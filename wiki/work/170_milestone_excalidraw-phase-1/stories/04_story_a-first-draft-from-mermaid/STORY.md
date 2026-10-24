@@ -4,7 +4,7 @@ number: 04
 slug: a-first-draft-from-mermaid
 title: "A first draft from Mermaid — the editor stops opening empty: the operator requests a draft and the architect proposes a whole diagram, drawn on accept by Excalidraw's converter"
 parent: 170
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-20
 updated: 2026-10-24

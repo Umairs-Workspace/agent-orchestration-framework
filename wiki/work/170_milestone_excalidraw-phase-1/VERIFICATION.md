@@ -197,3 +197,12 @@ F-170-11, F-170-12 and F-170-13 are deferred to a later milestone by the operato
   Approved by the operator at `aof:verify 170`, 2026-10-24. The admission exempts exactly
   `d3-shape/src/curve/bundle.js`, at the one reviewed sha256 that both copies (v1.3.7, v3.2.0)
   hash to; any other path, package or byte still fails the audit.
+
+## Accept decision
+
+2026-10-24, `aof:verify 170`. Stories 00–09 are accepted (`done`). Each carries an OUTCOME.md, and
+seven carry a RETROSPECTIVE.md (03, 05 and 06 surfaced no lesson of their own). No blocker finding is
+open: F-170-01..10 are fixed, and F-170-11..13 are non-blockers the operator deferred. Validate is
+PASS; doctor reports no `control-unresolved` and no dangling citation, with FF-17001 now declared in
+ARCHITECTURE's register. The milestone moves to `done` on a green whole-tree regression gate at the
+accepting commit; the first gate (`b2dbfad6`) was red and its repairs are F-170-08.

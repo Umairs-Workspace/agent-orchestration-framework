@@ -4,7 +4,7 @@ number: 00
 slug: native-draft-store-and-review-loop
 title: "The native draft store and the review loop — an embedded Excalidraw editor saves a draft, and the operator and the architect ask, answer, propose, preview, accept and reject"
 parent: 170
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-18
 updated: 2026-10-24

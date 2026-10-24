@@ -4,7 +4,7 @@ number: 05
 slug: notes-without-a-session
 title: "Notes without a session — a note on selected shapes or the whole diagram records a review request and launches nothing; the review panel lists and withdraws notes"
 parent: 170
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-20
 updated: 2026-10-24

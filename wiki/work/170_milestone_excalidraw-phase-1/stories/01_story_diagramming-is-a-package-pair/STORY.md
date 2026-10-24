@@ -4,7 +4,7 @@ number: 01
 slug: diagramming-is-a-package-pair
 title: "Diagramming is a package pair the build can leave out — @aof/diagrams and @aof/diagrams-ui, depended on one way"
 parent: 170
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-20
 updated: 2026-10-24

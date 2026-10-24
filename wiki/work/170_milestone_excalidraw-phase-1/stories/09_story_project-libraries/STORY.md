@@ -4,7 +4,7 @@ number: 09
 slug: project-libraries
 title: "Project libraries — .excalidrawlib files load as they are, every insertion keeps its library and item, and the architect places an item by name"
 parent: 170
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-21
 updated: 2026-10-24

@@ -4,7 +4,7 @@ number: 03
 slug: the-editor-is-a-route
 title: "The editor is a route — /diagram?ref=&file=, addressed by query, listed under no nav item, with the architect's session docked beside the canvas"
 parent: 170
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-20
 updated: 2026-10-24

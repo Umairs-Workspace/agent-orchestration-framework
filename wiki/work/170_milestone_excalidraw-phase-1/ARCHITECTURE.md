@@ -251,3 +251,9 @@ every other board write keeps the 1 MB limit.
 **Consequences.** The ADR's figure is the diagram, library items and sketches included. Export runs in
 the browser; `aof diagram export` (the diagram-design path) is untouched, and a CLI-only export of a
 scene would need a headless browser.
+
+## Fitness functions
+
+| id | invariant | enforced by (arch-test) | from |
+|---|---|---|---|
+| FF-17001 | **Diagramming is its own package, depended on one way.** No `@aof/work` source imports `@aof/diagrams`, and no core source imports a retired diagram home. `@aof/work`'s manifest does not list the package and exports no diagram module, the package lists `@aof/work`, and core lists the package. The diagram verbs ride `@aof/diagrams`' contribution. | `test/arch/diagrams/acd-diagrams-package-one-way.test.mjs` | ADR-001 |

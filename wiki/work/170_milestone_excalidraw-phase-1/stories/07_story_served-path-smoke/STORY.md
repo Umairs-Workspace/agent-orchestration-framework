@@ -4,7 +4,7 @@ number: 07
 slug: served-path-smoke
 title: "The served-path smoke — a real browser drives the served editor through a first draft, libraries, a note, a batch review, accept and publish, and its screenshots are read"
 parent: 170
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-20
 updated: 2026-10-24

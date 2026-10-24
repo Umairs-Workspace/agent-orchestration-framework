@@ -4,7 +4,7 @@ number: 02
 slug: the-opt-out-seam
 title: "The opt-out seam — one capability read says whether this project offers the editor, and the editor follows the generator switch"
 parent: 170
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-20
 updated: 2026-10-24

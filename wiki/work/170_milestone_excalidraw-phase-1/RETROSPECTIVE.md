@@ -132,3 +132,13 @@ geometry. A relabel's effect reaches past the node to its arrows.
 
 **Lesson:** A change's touch set covers its geometric consequences, not only the facts it names: a
 relabel can resize, so it reaches the arrows. R1's rule held for the third time.
+
+## R9 · A milestone built off-stream met the whole-tree gate for the first time at verify
+
+**Kind:** near-miss · **Area:** process · **Stage:** verify · **Owner:** product-owner · **Raised by:** product-owner · **Promoted to:** none
+
+**What happened:** 170's first regression gate was red on six units. Four were the branch's own and had never run whole-tree. An audited `spawnSync` had a stale source digest after the migrate fix, the diagrams kernel did not admit a dependency the merge of main added, two imported stories declared a bundle member without its manifest and renders, and a delivered milestone's control did not know the new `/diagram` surface. The other two passed alone.
+
+**Why:** The work was built ahead of the stream and verified by focused suites, then imported. The import's inference lane wrote the stories' `files:` from the evidence, without the generated siblings a bundle member brings. No step between build and accept ran the whole tree.
+
+**Lesson:** An imported milestone owes one whole-tree run before its UAT, not after. Stories written at import should be checked against FF-7106's sibling rule (`aof work validate` does not reach it) before verify.

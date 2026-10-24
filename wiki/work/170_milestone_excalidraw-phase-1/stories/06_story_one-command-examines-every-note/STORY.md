@@ -4,7 +4,7 @@ number: 06
 slug: one-command-examines-every-note
 title: "One command examines every note — /aof:diagram-review <ref> <file> with no request id answers each open note in one session: an answer or a proposal per note"
 parent: 170
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-20
 updated: 2026-10-24

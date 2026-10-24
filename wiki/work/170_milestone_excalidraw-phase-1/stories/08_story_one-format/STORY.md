@@ -4,7 +4,7 @@ number: 08
 slug: one-format
 title: "One format — the diagram is Excalidraw's scene, the architect reads and edits it as Mermaid, a proposal is compiled and accepted element by element, and Publish exports from the same canvas"
 parent: 170
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-21
 updated: 2026-10-24
