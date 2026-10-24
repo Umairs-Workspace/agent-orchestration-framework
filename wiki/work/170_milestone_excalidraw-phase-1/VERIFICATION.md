@@ -205,5 +205,9 @@ F-170-11, F-170-12 and F-170-13 are deferred to a later milestone by the operato
 seven carry a RETROSPECTIVE.md (03, 05 and 06 surfaced no lesson of their own). No blocker finding is
 open: F-170-01..10 and F-170-14 are fixed, and F-170-11..13 are non-blockers the operator deferred. Validate is
 PASS; doctor reports no `control-unresolved` and no dangling citation, with FF-17001 now declared in
-ARCHITECTURE's register. The milestone moves to `done` on a green whole-tree regression gate at the
-accepting commit; the first gate (`b2dbfad6`) was red and its repairs are F-170-08.
+ARCHITECTURE's register. The whole-tree regression gate is green at `396f34da` (13,506 of 13,506 cases, 13.7 min; REGRESSION.md).
+The first gate (`b2dbfad6`) was red, and its repairs are F-170-08. The second (`396f34da`) was red on one
+unit, the native package suites' 90-second budget, because `%TEMP%` held 66,000 entries and milestone
+167's `discovery.test.mjs` took 297 s to build and delete its trees there. With the stale test leftovers
+cleared (the operator's go), it took 50 s and the third run was green. That budget fails on a slow disk
+alone, which is a fragility in 167's test, not in this milestone. The milestone is accepted: `done`.

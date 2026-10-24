@@ -3,7 +3,7 @@ type: milestone
 number: 170
 slug: excalidraw-phase-1
 title: "Excalidraw phase 1 — an ADR diagram is an Excalidraw scene the architect reads and edits as Mermaid, annotated by the operator, and examined by one command"
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-20
 updated: 2026-10-24
@@ -121,10 +121,9 @@ Out of scope:
 written at import from this list, the ADRs and VERIFICATION. None carries a task contract, because
 the work was built before the milestone entered the stream.
 
-All ten are built. The milestone is `in-review`: VERIFICATION.md records the evidence (23/23 in a
-real browser, every touched suite and control green) and the acceptance items still open — an
-operator's live first draft and batch review, and the maintainer's sign-off on the d3-shape
-admission.
+All ten are built and accepted. The milestone was accepted at `aof:verify 170` on 2026-10-24, after
+the operator's UAT on the control node, the d3-shape sign-off and a green whole-tree gate
+(VERIFICATION.md, REGRESSION.md).
 
 ## Dependencies
 
