@@ -37,6 +37,7 @@ import { Board } from "@/board/Board";
 import { Fleet } from "@/fleet/Fleet";
 import { App } from "@/config/App";
 import { Home } from "@/home/Home";
+import { DiagramSurface } from "@/diagram/DiagramSurface";
 import { homePageOrigins } from "@/home/session-mount.mjs";
 
 // The route table's `id` column (ADR-002, binding) → the surface that renders it. `not-found` is
@@ -56,6 +57,9 @@ const SURFACES: Record<string, () => ReactElement> = {
   fleet: () => <Fleet />,
   board: () => <Board />,
   config: () => <App />,
+  // The diagram editor is HANDED its address (the draft is named in the query): like the home, its
+  // own directory may not read a browser global, and the entry already holds the resolved address.
+  diagram: () => <DiagramSurface address={plan.address} />,
 };
 
 const plan = entryPlanFor({ pathname: location.pathname, search: location.search, hash: location.hash });

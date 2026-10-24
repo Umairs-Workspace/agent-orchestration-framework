@@ -1,0 +1,288 @@
+import { commandError } from "@aof/contracts/error";
+import { headingCaptureRe, idForm } from "@aof/work/declared-id";
+import { stripHtmlComments } from "@aof/foundation/markdown";
+
+// THE ONE HOME of a diagram's place and spelling (milestone 133, ADR-003; FF-13302). Three parties
+// must agree on it — the writer (`aof diagram plan` / `export`), the reader (the doctor lane) and
+// the architect who pastes the link block — so the `diagrams` folder segment, the `ADR-NNN-<slug>`
+// stem grammar, the paths, the brief reader, the block writer and the link parser all live here,
+// and no other `src/` module re-derives any of them.
+//
+// PURE over text and paths: nothing here reads the disk. The markdown and the listing come in as
+// arguments, which is what lets the doctor lane stay a pure lane and the console stay independent.
+// The ADR id's SHAPE has one home (66/ADR-001 §7, FF-6604); this module narrows it, never re-spells
+// it. The stem takes the ADR's own three digits (ADR-003 §1), so an id here is the declared form
+// AND exactly `ADR-` plus three digits long.
+
+export const DIAGRAMS_DIR = "diagrams";
+
+const ADR_FORM = idForm("ADR").id;
+const ADR_ID = new RegExp(`^${ADR_FORM}$`);
+const ADR_ID_LENGTH = "ADR-".length + 3;
+const SLUG = /^[a-z0-9][a-z0-9-]{0,47}$/;
+// An ADR heading is matched on its id only: `## ADR-002 — anything` is ADR-002, `## ADR-2` is not.
+const ADR_HEADING = new RegExp(`^##\\s+(${ADR_FORM})`);
+const H2 = /^##\s/;
+const H2_OR_H3 = /^###?\s/;
+const DIAGRAM_HEADING = /^###\s+Diagram\s*$/;
+const FENCE = /^\s*(```|~~~)/;
+// A diagram link: an image `![…](diagrams/…)` or a plain link `[…](diagrams/…)`.
+const DIAGRAM_LINK = new RegExp(`(!?)\\[[^\\]]*\\]\\((${DIAGRAMS_DIR}/[^)\\s]+)\\)`, "g");
+
+export function isAdrId(value) {
+  return typeof value === "string" && value.length === ADR_ID_LENGTH && ADR_ID.test(value);
+}
+
+export function assertAdrId(adr) {
+  if (!isAdrId(adr)) {
+    throw commandError(`"${adr}" is not an ADR id — expected ADR-NNN (three digits, e.g. ADR-002).`, "diagram-adr-invalid", 400);
+  }
+}
+
+export function assertSlug(slug) {
+  if (typeof slug !== "string" || !SLUG.test(slug)) {
+    throw commandError(
+      `"${slug}" is not a diagram slug — expected lowercase letters, digits and hyphens, starting with a letter or digit, at most 48 characters.`,
+      "diagram-slug-invalid",
+      400,
+    );
+  }
+}
+
+// The stem grammar: `ADR-<NNN>-<slug>`.
+export function diagramStem(adr, slug) {
+  assertAdrId(adr);
+  assertSlug(slug);
+  return `${adr}-${slug}`;
+}
+
+// The ADR a stem names — its leading `ADR-NNN` — or null when the stem does not start with one.
+export function stemAdr(stem) {
+  const adr = String(stem).slice(0, ADR_ID_LENGTH);
+  return isAdrId(adr) && (stem.length === ADR_ID_LENGTH || stem[ADR_ID_LENGTH] === "-") ? adr : null;
+}
+
+// A path in forward slashes with no trailing `/`. Trailing slashes are trimmed by a loop, not
+// `/\/+$/`, which is polynomial on a long run of `/` (CodeQL js/polynomial-redos).
+function slashBase(value) {
+  let base = String(value).replace(/\\/g, "/");
+  while (base.endsWith("/")) base = base.slice(0, -1);
+  return base;
+}
+
+// Project-root-relative, forward-slash paths whatever the host OS: they are compared across
+// nodes and pasted into markdown. `png` is present only when `formats` asks for it.
+export function diagramsDir(itemDir) {
+  return `${slashBase(itemDir)}/${DIAGRAMS_DIR}`;
+}
+
+// A project's Excalidraw libraries (milestone 170, ADR-011), read as they are:
+// `<project>/.aof/diagrams/libraries/*.excalidrawlib`.
+export function diagramLibrariesDir(projectRoot) {
+  return `${slashBase(projectRoot)}/.aof/${DIAGRAMS_DIR}/libraries`;
+}
+
+// The operator's shared libraries, for every project (ADR-011, amended at 170's verify): a large
+// public set lives once in the global home, `<global home>/diagrams/libraries/*.excalidrawlib`.
+export function globalDiagramLibrariesDir(globalHome) {
+  return `${slashBase(globalHome)}/${DIAGRAMS_DIR}/libraries`;
+}
+
+export function diagramPaths(itemDir, stem, sourceExt, formats) {
+  const dir = diagramsDir(itemDir);
+  const paths = { dir, source: `${dir}/${stem}${sourceExt}` };
+  if (formats.includes("svg")) paths.svg = `${dir}/${stem}.svg`;
+  if (formats.includes("png")) paths.png = `${dir}/${stem}.png`;
+  return paths;
+}
+
+// 145 — THE LOOP DIAGRAM'S PLACE, in the same home (FF-13302 extended). `aof diagram plan <ref>
+// loop` / `export <ref> loop` take the subject `loop` where the ADR plan takes an ADR id, and write
+// under the item's `execution/` folder: the plan aof computes, the source the session draws, and
+// the PNG. Forward-slash and project-relative like `diagramPaths`; `source` is present only when a
+// generator's extension is known. The loop diagram keeps no SVG (145 UAT, operator): the SVG the
+// rasterizer reads is a scratch file at `rasterSvg`, removed once the PNG is made.
+export const LOOP_SUBJECT = "loop";
+export const EXECUTION_DIR = "execution";
+
+export function loopDiagramPaths(itemDir, sourceExt) {
+  const dir = `${slashBase(itemDir)}/${EXECUTION_DIR}`;
+  const paths = { dir, plan: `${dir}/${LOOP_SUBJECT}-plan.json` };
+  if (typeof sourceExt === "string") paths.source = `${dir}/${LOOP_SUBJECT}${sourceExt}`;
+  paths.png = `${dir}/${LOOP_SUBJECT}.png`;
+  return paths;
+}
+
+export function loopRasterSvgPath(paths) {
+  return `${paths.dir}/.${LOOP_SUBJECT}.raster.svg`;
+}
+
+// The review records of one scene draft (collaborative refinement): the human's requests and the
+// architect's proposals live beside the scene as `<stem>.review/{requests,proposals}/<id>.json`.
+// Ids are random lowercase hex, validated with `isReviewId` BEFORE any path is built from them.
+export const REVIEW_ID = /^[a-z0-9]{8,32}$/;
+
+export function isReviewId(value) {
+  return typeof value === "string" && REVIEW_ID.test(value);
+}
+
+export function diagramReviewPaths(itemDir, stem) {
+  const dir = `${diagramsDir(itemDir)}/${stem}.review`;
+  return { dir, requests: `${dir}/requests`, proposals: `${dir}/proposals` };
+}
+
+export function reviewRecordPath(directory, id) {
+  if (!isReviewId(id)) throw commandError("Review id is invalid.", "diagram-review-id-invalid", 400);
+  return `${directory}/${id}.json`;
+}
+
+// The one file a reader may ask an item's `diagrams/` folder for (133/VERIFICATION F-133-02): a bare
+// `ADR-NNN-<slug>` stem plus one of the three extensions export writes. Anything else — a path, a
+// `..`, another extension, a stem with no ADR or no slug — is null, so a request can never name a
+// file outside the folder. `path` is forward-slashed like every path here.
+// `.excalidraw` is an Excalidraw diagram itself — the scene the editor draws (milestone 170, ADR-010).
+export const DIAGRAM_FILE_EXTS = Object.freeze([".html", ".svg", ".png", ".excalidraw"]);
+
+export function diagramFile(itemDir, name) {
+  const base = String(name ?? "");
+  const dot = base.lastIndexOf(".");
+  if (dot <= 0 || !DIAGRAM_FILE_EXTS.includes(base.slice(dot))) return null;
+  const stem = base.slice(0, dot);
+  const adr = stemAdr(stem);
+  if (adr == null || !SLUG.test(stem.slice(adr.length + 1))) return null;
+  return { name: base, stem, ext: base.slice(dot), path: `${diagramsDir(itemDir)}/${base}` };
+}
+
+function linesOf(markdown) {
+  return String(markdown ?? "").split(/\r?\n/);
+}
+
+// The line range [start, end) of one ADR's section: its `## ADR-NNN` heading to the next `## `
+// heading or the end of the file. Null when the heading is absent.
+function adrSection(lines, adrId) {
+  const start = lines.findIndex((line) => ADR_HEADING.exec(line)?.[1] === adrId);
+  if (start === -1) return null;
+  let end = start + 1;
+  while (end < lines.length && !H2.test(lines[end])) end += 1;
+  return { start, end };
+}
+
+export function hasAdrSection(markdown, adrId) {
+  return adrSection(linesOf(markdown), adrId) != null;
+}
+
+// The ADR heading's title — its text after the id and the dash — or null when the heading is absent.
+// `## ADR-002 — The generator seam` gives `The generator seam`.
+export function readAdrTitle(markdown, adrId) {
+  const lines = linesOf(markdown);
+  const section = adrSection(lines, adrId);
+  if (section == null) return null;
+  return (headingCaptureRe("ADR").exec(lines[section.start])?.[2] ?? "").trim();
+}
+
+// The diagram sources for one ADR in a `diagrams/` listing: `ADR-NNN-<slug><sourceExt>` whose slug
+// is legal, each with the stem its file name gives. Pure over the listing (names, not paths).
+export function findDiagramSources(names, adrId, sourceExt) {
+  const prefix = `${adrId}-`;
+  return names
+    .filter((name) => name.startsWith(prefix) && name.endsWith(sourceExt))
+    .map((name) => ({ name, stem: name.slice(0, name.length - sourceExt.length) }))
+    .filter(({ stem }) => SLUG.test(stem.slice(prefix.length)))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// The brief is the prose under the ADR's own `### Diagram` heading, up to the first line that
+// links into `diagrams/` or the next `##`/`###` heading. Trimmed; empty is null.
+export function readDiagramBrief(markdown, adrId) {
+  const lines = linesOf(markdown);
+  const section = adrSection(lines, adrId);
+  if (section == null) return null;
+  let at = section.start + 1;
+  while (at < section.end && !DIAGRAM_HEADING.test(lines[at])) at += 1;
+  if (at >= section.end) return null;
+  const brief = [];
+  for (at += 1; at < section.end; at += 1) {
+    const line = lines[at];
+    if (H2_OR_H3.test(line) || line.includes(`](${DIAGRAMS_DIR}/`)) break;
+    brief.push(line);
+  }
+  const text = brief.join("\n").trim();
+  return text === "" ? null : text;
+}
+
+// A PROTOTYPE'S DIAGRAMS (milestone 168 / ADR-006) — the third subject. A prototype has no ADRs:
+// its briefs live under `## Diagrams` in PROTOTYPE.md, one `### <name>` each, and the diagram's
+// subject is that NAME — the slug grammar, and the stem itself, so its files are
+// `diagrams/<name>.{html,svg,png}` through `diagramPaths` unchanged. Homed here with the ADR half
+// because this file is the one home of a diagram's place and spelling (FF-13302).
+const PROTOTYPE_DIAGRAMS_HEADING = /^##\s+Diagrams\s*$/;
+
+export function prototypeDiagramStem(name) {
+  assertSlug(name);
+  return name;
+}
+
+// The brief is the prose under `### <name>` inside `## Diagrams`, up to the next heading or the first
+// line that links into `diagrams/` (the pasted block). Null when the heading is absent; "" when it
+// carries no prose.
+export function readPrototypeBrief(markdown, name) {
+  const lines = linesOf(markdown);
+  const section = lines.findIndex((line) => PROTOTYPE_DIAGRAMS_HEADING.test(line));
+  if (section === -1) return null;
+  let at = section + 1;
+  while (at < lines.length && !H2.test(lines[at]) && lines[at].trim() !== `### ${name}`) at += 1;
+  if (at >= lines.length || H2.test(lines[at])) return null;
+  const brief = [];
+  for (at += 1; at < lines.length; at += 1) {
+    const line = lines[at];
+    if (H2_OR_H3.test(line) || line.includes(`](${DIAGRAMS_DIR}/`)) break;
+    brief.push(line);
+  }
+  return stripHtmlComments(brief.join("\n")).trim();
+}
+
+// The block the architect pastes under the ADR (ADR-003 §3): the SVG as an image, then the source
+// and — when exported — the PNG as links. A prototype's diagram has no ADR id, so its image is
+// titled by its name alone (168/ADR-006).
+export function renderDiagramBlock({ adrId, title, stem, sourceExt, formats }) {
+  const source = `${stem}${sourceExt}`;
+  const links = [`Source: [${source}](${DIAGRAMS_DIR}/${source})`];
+  if (formats.includes("png")) links.push(`PNG: [${stem}.png](${DIAGRAMS_DIR}/${stem}.png)`);
+  const alt = adrId == null ? title : `${adrId} — ${title}`;
+  return `![${alt}](${DIAGRAMS_DIR}/${stem}.svg)\n\n${links.join(" · ")}`;
+}
+
+// Every image or link target under `diagrams/`, with the `## ADR-NNN` section it sits in (null
+// outside any ADR — reported, not dropped, so the gate can see it), its stem and 1-based line.
+// Fenced code and inline code spans are skipped: an ADR that SHOWS the block has not linked a diagram.
+export function parseDiagramLinks(markdown) {
+  const links = [];
+  let adr = null;
+  let fenced = false;
+  linesOf(markdown).forEach((line, index) => {
+    if (FENCE.test(line)) {
+      fenced = !fenced;
+      return;
+    }
+    if (fenced) return;
+    if (H2.test(line)) {
+      adr = ADR_HEADING.exec(line)?.[1] ?? null;
+      return;
+    }
+    // An inline code span QUOTES a link rather than making one (this milestone's own measured-facts
+    // table does exactly that), so each span is blanked before the match.
+    for (const match of line.replace(/`[^`]*`/g, (span) => " ".repeat(span.length)).matchAll(DIAGRAM_LINK)) {
+      const target = match[2];
+      const base = target.slice(target.lastIndexOf("/") + 1);
+      const dot = base.lastIndexOf(".");
+      links.push({
+        adr,
+        stem: dot > 0 ? base.slice(0, dot) : base,
+        target,
+        line: index + 1,
+        kind: match[1] === "!" ? "image" : "link",
+      });
+    }
+  });
+  return links;
+}

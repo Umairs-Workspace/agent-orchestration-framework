@@ -8,9 +8,12 @@ import { sourceFiles, workspaceSourceRoots } from "../../scripts/source-inventor
 // readSrcFiles(repoRoot) — every src/**/*.mjs file as `{ rel, path }`, where `rel` is
 // the slash-joined path relative to src/. Used to assert that a forbidden argv shape
 // (a `--system-prompt` replacement, a second claude launch builder) exists nowhere.
+// The owners whose sources run in a browser: the UI app and the editor library it lazily imports.
+const BROWSER_OWNERS = new Set(["@aof/ui", "@aof/diagrams-ui"]);
+
 function runtimeFiles(files, runtime) {
   if (!["all", "node", "browser"].includes(runtime)) throw Error(`Unknown source runtime: ${runtime}`);
-  return files.filter(file => runtime === "all" || (file.owner === "@aof/ui") === (runtime === "browser"));
+  return files.filter(file => runtime === "all" || BROWSER_OWNERS.has(file.owner) === (runtime === "browser"));
 }
 
 export async function readSrcFiles(repoRoot, { runtime = "all" } = {}) {

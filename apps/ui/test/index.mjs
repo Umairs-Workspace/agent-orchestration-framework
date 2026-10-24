@@ -15,6 +15,8 @@ import { terminalOneImplementationTests } from "./terminal-one-implementation.su
 import { terminalUnavailablePaneTests } from "./terminal-unavailable-pane.suite.mjs";
 import { appRoutesTests } from "./app-routes.suite.mjs";
 import { boardDiagramsTests } from "./board-diagrams.suite.mjs";
+// the `/diagram` route: its row, the nav that lists it under no item, its address vocabulary and its dock mount.
+import { diagramAddressTests } from "./diagram-address.suite.mjs";
 import { boardRuleGroupsTests } from "./board-rule-groups.suite.mjs";
 import { boardRunsPureTests } from "./board-runs-pure.suite.mjs";
 import { fleetAssignmentChipTests } from "./fleet-assignment-chip.suite.mjs";
@@ -51,6 +53,7 @@ export const tests = [
   ...terminalUnavailablePaneTests,
   ...appRoutesTests,
   ...boardDiagramsTests,
+  ...diagramAddressTests,
   ...boardRuleGroupsTests,
   ...boardRunsPureTests,
   ...fleetAssignmentChipTests,

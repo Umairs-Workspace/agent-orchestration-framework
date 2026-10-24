@@ -312,6 +312,38 @@ async function handleDiagramApi(request, response, options = {}) {
   } catch {
     return false;
   }
+  // The opt-out seam. A project with diagrams off answers `editor: false`; a build WITHOUT the
+  // diagrams package has no `diagram:capability` at all, and that is the same answer with
+  // `absent: true` — the board hides Edit draft either way and never loads the editor chunk.
+  if (request.method === "GET" && requestUrl.pathname === "/api/diagram/capability") {
+    response.setHeader("cache-control", "no-store");
+    try {
+      const workspace = await loadWorkspace(path.resolve(options.projectDir ?? process.cwd()));
+      const result = await invoke("diagram:capability", {}, { workspace });
+      sendJson(response, 200, result); return true;
+    } catch (error) {
+      if (/^Unknown command id "diagram:capability"/u.test(error?.message ?? "")) {
+        sendJson(response, 200, { absent: true, enabled: false, editor: false, generator: "off" }); return true;
+      }
+      sendApiError(response, error.status ?? 500, error.message, error.code ?? "diagram-capability-api-failed"); return true;
+    }
+  }
+  if (requestUrl.pathname === "/api/diagram/scene") {
+    response.setHeader("cache-control", "no-store");
+    try {
+      const workspace = await loadWorkspace(path.resolve(options.projectDir ?? process.cwd()));
+      const ctx = { workspace };
+      const params = requestUrl.searchParams;
+      if (request.method === "GET") {
+        const result = await invoke("diagram:scene", { ref: (params.get("ref") ?? "").trim(), file: (params.get("file") ?? "").trim(), action: "read" }, ctx);
+        sendJson(response, 200, result); return true;
+      }
+      if (!admitWriteRequest(request, response)) return true;
+      const body = await readJsonBody(request, 16_000_000);
+      const result = await invoke("diagram:scene", { ...body, ref: (params.get("ref") ?? body.ref ?? "").trim(), file: (params.get("file") ?? body.file ?? "").trim() }, ctx);
+      sendJson(response, 200, result); return true;
+    } catch (error) { sendApiError(response, error.status ?? 500, error.message, error.code ?? "diagram-scene-api-failed"); return true; }
+  }
   if (request.method !== "GET" || requestUrl.pathname !== "/api/diagram/file") return false;
   try {
     const workspace = await loadWorkspace(path.resolve(options.projectDir ?? process.cwd()));
@@ -408,20 +440,28 @@ function send(response, status, contentTypeValue, body) {
 // (400) JSON body, and one that is not a plain object (400 `invalid-body`, 131/04: a
 // `null` body otherwise threw on `body.ref` to a 500). These are HTTP-body concerns and stay in the face; the
 // resolved JSON object is handed to the command as its input.
-function readJsonBody(request) {
+// `maxBytes` is the route's own: every board write keeps the 1 MB default, and the diagram route
+// alone raises it, because Publish carries the editor's SVG and, when owed, a base64 PNG.
+// The body is gathered as bytes and decoded once: decoding each chunk alone turns a multi-byte
+// character split across two chunks into U+FFFD, silently, in whatever the write stores.
+function readJsonBody(request, maxBytes = 1_000_000) {
   return new Promise((resolve, reject) => {
-    let body = "";
+    const chunks = [];
+    let received = 0;
     let tooLarge = false;
     request.on("data", (chunk) => {
       if (tooLarge) return;
-      body += chunk;
-      if (Buffer.byteLength(body, "utf8") > 1_000_000) tooLarge = true;
+      const bytes = typeof chunk === "string" ? Buffer.from(chunk, "utf8") : chunk;
+      received += bytes.length;
+      if (received > maxBytes) { tooLarge = true; chunks.length = 0; return; }
+      chunks.push(bytes);
     });
     request.on("end", () => {
       if (tooLarge) {
         reject(httpError("Request body is too large.", "payload-too-large", 413));
         return;
       }
+      const body = Buffer.concat(chunks).toString("utf8");
       if (body.trim() === "") {
         reject(httpError("Request body must be JSON.", "empty-json", 400));
         return;

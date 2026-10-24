@@ -37,8 +37,9 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // the shell renders its ask block through `ask.mjs`'s `askBlockLines`, and spells no phrase of its
 // own). `waiting on you` is spelled in no other comment-stripped `packages/core/src/**` or `apps/ui/src/**` module, and
 // no module but `form.mjs` DEFINES `formatElapsed` (ruling 9: the register's red probe, a second
-// ladder, imports nothing and need not spell the phrase). The one `apps/ui/src/**` specifier that
-// resolves outside `apps/ui/src` is the board's import of the form. Fixture: `accountLine` and the
+// ladder, imports nothing and need not spell the phrase). The `apps/ui/src/**` specifiers that
+// resolve outside `apps/ui/src` are the board's import of the form and, since milestone 170
+// (ADR-001), the diagram surface's one lazy import of the editor package. Fixture: `accountLine` and the
 // Discord line 1 share a byte-identical `<ref> — <phrase> (<phase>, <elapsed>)`.
 //
 // FF-13109, structural then fixture. In `packages/core/src/board-ui.mjs` every body read (`readJsonBody(`) is
@@ -139,7 +140,12 @@ const FORM_IMPORTERS = Object.freeze(["packages/messaging/src/discord-commands.m
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const PHRASES = Object.freeze(["waiting on you", "answered by", "parked, unanswered", "loop halted", "loop died", "loop relaunched"]);
 const THE_PHRASE = "waiting on you";
-const UI_OUTSIDE = Object.freeze([{ file: "apps/ui/src/board/action.mjs", specifier: "@aof/messaging/form" }]);
+// The board's import of the ask form; and the diagram surface's lazy `import()` of `@aof/diagrams-ui`'s
+// editor (170/ADR-001: diagramming is a package the app reaches one way, through one dynamic import).
+const UI_OUTSIDE = Object.freeze([
+  { file: "apps/ui/src/board/action.mjs", specifier: "@aof/messaging/form" },
+  { file: "apps/ui/src/diagram/DiagramSurface.tsx", specifier: "@aof/diagrams-ui/editor" },
+]);
 const UI_EXTENSIONS = /\.(?:mjs|mts|ts|tsx|js)$/u;
 const BOARD = "packages/server/src/board-ui.mjs";
 const FLEET = "packages/mesh/src/ui-serve.mjs";
@@ -642,7 +648,7 @@ export const archTests = [
     },
   },
   {
-    name: "arch/131 FF-13108 (acd-loop-ask-reaches-every-face): structural — waiting on you is spelled in form.mjs alone, formatElapsed is defined in no module but src/notify/form.mjs, and the one apps/ui/src specifier that leaves apps/ui/src is the board's import of the form",
+    name: "arch/131 FF-13108 (acd-loop-ask-reaches-every-face): structural — waiting on you is spelled in form.mjs alone, formatElapsed is defined in no module but src/notify/form.mjs, and the apps/ui/src specifiers that leave apps/ui/src are the board's import of the form and the diagram surface's lazy editor import",
     run: async () => {
       const src = await srcUnits();
       const ui = await uiUnits();
@@ -662,7 +668,7 @@ export const archTests = [
           if (!resolved(unit.rel, specifier).startsWith("apps/ui/src/")) outside.push({ file: unit.rel, specifier });
         }
       }
-      assert.deepEqual(outside, [...UI_OUTSIDE], `the only import specifier in apps/ui/src/** that resolves outside apps/ui/src is ../../../packages/core/src/notify/form.mjs in apps/ui/src/board/action.mjs — found ${JSON.stringify(outside)}`);
+      assert.deepEqual(outside, [...UI_OUTSIDE], `the import specifiers in apps/ui/src/** that resolve outside apps/ui/src are the form in apps/ui/src/board/action.mjs and the editor package in apps/ui/src/diagram/DiagramSurface.tsx — found ${JSON.stringify(outside)}`);
     },
   },
   {

@@ -10,11 +10,12 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //  EXISTING `.feature` for writing (create-only scaffolding is admitted)."
 //
 // MEASURED AT HEAD (ADR-009/A): ONE write site, create-only
-// (`packages/work/src/commands/migrate-folder.mjs:251-255` — ADR-009/A cited `:225-229`, which is
+// (`packages/work/src/commands/migrate-folder.mjs:267-271` — ADR-009/A cited `:225-229`, which is
 // where it sat before 66/00 declared the flag at that call, and `:231-235` until 119/02's
 // prose sweep moved this module's registry rationale into its header, 11 lines above the
 // call, and `:242-246` until 127/01 retired its private `ITEM_RE` + `nextFreeSlot` onto the one
-// enumerator and the one mint); ZERO overwrite sites — the
+// enumerator and the one mint, and `:251-255` until 170's import put the refusal of a source inside
+// the work stream and the source SPEC's read above the call); ZERO overwrite sites — the
 // corrected invariant is TRUE at HEAD. The ratchet that correction carries is this
 // milestone's own lesson third time round: a "no code path does X" invariant is a
 // MEASUREMENT, and may not be frozen until it has been run against HEAD. The line
@@ -99,7 +100,9 @@ const THE_NAMED_WRITE_SITE = "packages/work/src/commands/migrate-folder.mjs";
 // …and 127/01 moved it two more, to :244 — the module's private `ITEM_RE` copy and its
 // `nextFreeSlot` scan retired onto the one enumerator and the one mint (127/ADR-001 §5), and the
 // import that replaced them carries its rationale above the call.
-const THE_NAMED_WRITE_LINE = 251;
+// …and 170's import moved it sixteen more, to :267: migrate refuses a source inside the work stream
+// and reads the source SPEC's tags and sections, both before the scaffold.
+const THE_NAMED_WRITE_LINE = 267;
 
 // Write-shaped callees: every door under `packages/core/src/` through which bytes reach a path.
 const WRITE_CALLS = [

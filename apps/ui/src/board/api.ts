@@ -290,7 +290,15 @@ export type FleetOriginResponse = {
   source: "launcher" | "default" | "none";
 };
 
+// The opt-out seam's answer (`/api/diagram/capability` → `diagram:capability`): whether this project
+// offers the draft editor. `absent` is the board face's own answer for a build without the
+// diagrams package; the board treats every falsy `editor` the same way — no Edit draft, no fetch.
+export type DiagramCapability = { absent: boolean; enabled: boolean; editor: boolean; generator: string };
+
 export const workApi = {
+  async diagramCapability(): Promise<DiagramCapability> {
+    return getJson<DiagramCapability>("/api/diagram/capability");
+  },
   // milestone 127 / ADR-006 §2 — archived rows are hidden by default and revealed by ONE
   // parameter that flips the request. Hidden is a property of the FETCH, never a filter the
   // board applies: OFF requests the list with no query string at all (a testable absence), ON

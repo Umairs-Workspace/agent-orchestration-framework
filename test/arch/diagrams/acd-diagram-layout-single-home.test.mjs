@@ -27,10 +27,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { parseDiagramLinks, readPrototypeBrief, renderDiagramBlock } from "@aof/work/diagrams/layout";
+import { parseDiagramLinks, readPrototypeBrief, renderDiagramBlock } from "@aof/diagrams/layout";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const THE_ONE_HOME = "packages/work/src/diagrams/layout.mjs";
+const THE_ONE_HOME = "packages/diagrams/src/layout.mjs";
 // The manifest's own entry (story 04). Named, never counted; it may spell the segment exactly once.
 const MANIFEST = "packages/work/src/artifacts.mjs";
 const SEGMENT = ["dia", "grams"].join("");
@@ -58,7 +58,9 @@ function literals(code) {
 function layoutSpellings(file, text) {
   const code = stripComments(text);
   const hits = [];
-  const folder = literals(code).filter((value) =>
+  // A workspace package NAME (`@aof/diagrams`) is a module address, not a folder path, exactly as an
+  // import specifier through the family is; the contribution that names the package is not a spelling.
+  const folder = literals(code).filter((value) => !value.startsWith("@aof/")).filter((value) =>
     value === SEGMENT || value.startsWith(`${SEGMENT}/`) || value.includes(`/${SEGMENT}/`) || value.endsWith(`/${SEGMENT}`));
   if (file === MANIFEST) {
     if (folder.length > 1) hits.push(`${MANIFEST} spells the folder ${folder.length} times (its one manifest entry is the exception)`);
@@ -79,13 +81,16 @@ function layoutSpellings(file, text) {
 
 const offenderLines = (file, text) => layoutSpellings(file, text).map((hit) => `${file}: ${hit}`);
 
-const LAYOUT_IMPORT = /from\s*["']([^"']*diagrams\/layout\.mjs)["']/g;
+// A relative import that resolves to the one home, or the package's published `./layout` export —
+// the layout now lives at @aof/diagrams' root, so its own commands reach it as `../layout.mjs` and
+// its lane as `./layout.mjs`, and anything outside the package through the export.
+const LAYOUT_IMPORT = /from\s*["']([^"']*layout\.mjs|@aof\/diagrams\/layout)["']/g;
 
 function importsTheLayout(file, text) {
   const code = stripComments(text);
   return [...code.matchAll(LAYOUT_IMPORT)].some((match) =>
-    [THE_ONE_HOME, "packages/work/src/diagrams/layout.mjs"].some(owner =>
-      path.resolve(repoRoot, path.dirname(file), match[1]) === path.join(repoRoot, owner)));
+    match[1] === "@aof/diagrams/layout"
+    || path.resolve(repoRoot, path.dirname(file), match[1]) === path.join(repoRoot, THE_ONE_HOME));
 }
 
 const BLOCK = { adrId: "ADR-002", title: "the generator seam", stem: "ADR-002-generator-seam", sourceExt: ".html", formats: ["svg", "png"] };
@@ -109,12 +114,15 @@ export const archTests = [
       assert.equal(existsSync(path.join(repoRoot, "packages/core/src/work-diagrams/layout.mjs")), false,
         "the retired forward is absent; handlers reach the owned implementation");
       const handlers = [];
-      const family = path.join(repoRoot, "packages", "work", "src", "commands", "diagram");
+      const family = path.join(repoRoot, "packages", "diagrams", "src", "commands");
       if (existsSync(family)) {
-        for (const name of await readdir(family)) if (name.endsWith(".mjs")) handlers.push(`packages/work/src/commands/diagram/${name}`);
+        // `capability.mjs` handles NO diagram path: it answers the one reader's config (on/off, the
+        // generator) and names no folder, stem or file, so it owes the layout nothing. Named, not
+        // pattern-matched, so a second path-less verb is an edit here.
+        for (const name of await readdir(family)) if (name.endsWith(".mjs") && name !== "capability.mjs") handlers.push(`packages/diagrams/src/commands/${name}`);
       }
-      if (existsSync(path.join(repoRoot, "packages", "work", "src", "doctor", "diagrams.mjs"))) handlers.push("packages/work/src/doctor/diagrams.mjs");
-      assert.ok(handlers.includes("packages/work/src/commands/diagram/plan.mjs"), "the plan verb exists and is checked");
+      if (existsSync(path.join(repoRoot, "packages", "diagrams", "src", "doctor-lane.mjs"))) handlers.push("packages/diagrams/src/doctor-lane.mjs");
+      assert.ok(handlers.includes("packages/diagrams/src/commands/plan.mjs"), "the plan verb exists and is checked");
       for (const file of handlers) {
         assert.ok(importsTheLayout(file, await readFile(path.join(repoRoot, file), "utf8")), `${file} imports ${THE_ONE_HOME}`);
       }
@@ -141,21 +149,24 @@ export const archTests = [
   {
     name: "arch/133 FF-13302 red probe: the detector fires on a planted folder path and a planted stem, and allows the manifest's one entry",
     run: () => {
-      assert.deepEqual(layoutSpellings("packages/work/src/doctor/diagrams.mjs", `const dir = path.join(item, "${SEGMENT}");`), [`builds a folder path from "${SEGMENT}"`]);
+      assert.deepEqual(layoutSpellings("packages/diagrams/src/doctor-lane.mjs", `const dir = path.join(item, "${SEGMENT}");`), [`builds a folder path from "${SEGMENT}"`]);
       assert.deepEqual(layoutSpellings("packages/core/src/x.mjs", `const p = \`${SEGMENT}/\${stem}.svg\`;`).length, 1);
       assert.deepEqual(layoutSpellings("packages/core/src/x.mjs", "const stem = `ADR-${n}-${slug}`;"), ["builds an ADR-<NNN>- stem"]);
       assert.deepEqual(layoutSpellings("packages/core/src/x.mjs", "const id = `ADR-${String(n).padStart(3, \"0\")}`;"), [], "an ADR id alone is not a stem");
       assert.deepEqual(layoutSpellings(MANIFEST, `{ name: "DIAGRAMS", dir: "${SEGMENT}", ext: ".svg" }`), []);
       assert.equal(layoutSpellings(MANIFEST, `"${SEGMENT}"; "${SEGMENT}"`).length, 1);
       assert.deepEqual(layoutSpellings("packages/core/src/x.mjs", `// "${SEGMENT}/" in a comment\nconst a = 1;`), []);
-      assert.equal(importsTheLayout("packages/work/src/commands/diagram/plan.mjs", 'import { x } from "../../diagrams/layout.mjs";'), true);
-      assert.equal(importsTheLayout("packages/work/src/commands/diagram/plan.mjs", 'import { x } from "../diagrams/layout.mjs";'), false);
+      assert.deepEqual(layoutSpellings("packages/diagrams/src/contribution.mjs", `export const name = "@aof/${SEGMENT}";`), [], "a package name is an address, not a folder");
+      assert.deepEqual(layoutSpellings("packages/core/src/x.mjs", `const p = "wiki/${SEGMENT}";`), [`builds a folder path from "wiki/${SEGMENT}"`], "…and a folder path still fires");
+      assert.equal(importsTheLayout("packages/diagrams/src/commands/plan.mjs", 'import { x } from "../layout.mjs";'), true);
+      assert.equal(importsTheLayout("packages/diagrams/src/commands/plan.mjs", 'import { x } from "./layout.mjs";'), false);
+      assert.equal(importsTheLayout("packages/work/src/doctor/index.mjs", 'import { x } from "@aof/diagrams/layout";'), true);
     },
   },
   {
     name: "arch/145 FF-13302 red probe: an execution/ path or a loop file name spelled outside the layout fails it, naming the file",
     run: () => {
-      const plan = "packages/work/src/commands/diagram/plan.mjs";
+      const plan = "packages/diagrams/src/commands/plan.mjs";
       const planted = offenderLines(plan, `const svg = "${EXECUTION}/loop.svg";`);
       assert.equal(planted.length, 1);
       assert.ok(planted[0].startsWith(`${plan}: `), "the offender names the file");

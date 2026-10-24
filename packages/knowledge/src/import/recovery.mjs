@@ -325,7 +325,7 @@ async function recoverAofDecisions(milestoneDir) {
     const bodyLines = section.body.filter((line) => !/^\s*\*\*Status:\*\*/i.test(line));
     decisions.push({ id, title, status, body: sectionBody(bodyLines) });
   }
-  return renumberDecisions(decisions);
+  return keepSourceIds(decisions, renumberDecisions);
 }
 
 // Recover outcomes from an aof RETROSPECTIVE.md: each `## R<n>` entry → an
@@ -342,7 +342,7 @@ async function recoverAofOutcomes(milestoneDir) {
     const title = rawTitle.replace(/`/g, "").trim();
     outcomes.push({ id, title, body: sectionBody(section.body) });
   }
-  return renumberOutcomes(outcomes);
+  return keepSourceIds(outcomes, renumberOutcomes);
 }
 
 // ──────────────────────────────────────────────────── ARBITRARY recovery ──
@@ -477,6 +477,16 @@ function recoverArbitraryOutcomes(sourceDir) {
 }
 
 // ───────────────────────────────────────────────────────────── helpers ──
+
+// An aof-structured source's own ids are what its prose, its code and its tests cite ("ADR-012",
+// "R4"), so they are kept whenever every entry has one and none repeats. Measured importing a
+// milestone whose ADR-010–ADR-013 superseded ADR-005–ADR-009: renumbering made them ADR-007–ADR-010,
+// and every citation of them pointed at the wrong decision. Only a missing or colliding id re-numbers
+// the whole list, which is the case the renumbering exists for.
+function keepSourceIds(entries, renumber) {
+  const ids = entries.map((entry) => String(entry.id ?? "").toUpperCase());
+  return ids.every((id) => id.length > 0) && new Set(ids).size === ids.length ? entries : renumber(entries);
+}
 
 // Re-number a decision list to contiguous `ADR-001`, `ADR-002`, … so the
 // materialized headings are parser-clean and unique even when the source ids

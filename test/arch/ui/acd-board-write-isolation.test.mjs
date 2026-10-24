@@ -245,7 +245,14 @@ export const archTests = [
         assert.ok(admit >= 0 && admit < body.indexOf("readJsonBody("), `${route} calls admitWriteRequest( before readJsonBody(`);
       }
       const admissions = [...board.matchAll(/(?<!function\s)\badmitWriteRequest\(/g)];
-      assert.equal(admissions.length, 4, "four admitWriteRequest( call sites: the phase-door closure, resync, feedback and answer");
+      // Excalidraw drafts (PR #13) add the fifth: `handleDiagramApi`'s `/api/diagram/scene` POST, the one
+      // board write outside `/api/work`. It too admits before it reads a body — asserted here, not assumed.
+      assert.equal(admissions.length, 5, "five admitWriteRequest( call sites: the phase-door closure, resync, feedback, answer and the diagram scene");
+      const sceneRoute = board.indexOf('requestUrl.pathname === "/api/diagram/scene"');
+      assert.ok(sceneRoute >= 0, "the diagram scene route is present");
+      const sceneBranch = matchedBraceBody(board, sceneRoute) ?? "";
+      const sceneAdmit = sceneBranch.indexOf("admitWriteRequest(");
+      assert.ok(sceneAdmit >= 0 && sceneAdmit < sceneBranch.indexOf("readJsonBody("), "the diagram scene route calls admitWriteRequest( before readJsonBody(");
 
       // (d) The rerun UI surface (the pure verb module + the DetailPanel affordance)
       // reaches the launch via the runAgent → TerminalDock path and adds NO new

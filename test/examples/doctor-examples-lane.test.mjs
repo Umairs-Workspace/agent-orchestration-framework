@@ -475,6 +475,9 @@ export const doctorExamplesLaneTests = [
       // 167/00: the row is a stated raise for every later lane too, so the count is read off the row, not re-pinned here.
       assert.equal(children, rowData.ceiling, `the doctor family has as many members as its row's ceiling`);
       assert.ok(rowData.ceiling >= 11, `the row still carries the tenth lane's raise (`+rowData.ceiling+`)`);
+      // The @aof/diagrams move gave one back: the diagrams lane left for its package the way the examples
+      // lane did, and the row states that too.
+      assert.match(rowData.why, /@aof\/diagrams/);
       assert.match(rowData.why, /tenth doctor lane/);
       assert.match(rowData.why, /134\/04: 10 -> 11/);
       assert.match(rowData.why, /11 -> 10/);

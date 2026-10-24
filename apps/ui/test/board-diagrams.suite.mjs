@@ -157,6 +157,8 @@ export const boardDiagramsTests = [
       assert.ok(html.includes('<a href="/api/diagram/file?ref=133&amp;file=ADR-002-seam.html" target="_blank" rel="noopener noreferrer">ADR-002-seam.html</a>'), "Source");
       assert.ok(html.includes('<a href="/api/diagram/file?ref=133&amp;file=ADR-002-seam.png" target="_blank" rel="noopener noreferrer">ADR-002-seam.png</a>'), "PNG");
       assert.equal(diagramFileUrl("133/04", "ADR-002-a b.svg"), "/api/diagram/file?ref=133%2F04&file=ADR-002-a%20b.svg");
+      const scene = renderFor("133", "Source: [ADR-002-seam.excalidraw](diagrams/ADR-002-seam.excalidraw)", {});
+      assert.match(scene, /href="\/api\/diagram\/file\?ref=133&amp;file=ADR-002-seam\.excalidraw" target="_blank"/, "an Excalidraw diagram's scene is served like the others (milestone 170)");
       const other = "See [spec](../SPEC.md), [a folder](diagrams/old/x.svg) and [a script](diagrams/ADR-002-x.js).";
       assert.equal(renderFor("133", other, {}), marked.parse(other, { async: false, gfm: true, breaks: false }), "every other link renders as marked renders it");
     },

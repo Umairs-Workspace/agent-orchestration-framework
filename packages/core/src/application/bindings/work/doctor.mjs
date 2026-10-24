@@ -7,7 +7,7 @@ export function assembleWorkDoctor({ runStoreServices, workDoctorDiagramsService
   // Core composition for work-owned doctor services.
 
   const { readRuns } = runStoreServices;
-  const { diagramsGroup } = workDoctorDiagramsServices;
+  const { diagramsGroup, diagramListing } = workDoctorDiagramsServices;
   const { examplesGroup } = workDoctorExamplesServices;
   const { examplesEnabledFromConfig } = configInspectServices;
   // Deferred: the answers collector is assembled after the doctor; the probe calls it only at run time.
@@ -28,7 +28,7 @@ export function assembleWorkDoctor({ runStoreServices, workDoctorDiagramsService
     orphanFolderGroup,
     siblingDependencyNumber,
     staleWindowFromConfig,
-  } = createWorkDoctor({ projectExecution, readRuns, diagramsGroup, storyProbe, budgetRows: EXAMPLES_BUDGET_ROWS, extensionGroups: [examplesGroup] });
+  } = createWorkDoctor({ projectExecution, readRuns, diagramsGroup, diagramListing, storyProbe, budgetRows: EXAMPLES_BUDGET_ROWS, extensionGroups: [examplesGroup] });
 
   return { CHECK_GROUPS, CONVENTION_DOCS, budgetsFromConfig, buildSnapshot, doctorWork, duplicateDriverNumberGroup, inScope, isDependTarget, isDriver, orphanFolderGroup, siblingDependencyNumber, staleWindowFromConfig };
 }

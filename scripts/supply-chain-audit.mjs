@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -69,6 +70,17 @@ const suspiciousPayloadFiles = new Set([
   "bun_environment.js"
 ]);
 
+// REVIEWED payload-name collisions. A file whose NAME matches a known malware payload is an error
+// unless it sits at exactly this package-relative path AND its bytes hash to a reviewed digest — a
+// changed byte, a different path or a different package still fails. Each entry states its provenance.
+//   d3-shape `src/curve/bundle.js` is D3's `curveBundle` (the hierarchical edge-bundling curve). PR #13
+//   reaches d3-shape 1.3.7 and 3.2.0 through @excalidraw/excalidraw -> @excalidraw/mermaid-to-excalidraw
+//   -> mermaid. Both copies are byte-identical to github.com/d3/d3-shape at tags v1.3.7 and v3.2.0
+//   (sha256 below), and yarn.lock's checksums pin both tarballs to registry.npmjs.org.
+const reviewedPayloadCollisions = [
+  { packageName: "d3-shape", file: "src/curve/bundle.js", sha256: new Set(["8ea2ba769352b26a109f89f0c67770cb552fe6346162ef1f783af70d48fe5e25"]) },
+];
+
 export async function auditSupplyChain(repoRoot) {
   const lockPath = path.join(repoRoot, 'yarn.lock');
   const nodeModulesPath = path.join(repoRoot, 'node_modules');
@@ -128,6 +140,7 @@ export async function auditSupplyChain(repoRoot) {
     // versioned exceptions above protect dependencies absent on this platform.
     for (const { location, manifest } of installedManifests(repoRoot)) auditScripts(manifest, location);
     for (const filePath of await findSuspiciousPayloads(nodeModulesPath)) {
+      if (isReviewedCollision(repoRoot, filePath)) continue;
       diagnostics.push(error("SUSPICIOUS_PAYLOAD_FILE", path.relative(repoRoot, filePath).replaceAll("\\", "/"), "Known npm malware payload filename found in node_modules."));
     }
   }
@@ -168,6 +181,18 @@ function isKnownCompromisedVersion(name, version) {
   return false;
 }
 
+
+function isReviewedCollision(root, filePath) {
+  const segments = path.relative(root, filePath).split(path.sep);
+  return reviewedPayloadCollisions.some(({ packageName, file, sha256 }) => {
+    const tail = [packageName, ...file.split("/")];
+    if (segments.length < tail.length) return false;
+    if (!tail.every((part, index) => segments[segments.length - tail.length + index] === part)) return false;
+    // The package directory must be a direct child of a node_modules directory.
+    if (segments[segments.length - tail.length - 1] !== "node_modules") return false;
+    return sha256.has(createHash("sha256").update(readFileSync(filePath)).digest("hex"));
+  });
+}
 
 async function findSuspiciousPayloads(root) {
   const found = [];

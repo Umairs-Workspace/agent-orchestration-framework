@@ -32,6 +32,7 @@ import {
   probeFleetOrigin,
 } from "../../apps/ui/src/app/shell-nav.mjs";
 import { ROUTES } from "../../apps/ui/src/app/routes.mjs";
+import { NAV_UNLISTED_ROUTES } from "../../apps/ui/src/app/shell-nav.mjs";
 import { withShellApp, withShellComposedBoard } from "../../apps/ui/test/support/shell-app-harness.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
 import { findAll } from "../../apps/ui/test/support/mini-react.mjs";
@@ -65,8 +66,8 @@ export const shellNavigationTests = [
         assert.deepEqual(nav.items.map((item) => item.label), ["Terminals", "Fleet", "Board", "Config"], `${row.name}: four items, in the table's order`);
         assert.deepEqual(
           nav.items.map((item) => item.id),
-          ROUTES.filter((route) => route.path !== null).map((route) => route.id),
-          `${row.name}: the items ARE the table's addressable rows — never a hand-typed list`,
+          ROUTES.filter((route) => route.path !== null && !NAV_UNLISTED_ROUTES.has(route.id)).map((route) => route.id),
+          `${row.name}: the items ARE the table's addressable rows, less the nav's own unlisted set (the diagram editor is a destination, not a bar item) — never a hand-typed list`,
         );
         // Every item is a link carrying an `href`, never a button that pushes state.
         for (const item of nav.items) {

@@ -19,10 +19,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
-import { generatorFor, generatorIds } from "../../../packages/core/src/diagrams/generators.mjs";
+import { generatorFor, generatorIds } from "@aof/diagrams/generators";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const THE_ONE_HOME = "packages/core/src/diagrams/generator-diagram-design.mjs";
+const THE_ONE_HOME = "packages/diagrams/src/generator-diagram-design.mjs";
 const NEEDLE = ["diagram", "design"].join("-");
 const CODE = new Set([".mjs", ".js", ".cjs", ".ts"]);
 const CONTRACT_KEYS = ["id", "instructions", "locate", "readBack", "sourceExt", "toSvg"];
@@ -64,9 +64,13 @@ function filesNamingTheGenerator(entries) {
 const BUNDLE_ROOT = path.join(repoRoot, "packages", "core", "assets");
 const DIAGRAM_COMMANDS = ["packages/core/assets/commands/loop-diagram.md", "packages/core/assets/commands/add-diagram.md"];
 
+// The adapter moved to @aof/diagrams with the rest of diagramming, so the sweep covers that package's
+// src too: the one home is there, and the registry beside it is the only module allowed to reach it.
+const DIAGRAMS_SRC = path.join(repoRoot, "packages", "diagrams", "src");
+
 async function readEntries() {
   const entries = [];
-  for (const full of [...await sourceFiles(), ...await sourceFiles(BUNDLE_ROOT)]) {
+  for (const full of [...await sourceFiles(), ...await sourceFiles(BUNDLE_ROOT), ...await sourceFiles(DIAGRAMS_SRC)]) {
     entries.push({ file: path.relative(repoRoot, full).replace(/\\/g, "/"), text: await readFile(full, "utf8") });
   }
   return entries;
@@ -85,9 +89,9 @@ export const archTests = [
     name: "arch/133 FF-13301: the config validator takes its ids from the registry, and the registry is keyed by each adapter's own id",
     run: async () => {
       const config = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/config-inspect.mjs"), "utf8"));
-      assert.match(config, /import\s*\{[^}]*\bgeneratorIds\b[^}]*\}\s*from\s*["'](?:\.\.\/)+diagrams\/generators\.mjs["']/);
+      assert.match(config, /import\s*\{[^}]*\bgeneratorIds\b[^}]*\}\s*from\s*["']@aof\/diagrams\/generators["']/);
       assert.match(config, /\bgeneratorIds\(\)/, "the validator calls generatorIds()");
-      const registry = stripComments(await readFile(path.join(repoRoot, "packages", "core", "src", "diagrams", "generators.mjs"), "utf8"));
+      const registry = stripComments(await readFile(path.join(repoRoot, "packages", "diagrams", "src", "generators.mjs"), "utf8"));
       assert.match(registry, /\.map\(\(adapter\)\s*=>\s*\[adapter\.id,\s*adapter\]\)/, "the map is built from adapter.id");
       for (const id of generatorIds()) {
         assert.equal(generatorFor(id).id, id, `${id} is keyed by its own id`);
@@ -115,7 +119,7 @@ export const archTests = [
         { file: "packages/core/src/application/bindings/config-inspect.mjs", text: `const legal = ["${NEEDLE}", "off"];` },
         { file: "packages/core/assets/agents/aof-architect.md", text: `Draw with the ${NEEDLE} plugin.` },
         { file: "packages/core/src/application/bindings/work.mjs", text: `// the ${NEEDLE} plugin draws\nexport const x = 1;` },
-        { file: "packages/core/src/diagrams/generators.mjs", text: `import { a } from "./generator-${NEEDLE}.mjs";` },
+        { file: "packages/diagrams/src/generators.mjs", text: `import { a } from "./generator-${NEEDLE}.mjs";` },
         { file: "packages/core/src/work/other.mjs", text: `import { a } from "./generator-${NEEDLE}.mjs";` },
       ];
       assert.deepEqual(

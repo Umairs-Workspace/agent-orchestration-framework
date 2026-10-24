@@ -128,8 +128,14 @@ function markingFor(availability, current) {
 // The addressable rows of the table, in the table's declared order. `not-found` is excluded
 // because it has no path: it is what every address the table does not know resolves to, not a
 // place you can navigate to.
+// ADDRESSABLE BUT UNLISTED. The diagram editor (`/diagram`) is a destination the board links to
+// from a figure, with a draft named in its query; it is not a place in the bar, and the bar is
+// designed for four. Named here, in the nav's own vocabulary beside the labels, rather than as a
+// column of the route table, which is origin-blind and render-blind by design.
+export const NAV_UNLISTED_ROUTES = Object.freeze(new Set(["diagram"]));
+
 function addressableRoutes() {
-  return ROUTES.filter((route) => typeof route.path === "string");
+  return ROUTES.filter((route) => typeof route.path === "string" && !NAV_UNLISTED_ROUTES.has(route.id));
 }
 
 // navModel({ address, viewportWidth, resolvable }) — the whole nav, as values.

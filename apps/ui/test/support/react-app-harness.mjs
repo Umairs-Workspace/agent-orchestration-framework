@@ -47,6 +47,22 @@ export const useCallback = (...a) => R().useCallback(...a);
 export const useMemo = (...a) => R().useMemo(...a);
 export const useRef = (...a) => R().useRef(...a);
 export const Fragment = Symbol.for("aof.mini.fragment");
+// Lazy DOM-heavy leaves are loaded only if mounted, just as in the browser. This
+// instrument does not emulate Suspense scheduling; dedicated browser tests own that.
+export const Suspense = ({ children }) => children;
+export const lazy = (loader) => {
+  let component = null;
+  let pending = null;
+  return function Lazy(props) {
+    const [, setReady] = useState(false);
+    useEffect(() => {
+      let active = true;
+      (pending ??= loader()).then((module) => { component = module.default; if (active) setReady(true); });
+      return () => { active = false; };
+    }, []);
+    return component ? R().jsx(component, props) : null;
+  };
+};
 // The class base, present for ONE reason: an error boundary has no function-component
 // form, so without it the shell's "a failing surface degrades in place" contract is
 // undrivable headlessly (m45 / F-45-M-1). \`isReactComponent\` on the prototype is the
@@ -113,6 +129,10 @@ function hashOf(text) {
 //              icon pack that is 1,500 SVG modules).
 //   `resolve`— [{ filter: RegExp, to: <virtual name> }], how an import specifier
 //              in the real source reaches one of those stubs.
+const EXCALIDRAW_EDITOR_STUB_NAME = "__excalidraw_editor__";
+const EXCALIDRAW_EDITOR_STUB = "export const ExcalidrawEditor = () => null; export default ExcalidrawEditor;";
+// The editor is reached as `@aof/diagrams-ui/editor` (its package export) since diagramming became its own package.
+const EXCALIDRAW_EDITOR_FILTER = /(?:^|\/)ExcalidrawEditor(?:\.tsx)?$|^@aof\/diagrams-ui\/editor$/;
 export async function bundleSurface({ entry, stubs = {}, resolve = [] }) {
   const key = bundleCacheKey({ entry, stubs, resolve });
   const cached = bundleCache.get(key);
@@ -123,6 +143,7 @@ export async function bundleSurface({ entry, stubs = {}, resolve = [] }) {
     ["react", VIRTUAL_REACT],
     ["react/jsx-runtime", VIRTUAL_JSX],
     ["react/jsx-dev-runtime", VIRTUAL_JSX],
+    [EXCALIDRAW_EDITOR_STUB_NAME, EXCALIDRAW_EDITOR_STUB],
     ...Object.entries(stubs),
   ]);
   const stubPlugin = {
@@ -132,6 +153,9 @@ export async function bundleSurface({ entry, stubs = {}, resolve = [] }) {
       for (const entry of resolve) {
         build.onResolve({ filter: entry.filter }, () => ({ path: entry.to, namespace: "aof-stub" }));
       }
+      // Default for EVERY surface: Markdown.tsx lazily imports the editor, and the real one drags in the
+      // canvas SDK. Callers' own rules above win.
+      build.onResolve({ filter: EXCALIDRAW_EDITOR_FILTER }, () => ({ path: EXCALIDRAW_EDITOR_STUB_NAME, namespace: "aof-stub" }));
       build.onResolve({ filter: /\.css$/ }, (args) => ({ path: args.path, namespace: "aof-empty" }));
       build.onLoad({ filter: /.*/, namespace: "aof-stub" }, (args) => ({ contents: sources.get(args.path) ?? "export default {};", loader: "js" }));
       build.onLoad({ filter: /.*/, namespace: "aof-empty" }, () => ({ contents: "", loader: "js" }));

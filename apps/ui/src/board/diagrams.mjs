@@ -18,7 +18,8 @@
 const MEMBER_SRC = /^diagrams\/([^/\\]+\.svg)$/;
 const IMAGE = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
 // A pasted block's link into the item's own `diagrams/` folder (the source, the SVG or the PNG).
-const FILE_HREF = /^diagrams\/([^/\\]+\.(?:html|svg|png))$/;
+// `.excalidraw` since milestone 170: an Excalidraw diagram's source is its scene.
+const FILE_HREF = /^diagrams\/([^/\\]+\.(?:html|svg|png|excalidraw))$/;
 
 // The member a diagram image's `src` names, or null when the src is an ordinary image.
 export function diagramMember(src) {
