@@ -4,7 +4,10 @@
 import assert from "node:assert/strict";
 import {
   diagramFile,
+  diagramLibrariesDir,
   diagramPaths,
+  diagramsDir,
+  globalDiagramLibrariesDir,
   diagramStem,
   loopDiagramPaths,
   loopRasterSvgPath,
@@ -35,6 +38,19 @@ const BLOCK_INPUT = {
 };
 
 export const diagramLayoutTests = [
+  {
+    name: "170: the diagram, library and loop paths are forward-slashed with no trailing slash, in linear time on a long run of slashes",
+    run: () => {
+      assert.equal(diagramsDir("a\\b//"), "a/b/diagrams");
+      assert.equal(diagramLibrariesDir("C:\\proj\\"), "C:/proj/.aof/diagrams/libraries");
+      assert.equal(globalDiagramLibrariesDir("/home/u/.aof/"), "/home/u/.aof/diagrams/libraries");
+      assert.equal(loopDiagramPaths("w/07/", ".html").dir, "w/07/execution");
+      // CodeQL js/polynomial-redos: `/\/+$/` was quadratic on a long run of `/` not at the end.
+      const started = Date.now();
+      assert.equal(diagramsDir(`${"/".repeat(100_000)}x`), `${"/".repeat(100_000)}x/diagrams`);
+      assert.ok(Date.now() - started < 1000, "a long run of slashes is not polynomial");
+    },
+  },
   {
     name: "133/01 task 01: the stem grammar — ADR-NNN plus a lowercase slug of at most 48 characters",
     run: () => {

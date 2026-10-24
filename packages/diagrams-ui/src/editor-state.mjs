@@ -72,9 +72,16 @@ export function selectionFor(ids) {
   return Object.fromEntries(ids.map((id) => [id, true]));
 }
 
+// Sliced, not matched: a `\s*(.*?)\.?\s*$` pattern is polynomial on a long run of whitespace after
+// the marker (CodeQL js/polynomial-redos), and the message comes from the server.
+const STALE_MARKER = "changed since it was made:";
 export function staleConflictIds(message) {
-  const match = /changed since it was made:\s*(.*?)\.?\s*$/s.exec(String(message ?? ""));
-  return match ? match[1].split(",").map((s) => s.trim()).filter(Boolean) : [];
+  const text = String(message ?? "");
+  const at = text.indexOf(STALE_MARKER);
+  if (at < 0) return [];
+  let list = text.slice(at + STALE_MARKER.length).trim();
+  if (list.endsWith(".")) list = list.slice(0, -1);
+  return list.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
 export function describeError(code, message) {

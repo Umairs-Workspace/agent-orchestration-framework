@@ -62,22 +62,30 @@ export function stemAdr(stem) {
   return isAdrId(adr) && (stem.length === ADR_ID_LENGTH || stem[ADR_ID_LENGTH] === "-") ? adr : null;
 }
 
+// A path in forward slashes with no trailing `/`. Trailing slashes are trimmed by a loop, not
+// `/\/+$/`, which is polynomial on a long run of `/` (CodeQL js/polynomial-redos).
+function slashBase(value) {
+  let base = String(value).replace(/\\/g, "/");
+  while (base.endsWith("/")) base = base.slice(0, -1);
+  return base;
+}
+
 // Project-root-relative, forward-slash paths whatever the host OS: they are compared across
 // nodes and pasted into markdown. `png` is present only when `formats` asks for it.
 export function diagramsDir(itemDir) {
-  return `${String(itemDir).replace(/\\/g, "/").replace(/\/+$/, "")}/${DIAGRAMS_DIR}`;
+  return `${slashBase(itemDir)}/${DIAGRAMS_DIR}`;
 }
 
 // A project's Excalidraw libraries (milestone 170, ADR-011), read as they are:
 // `<project>/.aof/diagrams/libraries/*.excalidrawlib`.
 export function diagramLibrariesDir(projectRoot) {
-  return `${String(projectRoot).replace(/\\/g, "/").replace(/\/+$/, "")}/.aof/${DIAGRAMS_DIR}/libraries`;
+  return `${slashBase(projectRoot)}/.aof/${DIAGRAMS_DIR}/libraries`;
 }
 
 // The operator's shared libraries, for every project (ADR-011, amended at 170's verify): a large
 // public set lives once in the global home, `<global home>/diagrams/libraries/*.excalidrawlib`.
 export function globalDiagramLibrariesDir(globalHome) {
-  return `${String(globalHome).replace(/\\/g, "/").replace(/\/+$/, "")}/${DIAGRAMS_DIR}/libraries`;
+  return `${slashBase(globalHome)}/${DIAGRAMS_DIR}/libraries`;
 }
 
 export function diagramPaths(itemDir, stem, sourceExt, formats) {
@@ -98,10 +106,7 @@ export const LOOP_SUBJECT = "loop";
 export const EXECUTION_DIR = "execution";
 
 export function loopDiagramPaths(itemDir, sourceExt) {
-  // Trailing slashes are trimmed by a loop, not `/\/+$/`, which is polynomial on a long run of `/`.
-  let base = String(itemDir).replace(/\\/g, "/");
-  while (base.endsWith("/")) base = base.slice(0, -1);
-  const dir = `${base}/${EXECUTION_DIR}`;
+  const dir = `${slashBase(itemDir)}/${EXECUTION_DIR}`;
   const paths = { dir, plan: `${dir}/${LOOP_SUBJECT}-plan.json` };
   if (typeof sourceExt === "string") paths.source = `${dir}/${LOOP_SUBJECT}${sourceExt}`;
   paths.png = `${dir}/${LOOP_SUBJECT}.png`;

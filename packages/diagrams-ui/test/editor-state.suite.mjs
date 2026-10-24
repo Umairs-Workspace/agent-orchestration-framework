@@ -51,6 +51,11 @@ export const reviewStateTests = [
   { name: "review state: stale and decided errors are explained", run: () => {
     const message = "Proposal is stale; these changed since it was made: node:a, layout:b.";
     assert.deepEqual(staleConflictIds(message), ["node:a", "layout:b"]);
+    assert.deepEqual(staleConflictIds("no marker here"), []);
+    // CodeQL js/polynomial-redos: a long run of whitespace after the marker is read in linear time.
+    const started = Date.now();
+    assert.deepEqual(staleConflictIds(`changed since it was made:${"\t".repeat(200_000)}x`), ["x"]);
+    assert.ok(Date.now() - started < 1000, "a long whitespace run is not polynomial");
     assert.match(describeError("diagram-proposal-stale", message), /node:a, layout:b changed.*Ask the architect again/);
     assert.match(describeError("diagram-proposal-decided", "x"), /already/);
     assert.match(describeError("diagram-scene-conflict", "x"), /changed elsewhere/);
