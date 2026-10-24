@@ -31,6 +31,7 @@ export declare const EDGE_KINDS: Readonly<Record<EdgeKind, string>>;
 export declare const STYLE_PROPS: readonly string[];
 export declare const LIMITS: Readonly<{ nodes: number; edges: number; label: number; id: number; bytes: number }>;
 
+export declare function isProfileId(id: unknown): boolean;
 export declare function encodeLabel(text: string): string;
 export declare function decodeLabel(text: string): string;
 export declare function parseProfile(text: string): ProfileModel;

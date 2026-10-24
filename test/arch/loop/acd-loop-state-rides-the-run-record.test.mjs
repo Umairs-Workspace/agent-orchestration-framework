@@ -265,7 +265,12 @@ function assertUiFrozen(pairs) {
   // RE-PINNED at the merge of main into PR #13 (2026-10-23): both histories above stack on one tree; the hash is that tree's.
   // RE-PINNED at 170's import (2026-10-24): `board/diagrams.mjs` (+1 −1) is a comment, its milestone citation
   // renumbered 200 → 170 when the temporary milestone entered the stream. No code changes.
-  assert.equal(hash.digest("hex"), "ab808ae80c17b54f1fe719586032ee58f398617c6b48673b0b969be8316dac5f", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED at `aof:verify 170` (2026-10-24, STATE's opt-out finding): `git diff --numstat HEAD -- apps/ui/src`
+  // is ONE file, `diagram/DiagramSurface.tsx` (+22 −1): the surface asks `/api/diagram/capability` before it
+  // imports the editor, so a directly opened `/diagram` on a project with diagrams off fetches none of the
+  // SDK. It reads the capability answer only; no fleet or home file, run-record key, cycle, level or loop
+  // state is read.
+  assert.equal(hash.digest("hex"), "6b97b37dcfcc25bdd8f1c6112fd1155fa555616970734e346090dfa932f765a3", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [

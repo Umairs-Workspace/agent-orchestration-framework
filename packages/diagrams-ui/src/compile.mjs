@@ -301,9 +301,24 @@ export function compileProposal({ elements, changes, proposed, hints = new Map()
 
   // 7. Edges: added and changed edges are (re)drawn; a moved or resized node's other edges are
   //    re-routed, their labels re-centred on the new line.
+  // A library item a person dragged in from the panel has no anchor box (only an insertion compiled
+  // here carries one), so an edge to it gets one now: transparent, over the item, in the item's group.
+  const anchorOf = (id) => {
+    const entry = index[id] ?? added.get(id);
+    if (!entry || entry.container || !entry.lib) return entry?.container ?? null;
+    const members = entry.elementIds.map((e) => byId.get(e)).filter(Boolean);
+    const box = boundsOf(members);
+    if (!box) return null;
+    let group = members[0].groupIds?.at(-1);
+    if (!group) { group = newId(); for (const member of members) patch(member.id, { groupIds: [...(member.groupIds ?? []), group] }); }
+    const [anchor] = toElements([{ type: "rectangle", id: newId(), x: box.x, y: box.y, width: box.w, height: box.h, strokeColor: "transparent", backgroundColor: "transparent" }]);
+    add(tag({ ...anchor, groupIds: [group], frameId: members.find((e) => e.frameId)?.frameId ?? null }, { id, lib: aofOf(members[0])?.lib, anchor: true }));
+    entry.container = anchor.id;
+    return anchor.id;
+  };
   const draw = (edge) => {
-    const from = (index[edge.from] ?? added.get(edge.from))?.container;
-    const to = (index[edge.to] ?? added.get(edge.to))?.container;
+    const from = anchorOf(edge.from);
+    const to = anchorOf(edge.to);
     const a = nodeBox(edge.from);
     const b = nodeBox(edge.to);
     if (!from || !to || !a || !b) { unresolved.push(`${edge.key}: an end has no box to bind to`); return; }

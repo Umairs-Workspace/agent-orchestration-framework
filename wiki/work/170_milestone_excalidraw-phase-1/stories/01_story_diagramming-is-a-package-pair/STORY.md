@@ -38,4 +38,4 @@ VERIFICATION.md, and acceptance goes through `aof:verify 170`.
   It exports `./editor`, `./editor-state` and `./fonts`, so the app never names the SDK.
 - **One way.** The work doctor takes the lane and the listing probe by injection (`diagramsGroup`,
   `diagramListing`, null by default). The board reaches the editor through one dynamic import.
-  FF-13304 (`acd-diagrams-package-one-way`) pins the direction.
+  FF-17001 (`acd-diagrams-package-one-way`) pins the direction.

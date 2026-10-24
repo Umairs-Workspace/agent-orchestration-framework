@@ -8,7 +8,7 @@ import { archTests as acdDiagramGeneratorNamedOnceTests } from "./acd-diagram-ge
 import { archTests as acdDiagramLayoutSingleHomeTests } from "./acd-diagram-layout-single-home.test.mjs";
 // milestone 133 / story 02 — FF-13303 (export needs no Playwright and forms one argv).
 import { archTests as acdDiagramExportNoPlaywrightTests } from "./acd-diagram-export-no-playwright.test.mjs";
-// @aof/diagrams — FF-13304 (diagramming is its own package, depended on one way).
+// milestone 170 / ADR-001 — FF-17001 (diagramming is its own package, depended on one way).
 import { archTests as acdDiagramsPackageOneWayTests } from "./acd-diagrams-package-one-way.test.mjs";
 
 export const tests = [

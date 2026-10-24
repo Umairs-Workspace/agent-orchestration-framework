@@ -658,7 +658,7 @@ export const SOURCE_DIRECTORY_EXEMPTIONS = Object.freeze([
   
   Object.freeze({ directory: "test/smoke", why: "milestone 170 / story 07: hand-run real-browser smokes that are NOT registered suites (they need a Chromium and the playwright-core driver, neither a dependency of this repository) — one member, `diagram-editor.smoke.mjs`, under the threshold. A smoke here is run at a gate and its result recorded in the milestone's VERIFICATION.md; a ninth is a row." }),
   Object.freeze({ directory: "test/diagrams", why: "milestone 133's diagram suites: the index, `diagram-layout`, `diagram-generator` and `diagram-plan-command` (story 01), and story 02's export and rasterizer suites — well under the threshold." }),
-  Object.freeze({ directory: "test/arch/diagrams", why: "milestone 133's diagram controls: the index, FF-13301 `acd-diagram-generator-named-once` and FF-13302 `acd-diagram-layout-single-home` (story 01), story 02's FF-13303 `acd-diagram-export-no-playwright`, and FF-13304 `acd-diagrams-package-one-way` (diagramming as its own package) — five members, under the threshold." }),
+  Object.freeze({ directory: "test/arch/diagrams", why: "milestone 133's diagram controls: the index, FF-13301 `acd-diagram-generator-named-once` and FF-13302 `acd-diagram-layout-single-home` (story 01), story 02's FF-13303 `acd-diagram-export-no-playwright`, and 170's FF-17001 `acd-diagrams-package-one-way` (diagramming as its own package) — five members, under the threshold." }),
   // milestone 134 — the work-examples family (ADR-002), founded by story 02 as THREE exemptions on
   // 133's diagram precedent. Each names every member the milestone plans for it, so stories 03, 04
   // and 05 add files without touching a budget line.

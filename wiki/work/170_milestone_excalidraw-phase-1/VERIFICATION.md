@@ -118,6 +118,50 @@ Each of these was run against `68116cc` in a separate worktree and failed the sa
   and the `work-memory/00` goldens.
 - **The autonomous shell-out black-box case.**
 
+### At `aof:verify 170`, on the Windows control node (2026-10-24)
+
+Node 24, isolated `AOF_GLOBAL_HOME`, focused `node scripts/test.mjs --only` runs.
+
+- **The review loop was red on Windows.** `diagram-scene-review` failed 3 of 17. Two cases hit
+  EPERM replacing a record (F-170-02), and the symlink case could not create its link (F-170-03).
+  After both fixes, that file plus `diagram-scene-command`, `diagram-scene-api` and FF-17001 pass
+  40 of 40, and `diagram-scene-review` alone passes 17 of 17 on three consecutive runs.
+- **The EPERM cause, measured** (a scratch probe that loops create, then replace, 400 times per
+  round over three interleaved rounds): a record created with `link()` refused its later `rename()`
+  14 times in 1,200. A record created with `rename()` or an exclusive open refused 0 times in 1,200.
+  It is the hard link, not the load. `writeRecord` now creates a record by `rename()`, after
+  checking under the diagram's exclusive `.lock` that the id is absent.
+- `aof work validate 170`: PASS. `aof work doctor 170`: no `control-unresolved`. Its warnings are
+  `started-story-no-tasks` for all ten stories and the unwitnessed `depends:` edges, both expected
+  for an imported milestone.
+
+## Fitness functions
+
+| id | enforced by | result | red probe |
+|---|---|---|---|
+| FF-17001 | `test/arch/diagrams/acd-diagrams-package-one-way.test.mjs` | green, 4/4 | planted `packages/work/src/zz-red-probe.mjs` holding `import "@aof/diagrams";` → `not ok - arch/170 FF-17001: no @aof/work source imports @aof/diagrams…`, actual `['packages/work/src/zz-red-probe.mjs: imports @aof/diagrams']`; plant removed |
+
+## Findings
+
+| id | observed | type | severity | triage | routed-to | status |
+|---|---|---|---|---|---|---|
+| F-170-01 | ADR-001's package-direction control was numbered FF-13304, the id 133 already gives "the console renders a diagram only as an image" (`test/arch/ui/acd-diagram-rendered-as-image.test.mjs`). Two controls answered to one id. | defect | medium | blocker | verify (fixed inline) | fixed: renumbered FF-17001 in the control, its index, the directory-budget row, ADR-001, story 01, STATE and the PRD |
+| F-170-02 | `writeRecord` placed a new review record with `link()`. On Windows, replacing it later (`markProposed`, accept, respond) intermittently failed with EPERM, so the review loop broke on the control node. | defect | high | blocker | verify (fixed inline) | fixed: create is check-then-`rename()` under the `.lock`, with a coded `diagram-review-id-taken` 409 |
+| F-170-03 | Two scene tests created a directory symlink, which Windows refuses without privilege, so `review storage refuses symlinks` could not run on the control node. | defect | low | blocker | verify (fixed inline) | fixed: `symlink(…, "junction")`, the repo's idiom; `lstat` reports a junction as a symlink, so the refusal is still exercised |
+| F-170-04 | A box label over 500 characters, which the editor allows, made the Mermaid view unserializable, so context, propose and accept all failed on that diagram. A claimed `customData.aof.id` was kept if it matched the id pattern, even when it was a Mermaid keyword or over 64 characters, which the parser then rejected. | defect | medium | blocker | verify (fixed inline) | fixed: save refuses a scene whose view the profile could not read back (`diagram-scene-unviewable`, naming the node), and a claimed id is kept only if `isProfileId` passes (the parser's whole rule, now shared) |
+| F-170-05 | The review listing kept only the newest 50 records, so an old open note or pending proposal dropped out of the panel. Every five-second poll re-parsed every record file. | defect | medium | blocker | verify (fixed inline) | fixed: every open note and pending proposal is listed; only decided records are capped at 50; a record is re-parsed only when its identity, size or mtime changes |
+| F-170-06 | Accept applied `add` operations without checking them against the proposal. A library item dragged in from the panel had no anchor box, so a proposed edge to it never bound. | defect | medium | blocker | verify (fixed inline) | fixed: each added element must belong, in the accepted scene, to a node, frame or edge the proposal adds or changes; compile gives an anchorless library item a transparent anchor in its group, which the touched set covers |
+| F-170-07 | The opt-out was enforced only in the board. `diagram:scene` wrote with `work.diagrams` off, and a directly opened `/diagram?…` loaded the editor chunk. | defect | low | blocker | verify (fixed inline) | fixed: every write action refuses with `diagram-disabled` (409, the code `diagram:export` already uses); the surface asks `/api/diagram/capability` before it imports the editor (FF-5307 re-pinned, +22 −1) |
+
+The recall at triage (`aof work memory recall … --kind finding`) returned no candidate with the
+same cause for any of the seven. Each is recorded as a distinct incident.
+
+Each of F-170-04 to F-170-07 has a test that fails on HEAD's source and passes on the fix. Against
+HEAD with the new tests: 5 of 32 cases failed in `diagram-scene-command` and `diagram-scene-review`.
+With the fix: those two files plus `diagram-scene-api` pass 41 of 41; `@aof/diagrams` 38/38;
+`@aof/diagrams-ui` 20/20; FF-5307, FF-17001 and `acd-loop-ask-reaches-every-face` 29/29;
+`acd-no-new-silent-catch` 2/2; the UI type-check (`tsconfig.app.json`) is clean.
+
 ## Acceptance — open
 
 - [ ] Operator acceptance of the served editor: a live first draft and a live batch review.

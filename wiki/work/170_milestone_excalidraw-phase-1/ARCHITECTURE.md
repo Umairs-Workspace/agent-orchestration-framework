@@ -32,7 +32,7 @@ either and exports no diagram module. The work doctor takes the lane and the ite
 injection (`diagramsGroup`, `diagramListing`, defaulting to null); core injects node's `readdir`.
 The board reaches the editor through one dynamic `import("@aof/diagrams-ui/editor")`.
 
-**Consequences.** FF-13304 (`acd-diagrams-package-one-way`) pins the direction. The board's chunk
+**Consequences.** FF-17001 (`acd-diagrams-package-one-way`) pins the direction. The board's chunk
 is unchanged and the SDK stays in the lazy half (measured). The HTTP routes and the bundled
 prompts stay in core until the contribution contract carries routes and assets (out of scope).
 

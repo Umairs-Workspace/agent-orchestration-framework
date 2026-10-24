@@ -28,7 +28,7 @@ Developer-actionable items from reconciling the delivered work (pick up at `aof:
 From the import-time review of the delivered code (2026-10-24, static). The first four were
 re-checked by hand against the code and fixed the same day. Each fix has a test that fails on the
 earlier code (`diagram-scene-review`, `diagram-scene-api`, `mermaid-profile.suite`). The
-`readJsonBody` fix re-pins `board-ui.mjs` under FF-5307 with its reason. FF-13304 was already red at
+`readJsonBody` fix re-pins `board-ui.mjs` under FF-5307 with its reason. FF-17001 (then numbered FF-13304) was already red at
 the branch head, after the merge of main gave `@aof/diagrams` a `@aof/foundation` dependency, and its
 expectation now lists that dependency.
 
@@ -49,16 +49,17 @@ expectation now lists that dependency.
 - [x] **A library file name with a space breaks the architect's view** (09). The `aof:lib` grammar
   (`mermaid-profile.mjs`) allows only `[A-Za-z0-9._-]` in a library name, but the name comes from
   the file name. `Azure Icons.excalidrawlib` produces a view that the profile's own parser rejects.
-- [ ] **A long label breaks the review loop** (08). `serializeProfile` throws on a label over 500
+- [x] **A long label breaks the review loop** (08). Fixed at `aof:verify 170` (VERIFICATION F-170-04). `serializeProfile` throws on a label over 500
   characters, which the editor allows. An imported `customData.aof.id` is likely not checked against
   reserved words or the length limit either (not traced end to end).
-- [ ] **The review listing drops records older than the newest 50** (05). An old open note or
+- [x] **The review listing drops records older than the newest 50** (05). Fixed at `aof:verify 170` (VERIFICATION F-170-05). An old open note or
   pending proposal vanishes from the panel, and every 5-second poll re-parses every record file.
-- [ ] **Accept does not check `add` operations against the proposal** (08, likely). Library items
+- [x] **Accept does not check `add` operations against the proposal** (08, likely). Fixed at `aof:verify 170` (VERIFICATION F-170-06). Library items
   dragged from the panel get no anchor box, so an edge proposed to one never resolves.
-- [ ] **The opt-out is enforced only in the UI** (02, low). `/api/diagram/scene` writes with
+- [x] **The opt-out is enforced only in the UI** (02, low). Fixed at `aof:verify 170` (VERIFICATION F-170-07). `/api/diagram/scene` writes with
   `work.diagrams` unset, and `/diagram?…` loads the editor chunk when opened directly.
-- [ ] **Replacing a review record fails with EPERM on Windows under load** (00, 05, 06). Measured
+- [x] **Replacing a review record fails with EPERM on Windows under load** (00, 05, 06). Fixed at
+  `aof:verify 170`: the cause was the hard link, measured (VERIFICATION F-170-02). Measured
   2026-10-24 on the control node. `writeRecord`'s `rename` over an existing record intermittently
   fails, in different `diagram-scene-review` cases on each run, with HEAD's `scene.mjs` too. A retry
   (foundation's `renameWithRetry`, about 0.5 s) did not clear it, so the hold is long. The suspect

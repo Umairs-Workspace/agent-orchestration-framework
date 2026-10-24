@@ -16,10 +16,9 @@
 // Every node, subgraph and sketch carries its Mermaid id in `customData.aof.id`. `assignAliases` gives
 // one to whatever has none (what a person drew), at save; a copied element that carries an id
 // already claimed becomes new. Edge keys are computed (`<from>-><to>#<n>`, in drawing order).
-import { serializeProfile } from "./mermaid-profile.mjs";
+import { isProfileId, serializeProfile } from "./mermaid-profile.mjs";
 
 const BOX_TYPES = new Set(["rectangle", "diamond", "ellipse"]);
-const ID = /^[A-Za-z][A-Za-z0-9_]*$/;
 const DEFAULT_STROKE = "#1e1e1e";
 
 const aofOf = (element) => element?.customData?.aof ?? null;
@@ -86,7 +85,7 @@ function partsOf(elements) {
 }
 
 const claimedId = (part) => {
-  for (const element of part.elements) { const id = aofOf(element)?.id; if (typeof id === "string" && ID.test(id)) return id; }
+  for (const element of part.elements) { const id = aofOf(element)?.id; if (isProfileId(id)) return id; }
   return null;
 };
 

@@ -72,6 +72,10 @@ export function decodeLabel(text) {
     .replace(/#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)));
 }
 
+// The whole id rule, for a reader that must not throw — the scene's projection keeps a claimed id
+// only when the parser would read it back.
+export const isProfileId = (id) => typeof id === "string" && ID.test(id) && id.length <= LIMITS.id && !RESERVED.has(id.toLowerCase());
+
 function checkId(id, line) {
   if (!ID.test(id) || id.length > LIMITS.id) throw profileError(`"${id}" is not a profile id: a letter, then letters, digits or _, at most ${LIMITS.id} characters.`, "diagram-mermaid-invalid", line);
   if (RESERVED.has(id.toLowerCase())) throw profileError(`"${id}" is a Mermaid keyword and cannot be an id.`, "diagram-mermaid-invalid", line);
@@ -276,11 +280,11 @@ export function validateModel(model) {
   const nodes = new Set();
   const groups = new Set();
   for (const group of model.subgraphs ?? []) {
-    if (!ID.test(group.id) || groups.has(group.id)) problems.push(`subgraph "${group.id}" is not a unique id.`);
+    if (!isProfileId(group.id) || groups.has(group.id)) problems.push(`subgraph "${group.id}" is not a unique id.`);
     groups.add(group.id);
   }
   for (const node of model.nodes ?? []) {
-    if (!ID.test(node.id) || nodes.has(node.id) || groups.has(node.id)) problems.push(`node "${node.id}" is not a unique id.`);
+    if (!isProfileId(node.id) || nodes.has(node.id) || groups.has(node.id)) problems.push(`node "${node.id}" is not a unique id.`);
     if (!SHAPES[node.shape]) problems.push(`node "${node.id}" has an unknown shape "${node.shape}".`);
     if (String(node.label ?? "").length > LIMITS.label) problems.push(`node "${node.id}"'s label is over ${LIMITS.label} characters.`);
     nodes.add(node.id);

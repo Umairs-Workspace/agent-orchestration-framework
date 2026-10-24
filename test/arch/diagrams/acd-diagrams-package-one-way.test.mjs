@@ -1,4 +1,4 @@
-// FF-13304 — DIAGRAMMING IS ITS OWN PACKAGE, AND DEPENDENCIES RUN ONE WAY.
+// FF-17001 (milestone 170 / ADR-001) — DIAGRAMMING IS ITS OWN PACKAGE, AND DEPENDENCIES RUN ONE WAY.
 //
 // "No module under `packages/work/src/**` or `packages/core/src/**` imports a diagram module by
 //  relative path, `packages/work/package.json` does not list `@aof/diagrams`, `@aof/diagrams`
@@ -59,7 +59,7 @@ async function modulesUnder(prefix, floor) {
 
 export const archTests = [
   {
-    name: "arch/133 FF-13304: no @aof/work source imports @aof/diagrams, and no core source imports a retired diagram home",
+    name: "arch/170 FF-17001: no @aof/work source imports @aof/diagrams, and no core source imports a retired diagram home",
     run: async () => {
       const offenders = [];
       for (const file of await modulesUnder(WORK_SRC, 50)) {
@@ -72,7 +72,7 @@ export const archTests = [
     },
   },
   {
-    name: "arch/133 FF-13304: @aof/work's manifest does not list the package and exports no diagram module; the package lists @aof/work; core lists the package",
+    name: "arch/170 FF-17001: @aof/work's manifest does not list the package and exports no diagram module; the package lists @aof/work; core lists the package",
     run: async () => {
       const work = JSON.parse(await readFile(path.join(repoRoot, "packages/work/package.json"), "utf8"));
       for (const field of ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"]) {
@@ -89,7 +89,7 @@ export const archTests = [
     },
   },
   {
-    name: "arch/133 FF-13304: the diagram verbs ride @aof/diagrams' contribution, and @aof/work's contribution no longer owns their ids",
+    name: "arch/170 FF-17001: the diagram verbs ride @aof/diagrams' contribution, and @aof/work's contribution no longer owns their ids",
     run: async () => {
       const registry = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/command-core.mjs"), "utf8"));
       assert.match(registry, /createDiagramsContribution\(\[diagramPlanCommand, diagramExportCommand, diagramFileCommand, diagramSceneCommand, diagramCapabilityCommand\]\)/u, "the five verbs are registered through the package's contribution");
@@ -101,7 +101,7 @@ export const archTests = [
     },
   },
   {
-    name: "arch/133 FF-13304 red probe: the detectors fire on each planted back-reference and retired home, and not on a comment or an injected seam",
+    name: "arch/170 FF-17001 red probe: the detectors fire on each planted back-reference and retired home, and not on a comment or an injected seam",
     run: () => {
       const planted = [
         ['import { DIAGRAMS_DIR } from "@aof/diagrams/layout";', "imports @aof/diagrams/layout"],

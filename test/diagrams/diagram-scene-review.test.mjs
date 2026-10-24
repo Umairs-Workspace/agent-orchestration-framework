@@ -62,6 +62,23 @@ export const diagramSceneReviewTests = [
     assert.deepEqual(listed.skipped, { requests: [], proposals: ["deadbeefdeadbeef"] });
     await rejected(fx.run("reject", { proposalId: "deadbeefdeadbeef" }), "diagram-review-corrupt");
   }) },
+  { name: "review: an open note is listed however many decided notes are newer, and a changed record is read again", run: () => withFixture(async (fx) => {
+    const { request } = await seeded(fx);
+    const requests = path.join(fx.item, "diagrams", "ADR-002-scene.review", "requests");
+    const old = { ...request, createdAt: "2000-01-01T00:00:00.000Z" };
+    await writeFile(path.join(requests, `${request.id}.json`), JSON.stringify(old));
+    for (let i = 0; i < 60; i++) {
+      const id = i.toString(16).padStart(16, "0");
+      await writeFile(path.join(requests, `${id}.json`), JSON.stringify({ ...request, id, createdAt: new Date(Date.UTC(2030, 0, 1, 0, 0, i)).toISOString(), status: "answered", answer: "done", answeredAt: "2030-01-02T00:00:00.000Z" }));
+    }
+    let listed = (await fx.run("proposals")).requests;
+    assert.equal(listed.length, 51, "the open note and the newest 50 decided notes");
+    assert.equal(listed.at(-1).id, request.id);
+    await fx.run("withdraw", { requestId: request.id });
+    listed = (await fx.run("proposals")).requests;
+    assert.equal(listed.length, 50, "withdrawn, the old note falls under the cap");
+    assert.equal(listed.some((r) => r.id === request.id), false);
+  }) },
   { name: "review: a note needs a saved diagram, the current revision and ids the diagram has", run: () => withFixture(async (fx) => {
     await rejected(fx.run("request", { baseRevision: "0".repeat(64), selectedIds: [], request: "x" }), "diagram-scene-missing");
     const saved = await fx.saved(TWO);
@@ -174,6 +191,34 @@ export const diagramSceneReviewTests = [
     assert.equal(accepted.proposal.status, "accepted");
     assert.deepEqual(projectScene(accepted.scene.elements).model.edges.map((e) => e.key), ["API->DB#1"]);
   }) },
+  { name: "review: an edge to a library item a person dragged in compiles to a new anchor box in its group, and is accepted", run: () => withFixture(async (fx) => {
+    // The SDK's panel insertion: the item's elements, tagged with their library, and no anchor box.
+    const dragged = [...TWO, el("fn-1", "ellipse", { x: 600, customData: { aof: { lib: { library: "azure", item: "Function App" } } } })];
+    const saved = await fx.saved(dragged);
+    const { view } = await fx.run("context", {});
+    assert.match(view, /%% aof:lib n1 azure\/"Function App"/);
+    const { request } = await fx.run("request", { baseRevision: saved.revision, selectedIds: ["API", "n1"], request: "Join them" });
+    const { proposal } = await propose(fx, request, saved.revision, `${view}  API --> n1\n`);
+    let n = 0;
+    const toElements = (skeletons) => skeletons.map((s) => ({ strokeColor: "#1e1e1e", backgroundColor: "transparent", groupIds: [], boundElements: null, version: 1, width: Math.abs(s.points?.[1]?.[0] ?? 0), height: Math.abs(s.points?.[1]?.[1] ?? 0), ...s, id: s.id ?? `made${++n}` }));
+    const stored = (await fx.run("read")).scene.elements;
+    const { elements, touched, unresolved } = compileProposal({ elements: stored, changes: proposal.changes, proposed: parseProfile(proposal.text), toElements, newId: () => `new${++n}` });
+    assert.deepEqual(unresolved, [], "the edge finds a box to bind to");
+    const accepted = await fx.run("accept", { proposalId: proposal.id, baseRevision: saved.revision, operations: operationsFor(stored, elements, touched) });
+    const { model, index } = projectScene(accepted.scene.elements);
+    assert.deepEqual(model.edges.map((e) => e.key), ["API->DB#1", "API->n1#1"]);
+    assert.deepEqual(Object.keys(model.libs), ["n1"], "the anchor joins the item: still one library node");
+    assert.ok(index.n1.container, "the item now carries its anchor");
+  }) },
+  { name: "review: accept refuses an added element the proposal does not account for", run: () => withFixture(async (fx) => {
+    const { saved, request } = await seeded(fx);
+    const { proposal } = await propose(fx, request, saved.revision);
+    const before = await readFile(fx.target, "utf8");
+    for (const extra of [el("loose", "freedraw", { x: 900 }), el("box", "rectangle", { x: 900, customData: { aof: { id: "Other" } } })]) {
+      await rejected(fx.run("accept", { proposalId: proposal.id, baseRevision: saved.revision, operations: [...RENAME_OPS, { op: "add", element: extra }] }), "diagram-proposal-invalid");
+    }
+    assert.equal(await readFile(fx.target, "utf8"), before);
+  }) },
   { name: "review: a withdrawn note stays withdrawn and an answer is never overwritten — respond and propose refuse them", run: () => withFixture(async (fx) => {
     const { saved, request } = await seeded(fx);
     await fx.run("withdraw", { requestId: request.id });
@@ -230,7 +275,7 @@ export const diagramSceneReviewTests = [
     const outside = path.join(fx.root, "outside");
     await mkdir(outside);
     await rm(path.join(reviewDir, "proposals"), { recursive: true, force: true });
-    await symlink(outside, path.join(reviewDir, "proposals"));
+    await symlink(outside, path.join(reviewDir, "proposals"), "junction");
     await rejected(propose(fx, request, saved.revision), "diagram-scene-storage-invalid");
     assert.deepEqual(await readdir(outside), []);
   }) },
@@ -241,7 +286,7 @@ export const diagramSceneReviewTests = [
       const item = path.join(project, "wiki/work/07_milestone_scene");
       await mkdir(path.join(project, ".aof"), { recursive: true });
       await mkdir(item, { recursive: true });
-      await writeFile(path.join(project, ".aof/aof.config.json"), JSON.stringify({ name: "scene-test", resources: [], work: { dir: "./wiki/work" } }));
+      await writeFile(path.join(project, ".aof/aof.config.json"), JSON.stringify({ name: "scene-test", resources: [], work: { dir: "./wiki/work", diagrams: { generator: "diagram-design" } } }));
       await writeFile(path.join(item, "SPEC.md"), "---\ntype: milestone\nnumber: 07\nslug: scene\ntitle: scene\nstatus: in-progress\nschema: 1\n---\n# Scene\n");
       await writeFile(path.join(item, "ARCHITECTURE.md"), "## ADR-002 — Scene\n\n### Diagram\nDraw this.\n");
       const cli = fileURLToPath(new URL("../../packages/core/bin/aof.mjs", import.meta.url));

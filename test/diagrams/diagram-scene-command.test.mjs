@@ -5,6 +5,7 @@ import { lstat, mkdtemp, mkdir, open, readFile, readdir, rm, symlink, unlink, wr
 import os from "node:os";
 import path from "node:path";
 import { createDiagramSceneCommand } from "@aof/diagrams/commands/scene";
+import { LIMITS, parseProfile } from "@aof/diagrams/mermaid-profile";
 
 // diagram:scene over Excalidraw's own scene (milestone 170, ADR-010): the store keeps a canonical file,
 // stamps a Mermaid id on what a person drew, serves the Mermaid view, reads the project libraries, and
@@ -16,7 +17,7 @@ async function fixture(options = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-scene-")); const item = path.join(root, "wiki", "work", "07_demo");
   await mkdir(path.join(item, "diagrams"), { recursive: true });
   await writeFile(path.join(item, "ARCHITECTURE.md"), options.adr === false ? "# Demo\n" : "# Demo\n\n## ADR-002 — Scene\n\n### Diagram\n\nDraw it.\n");
-  const command = createDiagramSceneCommand({ resolveItemExact: async (_ctx, ref) => ref === "07" ? { ref: "07", dir: item, status: options.status ?? "in-progress", archived: options.archived } : null, requireLocalCheckout() {} }).diagramSceneCommand;
+  const command = createDiagramSceneCommand({ resolveItemExact: async (_ctx, ref) => ref === "07" ? { ref: "07", dir: item, status: options.status ?? "in-progress", archived: options.archived } : null, requireLocalCheckout() {}, resolveWorkDiagrams: () => options.diagrams ?? { enabled: true, formats: ["svg"] } }).diagramSceneCommand;
   return { root, item, command, ctx: { workspace: { root, projectRoot: root } } };
 }
 async function withFixture(fn, options) { const fx = await fixture(options); try { await fn(fx); } finally { await rm(fx.root, { recursive: true, force: true }); } }
@@ -31,7 +32,7 @@ export const diagramSceneCommandTests = [
       const item = path.join(project, "wiki/work/07_milestone_scene");
       await mkdir(path.join(project, ".aof"), { recursive: true });
       await mkdir(item, { recursive: true });
-      await writeFile(path.join(project, ".aof/aof.config.json"), JSON.stringify({ name: "scene-test", resources: [], work: { dir: "./wiki/work" } }));
+      await writeFile(path.join(project, ".aof/aof.config.json"), JSON.stringify({ name: "scene-test", resources: [], work: { dir: "./wiki/work", diagrams: { generator: "diagram-design" } } }));
       await writeFile(path.join(item, "SPEC.md"), "---\ntype: milestone\nnumber: 07\nslug: scene\ntitle: scene\nstatus: in-progress\nschema: 1\n---\n# Scene\n");
       await writeFile(path.join(item, "ARCHITECTURE.md"), "## ADR-002 — Scene\n\n### Diagram\nDraw this.\n");
       const cli = fileURLToPath(new URL("../../packages/core/bin/aof.mjs", import.meta.url));
@@ -50,6 +51,12 @@ export const diagramSceneCommandTests = [
       assert.match(context.view, /n1\["API"\]/); assert.deepEqual(context.selected.nodes.map((n) => n.id), ["n1"]);
     } finally { await rm(root, { recursive: true, force: true }); }
   } },
+  { name: "scene: with diagrams off the store writes nothing, and a read still answers", run: () => withFixture(async ({ command, ctx, item }) => {
+    await rejected(() => save(command, ctx, scene()), "diagram-disabled");
+    await rejected(() => command.run({ ref: "07", file, action: "publish", baseRevision: "0".repeat(64), svg: "<svg></svg>" }, ctx), "diagram-disabled");
+    assert.deepEqual(await readdir(path.join(item, "diagrams")), [], "nothing was written");
+    assert.equal((await command.run({ ref: "07", file, action: "read" }, ctx)).present, false);
+  }, { diagrams: { enabled: false, formats: ["svg"] } }) },
   { name: "scene: delivered and archived items reject writes, while an ADR heading is required", run: async () => {
     for (const options of [{ status: "done" }, { status: "done", archived: true }]) await withFixture(async ({ command, ctx }) => rejected(() => save(command, ctx, scene()), "diagram-item-delivered"), options);
     await withFixture(async ({ command, ctx }) => rejected(() => save(command, ctx, scene()), "diagram-adr-unknown"), { adr: false });
@@ -104,6 +111,17 @@ export const diagramSceneCommandTests = [
     await rejected(() => save(command, ctx, scene([el("big", "text", { text: "é".repeat(2_200_000) })]), saved.revision), "diagram-scene-too-large");
     assert.equal(await readFile(target, "utf8"), original);
   }) },
+  { name: "scene: a scene whose Mermaid view the profile could not read back is refused at save, and a claimed id it could not read is re-aliased", run: () => withFixture(async ({ command, ctx, item }) => {
+    const saved = await save(command, ctx, scene()); const target = path.join(item, "diagrams", file); const original = await readFile(target, "utf8");
+    const long = "x".repeat(LIMITS.label + 1);
+    await rejected(() => save(command, ctx, scene([el("b", "rectangle"), el("t", "text", { containerId: "b", text: long, originalText: long })]), saved.revision), "diagram-scene-unviewable");
+    assert.equal(await readFile(target, "utf8"), original, "a refused save leaves the file alone");
+    const tooLong = `A${"b".repeat(LIMITS.id)}`;
+    const next = await save(command, ctx, scene([el("k", "rectangle", { customData: { aof: { id: "end" } } }), el("l", "rectangle", { customData: { aof: { id: tooLong } } })]), saved.revision);
+    assert.deepEqual(next.assigned, { k: "n1", l: "n2" }, "a keyword and an over-long id are not kept");
+    const { view } = await command.run({ ref: "07", file, action: "context" }, ctx);
+    assert.deepEqual(parseProfile(view).nodes.map((n) => n.id), ["n1", "n2"], "the architect's view parses");
+  }) },
   { name: "scene: stale and simultaneous writers conflict rather than overwrite", run: () => withFixture(async ({ command, ctx }) => {
     const first = await save(command, ctx, scene()); await save(command, ctx, scene([el("next", "rectangle")]), first.revision);
     await rejected(() => save(command, ctx, scene(), first.revision), "diagram-scene-conflict");
@@ -123,7 +141,7 @@ export const diagramSceneCommandTests = [
     try { await rejected(() => save(command, ctx, scene([el("atomic", "rectangle")]), saved.revision), "diagram-scene-locked"); }
     finally { await lock.close(); await unlink(`${target}.lock`); }
     assert.equal(await readFile(target, "utf8"), original);
-    await rm(path.join(item, "diagrams"), { recursive: true }); const outside = path.join(root, "outside"); await mkdir(outside); await symlink(outside, path.join(item, "diagrams"));
+    await rm(path.join(item, "diagrams"), { recursive: true }); const outside = path.join(root, "outside"); await mkdir(outside); await symlink(outside, path.join(item, "diagrams"), "junction");
     await rejected(() => command.run({ ref: "07", file, action: "read" }, ctx), "diagram-scene-storage-invalid");
   }) },
 ];

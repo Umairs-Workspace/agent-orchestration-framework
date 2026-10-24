@@ -11,7 +11,7 @@
 // imports the editor. This surface reads nothing of the board's: its address vocabulary and its
 // dock mount are its own modules in this directory, and the dock is the shared terminal control
 // at the board-dock host, contributed to the shell's overlay slot exactly as the board does it.
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { SurfaceDock } from "../app/SurfaceSlot";
 import { TerminalControl } from "../terminal/TerminalControl";
 import type { TerminalOrigins } from "../terminal/TerminalControl";
@@ -31,6 +31,27 @@ export function DiagramSurface({ address }: { address: { pathname: string; searc
   const [dockOpen, setDockOpen] = useState(false);
   // The PTY lives on the server that served this page; this surface mirrors no worker session.
   const origins = useMemo<TerminalOrigins>(() => ({ self: typeof window === "undefined" ? null : window.location.origin, fleet: null }), []);
+  // The opt-out seam (170/ADR-002) holds on a direct address too: the surface asks the capability
+  // before it imports the editor, so a project with diagrams off fetches none of it. Any failure
+  // answers "not editable", as the board's asker does.
+  const [editor, setEditor] = useState<boolean | null>(null);
+  useEffect(() => {
+    let current = true;
+    fetch("/api/diagram/capability")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((answer: { editor?: unknown } | null) => answer?.editor === true, () => false)
+      .then((on) => { if (current) setEditor(on); });
+    return () => { current = false; };
+  }, []);
+
+  if (target != null && editor !== true) {
+    return (
+      <section className="p-4 text-sm" aria-label="Diagram editor">
+        <p role="status">{editor === null ? "Checking whether this project draws diagrams…" : "Diagrams are off in this project (work.diagrams), so there is no draft editor."}</p>
+        {editor === false ? <p className="mt-2"><a href={boardHref(target.ref)} className="underline">Back to the board</a></p> : null}
+      </section>
+    );
+  }
 
   if (target == null) {
     return (

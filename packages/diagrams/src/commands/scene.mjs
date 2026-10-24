@@ -1,10 +1,10 @@
-import { link, lstat, mkdir, open, readFile, readdir, realpath, rename, unlink, writeFile } from "node:fs/promises";
+import { lstat, mkdir, open, readFile, readdir, realpath, rename, unlink, writeFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 import { diagramFile, diagramLibrariesDir, diagramPaths, diagramReviewPaths, hasAdrSection, isReviewId, readAdrTitle, readDiagramBrief, renderDiagramBlock, reviewRecordPath, stemAdr } from "../layout.mjs";
-import { LIMITS, diffModels, parseProfile, serializeProfile } from "../mermaid-profile.mjs";
+import { LIMITS, diffModels, parseProfile, serializeProfile, validateModel } from "../mermaid-profile.mjs";
 import { assignAliases, projectScene } from "../scene-view.mjs";
 
 // diagram:scene — `aof diagram scene <ref> <ADR-NNN-slug.excalidraw>` (milestone 170, ADR-010..ADR-013).
@@ -147,6 +147,8 @@ function applyOperations(elements, operations, allowed) {
 //   node removed                                      all that, plus the boxes at its arrows' far ends and their frames
 //   node added · lib                                  its frame (the new elements are additions)
 //   edge (any)                                        the arrow and its label, the two boxes it binds and their frames
+//                                                     (a library item with no anchor box: its elements, which the
+//                                                     editor groups under the anchor it adds)
 // A box's frame is in because the editor re-fits a frame whose member it changes (a box's bindings change
 // when an arrow joins or leaves it), and accept refuses an update outside this set.
 //   subgraph                                          the frame and the boxes moving in or out of it
@@ -176,13 +178,38 @@ function touchedElements(changes, base, index, proposed) {
     } else if (kind === "edge") {
       for (const e of index[id]?.elementIds ?? []) ids.add(e);
       const [from, to] = id.replace(/#\d+$/, "").split("->");
-      addContainer(from); addContainer(to); addFrames(from); addFrames(to);
+      for (const end of [from, to]) { if (index[end]?.lib && !index[end].container) addOwn(end); addContainer(end); addFrames(end); }
     } else if (kind === "subgraph") {
       addContainer(id);
       for (const node of [...base.nodes, ...proposed.nodes].filter((n) => n.parent === id)) addOwn(node.id);
     }
   }
   return ids;
+}
+
+// An added element must belong, in the accepted scene, to a node or frame the proposal adds or changes,
+// to an end of an edge it draws (a library item's new anchor box), or to an edge between ends it
+// names — never to a sketch, and never to anything the proposal does not touch.
+function requireAdditionsProposed(elements, operations, changes) {
+  const additions = operations.filter((operation) => operation.op === "add").map((operation) => operation.element.id);
+  if (!additions.length) return;
+  const ids = new Set();
+  const pairs = new Set();
+  for (const { key } of Array.isArray(changes) ? changes : []) {
+    const kind = key.slice(0, key.indexOf(":"));
+    const id = key.slice(key.indexOf(":") + 1);
+    if (kind !== "edge") { ids.add(id); continue; }
+    const [from, to] = id.replace(/#\d+$/, "").split("->");
+    pairs.add(`${from}->${to}`); ids.add(from); ids.add(to);
+  }
+  const owner = new Map();
+  for (const [id, entry] of Object.entries(projectScene(elements).index)) for (const elementId of entry.elementIds) owner.set(elementId, [id, entry]);
+  const stray = additions.filter((elementId) => {
+    const [id, entry] = owner.get(elementId) ?? [];
+    if (!entry || entry.kind === "sketch") return true;
+    return entry.kind === "edge" ? !pairs.has(`${entry.from}->${entry.to}`) : !ids.has(id);
+  });
+  if (stray.length) fail(`Added elements are outside what this proposal touches: ${stray.join(", ")}.`, "diagram-proposal-invalid");
 }
 
 // ---- project libraries (.aof/diagrams/libraries/*.excalidrawlib) --------------------------------
@@ -328,6 +355,24 @@ async function readRecord(paths, kind, id) {
   return fail(`Stored ${kind} is invalid.`, "diagram-review-corrupt", 409);
 }
 
+// The panel polls every five seconds, so a record file is parsed again only when it changed: the
+// cache is keyed by path and checked against the file's identity, size and modification time.
+const newestFirst = (a, b) => String(b.createdAt).localeCompare(String(a.createdAt)) || b.id.localeCompare(a.id);
+const LIVE_STATUS = Object.freeze({ request: "open", proposal: "pending" });
+const listedRecords = new Map();
+async function parsedRecord(file, id, kind) {
+  let stat;
+  try { stat = await lstat(file); } catch (error) { if (error?.code === "ENOENT") return null; throw error; }
+  const cached = listedRecords.get(file);
+  if (cached && cached.ino === stat.ino && cached.size === stat.size && cached.mtimeMs === stat.mtimeMs) return cached.record;
+  const text = await readRecordText(file);
+  let record = null;
+  try { record = JSON.parse(text); } catch { record = null; }
+  if (!(plainObject(record) && record.id === id && record.kind === kind)) record = null;
+  listedRecords.set(file, { ino: stat.ino, size: stat.size, mtimeMs: stat.mtimeMs, record });
+  return record;
+}
+
 async function listRecords(paths, kind) {
   await assertReviewStorage(paths);
   const directory = path.resolve(kind === "request" ? paths.requests : paths.proposals);
@@ -335,26 +380,32 @@ async function listRecords(paths, kind) {
   try { names = await readdir(directory); } catch (error) { if (error?.code === "ENOENT") return { records: [], skipped: [] }; throw error; }
   const records = [];
   const skipped = [];
+  const seen = new Set();
   for (const name of names) {
     const id = RECORD_FILE.exec(name)?.[1];
     if (!id) continue;
-    const text = await readRecordText(path.join(directory, name));
+    const file = path.join(directory, name);
+    seen.add(file);
+    const record = await parsedRecord(file, id, kind);
     // An unreadable record is reported by id, never dropped without a word.
-    let record = null;
-    try {
-      record = JSON.parse(text);
-    } catch {
-      skipped.push(id);
-      continue;
-    }
-    if (plainObject(record) && record.id === id && record.kind === kind) records.push(record);
-    else skipped.push(id);
+    if (record) records.push(record); else skipped.push(id);
   }
-  records.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)) || b.id.localeCompare(a.id));
-  return { records: records.slice(0, MAX_LISTED), skipped };
+  for (const file of listedRecords.keys()) if (path.dirname(file) === directory && !seen.has(file)) listedRecords.delete(file);
+  records.sort(newestFirst);
+  // An open note or a pending proposal is listed however old it is; only decided records are capped.
+  const live = records.filter((record) => record.status === LIVE_STATUS[kind]);
+  const decided = records.filter((record) => record.status !== LIVE_STATUS[kind]).slice(0, MAX_LISTED);
+  return { records: [...live, ...decided].sort(newestFirst), skipped };
 }
 
-// Atomic write (temp + rename). A NEW record is linked into place so an existing id is never replaced.
+// Atomic write (temp + rename). A NEW record never replaces an existing id: every writer holds the
+// diagram's exclusive .lock, so the absence checked here still holds at the rename. Not link(): on
+// Windows a record first placed by a hard link intermittently refuses its later replacement with
+// EPERM (measured at 170's verify: 14 in 1,200 against 0 in 1,200 for a renamed record).
+async function recordExists(file) {
+  try { await lstat(file); return true; } catch (error) { if (error?.code === "ENOENT") return false; throw error; }
+}
+
 async function writeRecord(paths, record, { create = false } = {}) {
   const directory = path.resolve(record.kind === "request" ? paths.requests : paths.proposals);
   const body = JSON.stringify(record);
@@ -365,7 +416,8 @@ async function writeRecord(paths, record, { create = false } = {}) {
   const temporary = path.join(directory, `.${record.id}.${randomUUID()}.tmp`);
   try {
     await writeFile(temporary, body, { mode: 0o600, flag: "wx" });
-    if (create) await link(temporary, target); else await rename(temporary, target);
+    if (create && await recordExists(target)) fail(`Review record ${record.id} already exists.`, "diagram-review-id-taken", 409);
+    await rename(temporary, target);
   } finally { await removeIfPresent(temporary); }
 }
 
@@ -409,6 +461,11 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
       // An archived item is an accepted one, so `done` covers it.
       const readOnly = item.status === "done";
       if (WRITE_ACTIONS.has(action)) requireLocalCheckout(item, ref);
+      // The opt-out (ADR-002) holds at the store, not only in the board: with diagrams off, the editor
+      // follows the generator switch and nothing is written.
+      if (WRITE_ACTIONS.has(action) && resolveWorkDiagrams(ctx?.workspace?.config ?? {}).enabled !== true) {
+        fail("Diagrams are off in this project (work.diagrams), so the draft editor writes nothing.", "diagram-disabled", 409);
+      }
       const projectRoot = ctx?.workspace?.projectRoot ?? ctx?.workspace?.root;
       if (action === "libraries") return { ref: item.ref, file: spec.name, items: await readLibraries(projectRoot) };
       if (typeof item.dir !== "string" || item.dir.length === 0) return { ref: item.ref, file: spec.name, present: false, revision: null, scene: emptyScene(), readOnly: true };
@@ -484,9 +541,15 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
         try { await writeFile(temporary, body, { mode: 0o600, flag: "wx", ...(encoding ? { encoding } : {}) }); await rename(temporary, target); }
         finally { await removeIfPresent(temporary); }
       };
-      // Save stamps a Mermaid id on whatever a person drew, and answers which elements it stamped.
+      // Save stamps a Mermaid id on whatever a person drew, and answers which elements it stamped. The
+      // architect reads the diagram only as Mermaid (ADR-010), so a scene whose view the profile could
+      // not read back is refused here, where the person sees it, rather than breaking every review.
       const writeScene = async (scene) => {
         const { elements, assigned } = assignAliases(scene.elements);
+        const { model } = projectScene(elements);
+        const problems = validateModel(model);
+        if (!problems.length && serializeProfile(model).length > LIMITS.bytes) problems.push(`its Mermaid view is over ${LIMITS.bytes} characters.`);
+        if (problems.length) fail(`Not saved: the architect reads this diagram as Mermaid, and ${problems.join(" ")}`, "diagram-scene-unviewable");
         const stamped = { ...scene, elements };
         const text = canonicalScene(stamped);
         if (byteLength(text) > MAX_BYTES) fail("The diagram is over its size limit.", "diagram-scene-too-large", 413);
@@ -631,6 +694,7 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
           }
           if (!Array.isArray(input.operations) || !validJsonTree(input.operations)) fail("accept needs the editor's element operations, as plain JSON.", "diagram-proposal-invalid");
           const elements = applyOperations(current.scene.elements, input.operations, new Set(Object.keys(proposal.snapshot)));
+          requireAdditionsProposed(elements, input.operations, proposal.changes);
           const saved = await writeScene(validateScene({ ...current.scene, elements }));
           const accepted = { ...proposal, status: "accepted", decidedAt: new Date().toISOString(), acceptedRevision: saved.revision };
           await writeRecord(review, accepted);
