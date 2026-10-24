@@ -81,7 +81,9 @@ export const archTests = [
       assert.deepEqual(Object.keys(work.exports).filter((key) => /diagram/u.test(key)), [], "@aof/work exports no diagram module");
       const diagrams = JSON.parse(await readFile(path.join(repoRoot, "packages/diagrams/package.json"), "utf8"));
       assert.equal(diagrams.name, PACKAGE);
-      assert.deepEqual(Object.keys(diagrams.dependencies).sort(), ["@aof/contracts", "@aof/work"]);
+      // @aof/foundation since the merge of main (eff69b65): the layout reads a brief through main's
+      // `stripHtmlComments` (@aof/foundation/markdown). It is a leaf below @aof/work, so the one-way rule holds.
+      assert.deepEqual(Object.keys(diagrams.dependencies).sort(), ["@aof/contracts", "@aof/foundation", "@aof/work"]);
       const core = JSON.parse(await readFile(path.join(repoRoot, "packages/core/package.json"), "utf8"));
       assert.equal(core.dependencies[PACKAGE], "workspace:*", "core composes the package by declared dependency");
     },

@@ -258,12 +258,14 @@ function assertUiFrozen(pairs) {
   // `onRunAgent` thread PR #13 added. Nothing new is read: the editor's reads moved with it to the diagram
   // surface and its dock binds a `local-pty` exactly as the board's does; no fleet or home file, run-record
   // key, cycle, level or loop state is read.
-  // RE-PINNED by milestone 200 (ADR-010: the diagram is Excalidraw's scene, read as Mermaid), measured:
+  // RE-PINNED by milestone 170 (ADR-010: the diagram is Excalidraw's scene, read as Mermaid), measured:
   // `git diff --numstat HEAD -- apps/ui/src` is ONE file, `board/diagrams.mjs` (+2 −1): the pasted block's
   // Source link may now name the `.excalidraw` scene and is pointed at `/api/diagram/file` like the HTML, SVG
   // and PNG. Nothing new is read; no fleet or home file, run-record key, cycle, level or loop state is read.
   // RE-PINNED at the merge of main into PR #13 (2026-10-23): both histories above stack on one tree; the hash is that tree's.
-  assert.equal(hash.digest("hex"), "ba734fb1280cbfb89b65c68f0ad41cb62984dc96cb0694f810289c5f8dd8a8de", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED at 170's import (2026-10-24): `board/diagrams.mjs` (+1 −1) is a comment, its milestone citation
+  // renumbered 200 → 170 when the temporary milestone entered the stream. No code changes.
+  assert.equal(hash.digest("hex"), "ab808ae80c17b54f1fe719586032ee58f398617c6b48673b0b969be8316dac5f", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [
@@ -424,11 +426,13 @@ export const archTests = [
         // RE-PINNED by the diagrams opt-out seam: one GET `/api/diagram/capability` branch onto
         // `diagram:capability` (+16, all inside `handleDiagramApi`, with the absent-package answer); no
         // admission added, no run key read, `handleWorkApi` byte-identical.
-        // RE-PINNED by milestone 200 (ADR-013): `readJsonBody` takes the route's own limit (default 1 MB, every
+        // RE-PINNED by milestone 170 (ADR-013): `readJsonBody` takes the route's own limit (default 1 MB, every
         // board write unchanged) and the diagram scene route alone passes 16 MB, because Publish carries the
         // editor's SVG and a base64 PNG (+5 −3). No admission, route or run-key read changes.
         // RE-PINNED at the merge of main into PR #13 (2026-10-23): both re-pins above stack on the one merged file.
-        ["packages/server/src/board-ui.mjs", "b0602ac85a2023dcf354edf3ea996952df2d33e0d67588dde9ee871a3be635d8"],
+        // RE-PINNED by 170's import review: `readJsonBody` gathers the body as bytes and decodes it once, so a
+        // character split across chunks is no longer U+FFFD (+9 −3). Same limits, routes, admission and answers.
+        ["packages/server/src/board-ui.mjs", "2611de0a58ceae6095151d2df3ce69daa421a2496e8beb0c16002692aee7aff4"],
       ]);
       for (const [rel, digest] of pins) assert.equal(await normalizedDigest(path.join(root, rel)), digest, `${rel}: frozen run/board seam changed`);
       const uiPairs = await uiTreePairs();

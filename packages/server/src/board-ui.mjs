@@ -442,20 +442,26 @@ function send(response, status, contentTypeValue, body) {
 // resolved JSON object is handed to the command as its input.
 // `maxBytes` is the route's own: every board write keeps the 1 MB default, and the diagram route
 // alone raises it, because Publish carries the editor's SVG and, when owed, a base64 PNG.
+// The body is gathered as bytes and decoded once: decoding each chunk alone turns a multi-byte
+// character split across two chunks into U+FFFD, silently, in whatever the write stores.
 function readJsonBody(request, maxBytes = 1_000_000) {
   return new Promise((resolve, reject) => {
-    let body = "";
+    const chunks = [];
+    let received = 0;
     let tooLarge = false;
     request.on("data", (chunk) => {
       if (tooLarge) return;
-      body += chunk;
-      if (Buffer.byteLength(body, "utf8") > maxBytes) tooLarge = true;
+      const bytes = typeof chunk === "string" ? Buffer.from(chunk, "utf8") : chunk;
+      received += bytes.length;
+      if (received > maxBytes) { tooLarge = true; chunks.length = 0; return; }
+      chunks.push(bytes);
     });
     request.on("end", () => {
       if (tooLarge) {
         reject(httpError("Request body is too large.", "payload-too-large", 413));
         return;
       }
+      const body = Buffer.concat(chunks).toString("utf8");
       if (body.trim() === "") {
         reject(httpError("Request body must be JSON.", "empty-json", 400));
         return;

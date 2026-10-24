@@ -38,7 +38,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // own). `waiting on you` is spelled in no other comment-stripped `packages/core/src/**` or `apps/ui/src/**` module, and
 // no module but `form.mjs` DEFINES `formatElapsed` (ruling 9: the register's red probe, a second
 // ladder, imports nothing and need not spell the phrase). The `apps/ui/src/**` specifiers that
-// resolve outside `apps/ui/src` are the board's import of the form and, since milestone 200
+// resolve outside `apps/ui/src` are the board's import of the form and, since milestone 170
 // (ADR-001), the diagram surface's one lazy import of the editor package. Fixture: `accountLine` and the
 // Discord line 1 share a byte-identical `<ref> — <phrase> (<phase>, <elapsed>)`.
 //
@@ -141,7 +141,7 @@ const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const PHRASES = Object.freeze(["waiting on you", "answered by", "parked, unanswered", "loop halted", "loop died", "loop relaunched"]);
 const THE_PHRASE = "waiting on you";
 // The board's import of the ask form; and the diagram surface's lazy `import()` of `@aof/diagrams-ui`'s
-// editor (200/ADR-001: diagramming is a package the app reaches one way, through one dynamic import).
+// editor (170/ADR-001: diagramming is a package the app reaches one way, through one dynamic import).
 const UI_OUTSIDE = Object.freeze([
   { file: "apps/ui/src/board/action.mjs", specifier: "@aof/messaging/form" },
   { file: "apps/ui/src/diagram/DiagramSurface.tsx", specifier: "@aof/diagrams-ui/editor" },

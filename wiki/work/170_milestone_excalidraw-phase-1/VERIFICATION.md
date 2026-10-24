@@ -1,7 +1,7 @@
 ---
 doc: verification
 ---
-# 200 · Excalidraw phase 1 — Verification
+# 170 · Excalidraw phase 1 — Verification
 
 Built on `feat/excalidraw-collaborative-refinement`: stories 00–03 at `68116cc` and before; 04–09 in
 the commit that carries this record, on the scene store with Mermaid as the interface (ADR-010–ADR-013).

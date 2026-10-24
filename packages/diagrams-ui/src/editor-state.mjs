@@ -24,7 +24,7 @@ export function sceneFingerprint(scene) {
 }
 
 // The slash command that asks the architect to review a recorded request (same style as action.mjs).
-// With no request id it is the BATCH form (200/06): the command examines every open note.
+// With no request id it is the BATCH form (170/06): the command examines every open note.
 export function diagramReviewInvocation(ref, file, requestId) {
   return requestId ? `/aof:diagram-review ${ref} ${file} ${requestId}` : `/aof:diagram-review ${ref} ${file}`;
 }
@@ -100,7 +100,7 @@ export function shouldPoll({ open = true, visible = true } = {}) {
   return Boolean(open) && Boolean(visible);
 }
 
-// ---- Excalidraw editor: notes (200/05) ----
+// ---- Excalidraw editor: notes (170/05) ----
 // A NOTE is a review request the operator recorded without starting a session; it is open until
 // answered, proposed for, or withdrawn.
 export function openNotes(requests) {

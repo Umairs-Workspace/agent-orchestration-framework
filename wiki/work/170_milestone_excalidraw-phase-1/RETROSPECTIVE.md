@@ -1,7 +1,7 @@
 ---
 doc: retrospective
 ---
-# 200 · Excalidraw phase 1 — retrospective
+# 170 · Excalidraw phase 1 — retrospective
 
 What building phase 1 taught, for the import to carry.
 
@@ -60,6 +60,12 @@ an explicit item, recorded in VERIFICATION's acceptance list rather than implied
 
 **Lesson:** Cross-references to a temporary milestone use its slug, not its number, until it has
 been imported.
+
+**At import (2026-10-24):** With the folder still inside `wiki/work/`, the mint counted it and
+offered 201, so it was moved out first and landed as 170. The code had cited "milestone 200" and
+"200/NN" in about 30 places anyway, and they were renumbered by hand. The CLI's recovery also
+re-sequenced the ADRs (010–013 became 007–010) and flattened the SPEC, so the source documents were
+carried verbatim instead.
 
 ## R5 · A first draft was built as an import, and the operator saw three pictures of one diagram
 

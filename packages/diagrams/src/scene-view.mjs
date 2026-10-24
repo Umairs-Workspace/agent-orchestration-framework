@@ -1,4 +1,4 @@
-// THE SCENE, SEEN AS MERMAID (milestone 200, ADR-010). A diagram is stored as Excalidraw's own scene —
+// THE SCENE, SEEN AS MERMAID (milestone 170, ADR-010). A diagram is stored as Excalidraw's own scene —
 // it holds everything the editor can draw, library items included — and the architect reads and
 // writes it through this projection into the aof Mermaid profile. Pure and import-free beyond the
 // profile, so the server (context, propose) and the browser editor (selection, compile) run the same

@@ -28,7 +28,13 @@ async function withApi(run) {
       res.setEncoding("utf8"); res.on("data", (chunk) => { text += chunk; });
       res.on("end", () => resolve({ status: res.statusCode, headers: res.headers, body: text ? JSON.parse(text) : null }));
     });
-    req.on("error", reject); if (body !== undefined) req.write(body); req.end();
+    req.on("error", reject);
+    // An array body is written part by part with a pause between, so the server reads separate chunks.
+    if (Array.isArray(body)) {
+      (async () => { for (const part of body) { req.write(part); await new Promise((r) => setTimeout(r, 50)); } req.end(); })().catch(reject);
+      return;
+    }
+    if (body !== undefined) req.write(body); req.end();
   });
   try { await run({ calls, request, setFailure: (error) => { failure = error; }, port: address.port, workspace }); }
   finally { await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve())); }
@@ -93,6 +99,14 @@ export const diagramSceneApiTests = [
     const response = await request("POST", "/api/diagram/scene?ref=07&file=ADR-002-scene.excalidraw", { headers: { host, origin: `http://${host}`, "content-type": "application/json" }, body: JSON.stringify({ action: "publish", svg: "x".repeat(3_000_000) }) });
     assert.equal(response.status, 200);
     assert.equal(calls[0].input.svg.length, 3_000_000);
+  }) },
+  { name: "scene api: a multi-byte character split across two chunks reaches the command intact", run: () => withApi(async ({ calls, request, port }) => {
+    const host = `127.0.0.1:${port}`;
+    const bytes = Buffer.from(JSON.stringify({ action: "save", label: "Orders — café 東京" }), "utf8");
+    const cut = bytes.indexOf(Buffer.from("—", "utf8")) + 1; // inside the dash's three bytes
+    const response = await request("POST", "/api/diagram/scene?ref=07&file=ADR-002-scene.excalidraw", { headers: { host, origin: `http://${host}`, "content-type": "application/json", "content-length": String(bytes.length) }, body: [bytes.subarray(0, cut), bytes.subarray(cut)] });
+    assert.equal(response.status, 200);
+    assert.equal(calls[0].input.label, "Orders — café 東京");
   }) },
   { name: "scene api: command errors retain their 409 status and code", run: () => withApi(async ({ calls, request, port, setFailure }) => {
     setFailure(Object.assign(new Error("revision conflict"), { status: 409, code: "diagram-scene-conflict" }));

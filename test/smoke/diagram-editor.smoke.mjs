@@ -1,4 +1,4 @@
-// THE DIAGRAM EDITOR, SERVED AND DRIVEN IN A REAL BROWSER (milestone 200 / story 07).
+// THE DIAGRAM EDITOR, SERVED AND DRIVEN IN A REAL BROWSER (milestone 170 / story 07).
 //
 // The headless harness stubs the editor (the canvas needs a real DOM), so nothing in the registered
 // suites proves the served path: the board's link, the lazy SDK, a first draft drawn by Excalidraw's own

@@ -68,7 +68,7 @@ export function diagramsDir(itemDir) {
   return `${String(itemDir).replace(/\\/g, "/").replace(/\/+$/, "")}/${DIAGRAMS_DIR}`;
 }
 
-// A project's Excalidraw libraries (milestone 200, ADR-011), read as they are:
+// A project's Excalidraw libraries (milestone 170, ADR-011), read as they are:
 // `<project>/.aof/diagrams/libraries/*.excalidrawlib`.
 export function diagramLibrariesDir(projectRoot) {
   return `${String(projectRoot).replace(/\\/g, "/").replace(/\/+$/, "")}/.aof/${DIAGRAMS_DIR}/libraries`;
@@ -129,7 +129,7 @@ export function reviewRecordPath(directory, id) {
 // `ADR-NNN-<slug>` stem plus one of the three extensions export writes. Anything else — a path, a
 // `..`, another extension, a stem with no ADR or no slug — is null, so a request can never name a
 // file outside the folder. `path` is forward-slashed like every path here.
-// `.excalidraw` is an Excalidraw diagram itself — the scene the editor draws (milestone 200, ADR-010).
+// `.excalidraw` is an Excalidraw diagram itself — the scene the editor draws (milestone 170, ADR-010).
 export const DIAGRAM_FILE_EXTS = Object.freeze([".html", ".svg", ".png", ".excalidraw"]);
 
 export function diagramFile(itemDir, name) {

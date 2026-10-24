@@ -1,7 +1,7 @@
 ---
 doc: architecture
 ---
-# 200 · Excalidraw phase 1 — Architecture Decisions
+# 170 · Excalidraw phase 1 — Architecture Decisions
 
 ADR-001 to ADR-004 record decisions delivered on the branch (measured, with their gates named).
 ADR-010 to ADR-013 are the format the phase settled on — Excalidraw's scene is the store, Mermaid is

@@ -1,4 +1,4 @@
-// The aof Mermaid profile (milestone 200, ADR-006): the one format of an ADR diagram. Pure over text,
+// The aof Mermaid profile (milestone 170, ADR-006): the one format of an ADR diagram. Pure over text,
 // driven headlessly: parse, the canonical form, every refusal, diff, and the three-way merge rules.
 import assert from "node:assert/strict";
 import {
@@ -140,6 +140,15 @@ export const mermaidProfileTests = [
       assert.equal(refusal('flowchart LR\n  A\n  %% aof:lib A azure').code, "diagram-mermaid-invalid");
       assert.ok(refusal('flowchart LR\n  A\n  %% aof:lib B azure/"X"'), "a lib must name a node");
       assert.ok(refusal('flowchart LR\n  A\n  %% aof:sketch A "x"'), "a sketch cannot reuse a node id");
+    },
+  },
+  {
+    name: "profile: a library is named by its file, so a name with spaces reads back from the view the profile wrote",
+    run: () => {
+      const m = model('flowchart LR\n  Fn["Orders"]\n  %% aof:lib Fn Azure Icons/"Function App"\n');
+      assert.deepEqual(m.libs, { Fn: { library: "Azure Icons", item: "Function App" } });
+      assert.deepEqual(model(serializeProfile(m)).libs, m.libs, "the view the profile writes parses back");
+      assert.equal(refusal('flowchart LR\n  Fn\n  %% aof:lib Fn  /"Function App"').code, "diagram-mermaid-invalid", "a library still needs a name");
     },
   },
 ];

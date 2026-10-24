@@ -7,7 +7,7 @@ import { projectScene, sceneView, selectionIds } from "@aof/diagrams/scene-view"
 import { compileProposal, firstDraftSkeletons, libraryItemsFor, operationsFor } from "./compile.mjs";
 import { POLL_MS, describeCounts, describeError, diagramReviewInvocation, openNotes, pendingProposals, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, touchedIds } from "./editor-state.mjs";
 
-// THE EDITOR (milestone 200, ADR-010..ADR-013). The diagram is stored as Excalidraw's own scene, so
+// THE EDITOR (milestone 170, ADR-010..ADR-013). The diagram is stored as Excalidraw's own scene, so
 // this canvas IS the diagram: anything can be drawn, and your project's libraries are in the Library
 // panel. The architect reads the scene as Mermaid and proposes edited Mermaid; Accept compiles the
 // proposal's changes into element edits here and the server applies them, refusing whatever you

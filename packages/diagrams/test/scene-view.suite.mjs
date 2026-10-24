@@ -1,4 +1,4 @@
-// The scene, seen as Mermaid (milestone 200, ADR-010): an Excalidraw scene — boxes, frames, arrows,
+// The scene, seen as Mermaid (milestone 170, ADR-010): an Excalidraw scene — boxes, frames, arrows,
 // library item insertions and free drawing — projected into the aof Mermaid profile the architect
 // reads, with every Mermaid id traced back to the elements that show it.
 import assert from "node:assert/strict";

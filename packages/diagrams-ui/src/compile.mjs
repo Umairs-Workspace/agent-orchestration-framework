@@ -1,4 +1,4 @@
-// COMPILING A PROPOSAL INTO THE SCENE (milestone 200, ADR-012). A proposal is the Mermaid view edited;
+// COMPILING A PROPOSAL INTO THE SCENE (milestone 170, ADR-012). A proposal is the Mermaid view edited;
 // its `changes` are keyed facts (`node:API`, `edge:A->B#1`, `layout:API`, `lib:Fn`, …). This module
 // turns those facts into edits of the stored Excalidraw scene, touching only what they name.
 //
@@ -340,7 +340,10 @@ export function compileProposal({ elements, changes, proposed, hints = new Map()
     const box = boundsOf(members);
     if (!box) continue;
     const next = { x: box.x - 24, y: box.y - 36, width: box.w + 48, height: box.h + 60 };
-    if (touched.has(frameId) || members.some((e) => touched.has(e.id))) patch(frameId, next);
+    // A fit that changes nothing is not an edit: it would make the frame look changed to Excalidraw and
+    // send an update accept may refuse.
+    const fits = Object.entries(next).every(([key, value]) => frame[key] === value);
+    if (!fits && (touched.has(frameId) || members.some((e) => touched.has(e.id)))) patch(frameId, next);
     void id;
   }
   return { elements: list, touched, unresolved };

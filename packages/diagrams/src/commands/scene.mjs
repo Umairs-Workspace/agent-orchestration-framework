@@ -7,7 +7,7 @@ import { diagramFile, diagramLibrariesDir, diagramPaths, diagramReviewPaths, has
 import { LIMITS, diffModels, parseProfile, serializeProfile } from "../mermaid-profile.mjs";
 import { assignAliases, projectScene } from "../scene-view.mjs";
 
-// diagram:scene — `aof diagram scene <ref> <ADR-NNN-slug.excalidraw>` (milestone 200, ADR-010..ADR-013).
+// diagram:scene — `aof diagram scene <ref> <ADR-NNN-slug.excalidraw>` (milestone 170, ADR-010..ADR-013).
 // A diagram is stored as Excalidraw's own scene: it holds everything the editor draws, library items
 // and free drawing included. The architect reads it as Mermaid (scene-view.mjs) and proposes edited
 // Mermaid; the editor compiles the proposal's changes into element edits, and accept applies them —
@@ -144,9 +144,11 @@ function applyOperations(elements, operations, allowed) {
 //   style                                             the node's own elements, and its frames
 //   node changed (label, shape, subgraph)             those, and its arrows (a relabelled box may grow)
 //   layout (a move)                                   the node's elements, its arrows, and its frames
-//   node removed                                      all that, plus the boxes at its arrows' far ends
+//   node removed                                      all that, plus the boxes at its arrows' far ends and their frames
 //   node added · lib                                  its frame (the new elements are additions)
-//   edge (any)                                        the arrow and its label, and the two boxes it binds
+//   edge (any)                                        the arrow and its label, the two boxes it binds and their frames
+// A box's frame is in because the editor re-fits a frame whose member it changes (a box's bindings change
+// when an arrow joins or leaves it), and accept refuses an update outside this set.
 //   subgraph                                          the frame and the boxes moving in or out of it
 function touchedElements(changes, base, index, proposed) {
   const ids = new Set();
@@ -155,7 +157,7 @@ function touchedElements(changes, base, index, proposed) {
   const addArrows = (id, farEnds) => {
     for (const key of index[id]?.arrows ?? []) {
       for (const e of index[key]?.elementIds ?? []) ids.add(e);
-      if (farEnds) { addContainer(index[key].from); addContainer(index[key].to); }
+      if (farEnds) { addContainer(index[key].from); addContainer(index[key].to); addFrames(index[key].from); addFrames(index[key].to); }
     }
   };
   const addFrames = (id) => { for (const parent of [base.nodes.find((n) => n.id === id)?.parent, proposed.nodes.find((n) => n.id === id)?.parent]) if (parent) addContainer(parent); };
@@ -174,7 +176,7 @@ function touchedElements(changes, base, index, proposed) {
     } else if (kind === "edge") {
       for (const e of index[id]?.elementIds ?? []) ids.add(e);
       const [from, to] = id.replace(/#\d+$/, "").split("->");
-      addContainer(from); addContainer(to);
+      addContainer(from); addContainer(to); addFrames(from); addFrames(to);
     } else if (kind === "subgraph") {
       addContainer(id);
       for (const node of [...base.nodes, ...proposed.nodes].filter((n) => n.parent === id)) addOwn(node.id);
@@ -503,6 +505,11 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
         if (request.status !== "open") return;
         await writeRecord(review, { ...request, status: "proposed", proposalId: proposal.id, proposedAt: proposal.createdAt });
       };
+      // A withdrawn note stays withdrawn and an answer is never overwritten: only an open note, or one a
+      // proposal answered (which may be rejected and proposed for again), takes an answer or a proposal.
+      const requireAnswerable = (request) => {
+        if (request.status === "withdrawn" || request.status === "answered") fail(`Request ${request.id} is already ${request.status}.`, "diagram-request-decided", 409);
+      };
       const requirePending = (proposal) => {
         if (proposal.status !== "pending") fail(`Proposal ${proposal.id} is already ${proposal.status}.`, "diagram-proposal-decided", 409);
       };
@@ -547,6 +554,7 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
         const answer = boundedString(input.answer, "answer", MAX_TEXT);
         return underSceneLock(async () => {
           const record = await readRecord(review, "request", requestId);
+          requireAnswerable(record);
           const answered = { ...record, status: "answered", answer, answeredAt: new Date().toISOString() };
           await writeRecord(review, answered);
           return { ref: item.ref, file: spec.name, request: answered };
@@ -564,6 +572,7 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
         return underSceneLock(async (current) => {
           const baseRevision = requireSavedRevision(current);
           const request = await readRecord(review, "request", requestId);
+          requireAnswerable(request);
           const { model: base, index } = projectScene(current.scene.elements);
           // A node always has a place and keeps its library item, so a proposal that leaves out a node's
           // `%% aof:node` or `%% aof:lib` line leaves it as it is; only removing the node removes them.

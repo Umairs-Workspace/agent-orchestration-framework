@@ -1,23 +1,23 @@
 ---
 type: milestone
-number: 200
+number: 170
 slug: excalidraw-phase-1
 title: "Excalidraw phase 1 — an ADR diagram is an Excalidraw scene the architect reads and edits as Mermaid, annotated by the operator, and examined by one command"
 status: in-review
 owner: product-owner
 created: 2026-10-20
-updated: 2026-10-21
+updated: 2026-10-24
 schema: 1
 aofVersion: 0.1.0
 tags: [design, board, ui, work]
 ---
-# 200 · Excalidraw phase 1
+# 170 · Excalidraw phase 1
 
-TEMPORARY HOME. This folder was written by hand on `feat/excalidraw-collaborative-refinement`
-ahead of the stream, numbered high so it collides with nothing live; it is the phase-1 cut of
-[wiki/planning/PRD-excalidraw-refinement.md](../../planning/PRD-excalidraw-refinement.md) and will
-be imported into the stream with `aof migrate` once the phase is complete. Phase 2 (in-diagram
-conversation, a push channel instead of the poll) is out of scope here and stays in the PRD.
+The phase-1 cut of [wiki/planning/PRD-excalidraw-refinement.md](../../planning/PRD-excalidraw-refinement.md).
+It was built ahead of the stream on `feat/excalidraw-collaborative-refinement` in a hand-numbered
+temporary folder, `200_milestone_excalidraw-phase-1`, and imported as 170 with `aof migrate` on
+2026-10-24 (RETROSPECTIVE R4). Phase 2 (in-diagram conversation, a push channel instead of the poll)
+is out of scope here and stays in the PRD.
 
 ## Objective
 
@@ -94,29 +94,32 @@ Out of scope:
 - real-time multi-operator editing (a room or a CRDT) — the PRD's later future
 
 ## Stories
-- [x] `00_story_native-draft-store-and-review-loop` — PR #13: the embedded editor, the scene store,
+
+- [x] [00 · The native draft store and the review loop](stories/00_story_native-draft-store-and-review-loop/STORY.md) — PR #13: the embedded editor, the scene store,
   and the ask/answer/propose/preview/accept/reject loop (ADR-004).
-- [x] `01_story_diagramming-is-a-package-pair` — `@aof/diagrams` and `@aof/diagrams-ui`, one way
+- [x] [01 · Diagramming is a package pair](stories/01_story_diagramming-is-a-package-pair/STORY.md) — `@aof/diagrams` and `@aof/diagrams-ui`, one way
   (ADR-001).
-- [x] `02_story_the-opt-out-seam` — `diagram:capability`, the board hiding Edit draft, the absent
+- [x] [02 · The opt-out seam](stories/02_story_the-opt-out-seam/STORY.md) — `diagram:capability`, the board hiding Edit draft, the absent
   answer (ADR-002).
-- [x] `03_story_the-editor-is-a-route` — `/diagram`, unlisted in the nav, with its own address
+- [x] [03 · The editor is a route](stories/03_story_the-editor-is-a-route/STORY.md) — `/diagram`, unlisted in the nav, with its own address
   vocabulary and dock mount (ADR-003).
-- [x] `04_story_a-first-draft-from-mermaid` — a first draft, requested in the editor and proposed as
+- [x] [04 · A first draft from Mermaid](stories/04_story_a-first-draft-from-mermaid/STORY.md) — a first draft, requested in the editor and proposed as
   a whole diagram (built first as a one-shot Mermaid import, ADR-005; rebuilt on the one format).
-- [x] `08_story_one-format` — the scene is the store and Mermaid the interface: the projection,
+- [x] [08 · One format](stories/08_story_one-format/STORY.md) — the scene is the store and Mermaid the interface: the projection,
   compile, element-level accept and Publish (ADR-010, ADR-012, ADR-013; built first with the `.mmd`
   as the store, ADR-006–ADR-009, and reworked when libraries had no place in it).
-- [x] `09_story_project-libraries` — `.excalidrawlib` files used as they are, insertions that keep
+- [x] [09 · Project libraries](stories/09_story_project-libraries/STORY.md) — `.excalidrawlib` files used as they are, insertions that keep
   their provenance, and the architect placing items by name (ADR-011).
-- [x] `05_story_notes-without-a-session` — a note records a request and launches nothing; the panel
+- [x] [05 · Notes without a session](stories/05_story_notes-without-a-session/STORY.md) — a note records a request and launches nothing; the panel
   lists and withdraws notes.
-- [x] `06_story_one-command-examines-every-note` — the batch form of `/aof:diagram-review`.
-- [x] `07_story_served-path-smoke` — the real-browser check extended to draft, note and batch
+- [x] [06 · One command examines every note](stories/06_story_one-command-examines-every-note/STORY.md) — the batch form of `/aof:diagram-review`.
+- [x] [07 · The served-path smoke](stories/07_story_served-path-smoke/STORY.md) — the real-browser check extended to draft, note and batch
   review; its script and fixtures kept beside the suite.
 
 04 depends on nothing delivered-but-pending; 05 and 06 are independent of 04 and of each other;
-08 is the store 04–06 read and write, 09 rides on 08, and 07 composes them all.
+08 is the store 04–06 read and write, 09 rides on 08, and 07 composes them all. The stories were
+written at import from this list, the ADRs and VERIFICATION. None carries a task contract, because
+the work was built before the milestone entered the stream.
 
 All ten are built. The milestone is `in-review`: VERIFICATION.md records the evidence (23/23 in a
 real browser, every touched suite and control green) and the acceptance items still open — an

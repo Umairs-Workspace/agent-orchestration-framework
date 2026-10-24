@@ -1,4 +1,4 @@
-// THE AOF MERMAID PROFILE — the ONE format of an ADR diagram (milestone 200, ADR-006).
+// THE AOF MERMAID PROFILE — the ONE format of an ADR diagram (milestone 170, ADR-006).
 //
 // A diagram is `diagrams/ADR-NNN-<slug>.mmd`: a Mermaid FLOWCHART in a canonical subset, plus `%% aof:`
 // comment lines carrying what Mermaid cannot say and collaboration needs — the position and size a
@@ -22,7 +22,7 @@
 //     libs:   { [nodeId]: { library, item } },   a node placed from a project library item
 //     sketches: { [id]: summary } }               read-only: what Mermaid cannot express, by name
 //
-// Since milestone 200's ADR-010 the profile is the architect's VIEW of a diagram, not its storage:
+// Since milestone 170's ADR-010 the profile is the architect's VIEW of a diagram, not its storage:
 // the stored file is Excalidraw's own scene, projected into this form (scene-view.mjs), and a
 // proposal is this form edited.
 // An edge's identity is `<from>-><to>#<n>`, n counting edges between that ordered pair in file order:
@@ -159,7 +159,9 @@ function readDirective(body, line, model) {
   }
   if (word === "aof:lib") {
     const id = checkId(parts[0] ?? "", line);
-    const ref = /^aof:lib\s+\S+\s+([A-Za-z0-9][A-Za-z0-9._-]*)\/"([^"]*)"\s*$/.exec(body.trim());
+    // The library is its file's name, so it may hold spaces ("Azure Icons"); it ends at the `/"` that
+    // opens the item, and a file name never holds a `/`.
+    const ref = /^aof:lib\s+\S+\s+([^\s/"][^/"]*)\/"([^"]*)"\s*$/.exec(body.trim());
     if (!ref || ref[2].trim() === "") throw profileError('aof:lib reads `%% aof:lib <id> <library>/"<item name>"`.', "diagram-mermaid-invalid", line);
     model.libs[id] = { library: ref[1], item: decodeLabel(ref[2]) };
     return;

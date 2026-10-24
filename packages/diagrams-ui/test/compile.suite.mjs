@@ -1,4 +1,4 @@
-// Compiling a proposal into the stored scene (milestone 200, ADR-012), headlessly: the SDK's element
+// Compiling a proposal into the stored scene (milestone 170, ADR-012), headlessly: the SDK's element
 // factory is faked (it measures text as 10 px a character), and the property that matters is checked
 // directly — the scene a proposal compiles to READS BACK, through the projection, as the proposal.
 import assert from "node:assert/strict";

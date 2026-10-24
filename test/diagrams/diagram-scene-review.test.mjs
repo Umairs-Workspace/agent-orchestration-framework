@@ -5,8 +5,11 @@ import { mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:
 import os from "node:os";
 import path from "node:path";
 import { createDiagramSceneCommand } from "@aof/diagrams/commands/scene";
+import { parseProfile } from "@aof/diagrams/mermaid-profile";
+import { projectScene } from "@aof/diagrams/scene-view";
+import { compileProposal, operationsFor } from "@aof/diagrams-ui/compile";
 
-// The review loop over the stored scene (milestone 200, ADR-011/ADR-012): notes name Mermaid ids; a
+// The review loop over the stored scene (milestone 170, ADR-011/ADR-012): notes name Mermaid ids; a
 // proposal is the Mermaid view edited, recorded with its changes and a snapshot of the elements they
 // touch; accept applies the editor's compiled element operations, refusing as stale — by Mermaid id —
 // anything a person changed since, and refusing an operation outside what the proposal touches.
@@ -147,6 +150,45 @@ export const diagramSceneReviewTests = [
     const accepted = await fx.run("accept", { proposalId: proposal.id, baseRevision: saved.revision, operations: RENAME_OPS });
     await rejected(fx.run("accept", { proposalId: proposal.id, baseRevision: accepted.revision, operations: RENAME_OPS }), "diagram-proposal-decided");
     await rejected(fx.run("reject", { proposalId: proposal.id }), "diagram-proposal-decided");
+  }) },
+  { name: "review: an edge into a node inside a subgraph compiles and is accepted — the frame the editor re-fits is in what the proposal touches", run: () => withFixture(async (fx) => {
+    // DB sits in a hand-sized frame; the editor re-fits a frame whose member it changes, and a new arrow
+    // changes DB's bindings. Before the frames of an edge's ends were in the touched set, accept refused it.
+    const framed = [
+      ...TWO.filter((e) => e.id !== "a1"),
+      el("f1", "frame", { x: 250, y: -100, width: 600, height: 400, name: "Store", customData: { aof: { id: "store" } } }),
+    ].map((e) => (e.id === "e-db" || e.id === "t-db" ? { ...e, frameId: "f1" } : e));
+    const saved = await fx.saved(framed);
+    const { view } = await fx.run("context", {});
+    assert.match(view, /subgraph store/);
+    const { request } = await fx.run("request", { baseRevision: saved.revision, selectedIds: ["API", "DB"], request: "Join them" });
+    const { proposal } = await propose(fx, request, saved.revision, `${view}  API --> DB\n`);
+    assert.deepEqual(proposal.changes.map((c) => c.key), ["edge:API->DB#1"]);
+    let n = 0;
+    // The SDK's converter, closely enough for an unlabelled arrow: its size is its points' extent.
+    const toElements = (skeletons) => skeletons.map((s) => ({ strokeColor: "#1e1e1e", backgroundColor: "transparent", groupIds: [], boundElements: null, version: 1, width: Math.abs(s.points?.[1]?.[0] ?? 0), height: Math.abs(s.points?.[1]?.[1] ?? 0), ...s, id: s.id ?? `made${++n}` }));
+    const { elements, touched, unresolved } = compileProposal({ elements: framed, changes: proposal.changes, proposed: parseProfile(proposal.text), toElements, newId: () => `new${++n}` });
+    assert.deepEqual(unresolved, []);
+    assert.ok(touched.has("f1"), "the hand-sized frame is re-fitted around its member");
+    const accepted = await fx.run("accept", { proposalId: proposal.id, baseRevision: saved.revision, operations: operationsFor(framed, elements, touched) });
+    assert.equal(accepted.proposal.status, "accepted");
+    assert.deepEqual(projectScene(accepted.scene.elements).model.edges.map((e) => e.key), ["API->DB#1"]);
+  }) },
+  { name: "review: a withdrawn note stays withdrawn and an answer is never overwritten — respond and propose refuse them", run: () => withFixture(async (fx) => {
+    const { saved, request } = await seeded(fx);
+    await fx.run("withdraw", { requestId: request.id });
+    await rejected(fx.run("respond", { requestId: request.id, answer: "Too late." }), "diagram-request-decided");
+    await rejected(propose(fx, request, saved.revision), "diagram-request-decided");
+    const { request: asked } = await fx.run("request", { baseRevision: saved.revision, selectedIds: [], request: "Why?" });
+    await fx.run("respond", { requestId: asked.id, answer: "Because." });
+    await rejected(fx.run("respond", { requestId: asked.id, answer: "Changed my mind." }), "diagram-request-decided");
+    await rejected(propose(fx, asked, saved.revision), "diagram-request-decided");
+    const listed = (await fx.run("proposals")).requests;
+    assert.deepEqual(listed.map((r) => [r.status, r.answer ?? null]).sort(), [["answered", "Because."], ["withdrawn", null]]);
+    // A note a proposal answered may still be proposed for again (its proposal may be rejected).
+    const { request: open } = await fx.run("request", { baseRevision: saved.revision, selectedIds: ["API"], request: "Rename" });
+    await propose(fx, open, saved.revision);
+    await propose(fx, open, saved.revision, RENAMED.replace("Gateway", "Edge"));
   }) },
   { name: "review: reject and withdraw leave the diagram alone", run: () => withFixture(async (fx) => {
     const { saved, request } = await seeded(fx);

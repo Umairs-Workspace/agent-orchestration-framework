@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { createDiagramSceneCommand } from "@aof/diagrams/commands/scene";
 
-// diagram:scene over Excalidraw's own scene (milestone 200, ADR-010): the store keeps a canonical file,
+// diagram:scene over Excalidraw's own scene (milestone 170, ADR-010): the store keeps a canonical file,
 // stamps a Mermaid id on what a person drew, serves the Mermaid view, reads the project libraries, and
 // serializes every write under the diagram's exclusive lock.
 const file = "ADR-002-scene.excalidraw";
