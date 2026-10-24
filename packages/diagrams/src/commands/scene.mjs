@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
-import { diagramFile, diagramLibrariesDir, diagramPaths, diagramReviewPaths, hasAdrSection, isReviewId, readAdrTitle, readDiagramBrief, renderDiagramBlock, reviewRecordPath, stemAdr } from "../layout.mjs";
+import { diagramFile, diagramLibrariesDir, diagramPaths, globalDiagramLibrariesDir, diagramReviewPaths, hasAdrSection, isReviewId, readAdrTitle, readDiagramBrief, renderDiagramBlock, reviewRecordPath, stemAdr } from "../layout.mjs";
 import { LIMITS, diffModels, parseProfile, serializeProfile, validateModel } from "../mermaid-profile.mjs";
 import { assignAliases, projectScene } from "../scene-view.mjs";
 
@@ -212,32 +212,43 @@ function requireAdditionsProposed(elements, operations, changes) {
   if (stray.length) fail(`Added elements are outside what this proposal touches: ${stray.join(", ")}.`, "diagram-proposal-invalid");
 }
 
-// ---- project libraries (.aof/diagrams/libraries/*.excalidrawlib) --------------------------------
-async function readLibraries(projectRoot) {
-  if (!projectRoot) return [];
-  const dir = path.resolve(diagramLibrariesDir(projectRoot));
+// ---- libraries: the global home's, then the project's (*.excalidrawlib) -------------------------
+// One root's libraries, by file name. Each root has its own size cap, so a large shared set in the
+// global home never crowds out a project's own.
+async function readLibraryRoot(dir, where) {
+  const libraries = new Map();
   let names;
-  try { names = (await readdir(dir)).filter((name) => name.endsWith(".excalidrawlib")).sort(); } catch (error) { if (error?.code === "ENOENT") return []; throw error; }
-  const items = [];
+  try { names = (await readdir(dir)).filter((name) => name.endsWith(".excalidrawlib")).sort(); } catch (error) { if (error?.code === "ENOENT") return libraries; throw error; }
   let total = 0;
   for (const name of names) {
     const file = path.join(dir, name);
     const stat = await lstat(file);
     if (!stat.isFile()) continue;
     total += stat.size;
-    if (total > MAX_LIBRARY_BYTES) fail(`The project libraries are over ${MAX_LIBRARY_BYTES} bytes.`, "diagram-library-too-large", 413);
+    if (total > MAX_LIBRARY_BYTES) fail(`The ${where} libraries are over ${MAX_LIBRARY_BYTES} bytes.`, "diagram-library-too-large", 413);
     let parsed;
     try { parsed = JSON.parse(await readFile(file, "utf8")); } catch { fail(`${name} is not a valid Excalidraw library.`, "diagram-library-invalid", 409); }
     const library = name.slice(0, -".excalidrawlib".length);
     const entries = Array.isArray(parsed?.libraryItems) ? parsed.libraryItems
       : Array.isArray(parsed?.library) ? parsed.library.map((elements, i) => ({ id: `${library}-${i + 1}`, elements, name: null })) : null;
     if (!entries) fail(`${name} is not a valid Excalidraw library.`, "diagram-library-invalid", 409);
+    const items = [];
     entries.forEach((entry, i) => {
       if (!Array.isArray(entry?.elements)) return;
       items.push({ library, item: typeof entry.name === "string" && entry.name.trim() ? entry.name.trim() : `item ${i + 1}`, id: String(entry.id ?? `${library}-${i + 1}`), elements: entry.elements });
     });
+    libraries.set(library, items);
   }
-  return items;
+  return libraries;
+}
+
+// Every library this project may draw from: the global home's shared sets, and the project's own. A
+// project file shadows a global one of the same name, so a project can pin or customise a set.
+async function readLibraries(projectRoot, globalHome) {
+  const merged = new Map();
+  if (globalHome) for (const [library, items] of await readLibraryRoot(path.resolve(globalDiagramLibrariesDir(globalHome)), "global")) merged.set(library, items);
+  if (projectRoot) for (const [library, items] of await readLibraryRoot(path.resolve(diagramLibrariesDir(projectRoot)), "project")) merged.set(library, items);
+  return [...merged.keys()].sort().flatMap((library) => merged.get(library));
 }
 const libraryRef = (lib) => `${lib.library}/"${lib.item}"`;
 
@@ -423,7 +434,7 @@ async function writeRecord(paths, record, { create = false } = {}) {
 
 const newReviewId = () => randomBytes(8).toString("hex");
 
-export function createDiagramSceneCommand({ resolveItemExact, requireLocalCheckout, resolveWorkDiagrams = () => ({ enabled: false, formats: ["svg"] }) }) {
+export function createDiagramSceneCommand({ resolveItemExact, requireLocalCheckout, resolveWorkDiagrams = () => ({ enabled: false, formats: ["svg"] }), resolveGlobalHome = () => null }) {
   const diagramSceneCommand = {
     id: "diagram:scene",
     input: {
@@ -467,7 +478,7 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
         fail("Diagrams are off in this project (work.diagrams), so the draft editor writes nothing.", "diagram-disabled", 409);
       }
       const projectRoot = ctx?.workspace?.projectRoot ?? ctx?.workspace?.root;
-      if (action === "libraries") return { ref: item.ref, file: spec.name, items: await readLibraries(projectRoot) };
+      if (action === "libraries") return { ref: item.ref, file: spec.name, items: await readLibraries(projectRoot, resolveGlobalHome()) };
       if (typeof item.dir !== "string" || item.dir.length === 0) return { ref: item.ref, file: spec.name, present: false, revision: null, scene: emptyScene(), readOnly: true };
 
       const file = path.resolve(spec.path);
@@ -504,7 +515,7 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
             nodes: model.nodes.filter((n) => wanted.has(n.id)), subgraphs: model.subgraphs.filter((g) => wanted.has(g.id)),
             edges: model.edges.filter((e) => wanted.has(e.key)), sketches: Object.keys(model.sketches).filter((id) => wanted.has(id)),
           },
-          libraries: (await readLibraries(projectRoot)).map(libraryRef),
+          libraries: (await readLibraries(projectRoot, resolveGlobalHome())).map(libraryRef),
           brief: adr ? readDiagramBrief(architecture, adr) : null, architecture, request: typeof request === "string" ? request : "",
         };
         return stored ? { ...context, requestId: stored.id, requestRevision: stored.revision } : context;
@@ -651,11 +662,11 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
             const id = key.slice(4);
             if (change !== "added" || base.nodes.some((n) => n.id === id)) fail(`A node's library item cannot change ("${id}"); remove the node and add a new one.`, "diagram-proposal-invalid");
           }
-          const libraries = await readLibraries(projectRoot);
+          const libraries = await readLibraries(projectRoot, resolveGlobalHome());
           for (const [id, lib] of Object.entries(proposed.libs)) {
             if (base.libs[id]) continue;
             const matches = libraries.filter((entry) => entry.library === lib.library && entry.item === lib.item);
-            if (matches.length !== 1) fail(`${libraryRef(lib)} ${matches.length ? "names more than one" : "is not an"} item in the project libraries (${path.relative(projectRoot, diagramLibrariesDir(projectRoot)).split(path.sep).join("/")}).`, "diagram-library-unknown");
+            if (matches.length !== 1) fail(`${libraryRef(lib)} ${matches.length ? "names more than one" : "is not an"} item in the libraries (the project's ${path.relative(projectRoot, diagramLibrariesDir(projectRoot)).split(path.sep).join("/")}, or the global home's diagrams/libraries).`, "diagram-library-unknown");
           }
           const snapshot = {};
           const byId = new Map(current.scene.elements.map((e) => [e.id, e]));

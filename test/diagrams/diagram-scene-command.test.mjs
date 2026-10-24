@@ -17,7 +17,7 @@ async function fixture(options = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-scene-")); const item = path.join(root, "wiki", "work", "07_demo");
   await mkdir(path.join(item, "diagrams"), { recursive: true });
   await writeFile(path.join(item, "ARCHITECTURE.md"), options.adr === false ? "# Demo\n" : "# Demo\n\n## ADR-002 — Scene\n\n### Diagram\n\nDraw it.\n");
-  const command = createDiagramSceneCommand({ resolveItemExact: async (_ctx, ref) => ref === "07" ? { ref: "07", dir: item, status: options.status ?? "in-progress", archived: options.archived } : null, requireLocalCheckout() {}, resolveWorkDiagrams: () => options.diagrams ?? { enabled: true, formats: ["svg"] } }).diagramSceneCommand;
+  const command = createDiagramSceneCommand({ resolveItemExact: async (_ctx, ref) => ref === "07" ? { ref: "07", dir: item, status: options.status ?? "in-progress", archived: options.archived } : null, requireLocalCheckout() {}, resolveWorkDiagrams: () => options.diagrams ?? { enabled: true, formats: ["svg"] }, resolveGlobalHome: () => options.globalHome ?? null }).diagramSceneCommand;
   return { root, item, command, ctx: { workspace: { root, projectRoot: root } } };
 }
 async function withFixture(fn, options) { const fx = await fixture(options); try { await fn(fx); } finally { await rm(fx.root, { recursive: true, force: true }); } }
@@ -49,7 +49,32 @@ export const diagramSceneCommandTests = [
       await writeFile(input, JSON.stringify({ selectedIds: ["n1"], request: "Explain this" }));
       const context = invoke("--action", "context", "--input", input);
       assert.match(context.view, /n1\["API"\]/); assert.deepEqual(context.selected.nodes.map((n) => n.id), ["n1"]);
+      // Core wires the global home (AOF_GLOBAL_HOME here) as the shared library root.
+      await mkdir(path.join(root, "global", "diagrams", "libraries"), { recursive: true });
+      await writeFile(path.join(root, "global", "diagrams", "libraries", "shared.excalidrawlib"), JSON.stringify({ type: "excalidrawlib", version: 2, libraryItems: [{ id: "s1", name: "Queue", elements: [el("q", "rectangle")] }] }));
+      assert.deepEqual(invoke("--action", "libraries").items.map((i) => `${i.library}/${i.item}`), ["shared/Queue"]);
     } finally { await rm(root, { recursive: true, force: true }); }
+  } },
+  { name: "scene: libraries come from the global home and the project; a project file shadows a global one of the same name", run: async () => {
+    const globalHome = await mkdtemp(path.join(os.tmpdir(), "aof-scene-global-"));
+    try {
+      await withFixture(async ({ command, ctx, root }) => {
+        const shared = path.join(globalHome, "diagrams", "libraries");
+        await mkdir(shared, { recursive: true });
+        await writeFile(path.join(shared, "aws.excalidrawlib"), JSON.stringify({ type: "excalidrawlib", version: 2, libraryItems: [{ id: "k", name: "Kinesis", elements: [el("k", "rectangle")] }] }));
+        await writeFile(path.join(shared, "azure.excalidrawlib"), JSON.stringify({ type: "excalidrawlib", version: 2, libraryItems: [{ id: "g", name: "Global App", elements: [el("g", "rectangle")] }] }));
+        const list = async () => (await command.run({ ref: "07", file, action: "libraries" }, ctx)).items.map((i) => `${i.library}/${i.item}`);
+        assert.deepEqual(await list(), ["aws/Kinesis", "azure/Global App"], "the global sets, with no project folder");
+        const own = path.join(root, ".aof", "diagrams", "libraries");
+        await mkdir(own, { recursive: true });
+        await writeFile(path.join(own, "azure.excalidrawlib"), JSON.stringify({ type: "excalidrawlib", version: 2, libraryItems: [{ id: "p", name: "Project App", elements: [el("p", "rectangle")] }] }));
+        await writeFile(path.join(own, "team.excalidrawlib"), JSON.stringify({ type: "excalidrawlib", version: 2, libraryItems: [{ id: "t", name: "Gateway", elements: [el("t", "rectangle")] }] }));
+        assert.deepEqual(await list(), ["aws/Kinesis", "azure/Project App", "team/Gateway"], "the project's azure shadows the global one");
+        await save(command, ctx, scene([el("b", "rectangle")]));
+        const context = await command.run({ ref: "07", file, action: "context" }, ctx);
+        assert.deepEqual(context.libraries, ['aws/"Kinesis"', 'azure/"Project App"', 'team/"Gateway"']);
+      }, { globalHome });
+    } finally { await rm(globalHome, { recursive: true, force: true }); }
   } },
   { name: "scene: with diagrams off the store writes nothing, and a read still answers", run: () => withFixture(async ({ command, ctx, item }) => {
     await rejected(() => save(command, ctx, scene()), "diagram-disabled");

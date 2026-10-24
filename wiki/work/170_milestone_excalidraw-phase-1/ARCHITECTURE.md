@@ -206,6 +206,16 @@ another.
 (tagged `anchor`) that arrows bind to, and a caption (tagged `label`) centred under the item. A
 library deleted after use leaves its insertions intact and named; only new insertions need it.
 
+**Amended at `aof:verify 170` (2026-10-24): two roots.** The operator's UAT loaded a real public set
+(AWS Architecture Icons, 3.9 MB), which belongs to the operator, not to one repository. Libraries are
+now read from two roots: the global home's `diagrams/libraries/*.excalidrawlib` (`~/.aof`, relocated
+by `AOF_GLOBAL_HOME`; core injects it) for large shared sets, and the project's
+`.aof/diagrams/libraries/` for its own. A project file shadows a global file of the same name, so a
+project can pin or customise a set. Each root has its own 8 MB cap. Item references are unchanged
+(`<library>/"<item>"`, the library being the file's name), so a scene names an item the same way
+whichever root supplied it. Both roots' paths are built in `layout.mjs` (FF-13302). An anchorless
+item a person drags in gets its anchor when an edge is first proposed to it (F-170-06).
+
 ## ADR-012: A proposal is compiled in the editor and accepted element by element
 
 **Status:** Accepted

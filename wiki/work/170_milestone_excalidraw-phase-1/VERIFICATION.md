@@ -157,12 +157,13 @@ Node 24, isolated `AOF_GLOBAL_HOME`, focused `node scripts/test.mjs --only` runs
 
 | F-170-09 | At the UAT, a first draft's labels were clipped by their own boxes ("odes · edges · aof:sketc", "Architec / t"). Excalidraw fetches a font only once the scene draws text in it, so on an empty canvas the converter measured and wrapped every label in the fallback font. Stored: 295 px for a 36-character Excalifont line that needs about 400 px. | defect | high | blocker | verify (fixed inline) | fixed: accept loads `20px Excalifont` for the proposal's characters before anything is measured; the operator's second draft fit |
 | F-170-10 | Opened on the fleet origin (`:4181`), `/diagram` said "Diagrams are off in this project". The fleet serves no `/api/diagram/*`, and the 404 was read as off. | defect | low | blocker | verify (fixed inline) | fixed: a 404 says this server does not serve the editor and points to the project's own board; FF-5307 re-pinned (+11 −7) |
+| F-170-14 | At the UAT, the operator placed a 3.9 MB public icon set in the project's `.aof/diagrams/libraries/`, where it would be committed with the repository. The operator ruled that large shared libraries belong in the global store, and the project folder holds a project's own. | gap | medium | blocker (operator's call) | verify (built inline) | fixed: ADR-011 amended; libraries are read from the global home's `diagrams/libraries/` and the project's, the project shadowing a global file of the same name, each root with its own 8 MB cap; `diagram-scene-command` covers both roots, shadowing and core's `AOF_GLOBAL_HOME` wiring |
 | F-170-11 | A note is added only from the bar below the canvas. There is no contextual entry on a selected shape, such as the right-click menu or the selection toolbar. | gap | medium | non-blocker | backlog — a later milestone (operator's call at the UAT) | open |
 | F-170-12 | The Library panel has no search. With a real set (249 AWS icons) an item can only be found by scrolling. Excalidraw 0.18's only search box searches the canvas. | gap | medium | non-blocker | backlog — a later milestone (operator's call at the UAT) | open |
 | F-170-13 | When the architect finishes, the editor does not update by itself; the operator refreshed. Whether the five-second poll updated the review panel, as opposed to the canvas, was not measured. | gap | low | non-blocker | backlog — phase 2's push channel (SPEC, out of scope), a later milestone (operator's call) | open |
 
 The recall at triage (`aof work memory recall … --kind finding`) returned no candidate with the
-same cause for any of the thirteen. Each is recorded as a distinct incident.
+same cause for any of the fourteen. Each is recorded as a distinct incident.
 
 Each of F-170-04 to F-170-07 has a test that fails on HEAD's source and passes on the fix. Against
 HEAD with the new tests: 5 of 32 cases failed in `diagram-scene-command` and `diagram-scene-review`.
@@ -202,7 +203,7 @@ F-170-11, F-170-12 and F-170-13 are deferred to a later milestone by the operato
 
 2026-10-24, `aof:verify 170`. Stories 00–09 are accepted (`done`). Each carries an OUTCOME.md, and
 seven carry a RETROSPECTIVE.md (03, 05 and 06 surfaced no lesson of their own). No blocker finding is
-open: F-170-01..10 are fixed, and F-170-11..13 are non-blockers the operator deferred. Validate is
+open: F-170-01..10 and F-170-14 are fixed, and F-170-11..13 are non-blockers the operator deferred. Validate is
 PASS; doctor reports no `control-unresolved` and no dangling citation, with FF-17001 now declared in
 ARCHITECTURE's register. The milestone moves to `done` on a green whole-tree regression gate at the
 accepting commit; the first gate (`b2dbfad6`) was red and its repairs are F-170-08.

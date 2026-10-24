@@ -74,6 +74,12 @@ export function diagramLibrariesDir(projectRoot) {
   return `${String(projectRoot).replace(/\\/g, "/").replace(/\/+$/, "")}/.aof/${DIAGRAMS_DIR}/libraries`;
 }
 
+// The operator's shared libraries, for every project (ADR-011, amended at 170's verify): a large
+// public set lives once in the global home, `<global home>/diagrams/libraries/*.excalidrawlib`.
+export function globalDiagramLibrariesDir(globalHome) {
+  return `${String(globalHome).replace(/\\/g, "/").replace(/\/+$/, "")}/${DIAGRAMS_DIR}/libraries`;
+}
+
 export function diagramPaths(itemDir, stem, sourceExt, formats) {
   const dir = diagramsDir(itemDir);
   const paths = { dir, source: `${dir}/${stem}${sourceExt}` };

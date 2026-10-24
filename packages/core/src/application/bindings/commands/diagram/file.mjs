@@ -2,6 +2,7 @@
 import { createDiagramFileCommand } from "@aof/diagrams/commands/file";
 import { createDiagramSceneCommand } from "@aof/diagrams/commands/scene";
 import { createDiagramCapabilityCommand } from "@aof/diagrams/commands/capability";
+import { defaultGlobalWorkspaceDir } from "../../../../paths.mjs";
 
 export function assembleCommandsDiagramFile({ commandsResolveServices, configInspectServices }) {
   // Core constructs this application service from its owning package.
@@ -11,8 +12,9 @@ export function assembleCommandsDiagramFile({ commandsResolveServices, configIns
   const { resolveWorkDiagrams } = configInspectServices;
 
   const { diagramFileCommand } = createDiagramFileCommand({ resolveItemExact });
-  // Publish writes the formats `work.diagrams` owes, read through the same one reader.
-  const { diagramSceneCommand } = createDiagramSceneCommand({ resolveItemExact, requireLocalCheckout, resolveWorkDiagrams });
+  // Publish writes the formats `work.diagrams` owes, read through the same one reader. Libraries are
+  // read from the global home too (AOF_GLOBAL_HOME-relocatable, like every global path).
+  const { diagramSceneCommand } = createDiagramSceneCommand({ resolveItemExact, requireLocalCheckout, resolveWorkDiagrams, resolveGlobalHome: () => defaultGlobalWorkspaceDir() });
   const { diagramCapabilityCommand } = createDiagramCapabilityCommand({ resolveWorkDiagrams });
 
   return { diagramFileCommand, diagramSceneCommand, diagramCapabilityCommand };
