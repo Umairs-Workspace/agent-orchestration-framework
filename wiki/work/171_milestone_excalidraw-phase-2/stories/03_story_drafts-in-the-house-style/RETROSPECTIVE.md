@@ -6,7 +6,7 @@ promotionFrom: 1
 
 ## R1 · The review prompt has more copies than the asset
 
-**Kind:** mistake · **Area:** contract · **Stage:** build · **Owner:** developer · **Raised by:** developer · **Promoted to:** control:71/FF-7106
+**Kind:** mistake · **Area:** contract · **Stage:** build · **Owner:** developer · **Raised by:** developer · **Promoted to:** control:FF-7106
 
 **What happened:** Editing `packages/core/assets/commands/diagram-review.md` left the Codex render
 unchanged: the prompt's body also lives verbatim in `packages/core/assets/variants/codex/workflow.md`,

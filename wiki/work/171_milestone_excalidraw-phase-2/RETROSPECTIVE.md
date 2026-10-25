@@ -9,7 +9,7 @@ whole-tree gate, not the story lanes, was what found the rest.
 
 ## R1 · The dock typed into claude by its own rule and repeated two defects the driver had already fixed
 
-**Kind:** mistake · **Area:** architecture · **Stage:** verify · **Owner:** architect · **Raised by:** operator · **Promoted to:** control:138/FF-13801
+**Kind:** mistake · **Area:** architecture · **Stage:** verify · **Owner:** architect · **Raised by:** operator · **Promoted to:** control:FF-13801
 
 **What happened:** At the `@uat`, "Request a first draft" typed its invocation into the dock and
 never submitted it. The dock typed on the session's first painted bytes, before claude's REPL

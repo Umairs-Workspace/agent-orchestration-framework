@@ -126,7 +126,7 @@ export const librarySearchTests = [
     const drag = libraryDrag(panel[0], "http://127.0.0.1:4177");
     assert.equal(drag.type, "application/vnd.excalidrawlib+json");
     const sdkTypes = await readFile(path.join(repoRoot, "node_modules/@excalidraw/excalidraw/dist/types/excalidraw/constants.d.ts"), "utf8");
-    assert.match(sdkTypes, new RegExp(`readonly excalidrawlib: "${LIBRARY_MIME.replace(/[.+]/g, "\\$&")}"`), "the pinned SDK's own drag type");
+    assert.match(sdkTypes, new RegExp(`readonly excalidrawlib: "${LIBRARY_MIME.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`), "the pinned SDK's own drag type");
     const payload = JSON.parse(drag.data);
     assert.equal(payload.type, "excalidrawlib", "the shape the SDK's drop handler parses");
     assert.deepEqual(payload.libraryItems, [panel[0]], "with the item's elements");
