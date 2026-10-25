@@ -1,11 +1,10 @@
-import { watch as fsWatch } from "node:fs";
 import path from "node:path";
 import { isLoopbackHost, sendTaggedJson } from "./static-serve.mjs";
 
 // Application services enter through explicit ports; constructing a transport binds no listener.
 // 167/ADR-001 — `countRequest(route, clientHeader)` counts each `/api/work*` request on the
 // process's cost meter; core supplies it, and its absence counts nothing.
-export function createBoardApi({ invoke, loadWorkspace, resolveCacheStalenessSeconds, countRequest = () => {} }) {
+export function createBoardApi({ invoke, loadWorkspace, resolveCacheStalenessSeconds, countRequest = () => {}, watchDirectory = null, reportDegrade = () => {} }) {
 // `/api/work*` — the work board's read-mostly HTTP API (milestone 03, story 01;
 // re-homed onto the command core in milestone 08, story 02).
 //
@@ -380,7 +379,9 @@ async function handleDiagramApi(request, response, options = {}) {
 // those (recursively), re-stamps 150 ms after the last change and every 30 s as a safety, ticks every
 // 2 s instead when no watch can start (167/ADR-009's pattern), and keeps a quiet stream open with a
 // comment line every 25 s. Everything it armed closes with the connection. The timers and the watch
-// are the caller's to inject (`options.timers`, `options.watch`), so a suite drives them by hand.
+// are the caller's to inject (`options.timers`, `options.watch`), so a suite drives them by hand; the
+// production watcher and the degrade reporter arrive with the API (`watchDirectory`, `reportDegrade`) from
+// core's binding, so this transport imports no filesystem of its own (ADR-004 inv.3). With no watcher it ticks.
 const EVENTS_DEBOUNCE_MS = 150;
 const EVENTS_SAFETY_MS = 30_000;
 const EVENTS_TICK_MS = 2_000;
@@ -388,6 +389,7 @@ const EVENTS_KEEPALIVE_MS = 25_000;
 async function streamDiagramEvents(request, response, options, params) {
   const timers = options.timers ?? { setTimeout, clearTimeout, setInterval, clearInterval };
   const watch = options.watch ?? watchDirectory;
+  const degraded = (error) => reportDegrade("diagram-events", error);
   const target = { ref: (params.get("ref") ?? "").trim(), file: (params.get("file") ?? "").trim() };
   let ctx;
   let last;
@@ -412,7 +414,7 @@ async function streamDiagramEvents(request, response, options, params) {
     closed = true;
     for (const handle of [safety, keepalive, tick]) if (handle) timers.clearInterval(handle);
     if (debounce) timers.clearTimeout(debounce);
-    for (const watcher of watchers) { try { watcher.close(); } catch { /* already closed */ } }
+    for (const watcher of watchers) { try { watcher.close(); } catch (error) { degraded(error); } }
   });
   response.writeHead(200, { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-store", connection: "keep-alive", "x-accel-buffering": "no" });
   const emit = (event, data) => { if (!closed) response.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`); };
@@ -429,12 +431,12 @@ async function streamDiagramEvents(request, response, options, params) {
       if (next.review !== last.review) emit("review", { review: next.review });
       if (JSON.stringify(next.scene) !== JSON.stringify(last.scene)) emit("scene", { scene: next.scene, revision: next.scene ? await revisionOf() : null });
       last = next;
-    } catch { /* the next change, tick or safety re-stamp tries again */ }
+    } catch (error) { degraded(error); /* the next change, tick or safety re-stamp tries again */ }
     finally { running = false; if (again && !closed) { again = false; void restamp(); } }
   };
   const changed = () => { if (debounce) timers.clearTimeout(debounce); debounce = timers.setTimeout(() => { debounce = null; void restamp(); }, EVENTS_DEBOUNCE_MS); };
   const degrade = () => { if (!tick && !closed) tick = timers.setInterval(() => void restamp(), EVENTS_TICK_MS); };
-  for (const directory of [...new Set(last.watch ?? [])]) {
+  for (const directory of watch ? [...new Set(last.watch ?? [])] : []) {
     try {
       const watcher = watch(directory, changed);
       if (watcher) { watcher.on?.("error", degrade); watchers.push(watcher); }
@@ -447,10 +449,6 @@ async function streamDiagramEvents(request, response, options, params) {
   safety = timers.setInterval(() => void restamp(), EVENTS_SAFETY_MS);
   keepalive = timers.setInterval(() => { if (!closed) response.write(": keepalive\n\n"); }, EVENTS_KEEPALIVE_MS);
   return true;
-}
-
-function watchDirectory(directory, onChange) {
-  return fsWatch(directory, { recursive: true }, onChange);
 }
 
 function scopeParam(params) {

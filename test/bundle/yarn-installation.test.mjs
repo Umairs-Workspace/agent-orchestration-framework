@@ -74,7 +74,7 @@ export const yarnInstallationTests = [
       } : name === 'server' ? {
         'commands/work-ui.mjs': ['node:path'],
         'static-serve.mjs': ['node:path'],
-        'board-ui.mjs': ['node:fs', 'node:path'],
+        'board-ui.mjs': ['node:path'],
         'board-serve.mjs': ['node:fs', 'node:path'],
         'setup-ui.mjs': ['node:http', 'node:fs/promises', 'node:path'],
         'terminal-ws.mjs': ['@aof/execution/pty', 'ws'],

@@ -459,10 +459,10 @@ export const archTests = [
         // RE-PINNED by 170's import review: `readJsonBody` gathers the body as bytes and decodes it once, so a
         // character split across chunks is no longer U+FFFD (+9 −3). Same limits, routes, admission and answers.
         // RE-PINNED by 171/02 (ADR-003): one GET `/api/diagram/events` branch inside `handleDiagramApi` and its
-        // `streamDiagramEvents` (+ the `node:fs` `watch` import): an event stream that invokes `diagram:scene`
-        // `stamp`/`read` only and carries no record. No admission, write route or run key; `handleWorkApi`
-        // byte-identical.
-        ["packages/server/src/board-ui.mjs", "5db178c41cd66360bcad67016a92279c176f8e60c45b86025b03ab6f9ed33914"],
+        // `streamDiagramEvents`: an event stream that invokes `diagram:scene` `stamp`/`read` only and carries no
+        // record; its watcher and degrade reporter arrive from core's binding (171 verify: no `node:fs` here, no
+        // silent catch). No admission, write route or run key; `handleWorkApi` byte-identical.
+        ["packages/server/src/board-ui.mjs", "c0d178827b3ad4d6b6cb42616a5c5106ef8cad0c42ddd9804e8f6f3e7ef6f99c"],
       ]);
       for (const [rel, digest] of pins) assert.equal(await normalizedDigest(path.join(root, rel)), digest, `${rel}: frozen run/board seam changed`);
       const uiPairs = await uiTreePairs();

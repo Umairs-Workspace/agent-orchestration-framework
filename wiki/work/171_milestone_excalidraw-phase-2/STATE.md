@@ -131,6 +131,18 @@ doc: state
   read state is out of scope; the `proposals` listing caps decided notes at 50, so a very old answered
   note loses its pin.
 
+- **171 verify: the live `@uat` found two defects every check had passed.** F-171-01 — the dock typed a
+  mount's command on the first painted bytes, then as raw `text`; the session driver had solved both in
+  September (2026-09-27 readiness, 70/06 paste-then-Enter) in a module the browser could not import. Fixed by
+  giving the gate and the framing one home (`@aof/contracts/tui-ready`). F-171-02 — the SDK's document-level
+  keyup clears the selection on a space, which closed the overlay's field. The smoke stands the session in and
+  never types a space, so neither could be seen without the operator.
+- **171 verify: the gate caught six reds the story lanes never ran.** 171/02 put `node:fs` and two silent
+  catches in the board transport (ADR-004 inv.3, m42-item-3) and stacked a pin comment past the-card-renders/04's
+  window; 03 and 05 declared `diagram-review.md` without two of its tracked renders (FF-7106); the F-171-01 fix
+  added a module to `aof work find` (FF-16004, and FF-16008 / build-sea downstream of it). The watcher and the
+  degrade reporter now arrive from core's binding; each pin moved with its reason.
+
 ## Verification
 
 - [ ] `@executable` suite green
