@@ -29,6 +29,30 @@ export function diagramReviewInvocation(ref, file, requestId) {
   return requestId ? `/aof:diagram-review ${ref} ${file} ${requestId}` : `/aof:diagram-review ${ref} ${file}`;
 }
 
+// What one delivery hands the architect (171/ADR-005, 171/04 Q1): a request's own review invocation,
+// then — when other notes are waiting — the batch invocation that examines them, so a session started
+// for a question also takes the notes already written. With no request id it is the batch alone
+// ("Review notes"). The surface decides what of it is typed.
+export function reviewInvocations({ ref, file, requestId = null, waiting = 0 } = {}) {
+  if (!requestId) return [diagramReviewInvocation(ref, file)];
+  const own = diagramReviewInvocation(ref, file, requestId);
+  return waiting > 0 ? [own, diagramReviewInvocation(ref, file)] : [own];
+}
+
+// THE ONE ASK PATH (171/ADR-001): the bar's Ask architect and the canvas overlay's both come here, so
+// a canvas ask and a bar ask are the same record and the same launch. An unsaved canvas is saved
+// first and the request is recorded against the revision that save answered. The selection is named
+// AFTER the save, because a shape drawn since the last one gets its Mermaid id there. The architect
+// is launched only once the request has an id.
+export async function askArchitect({ text, selection, unsaved, revision, save, record, launch, invocation }) {
+  const question = String(text ?? "").trim();
+  if (!question) throw new Error("Enter a question or requested change first.");
+  const baseRevision = unsaved ? (await save()).revision : revision;
+  const id = await record({ baseRevision, selectedIds: [...(selection() ?? [])], request: question });
+  if (id) launch(invocation(id), id);
+  return id;
+}
+
 // ---- Excalidraw editor: review state ----
 // Pure review-panel helpers for the Excalidraw editor (no React, no DOM).
 export const POLL_MS = 5000;
@@ -102,9 +126,10 @@ export function describeError(code, message) {
   }
 }
 
-// Poll only while the editor is open and the tab is visible.
-export function shouldPoll({ open = true, visible = true } = {}) {
-  return Boolean(open) && Boolean(visible);
+// Poll only while the editor is open and the tab is visible — and, since 171/ADR-003, only while the
+// review stream is not open: the poll is the stream's fallback, not a second channel.
+export function shouldPoll({ open = true, visible = true, stream = "down" } = {}) {
+  return Boolean(open) && Boolean(visible) && stream !== "open";
 }
 
 // ---- Excalidraw editor: notes (170/05) ----

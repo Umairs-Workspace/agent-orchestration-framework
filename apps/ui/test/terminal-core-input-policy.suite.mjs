@@ -40,7 +40,18 @@ import {
   mountPosture,
   inputPolicyFor,
   mountModelFor,
+  laterInputDecision,
+  COMMAND_READY_CAP_MS,
+  sessionInputs,
+  sessionOpened,
+  sessionOutput,
+  typeCommand,
+  sessionClosed,
+  flushLaterInputs,
 } from "../src/terminal/input-policy.mjs";
+import { PASTE_SUBMIT_SETTLE_MS, pasteFrame } from "@aof/contracts/tui-ready";
+
+const settle = (inputs = 1) => new Promise((resolve) => setTimeout(resolve, inputs * PASTE_SUBMIT_SETTLE_MS + 100));
 import {
   PROVIDER_IDS,
   initialPicker,
@@ -519,6 +530,77 @@ export const terminalCoreInputPolicyTests = [
         withInput.map(({ source, posture }) => `${source.kind}@${posture}`).sort(),
         ["local-pty@interactive", "mirror@interactive"],
       );
+    },
+  },
+  // milestone 171 / story 04 (ADR-005) — the later-input rule the control carries out: typed once per
+  // sequence number, only into a ready session, and otherwise answered as not delivered.
+  {
+    name: "171/04 · the later-input rule: typed once per sequence into a ready session; refused read-only or not connected; skipped when already answered",
+    run: () => {
+      const input = { seq: 2, text: "/aof:diagram-review 171 X.excalidraw n2" };
+      assert.deepEqual(laterInputDecision({ lastSeq: 1, input, inputEnabled: true, ready: true }), { action: "type", reason: null, data: input.text });
+      assert.equal(laterInputDecision({ lastSeq: 2, input, inputEnabled: true, ready: true }).action, "skip", "the same sequence is never typed twice");
+      assert.equal(laterInputDecision({ lastSeq: 5, input, inputEnabled: true, ready: true }).reason, "already-answered");
+      assert.deepEqual(laterInputDecision({ lastSeq: 1, input, inputEnabled: false, ready: true }), { action: "refuse", reason: "read-only" });
+      assert.deepEqual(laterInputDecision({ lastSeq: 1, input, inputEnabled: true, ready: false }), { action: "refuse", reason: "not-connected" });
+      for (const bad of [null, { seq: 3 }, { seq: 3, text: "" }, { seq: 1.5, text: "x" }]) assert.equal(laterInputDecision({ lastSeq: 0, input: bad, inputEnabled: true, ready: true }).action, "skip");
+    },
+  },
+  // @bug @finding-F-171-01 — the mount's command waits for the TUI's readiness, or for the cap; every
+  // input is typed as the session driver types: one paste, then its Enter as a separate write.
+  {
+    name: "171/04 F-171-01 · the mount's command is typed exactly once when nothing turns paste mode on, until the ready cap passes",
+    run: async () => {
+      const sent = [];
+      const record = sessionInputs();
+      assert.equal(sessionOpened(record, { send: (data) => sent.push(data), command: "/aof:x a1b2", inputEnabled: true }), true, "a command is owed, so the control arms its cap");
+      assert.equal(sessionOutput(record, "$ "), false, "a program that never signals readiness");
+      typeCommand(record);
+      assert.deepEqual(sent, [], "not typed on output alone");
+      assert.ok(COMMAND_READY_CAP_MS >= 10_000, `the cap outlasts a slow claude start (${COMMAND_READY_CAP_MS} ms)`);
+      typeCommand(record, { force: true });
+      typeCommand(record, { force: true });
+      await settle();
+      assert.deepEqual(sent, ["/aof:x a1b2", "\r"], "the cap types it once — raw, since paste mode never went on — and its Enter after");
+      assert.equal(record.ready, true, "and the session is ready for later input");
+      sessionClosed(record);
+    },
+  },
+  {
+    name: "171/04 F-171-01 · output arriving as bytes is decoded across chunks for the gate, and a reopened socket starts a fresh gate",
+    run: async () => {
+      const sent = [];
+      const record = sessionInputs();
+      sessionOpened(record, { send: (data) => sent.push(data), command: "/aof:x a1b2", inputEnabled: true });
+      const bytes = new TextEncoder().encode("\u001b[?2004h\u256d\u2500 claude");
+      assert.equal(sessionOutput(record, bytes.slice(0, 10).buffer), false, "a multi-byte glyph cut in half is not drawn text yet");
+      assert.equal(sessionOutput(record, bytes.slice(10).buffer), true);
+      typeCommand(record);
+      assert.deepEqual(sent, [pasteFrame("/aof:x a1b2")], "pasted at once; the Enter waits for the paste to settle");
+      await settle();
+      assert.deepEqual(sent, [pasteFrame("/aof:x a1b2"), "\r"]);
+      sessionOpened(record, { send: (data) => sent.push(data), command: "/aof:x a1b2", inputEnabled: true });
+      assert.equal(record.gate.ready, false, "a new session is read from its own first byte");
+      sessionClosed(record);
+    },
+  },
+  {
+    name: "171/04 F-171-01 · inputs go out one at a time — each paste's Enter before the next paste — and a closed session drops what is left",
+    run: async () => {
+      const sent = [];
+      const record = sessionInputs();
+      record.inputs = [{ seq: 1, text: "/aof:n1" }, { seq: 2, text: "/aof:n2" }];
+      sessionOpened(record, { send: (data) => sent.push(data), command: "/aof:first", inputEnabled: true });
+      sessionOutput(record, "\u001b[?2004h> ");
+      typeCommand(record);
+      assert.deepEqual(sent, [pasteFrame("/aof:first")], "the later inputs wait behind the command's Enter");
+      await settle(3);
+      assert.deepEqual(sent, [pasteFrame("/aof:first"), "\r", pasteFrame("/aof:n1"), "\r", pasteFrame("/aof:n2"), "\r"]);
+      record.inputs = [{ seq: 3, text: "/aof:n3" }, { seq: 4, text: "/aof:n4" }];
+      flushLaterInputs(record);
+      sessionClosed(record);
+      await settle();
+      assert.deepEqual(sent.slice(6), [pasteFrame("/aof:n3")], "n3's Enter and n4 never reach a closed session");
     },
   },
 ];

@@ -10,6 +10,7 @@
     "test": "node ../../scripts/test-workspace.mjs @aof/ui"
   },
   "dependencies": {
+    "@aof/contracts": "workspace:*",
     "@aof/diagrams-ui": "workspace:*",
     "@aof/messaging": "workspace:*",
     "@radix-ui/react-scroll-area": "^1.2.10",

@@ -516,7 +516,10 @@ export const terminalsHomeRouteTests = [
         // headroom (the ceiling's own rule: the next region belongs in its own file, and
         // apps/ui/src/fleet/ is itself at 20/20 — TECH_DEBT item 33). The card peek still does not move.
         ["apps/ui/src/fleet/Fleet.tsx", 1560, 1560, "130/03's loop line + Stop, inside its ceiling with zero headroom; the card peek does not move"],
-        ["apps/ui/src/terminal/TerminalControl.tsx", 840, 840, "story 05's wiring, inside its ceiling with zero headroom"],
+        // 840 -> 839 by 171/04 (ADR-005): the later-input seam paid for itself by an EXTRACTION — the
+        // mount command's once-per-session typing moved to `input-policy.mjs` beside the later-input
+        // rule, its account moved with it, and the control keeps only the socket wiring. One line of headroom.
+        ["apps/ui/src/terminal/TerminalControl.tsx", 839, 840, "story 05's wiring, then 171/04's later-input seam paid for by moving the command typing to input-policy.mjs"],
         // 1000 -> 994 on 2026-09-15 by 127/04: `humanizeSlug` moved to `model.ts` (the backlog row
         // shares it) and the archived pill joined the header cluster — net −6, so the ZERO
         // headroom this row was really about is now six lines. The re-aim is the Fleet.tsx row's idiom.

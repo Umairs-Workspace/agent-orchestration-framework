@@ -6,8 +6,12 @@
   "exports": {
     "./editor": "./src/ExcalidrawEditor.tsx",
     "./editor-state": "./src/editor-state.mjs",
+    "./canvas-anchor": "./src/canvas-anchor.mjs",
+    "./library-search": "./src/library-search.mjs",
     "./fonts": "./src/fonts.mjs",
-    "./compile": "./src/compile.mjs"
+    "./compile": "./src/compile.mjs",
+    "./review-stream": "./src/review-stream.mjs",
+    "./note-threads": "./src/note-threads.mjs"
   },
   "files": [
     "src"

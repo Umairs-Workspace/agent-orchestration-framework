@@ -25,7 +25,12 @@ export const archTests = [
       assert.ok(report.proposals.length > 0, "the real corpus emits proposals");
       assert.ok(report.proposals.some((proposal) => proposal.lane === "tunable"), "the real corpus fills the tunable lane");
       assert.ok(report.proposals.some((proposal) => proposal.lane === "advisory"), "the real corpus fills the advisory lane");
-      assert.ok(report.proposals.every((proposal) => Object.values(PROPOSAL_CLASSES).includes(proposal.class)), "every real proposal has a declared class");
+      // 153/05's contract: a lesson promoted to a rule or a control is a proposal with NO class and the
+      // `no-prompt-revision` reason — its prevention is elsewhere. Which lessons the live corpus holds is not
+      // this control's to decide (171's verify met the first such lesson), so that designed shape is admitted.
+      const designedClassless = (proposal) => proposal.class == null && proposal.reason?.code === "no-prompt-revision"
+        && (proposal.target?.kind === "rule" || proposal.target?.kind === "control");
+      assert.ok(report.proposals.every((proposal) => Object.values(PROPOSAL_CLASSES).includes(proposal.class) || designedClassless(proposal)), "every real proposal has a declared class, or is a rule/control promotion's designed no-prompt-revision proposal");
       for (const proposal of report.proposals.filter((entry) => entry.lane === "tunable")) {
         assert.equal(proposal.target.kind, "config");
         assert.equal(proposal.target.id, "work.loop.reviewRounds");

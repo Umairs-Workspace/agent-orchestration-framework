@@ -5,7 +5,7 @@ import { mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:
 import os from "node:os";
 import path from "node:path";
 import { createDiagramSceneCommand } from "@aof/diagrams/commands/scene";
-import { parseProfile } from "@aof/diagrams/mermaid-profile";
+import { parseProfile, serializeProfile } from "@aof/diagrams/mermaid-profile";
 import { projectScene } from "@aof/diagrams/scene-view";
 import { compileProposal, operationsFor } from "@aof/diagrams-ui/compile";
 
@@ -52,7 +52,241 @@ const propose = (fx, request, baseRevision, text = RENAMED) => fx.run("propose",
 // What the editor compiles for the rename: the label's text, nothing else.
 const RENAME_OPS = [{ op: "update", id: "t-api", patch: { text: "Gateway", originalText: "Gateway", width: 70 } }];
 
+// milestone 171 / story 02 — the stamp a watcher compares (ADR-003): stats only, one per kind of write.
+const moved = (before, after) => ({ scene: JSON.stringify(before.scene) !== JSON.stringify(after.scene), review: before.review !== after.review });
+async function stampAround(fx, write) {
+  const before = await fx.run("stamp");
+  await write();
+  return moved(before, await fx.run("stamp"));
+}
+const ONE_MORE = [...TWO, el("e-cache", "rectangle", { x: 600 })];
+
+// milestone 171 / story 03 — the house style a proposal fills in (ADR-004), from a style guide whose
+// semantic roles give paper #f3f5f7 and ink #1b1f27.
+const STYLE_GUIDE = [
+  "# Style", "", "### Semantic roles", "", "| Role | Purpose | Light | Dark |", "|---|---|---|---|",
+  "| `paper` | node fill | `#f3f5f7` | `#1b1f27` |", "| `ink` | text and stroke | `#1b1f27` | `#f3f5f7` |",
+  "| `muted` | arrows | `#585f6a` | `#aab1bc` |", "| `link` | flows | `#13766d` | `#3fa89c` |", "| `accent` | focal | `#ba2646` | `#d8486a` |", "",
+].join("\n");
+async function styled(fx) {
+  await writeFile(path.join(fx.root, "style.md"), STYLE_GUIDE);
+  fx.state.diagrams = { ...fx.state.diagrams, style: "style.md" };
+}
+const HOUSE = "fill:#f3f5f7,stroke:#1b1f27,color:#1b1f27";
+const styleLines = (text, id) => text.split("\n").map((line) => line.trim()).filter((line) => line.startsWith(`style ${id} `));
+async function emptyWithNote(fx) {
+  const saved = await fx.saved([]);
+  const { request } = await fx.run("request", { baseRevision: saved.revision, selectedIds: [], request: "Draw a first draft." });
+  return { saved, request };
+}
+const proposeText = (fx, request, baseRevision, text) => fx.run("propose", { requestId: request.id, baseRevision, summary: "Draft", rationale: "Because", text });
+const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url));
+
+// milestone 171 / story 05 — a note is a thread on its request record (ADR-006).
+const QUESTION = "Why does this write to the database?";
+async function answeredNote(fx) {
+  const saved = await fx.saved(TWO);
+  const { request } = await fx.run("request", { baseRevision: saved.revision, selectedIds: ["API"], request: QUESTION });
+  await fx.run("respond", { requestId: request.id, answer: "It avoids a queue hop." });
+  return { saved, request };
+}
+const turns = (record) => record.thread.map(({ by, text }) => ({ by, text }));
+const listed = async (fx, id) => (await fx.run("proposals")).requests.find((request) => request.id === id);
+const recordFile = (fx, id) => path.join(fx.item, "diagrams", "ADR-002-scene.review", "requests", `${id}.json`);
+// A request record is bounded by the review record limit: 2 × the 4 MB scene limit, plus 64 KB.
+const MAX_RECORD_BYTES = 2 * 4 * 1024 * 1024 + 64 * 1024;
+
 export const diagramSceneReviewTests = [
+  { name: "171/02 · the stamp names the scene, the review records and the directories to watch (the real CLI)", run: async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "aof-stamp-cli-"));
+    try {
+      const project = path.join(root, "project");
+      const item = path.join(project, "wiki/work/171_milestone_push");
+      const stampFile = "ADR-003-push-stream.excalidraw";
+      await mkdir(path.join(project, ".aof"), { recursive: true });
+      await mkdir(item, { recursive: true });
+      await writeFile(path.join(project, ".aof/aof.config.json"), JSON.stringify({ name: "stamp-test", resources: [], work: { dir: "./wiki/work", diagrams: { generator: "diagram-design" } } }));
+      await writeFile(path.join(item, "SPEC.md"), "---\ntype: milestone\nnumber: 171\nslug: push\ntitle: push\nstatus: in-progress\nschema: 1\n---\n# Push\n");
+      await writeFile(path.join(item, "ARCHITECTURE.md"), "## ADR-003 — Push\n\n### Diagram\nDraw this.\n");
+      const cli = fileURLToPath(new URL("../../packages/core/bin/aof.mjs", import.meta.url));
+      const invoke = (...args) => {
+        const result = spawnSync(process.execPath, [cli, "diagram", "scene", "171", stampFile, ...args, "--json"], { cwd: project, encoding: "utf8", env: { ...process.env, AOF_GLOBAL_HOME: path.join(root, "global") } });
+        assert.equal(result.status, 0, result.stderr); return JSON.parse(result.stdout);
+      };
+      const input = path.join(root, "input.json");
+      await writeFile(input, JSON.stringify({ baseRevision: null, scene: scene(TWO) }));
+      const saved = invoke("--action", "save", "--input", input);
+      await writeFile(input, JSON.stringify({ baseRevision: saved.revision, selectedIds: ["API"], request: "Why?" }));
+      invoke("--action", "request", "--input", input);
+      const stamp = invoke("--action", "stamp");
+      assert.equal(typeof stamp.scene.size, "number"); assert.equal(typeof stamp.scene.mtimeMs, "number");
+      assert.match(stamp.review, /^[0-9a-f]{64}$/);
+      const diagrams = path.join(item, "diagrams");
+      assert.ok(stamp.watch.length >= 1 && stamp.watch.every((dir) => dir === diagrams || dir.startsWith(diagrams + path.sep)), JSON.stringify(stamp.watch));
+      assert.deepEqual(invoke("--action", "stamp"), stamp, "unchanged with nothing written");
+    } finally { await rm(root, { recursive: true, force: true }); }
+  } },
+  { name: "171/02 · responding to the open note moves the review stamp and not the scene stamp", run: () => withFixture(async (fx) => {
+    const { request } = await seeded(fx);
+    assert.deepEqual(await stampAround(fx, () => fx.run("respond", { requestId: request.id, answer: "Because." })), { scene: false, review: true });
+  }) },
+  { name: "171/02 · proposing for the open note moves the review stamp and not the scene stamp", run: () => withFixture(async (fx) => {
+    const { saved, request } = await seeded(fx);
+    assert.deepEqual(await stampAround(fx, () => propose(fx, request, saved.revision)), { scene: false, review: true });
+  }) },
+  { name: "171/02 · withdrawing the open note moves the review stamp and not the scene stamp", run: () => withFixture(async (fx) => {
+    const { request } = await seeded(fx);
+    assert.deepEqual(await stampAround(fx, () => fx.run("withdraw", { requestId: request.id })), { scene: false, review: true });
+  }) },
+  { name: "171/02 · saving with one more shape moves the scene stamp and not the review stamp", run: () => withFixture(async (fx) => {
+    const { saved } = await seeded(fx);
+    assert.deepEqual(await stampAround(fx, () => fx.saved(ONE_MORE, saved.revision)), { scene: true, review: false });
+  }) },
+  { name: "171/03 E4 · a first draft is stored with every node in the house style", run: () => withFixture(async (fx) => {
+    await styled(fx);
+    const { saved, request } = await emptyWithNote(fx);
+    const { proposal } = await proposeText(fx, request, saved.revision, 'flowchart LR\n  api["API"] --> store("Store")\n  web["Web"] --> api\n');
+    for (const id of ["api", "store", "web"]) assert.deepEqual(styleLines(proposal.text, id), [`style ${id} ${HOUSE}`], id);
+    for (const id of ["api", "store", "web"]) assert.ok(proposal.changes.some((change) => change.key === `style:${id}`), `a style change for ${id}`);
+  }) },
+  { name: "171/03 E5 · an added node's own style is kept as written", run: () => withFixture(async (fx) => {
+    await styled(fx);
+    const { saved, request } = await seeded(fx);
+    const { proposal } = await proposeText(fx, request, saved.revision, `${VIEW}  api["Cache"]\n  style api fill:#fbe9ed,stroke:#ba2646\n`);
+    assert.deepEqual(styleLines(proposal.text, "api"), ["style api fill:#fbe9ed,stroke:#ba2646"]);
+  }) },
+  { name: "171/03 E6 · an added library item is never coloured", run: () => withFixture(async (fx) => {
+    await styled(fx);
+    const libraries = path.join(fx.root, ".aof", "diagrams", "libraries");
+    await mkdir(libraries, { recursive: true });
+    await writeFile(path.join(libraries, "aws-architecture-icons.excalidrawlib"), JSON.stringify({ type: "excalidrawlib", version: 2, libraryItems: [{ id: "k", name: "Kinesis", elements: [el("k", "rectangle")] }] }));
+    const { saved, request } = await seeded(fx);
+    const { proposal } = await proposeText(fx, request, saved.revision, `${VIEW}  k1["Kinesis"]\n  %% aof:lib k1 aws-architecture-icons/"Kinesis"\n`);
+    assert.deepEqual(styleLines(proposal.text, "k1"), []);
+  }) },
+  { name: "171/03 E7 · a node that already exists is not recoloured", run: () => withFixture(async (fx) => {
+    await styled(fx);
+    const { saved, request } = await seeded(fx);
+    const { proposal } = await propose(fx, request, saved.revision);
+    assert.match(proposal.text, /API\["Gateway"\]/);
+    assert.deepEqual(styleLines(proposal.text, "API"), []);
+  }) },
+  { name: "171/03 E8 · with no palette the proposal is stored as written", run: () => withFixture(async (fx) => {
+    const { saved, request } = await seeded(fx);
+    const text = serializeProfile(parseProfile(`${VIEW}  api["Cache"]\n`));
+    const { proposal } = await proposeText(fx, request, saved.revision, text);
+    assert.equal(proposal.text, text);
+    assert.deepEqual(styleLines(proposal.text, "api"), []);
+  }) },
+  { name: "171/03 · the filled-in proposal reads back, as Mermaid, as what was stored", run: () => withFixture(async (fx) => {
+    await styled(fx);
+    const { saved, request } = await emptyWithNote(fx);
+    const { proposal } = await proposeText(fx, request, saved.revision, 'flowchart LR\n  api["API"] --> store("Store")\n');
+    const model = parseProfile(proposal.text);
+    assert.deepEqual(model.styles.api, { fill: "#f3f5f7", stroke: "#1b1f27", color: "#1b1f27" });
+    const stored = JSON.parse(await readFile(path.join(fx.item, "diagrams", "ADR-002-scene.review", "proposals", `${proposal.id}.json`), "utf8"));
+    assert.equal(stored.text, proposal.text, "the record holds the filled-in text");
+  }) },
+  { name: "171/03 E12 · context carries the palette by role", run: () => withFixture(async (fx) => {
+    await styled(fx);
+    const { request } = await seeded(fx);
+    const context = await fx.run("context", { requestId: request.id });
+    assert.deepEqual({ paper: context.palette.paper, ink: context.palette.ink, muted: context.palette.muted, link: context.palette.link, accent: context.palette.accent },
+      { paper: "#f3f5f7", ink: "#1b1f27", muted: "#585f6a", link: "#13766d", accent: "#ba2646" });
+  }) },
+  { name: "171/03 · the review command tells the architect colours come by themselves (Claude, OpenCode and Codex)", run: async () => {
+    for (const rel of [".claude/commands/aof/diagram-review.md", ".opencode/commands/aof/diagram-review.md", ".agents/skills/aof-diagram-review/SKILL.md"]) {
+      const text = (await readFile(path.join(REPO_ROOT, rel), "utf8")).replace(/\s+/g, " ");
+      assert.match(text, /a node you add is drawn in the house style by itself — write no `style` line for it/u, rel);
+      assert.match(text, /A `style` line is for emphasis only: .* using the context's `palette` by role — `link` for a structural flow, `accent` for the one thing to look at first/u, rel);
+    }
+  } },
+  { name: "171/05 E1 · a reply is the thread's third turn and reopens the note", run: () => withFixture(async (fx) => {
+    const { request } = await answeredNote(fx);
+    const { request: replied } = await fx.run("reply", { requestId: request.id, text: "And what about the cache?" });
+    assert.deepEqual(turns(replied), [{ by: "operator", text: QUESTION }, { by: "architect", text: "It avoids a queue hop." }, { by: "operator", text: "And what about the cache?" }]);
+    assert.equal(replied.status, "open");
+    assert.equal((await listed(fx, request.id)).status, "open", "the batch review's open notes include it");
+  }) },
+  { name: "171/05 E2 · a reply to a note a proposal closed reopens it and leaves the proposal alone", run: () => withFixture(async (fx) => {
+    const { saved, request } = await seeded(fx);
+    const { proposal } = await propose(fx, request, saved.revision);
+    assert.equal((await listed(fx, request.id)).status, "proposed");
+    const before = (await fx.run("proposals")).proposals.find((item) => item.id === proposal.id);
+    await fx.run("reply", { requestId: request.id, text: "Keep the old label" });
+    assert.equal((await listed(fx, request.id)).status, "open");
+    assert.deepEqual((await fx.run("proposals")).proposals.find((item) => item.id === proposal.id), before, "the proposal is still pending, unchanged");
+  }) },
+  { name: "171/05 E3 · a reply to a withdrawn note is refused and changes nothing", run: () => withFixture(async (fx) => {
+    const saved = await fx.saved(TWO);
+    const { request } = await fx.run("request", { baseRevision: saved.revision, selectedIds: ["API"], request: QUESTION });
+    await fx.run("withdraw", { requestId: request.id });
+    const before = await readFile(recordFile(fx, request.id), "utf8");
+    await rejected(fx.run("reply", { requestId: request.id, text: "One more thing" }), "diagram-request-decided");
+    assert.equal(await readFile(recordFile(fx, request.id), "utf8"), before);
+  }) },
+  { name: "171/05 · a reply to a note whose record is at its size limit is refused and changes nothing", run: () => withFixture(async (fx) => {
+    const { request } = await answeredNote(fx);
+    const stored = JSON.parse(await readFile(recordFile(fx, request.id), "utf8"));
+    const base = JSON.stringify({ ...stored, pad: "" });
+    const full = JSON.stringify({ ...stored, pad: "x".repeat(MAX_RECORD_BYTES - Buffer.byteLength(base) - 16) });
+    await writeFile(recordFile(fx, request.id), full);
+    await rejected(fx.run("reply", { requestId: request.id, text: "One more thing" }), "diagram-review-too-large");
+    assert.equal(await readFile(recordFile(fx, request.id), "utf8"), full);
+  }) },
+  { name: "171/05 · an empty reply is refused and changes nothing", run: () => withFixture(async (fx) => {
+    const { request } = await answeredNote(fx);
+    const before = await readFile(recordFile(fx, request.id), "utf8");
+    await rejected(fx.run("reply", { requestId: request.id, text: "" }), "diagram-scene-invalid");
+    assert.equal(await readFile(recordFile(fx, request.id), "utf8"), before);
+  }) },
+  { name: "171/05 · a reply on a delivered item's read-only diagram is refused and changes nothing", run: () => withFixture(async (fx) => {
+    const { request } = await answeredNote(fx);
+    const before = await readFile(recordFile(fx, request.id), "utf8");
+    fx.state.status = "done";
+    await rejected(fx.run("reply", { requestId: request.id, text: "One more thing" }), "diagram-item-delivered");
+    assert.equal(await readFile(recordFile(fx, request.id), "utf8"), before);
+  }) },
+  { name: "171/05 E4 · the architect's response is a turn, and the answer is that turn", run: () => withFixture(async (fx) => {
+    const { request } = await answeredNote(fx);
+    await fx.run("reply", { requestId: request.id, text: "And what about the cache?" });
+    const { request: answered } = await fx.run("respond", { requestId: request.id, answer: "The cache is read-through; it never writes." });
+    assert.deepEqual(turns(answered).at(-1), { by: "architect", text: "The cache is read-through; it never writes." });
+    assert.equal(answered.answer, "The cache is read-through; it never writes.");
+    assert.equal(answered.status, "answered");
+    assert.equal(answered.thread.length, 4);
+  }) },
+  { name: "171/05 E5 · a record from before threads reads as the turns it implies", run: () => withFixture(async (fx) => {
+    const saved = await fx.saved(TWO);
+    const id = "abcdef0123456789";
+    const legacy = { id, kind: "request", createdAt: "2026-10-01T00:00:00.000Z", revision: saved.revision, selectedIds: ["API"], request: QUESTION, status: "answered", answer: "It avoids a queue hop.", answeredAt: "2026-10-01T01:00:00.000Z" };
+    await mkdir(path.dirname(recordFile(fx, id)), { recursive: true });
+    await writeFile(recordFile(fx, id), JSON.stringify(legacy));
+    const expected = [{ by: "operator", text: QUESTION }, { by: "architect", text: "It avoids a queue hop." }];
+    assert.deepEqual(turns(await listed(fx, id)), expected, "listed");
+    assert.deepEqual(turns(await fx.run("context", { requestId: id })), expected, "its context");
+  }) },
+  { name: "171/05 E6 · the architect's context carries the whole thread, oldest first", run: () => withFixture(async (fx) => {
+    const { request } = await answeredNote(fx);
+    await fx.run("reply", { requestId: request.id, text: "And what about the cache?" });
+    const context = await fx.run("context", { requestId: request.id });
+    assert.deepEqual(context.thread.map((turn) => turn.text), [QUESTION, "It avoids a queue hop.", "And what about the cache?"]);
+  }) },
+  { name: "171/05 · the review command answers the latest operator turn (Claude, OpenCode and Codex)", run: async () => {
+    for (const rel of [".claude/commands/aof/diagram-review.md", ".opencode/commands/aof/diagram-review.md", ".agents/skills/aof-diagram-review/SKILL.md"]) {
+      const text = (await readFile(path.join(REPO_ROOT, rel), "utf8")).replace(/\s+/g, " ");
+      assert.match(text, /Read the note's thread and answer its latest operator turn/u, rel);
+    }
+  } },
+  { name: "171/02 · the stamp is a read: it answers with diagrams off and on a delivered item, and before anything is saved", run: () => withFixture(async (fx) => {
+    const empty = await fx.run("stamp");
+    assert.equal(empty.scene, null, "no scene yet");
+    await seeded(fx);
+    fx.state.diagrams = { enabled: false, formats: ["svg"] };
+    assert.ok((await fx.run("stamp")).scene);
+    fx.state.status = "done";
+    assert.ok((await fx.run("stamp")).review);
+  }) },
   { name: "review: a corrupt record is reported as skipped in the listing and refused by id, never silently dropped", run: () => withFixture(async (fx) => {
     const { saved, request } = await seeded(fx);
     await propose(fx, request, saved.revision);
@@ -87,7 +321,9 @@ export const diagramSceneReviewTests = [
     await rejected(fx.run("request", { baseRevision: saved.revision, selectedIds: ["Nope"], request: "x" }), "diagram-review-selection-invalid");
     const out = await fx.run("request", { baseRevision: saved.revision, selectedIds: ["API", "API->DB#1"], request: "Explain" });
     assert.equal("invocation" in out, false, "the editor composes the slash command (FF-6306)");
-    assert.deepEqual({ ...out.request, id: "", createdAt: "" }, { id: "", kind: "request", createdAt: "", revision: saved.revision, selectedIds: ["API", "API->DB#1"], request: "Explain", status: "open", answer: null, answeredAt: null });
+    // 171/ADR-006: the note is the thread's first turn, at the record's own time.
+    assert.equal(out.request.thread[0].at, out.request.createdAt);
+    assert.deepEqual({ ...out.request, id: "", createdAt: "", thread: out.request.thread.map((turn) => ({ ...turn, at: "" })) }, { id: "", kind: "request", createdAt: "", revision: saved.revision, selectedIds: ["API", "API->DB#1"], request: "Explain", status: "open", answer: null, answeredAt: null, thread: [{ by: "operator", text: "Explain", at: "" }] });
   }) },
   { name: "review: context by requestId uses the stored note against the diagram as it is now", run: () => withFixture(async (fx) => {
     const { saved, request } = await seeded(fx);

@@ -75,8 +75,8 @@ import {
 import { emitFit, geometryPlanFor, GEOMETRY_FIT } from "./geometry.mjs";
 import type { ResizeMessage } from "./geometry.mjs";
 import { terminalSocketUrl, REFUSAL_MISSING_ORIGIN, REFUSAL_UNRESOLVABLE_ORIGIN } from "./socket-url.mjs";
-import { mountModelFor } from "./input-policy.mjs";
-import type { MountPostureName } from "./input-policy.mjs";
+import { COMMAND_READY_CAP_MS, flushLaterInputs, mountModelFor, sessionClosed, sessionInputs, sessionOpened, sessionOutput, typeCommand } from "./input-policy.mjs";
+import type { LaterInput, LaterInputReport, MountPostureName } from "./input-policy.mjs";
 import { terminalPaneIdentity, terminalPaneLabel } from "./pane-identity.mjs";
 import { clampDockHeight, contentRegionHeight, dockHeightBounds } from "./clamp.mjs";
 import { fullscreenOpenerFor } from "./fullscreen-request.mjs";
@@ -182,6 +182,7 @@ export function TerminalControl({
   onClose,
   origins,
   standing,
+  laterInputs, onLaterInput, onSessionReady,
 }: {
   host: TerminalHost;
   mount: TerminalMount;
@@ -192,6 +193,8 @@ export function TerminalControl({
   // mount's frozen shape does not carry. Its whole meaning is in `terminalPaneStanding`; ABSENT is
   // m46's behaviour, unchanged, at every host that ships today.
   standing?: TerminalPaneStandingInput | null;
+  // 171/ADR-005 — input a surface types into the live session once it is READY (input-policy.mjs's rule).
+  laterInputs?: ReadonlyArray<LaterInput>; onLaterInput?: (report: LaterInputReport) => void; onSessionReady?: (ready: boolean) => void;
 }) {
   const affordances = hostAffordances(host);
   const isDock = host === HOST_BOARD_DOCK;
@@ -231,6 +234,10 @@ export function TerminalControl({
   // The re-fit, reachable from the RE-LAYOUT effect, which owns boxes this effect's observer
   // cannot see (the overlay's). One home for the account: `sendFit`, below.
   const sendFitRef = useRef<(() => void) | null>(null);
+  // What the live session is TYPED — its own command, then any later input — held across renders.
+  const typed = useRef(sessionInputs());
+  Object.assign(typed.current, { inputs: laterInputs ?? [], onLaterInput, onSessionReady });
+  useEffect(() => flushLaterInputs(typed.current), [laterInputs]);
 
   // WHETHER THERE IS A DOOR AT ALL. Asked once, at first render, and never re-asked — the same
   // rule and the same reason as `SurfaceSlot`'s: whether an app shell exists is a property of the
@@ -409,20 +416,10 @@ export function TerminalControl({
     ws.binaryType = "arraybuffer";
     let lastFit: ResizeMessage | null = null;
 
-    // The state-aware command, typed ONCE per session as ordinary input on the same raw path a
-    // keystroke takes (never a JSON frame — the envelope is unchanged). A mount with no input
-    // path cannot type it, which is the honest consequence of the posture rather than a guard.
-    let commandSent = false;
+    // The state-aware command is typed ONCE per session, and later input after it, through the one
+    // record (`input-policy.mjs`, where the account of both lives); this effect only wires the socket.
     let commandTimer: ReturnType<typeof setTimeout> | null = null;
-    const sendCommand = () => {
-      if (commandSent || !mount.command || !model.inputEnabled) return;
-      commandSent = true;
-      if (commandTimer !== null) {
-        clearTimeout(commandTimer);
-        commandTimer = null;
-      }
-      if (ws.readyState === WebSocket.OPEN) ws.send(mount.command + "\r");
-    };
+    const sendCommand = (force = false) => { typeCommand(typed.current, { force }); if (typed.current.commandSent && commandTimer !== null) { clearTimeout(commandTimer); commandTimer = null; } };
 
     // A `scale` source declares NO resize control frame, so the emitter is never wired for one:
     // the guard is STRUCTURAL (there is no path to send down) rather than an early return one
@@ -444,7 +441,8 @@ export function TerminalControl({
 
     ws.onopen = () => {
       sendFit?.();
-      if (mount.command && model.inputEnabled) commandTimer = setTimeout(sendCommand, 700);
+      const owed = sessionOpened(typed.current, { send: (data: string) => { if (ws.readyState === WebSocket.OPEN) ws.send(data); }, command: mount.command, inputEnabled: model.inputEnabled });
+      if (owed) commandTimer = setTimeout(() => sendCommand(true), COMMAND_READY_CAP_MS);
       setState((current) => applyTerminalEvent(current, TERMINAL_EVENTS.SOCKET_OPEN));
     };
 
@@ -453,7 +451,7 @@ export function TerminalControl({
       else term.write(new Uint8Array(data));
       standingRef.current?.onReport?.({ painted: true });
       setState((current) => applyTerminalEvent(current, TERMINAL_EVENTS.BYTES));
-      sendCommand();
+      if (sessionOutput(typed.current, data)) sendCommand();
     };
 
     ws.onmessage = (event: MessageEvent) => {
@@ -472,8 +470,8 @@ export function TerminalControl({
       paint(data as string | ArrayBuffer);
     };
 
-    ws.onerror = () => setState((current) => applyTerminalEvent(current, TERMINAL_EVENTS.TRANSPORT_FAILURE));
-    ws.onclose = () => setState((current) => applyTerminalEvent(current, TERMINAL_EVENTS.CLOSE));
+    ws.onerror = () => { sessionClosed(typed.current); setState((current) => applyTerminalEvent(current, TERMINAL_EVENTS.TRANSPORT_FAILURE)); };
+    ws.onclose = () => { sessionClosed(typed.current); setState((current) => applyTerminalEvent(current, TERMINAL_EVENTS.CLOSE)); };
 
     // THE INPUT DIRECTION. Registered only when the policy says so: a read-only mount gets NO
     // handler at all, not one that is registered and ignored (a half-disabled widget that
@@ -494,6 +492,7 @@ export function TerminalControl({
 
     return () => {
       if (commandTimer !== null) clearTimeout(commandTimer);
+      sessionClosed(typed.current);
       if (sendFitRef.current === sendFit) sendFitRef.current = null;
       observer?.disconnect();
       dataSub?.dispose();

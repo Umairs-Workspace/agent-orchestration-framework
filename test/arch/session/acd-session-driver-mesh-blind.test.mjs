@@ -140,10 +140,13 @@ export const archTests = [
       // 167/00 adds the cost meter, a zero-import foundation leaf the degrade reporter counts every
       // report through (167/ADR-001), so 38 -> 39 with no lifecycle, provider or mesh edge.
       assert.ok(graph.seen.has(path.join(root, "packages/foundation/src/cost-meter.mjs")), "167/00 adds the cost meter leaf through the degrade reporter");
-      assert.equal(graph.seen.size, 39, "the 31-module assembly plus seven explicitly owned Codex/policy and observation leaves, and the cost meter");
+      // 171 F-171-01 moves the byte gate out of the session screen into `@aof/contracts/tui-ready`, a
+      // zero-import contracts leaf the browser's dock reads too, so 39 -> 40 with no lifecycle, provider or mesh edge.
+      assert.ok(graph.seen.has(path.join(root, "packages/contracts/src/tui-ready.mjs")), "171 F-171-01 adds the byte gate's leaf through the session screen");
+      assert.equal(graph.seen.size, 40, "the 31-module assembly plus seven explicitly owned Codex/policy and observation leaves, the cost meter, and the byte gate");
       assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/otel-attribution", "@aof/execution/pty", "@aof/execution/session-driver", "@aof/work/phase-brief"], "the adapter uses only the two execution APIs");
       const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
-      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-executable.mjs", "packages/execution/src/codex-process-environment.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-events.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs"], "native transport and observation stay in execution; no work, mesh or core import is introduced");
+      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/contracts/src/tui-ready.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-executable.mjs", "packages/execution/src/codex-process-environment.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-events.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs"], "native transport and observation stay in execution; no work, mesh or core import is introduced");
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
       const terminalWs = path.join(root, "packages/server/src/terminal-ws.mjs");
@@ -333,7 +336,10 @@ export const archTests = [
       // 169/01 — Hyperagent is no longer a runtime, so core's model imports nothing of the package:
       // the runtime leaf the model reached (168 -> 169) is gone from the closure (169 -> 168).
       assert.ok(!sinkGraph.seen.has(path.join(root, "packages/integration-hyperagent/src/runtime.mjs")), "no Hyperagent runtime leaf");
-      assert.equal(sinkGraph.seen.size, 168, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
+      // 171 F-171-01 — the session screen reads readiness through the byte gate's zero-import contracts
+      // leaf, `@aof/contracts/tui-ready` (168 -> 169); it does no I/O and reaches no lifecycle module.
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/contracts/src/tui-ready.mjs")), "the byte gate's leaf");
+      assert.equal(sinkGraph.seen.size, 169, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

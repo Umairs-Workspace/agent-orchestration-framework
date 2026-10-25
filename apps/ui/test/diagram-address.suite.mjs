@@ -10,11 +10,12 @@ import { CONTENT_MODE_FIXED, contentModeFor } from "../src/app/shell-layout.mjs"
 import { POSTURE_INTERACTIVE } from "../src/terminal/input-policy.mjs";
 import { sessionSourceFor } from "../src/terminal/source-table.mjs";
 import { DIAGRAM_ROUTE_ID, boardHref, diagramAddressOf, diagramHref, isDiagramMember } from "../src/diagram/diagram-address.mjs";
-import { DIAGRAM_DOCK_SOURCE, UNBOUND_DIAGRAM_DOCK_MOUNT, diagramDockMount } from "../src/diagram/dock-mount.mjs";
+import { DIAGRAM_DOCK_SOURCE, UNBOUND_DIAGRAM_DOCK_MOUNT, deliveryPlan, diagramDockMount } from "../src/diagram/dock-mount.mjs";
+import { reviewInvocations } from "@aof/diagrams-ui/editor-state";
 
 const ADDRESS = (pathname, search = "", hash = "") => ({ pathname, search, hash });
 
-export const diagramAddressTests = [
+const addressTests = [
   {
     name: "diagram-route: the table has a frozen `diagram` row at `/diagram`, resolved like every other path and absent from the bar",
     run: () => {
@@ -87,3 +88,70 @@ export const diagramAddressTests = [
     },
   },
 ];
+
+// ── milestone 171 / story 04 (ADR-005) — the surface's one delivery decision ────────────────────
+// `deliveryPlan` (dock-mount.mjs) over what the editor hands it (`reviewInvocations`, the editor's
+// pure state): a ready session is typed into, a note otherwise waits, a question otherwise starts a
+// session that also takes the waiting notes (171/04 Q1). The control typing it is the terminal suite's.
+const FILE = "ADR-003-push-stream.excalidraw";
+const single = (id) => `/aof:diagram-review 171 ${FILE} ${id}`;
+const BATCH = `/aof:diagram-review 171 ${FILE}`;
+const handed = (requestId, waiting = 0) => reviewInvocations({ ref: "171", file: FILE, requestId, waiting });
+const running = { dockOpen: true, sessionReady: true };
+const closed = { dockOpen: false, sessionReady: false };
+const exited = { dockOpen: true, sessionReady: false };
+
+const deliveryTests = [
+  // R1 · With the architect's session running, a new note is typed into it
+  { name: "171/04 E1 · a note added while the session runs is typed into it", run: () => {
+    const plan = deliveryPlan({ kind: "note", invocations: handed("n4"), ...running });
+    assert.equal(plan.outcome, "typed", "the editor says the note was sent to the architect");
+    assert.deepEqual(plan.type, [single("n4")]);
+  } },
+  { name: "171/04 E2 · a note added with the dock closed waits, as in 170", run: () => {
+    const plan = deliveryPlan({ kind: "note", invocations: handed("n4"), ...closed });
+    assert.equal(plan.outcome, "waiting", "the editor says the note waits for a review session");
+    assert.deepEqual([plan.type, plan.command], [[], null], "nothing is handed to a dock");
+  } },
+  { name: "171/04 E3 · a note added after the session exited waits and says the session is not running", run: () => {
+    const plan = deliveryPlan({ kind: "note", invocations: handed("n4"), ...exited });
+    assert.equal(plan.outcome, "not-running");
+    assert.deepEqual([plan.type, plan.command], [[], null], "nothing is typed");
+  } },
+  // R2 · Ask architect goes into the open session, and a new session also takes the waiting notes
+  { name: "171/04 E4 · Ask architect with the session running types into it, and starts no session", run: () => {
+    const plan = deliveryPlan({ kind: "ask", invocations: handed("n5"), ...running });
+    assert.equal(plan.outcome, "typed");
+    assert.deepEqual(plan.type, [single("n5")]);
+    assert.equal(plan.command, null, "no new session");
+  } },
+  { name: "171/04 E5 · Ask architect with the dock closed opens a session typed the question, as in 170", run: () => {
+    const plan = deliveryPlan({ kind: "ask", invocations: handed("n5"), ...closed });
+    assert.equal(plan.outcome, "started");
+    assert.equal(plan.command, single("n5"));
+  } },
+  { name: "171/04 · Ask architect on a dock whose session exited starts a new one (no longer a silent miss)", run: () => {
+    const plan = deliveryPlan({ kind: "ask", invocations: handed("n5"), ...exited });
+    assert.equal(plan.outcome, "started");
+    assert.equal(plan.command, single("n5"));
+  } },
+  { name: "171/04 E9 · a new session takes the question, then the waiting notes", run: () => {
+    const plan = deliveryPlan({ kind: "ask", invocations: handed("n5", 2), ...closed });
+    assert.equal(plan.command, single("n5"), "typed the question");
+    assert.deepEqual(plan.then, [BATCH], "then handed the batch invocation for the waiting notes");
+  } },
+  { name: "171/04 E10 · with no note open, a new session is typed only the question's invocation", run: () => {
+    const plan = deliveryPlan({ kind: "ask", invocations: handed("n5", 0), ...closed });
+    assert.deepEqual([plan.command, plan.then], [single("n5"), []]);
+  } },
+  { name: "171/04 · with a note open, a first draft's session is typed the first draft's invocation, then the batch", run: () => {
+    const plan = deliveryPlan({ kind: "ask", invocations: handed("fd1", 1), ...closed });
+    assert.deepEqual([plan.command, plan.then], [single("fd1"), [BATCH]]);
+  } },
+  { name: "171/04 · \"Review 2 notes with the architect\" starts a session typed the batch invocation once", run: () => {
+    const plan = deliveryPlan({ kind: "ask", invocations: handed(null), ...closed });
+    assert.deepEqual([plan.command, plan.then], [BATCH, []]);
+  } },
+];
+
+export const diagramAddressTests = [...addressTests, ...deliveryTests];

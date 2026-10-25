@@ -28,8 +28,8 @@ const MAX_LISTED = 50;
 const MAX_SVG = 4 * 1024 * 1024;
 const MAX_PNG = 6 * 1024 * 1024;
 const MAX_LIBRARY_BYTES = 8 * 1024 * 1024;
-const SCENE_ACTIONS = new Set(["read", "save", "context", "request", "withdraw", "respond", "propose", "proposals", "accept", "reject", "publish", "libraries"]);
-const WRITE_ACTIONS = new Set(["save", "request", "withdraw", "respond", "propose", "accept", "reject", "publish"]);
+const SCENE_ACTIONS = new Set(["read", "save", "context", "request", "withdraw", "respond", "propose", "proposals", "accept", "reject", "publish", "libraries", "stamp", "reply"]);
+const WRITE_ACTIONS = new Set(["save", "request", "withdraw", "respond", "reply", "propose", "accept", "reject", "publish"]);
 const REVISION = /^[0-9a-f]{64}$/;
 const RECORD_FILE = /^([a-z0-9]{8,32})\.json$/;
 const SVG_DOCUMENT = /^\s*(?:<\?xml[^>]*>\s*)?(?:<!DOCTYPE[^>]*>\s*)?<svg[\s>][\s\S]*<\/svg>\s*$/;
@@ -351,6 +351,16 @@ async function readRecordText(file) {
   }
 }
 
+// A NOTE IS A THREAD (171/ADR-006): turns `{ by: "operator" | "architect", text, at }` on the request
+// record itself. A record written before threads has the thread its request and answer imply, read
+// here — once, for every reader — so the panel, the batch review and `context` see the same turns.
+function withThread(record) {
+  if (record?.kind !== "request" || Array.isArray(record.thread)) return record;
+  const thread = [{ by: "operator", text: record.request, at: record.createdAt }];
+  if (typeof record.answer === "string" && record.answer.length > 0) thread.push({ by: "architect", text: record.answer, at: record.answeredAt });
+  return { ...record, thread };
+}
+
 async function readRecord(paths, kind, id) {
   await assertReviewStorage(paths);
   const directory = kind === "request" ? paths.requests : paths.proposals;
@@ -362,7 +372,7 @@ async function readRecord(paths, kind, id) {
   } catch {
     return fail(`Stored ${kind} is not valid JSON.`, "diagram-review-corrupt", 409);
   }
-  if (plainObject(record) && record.id === id && record.kind === kind) return record;
+  if (plainObject(record) && record.id === id && record.kind === kind) return withThread(record);
   return fail(`Stored ${kind} is invalid.`, "diagram-review-corrupt", 409);
 }
 
@@ -379,9 +389,41 @@ async function parsedRecord(file, id, kind) {
   const text = await readRecordText(file);
   let record = null;
   try { record = JSON.parse(text); } catch { record = null; }
-  if (!(plainObject(record) && record.id === id && record.kind === kind)) record = null;
+  record = plainObject(record) && record.id === id && record.kind === kind ? withThread(record) : null;
   listedRecords.set(file, { ino: stat.ino, size: stat.size, mtimeMs: stat.mtimeMs, record });
   return record;
+}
+
+// The house palette (171/ADR-004), read from the style guide `work.diagrams.style` names; none when no
+// guide is named or its file is missing. The reader is loaded only when a palette is asked for, so a
+// verb that merely composes the registry (`aof work find`, FF-16004's ceiling) does not evaluate it.
+async function readHouseStyle(projectRoot, style) {
+  if (typeof style !== "string" || style.length === 0 || !projectRoot) return null;
+  let text;
+  try { text = await readFile(path.resolve(projectRoot, style), "utf8"); }
+  catch (error) { if (error?.code === "ENOENT" || error?.code === "EISDIR") return null; throw error; }
+  return (await import("../house-style.mjs")).readPalette(text);
+}
+const nodeStyleOf = async (palette) => (palette ? (await import("../house-style.mjs")).defaultNodeStyle(palette) : null);
+
+// A STAMP (171/ADR-003): what a watcher compares, by stat alone — nothing is parsed. The scene's
+// identity is its size and modification time; the review records' is one digest over every
+// request's and proposal's name, size and modification time (the identity `parsedRecord` caches on).
+async function statStamp(file) {
+  try { const stat = await lstat(file); return stat.isFile() ? { size: stat.size, mtimeMs: stat.mtimeMs } : null; } catch (error) { if (error?.code === "ENOENT") return null; throw error; }
+}
+async function reviewStamp(paths) {
+  await assertReviewStorage(paths);
+  const entries = [];
+  for (const [kind, directory] of [["requests", paths.requests], ["proposals", paths.proposals]]) {
+    let names = [];
+    try { names = await readdir(path.resolve(directory)); } catch (error) { if (error?.code !== "ENOENT") throw error; }
+    for (const name of names.filter((entry) => RECORD_FILE.test(entry)).sort()) {
+      const stamp = await statStamp(path.join(path.resolve(directory), name));
+      if (stamp) entries.push(`${kind}/${name}:${stamp.size}:${stamp.mtimeMs}`);
+    }
+  }
+  return hash(entries.join("\n"));
 }
 
 async function listRecords(paths, kind) {
@@ -487,6 +529,7 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
       const review = diagramReviewPaths(item.dir, spec.stem);
       const architecture = await textOrNull(path.join(item.dir, "ARCHITECTURE.md")) ?? "";
       const adr = stemAdr(spec.stem);
+      const paletteOf = () => readHouseStyle(projectRoot, resolveWorkDiagrams(ctx?.workspace?.config ?? {}).style);
       const readCurrent = async () => {
         const raw = await textOrNull(file, MAX_BYTES);
         if (raw === null) return { ref: item.ref, file: spec.name, present: false, revision: null, scene: emptyScene(), readOnly };
@@ -517,10 +560,17 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
           },
           libraries: (await readLibraries(projectRoot, resolveGlobalHome())).map(libraryRef),
           brief: adr ? readDiagramBrief(architecture, adr) : null, architecture, request: typeof request === "string" ? request : "",
+          // The house palette by role, so an emphasis is named (`link`, `accent`), never a hex value.
+          palette: await paletteOf(),
         };
-        return stored ? { ...context, requestId: stored.id, requestRevision: stored.revision } : context;
+        // The note's whole thread, oldest first: the architect answers its latest operator turn.
+        return stored ? { ...context, requestId: stored.id, requestRevision: stored.revision, thread: stored.thread } : context;
       };
-      if (action === "read") return readCurrent();
+      // `read` carries the palette: the editor's defaults for a shape drawn by hand come from it.
+      if (action === "read") return { ...await readCurrent(), palette: await paletteOf() };
+      // The directories a watcher arms: the diagrams folder, and the review folder inside it (which a
+      // recursive watch on the folder also covers before it exists).
+      if (action === "stamp") return { ref: item.ref, file: spec.name, scene: await statStamp(file), review: await reviewStamp(review), watch: [diagramDir, path.resolve(review.dir)] };
       if (action === "context") return sceneContext(input, await readCurrent());
       if (action === "proposals") {
         const out = await readCurrent();
@@ -605,7 +655,8 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
           const known = knownIds(projectScene(current.scene.elements).index);
           const unknown = selectedIds.filter((id) => !known.has(id));
           if (unknown.length) fail(`The selection names ids this diagram does not have: ${unknown.join(", ")}.`, "diagram-review-selection-invalid");
-          const record = { id: newReviewId(), kind: "request", createdAt: new Date().toISOString(), revision, selectedIds, request, status: "open", answer: null, answeredAt: null };
+          const createdAt = new Date().toISOString();
+          const record = { id: newReviewId(), kind: "request", createdAt, revision, selectedIds, request, status: "open", answer: null, answeredAt: null, thread: [{ by: "operator", text: request, at: createdAt }] };
           await writeRecord(review, record, { create: true });
           // The agent invocation is composed by the editor: exactly one src module authors slash commands (FF-6306).
           return { ref: item.ref, file: spec.name, request: record };
@@ -629,9 +680,26 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
         return underSceneLock(async () => {
           const record = await readRecord(review, "request", requestId);
           requireAnswerable(record);
-          const answered = { ...record, status: "answered", answer, answeredAt: new Date().toISOString() };
+          // The architect's turn on the thread; `answer` stays the latest architect turn for every reader.
+          const answeredAt = new Date().toISOString();
+          const answered = { ...record, status: "answered", answer, answeredAt, thread: [...record.thread, { by: "architect", text: answer, at: answeredAt }] };
           await writeRecord(review, answered);
           return { ref: item.ref, file: spec.name, request: answered };
+        });
+      }
+
+      // A REPLY (171/ADR-006): the operator's next turn on the note's thread. It reopens the note — one a
+      // proposal closed too, leaving that proposal as it is — so the batch review takes it again.
+      if (action === "reply") {
+        const requestId = reviewIdInput(input.requestId, "requestId");
+        const text = boundedString(input.text, "text", MAX_TEXT);
+        return underSceneLock(async () => {
+          const record = await readRecord(review, "request", requestId);
+          if (record.status === "withdrawn") fail(`Request ${record.id} is already withdrawn.`, "diagram-request-decided", 409);
+          const at = new Date().toISOString();
+          const reopened = { ...record, status: "open", repliedAt: at, thread: [...record.thread, { by: "operator", text, at }] };
+          await writeRecord(review, reopened);
+          return { ref: item.ref, file: spec.name, request: reopened };
         });
       }
 
@@ -643,11 +711,19 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
         const summary = boundedString(input.summary, "summary", MAX_SUMMARY);
         const rationale = boundedString(input.rationale, "rationale", MAX_TEXT);
         const proposed = profileModel(input.text);
+        const fill = await nodeStyleOf(await paletteOf());
         return underSceneLock(async (current) => {
           const baseRevision = requireSavedRevision(current);
           const request = await readRecord(review, "request", requestId);
           requireAnswerable(request);
           const { model: base, index } = projectScene(current.scene.elements);
+          // The house style (171/ADR-004) fills in every node this proposal ADDS that names no style of
+          // its own and is no library item — in the stored text and its changes, so Preview and the
+          // record say what will be drawn. A first draft adds every node, so it is covered too.
+          if (fill) {
+            const existing = new Set(base.nodes.map((n) => n.id));
+            for (const node of proposed.nodes) if (!existing.has(node.id) && !proposed.styles[node.id] && !proposed.libs[node.id]) proposed.styles[node.id] = { ...fill };
+          }
           // A node always has a place and keeps its library item, so a proposal that leaves out a node's
           // `%% aof:node` or `%% aof:lib` line leaves it as it is; only removing the node removes them.
           const kept = new Set(proposed.nodes.map((n) => n.id));
@@ -752,7 +828,7 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
     },
     cli: {
       route: ["diagram", "scene"],
-      spec: { usage: "aof diagram scene <ref> <ADR-NNN-slug.excalidraw> [--action read|save|context|request|withdraw|respond|propose|proposals|accept|reject|publish|libraries] [--input path] [--json]", flags: { action: { type: "string", description: "read, save, context, request, withdraw, respond, propose, proposals, accept, reject, publish, or libraries" }, input: { type: "string", description: "JSON request file (scene, text, selectedIds, requestId, proposalId, operations, svg, png, …)" } } },
+      spec: { usage: "aof diagram scene <ref> <ADR-NNN-slug.excalidraw> [--action read|save|context|request|withdraw|respond|reply|propose|proposals|accept|reject|publish|libraries|stamp] [--input path] [--json]", flags: { action: { type: "string", description: "read, save, context, request, withdraw, respond, reply, propose, proposals, accept, reject, publish, libraries, or stamp" }, input: { type: "string", description: "JSON request file (scene, text, selectedIds, requestId, proposalId, operations, svg, png, …)" } } },
       argv: (positionals, options) => {
         let extra = {};
         if (options.input) { const raw = readFileSync(options.input, "utf8"); if (byteLength(raw) > MAX_RECORD_BYTES + MAX_SVG + MAX_PNG * 2) fail("Input is too large.", "diagram-scene-too-large", 413); extra = JSON.parse(raw); if (!plainObject(extra)) fail("Input JSON must be an object."); }

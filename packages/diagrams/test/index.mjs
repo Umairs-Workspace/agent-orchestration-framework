@@ -12,6 +12,8 @@ import { packageSeamsTests } from "./package-seams.suite.mjs";
 import { mermaidProfileTests } from "./mermaid-profile.suite.mjs";
 // milestone 170 / ADR-010 — the stored Excalidraw scene, seen as Mermaid.
 import { sceneViewTests } from "./scene-view.suite.mjs";
+// milestone 171 / ADR-004 — the house style, read from the style guide.
+import { houseStyleTests } from "./house-style.suite.mjs";
 
 export const tests = [
   ...diagramLayoutTests,
@@ -19,4 +21,5 @@ export const tests = [
   ...packageSeamsTests,
   ...mermaidProfileTests,
   ...sceneViewTests,
+  ...houseStyleTests,
 ];

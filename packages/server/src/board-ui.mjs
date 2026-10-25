@@ -4,7 +4,7 @@ import { isLoopbackHost, sendTaggedJson } from "./static-serve.mjs";
 // Application services enter through explicit ports; constructing a transport binds no listener.
 // 167/ADR-001 — `countRequest(route, clientHeader)` counts each `/api/work*` request on the
 // process's cost meter; core supplies it, and its absence counts nothing.
-export function createBoardApi({ invoke, loadWorkspace, resolveCacheStalenessSeconds, countRequest = () => {} }) {
+export function createBoardApi({ invoke, loadWorkspace, resolveCacheStalenessSeconds, countRequest = () => {}, watchDirectory = null, reportDegrade = () => {} }) {
 // `/api/work*` — the work board's read-mostly HTTP API (milestone 03, story 01;
 // re-homed onto the command core in milestone 08, story 02).
 //
@@ -328,6 +328,7 @@ async function handleDiagramApi(request, response, options = {}) {
       sendApiError(response, error.status ?? 500, error.message, error.code ?? "diagram-capability-api-failed"); return true;
     }
   }
+  if (request.method === "GET" && requestUrl.pathname === "/api/diagram/events") return streamDiagramEvents(request, response, options, requestUrl.searchParams);
   if (requestUrl.pathname === "/api/diagram/scene") {
     response.setHeader("cache-control", "no-store");
     try {
@@ -368,6 +369,85 @@ async function handleDiagramApi(request, response, options = {}) {
   } catch (error) {
     sendApiError(response, error.status ?? 500, error.message, error.code ?? "diagram-api-failed");
   }
+  return true;
+}
+
+// `/api/diagram/events` — milestone 171 / ADR-003. One "look now" stream per open diagram: an event
+// says only WHAT moved (`review` or `scene`) with the stamp that moved, never a record, so the editor
+// re-reads through `proposals` and `read` and the records keep one reader. The face names no diagram
+// path: `diagram:scene --action stamp` answers the stamps and the directories to watch. It watches
+// those (recursively), re-stamps 150 ms after the last change and every 30 s as a safety, ticks every
+// 2 s instead when no watch can start (167/ADR-009's pattern), and keeps a quiet stream open with a
+// comment line every 25 s. Everything it armed closes with the connection. The timers and the watch
+// are the caller's to inject (`options.timers`, `options.watch`), so a suite drives them by hand; the
+// production watcher and the degrade reporter arrive with the API (`watchDirectory`, `reportDegrade`) from
+// core's binding, so this transport imports no filesystem of its own (ADR-004 inv.3). With no watcher it ticks.
+const EVENTS_DEBOUNCE_MS = 150;
+const EVENTS_SAFETY_MS = 30_000;
+const EVENTS_TICK_MS = 2_000;
+const EVENTS_KEEPALIVE_MS = 25_000;
+async function streamDiagramEvents(request, response, options, params) {
+  const timers = options.timers ?? { setTimeout, clearTimeout, setInterval, clearInterval };
+  const watch = options.watch ?? watchDirectory;
+  const degraded = (error) => reportDegrade("diagram-events", error);
+  const target = { ref: (params.get("ref") ?? "").trim(), file: (params.get("file") ?? "").trim() };
+  let ctx;
+  let last;
+  try {
+    ctx = { workspace: await loadWorkspace(path.resolve(options.projectDir ?? process.cwd())) };
+    last = await invoke("diagram:scene", { ...target, action: "stamp" }, ctx);
+  } catch (error) {
+    // A build without the diagrams package has no stream; the editor stays on its poll.
+    if (/^Unknown command id "diagram:scene"/u.test(error?.message ?? "")) { sendApiError(response, 404, "Diagram events are not available.", "not-found"); return true; }
+    sendApiError(response, error.status ?? 500, error.message, error.code ?? "diagram-events-api-failed"); return true;
+  }
+  let closed = false;
+  let running = false;
+  let again = false;
+  let debounce = null;
+  let tick = null;
+  let safety = null;
+  let keepalive = null;
+  const watchers = [];
+  // The response closes when the client goes (a request's own close can fire once its empty body is read).
+  response.on("close", () => {
+    closed = true;
+    for (const handle of [safety, keepalive, tick]) if (handle) timers.clearInterval(handle);
+    if (debounce) timers.clearTimeout(debounce);
+    for (const watcher of watchers) { try { watcher.close(); } catch (error) { degraded(error); } }
+  });
+  response.writeHead(200, { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-store", connection: "keep-alive", "x-accel-buffering": "no" });
+  const emit = (event, data) => { if (!closed) response.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`); };
+  const revisionOf = async () => (await invoke("diagram:scene", { ...target, action: "read" }, ctx)).revision ?? null;
+  emit("stamp", { review: last.review, scene: last.scene, revision: last.scene ? await revisionOf().catch(() => null) : null });
+  if (closed) return true;
+  const restamp = async () => {
+    if (closed) return;
+    if (running) { again = true; return; }
+    running = true;
+    try {
+      const next = await invoke("diagram:scene", { ...target, action: "stamp" }, ctx);
+      if (closed) return;
+      if (next.review !== last.review) emit("review", { review: next.review });
+      if (JSON.stringify(next.scene) !== JSON.stringify(last.scene)) emit("scene", { scene: next.scene, revision: next.scene ? await revisionOf() : null });
+      last = next;
+    } catch (error) { degraded(error); /* the next change, tick or safety re-stamp tries again */ }
+    finally { running = false; if (again && !closed) { again = false; void restamp(); } }
+  };
+  const changed = () => { if (debounce) timers.clearTimeout(debounce); debounce = timers.setTimeout(() => { debounce = null; void restamp(); }, EVENTS_DEBOUNCE_MS); };
+  const degrade = () => { if (!tick && !closed) tick = timers.setInterval(() => void restamp(), EVENTS_TICK_MS); };
+  for (const directory of watch ? [...new Set(last.watch ?? [])] : []) {
+    try {
+      const watcher = watch(directory, changed);
+      if (watcher) { watcher.on?.("error", degrade); watchers.push(watcher); }
+    } catch (error) {
+      // A folder that does not exist yet is covered by the watch on the folder holding it.
+      if (error?.code !== "ENOENT") degrade();
+    }
+  }
+  if (watchers.length === 0) degrade();
+  safety = timers.setInterval(() => void restamp(), EVENTS_SAFETY_MS);
+  keepalive = timers.setInterval(() => { if (!closed) response.write(": keepalive\n\n"); }, EVENTS_KEEPALIVE_MS);
   return true;
 }
 

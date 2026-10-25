@@ -39,6 +39,9 @@ const FILE = "ADR-002-scene.excalidraw";
 const SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"><rect x="20" y="40" width="160" height="80" fill="#dbe7f3" stroke="#1f3a5f"/><text x="100" y="86" text-anchor="middle" font-family="sans-serif" font-size="16">old figure</text></svg>';
 const META = process.platform === "darwin" ? "Meta" : "Control";
 
+// One library element, as the sets from the public site write them.
+const part = (id, type, x, y, w, h, extra = {}) => ({ id, type, x, y, width: w, height: h, angle: 0, strokeColor: "#0078d4", backgroundColor: "transparent", fillStyle: "solid", strokeWidth: 2, strokeStyle: "solid", roughness: 0, opacity: 100, groupIds: [], frameId: null, roundness: null, seed: 7, version: 1, versionNonce: 7, isDeleted: false, boundElements: null, link: null, locked: false, ...extra });
+
 function project(name, diagrams) {
   const root = path.join(work, name);
   const item = path.join(root, "wiki/work/07_milestone_scene");
@@ -49,7 +52,6 @@ function project(name, diagrams) {
   const block = renderDiagramBlock({ adrId: "ADR-002", title: "the scene seam", stem: "ADR-002-scene", sourceExt: ".excalidraw", formats: ["svg"] });
   // A project library with one item of three loose elements — as libraries from the public site often are.
   mkdirSync(path.join(root, ".aof/diagrams/libraries"), { recursive: true });
-  const part = (id, type, x, y, w, h, extra = {}) => ({ id, type, x, y, width: w, height: h, angle: 0, strokeColor: "#0078d4", backgroundColor: "transparent", fillStyle: "solid", strokeWidth: 2, strokeStyle: "solid", roughness: 0, opacity: 100, groupIds: [], frameId: null, roundness: null, seed: 7, version: 1, versionNonce: 7, isDeleted: false, boundElements: null, link: null, locked: false, ...extra });
   writeFileSync(path.join(root, ".aof/diagrams/libraries/azure.excalidrawlib"), JSON.stringify({ type: "excalidrawlib", version: 2, source: "smoke", libraryItems: [{ id: "fn", status: "unpublished", created: 1, name: "Function App", elements: [
     part("p1", "rectangle", 0, 0, 60, 60, { backgroundColor: "#cce4f6", roundness: { type: 3 } }),
     part("p2", "line", 15, 15, 30, 30, { points: [[0, 0], [30, 30]] }),
@@ -105,7 +107,13 @@ async function canvasPoint(page, fx, fy) {
   return { x: area.x + area.width * fx, y: area.y + area.height * fy };
 }
 
-const on = project("on", { generator: "diagram-design", formats: ["svg", "png"] });
+// The diagrams-on project names a copy of this repository's style guide, so drafts and hand-drawn
+// shapes start in the house style (171/03).
+const on = project("on", { generator: "diagram-design", formats: ["svg", "png"], style: "style.md" });
+writeFileSync(path.join(on.root, "style.md"), readFileSync(path.join(repoRoot, ".aof", "diagrams", "style.md"), "utf8"));
+const PAPER = "#f3f5f7";
+const INK = "#1b1f27";
+const element = (fixture, mermaidId, type) => stored(fixture).elements.find((e) => e.customData?.aof?.id === mermaidId && (!type || e.type === type) && !e.isDeleted);
 const off = project("off", undefined);
 const servers = [];
 const browser = await chromium.launch({ channel: argOf("channel", "chrome"), headless: true });
@@ -118,6 +126,10 @@ try {
   const page = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
   const requests = [];
   page.on("request", (request) => requests.push(request.url()));
+  // The dock's terminal socket is answered HERE and never reaches the server, so Ask architect's
+  // invocation is read off the socket as typed and no session starts (171/00).
+  const typedToDock = [];
+  await page.routeWebSocket(/\/ws\/terminal(?:\?|$)/, (ws) => ws.onMessage((message) => { if (typeof message === "string" && !message.startsWith("{")) typedToDock.push(message); }));
 
   // ── the board links to the editor and loads none of it ────────────────────────────────────
   await openFigure(page, ON);
@@ -142,13 +154,17 @@ try {
   const draftContext = scene(on, "context", { requestId: draftRequest.id });
   check("architect: the context offers the project library items by name", JSON.stringify(draftContext.libraries) === JSON.stringify(['azure/"Function App"']));
   scene(on, "propose", { requestId: draftRequest.id, baseRevision: current.revision, summary: "First draft from ADR-002", rationale: "The brief names an API that writes through a store.", text: 'flowchart LR\n  API["API"] -->|"writes"| Store[("Store")]\n' });
-  await page.reload({ waitUntil: "networkidle" });
+  // `load`, never `networkidle`, on the editor: it holds its review stream open (171/ADR-003).
+  await page.reload({ waitUntil: "load" });
   await page.getByRole("button", { name: /^Accept proposal: First draft/ }).waitFor({ timeout: 30000 });
   await page.getByRole("button", { name: /^Preview proposal: First draft/ }).click();
   await waitForText(page, "only adds to the diagram");
   await page.getByRole("button", { name: /^Accept proposal: First draft/ }).click();
   await waitForText(page, "Proposal accepted", 30000);
   check("draft: Accept draws the proposal and the scene reads back as it", /API\["API"\]/.test(view(on)) && /Store\["Store"\]/.test(view(on)) && /API -->\|"writes"\| Store/.test(view(on)), view(on).split("\n").slice(2, 6).join(" | "));
+  const apiBox = element(on, "API", "rectangle");
+  const apiLabel = stored(on).elements.find((e) => e.type === "text" && e.containerId === apiBox?.id);
+  check("house style: the accepted first draft is stored in the house style — paper fill, ink stroke, ink label", /style API fill:#f3f5f7,stroke:#1b1f27,color:#1b1f27/.test(view(on)) && apiBox?.backgroundColor === PAPER && apiBox?.strokeColor === INK && apiLabel?.strokeColor === INK, JSON.stringify({ fill: apiBox?.backgroundColor, stroke: apiBox?.strokeColor, label: apiLabel?.strokeColor }));
   check("draft: the first-draft offer is gone once the diagram holds shapes", await page.getByRole("button", { name: "Request a first draft" }).count() === 0);
   await page.screenshot({ path: path.join(shots, "01-first-draft-accepted.png") });
 
@@ -202,7 +218,7 @@ try {
   const proposed = scene(on, "propose", { requestId: open[1].id, baseRevision: ctx.revision, summary: "Gateway and a store trigger", rationale: "Renames the API and adds the Function the store triggers.", text: edited });
   check("batch: the proposal's changes are the rename, the new library node and its edge", JSON.stringify(proposed.proposal.changes.map((c) => c.key).sort()) === JSON.stringify(["edge:Store->Trigger#1", "lib:Trigger", "node:API", "node:Trigger"]), JSON.stringify(proposed.proposal.changes));
   await waitForText(page, "the API owns every write", 20000);
-  check("batch: the answer appears in the panel on its own (the editor polls)", true);
+  check("batch: the answer appears in the panel on its own (the editor is told, or polls)", true);
   await page.getByRole("button", { name: /^Accept proposal: Gateway and a store trigger/ }).waitFor({ timeout: 20000 });
   await page.getByRole("button", { name: /^Accept proposal: Gateway and a store trigger/ }).click();
   await waitForText(page, "Proposal accepted", 30000);
@@ -222,8 +238,262 @@ try {
   check("publish: the editor shows the block to paste under the ADR", (await page.getByLabel("ADR diagram block").inputValue()).includes("Source: [ADR-002-scene.excalidraw](diagrams/ADR-002-scene.excalidraw)"));
   await page.screenshot({ path: path.join(shots, "04-published.png") });
 
+  // ── 171/00: Ask architect at the selection, on the drawn canvas ─────────────────────────────
+  // A box drawn at a known place is selected as it is drawn, so the action is measured against where
+  // the box is. A pan moves the box by the wheel's delta, and a zoom about a point keeps that point
+  // fixed — so with the cursor on the box's top-centre, both have a known answer.
+  const action = page.locator("[data-aof-canvas-action=ask]");
+  const barAsk = page.locator('button[aria-label="Ask architect"]');
+  const near = (a, b) => Math.abs(a - b) <= 3;
+  const sitsAbove = async (top) => { const r = await action.boundingBox(); return r && near(r.x + r.width / 2, top.x) && near(r.y + r.height, top.y - 8) ? r : null; };
+  // Points of its own, clear of the shapes and of the SDK's panels on this (now shorter) canvas.
+  const clear = await canvasPoint(page, 0.8, 0.2);
+  await page.mouse.click(clear.x, clear.y);
+  await page.keyboard.press("Escape");
+  check("canvas: with nothing selected no action is drawn, and the bar offers Add note and Ask architect", await action.count() === 0 && await page.getByRole("button", { name: "Add note" }).count() === 1 && await barAsk.count() === 1, `${await action.count()} actions`);
+  const p = await canvasPoint(page, 0.2, 0.55);
+  const q = await canvasPoint(page, 0.3, 0.65);
+  await page.keyboard.press("r");
+  await page.mouse.move(p.x, p.y); await page.mouse.down(); await page.mouse.move(q.x, q.y, { steps: 6 }); await page.mouse.up();
+  await action.waitFor({ timeout: 10000 });
+  let top = { x: (p.x + q.x) / 2, y: p.y };
+  const drawnAt = await sitsAbove(top);
+  check("canvas: a selected box offers one Ask architect, centred just above it", Boolean(drawnAt) && await action.count() === 1 && await page.locator("[data-aof-canvas-overlay]").getByText("Add note").count() === 0, JSON.stringify({ action: await action.boundingBox(), top }));
+  const islands = await page.locator(".excalidraw .Island").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect()).filter((r) => r.width && r.height).map((r) => ({ x: r.x, y: r.y, width: r.width, height: r.height })));
+  const overlaps = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  check("canvas: the action is clear of Excalidraw's own panels", islands.length > 0 && !islands.some((island) => overlaps(drawnAt, island)), `${islands.length} panels`);
+  await page.screenshot({ path: path.join(shots, "06-ask-at-selection.png") });
+  await page.mouse.move(top.x, top.y);
+  await page.mouse.wheel(0, -60);
+  top = { x: top.x, y: top.y + 60 };
+  await page.waitForTimeout(300);
+  check("canvas: the action follows the box on a pan", Boolean(await sitsAbove(top)), JSON.stringify({ action: await action.boundingBox(), top }));
+  // A zoom about the top-centre leaves that point — and so the action — where it was; the zoom
+  // readout is what shows the canvas really zoomed, and the box's drawn width what shows by how much.
+  const zoomShown = () => page.locator(".excalidraw .reset-zoom-button").first().innerText();
+  const zoomBefore = await zoomShown();
+  await page.mouse.move(top.x, top.y);
+  await page.keyboard.down("Control"); await page.mouse.wheel(0, -100); await page.keyboard.up("Control");
+  await page.waitForTimeout(300);
+  const zoomAfter = await zoomShown();
+  check("canvas: the action follows the box on a zoom", zoomAfter !== zoomBefore && Boolean(await sitsAbove(top)), JSON.stringify({ zoomBefore, zoomAfter, action: await action.boundingBox(), top }));
+  await page.screenshot({ path: path.join(shots, "07-ask-after-pan-and-zoom.png") });
+  // DESIGN's second breakpoint. The canvas keeps its scroll, so the box keeps its place in the
+  // canvas; only the canvas itself may move on the page as the header reflows.
+  const canvasAt = async () => page.locator(".excalidraw").first().boundingBox();
+  const wide = await canvasAt();
+  await page.setViewportSize({ width: 768, height: 900 });
+  await page.waitForTimeout(500);
+  const narrow = await canvasAt();
+  const topAt768 = { x: top.x - wide.x + narrow.x, y: top.y - wide.y + narrow.y };
+  check("canvas: at 768 px the action still sits just above the box", Boolean(await sitsAbove(topAt768)), JSON.stringify({ action: await action.boundingBox(), top: topAt768 }));
+  await page.screenshot({ path: path.join(shots, "07b-ask-at-768.png") });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.waitForTimeout(500);
+  const field = page.getByLabel("Question for the architect");
+  await action.click();
+  await page.mouse.click(clear.x, clear.y);
+  check("canvas: choosing elsewhere closes the open field", await field.count() === 0 && await action.count() === 0);
+  await page.mouse.click(top.x, top.y);
+  await action.waitFor({ timeout: 10000 });
+  await action.click();
+  await field.fill("Leave this");
+  await field.press("Escape");
+  const before = scene(on, "proposals").requests.length;
+  check("canvas: Escape closes the field, asks nothing and gives the action back", await field.count() === 0 && await action.count() === 1 && scene(on, "proposals").requests.length === before);
+  await action.click();
+  check("canvas: the field's Ask is disabled until the question has text", await page.getByRole("button", { name: "Ask", exact: true }).isDisabled());
+  await field.fill("Why is this box here?");
+  // Wider than the action, the field can reach the SDK's panels: nothing may be drawn over it.
+  const uncovered = await page.locator("[data-aof-canvas-overlay] [role=group]").evaluate((group) => {
+    const r = group.getBoundingClientRect();
+    return [[r.left + 4, r.top + r.height / 2], [r.right - 4, r.top + r.height / 2], [r.left + r.width / 2, r.top + 4]].every(([x, y]) => group.contains(document.elementFromPoint(x, y)));
+  });
+  check("canvas: the open field is drawn over everything around it, the SDK's panels included", uncovered);
+  await page.screenshot({ path: path.join(shots, "08-ask-field-open.png") });
+  await field.press("Enter");
+  await waitForText(page, "Architect session started in the dock", 20000);
+  const asked = scene(on, "proposals").requests.find((request) => request.request === "Why is this box here?");
+  check("canvas: the unsaved box was saved first, and the request names it", Boolean(asked) && asked.selectedIds?.length === 1 && new RegExp(`\\b${asked.selectedIds[0]}\\b`).test(view(on)) && (await page.locator("header [role=status]").first().innerText()) === "Saved", JSON.stringify(asked));
+  const drawnBox = element(on, asked.selectedIds[0]);
+  check("house style: a rectangle drawn by hand is saved with an ink stroke, a paper background and a solid fill", drawnBox?.strokeColor === INK && drawnBox?.backgroundColor === PAPER && drawnBox?.fillStyle === "solid", JSON.stringify({ stroke: drawnBox?.strokeColor, background: drawnBox?.backgroundColor, fill: drawnBox?.fillStyle }));
+  await page.getByText(`Why is this box here? — open · ${asked.selectedIds[0]}`).first().waitFor({ timeout: 15000 });
+  const invocation = `/aof:diagram-review 07 ${FILE} ${asked.id}`;
+  for (let i = 0; i < 50 && !typedToDock.some((typed) => typed.startsWith(invocation)); i += 1) await page.waitForTimeout(100);
+  check("canvas: the review panel lists the request, and the dock was handed the bar's invocation", typedToDock.some((typed) => typed === `${invocation}\r`), JSON.stringify(typedToDock));
+  check("canvas: the field closed once asked", await field.count() === 0);
+  await page.screenshot({ path: path.join(shots, "09-asked.png") });
+
+  // ── 171/04: with the architect's session open in the dock, a note is typed into it ──────────
+  const typedBefore = typedToDock.length;
+  await page.getByLabel(/Note, question or requested change/).fill("Is the cache needed at all?");
+  await page.screenshot({ path: path.join(shots, "09a-note-typed.png") });
+  await page.getByRole("button", { name: "Add note" }).click();
+  await waitForText(page, "Note recorded and sent to the architect's session", 15000);
+  const sentNote = scene(on, "proposals").requests.find((request) => request.request === "Is the cache needed at all?");
+  for (let i = 0; i < 30 && typedToDock.length === typedBefore; i += 1) await page.waitForTimeout(100);
+  check("dock: a note added while the session runs is typed into it, once, as its own review", Boolean(sentNote) && JSON.stringify(typedToDock.slice(typedBefore)) === JSON.stringify([`/aof:diagram-review 07 ${FILE} ${sentNote.id}\r`]), JSON.stringify(typedToDock.slice(typedBefore)));
+  await page.screenshot({ path: path.join(shots, "09b-note-sent-to-session.png") });
+
+  // ── 171/01: Find in libraries, over a real-sized set ─────────────────────────────────────────
+  // A 30-item library in the global home, written now — after the checks that read the project's
+  // one library by name — and loaded by a reload, as the editor reads libraries once when it opens.
+  const AWS = "aws-architecture-icons";
+  const ICONS = ["API Gateway", "AppSync", "Athena", "Aurora", "Batch", "CloudFront", "CloudWatch", "Cognito", "DynamoDB", "EC2", "ECS", "EFS",
+    "ElastiCache", "EventBridge", "Glue", "IAM", "Kinesis", "Kinesis Data Firehose", "Kinesis Data Streams", "Kinesis Video Streams", "Lambda",
+    "Lambda Function URL", "RDS", "Route 53", "S3", "SNS", "SQS", "Step Functions", "VPC", "WAF"];
+  mkdirSync(path.join(home, "diagrams", "libraries"), { recursive: true });
+  writeFileSync(path.join(home, "diagrams", "libraries", `${AWS}.excalidrawlib`), JSON.stringify({ type: "excalidrawlib", version: 2, source: "smoke", libraryItems: ICONS.map((name, i) => ({ id: `aws-${i}`, status: "unpublished", created: 1, name, elements: [
+    part(`r${i}`, "rectangle", 0, 0, 48, 48, { backgroundColor: "#ff9900", roundness: { type: 3 } }),
+    part(`l${i}`, "line", 12, 24, 24, 0, { points: [[0, 0], [24, 0]] }),
+  ] })) }));
+  await page.reload({ waitUntil: "load" });
+  await page.locator(".excalidraw canvas").first().waitFor({ timeout: 30000 });
+  await page.locator(".default-sidebar-trigger").first().click();
+  await page.getByRole("tab", { name: "Find in libraries" }).click();
+  const search = page.getByRole("searchbox", { name: "Find in libraries" });
+  await search.waitFor({ timeout: 10000 });
+  await page.screenshot({ path: path.join(shots, "10a-find-open.png") });
+  const focused = await search.evaluate((input) => input === document.activeElement);
+  const tabs = await page.locator(".default-sidebar [role=tab]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("aria-label") ?? node.textContent));
+  check("find: the Find tab sits beside the Library tab, its field focused", focused && tabs.length >= 3, JSON.stringify({ focused, tabs }));
+  await search.fill("kin");
+  const tiles = page.locator("[data-aof-library-search] ul > li");
+  const kin = ICONS.filter((name) => /kin/i.test(`${name} ${AWS}`));
+  await page.waitForTimeout(800);
+  const shownNames = await tiles.locator("span.truncate:first-of-type").allInnerTexts();
+  const previewed = await tiles.locator("svg").count();
+  check("find: typing \"kin\" leaves only the items whose name has it, each with a preview, its name and its library", JSON.stringify(shownNames) === JSON.stringify(kin) && previewed === kin.length && await tiles.getByText(AWS).count() === kin.length && (await page.locator("[data-aof-library-search] [role=status]").innerText()) === `${kin.length} items`, JSON.stringify({ shownNames, previewed }));
+  await page.screenshot({ path: path.join(shots, "10-find-tab.png") });
+  const libLines = () => view(on).split("\n").filter((line) => line.includes(`${AWS}/`));
+  const canvasBox = await page.locator(".excalidraw").first().boundingBox();
+  await page.getByRole("button", { name: `Insert Kinesis from ${AWS}` }).click();
+  await action.waitFor({ timeout: 10000 });
+  const clicked = await action.boundingBox();
+  check("find: a clicked item lands at the centre of the visible canvas", near(clicked.x + clicked.width / 2, canvasBox.x + canvasBox.width / 2) && clicked.y + clicked.height < canvasBox.y + canvasBox.height / 2, JSON.stringify({ action: clicked, canvas: canvasBox }));
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await waitForText(page, "Saved.");
+  check("find: the clicked item saves as a library node", libLines().some((line) => line.endsWith(`${AWS}/"Kinesis"`)), JSON.stringify(libLines()));
+  // Save is pressed outside the sidebar, which closes it as any outside press does: open Find again.
+  if (!await search.isVisible()) {
+    await page.locator(".default-sidebar-trigger").first().click();
+    await page.getByRole("tab", { name: "Find in libraries" }).click();
+  }
+  await search.fill("kin");
+  const dropAt = await canvasPoint(page, 0.3, 0.72);
+  await page.getByRole("button", { name: `Insert Kinesis Data Streams from ${AWS}` }).hover();
+  await page.mouse.down(); await page.mouse.move(dropAt.x, dropAt.y, { steps: 12 }); await page.mouse.up();
+  await page.waitForTimeout(500);
+  const dropped = await action.boundingBox();
+  check("find: a dragged item lands where it is dropped", Boolean(dropped) && near(dropped.x + dropped.width / 2, dropAt.x) && dropped.y + dropped.height < dropAt.y, JSON.stringify({ action: dropped, dropAt }));
+  await page.screenshot({ path: path.join(shots, "11-find-inserted.png") });
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await waitForText(page, "Saved.");
+  check("find: the dragged item saves as a library node", libLines().some((line) => line.endsWith(`${AWS}/"Kinesis Data Streams"`)), JSON.stringify(libLines()));
+
+  // ── 171/02: review records and saved drafts are pushed ──────────────────────────────────────
+  // A mark on the window proves the page was never reloaded; the stand-in architect writes through
+  // the real CLI, and each write must reach the open panel within 2 seconds.
+  await page.evaluate(() => { window.__aofNoReload = true; });
+  const within = async (what, timeout) => { const started = Date.now(); await what(timeout); return Date.now() - started; };
+  const openNote = scene(on, "proposals").requests.find((request) => request.status === "open" && request.request === "Why is this box here?");
+  scene(on, "respond", { requestId: openNote.id, answer: "It is the store's cache, drawn before its arrows." });
+  const answered = await within((timeout) => waitForText(page, "the store's cache, drawn before its arrows", timeout), 2000);
+  const nowRevision = scene(on, "read").revision;
+  const { request: second } = scene(on, "request", { baseRevision: nowRevision, selectedIds: [], request: "Name the store for what it holds." });
+  const secondView = scene(on, "context", { requestId: second.id }).view;
+  scene(on, "propose", { requestId: second.id, baseRevision: nowRevision, summary: "Orders store", rationale: "Named for what it holds.", text: secondView.replace('Store["Store"]', 'Store["Orders store"]') });
+  const proposed2 = await within((timeout) => page.getByRole("button", { name: "Accept proposal: Orders store" }).waitFor({ timeout }), 2000);
+  check("push: an answer and a proposal appear in the open panel within 2 seconds each, with no reload", await page.evaluate(() => window.__aofNoReload === true) && await page.getByRole("button", { name: "Preview proposal: Orders store" }).count() === 1 && await page.getByRole("button", { name: "Reject proposal: Orders store" }).count() === 1, `answer ${answered} ms, proposal ${proposed2} ms`);
+  await page.screenshot({ path: path.join(shots, "12-pushed-answer-and-proposal.png") });
+  // A second window on the same diagram saves; the first window's canvas follows.
+  const other = await page.context().newPage();
+  await other.goto(page.url(), { waitUntil: "load" });
+  await other.locator(".excalidraw canvas").first().waitFor({ timeout: 30000 });
+  const drawIn = async (target, fx, fy) => {
+    const area = await target.locator(".excalidraw").first().boundingBox();
+    const from = { x: area.x + area.width * fx, y: area.y + area.height * fy };
+    await target.mouse.click(area.x + area.width * 0.8, area.y + area.height * 0.2);
+    await target.keyboard.press("Escape");
+    await target.keyboard.press("r");
+    await target.mouse.move(from.x, from.y); await target.mouse.down(); await target.mouse.move(from.x + 60, from.y + 40, { steps: 4 }); await target.mouse.up();
+    await target.keyboard.press("Escape");
+  };
+  const status = (target) => target.locator("header [role=status]").first().innerText();
+  // The node ids a view names: what the second window's save adds is the one id that was not there.
+  const nodeIds = (text) => new Set([...text.matchAll(/\bn\d+\b/g)].map((match) => match[0]));
+  const idsBefore = nodeIds(view(on));
+  await drawIn(other, 0.62, 0.62);
+  await other.getByRole("button", { name: "Save", exact: true }).click();
+  await waitForText(other, "Saved.");
+  const added = [...nodeIds(view(on))].filter((id) => !idsBefore.has(id));
+  await page.locator("header [role=status]").filter({ hasText: "Updated from the saved draft" }).first().waitFor({ timeout: 4000 });
+  await page.getByRole("button", { name: "Show the Mermaid view" }).click();
+  const shownView = await page.getByRole("textbox", { name: "Mermaid view" }).inputValue();
+  check("push: a draft saved in a second window reaches the first window's clean canvas, with no reload", await page.evaluate(() => window.__aofNoReload === true) && added.length === 1 && nodeIds(shownView).has(added[0]), `${JSON.stringify(added)} in the first window's view`);
+  await page.getByRole("button", { name: "Hide", exact: true }).click();
+  // Clear of the properties panel the rectangle tool opens on the left.
+  await drawIn(page, 0.3, 0.6);
+  await page.locator("header [role=status]").filter({ hasText: "Unsaved changes" }).first().waitFor({ timeout: 4000 });
+  await drawIn(other, 0.7, 0.3);
+  await other.getByRole("button", { name: "Save", exact: true }).click();
+  await waitForText(other, "Saved.");
+  const line = page.locator("[data-aof-changed-elsewhere]");
+  await line.waitFor({ timeout: 4000 });
+  check("push: a dirty canvas keeps its unsaved shape and offers a reload", (await status(page)) === "Unsaved changes" && (await line.innerText()).includes("changed in another window") && await line.getByRole("button", { name: "Reload" }).count() === 1);
+  await page.screenshot({ path: path.join(shots, "13-changed-elsewhere.png") });
+  await line.getByRole("button", { name: "Reload" }).click();
+  await page.locator("header [role=status]").filter({ hasText: "Updated from the saved draft" }).first().waitFor({ timeout: 4000 });
+  check("push: Reload takes the saved draft and closes the line", await line.count() === 0 && await page.evaluate(() => window.__aofNoReload === true));
+  await other.close();
+
+  // ── 171/05: a note is a thread beside its shape ──────────────────────────────────────────────
+  // The drawn box `n2` holds two notes: 171/00's question (answered above) and 171/04's. Its pin sits
+  // on the box's top-right corner; the thread opens beside it, takes a reply, and shows the answer the
+  // stand-in architect writes next — pushed, with no reload.
+  const pin = page.locator('[data-aof-note-pin][aria-label*=" on n2"]');
+  await pin.waitFor({ timeout: 10000 });
+  const pinBox = async () => { const r = await pin.boundingBox(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, r }; };
+  // The console's primary (teal, the style guide's `link` #13766d) — never the SDK's own purple, which
+  // Excalidraw's container defines under the same token name.
+  const pinColour = await pin.evaluate((element) => getComputedStyle(element).backgroundColor);
+  check("thread: the box's notes share one pin that counts them, in the console's primary colour once answered", (await pin.innerText()).trim() === "2" && pinColour === "rgb(19, 118, 109)", `${await pin.getAttribute("aria-label")} · ${pinColour}`);
+  const corner = await pinBox();
+  await pin.click();
+  const threadBox = page.locator('[data-aof-note-thread]');
+  await threadBox.waitFor({ timeout: 5000 });
+  const threadRect = await threadBox.boundingBox();
+  check("thread: it opens beside the box, clear of the pin, oldest turn first", threadRect.x >= corner.x && !(threadRect.x < corner.r.x + corner.r.width && corner.r.x < threadRect.x + threadRect.width && threadRect.y < corner.r.y + corner.r.height && corner.r.y < threadRect.y + threadRect.height) && (await threadBox.innerText()).indexOf("Why is this box here?") < (await threadBox.innerText()).indexOf("the store's cache"), JSON.stringify({ thread: threadRect, pin: corner.r }));
+  await page.getByLabel("Reply to the architect").fill("Should it be a write-through cache?");
+  await threadBox.getByRole("button", { name: "Reply", exact: true }).click();
+  await threadBox.getByText("it waits for a review session").waitFor({ timeout: 10000 });
+  const latest = scene(on, "proposals").requests.find((request) => request.request === "Is the cache needed at all?");
+  check("thread: a reply is the thread's next turn, reopening the note, with no session running", latest.status === "open" && latest.thread.at(-1).text === "Should it be a write-through cache?" && latest.thread.length === 2, JSON.stringify(latest.thread));
+  scene(on, "respond", { requestId: latest.id, answer: "Write-through would double the writes; keep it read-through." });
+  await threadBox.getByText("keep it read-through").waitFor({ timeout: 4000 });
+  check("thread: the architect's answer appears in the open thread, pushed, with no reload", await page.evaluate(() => window.__aofNoReload === true));
+  await page.screenshot({ path: path.join(shots, "14-note-thread.png") });
+  await page.keyboard.press("Escape");
+  await threadBox.waitFor({ state: "detached", timeout: 3000 }).catch(() => {});
+  // A pan moves the pin by the wheel's delta; a zoom about another point P moves it to P + (C − P)·k.
+  const pinBefore = await pinBox();
+  const canvasArea = await page.locator(".excalidraw").first().boundingBox();
+  const zoomAbout = { x: canvasArea.x + canvasArea.width * 0.7, y: canvasArea.y + canvasArea.height * 0.5 };
+  await page.mouse.move(zoomAbout.x, zoomAbout.y);
+  await page.mouse.wheel(0, -40);
+  await page.waitForTimeout(300);
+  const panned = await pinBox();
+  const zoomFrom = parseInt(await page.locator(".excalidraw .reset-zoom-button").first().innerText(), 10);
+  await page.keyboard.down("Control"); await page.mouse.wheel(0, -100); await page.keyboard.up("Control");
+  await page.waitForTimeout(300);
+  const zoomTo = parseInt(await page.locator(".excalidraw .reset-zoom-button").first().innerText(), 10);
+  const zoomed = await pinBox();
+  const k = zoomTo / zoomFrom;
+  const expected = { x: zoomAbout.x + (panned.x - zoomAbout.x) * k, y: zoomAbout.y + (panned.y - zoomAbout.y) * k };
+  check("thread: the pin stays on the box's corner as the canvas pans and zooms", near(panned.x, pinBefore.x) && near(panned.y, pinBefore.y + 40) && zoomTo !== zoomFrom && Math.abs(zoomed.x - expected.x) <= 4 && Math.abs(zoomed.y - expected.y) <= 4, JSON.stringify({ pinBefore, panned, zoomed, expected, zoomFrom, zoomTo }));
+
   // ── reload, close, the board shows the new figure, a hostile address ───────────────────────
-  await page.reload({ waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "load" });
   // A reload cannot know whether an earlier session published this revision, so it claims only "Saved".
   await page.locator("header [role=status]").filter({ hasText: /^Saved$/ }).first().waitFor({ timeout: 30000 });
   check("route: a reload reopens the diagram at the same address", page.url().endsWith("/diagram?ref=07&file=ADR-002-scene.svg"));

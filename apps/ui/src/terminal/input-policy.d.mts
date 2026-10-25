@@ -60,3 +60,49 @@ export declare function mountModelFor(input?: {
   mount?: MountDeclaration | MountPostureName | { readOnly?: boolean } | null;
   reason?: string | null;
 }): MountModel;
+
+// Later input (milestone 171 / ADR-005): typed into a ready session once per sequence number.
+export interface LaterInput {
+  readonly seq: number;
+  readonly text: string;
+}
+export interface LaterInputReport {
+  readonly seq: number;
+  readonly delivered: boolean;
+  readonly reason: string | null;
+}
+export declare const LATER_INPUT_TYPED: "type";
+export declare const LATER_INPUT_SKIPPED: "skip";
+export declare const LATER_INPUT_REFUSED: "refuse";
+export declare function laterInputDecision(facts: {
+  lastSeq?: number;
+  input: LaterInput | null | undefined;
+  inputEnabled: boolean;
+  ready: boolean;
+}): { readonly action: "type" | "skip" | "refuse"; readonly reason: string | null; readonly data?: string };
+
+// What the live session is typed (171/ADR-005): the mount's command once, then later inputs.
+export interface SessionInputs {
+  send: ((data: string) => void) | null;
+  command: string | null;
+  commandSent: boolean;
+  inputEnabled: boolean;
+  ready: boolean;
+  lastSeq: number;
+  inputs: readonly LaterInput[];
+  onLaterInput: ((report: LaterInputReport) => void) | null | undefined;
+  onSessionReady: ((ready: boolean) => void) | null | undefined;
+  // `createTuiReadyGate()` from `@aof/contracts/tui-ready` (171 F-171-01).
+  gate: { feed(text: string): boolean; readonly ready: boolean; readonly pasteModeOn: boolean };
+  decoder: TextDecoder | null;
+  // One input at a time: its text (a paste once paste mode is on), then its Enter after the settle.
+  outbox: string[];
+  submitTimer: ReturnType<typeof setTimeout> | null;
+}
+export declare const COMMAND_READY_CAP_MS: number;
+export declare function sessionInputs(): SessionInputs;
+export declare function sessionOpened(record: SessionInputs, facts: { send: (data: string) => void; command: string | null | undefined; inputEnabled: boolean }): boolean;
+export declare function sessionOutput(record: SessionInputs, data: string | ArrayBuffer): boolean;
+export declare function typeCommand(record: SessionInputs, options?: { force?: boolean }): void;
+export declare function sessionClosed(record: SessionInputs): void;
+export declare function flushLaterInputs(record: SessionInputs): void;
