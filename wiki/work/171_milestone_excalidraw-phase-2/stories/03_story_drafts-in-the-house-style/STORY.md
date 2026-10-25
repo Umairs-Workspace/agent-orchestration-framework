@@ -4,7 +4,7 @@ number: 03
 slug: drafts-in-the-house-style
 title: "Drafts in the house style — a first draft, every new node and every hand-drawn shape start in the project's diagram style"
 parent: 171
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-24
 updated: 2026-10-25

@@ -7,8 +7,8 @@ doc: state
 
 - [x] Stories broken down and every story contracted (`aof:refine 171 --autonomous`, 2026-10-24):
   00–05, each with its example map, task features and build plan.
-- [ ] Mocks committed: `mocks/ask-architect.png`, `mocks/note-thread.png`, `mocks/library-find.png`
-  (the operator supplies them; until then each surface's binding checklist in DESIGN.md rules).
+- [x] Stories 00–05 built, reviewed and accepted (aof:verify, 2026-10-25).
+- [ ] Mocks committed — not supplied; carried to `backlog/milestone_excalidraw-phase-3` (OUTCOME gap).
 
 ## Notes & decisions in flight
 
@@ -25,7 +25,7 @@ doc: state
   was "Add a note on the canvas" and became "Ask the architect from the canvas"; ADR-001, SPEC and
   DESIGN follow). A session started from the editor also takes the waiting notes (171/04 Q1). The
   operator supplies mocks for the three new surfaces.
-- **Assumption to confirm at review.** Story 05 keeps a reply field in a note's thread beside its
+- **Assumption to confirm at review — carried to phase 3.** Story 05 keeps a reply field in a note's thread beside its
   shape (PRD phase 2: "read and answered beside the shape"). A reply continues an existing note, so
   it was read as outside "adding notes should be through the editor"; if the operator meant replies
   too, the reply moves to the review panel and 05's R1/E1–E3 and its DESIGN surface change.
@@ -75,77 +75,12 @@ doc: state
 
 ## Feedback (for retro)
 
-- **171/00 declared write set was incomplete.** The one ask path the bar and overlay share needed a
-  headless home; `editor-state.mjs` (+ `.d.mts`) is the editor's pure state, so it went there, and
-  `files:` now names both (and the package README, which documents each export). Story 02 also
-  writes `editor-state.mjs`; the waves are serial anyway.
-- **171/00: the overlay layer cannot be one z-index.** At the SDK's canvas-button layer the action is
-  correctly under the SDK's menus, but the 320 px question field slid under the properties panel and
-  was typed into half-hidden. The open field now rises above the layer UI; the smoke asserts nothing
-  is drawn over it. Story 05's thread popover is the same shape and needs the same rule.
-- **171/00 review close (solo, one round).** Fixed in the round: choosing other shapes while the
-  field is open now closes it (it had moved to the new selection while still asking about the old);
-  the overlay's watched flags are now read from the hide rule's own list (`MID_GESTURE`). Recorded,
-  not fixed (Nits): the question field grows on line breaks, not on soft wraps; E5's "the bar's ask is
-  the same" is held by the shared `askArchitect` plus source-shape assertions on the two call sites,
-  and in the browser only for the canvas path.
-- **171/01 review close (solo, one round, no Blocker).** Fixed at the close: the field showed two
-  clear buttons (Chrome's native one and the labelled Clear); the native one is hidden. Found by the
-  smoke: the field was not focused on open (the SDK's tab trigger keeps focus), now focused on the next
-  frame. Recorded (Nit): item names truncate in the 3-column grid of the 302 px sidebar; the tile's
-  title carries the full name.
-- **171/02: two write-set misses and one smoke trap.** `acd-run-status-renders-the-record` measures
-  each board-ui re-pin's distance to its entry, so stacking a reason widened its windows (+500, the
-  170 precedent) — it was in `reads:`, not `files:`; and the package README documents exports. Both
-  are now in `files:`. The smoke's `waitUntil: "networkidle"` can never settle on the editor any more
-  (the open event stream is a connection), so editor pages wait for `load`.
-- **171/02 review close (solo, one round, no Blocker).** Recorded (Nit): E3's "a quiet minute makes
-  no request" is held by the poll rule over the stream state; the browser run does not count requests.
-  The near-miss recall ran AFTER the build (`…171020000001`), not before it — a process slip.
-- **171/03: the Codex prompt is a second copy.** The review prompt's body lives in the asset AND,
-  verbatim, in `packages/core/assets/variants/codex/workflow.md` — editing only the asset left the
-  Codex render unchanged, and `aof work update` refused the hand-edited render. Edited both, then let
-  the update re-render and re-lock; `files:` now names the variant, the lock and the journal.
-- **171/03 review close (solo, one round, no Blocker).** Recorded (Nit): E10 (a stored shape keeps its
-  own colours under the defaults) is held by the defaults being `currentItem*` only plus a source
-  assertion; in the browser only the library icon keeping its blue shows it.
-- **171/04: the control had no room for its seam.** `TerminalControl.tsx` sat at its 840-line ratchet
-  with zero headroom (`acd-ui-surface-file-budget`; `terminals-home-route` pins the count). Refine named
-  only the FF-5307 freeze. Paid for by EXTRACTION, the ratchet's own remedy: the command's
-  once-per-session typing moved to `input-policy.mjs` beside the later-input rule, account and all —
-  839 lines. The grid suite's socket-suite lane count (13 → 20) and the home-route row (840 → 839)
-  re-aimed with reasons; `files:` now names both, and `editor-state.mjs` (the invocation list).
-- **171/04: a 170 defect the story exposed.** The diagram surface was `h-full`, not the shell's
-  `CONTENT_FIXED_HEIGHT_CLASS`, so an open dock covered the editor's bar — exactly where a note to the
-  open session is added. Now sized as the board is; the editor column scrolls with a sticky header.
-- **171/04 review close (solo, one round, no Blocker).** Recorded (Nit): with the dock open, the
-  status line under the bar can sit below the fold of the scrolling column.
-- **171/05: the SDK shadows two console tokens.** Inside `.excalidraw`, Excalidraw defines
-  `--color-primary` (its purple) and `--color-muted`, so the pin's `bg-primary` drew purple, and
-  171/00's hover and 171/01's tiles used the SDK's grey — found only by reading screenshot 14. aof's
-  chrome roots now re-declare both from the document root (`consoleTokens`), the console theme staying
-  their one home; the smoke asserts the pin's computed colour (`rgb(19, 118, 109)`). `files:` grew by
-  `canvas-anchor.mjs` (the two placements FF-17102 homes there), `LibrarySearch.tsx` and the Codex variant.
-- **171/05 review close (solo, one round, no Blocker).** Recorded (Nits): a thread's header shows its
-  latest note's status and the pin's colour reads "some note has the architect's last word" — per-viewer
-  read state is out of scope; the `proposals` listing caps decided notes at 50, so a very old answered
-  note loses its pin.
-
-- **171 verify: the live `@uat` found two defects every check had passed.** F-171-01 — the dock typed a
-  mount's command on the first painted bytes, then as raw `text`; the session driver had solved both in
-  September (2026-09-27 readiness, 70/06 paste-then-Enter) in a module the browser could not import. Fixed by
-  giving the gate and the framing one home (`@aof/contracts/tui-ready`). F-171-02 — the SDK's document-level
-  keyup clears the selection on a space, which closed the overlay's field. The smoke stands the session in and
-  never types a space, so neither could be seen without the operator.
-- **171 verify: the gate caught six reds the story lanes never ran.** 171/02 put `node:fs` and two silent
-  catches in the board transport (ADR-004 inv.3, m42-item-3) and stacked a pin comment past the-card-renders/04's
-  window; 03 and 05 declared `diagram-review.md` without two of its tracked renders (FF-7106); the F-171-01 fix
-  added a module to `aof work find` (FF-16004, and FF-16008 / build-sea downstream of it). The watcher and the
-  degrade reporter now arrive from core's binding; each pin moved with its reason.
+Archived at accept (2026-10-25): the notes graduated into `RETROSPECTIVE.md` (R1–R4) and the stories'
+own retrospectives (00, 02, 03, 04, 05); the full notes are in git history at `ae88965e`.
 
 ## Verification
 
-- [ ] `@executable` suite green
-- [ ] Fitness functions green (FF-17101, FF-17102, each with its red probe)
-- [ ] `@manual` signed off
-- [ ] `@uat` (04, 05) run by the operator with a live architect session
+- [x] `@executable` suite green — whole tree green at `ae88965e` (`REGRESSION.md`)
+- [x] Fitness functions green (FF-17101, FF-17102, each with its red probe)
+- [x] `@manual` signed off
+- [x] `@uat` (04, 05) run by the operator with a live architect session — PASS

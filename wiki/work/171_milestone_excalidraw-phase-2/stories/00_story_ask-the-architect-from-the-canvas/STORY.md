@@ -4,7 +4,7 @@ number: 00
 slug: ask-the-architect-from-the-canvas
 title: "Ask the architect from the canvas — a selected shape offers Ask architect where it sits"
 parent: 171
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-24
 updated: 2026-10-25

@@ -4,7 +4,7 @@ number: 01
 slug: find-a-library-item-by-name
 title: "Find a library item by name — a search tab beside the Library panel, over both library roots"
 parent: 171
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-24
 updated: 2026-10-25

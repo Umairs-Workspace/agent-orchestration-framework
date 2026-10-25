@@ -4,7 +4,7 @@ number: 05
 slug: a-note-is-a-thread-beside-its-shape
 title: "A note is a thread beside its shape — follow-ups both ways, read and answered on the canvas"
 parent: 171
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-24
 updated: 2026-10-25

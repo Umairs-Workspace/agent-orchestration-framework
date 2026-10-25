@@ -4,7 +4,7 @@ number: 04
 slug: a-note-reaches-the-open-session
 title: "A note reaches the open session — with the architect's session open, a new note is typed into it as it is written"
 parent: 171
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-24
 updated: 2026-10-25

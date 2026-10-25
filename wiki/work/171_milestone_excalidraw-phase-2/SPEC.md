@@ -3,10 +3,10 @@ type: milestone
 number: 171
 slug: excalidraw-phase-2
 title: "Excalidraw phase 2 — the editor follows the architect live and is easier to drive"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-25
 schema: 1
 aofVersion: 0.1.0
 tags: [design, board, ui, work]
@@ -57,12 +57,12 @@ Out of scope:
 Independent by construction: each owns one seam. Only 05 depends, on 00 (the overlay) and 04 (the
 delivery function).
 
-- [ ] [00 · Ask the architect from the canvas](stories/00_story_ask-the-architect-from-the-canvas/STORY.md) — F-170-11, as ruled at refine
-- [ ] [01 · Find a library item by name](stories/01_story_find-a-library-item-by-name/STORY.md) — F-170-12
-- [ ] [02 · Review records are pushed](stories/02_story_review-records-are-pushed/STORY.md) — F-170-13
-- [ ] [03 · Drafts in the house style](stories/03_story_drafts-in-the-house-style/STORY.md)
-- [ ] [04 · A note reaches the open session](stories/04_story_a-note-reaches-the-open-session/STORY.md)
-- [ ] [05 · A note is a thread beside its shape](stories/05_story_a-note-is-a-thread-beside-its-shape/STORY.md) — depends 00, 04
+- [x] [00 · Ask the architect from the canvas](stories/00_story_ask-the-architect-from-the-canvas/STORY.md) — F-170-11, as ruled at refine
+- [x] [01 · Find a library item by name](stories/01_story_find-a-library-item-by-name/STORY.md) — F-170-12
+- [x] [02 · Review records are pushed](stories/02_story_review-records-are-pushed/STORY.md) — F-170-13
+- [x] [03 · Drafts in the house style](stories/03_story_drafts-in-the-house-style/STORY.md)
+- [x] [04 · A note reaches the open session](stories/04_story_a-note-reaches-the-open-session/STORY.md)
+- [x] [05 · A note is a thread beside its shape](stories/05_story_a-note-is-a-thread-beside-its-shape/STORY.md) — depends 00, 04
 
 ## Dependencies
 

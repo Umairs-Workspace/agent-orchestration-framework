@@ -4,7 +4,7 @@ number: 02
 slug: review-records-are-pushed
 title: "Review records are pushed — an answer, a proposal or a saved draft reaches the open editor without a reload"
 parent: 171
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-24
 updated: 2026-10-25
