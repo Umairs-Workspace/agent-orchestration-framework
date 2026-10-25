@@ -7,8 +7,9 @@
 //   2. the comment-stripped session driver spells none of the byte readers that moved into the door
 //      (`ANSI_ESCAPE_RE`, `TUI_READY_MARKER`, `2004h`, `PARKED_PASTE_RE`, `PROVIDER_WAIT_RE`,
 //      `hasVisibleText`, `screenTail`);
-//   3. no comment-stripped module but `packages/core/src/terminal/session-screen.mjs` spells the byte gate's
-//      markers, `?2004h` or `?2004l`.
+//   3. no comment-stripped module but the byte gate's home spells its markers, `?2004h` or `?2004l` —
+//      `packages/contracts/src/tui-ready.mjs` since 171 F-171-01, which moved the gate out of the door so
+//      the browser's dock types on the same rule (the door now reads it through `createTuiReadyGate`).
 // Comments are stripped the way `acd-worker-driver-no-headless-print` strips them, so a comment that
 // narrates the move is never a violation. Each spelling is PLANTED into a copy of the live sources to
 // prove the detector is not vacuous (the m03 self-check); nothing is written to disk.
@@ -25,6 +26,7 @@ const EMULATOR = "@xterm/headless";
 const MODEL = "packages/execution/src/terminal/screen.mjs";
 const DOOR = "packages/execution/src/terminal/session-screen.mjs";
 const DRIVER = "packages/execution/src/session-driver.mjs";
+const GATE = "packages/contracts/src/tui-ready.mjs";
 const DRIVER_SPELLINGS = Object.freeze(["ANSI_ESCAPE_RE", "TUI_READY_MARKER", "2004h", "PARKED_PASTE_RE", "PROVIDER_WAIT_RE", "hasVisibleText", "screenTail"]);
 const MARKERS = Object.freeze(["?2004h", "?2004l"]);
 
@@ -46,7 +48,7 @@ export function screenReaderViolations(files) {
     if (rel === DRIVER) {
       for (const spelling of DRIVER_SPELLINGS) if (code.includes(spelling)) violations.push({ file, spelling });
     }
-    if (rel !== DOOR) {
+    if (rel !== GATE) {
       for (const spelling of MARKERS) if (code.includes(spelling)) violations.push({ file, spelling });
     }
   }
@@ -80,9 +82,11 @@ export const archTests = [
       assert.ok(files.length > 100, `non-vacuity: ${files.length} src modules were read`);
       const model = files.find((file) => file.rel === MODEL);
       assert.ok(model != null && importSpecifiers(model.source).some((entry) => entry.specifier === EMULATOR), `${MODEL} is the one importer of ${EMULATOR}`);
+      const gate = files.find((file) => file.rel === GATE);
+      assert.ok(gate != null && MARKERS.every((marker) => stripComments(gate.source).includes(marker)), `${GATE} is the byte gate's one home`);
       const door = files.find((file) => file.rel === DOOR);
-      assert.ok(door != null && MARKERS.every((marker) => stripComments(door.source).includes(marker)), `${DOOR} is the byte gate's one home`);
-      assert.deepEqual(screenReaderViolations(files), [], "no module but the model imports the emulator, the driver reads no screen, and only the door spells the markers");
+      assert.ok(door != null && stripComments(door.source).includes("createTuiReadyGate"), `${DOOR} reads readiness through the gate`);
+      assert.deepEqual(screenReaderViolations(files), [], "no module but the model imports the emulator, the driver reads no screen, and only the gate's home spells the markers");
     },
   },
   ...[

@@ -24,7 +24,40 @@ async function withFixture(fn, options) { const fx = await fixture(options); try
 async function rejected(run, code) { await assert.rejects(run, (error) => error.code === code, `expected ${code}`); }
 const save = (command, ctx, value, baseRevision = null) => command.run({ ref: "07", file, action: "save", baseRevision, scene: value }, ctx);
 
+// milestone 171 / story 03 — the palette `read` carries, read from the style guide config names (ADR-004).
+const REPO_STYLE = fileURLToPath(new URL("../../.aof/diagrams/style.md", import.meta.url));
+const consoleColours = (palette) => palette && { paper: palette.paper, ink: palette.ink, muted: palette.muted, link: palette.link, accent: palette.accent };
+
 export const diagramSceneCommandTests = [
+  { name: "171/03 E1 · a project whose work.diagrams.style names a copy of this repository's style guide reads the console's colours", run: () => withFixture(async ({ command, ctx, root }) => {
+    await writeFile(path.join(root, "style.md"), await readFile(REPO_STYLE, "utf8"));
+    const answer = await command.run({ ref: "07", file, action: "read" }, ctx);
+    assert.deepEqual(consoleColours(answer.palette), { paper: "#f3f5f7", ink: "#1b1f27", muted: "#585f6a", link: "#13766d", accent: "#ba2646" });
+  }, { diagrams: { enabled: true, formats: ["svg"], style: "style.md" } }) },
+  { name: "171/03 E2 · with no work.diagrams.style there is no palette", run: () => withFixture(async ({ command, ctx }) => {
+    assert.equal((await command.run({ ref: "07", file, action: "read" }, ctx)).palette, null);
+  }, { diagrams: { enabled: true, formats: ["svg"] } }) },
+  { name: "171/03 · a style guide named in config but missing from disk gives no palette", run: () => withFixture(async ({ command, ctx }) => {
+    assert.equal((await command.run({ ref: "07", file, action: "read" }, ctx)).palette, null);
+  }, { diagrams: { enabled: true, formats: ["svg"], style: "missing/style.md" } }) },
+  { name: "171/03 · the read answer carries the palette (the real CLI)", run: async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "aof-palette-cli-"));
+    try {
+      const project = path.join(root, "project");
+      const item = path.join(project, "wiki/work/171_milestone_style");
+      await mkdir(path.join(project, ".aof"), { recursive: true });
+      await mkdir(item, { recursive: true });
+      await writeFile(path.join(project, "style.md"), await readFile(REPO_STYLE, "utf8"));
+      await writeFile(path.join(project, ".aof/aof.config.json"), JSON.stringify({ name: "palette-test", resources: [], work: { dir: "./wiki/work", diagrams: { generator: "diagram-design", style: "style.md" } } }));
+      await writeFile(path.join(item, "SPEC.md"), "---\ntype: milestone\nnumber: 171\nslug: style\ntitle: style\nstatus: in-progress\nschema: 1\n---\n# Style\n");
+      const cli = fileURLToPath(new URL("../../packages/core/bin/aof.mjs", import.meta.url));
+      const result = spawnSync(process.execPath, [cli, "diagram", "scene", "171", "ADR-004-house-style.excalidraw", "--json"], { cwd: project, encoding: "utf8", env: { ...process.env, AOF_GLOBAL_HOME: path.join(root, "global") } });
+      assert.equal(result.status, 0, result.stderr);
+      const { palette } = JSON.parse(result.stdout);
+      assert.equal(palette.paper, "#f3f5f7");
+      assert.equal(palette.ink, "#1b1f27");
+    } finally { await rm(root, { recursive: true, force: true }); }
+  } },
   { name: "scene: real CLI routes save, read and context with declared flags", run: async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "aof-scene-cli-"));
     try {

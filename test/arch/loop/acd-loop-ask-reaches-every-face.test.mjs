@@ -141,10 +141,13 @@ const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const PHRASES = Object.freeze(["waiting on you", "answered by", "parked, unanswered", "loop halted", "loop died", "loop relaunched"]);
 const THE_PHRASE = "waiting on you";
 // The board's import of the ask form; and the diagram surface's lazy `import()` of `@aof/diagrams-ui`'s
-// editor (170/ADR-001: diagramming is a package the app reaches one way, through one dynamic import).
+// editor (170/ADR-001: diagramming is a package the app reaches one way, through one dynamic import);
+// and the terminal's input policy reading the TUI's readiness from the byte gate's one home (171
+// F-171-01: the dock types a mount's command on the rule the session driver pastes on, FF-13801).
 const UI_OUTSIDE = Object.freeze([
   { file: "apps/ui/src/board/action.mjs", specifier: "@aof/messaging/form" },
   { file: "apps/ui/src/diagram/DiagramSurface.tsx", specifier: "@aof/diagrams-ui/editor" },
+  { file: "apps/ui/src/terminal/input-policy.mjs", specifier: "@aof/contracts/tui-ready" },
 ]);
 const UI_EXTENSIONS = /\.(?:mjs|mts|ts|tsx|js)$/u;
 const BOARD = "packages/server/src/board-ui.mjs";

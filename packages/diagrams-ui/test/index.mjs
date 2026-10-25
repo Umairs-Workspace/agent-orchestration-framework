@@ -7,10 +7,22 @@
 import { sceneDraftTests, reviewStateTests, notesAndDraftsTests } from "./editor-state.suite.mjs";
 // milestone 170 / ADR-012 — a proposal compiled into the stored scene, read back as the proposal.
 import { compileTests } from "./compile.suite.mjs";
+// milestone 171 / story 00 — Ask architect at the selection: the overlay's anchor and the one ask path.
+import { canvasAnchorTests } from "./canvas-anchor.suite.mjs";
+// milestone 171 / story 01 — Find in libraries: the filter, both roots, the panel's own insertion.
+import { librarySearchTests } from "./library-search.suite.mjs";
+// milestone 171 / story 02 — the editor follows the review stream; the poll is its fallback.
+import { reviewStreamTests } from "./review-stream.suite.mjs";
+// milestone 171 / story 05 — a note's thread pinned beside its shape, and a reply delivered.
+import { noteThreadTests } from "./note-threads.suite.mjs";
 
 export const tests = [
   ...sceneDraftTests,
   ...reviewStateTests,
   ...notesAndDraftsTests,
   ...compileTests,
+  ...canvasAnchorTests,
+  ...librarySearchTests,
+  ...reviewStreamTests,
+  ...noteThreadTests,
 ];

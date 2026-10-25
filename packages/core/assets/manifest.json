@@ -246,7 +246,7 @@
         "id": "aof-diagram-review",
         "kind": "skill"
       },
-      "hash": "sha256:3c0719535ece4fb39b5d1ea17e635ac64dca1d5b9b19a2fedee5ec89fdf9eb0d"
+      "hash": "sha256:50f7bc1ef053b745300c0f1eb9bff400ae81784992541986b20bc21d8b9d7c6f"
     },
     {
       "path": ".agents/skills/aof-diagram-review/agents/openai.yaml",
@@ -1263,7 +1263,7 @@
         "id": "diagram-review",
         "kind": "command"
       },
-      "hash": "sha256:fe9f0a882e9b683c7ab3b587f5c7506f57d76e7e129437df17ee2b854ad1dcd5"
+      "hash": "sha256:23a5ae63d592a43afdeecd6960475db4710fca16b04e64612a08cd7fab6553d6"
     },
     {
       "path": ".claude/commands/aof/explain.md",

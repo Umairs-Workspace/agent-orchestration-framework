@@ -3,7 +3,7 @@ type: milestone
 number: 171
 slug: excalidraw-phase-2
 title: "Excalidraw phase 2 — the editor follows the architect live and is easier to drive"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-10-24
 updated: 2026-10-24
@@ -24,7 +24,7 @@ uncoloured unless someone asks.
 This milestone closes those gaps and takes phase 2 of
 [wiki/planning/PRD-excalidraw-refinement.md](../../planning/PRD-excalidraw-refinement.md). An
 outsider can check it. On a project with `work.diagrams` on, open a diagram in the editor, select a
-shape and add a note from the canvas itself. Find an item in a large library by typing part of its
+shape and ask the architect about it from the canvas itself. Find an item in a large library by typing part of its
 name. Run `/aof:diagram-review` in another session: its answer and its proposal appear in the open
 editor without a reload. Request a first draft: it arrives coloured in the project's diagram style.
 Talk to the architect about a shape from inside the diagram, without leaving the canvas.
@@ -32,8 +32,9 @@ Talk to the architect about a shape from inside the diagram, without leaving the
 ## Scope
 
 In scope:
-- contextual notes: a selected shape offers "Add note" on the canvas (context menu or selection
-  toolbar), scoped to the selection, as the bar below the canvas does today (170 VERIFICATION F-170-11)
+- asking from the canvas: a selected shape offers "Ask architect" where it sits, scoped to the
+  selection (170 VERIFICATION F-170-11). The operator ruled at refine (2026-10-24, 171/00 Q1) that
+  the canvas offers only Ask architect; notes are added through the editor's bar
 - library search: the editor filters the Library panel by item or library name, over the global and
   project library roots (F-170-12; Excalidraw 0.18's panel has no search)
 - a push channel for review records: answers and proposals reach the open editor as they are written,
@@ -53,7 +54,15 @@ Out of scope:
 
 ## Stories
 
-To be broken down by `aof:refine`.
+Independent by construction: each owns one seam. Only 05 depends, on 00 (the overlay) and 04 (the
+delivery function).
+
+- [ ] [00 · Ask the architect from the canvas](stories/00_story_ask-the-architect-from-the-canvas/STORY.md) — F-170-11, as ruled at refine
+- [ ] [01 · Find a library item by name](stories/01_story_find-a-library-item-by-name/STORY.md) — F-170-12
+- [ ] [02 · Review records are pushed](stories/02_story_review-records-are-pushed/STORY.md) — F-170-13
+- [ ] [03 · Drafts in the house style](stories/03_story_drafts-in-the-house-style/STORY.md)
+- [ ] [04 · A note reaches the open session](stories/04_story_a-note-reaches-the-open-session/STORY.md)
+- [ ] [05 · A note is a thread beside its shape](stories/05_story_a-note-is-a-thread-beside-its-shape/STORY.md) — depends 00, 04
 
 ## Dependencies
 

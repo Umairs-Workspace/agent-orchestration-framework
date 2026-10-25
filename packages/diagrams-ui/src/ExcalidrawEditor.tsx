@@ -1,11 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CaptureUpdateAction, Excalidraw, convertToExcalidrawElements, exportToBlob, exportToSvg, restoreElements, serializeAsJSON } from "@excalidraw/excalidraw";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import "@excalidraw/excalidraw/index.css";
+import { canvasDefaults } from "@aof/diagrams/house-style";
 import { parseProfile } from "@aof/diagrams/mermaid-profile";
 import { projectScene, sceneView, selectionIds } from "@aof/diagrams/scene-view";
 import { compileProposal, firstDraftSkeletons, libraryItemsFor, operationsFor } from "./compile.mjs";
-import { POLL_MS, describeCounts, describeError, diagramReviewInvocation, openNotes, pendingProposals, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, touchedIds } from "./editor-state.mjs";
+import { CanvasOverlay } from "./CanvasOverlay";
+import { LibrarySearchSidebar } from "./LibrarySearch";
+import { replyToNote } from "./note-threads.mjs";
+import type { ThreadNote } from "./note-threads.mjs";
+import { CANVAS_UPDATED, CHANGED_ELSEWHERE, STREAM_INITIAL, streamStep } from "./review-stream.mjs";
+import type { StreamEvent, StreamState } from "./review-stream.mjs";
+import { POLL_MS, askArchitect, reviewInvocations, describeCounts, describeError, diagramReviewInvocation, openNotes, pendingProposals, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, touchedIds } from "./editor-state.mjs";
 
 // THE EDITOR (milestone 170, ADR-010..ADR-013). The diagram is stored as Excalidraw's own scene, so
 // this canvas IS the diagram: anything can be drawn, and your project's libraries are in the Library
@@ -14,9 +21,9 @@ import { POLL_MS, describeCounts, describeError, diagramReviewInvocation, openNo
 // changed since. Publish exports the figure the ADR shows from this same canvas.
 
 type Scene = { type: "excalidraw"; version: 2; elements: CanvasElement[]; appState: Record<string, unknown>; files: Record<string, unknown> };
-type SceneResponse = { ref: string; file: string; present: boolean; revision: string | null; scene: Scene; readOnly: boolean; assigned?: Record<string, string> };
+type SceneResponse = { ref: string; file: string; present: boolean; revision: string | null; scene: Scene; readOnly: boolean; assigned?: Record<string, string>; palette?: Record<string, string> | null };
 type LibraryEntry = { library: string; item: string; id: string; elements: CanvasElement[] };
-type ReviewRequest = { id: string; request: string; status: string; answer: string | null; selectedIds?: string[] };
+type ReviewRequest = { id: string; request: string; status: string; answer: string | null; selectedIds?: string[]; createdAt?: string; thread?: ThreadNote["thread"] };
 type ReviewProposal = { id: string; requestId?: string; summary: string; rationale: string; status: string; text?: string; changes?: Array<{ key: string; change: string }>; reason?: string | null };
 type ReviewList = { requests: ReviewRequest[]; proposals: ReviewProposal[] };
 type CanvasElement = Record<string, unknown> & { id: string; type: string; isDeleted?: boolean; customData?: Record<string, unknown>; x: number; y: number; width: number; height: number; containerId?: string | null; frameId?: string | null };
@@ -32,6 +39,9 @@ async function jsonResponse<T>(response: Response): Promise<T> {
 }
 const failure = (reason: unknown) => reason instanceof ApiError ? describeError(reason.code, reason.message) : reason instanceof Error ? reason.message : "Diagram operation failed";
 const ARCHITECT_NOTICE = "Architect session started in the dock below the canvas. Answers and proposals appear in the review panel.";
+const SENT_NOTICE = "Sent to the architect's session in the dock. Answers and proposals appear in the review panel.";
+const NOTE_SENT = "Note recorded and sent to the architect's session in the dock.";
+const NOTE_NOT_RUNNING = "Note recorded. The architect session in the dock is not running — Review notes starts one.";
 const FIRST_DRAFT_REQUEST = "Draw a first draft of this diagram from its ADR and diagram brief.";
 const toElements = (skeletons: unknown[]) => convertToExcalidrawElements(skeletons as never, { regenerateIds: false }) as unknown as CanvasElement[];
 // Bytes per `String.fromCharCode` call: well under the engine's argument-count limit.
@@ -49,11 +59,15 @@ async function converted(text: string) {
   return (await parseMermaidToExcalidraw(text)).elements as unknown as Array<Record<string, unknown> & { id: string; type: string; x: number; y: number; width: number; height: number }>;
 }
 
-export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onAskArchitect }: { itemRef: string; svgFile: string; onRequestClose: () => void; onAskArchitect?: (invocation: string) => void }) {
+type Delivery = "typed" | "started" | "waiting" | "not-running";
+
+export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }: { itemRef: string; svgFile: string; onRequestClose: () => void; onDeliver?: (invocations: string[], kind: "ask" | "note") => Delivery }) {
   const file = sceneFileName(svgFile);
   const url = `/api/diagram/scene?ref=${encodeURIComponent(itemRef)}&file=${encodeURIComponent(file)}`;
   const [loaded, setLoaded] = useState<SceneResponse | null>(null);
   const [libraries, setLibraries] = useState<LibraryEntry[]>([]);
+  // The Library panel's items, tagged with where each came from: Find inserts these same items.
+  const libraryItems = useMemo(() => libraryItemsFor(libraries) as unknown as Array<{ id: string; elements: unknown[] }>, [libraries]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -61,9 +75,20 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onAskArchit
   const [publishedRevision, setPublishedRevision] = useState<string | null>(null);
   const [question, setQuestion] = useState("");
   const api = useRef<ExcalidrawImperativeAPI | null>(null);
+  // The same API as state, for the canvas overlay's subscriptions.
+  const [canvasApi, setCanvasApi] = useState<ExcalidrawImperativeAPI | null>(null);
   const revision = useRef<string | null>(null);
   const baseline = useRef<string | null>(null);
   const busyRef = useRef(false);
+  // Read by the review stream's handlers, which outlive any one render.
+  const dirtyRef = useRef(false);
+  const stream = useRef<StreamState>(STREAM_INITIAL);
+  const deferred = useRef<StreamEvent | null>(null);
+  const streamDispatch = useRef<(event: StreamEvent) => void>(() => {});
+  const [changedElsewhere, setChangedElsewhere] = useState(false);
+  const [reloading, setReloading] = useState(false);
+  // What the header says when the canvas took a draft saved elsewhere, until the next edit or save.
+  const [canvasNote, setCanvasNote] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [invocation, setInvocation] = useState<string | null>(null);
@@ -97,6 +122,7 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onAskArchit
     return () => controller.abort();
   }, [url, post]);
 
+  const markDirty = (value: boolean) => { dirtyRef.current = value; setDirty(value); if (value) setCanvasNote(null); };
   const canvasFingerprint = () => {
     const live = api.current;
     if (!live) return null;
@@ -109,7 +135,7 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onAskArchit
     setLiveCount(scene.elements.filter((element) => element.isDeleted !== true && element.type !== "text").length);
     const fingerprint = sceneFingerprint(scene);
     if (baseline.current === null) baseline.current = fingerprint;
-    setDirty(fingerprint !== baseline.current);
+    markDirty(fingerprint !== baseline.current);
   }, []);
 
   useEffect(() => {
@@ -126,20 +152,87 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onAskArchit
     } catch (reason) { setReviewError(failure(reason)); }
   }, [post]);
 
+  // A draft saved elsewhere, taken into the canvas in place: the canvas is clean, or the operator
+  // chose Reload over their unsaved edits.
+  const reloadSaved = useCallback(async () => {
+    const live = api.current;
+    if (!live) return;
+    setReloading(true);
+    try {
+      const answer = await fetch(url).then(jsonResponse<SceneResponse>);
+      live.updateScene({ elements: answer.scene.elements as never, captureUpdate: CaptureUpdateAction.NEVER });
+      const files = Object.values(answer.scene.files ?? {});
+      if (files.length) live.addFiles(files as never);
+      revision.current = answer.revision;
+      baseline.current = sceneFingerprint(JSON.parse(serializeAsJSON(live.getSceneElements(), live.getAppState(), live.getFiles(), "local")) as Scene);
+      dirtyRef.current = false; setDirty(false);
+      setLoaded((prior) => prior && ({ ...prior, present: answer.present, revision: answer.revision }));
+      setChangedElsewhere(false);
+      setCanvasNote(CANVAS_UPDATED);
+    } catch (reason) { setError(failure(reason)); }
+    finally { setReloading(false); }
+  }, [url]);
+
+  // THE "LOOK NOW" STREAM (171/ADR-003). The face says what moved; `review-stream.mjs` says what that
+  // means for this editor, and this effect carries it out. The five-second poll runs only while the
+  // stream is not open, and nothing runs while the tab is hidden.
+  const isLoaded = loaded !== null;
   useEffect(() => {
-    if (!loaded) return undefined;
+    if (!isLoaded) return undefined;
+    const address = `/api/diagram/events?ref=${encodeURIComponent(itemRef)}&file=${encodeURIComponent(file)}`;
+    let source: EventSource | null = null;
     let timer: ReturnType<typeof setInterval> | null = null;
-    const sync = () => {
-      if (timer) { clearInterval(timer); timer = null; }
-      if (shouldPoll({ open: true, visible: document.visibilityState !== "hidden" })) {
-        void refreshReview();
-        timer = setInterval(() => void refreshReview(), POLL_MS);
-      }
+    const visible = () => document.visibilityState !== "hidden";
+    const syncPoll = () => {
+      const poll = shouldPoll({ open: true, visible: visible(), stream: stream.current.stream });
+      if (poll && !timer) timer = setInterval(() => void refreshReview(), POLL_MS);
+      if (!poll && timer) { clearInterval(timer); timer = null; }
     };
-    sync();
-    document.addEventListener("visibilitychange", sync);
-    return () => { document.removeEventListener("visibilitychange", sync); if (timer) clearInterval(timer); };
-  }, [loaded, refreshReview]);
+    const connect = () => {
+      source?.close();
+      const next = new EventSource(address);
+      source = next;
+      const data = (message: Event) => { try { return JSON.parse((message as MessageEvent).data); } catch { return {}; } };
+      next.onopen = () => dispatch({ type: "open" });
+      next.onerror = () => dispatch({ type: "error" });
+      next.addEventListener("stamp", (message) => dispatch({ type: "stamp", ...data(message) }));
+      next.addEventListener("review", (message) => dispatch({ type: "review", ...data(message) }));
+      next.addEventListener("scene", (message) => dispatch({ type: "scene", ...data(message) }));
+    };
+    const dispatch = (event: StreamEvent) => {
+      const { state, effects } = streamStep(stream.current, event, { revision: revision.current, dirty: dirtyRef.current, writing: busyRef.current });
+      stream.current = state;
+      for (const effect of effects) {
+        if (effect === "refresh") void refreshReview();
+        else if (effect === "replace") void reloadSaved();
+        else if (effect === "offer-reload") setChangedElsewhere(true);
+        else if (effect === "close-line") setChangedElsewhere(false);
+        else if (effect === "defer") deferred.current = event;
+        else if (effect === "connect") connect();
+        else if (effect === "disconnect") { source?.close(); source = null; }
+      }
+      syncPoll();
+    };
+    streamDispatch.current = dispatch;
+    const onVisibility = () => dispatch({ type: visible() ? "visible" : "hidden" });
+    void refreshReview();
+    dispatch({ type: visible() ? "connect" : "hidden" });
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      source?.close();
+      if (timer) clearInterval(timer);
+      streamDispatch.current = () => {};
+      stream.current = STREAM_INITIAL;
+    };
+  }, [isLoaded, itemRef, file, refreshReview, reloadSaved]);
+  // A draft event that arrived during one of this editor's own writes is decided once the write has
+  // answered — by then the revision it wrote is known, and its own save is not a change made elsewhere.
+  const afterWrite = () => {
+    const held = deferred.current;
+    deferred.current = null;
+    if (held) streamDispatch.current(held);
+  };
 
   const sceneNow = (): Scene | null => {
     const live = api.current;
@@ -165,7 +258,7 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onAskArchit
     }
     baseline.current = canvasFingerprint();
     setLoaded((prior) => prior && ({ ...prior, present: true, revision: answer.revision }));
-    setDirty(false);
+    markDirty(false); setCanvasNote(null);
     return answer;
   };
   const perform = async (operation: () => Promise<void>) => {
@@ -173,7 +266,7 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onAskArchit
     busyRef.current = true; setBusy(true); setError(null);
     try { await operation(); }
     catch (reason) { setError(failure(reason)); }
-    finally { busyRef.current = false; setBusy(false); }
+    finally { busyRef.current = false; setBusy(false); afterWrite(); }
   };
   const selectedIdsNow = () => selectionIds(api.current?.getSceneElements() as never ?? [], api.current?.getAppState().selectedElementIds as never);
   // A NOTE: recorded, and NOTHING is launched. Notes wait in the panel until a review session — the
@@ -183,30 +276,63 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onAskArchit
     const answer = await post<{ request?: { id?: string } }>({ action: "request", baseRevision: revision.current, selectedIds: selectedIdsNow(), request: text });
     return answer.request?.id ?? null;
   };
-  const launch = (command: string) => {
-    if (onAskArchitect) { onAskArchitect(command); setNotice(ARCHITECT_NOTICE); }
-    else { setInvocation(command); setNotice("Run this command in your architect session."); }
+  // DELIVERY (171/ADR-005): the surface types into the architect's running session, starts one, or
+  // lets a note wait — its one decision. With no surface to deliver through, the command is shown to copy.
+  const waitingNotes = () => openNotes(review.requests).length;
+  const deliverAsk = (invocations: string[]) => {
+    if (!onDeliver) { setInvocation(invocations[0]); setNotice("Run this command in your architect session."); return; }
+    setNotice(onDeliver(invocations, "ask") === "typed" ? SENT_NOTICE : ARCHITECT_NOTICE);
   };
+  // A question's own invocation, then the batch when other notes wait (171/04 Q1).
+  const launch = (_command: string, requestId: string) => deliverAsk(reviewInvocations({ ref: itemRef, file, requestId, waiting: waitingNotes() }));
   const note = async () => {
     if (!question.trim()) throw new Error("Enter a note first.");
     setNotice(null); setInvocation(null);
-    await recordRequest(question.trim());
-    setQuestion("");
-    setNotice(`Note recorded. Run ${diagramReviewInvocation(itemRef, file)} in a Claude session, or Review notes, to have the architect examine it.`);
-    await refreshReview();
-  };
-  const ask = async () => {
-    if (!question.trim()) throw new Error("Enter a question or requested change first.");
-    setNotice(null); setInvocation(null);
     const id = await recordRequest(question.trim());
-    if (id) { launch(diagramReviewInvocation(itemRef, file, id)); setQuestion(""); }
+    setQuestion("");
+    const outcome = id && onDeliver ? onDeliver(reviewInvocations({ ref: itemRef, file, requestId: id }), "note") : "waiting";
+    setNotice(outcome === "typed" ? NOTE_SENT : outcome === "not-running" ? NOTE_NOT_RUNNING
+      : `Note recorded. Run ${diagramReviewInvocation(itemRef, file)} in a Claude session, or Review notes, to have the architect examine it.`);
     await refreshReview();
   };
-  const reviewNotes = async () => { setNotice(null); setInvocation(null); launch(diagramReviewInvocation(itemRef, file)); };
+  // ASK ARCHITECT, from the bar or at the selection on the canvas: one path (171/ADR-001). Either
+  // names the canvas elements it is about; their Mermaid ids are read after the save.
+  const askAt = async (text: string, elementIds: string[]) => {
+    setNotice(null); setInvocation(null);
+    const id = await askArchitect({
+      text, unsaved: dirty || !loaded?.present, revision: revision.current, save: saveSnapshot,
+      selection: () => selectionIds(api.current?.getSceneElements() as never ?? [], selectionFor(elementIds) as never),
+      record: async (request) => (await post<{ request?: { id?: string } }>({ action: "request", ...request })).request?.id ?? null,
+      launch, invocation: (requestId) => diagramReviewInvocation(itemRef, file, requestId),
+    });
+    await refreshReview();
+    return id;
+  };
+  const selectedElementIds = () => { const ids = api.current?.getAppState().selectedElementIds ?? {}; return Object.keys(ids).filter((id) => ids[id]); };
+  const ask = async () => { if (await askAt(question, selectedElementIds())) setQuestion(""); };
+  const askAtSelection = async (text: string, elementIds: string[]) => {
+    if (busyRef.current) throw new Error("The editor is busy; try again in a moment.");
+    busyRef.current = true; setBusy(true); setError(null);
+    try { if (!await askAt(text, elementIds)) throw new Error("The request was not recorded."); }
+    catch (reason) { throw new Error(failure(reason)); }
+    finally { busyRef.current = false; setBusy(false); afterWrite(); }
+  };
+  const reviewNotes = async () => { setNotice(null); setInvocation(null); deliverAsk(reviewInvocations({ ref: itemRef, file })); };
+  // A REPLY in a note's thread beside its shape (171/ADR-006): recorded on the note, then delivered as
+  // a note is — typed into the architect's running session, or left to wait (ADR-005).
+  const replyInThread = async (note: ThreadNote, text: string) => {
+    const outcome = await replyToNote({
+      requestId: note.id, text, record: (reply) => post({ action: "reply", ...reply }),
+      deliver: onDeliver ? (invocations) => onDeliver(invocations, "note") : null,
+      invocations: (requestId) => reviewInvocations({ ref: itemRef, file, requestId }),
+    });
+    await refreshReview();
+    return outcome === "typed" ? "Sent to the architect's session." : "Reply recorded — it waits for a review session.";
+  };
   const firstDraft = async () => {
     setNotice(null); setInvocation(null);
     const id = await recordRequest(FIRST_DRAFT_REQUEST);
-    if (id) launch(diagramReviewInvocation(itemRef, file, id));
+    if (id) launch("", id);
     await refreshReview();
   };
   const withdraw = async (request: ReviewRequest) => {
@@ -278,7 +404,7 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onAskArchit
       live.updateScene({ elements: answer.scene.elements as never, captureUpdate: CaptureUpdateAction.IMMEDIATELY });
       baseline.current = canvasFingerprint();
       setLoaded((prior) => prior && ({ ...prior, present: true, revision: answer.revision }));
-      setDirty(false);
+      markDirty(false); setCanvasNote(null);
       // Bring what the proposal changed into view: an accepted change off-screen reads as nothing.
       const changed = touchedIds(proposal);
       if (!changed.length || selectAndShow(changed) === 0) live.scrollToContent(undefined, { fitToContent: true, animate: false });
@@ -312,26 +438,33 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onAskArchit
   const close = () => { if (!busy && (!dirty || window.confirm("Discard unsaved diagram edits?"))) onRequestClose(); };
 
   const notes = openNotes(review.requests);
-  return <section className="flex min-h-0 flex-1 flex-col bg-background" aria-label="Excalidraw architecture diagram">
-    <header className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border px-4 py-2 text-xs">
+  // The column scrolls: with the architect's dock open the shell's box is shorter than the canvas,
+  // panel and bar together, and the bar is where a note is added to that open session (171/04).
+  return <section className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background" aria-label="Excalidraw architecture diagram">
+    <header className="sticky top-0 z-10 flex shrink-0 flex-wrap items-center gap-2 border-b border-border bg-background px-4 py-2 text-xs">
       <strong>{file}</strong>
-      <span role="status">{loaded?.readOnly ? "Read-only" : dirty ? "Unsaved changes" : !loaded?.present ? "New diagram — not saved" : publishedRevision && publishedRevision === loaded.revision ? "Saved and published" : "Saved"}</span>
+      <span role="status">{loaded?.readOnly ? "Read-only" : dirty ? "Unsaved changes" : canvasNote ? canvasNote : !loaded?.present ? "New diagram — not saved" : publishedRevision && publishedRevision === loaded.revision ? "Saved and published" : "Saved"}</span>
       <button type="button" disabled={!ready || busy || loaded?.readOnly} onClick={() => void perform(async () => { await saveSnapshot(); setNotice("Saved."); })} className="ml-auto rounded border px-3 py-1 disabled:opacity-50">{busy ? "Working…" : "Save"}</button>
       <button type="button" aria-label="Publish figure" disabled={!ready || busy || loaded?.readOnly || liveCount === 0} onClick={() => void perform(publish)} className="rounded border px-3 py-1 disabled:opacity-50">Publish</button>
       <button type="button" disabled={busy} onClick={close} className="rounded border px-3 py-1 disabled:opacity-50">Close editor</button>
     </header>
+    {changedElsewhere ? <p role="status" data-aof-changed-elsewhere="" className="flex flex-wrap items-center gap-2 border-b bg-amber-50 px-4 py-2 text-sm text-amber-950">
+      <span>{CHANGED_ELSEWHERE}</span>
+      <button type="button" disabled={reloading} onClick={() => streamDispatch.current({ type: "reload" })} className="rounded border border-amber-900/30 px-3 py-0.5 disabled:opacity-50">{reloading ? "Reloading…" : "Reload"}</button>
+    </p> : null}
     {!loaded && !error ? <p className="px-4 py-2 text-sm">Loading the diagram…</p> : null}
     {loaded && ready && liveCount === 0 && !loaded.readOnly ? <p className="border-b bg-amber-50 px-4 py-2 text-sm text-amber-950">This diagram is empty. Request a first draft from the ADR below, draw it, or drag items in from your libraries.</p> : null}
     {error ? <p role="alert" className="border-b px-4 py-2 text-sm text-red-700">{error} Your canvas has not been replaced.</p> : null}
     <p className="px-4 py-1 text-xs text-muted-foreground">Save keeps the drawing; Publish writes the figure the ADR shows. The architect reads it as Mermaid — a note waits for a review session, Ask architect starts one now. Nothing changes until you accept a proposal.</p>
     {loaded ? <div className="min-h-0 flex-1" style={{ minHeight: "40vh" }}><Excalidraw
-      initialData={{ elements: loaded.scene.elements as never, appState: { viewBackgroundColor: "#ffffff", ...loaded.scene.appState }, files: loaded.scene.files as never, libraryItems: libraryItemsFor(libraries) as never, scrollToContent: true }}
+      initialData={{ elements: loaded.scene.elements as never, appState: { viewBackgroundColor: "#ffffff", ...loaded.scene.appState, ...canvasDefaults(loaded.palette as never) }, files: loaded.scene.files as never, libraryItems: libraryItems as never, scrollToContent: true }}
       viewModeEnabled={loaded.readOnly}
       validateEmbeddable={() => false}
-      excalidrawAPI={(value) => { api.current = value; setReady(true); }}
+      excalidrawAPI={(value) => { api.current = value; setCanvasApi(value); setReady(true); }}
       onChange={remember}
       UIOptions={{ canvasActions: { loadScene: false, saveToActiveFile: false } }}
-    /></div> : null}
+    ><CanvasOverlay api={canvasApi} readOnly={loaded.readOnly} onAsk={askAtSelection} notes={review.requests} onReply={replyInThread} />
+      <LibrarySearchSidebar api={canvasApi} libraries={libraries} libraryItems={libraryItems} /></Excalidraw></div> : null}
 
     <section className="shrink-0 border-t border-border px-4 py-2 text-xs" aria-label="Architect review">
       <div className="flex items-center gap-2"><strong>Review</strong>

@@ -52,6 +52,8 @@ import assert from "node:assert/strict";
 import { withTerminalControl } from "./support/terminal-control-harness.mjs";
 import { boardDockMount } from "../src/board/dock-mount.mjs";
 import { fleetTerminalMount } from "../src/fleet/terminal-mount.mjs";
+import { diagramDockMount } from "../src/diagram/dock-mount.mjs";
+import { BRACKETED_PASTE_END, BRACKETED_PASTE_START, PASTE_SUBMIT_SETTLE_MS, pasteFrame } from "@aof/contracts/tui-ready";
 import { HOST_BOARD_DOCK, HOST_FLEET_CARD, WATCH_LABEL } from "../src/terminal/host-model.mjs";
 import {
   applyTerminalEvent,
@@ -74,7 +76,7 @@ const BOARD_ORIGIN = "http://127.0.0.1:41773";
 const FLEET_ORIGIN = "http://127.0.0.1:4181";
 const ORIGINS = { self: BOARD_ORIGIN, fleet: FLEET_ORIGIN };
 
-export const terminalControlOpensItsSocketTests = [
+const socketTests = [
   // ══════════════════════════════════════════════════════════════════════════════════════════
   // THE DERIVATION ITSELF, at the model. These live here rather than in 46/03's core suite
   // because that suite's header maps one-to-one onto its `.feature`'s scenarios and the contract
@@ -425,3 +427,199 @@ export const terminalControlOpensItsSocketTests = [
     },
   },
 ];
+
+// ══════════════════════════════════════════════════════════════════════════════════════════
+// LATER INPUT (milestone 171 / story 04 / ADR-005) — the REAL control types a surface's later input
+// into its live session, once per sequence number, on the raw path; the rule is
+// `laterInputDecision` (input-policy.mjs), and these cases are the control carrying it out.
+// ══════════════════════════════════════════════════════════════════════════════════════════
+const NOTE = "/aof:diagram-review 171 ADR-003-push-stream.excalidraw a1b2";
+// What claude paints once its REPL can take input: paste mode ON, then its prompt drawn (171 F-171-01).
+const PROMPT = "\u001b[?2004h╭─ claude ─╮\r\n> ";
+// What the session was TYPED, input by input (171 F-171-01): a paste's text, with "\r" appended once
+// its own Enter followed as a separate write.
+const typedOf = (app) => {
+  const typed = [];
+  for (const frame of app.socket().sent) {
+    if (typeof frame !== "string") continue;
+    if (frame === "\r" && typed.length > 0) { typed[typed.length - 1] += "\r"; continue; }
+    const pasted = frame.startsWith(BRACKETED_PASTE_START) && frame.endsWith(BRACKETED_PASTE_END);
+    const text = pasted ? frame.slice(BRACKETED_PASTE_START.length, -BRACKETED_PASTE_END.length) : frame;
+    if (text.startsWith("/aof:")) typed.push(text);
+  }
+  return typed;
+};
+// One input's paste has settled and its Enter has gone.
+const settled = (inputs = 1) => new Promise((resolve) => setTimeout(resolve, inputs * PASTE_SUBMIT_SETTLE_MS + 100));
+// A diagram dock whose session is READY: the socket accepted, its prompt painted, so the mount's
+// own command has been typed.
+function laterDock(extra = {}, { ready = true, command = "/aof:diagram-review 171 ADR-003-push-stream.excalidraw first" } = {}) {
+  const reports = [];
+  const readiness = [];
+  const props = { host: HOST_BOARD_DOCK, mount: diagramDockMount({ ref: "171", command }), origins: ORIGINS, onLaterInput: (report) => reports.push(report), onSessionReady: (ready) => readiness.push(ready), ...extra };
+  // Mounted on the harness's own signature (host, mount, origins); `wire` hands the callbacks by a
+  // re-render, which keeps the session, before anything is accepted.
+  return { props, options: { host: props.host, mount: props.mount, origins: props.origins }, reports, readiness,
+    wire(app) { app.setProps(props); app.render(); },
+    prepare(app) { this.wire(app); if (ready) { app.socket().accept(); app.socket().deliver(PROMPT); app.render(); } } };
+}
+
+const laterInputTests = [
+  {
+    name: "171/04 · a later input is typed into the open session and submitted, as raw input",
+    run: async () => {
+      const dock = laterDock();
+      await withTerminalControl(dock.options, async (app) => {
+        dock.prepare(app);
+        assert.deepEqual(dock.readiness, [true], "the session said it was ready once its own command was typed");
+        app.setProps({ ...dock.props, laterInputs: [{ seq: 1, text: NOTE }] });
+        app.render();
+        await settled(2);
+        assert.equal(typedOf(app).at(-1), `${NOTE}\r`, "the invocation, then a carriage return, on the raw path");
+        assert.deepEqual(app.socket().sent.slice(-2), [pasteFrame(NOTE), "\r"], "as one paste, then its Enter as a write of its own (F-171-01)");
+        assert.deepEqual(dock.reports, [{ seq: 1, delivered: true, reason: null }]);
+      });
+    },
+  },
+  {
+    name: "171/04 E7 · the same sequence number is never typed twice",
+    run: async () => {
+      const dock = laterDock();
+      await withTerminalControl(dock.options, async (app) => {
+        dock.prepare(app);
+        app.setProps({ ...dock.props, laterInputs: [{ seq: 1, text: NOTE }] });
+        app.render();
+        await settled(2);
+        const sent = app.socket().sent.length;
+        app.setProps({ ...dock.props, laterInputs: [{ seq: 1, text: NOTE }] });
+        app.render();
+        await settled();
+        assert.equal(app.socket().sent.length, sent, "a re-render handing sequence 1 again sends nothing more");
+        assert.equal(dock.reports.length, 1);
+      });
+    },
+  },
+  {
+    name: "171/04 E6 · two later inputs are typed in the order handed",
+    run: async () => {
+      const dock = laterDock();
+      const n1 = "/aof:diagram-review 171 ADR-003-push-stream.excalidraw n1";
+      const n2 = "/aof:diagram-review 171 ADR-003-push-stream.excalidraw n2";
+      await withTerminalControl(dock.options, async (app) => {
+        dock.prepare(app);
+        app.setProps({ ...dock.props, laterInputs: [{ seq: 1, text: n1 }] });
+        app.render();
+        app.setProps({ ...dock.props, laterInputs: [{ seq: 1, text: n1 }, { seq: 2, text: n2 }] });
+        app.render();
+        await settled(3);
+        assert.deepEqual(typedOf(app).slice(-2), [`${n1}\r`, `${n2}\r`], "each submitted on its own, n1 first");
+      });
+    },
+  },
+  {
+    name: "171/04 E8 · a later input to a terminal whose posture accepts no input is not typed, and says so",
+    run: async () => {
+      const dock = laterDock();
+      const readOnly = { ...dock.props, mount: { ...dock.props.mount, posture: "read-only", readOnly: true } };
+      await withTerminalControl({ host: readOnly.host, mount: readOnly.mount, origins: readOnly.origins }, (app) => {
+        app.setProps(readOnly); app.render();
+        app.socket().accept(); app.socket().deliver("bytes"); app.render();
+        const sent = app.socket().sent.length;
+        app.setProps({ ...readOnly, laterInputs: [{ seq: 1, text: NOTE }] });
+        app.render();
+        assert.equal(app.socket().sent.length, sent, "nothing is sent");
+        assert.deepEqual(dock.reports, [{ seq: 1, delivered: false, reason: "read-only" }]);
+      });
+    },
+  },
+  {
+    name: "171/04 · a later input to a terminal whose socket has closed is not typed, and says so",
+    run: async () => {
+      const dock = laterDock();
+      await withTerminalControl(dock.options, (app) => {
+        dock.prepare(app);
+        app.socket().hangUp(); app.render();
+        const sent = app.socket().sent.length;
+        app.setProps({ ...dock.props, laterInputs: [{ seq: 1, text: NOTE }] });
+        app.render();
+        assert.equal(app.socket().sent.length, sent, "nothing is sent");
+        assert.deepEqual(dock.reports, [{ seq: 1, delivered: false, reason: "not-connected" }]);
+        assert.deepEqual(dock.readiness, [true, false], "and the session said it was no longer ready when it closed");
+      });
+    },
+  },
+  {
+    name: "171/04 · a later input to a terminal that has not connected yet is not typed, and says so",
+    run: async () => {
+      const dock = laterDock({}, { ready: false });
+      await withTerminalControl(dock.options, (app) => {
+        dock.wire(app);
+        app.setProps({ ...dock.props, laterInputs: [{ seq: 1, text: NOTE }] });
+        app.render();
+        assert.deepEqual(app.socket().sent, [], "nothing is sent");
+        assert.deepEqual(dock.reports, [{ seq: 1, delivered: false, reason: "not-connected" }]);
+      });
+    },
+  },
+  {
+    name: "171/04 · the mount's own first command is still typed once, unchanged",
+    run: async () => {
+      const dock = laterDock({}, { ready: false, command: NOTE });
+      await withTerminalControl(dock.options, async (app) => {
+        dock.wire(app);
+        app.socket().accept();
+        app.socket().deliver(PROMPT);
+        app.socket().deliver("more output");
+        app.render();
+        await settled();
+        assert.deepEqual(typedOf(app), [`${NOTE}\r`], "typed exactly once");
+      });
+    },
+  },
+  // @bug @finding-F-171-01 — the mount's command waits until the session can take it.
+  ...[
+    { case: "its banner, before paste mode is on", output: ["Claude Code v2.1.310\r\n"] },
+    { case: "a probe that turns paste mode on and off, drawing nothing", output: ["\u001b[?2004h\u001b[>0q", "\u001b[?u\u001b[?2004l"] },
+  ].map(({ case: label, output }) => ({
+    name: `171/04 F-171-01 · the mount's command is not typed yet when the session paints ${label}`,
+    run: async () => {
+      const dock = laterDock({}, { ready: false, command: NOTE });
+      await withTerminalControl(dock.options, async (app) => {
+        dock.wire(app);
+        app.socket().accept();
+        for (const chunk of output) app.socket().deliver(chunk);
+        app.render();
+        assert.deepEqual(typedOf(app), [], "nothing typed before the prompt");
+        assert.deepEqual(dock.readiness, [], "and the session is not ready for later input either");
+        app.socket().deliver(PROMPT);
+        app.render();
+        await settled();
+        assert.deepEqual(typedOf(app), [`${NOTE}\r`], "typed exactly once, at the prompt");
+        assert.deepEqual(dock.readiness, [true]);
+      });
+    },
+  })),
+  {
+    name: "171/04 F-171-01 · the mount's command is typed exactly once at its prompt, drawn after paste mode turned on — the marker split across two chunks",
+    run: async () => {
+      const dock = laterDock({}, { ready: false, command: NOTE });
+      await withTerminalControl(dock.options, async (app) => {
+        dock.wire(app);
+        app.socket().accept();
+        app.socket().deliver("Claude Code\r\n\u001b[?20");
+        app.socket().deliver("04h");
+        app.render();
+        assert.deepEqual(typedOf(app), [], "paste mode on, nothing drawn since: not yet");
+        app.socket().deliver("> ");
+        app.socket().deliver("more output");
+        app.render();
+        assert.deepEqual(app.socket().sent.filter((frame) => frame === "\r"), [], "the Enter waits for the paste to settle");
+        await settled();
+        assert.deepEqual(typedOf(app), [`${NOTE}\r`]);
+        assert.deepEqual(app.socket().sent.slice(-2), [pasteFrame(NOTE), "\r"], "one paste, then its Enter as a write of its own");
+      });
+    },
+  },
+];
+
+export const terminalControlOpensItsSocketTests = [...socketTests, ...laterInputTests];

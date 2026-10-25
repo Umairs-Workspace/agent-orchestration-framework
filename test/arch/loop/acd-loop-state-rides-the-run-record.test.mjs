@@ -273,7 +273,25 @@ function assertUiFrozen(pairs) {
   // RE-PINNED at 170's UAT (2026-10-24, F-170-10): `diagram/DiagramSurface.tsx` (+11 −7 on the above): a server
   // that answers the capability 404 (the fleet origin) is told apart from a project with diagrams off, and the
   // page says to open the diagram from the project's own board. Same one read; nothing new is read.
-  assert.equal(hash.digest("hex"), "9b1c508c3c809b46a141015fb046a5e4ea1a5b78d477393cca0c86a6fe34a8c5", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED by 171/04 (ADR-005: a note reaches the open session), measured: `git diff --numstat HEAD --
+  // apps/ui/src` is SIX files. `terminal/input-policy.mjs` (+69) and `.d.mts` (+38): the pure later-input rule
+  // and the one record of what a live session is typed — the mount's command, moved here from the control
+  // with its account, then later input. `terminal/TerminalControl.tsx` (+17 −18): optional
+  // `laterInputs`/`onLaterInput`/`onSessionReady` props and the socket wired to that record (the session
+  // effect's dependency list unchanged; 839 of its 840 lines). `diagram/dock-mount.mjs` (+22) and `.d.mts`
+  // (+15): the surface's pure delivery decision. `diagram/DiagramSurface.tsx` (+42 −7): its one `deliver`
+  // function, the keyed dock, and the surface sized by the shell's `CONTENT_FIXED_HEIGHT_CLASS` as the board is
+  // (it was `h-full`, so an open dock covered the editor's bar). Nothing new is read: no fleet or home file,
+  // run-record key, cycle, level or loop state.
+  // RE-PINNED at 171's verify (F-171-01: the dock typed a mount's command before claude's REPL could take
+  // it). `terminal/input-policy.mjs` + `.d.mts`: the record reads the session's output through the byte gate
+  // (`@aof/contracts/tui-ready`) and types the command once it holds, or at `COMMAND_READY_CAP_MS`.
+  // `terminal/TerminalControl.tsx` (3 lines changed, none added): paint hands its chunk to the record, and the
+  // 700 ms fallback became the cap. Then, live (claude 2.1.310), a `text\r` written once the REPL was up
+  // landed its carriage return as a new line: `input-policy.mjs` types every input through one serial
+  // outbox — a bracketed paste, then its Enter as a separate write after the settle (the driver's 70/06 rule).
+  // Nothing new is read: no fleet or home file, run-record key, cycle, level or loop state.
+  assert.equal(hash.digest("hex"), "64a15068dfa61e7d604a9dc2ae6308eda717b4d5c266bf314bad4f57dffde128", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [
@@ -440,7 +458,11 @@ export const archTests = [
         // RE-PINNED at the merge of main into PR #13 (2026-10-23): both re-pins above stack on the one merged file.
         // RE-PINNED by 170's import review: `readJsonBody` gathers the body as bytes and decodes it once, so a
         // character split across chunks is no longer U+FFFD (+9 −3). Same limits, routes, admission and answers.
-        ["packages/server/src/board-ui.mjs", "2611de0a58ceae6095151d2df3ce69daa421a2496e8beb0c16002692aee7aff4"],
+        // RE-PINNED by 171/02 (ADR-003): one GET `/api/diagram/events` branch inside `handleDiagramApi` and its
+        // `streamDiagramEvents` (+ the `node:fs` `watch` import): an event stream that invokes `diagram:scene`
+        // `stamp`/`read` only and carries no record. No admission, write route or run key; `handleWorkApi`
+        // byte-identical.
+        ["packages/server/src/board-ui.mjs", "5db178c41cd66360bcad67016a92279c176f8e60c45b86025b03ab6f9ed33914"],
       ]);
       for (const [rel, digest] of pins) assert.equal(await normalizedDigest(path.join(root, rel)), digest, `${rel}: frozen run/board seam changed`);
       const uiPairs = await uiTreePairs();

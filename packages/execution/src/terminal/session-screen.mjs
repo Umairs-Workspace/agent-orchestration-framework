@@ -1,5 +1,6 @@
 import { CLAUDE_SCREENS } from "./claude-screens.mjs";
 import { PROVIDER_WAIT_RE } from "@aof/contracts/loop-bounds";
+import { ANSI_ESCAPE_RE, createTuiReadyGate } from "@aof/contracts/tui-ready";
 
 // Composition is inert; application diagnostics remain supplied policy.
 export function createSessionScreens({ createScreen, reportDegrade }) {
@@ -39,51 +40,20 @@ export function createSessionScreens({ createScreen, reportDegrade }) {
 
 const ESC = String.fromCharCode(27);
 
-// ── the byte gate, moved verbatim from src/agent-session-driver.mjs (138/ADR-001 §5) ─────────────
+// ── the byte gate (138/ADR-001 §5) ───────────────────────────────────────────────────────────────
 //
-// 2026-09-24 — READINESS IS OBSERVED, NOT ASSUMED. `INTERACTIVE_COMMAND_READY_DELAY_MS` is a
-// guess about how long claude takes to start, and under load the guess was wrong: three lanes
-// launched together in a downstream project (plus the repo's MCP servers starting) had the
-// directive pasted before the TUI was listening — no transcript, no session id, and each lane
-// idled to the 20-minute heartbeat deadline, three attempts running. The TUI announces its own
-// readiness by enabling bracketed paste (`TUI_READY_MARKER`); a real launch now types only
-// once BOTH the delay has passed (the measured-good floor) AND the marker has been seen,
-// bounded by `INTERACTIVE_READY_CAP_MS` — after which it types anyway and says so.
-//
-// 2026-09-27 — THE FIRST MARKER IS NOT THE PROMPT. claude 2.1.283 enables bracketed paste
-// TWICE: at ~1.2s for a short pre-REPL capability probe (it queries `CSI >0q` and `CSI ?u`,
-// draws nothing), turns it OFF again at ~1.5s (`TUI_PASTE_OFF_MARKER`), then back ON at
-// ~2.3s when the REPL mounts and draws its banner. Input written in between is echoed by
-// ConPTY in cooked mode and lost: pasted on the first marker, 4 of 4 directives were dropped,
-// one of them only 140ms before the mount. Keyed on the first marker, only the floor protected
-// the paste, and a slow start (language-tutor 03/03 and a downstream 02/02, 2026-09-26) burned
-// three attempts each on `directive-not-accepted`. So the TUI is READY only while the mode is
-// ON and something VISIBLE has been drawn since it went ON. The probe draws nothing between
-// its ON and its OFF, and the REPL draws its frame right after its own ON. Pasting the instant
-// that holds, with no floor at all, landed 6 of 6 on 2.1.283 and 2 of 2 on 2.1.282.
+// Readiness on the byte path is the TUI's own signal — bracketed paste ON and something visible
+// drawn since — read by `createTuiReadyGate` in `@aof/contracts/tui-ready`, its one home since 171
+// F-171-01 (the browser's dock types a mount's command on the same rule). Why the first marker is
+// not the prompt, and what that cost (2026-09-24, 2026-09-27), is written there. A real launch types
+// only once BOTH `INTERACTIVE_COMMAND_READY_DELAY_MS` has passed AND the gate holds, bounded by
+// `INTERACTIVE_READY_CAP_MS` — after which it types anyway and says so.
 //
 // With a model, readiness is the input box itself (ADR-002 §1); this gate is the fallback.
-const TUI_READY_MARKER = `${ESC}[?2004h`;
-const TUI_PASTE_OFF_MARKER = `${ESC}[?2004l`;
 // 129/06 F-58 — THE PROVIDER-WAIT LINE is read with `PROVIDER_WAIT_RE`, defined in `loop-bounds.mjs`
 // beside the heartbeat deadline it suspends. On the byte path it is read off the tail of the output,
 // escapes stripped, since the TUI colours it and a chunk boundary can fall inside the phrase.
 const PROVIDER_WAIT_WINDOW = 4096;
-// A terminal escape sequence, stripped to read what the TUI DREW: a CSI with ANY parameter bytes
-// (0x30-0x3F, so the private `<`, `=`, `>` forms claude 2.1.283 emits for its keyboard modes, such
-// as `CSI <u` and `CSI >5u`, are stripped too, not left as text), an OSC ended by BEL or ST (the
-// window title, hyperlinks), or a two-byte escape. `]` is left out of the two-byte class so an OSC
-// still in flight is `PARTIAL_ESCAPE_RE`'s to drop rather than half-stripped here.
-const ANSI_ESCAPE_RE = /\u001b(?:\[[0-?]*[ -/]*[@-~]|\][^\u0007\u001b]*(?:\u0007|\u001b\\)|[@-Z\\^_])/gu;
-// The same sequences cut off at the end of what has arrived so far: their tail is still in flight
-// and must not read as drawn text.
-const PARTIAL_ESCAPE_RE = /\u001b(?:\[[0-?]*[ -/]*|\][^\u0007\u001b]*)?$/u;
-
-// hasVisibleText(output) — whether the TUI drew anything a person would see: text left over once
-// every escape sequence (complete or still in flight) and control character is gone.
-function hasVisibleText(output) {
-  return output.replace(ANSI_ESCAPE_RE, "").replace(PARTIAL_ESCAPE_RE, "").replace(/[\u0000-\u001f\u007f]/gu, "").trim().length > 0;
-}
 
 // What the byte path records of the screen at a stop: its escape-stripped tail.
 const SCREEN_TAIL_CHARS = 600;
@@ -179,8 +149,8 @@ function openSessionScreen({ cols = 80, rows = 24, registry = CLAUDE_SCREENS, lo
 
   // The byte path: the driver's byte string and its readiness state, verbatim.
   let buffer = "";
+  const tuiGate = createTuiReadyGate();
   let tuiReadySeen = false;
-  let pasteModeOnAt = null;
   let pastedAt = null;
 
   const say = (verdict) => {
@@ -197,20 +167,10 @@ function openSessionScreen({ cols = 80, rows = 24, registry = CLAUDE_SCREENS, lo
 
   const readBytes = (text) => {
     buffer += text;
-    // The TUI's own readiness signal, read across a chunk boundary: the mode's latest toggle, then
-    // something visible drawn since it went ON (2026-09-27, see TUI_READY_MARKER). The window reaches
-    // back one byte short of a marker, so it only finds markers that END in this chunk, and a marker
-    // already read is never read twice. Both markers are the same length.
-    if (!tuiReadySeen) {
-      const window = buffer.slice(-(text.length + TUI_READY_MARKER.length - 1));
-      const on = window.lastIndexOf(TUI_READY_MARKER);
-      const off = window.lastIndexOf(TUI_PASTE_OFF_MARKER);
-      if (on > off) pasteModeOnAt = buffer.length - window.length + on + TUI_READY_MARKER.length;
-      else if (off > on) pasteModeOnAt = null;
-      if (pasteModeOnAt != null && hasVisibleText(buffer.slice(pasteModeOnAt))) {
-        tuiReadySeen = true;
-        say({ kind: "ready", id: "ready", source: "bytes" });
-      }
+    // The TUI's own readiness signal, read across a chunk boundary (`@aof/contracts/tui-ready`).
+    if (!tuiReadySeen && tuiGate.feed(text)) {
+      tuiReadySeen = true;
+      say({ kind: "ready", id: "ready", source: "bytes" });
     }
     const providerWait = PROVIDER_WAIT_RE.exec(buffer.slice(-PROVIDER_WAIT_WINDOW).replace(ANSI_ESCAPE_RE, ""));
     if (providerWait != null) say({ kind: "wait", id: "usage-limit", detail: providerWait[0].trim() });
@@ -385,7 +345,7 @@ function openSessionScreen({ cols = 80, rows = 24, registry = CLAUDE_SCREENS, lo
       return { source: "screen", buffer: snapshot.buffer, cursor: snapshot.cursor, rows: snapshot.rows.slice(0, end) };
     },
     gate() {
-      return { mode, pasteModeOn: pasteModeOnAt != null };
+      return { mode, pasteModeOn: tuiGate.pasteModeOn };
     },
     dispose() {
       if (disposed) return;

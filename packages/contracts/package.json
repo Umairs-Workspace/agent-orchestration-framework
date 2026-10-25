@@ -10,7 +10,8 @@
     "./error": "./src/error.mjs",
     "./claim-provenance": "./src/claim-provenance.mjs",
     "./freshness": "./src/freshness.mjs",
-    "./cache-provenance": "./src/cache-provenance.mjs"
+    "./cache-provenance": "./src/cache-provenance.mjs",
+    "./tui-ready": "./src/tui-ready.mjs"
   },
   "files": [
     "src"

@@ -171,6 +171,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aof/ui@workspace:apps/ui"
   dependencies:
+    "@aof/contracts": "workspace:*"
     "@aof/diagrams-ui": "workspace:*"
     "@aof/messaging": "workspace:*"
     "@radix-ui/react-scroll-area": "npm:^1.2.10"

@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { readdir, stat } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { DEFAULT_HEARTBEAT_MS } from "@aof/contracts/loop-bounds";
+import { BRACKETED_PASTE_END, BRACKETED_PASTE_START, PASTE_SUBMIT_SETTLE_MS } from "@aof/contracts/tui-ready";
 import { createTerminalSpawn, releasePtyAfterTreeTermination } from "./pty.mjs";
 import { createCodexAppServerAdapter, codexServerCommand } from "./codex-app-server.mjs";
 
@@ -586,9 +587,9 @@ const ESC = String.fromCharCode(27);
 // not exported: the driver DERIVES it from the `commandDelayMs` the caller already
 // supplies (see the write site below for why one decision drives both). It stays
 // overridable through `options.submitDelayMs` for a test that wants to own the window.
-const BRACKETED_PASTE_START = `${ESC}[200~`;
-const BRACKETED_PASTE_END = `${ESC}[201~`;
-const INTERACTIVE_COMMAND_SUBMIT_DELAY_MS = 900;
+// The framing and the settle have one home, `@aof/contracts/tui-ready`, since 171 F-171-01: the
+// browser's dock types a ready session the same way.
+const INTERACTIVE_COMMAND_SUBMIT_DELAY_MS = PASTE_SUBMIT_SETTLE_MS;
 
 // 2026-09-24 — READINESS IS OBSERVED, NOT ASSUMED, and since 138 (ADR-002) it is read off the
 // SCREEN: a real launch types the directive on the first frame the door calls `ready` — claude's

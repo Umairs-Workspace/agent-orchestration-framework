@@ -74,7 +74,7 @@ export const yarnInstallationTests = [
       } : name === 'server' ? {
         'commands/work-ui.mjs': ['node:path'],
         'static-serve.mjs': ['node:path'],
-        'board-ui.mjs': ['node:path'],
+        'board-ui.mjs': ['node:fs', 'node:path'],
         'board-serve.mjs': ['node:fs', 'node:path'],
         'setup-ui.mjs': ['node:http', 'node:fs/promises', 'node:path'],
         'terminal-ws.mjs': ['@aof/execution/pty', 'ws'],
@@ -134,7 +134,7 @@ export const yarnInstallationTests = [
         'providers.mjs': ['node:path', 'node:fs'],
         'terminal-sessions.mjs': ['node:fs/promises', 'node:path'],
         'pty.mjs': ['node:module', 'node-pty'],
-        'session-driver.mjs': ['node:path', 'node:child_process', 'node:fs/promises', 'node:crypto', '@aof/contracts/loop-bounds'],
+        'session-driver.mjs': ['node:path', 'node:child_process', 'node:fs/promises', 'node:crypto', '@aof/contracts/loop-bounds', '@aof/contracts/tui-ready'],
         'codex-app-server.mjs': ['node:child_process', 'node:path', '@aof/contracts/loop-bounds'],
         // 156: Windows Codex discovery (package bin, Store install) and the sandboxed child's PATH.
         'codex-executable.mjs': ['node:fs', 'node:fs/promises', 'node:child_process', 'node:module', 'node:path'],
@@ -143,7 +143,7 @@ export const yarnInstallationTests = [
         // 154/ADR-001: the session adapter owns native availability and bounded ANSI decoding.
         'runtime-session.mjs': ['node:fs/promises', 'node:path', 'node:util'],
         'screen.mjs': ['@xterm/headless'],
-        'session-screen.mjs': ['@aof/contracts/loop-bounds'],
+        'session-screen.mjs': ['@aof/contracts/loop-bounds', '@aof/contracts/tui-ready'],
         'claude-screens.mjs': ['@aof/contracts/loop-bounds'],
         'claude-trust.mjs': ['node:os', 'node:path', 'node:fs/promises', 'node:crypto'],
         'worktrees.mjs': ['node:child_process', '@aof/foundation/git-args'],

@@ -63,3 +63,25 @@ export function diagramDockMount(session) {
     unavailable: null,
   });
 }
+
+// DELIVERY (milestone 171 / ADR-005) — the surface's ONE decision about a note or a question for the
+// architect, pure so a suite reads it without React. `invocations` is the editor's list: the request's
+// own review invocation first, then — for a question or a first draft — the batch invocation when
+// other notes are waiting (171/04 Q1).
+//   · A READY session in the open dock is typed the first invocation: it took the waiting notes as
+//     they were written, so only the new one goes in, and Ask architect no longer does nothing there.
+//   · With no ready session a note WAITS, as in 170 — and says the session is not running when the
+//     dock is open on one that has exited.
+//   · A question with no ready session STARTS one, typed the first invocation, then handed the rest.
+export const DELIVERY_TYPED = "typed";
+export const DELIVERY_STARTED = "started";
+export const DELIVERY_WAITING = "waiting";
+export const DELIVERY_NOT_RUNNING = "not-running";
+export function deliveryPlan({ kind, invocations, dockOpen, sessionReady } = {}) {
+  const list = (Array.isArray(invocations) ? invocations : []).map(nonEmpty).filter((invocation) => invocation != null);
+  const plan = (outcome, { type = [], command = null, then = [] } = {}) => Object.freeze({ outcome, type: Object.freeze(type), command, then: Object.freeze(then) });
+  if (list.length === 0) return plan(DELIVERY_WAITING);
+  if (dockOpen === true && sessionReady === true) return plan(DELIVERY_TYPED, { type: [list[0]] });
+  if (kind === "note") return plan(dockOpen === true ? DELIVERY_NOT_RUNNING : DELIVERY_WAITING);
+  return plan(DELIVERY_STARTED, { command: list[0], then: list.slice(1) });
+}
