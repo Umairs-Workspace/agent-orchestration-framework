@@ -1,6 +1,6 @@
 ---
 type: milestone
-number:
+number: 172
 slug: excalidraw-phase-3
 title: "Excalidraw phase 3 — the architect conversation streams into the editor, through a designed UI"
 status: not-started
@@ -11,7 +11,7 @@ schema: 1
 aofVersion: 0.1.0
 tags: [design, board, ui, work]
 ---
-# Excalidraw phase 3 — the architect conversation streams into the editor, through a designed UI
+# 172 · Excalidraw phase 3 — the architect conversation streams into the editor, through a designed UI
 
 ## Objective
 
