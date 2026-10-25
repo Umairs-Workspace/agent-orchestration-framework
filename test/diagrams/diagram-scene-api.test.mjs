@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import http from "node:http";
 import { EventEmitter } from "node:events";
+import { watch as fsWatch } from "node:fs";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -125,7 +126,8 @@ const sceneApiTests = [
 // ── milestone 171 / story 02 — `/api/diagram/events`, the "look now" stream (ADR-003) ─────────────
 // The REAL face over the REAL scene command and a store on disk. Where a scenario names time (the
 // tick, the safety re-stamp, the keepalive) the face is handed a clock and a watch to drive by hand;
-// where it names a write reaching the client, the real recursive watch does it.
+// where it names a write reaching the client, the real recursive watch does it — handed to the face as
+// core's binding hands it (`watchDirectory`), since the transport imports no filesystem of its own.
 const STREAM_FILE = "ADR-003-push-stream.excalidraw";
 const box = (id, extra = {}) => ({ id, type: "rectangle", x: 0, y: 0, width: 100, height: 60, strokeColor: "#1e1e1e", backgroundColor: "transparent", version: 1, ...extra });
 const sceneOf = (elements) => ({ type: "excalidraw", version: 2, elements, appState: {}, files: {} });
@@ -178,6 +180,7 @@ async function withStream(run, faceOptions = {}) {
   const { request: note } = await scene("request", { baseRevision: saved.revision, selectedIds: ["API"], request: "Why?" });
   const api = createBoardApi({
     loadWorkspace: async () => workspace, resolveCacheStalenessSeconds: () => 30,
+    watchDirectory: (directory, onChange) => fsWatch(directory, { recursive: true }, onChange),
     invoke: async (id, input, ctx) => { if (id !== "diagram:scene") throw new Error(`Unknown command id "${id}".`); return command.run(input, ctx); },
   });
   const server = http.createServer(async (req, res) => { if (!await api.handleDiagramApi(req, res, { projectDir: root, ...faceOptions })) res.writeHead(404).end(); });
