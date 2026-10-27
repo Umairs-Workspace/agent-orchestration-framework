@@ -23,6 +23,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderDiagramBlock } from "@aof/diagrams/layout";
+import { BRACKETED_PASTE_END, BRACKETED_PASTE_START, TUI_READY_MARKER } from "@aof/contracts/tui-ready";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cli = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
@@ -92,6 +93,12 @@ function check(name, ok, detail = "") {
 }
 const waitForText = (page, text, timeout = 15000) => page.getByText(text, { exact: false }).first().waitFor({ timeout });
 const diagramText = (fixture) => readFileSync(fixture.diagram, "utf8");
+// 172/01 (ADR-003): every conversation is read in the panel beside the canvas — its composer, its
+// thread cards and its Proposals tab. A proposal's card shows in its open thread or on that tab.
+const composer = (page) => page.locator("#architect-request");
+const proposalsTab = (page) => page.getByRole("tab", { name: /^Proposals/ });
+const conversationsTab = (page) => page.getByRole("tab", { name: /^Conversations/ });
+const openThread = (page) => page.locator("[data-aof-thread][data-open]");
 
 async function openFigure(page, origin) {
   await page.goto(`${origin}/board#07`, { waitUntil: "networkidle" });
@@ -127,9 +134,19 @@ try {
   const requests = [];
   page.on("request", (request) => requests.push(request.url()));
   // The dock's terminal socket is answered HERE and never reaches the server, so Ask architect's
-  // invocation is read off the socket as typed and no session starts (171/00).
+  // invocation is read off the socket as typed and no session starts (171/00). It stands in for
+  // claude's TUI, so it says it is ready the way the TUI does (bracketed paste on, then a drawn banner —
+  // F-171-01's byte gate): the dock
+  // types nothing before that, then pastes each input and sends its Enter once the paste settles.
   const typedToDock = [];
-  await page.routeWebSocket(/\/ws\/terminal(?:\?|$)/, (ws) => ws.onMessage((message) => { if (typeof message === "string" && !message.startsWith("{")) typedToDock.push(message); }));
+  await page.routeWebSocket(/\/ws\/terminal(?:\?|$)/, (ws) => {
+    ws.onMessage((message) => { if (typeof message === "string" && !message.startsWith("{")) typedToDock.push(message); });
+    // Once the page's socket is open (a frame sent from the route handler itself arrives before it
+    // is): paste mode on, then something drawn — the REPL's banner — which is what "ready" means.
+    setTimeout(() => { try { ws.send(`${TUI_READY_MARKER}stand-in claude ready\r\n`); } catch { /* closed already */ } }, 300);
+  });
+  // Each input the dock submitted, its paste framing removed.
+  const submitted = (frames = typedToDock) => frames.join("").split(BRACKETED_PASTE_START).join("").split(BRACKETED_PASTE_END).join("").split("\r").slice(0, -1);
 
   // ── the board links to the editor and loads none of it ────────────────────────────────────
   await openFigure(page, ON);
@@ -156,6 +173,7 @@ try {
   scene(on, "propose", { requestId: draftRequest.id, baseRevision: current.revision, summary: "First draft from ADR-002", rationale: "The brief names an API that writes through a store.", text: 'flowchart LR\n  API["API"] -->|"writes"| Store[("Store")]\n' });
   // `load`, never `networkidle`, on the editor: it holds its review stream open (171/ADR-003).
   await page.reload({ waitUntil: "load" });
+  await proposalsTab(page).click();
   await page.getByRole("button", { name: /^Accept proposal: First draft/ }).waitFor({ timeout: 30000 });
   await page.getByRole("button", { name: /^Preview proposal: First draft/ }).click();
   await waitForText(page, "only adds to the diagram");
@@ -166,6 +184,8 @@ try {
   const apiLabel = stored(on).elements.find((e) => e.type === "text" && e.containerId === apiBox?.id);
   check("house style: the accepted first draft is stored in the house style — paper fill, ink stroke, ink label", /style API fill:#f3f5f7,stroke:#1b1f27,color:#1b1f27/.test(view(on)) && apiBox?.backgroundColor === PAPER && apiBox?.strokeColor === INK && apiLabel?.strokeColor === INK, JSON.stringify({ fill: apiBox?.backgroundColor, stroke: apiBox?.strokeColor, label: apiLabel?.strokeColor }));
   check("draft: the first-draft offer is gone once the diagram holds shapes", await page.getByRole("button", { name: "Request a first draft" }).count() === 0);
+  check("172/01 · E12 a decided proposal shows its outcome in place of its actions", await page.locator("[data-aof-proposal-outcome]").filter({ hasText: /^Accepted \d\d:\d\d$/ }).count() === 1);
+  await conversationsTab(page).click();
   await page.screenshot({ path: path.join(shots, "01-first-draft-accepted.png") });
 
   // ── the person adds a library item and free drawing: both save, and the view names them ─────
@@ -197,18 +217,20 @@ try {
 
   // ── notes: one withdrawn, two answered by one batch review ─────────────────────────────────
   const dockBefore = await page.locator(".xterm").count();
-  await page.getByLabel(/Note, question or requested change/).fill("Should the store be a queue instead?");
-  await page.getByRole("button", { name: "Add note" }).click();
+  await composer(page).fill("Should the store be a queue instead?");
+  await page.getByRole("button", { name: "Save as note" }).click();
   await waitForText(page, "Note recorded.");
-  check("note: Add note records the note and starts no session", (await page.locator(".xterm").count()) === dockBefore && scene(on, "proposals").requests.some((request) => request.status === "open" && request.request.startsWith("Should the store")));
+  check("note: Save as note records the note and starts no session", (await page.locator(".xterm").count()) === dockBefore && scene(on, "proposals").requests.some((request) => request.status === "open" && request.request.startsWith("Should the store")));
+  await openThread(page).getByText("Should the store be a queue instead?").waitFor({ timeout: 10000 });
+  check("172/01 · E10 a saved note's thread opens in the panel and reads \"Waiting for the architect\"", (await openThread(page).innerText()).includes("Waiting for the architect"));
   await page.getByRole("button", { name: /^Withdraw note: Should the store/ }).click();
   await waitForText(page, "Note withdrawn.");
   for (const text of ["Why does the API write directly to the store?", "Call the API the gateway, and add an Azure Function that the store triggers."]) {
-    await page.getByLabel(/Note, question or requested change/).fill(text);
-    await page.getByRole("button", { name: "Add note" }).click();
+    await composer(page).fill(text);
+    await page.getByRole("button", { name: "Save as note" }).click();
     await waitForText(page, "Note recorded.");
   }
-  await page.getByRole("button", { name: "Review notes" }).getByText("2 notes").waitFor({ timeout: 15000 });
+  await waitForText(page, "2 notes waiting", 15000);
 
   // The batch review, as `/aof:diagram-review 07 ADR-002-scene.excalidraw` runs it: every open note, oldest first.
   const open = scene(on, "proposals").requests.filter((request) => request.status === "open").reverse();
@@ -250,15 +272,20 @@ try {
   const clear = await canvasPoint(page, 0.8, 0.2);
   await page.mouse.click(clear.x, clear.y);
   await page.keyboard.press("Escape");
-  check("canvas: with nothing selected no action is drawn, and the bar offers Add note and Ask architect", await action.count() === 0 && await page.getByRole("button", { name: "Add note" }).count() === 1 && await barAsk.count() === 1, `${await action.count()} actions`);
-  const p = await canvasPoint(page, 0.2, 0.55);
-  const q = await canvasPoint(page, 0.3, 0.65);
+  check("canvas: with nothing selected no action is drawn, and the panel's composer offers Save as note and Ask", await action.count() === 0 && await page.getByRole("button", { name: "Save as note" }).count() === 1 && await barAsk.count() === 1, `${await action.count()} actions`);
+  const composerLabel = () => page.locator("[data-aof-composer] label").first().innerText();
+  check("172/01 · E9 with nothing selected the composer asks about the whole diagram", (await composerLabel()) === "Ask the architect · about the whole diagram", await composerLabel());
+  check("172/01 · the review list and the note bar are gone from under the canvas, and no thread popover exists", await page.locator('[aria-label="Architect review"]').count() === 0 && await page.getByRole("button", { name: "Add note" }).count() === 0 && await page.locator("[data-aof-note-thread]").count() === 0);
+  // Clear of the properties panel the rectangle tool opens on the left — the canvas is narrower beside
+  // the conversation panel (172/01) — and of the shapes already drawn.
+  const p = await canvasPoint(page, 0.32, 0.74);
+  const q = await canvasPoint(page, 0.42, 0.84);
   await page.keyboard.press("r");
   await page.mouse.move(p.x, p.y); await page.mouse.down(); await page.mouse.move(q.x, q.y, { steps: 6 }); await page.mouse.up();
   await action.waitFor({ timeout: 10000 });
   let top = { x: (p.x + q.x) / 2, y: p.y };
   const drawnAt = await sitsAbove(top);
-  check("canvas: a selected box offers one Ask architect, centred just above it", Boolean(drawnAt) && await action.count() === 1 && await page.locator("[data-aof-canvas-overlay]").getByText("Add note").count() === 0, JSON.stringify({ action: await action.boundingBox(), top }));
+  check("canvas: a selected box offers one Ask architect, centred just above it", Boolean(drawnAt) && await action.count() === 1 && await page.locator("[data-aof-canvas-overlay]").getByText("Save as note").count() === 0, JSON.stringify({ action: await action.boundingBox(), top }));
   const islands = await page.locator(".excalidraw .Island").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect()).filter((r) => r.width && r.height).map((r) => ({ x: r.x, y: r.y, width: r.width, height: r.height })));
   const overlaps = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
   check("canvas: the action is clear of Excalidraw's own panels", islands.length > 0 && !islands.some((island) => overlaps(drawnAt, island)), `${islands.length} panels`);
@@ -317,22 +344,25 @@ try {
   check("canvas: the unsaved box was saved first, and the request names it", Boolean(asked) && asked.selectedIds?.length === 1 && new RegExp(`\\b${asked.selectedIds[0]}\\b`).test(view(on)) && (await page.locator("header [role=status]").first().innerText()) === "Saved", JSON.stringify(asked));
   const drawnBox = element(on, asked.selectedIds[0]);
   check("house style: a rectangle drawn by hand is saved with an ink stroke, a paper background and a solid fill", drawnBox?.strokeColor === INK && drawnBox?.backgroundColor === PAPER && drawnBox?.fillStyle === "solid", JSON.stringify({ stroke: drawnBox?.strokeColor, background: drawnBox?.backgroundColor, fill: drawnBox?.fillStyle }));
-  await page.getByText(`Why is this box here? — open · ${asked.selectedIds[0]}`).first().waitFor({ timeout: 15000 });
+  await openThread(page).getByText("Why is this box here?").waitFor({ timeout: 15000 });
+  const firstCard = await page.locator("[data-aof-conversation-panel] [data-aof-thread]").first().getAttribute("data-open");
   const invocation = `/aof:diagram-review 07 ${FILE} ${asked.id}`;
-  for (let i = 0; i < 50 && !typedToDock.some((typed) => typed.startsWith(invocation)); i += 1) await page.waitForTimeout(100);
-  check("canvas: the review panel lists the request, and the dock was handed the bar's invocation", typedToDock.some((typed) => typed === `${invocation}\r`), JSON.stringify(typedToDock));
+  for (let i = 0; i < 50 && !submitted().includes(invocation); i += 1) await page.waitForTimeout(100);
+  check("172/01 · asking at the selection opens the new thread at the top of the panel holding that question", firstCard === "" && (await openThread(page).innerText()).includes(asked.selectedIds[0]));
+  check("canvas: the dock was handed the ask's invocation", submitted().includes(invocation), JSON.stringify(typedToDock));
   check("canvas: the field closed once asked", await field.count() === 0);
   await page.screenshot({ path: path.join(shots, "09-asked.png") });
 
   // ── 171/04: with the architect's session open in the dock, a note is typed into it ──────────
   const typedBefore = typedToDock.length;
-  await page.getByLabel(/Note, question or requested change/).fill("Is the cache needed at all?");
+  check("172/01 · E8 with a box selected the composer names it", (await composerLabel()) === `Ask the architect · about ${asked.selectedIds[0]}`, await composerLabel());
+  await composer(page).fill("Is the cache needed at all?");
   await page.screenshot({ path: path.join(shots, "09a-note-typed.png") });
-  await page.getByRole("button", { name: "Add note" }).click();
+  await page.getByRole("button", { name: "Save as note" }).click();
   await waitForText(page, "Note recorded and sent to the architect's session", 15000);
   const sentNote = scene(on, "proposals").requests.find((request) => request.request === "Is the cache needed at all?");
-  for (let i = 0; i < 30 && typedToDock.length === typedBefore; i += 1) await page.waitForTimeout(100);
-  check("dock: a note added while the session runs is typed into it, once, as its own review", Boolean(sentNote) && JSON.stringify(typedToDock.slice(typedBefore)) === JSON.stringify([`/aof:diagram-review 07 ${FILE} ${sentNote.id}\r`]), JSON.stringify(typedToDock.slice(typedBefore)));
+  for (let i = 0; i < 30 && submitted(typedToDock.slice(typedBefore)).length === 0; i += 1) await page.waitForTimeout(100);
+  check("dock: a note added while the session runs is typed into it, once, as its own review", Boolean(sentNote) && JSON.stringify(submitted(typedToDock.slice(typedBefore))) === JSON.stringify([`/aof:diagram-review 07 ${FILE} ${sentNote.id}`]), JSON.stringify(typedToDock.slice(typedBefore)));
   await page.screenshot({ path: path.join(shots, "09b-note-sent-to-session.png") });
 
   // ── 171/01: Find in libraries, over a real-sized set ─────────────────────────────────────────
@@ -399,6 +429,7 @@ try {
   const openNote = scene(on, "proposals").requests.find((request) => request.status === "open" && request.request === "Why is this box here?");
   scene(on, "respond", { requestId: openNote.id, answer: "It is the store's cache, drawn before its arrows." });
   const answered = await within((timeout) => waitForText(page, "the store's cache, drawn before its arrows", timeout), 2000);
+  await proposalsTab(page).click();
   const nowRevision = scene(on, "read").revision;
   const { request: second } = scene(on, "request", { baseRevision: nowRevision, selectedIds: [], request: "Name the store for what it holds." });
   const secondView = scene(on, "context", { requestId: second.id }).view;
@@ -406,6 +437,17 @@ try {
   const proposed2 = await within((timeout) => page.getByRole("button", { name: "Accept proposal: Orders store" }).waitFor({ timeout }), 2000);
   check("push: an answer and a proposal appear in the open panel within 2 seconds each, with no reload", await page.evaluate(() => window.__aofNoReload === true) && await page.getByRole("button", { name: "Preview proposal: Orders store" }).count() === 1 && await page.getByRole("button", { name: "Reject proposal: Orders store" }).count() === 1, `answer ${answered} ms, proposal ${proposed2} ms`);
   await page.screenshot({ path: path.join(shots, "12-pushed-answer-and-proposal.png") });
+  // DESIGN "A proposal in its thread": the pending proposal read in the thread that asked for it.
+  await conversationsTab(page).click();
+  await page.getByRole("button", { name: "Open the conversation on Whole diagram" }).click();
+  await openThread(page).getByRole("button", { name: "Accept proposal: Orders store" }).waitFor({ timeout: 5000 });
+  const card = openThread(page).locator("[data-aof-proposal]").filter({ hasText: "Orders store" });
+  const accentEdge = await card.evaluate((element) => getComputedStyle(element).borderLeftColor);
+  // The console's own accent, resolved by the page rather than restated here.
+  const consoleAccent = await page.evaluate(() => { const probe = document.createElement("span"); probe.style.color = "var(--color-accent)"; document.body.append(probe); const colour = getComputedStyle(probe).color; probe.remove(); return colour; });
+  check("172/01 · E11 a pending proposal is decided in the thread that asked for it, its card edged in the accent", (await openThread(page).innerText()).includes("A proposal answers this") && accentEdge === consoleAccent, `${accentEdge} vs ${consoleAccent}`);
+  await card.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(shots, "172-proposal-1280.png") });
   // A second window on the same diagram saves; the first window's canvas follows.
   const other = await page.context().newPage();
   await other.goto(page.url(), { waitUntil: "load" });
@@ -447,10 +489,10 @@ try {
   check("push: Reload takes the saved draft and closes the line", await line.count() === 0 && await page.evaluate(() => window.__aofNoReload === true));
   await other.close();
 
-  // ── 171/05: a note is a thread beside its shape ──────────────────────────────────────────────
+  // ── 171/05 → 172/01: a note's pin opens its thread in the panel ─────────────────────────────
   // The drawn box `n2` holds two notes: 171/00's question (answered above) and 171/04's. Its pin sits
-  // on the box's top-right corner; the thread opens beside it, takes a reply, and shows the answer the
-  // stand-in architect writes next — pushed, with no reload.
+  // on the box's top-right corner; choosing it opens the thread at the top of the panel (172/ADR-003),
+  // which takes a reply and shows the answer the stand-in architect writes next — pushed, no reload.
   const pin = page.locator('[data-aof-note-pin][aria-label*=" on n2"]');
   await pin.waitFor({ timeout: 10000 });
   const pinBox = async () => { const r = await pin.boundingBox(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, r }; };
@@ -458,12 +500,32 @@ try {
   // Excalidraw's container defines under the same token name.
   const pinColour = await pin.evaluate((element) => getComputedStyle(element).backgroundColor);
   check("thread: the box's notes share one pin that counts them, in the console's primary colour once answered", (await pin.innerText()).trim() === "2" && pinColour === "rgb(19, 118, 109)", `${await pin.getAttribute("aria-label")} · ${pinColour}`);
-  const corner = await pinBox();
+  // E5: the Whole diagram thread is open; the pin opens n2's at the top and collapses the other.
   await pin.click();
-  const threadBox = page.locator('[data-aof-note-thread]');
+  const threadBox = openThread(page);
+  await threadBox.filter({ hasText: "Why is this box here?" }).waitFor({ timeout: 5000 });
+  const cards = page.locator("[data-aof-conversation-panel] [data-aof-thread]");
+  check("172/01 · E5 a pin opens its thread at the top of the panel and closes the open one; nothing opens over the canvas", await cards.first().getAttribute("data-open") === "" && await threadBox.count() === 1 && await page.locator("[data-aof-canvas-overlay] [role=dialog], [data-aof-note-thread]").count() === 0 && (await threadBox.innerText()).indexOf("Why is this box here?") < (await threadBox.innerText()).indexOf("the store's cache"));
+  const borderColour = await threadBox.evaluate((element) => getComputedStyle(element).borderTopColor);
+  check("172/01 · the console's colours hold: the answered pin and the open thread's border are the console's teal", pinColour === "rgb(19, 118, 109)" && borderColour === "rgb(19, 118, 109)", `${pinColour} · ${borderColour}`);
+  // E6: a collapsed panel opens on the pin's thread.
+  await page.getByRole("button", { name: "Collapse the conversation panel" }).click();
+  check("172/01 · the collapsed panel leaves a tab on the edge", await page.locator("[data-aof-conversation-tab]").count() === 1 && await page.locator("[data-aof-conversation-panel]").count() === 0);
+  await pin.click();
   await threadBox.waitFor({ timeout: 5000 });
-  const threadRect = await threadBox.boundingBox();
-  check("thread: it opens beside the box, clear of the pin, oldest turn first", threadRect.x >= corner.x && !(threadRect.x < corner.r.x + corner.r.width && corner.r.x < threadRect.x + threadRect.width && threadRect.y < corner.r.y + corner.r.height && corner.r.y < threadRect.y + threadRect.height) && (await threadBox.innerText()).indexOf("Why is this box here?") < (await threadBox.innerText()).indexOf("the store's cache"), JSON.stringify({ thread: threadRect, pin: corner.r }));
+  check("172/01 · E6 a pin opens a collapsed panel on its thread", await page.locator("[data-aof-conversation-panel]").count() === 1 && (await threadBox.innerText()).includes("Why is this box here?"));
+  // E7: Show on canvas selects the thread's shapes and brings them into view — scrolled away first.
+  const away = await canvasPoint(page, 0.5, 0.5);
+  await page.mouse.click(away.x, away.y);
+  await page.keyboard.press("Escape");
+  await page.mouse.move(away.x, away.y);
+  for (let i = 0; i < 6; i += 1) await page.mouse.wheel(0, 400);
+  await page.waitForTimeout(300);
+  await threadBox.getByRole("button", { name: "Show on canvas" }).click();
+  await page.waitForTimeout(400);
+  const shownBox = await pin.boundingBox().catch(() => null);
+  const canvasNow = await page.locator(".excalidraw").first().boundingBox();
+  check("172/01 · E7 Show on canvas selects the thread's shapes and brings them into the visible canvas", await action.count() === 1 && Boolean(shownBox) && shownBox.x >= canvasNow.x && shownBox.y >= canvasNow.y && shownBox.y <= canvasNow.y + canvasNow.height, JSON.stringify({ shownBox, canvasNow }));
   await page.getByLabel("Reply to the architect").fill("Should it be a write-through cache?");
   await threadBox.getByRole("button", { name: "Reply", exact: true }).click();
   await threadBox.getByText("it waits for a review session").waitFor({ timeout: 10000 });
@@ -473,8 +535,15 @@ try {
   await threadBox.getByText("keep it read-through").waitFor({ timeout: 4000 });
   check("thread: the architect's answer appears in the open thread, pushed, with no reload", await page.evaluate(() => window.__aofNoReload === true));
   await page.screenshot({ path: path.join(shots, "14-note-thread.png") });
-  await page.keyboard.press("Escape");
-  await threadBox.waitFor({ state: "detached", timeout: 3000 }).catch(() => {});
+  // DESIGN's two breakpoints for the panel, the answered thread open (task 02's mock readings).
+  await page.screenshot({ path: path.join(shots, "172-panel-answered-1280.png") });
+  await page.setViewportSize({ width: 768, height: 800 });
+  await page.waitForTimeout(500);
+  const drawer = await page.locator("[data-aof-conversation-panel]").boundingBox();
+  check("172/01 · at 768 the panel is a 340 px drawer over the canvas's right edge", Boolean(drawer) && Math.round(drawer.width) === 340 && Math.round(drawer.x + drawer.width) === 768, JSON.stringify(drawer));
+  await page.screenshot({ path: path.join(shots, "172-panel-drawer-768.png") });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.waitForTimeout(500);
   // A pan moves the pin by the wheel's delta; a zoom about another point P moves it to P + (C − P)·k.
   const pinBefore = await pinBox();
   const canvasArea = await page.locator(".excalidraw").first().boundingBox();
@@ -497,6 +566,21 @@ try {
   // A reload cannot know whether an earlier session published this revision, so it claims only "Saved".
   await page.locator("header [role=status]").filter({ hasText: /^Saved$/ }).first().waitFor({ timeout: 30000 });
   check("route: a reload reopens the diagram at the same address", page.url().endsWith("/diagram?ref=07&file=ADR-002-scene.svg"));
+  // E13: a delivered item's diagram is read, never written — its threads and proposals list, and
+  // nothing in the panel writes.
+  const spec = path.join(on.item, "SPEC.md");
+  const specText = readFileSync(spec, "utf8");
+  writeFileSync(spec, specText.replace("status: in-progress", "status: done"));
+  await page.reload({ waitUntil: "load" });
+  await page.locator("header [role=status]").filter({ hasText: "Read-only" }).first().waitFor({ timeout: 30000 });
+  await page.locator("[data-aof-conversation-panel] [data-aof-thread]").first().waitFor({ timeout: 15000 });
+  await page.getByRole("button", { name: "Open the conversation on Whole diagram" }).click();
+  check("172/01 · E13 a delivered item's diagram reads its threads with no composer, no reply field and no proposal actions",
+    await page.locator("[data-aof-composer]").count() === 0 && await page.getByLabel("Reply to the architect").count() === 0
+      && await page.getByRole("button", { name: /^(Preview|Accept|Reject) proposal/ }).count() === 0 && (await openThread(page).innerText()).includes("Orders store"));
+  writeFileSync(spec, specText);
+  await page.reload({ waitUntil: "load" });
+  await page.locator("header [role=status]").filter({ hasText: /^Saved$/ }).first().waitFor({ timeout: 30000 });
   await page.getByRole("button", { name: "Close editor" }).click();
   await page.waitForURL(/\/board#07$/, { timeout: 15000 });
   await openFigure(page, ON);
@@ -516,6 +600,9 @@ try {
 } catch (error) {
   failed = true;
   if (!results.some((result) => !result.ok)) console.log(`FAIL - ${error.message}`);
+  // What each open page showed when the run stopped.
+  let shot = 0;
+  for (const context of browser.contexts()) for (const open of context.pages()) await open.screenshot({ path: path.join(shots, `zz-failure-${shot++}.png`) }).catch(() => {});
 } finally {
   await browser.close();
   for (const { child } of servers) child.kill();

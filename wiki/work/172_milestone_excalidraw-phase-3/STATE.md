@@ -76,6 +76,36 @@ doc: state
 - **Doctor advisory:** 172/00's example map holds six rules, over the limit of four, so the story is
   large. It built in one pass, with no rounds lost to no-progress.
 
+### 172/01 — build and review close (2026-10-27, solo)
+
+- **Process slip: the near-miss recall ran after the build, not before it.** It was run at the
+  review close and recorded with that time, not backdated. The lessons it surfaced (read the
+  screenshot, not only the green; a fixed-width panel has a width budget) had already shaped the
+  build through the smoke run and the mock readings, so it changed nothing. It is still a step
+  skipped.
+- **The declared write set was incomplete again.** `packages/diagrams-ui/test/canvas-anchor.suite.mjs`
+  (two 171/00 cases read the retired bar's source) and the budget table (two rows named the retired
+  `note-threads` modules) had to change; both are now declared on the story. Lesson for refine: a
+  story that retires a module owes every suite that reads the module's source, and grep finds them.
+- **The smoke had a stale fake since 171's verify.** Its dock socket never sent output, so after
+  F-171-01's byte gate the dock typed nothing and the two dock checks could not pass. The fake now
+  says it is ready the way claude's TUI does (paste mode on, then a drawn banner), and the checks
+  read the submitted lines. Story 02 retires the dock and these checks with it.
+- **The canvas is narrower beside the panel.** At 1280 it is about 900 px, so the smoke's drawn box
+  moved clear of the SDK's left properties panel. Expect any canvas-fraction coordinate written for
+  the full-width canvas to need the same.
+- **Fixed at close (Q2):** the Preview note lingered at the top of the list after its proposal was
+  decided (it now clears on accept, reject or opening a thread); the panel and the model each had an
+  `HH:MM` formatter (one `clockOf` now); the reject-reason field let keys reach the SDK's document
+  listeners (the panel's root now stops keydown and keyup for every field).
+- **Recorded (Q5), design gap, minor:** a proposal card's changes line reads the counts ("1 changed")
+  where `mocks/conversation-proposal.png` reads the change ("1 edge relabelled · nothing else
+  changes"). Saying what changed needs the change's kind (a relabel and a restyle are both
+  `changed`), which the proposal record does not carry.
+- **Recorded (Q5):** `test/arch/testing/acd-source-directory-budget.test.mjs`'s
+  `packages/diagrams-ui/test` exemption still lists its seven members by name; the names now match
+  the tree.
+
 ## Verification
 
 - [ ] `@executable` suite green

@@ -2,21 +2,21 @@ import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } fro
 import type { KeyboardEvent } from "react";
 import { getCommonBounds, getSceneVersion } from "@excalidraw/excalidraw";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
-import { ANCHOR_GAP, ASK_ACTION, CLOSED_FIELD, MID_GESTURE, besideAnchor, canAsk, cornerAnchor, fieldStep, selectionAction, selectionLabel } from "./canvas-anchor.mjs";
+import { ASK_ACTION, CLOSED_FIELD, MID_GESTURE, canAsk, cornerAnchor, fieldStep, selectionAction, selectionLabel } from "./canvas-anchor.mjs";
 import type { Anchor, FieldEvent, QuestionField, SceneBounds } from "./canvas-anchor.mjs";
-import { notePins } from "./note-threads.mjs";
-import type { ThreadNote } from "./note-threads.mjs";
-import { NotePinButton, NoteThreadPopover, pinSize } from "./NoteThread";
+import { notePins } from "./conversation-model.mjs";
+import type { NotePin, Thread } from "./conversation-model.mjs";
 
 // THE CANVAS OVERLAY (milestone 171 / ADR-001): the one layer aof draws above Excalidraw's canvas,
 // rendered as a child of the SDK component so it shares the canvas's origin. It follows the scene
 // through the SDK's `onChange` / `onScrollChange` subscriptions, so a pan re-renders this layer and
 // not the editor. Where anything sits is `canvas-anchor.mjs`'s answer, never computed here. It holds
-// Ask architect at the selection (171/00) and each note's pin and thread beside its shape (171/05).
+// Ask architect at the selection (171/00) and each thread's pin on its shape's corner (171/05). Since
+// 172/ADR-003 a pin opens its thread in the conversation panel beside the canvas, and nothing opens
+// over the drawing but the ask field.
 
 type Snapshot = { selectedIds: string[]; label: string; bounds: SceneBounds | null; appState: Record<string, unknown>; viewport: { width: number; height: number }; version: number };
 const ESTIMATE = { width: 112, height: 30 };
-const THREAD_ESTIMATE = { width: 320, height: 240 };
 // The app-state fields the anchor and the hide rule read; a change to any other does not re-render.
 const WATCHED = ["scrollX", "scrollY", ...MID_GESTURE];
 
@@ -40,6 +40,21 @@ function snapshotOf(api: ExcalidrawImperativeAPI): Snapshot {
 const sameSnapshot = (a: Snapshot | null, b: Snapshot) => a !== null && JSON.stringify(a) === JSON.stringify(b);
 const reduceField = (field: QuestionField, event: FieldEvent) => fieldStep(field, event).state;
 const RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+// A THREAD'S PIN (171/ADR-006, moved here from `NoteThread.tsx` at 172/01): a small filled circle on the
+// shape's corner — the console's primary colour when the architect has the last word, muted while the
+// thread waits — with a count when the shape holds more than one note. Choosing it opens the thread.
+export const PIN_SIZE = 12;
+export const pinSize = (pin: NotePin) => ({ width: pin.count > 1 ? 20 : PIN_SIZE, height: PIN_SIZE });
+export function NotePinButton({ pin, at, open, onOpen }: { pin: NotePin; at: { x: number; y: number }; open: boolean; onOpen: () => void }) {
+  const size = pinSize(pin);
+  return <button type="button" data-aof-note-pin={pin.key} aria-expanded={open}
+    aria-label={`${pin.count} note${pin.count === 1 ? "" : "s"} on ${pin.label}${pin.answered ? ", the architect answered" : ""}`}
+    onClick={onOpen} style={{ left: at.x, top: at.y, width: size.width, height: size.height }}
+    className={`pointer-events-auto absolute flex items-center justify-center rounded-full text-[9px] font-semibold leading-none text-white shadow-sm ${pin.answered ? "bg-primary" : "bg-muted-foreground"} ${RING}`}>
+    {pin.count > 1 ? pin.count : null}
+  </button>;
+}
 // INSIDE EXCALIDRAW'S CONTAINER THE SDK REDEFINES TWO CONSOLE TOKENS — `--color-primary` (its purple)
 // and `--color-muted` — so a `bg-primary` pin read the SDK's colour, not the console's teal. aof's
 // chrome roots re-declare both from the document root, where the console's theme defines them, so the
@@ -57,9 +72,9 @@ const measure = (element: HTMLElement | null, prior: { width: number; height: nu
   return measured.width === prior.width && measured.height === prior.height ? prior : measured;
 };
 
-export function CanvasOverlay({ api, readOnly, onAsk, notes = [], onReply }: {
+export function CanvasOverlay({ api, readOnly, onAsk, threads = [], openKey = null, onOpenThread }: {
   api: ExcalidrawImperativeAPI | null; readOnly: boolean; onAsk: (text: string, selectedIds: string[]) => Promise<void>;
-  notes?: ThreadNote[]; onReply?: (note: ThreadNote, text: string) => Promise<string | null>;
+  threads?: Thread[]; openKey?: string | null; onOpenThread?: (key: string) => void;
 }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [field, dispatch] = useReducer(reduceField, CLOSED_FIELD);
@@ -70,10 +85,6 @@ export function CanvasOverlay({ api, readOnly, onAsk, notes = [], onReply }: {
   const box = useRef<HTMLDivElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const lastAt = useRef<Anchor | null>(null);
-  // One thread open at a time, by its pin's key.
-  const [openPin, setOpenPin] = useState<string | null>(null);
-  const [threadSize, setThreadSize] = useState(THREAD_ESTIMATE);
-  const thread = useRef<HTMLDivElement | null>(null);
   const tokens = useMemo(consoleTokens, []);
 
   useEffect(() => {
@@ -88,11 +99,10 @@ export function CanvasOverlay({ api, readOnly, onAsk, notes = [], onReply }: {
     return () => { offChange(); offScroll(); };
   }, [api]);
 
-  // What is drawn (the action or the open field, and the open thread) is measured, so it is placed and
-  // kept inside the canvas edge by its real size.
+  // What is drawn (the action or the open field) is measured, so it is placed and kept inside the
+  // canvas edge by its real size.
   useLayoutEffect(() => {
     setSize((prior) => measure(box.current, prior));
-    setThreadSize((prior) => measure(thread.current, prior));
   });
   useEffect(() => { if (field.open) input.current?.focus(); else setAskedFor(null); }, [field.open]);
   const selectionKey = snapshot?.selectedIds.join(" ") ?? "";
@@ -100,30 +110,18 @@ export function CanvasOverlay({ api, readOnly, onAsk, notes = [], onReply }: {
     if (field.open && !field.asking && askedFor && askedFor.ids.join(" ") !== selectionKey) dispatch({ type: "escape" });
   }, [selectionKey, field.open, field.asking, askedFor]);
 
-  // The notes pinned beside their shapes, and each pin's scene bounds.
+  // The threads pinned on their shapes, and each pin's scene bounds.
   const version = snapshot?.version ?? 0;
   const pins = useMemo(() => {
     if (!api) return [];
     const elements = api.getSceneElements();
-    return notePins(notes, elements as never).map((pin) => {
+    return notePins(threads).map((pin) => {
       const own = elements.filter((element) => pin.elementIds.includes(element.id));
       return { pin, bounds: own.length ? getCommonBounds(own) as unknown as SceneBounds : null };
     });
     // `version` stands for the scene's elements, which the API holds.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [api, notes, version]);
-  const opened = pins.find(({ pin }) => pin.key === openPin) ?? null;
-  // The thread closes on a press anywhere but itself or a pin — the canvas included — and when its pin goes.
-  useEffect(() => {
-    if (openPin == null) return undefined;
-    if (!opened) { setOpenPin(null); return undefined; }
-    const away = (event: PointerEvent) => {
-      const target = event.target as Element | null;
-      if (!target?.closest?.("[data-aof-note-thread], [data-aof-note-pin]")) setOpenPin(null);
-    };
-    document.addEventListener("pointerdown", away, true);
-    return () => document.removeEventListener("pointerdown", away, true);
-  }, [openPin, opened]);
+  }, [api, threads, version]);
 
   const submit = async () => {
     if (!canAsk(field) || !askedFor) return;
@@ -151,20 +149,15 @@ export function CanvasOverlay({ api, readOnly, onAsk, notes = [], onReply }: {
     const spot = cornerAnchor({ bounds, appState: snapshot.appState, viewport: snapshot.viewport, size: pinSize(pin) });
     return spot ? [{ pin, spot }] : [];
   }) : [];
-  // Beside the shape and clear of its pin, which straddles the corner by half its width.
-  const threadAt = snapshot && opened ? besideAnchor({ bounds: opened.bounds, appState: snapshot.appState, viewport: snapshot.viewport, size: threadSize, gap: ANCHOR_GAP + pinSize(opened.pin).width / 2 }) : null;
   if (!at && placedPins.length === 0) return null;
   const label = askedFor?.label ?? "the selection";
   const rows = Math.min(4, Math.max(1, field.text.split("\n").length));
   // The action and the pins sit at the SDK's own canvas-button layer, under its menus and panels; an
-  // open field or thread is a focused popover, so it rises above them rather than be read unseen.
-  const layer = field.open || threadAt ? "calc(var(--zIndex-layerUI) + 1)" : "var(--zIndex-canvasButtons)";
+  // open field is a focused popover, so it rises above them rather than be read unseen.
+  const layer = field.open ? "calc(var(--zIndex-layerUI) + 1)" : "var(--zIndex-canvasButtons)";
   return <div className="pointer-events-none absolute inset-0 overflow-hidden" style={{ zIndex: layer, ...tokens }} data-aof-canvas-overlay="">
-    {placedPins.map(({ pin, spot }) => <NotePinButton key={pin.key} pin={pin} at={spot} open={openPin === pin.key}
-      onToggle={() => setOpenPin((current) => current === pin.key ? null : pin.key)} />)}
-    {opened && threadAt ? <NoteThreadPopover key={opened.pin.key} pin={opened.pin} at={threadAt} boxRef={(element) => { thread.current = element; }}
-      canReply={!readOnly && onReply != null} onClose={() => setOpenPin(null)}
-      onReply={(note, text) => onReply ? onReply(note, text) : Promise.resolve(null)} /> : null}
+    {placedPins.map(({ pin, spot }) => <NotePinButton key={pin.key} pin={pin} at={spot} open={openKey === pin.key}
+      onOpen={() => onOpenThread?.(pin.key)} />)}
     {at ? <div ref={box} className="pointer-events-auto absolute" style={{ left: at.x, top: at.y }} data-placement={at.placement}>
       {!field.open ? <button type="button" data-aof-canvas-action="ask"
         onClick={() => { if (!snapshot) return; setAskedFor({ ids: snapshot.selectedIds, label: snapshot.label }); dispatch({ type: "open" }); }}
@@ -177,7 +170,8 @@ export function CanvasOverlay({ api, readOnly, onAsk, notes = [], onReply }: {
             <button type="button" disabled={!canAsk(field)} onClick={() => void submit()} className={`rounded border border-border px-2 py-1 disabled:opacity-50 ${RING}`}>{field.asking ? "Asking…" : "Ask"}</button>
             <button type="button" disabled={field.asking} onClick={() => dispatch({ type: "escape" })} className={`rounded border border-border px-2 py-1 disabled:opacity-50 ${RING}`}>Cancel</button>
           </div>
-          {field.error ? <p role="alert" className="mt-1 text-red-700">{field.error}</p> : null}
+          <p className="mt-1 text-[11px] text-muted-foreground">Enter asks · Shift+Enter new line · Esc closes</p>
+          {field.error ? <p role="alert" className="mt-1 text-destructive">{field.error}</p> : null}
         </div>}
     </div> : null}
   </div>;

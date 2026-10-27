@@ -13,8 +13,9 @@ import { canvasAnchorTests } from "./canvas-anchor.suite.mjs";
 import { librarySearchTests } from "./library-search.suite.mjs";
 // milestone 171 / story 02 — the editor follows the review stream; the poll is its fallback.
 import { reviewStreamTests } from "./review-stream.suite.mjs";
-// milestone 171 / story 05 — a note's thread pinned beside its shape, and a reply delivered.
-import { noteThreadTests } from "./note-threads.suite.mjs";
+// milestone 172 / story 01 — the conversation panel's one model: threads, their states and proposals,
+// and 171/05's pins and replies, which it took over.
+import { conversationModelTests } from "./conversation-model.suite.mjs";
 
 export const tests = [
   ...sceneDraftTests,
@@ -24,5 +25,5 @@ export const tests = [
   ...canvasAnchorTests,
   ...librarySearchTests,
   ...reviewStreamTests,
-  ...noteThreadTests,
+  ...conversationModelTests,
 ];

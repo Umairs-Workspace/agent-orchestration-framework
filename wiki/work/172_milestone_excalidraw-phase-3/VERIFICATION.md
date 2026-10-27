@@ -67,6 +67,47 @@ one open note `34fbc19537bcaa40` asking "What does this box do?". Both were remo
   presumably Claude Code's own allowance for read-only or safe commands. `Write` is not path-scoped,
   so the architect wrote its input files under `/tmp`. Both are recorded as a finding (below).
 
+### 172/01 task 01 — the panel is the one place a thread is read, in a real browser (2026-10-27)
+
+`test/smoke/diagram-editor.smoke.mjs` (re-aimed at the panel in this story), run on the Mac against
+the built UI with the installed Chrome: **68/68 checks passed**. The architect is stood in for by the
+real CLI calls the review command makes. The dock's socket is answered by the smoke, which now says
+it is ready the way claude's TUI does: paste mode on, then a drawn banner. Every 171 check that drove
+the bar, the review list or the popover now drives the panel and passes. The story's own checks:
+
+- **E5:** the n2 pin opened n2's thread at the top of the panel and collapsed the open "Whole
+  diagram" thread. Nothing opened over the canvas (no dialog, no `[data-aof-note-thread]`).
+- **E6:** with the panel collapsed, only the edge tab remained; the pin opened the panel on n2's
+  thread.
+- **E7:** after scrolling n2 out of view, "Show on canvas" selected it (the canvas offered its Ask
+  action) and brought its pin back inside the visible canvas.
+- **Asking at the selection:** the new thread opened at the top of the panel holding the question,
+  and the dock was handed the ask's invocation.
+- **E8 / E9:** the composer read "Ask the architect · about n2" with the box selected, and "· about
+  the whole diagram" with nothing selected.
+- **E10:** Save as note recorded the note and started no session (no terminal). Its thread opened
+  and read "Waiting for the architect".
+- **Gone from under the canvas:** no review list, no Add note bar, no thread popover.
+- **E11 / E12:** the pending "Orders store" proposal was decided in the thread that asked for it,
+  its card's left edge in the console's accent (resolved from the page). Decided proposals show
+  "Accepted HH:MM" in place of their actions.
+- **E13:** with the item set to `done`, the threads and proposals listed with no composer, no reply
+  field and no Preview, Accept or Reject. The status was restored afterwards.
+- **Console colours:** the answered pin and the open thread's border both computed to the console's
+  teal, `rgb(19, 118, 109)`, not the SDK's purple.
+
+### 172/01 task 02 — the panel, the canvas ask and a proposal read against the committed mocks (2026-10-27)
+
+Screenshots from the same run, read against each surface's mock and DESIGN's binding checklist.
+
+| surface | width | mock | reading |
+|---|---|---|---|
+| the panel with an answered thread open | 1280 | `mocks/conversation-ask.png` | **CONFORMS.** Regions in order: editor header; canvas, then the 380 px panel. Panel header "Architect", chip, collapse; tabs Conversations 2 · Proposals 1; open card first, with a `primary` border and ring, "Answered · 2 notes" and Show on canvas; "You" turns on `muted` bubbles, the architect's plain; reply field; collapsed card with subject, state and last turn on one line; composer at the foot with its label, field, Ask (primary), Save as note and the waiting line. The chip reads "Not started" (story 02 gives it a session). |
+| the panel as a drawer | 768 | `mocks/conversation-streaming-768.png` | **CONFORMS** for the drawer: 340 px over the canvas's right edge (measured by the smoke), shadowed, under the editor header; the open thread and the composer as at 1280. The live turn (activity list, caret, "Answering" chip) is story 02's and not shown. |
+| the canvas ask open on a box | 1280 | `mocks/conversation-ask.png` | **CONFORMS.** The field is just above the selection, with Ask and Cancel to its right and the one-line hint "Enter asks · Shift+Enter new line · Esc closes" under it; its border and ring are `primary` while focused; the panel beside it names the same selection. |
+| a pending proposal in its thread | 1280 | `mocks/conversation-proposal.png` | **CONFORMS, one minor gap.** The architect's "Proposed: …" turn carries the card: `accent` left edge, summary at 600, changes line in `muted-foreground`, Preview, Accept (primary) and Reject; the thread reads "A proposal answers this"; decided proposals show their outcome. **Gap:** the changes line reads the counts ("1 changed") where the mock reads the change ("1 edge relabelled · nothing else changes"). |
+| console colours inside the SDK's container | — | — | **CONFORMS:** the answered pin and the open thread's border compute to teal `rgb(19, 118, 109)`. |
+
 ## Findings
 
 | id | observed | type | severity | triage | routed-to | status |

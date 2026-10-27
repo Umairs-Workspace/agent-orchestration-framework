@@ -1,30 +1,33 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CaptureUpdateAction, Excalidraw, convertToExcalidrawElements, exportToBlob, exportToSvg, restoreElements, serializeAsJSON } from "@excalidraw/excalidraw";
+import { CaptureUpdateAction, Excalidraw, convertToExcalidrawElements, exportToBlob, exportToSvg, getSceneVersion, restoreElements, serializeAsJSON } from "@excalidraw/excalidraw";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import "@excalidraw/excalidraw/index.css";
 import { canvasDefaults } from "@aof/diagrams/house-style";
 import { parseProfile } from "@aof/diagrams/mermaid-profile";
 import { projectScene, sceneView, selectionIds } from "@aof/diagrams/scene-view";
 import { compileProposal, firstDraftSkeletons, libraryItemsFor, operationsFor } from "./compile.mjs";
+import { selectionLabel } from "./canvas-anchor.mjs";
 import { CanvasOverlay } from "./CanvasOverlay";
+import { ConversationPanel } from "./ConversationPanel";
 import { LibrarySearchSidebar } from "./LibrarySearch";
-import { replyToNote } from "./note-threads.mjs";
-import type { ThreadNote } from "./note-threads.mjs";
+import { conversationOf, replyToNote, threadHolding } from "./conversation-model.mjs";
+import type { ConversationNote, Thread, ThreadNote } from "./conversation-model.mjs";
 import { CANVAS_UPDATED, CHANGED_ELSEWHERE, STREAM_INITIAL, streamStep } from "./review-stream.mjs";
 import type { StreamEvent, StreamState } from "./review-stream.mjs";
-import { POLL_MS, askArchitect, reviewInvocations, describeCounts, describeError, diagramReviewInvocation, openNotes, pendingProposals, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, touchedIds } from "./editor-state.mjs";
+import { POLL_MS, askArchitect, reviewInvocations, describeCounts, describeError, diagramReviewInvocation, openNotes, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, touchedIds } from "./editor-state.mjs";
 
 // THE EDITOR (milestone 170, ADR-010..ADR-013). The diagram is stored as Excalidraw's own scene, so
 // this canvas IS the diagram: anything can be drawn, and your project's libraries are in the Library
 // panel. The architect reads the scene as Mermaid and proposes edited Mermaid; Accept compiles the
 // proposal's changes into element edits here and the server applies them, refusing whatever you
-// changed since. Publish exports the figure the ADR shows from this same canvas.
+// changed since. Publish exports the figure the ADR shows from this same canvas. Since 172/ADR-003 every
+// conversation about it — notes, answers, replies and proposals — is read in one panel beside the canvas.
 
 type Scene = { type: "excalidraw"; version: 2; elements: CanvasElement[]; appState: Record<string, unknown>; files: Record<string, unknown> };
 type SceneResponse = { ref: string; file: string; present: boolean; revision: string | null; scene: Scene; readOnly: boolean; assigned?: Record<string, string>; palette?: Record<string, string> | null };
 type LibraryEntry = { library: string; item: string; id: string; elements: CanvasElement[] };
 type ReviewRequest = { id: string; request: string; status: string; answer: string | null; selectedIds?: string[]; createdAt?: string; thread?: ThreadNote["thread"] };
-type ReviewProposal = { id: string; requestId?: string; summary: string; rationale: string; status: string; text?: string; changes?: Array<{ key: string; change: string }>; reason?: string | null };
+type ReviewProposal = { id: string; requestId?: string; summary: string; rationale: string; status: string; createdAt?: string; decidedAt?: string | null; text?: string; changes?: Array<{ key: string; change: string }>; reason?: string | null };
 type ReviewList = { requests: ReviewRequest[]; proposals: ReviewProposal[] };
 type CanvasElement = Record<string, unknown> & { id: string; type: string; isDeleted?: boolean; customData?: Record<string, unknown>; x: number; y: number; width: number; height: number; containerId?: string | null; frameId?: string | null };
 
@@ -38,8 +41,8 @@ async function jsonResponse<T>(response: Response): Promise<T> {
   return body as T;
 }
 const failure = (reason: unknown) => reason instanceof ApiError ? describeError(reason.code, reason.message) : reason instanceof Error ? reason.message : "Diagram operation failed";
-const ARCHITECT_NOTICE = "Architect session started in the dock below the canvas. Answers and proposals appear in the review panel.";
-const SENT_NOTICE = "Sent to the architect's session in the dock. Answers and proposals appear in the review panel.";
+const ARCHITECT_NOTICE = "Architect session started in the dock below the canvas. Answers and proposals appear in the conversation panel.";
+const SENT_NOTICE = "Sent to the architect's session in the dock. Answers and proposals appear in the conversation panel.";
 const NOTE_SENT = "Note recorded and sent to the architect's session in the dock.";
 const NOTE_NOT_RUNNING = "Note recorded. The architect session in the dock is not running — Review notes starts one.";
 const FIRST_DRAFT_REQUEST = "Draw a first draft of this diagram from its ADR and diagram brief.";
@@ -73,7 +76,6 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
   const [dirty, setDirty] = useState(false);
   // The revision this session published, if any: whether an earlier session published it is not known.
   const [publishedRevision, setPublishedRevision] = useState<string | null>(null);
-  const [question, setQuestion] = useState("");
   const api = useRef<ExcalidrawImperativeAPI | null>(null);
   // The same API as state, for the canvas overlay's subscriptions.
   const [canvasApi, setCanvasApi] = useState<ExcalidrawImperativeAPI | null>(null);
@@ -95,11 +97,18 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
   const [block, setBlock] = useState<string | null>(null);
   const [view, setView] = useState<string | null>(null);
   const [review, setReview] = useState<ReviewList>({ requests: [], proposals: [] });
-  const [reviewOpen, setReviewOpen] = useState(true);
+  // The records are read once before the panel lists anything; until then it shows its skeleton.
+  const [reviewRead, setReviewRead] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
-  const [rejecting, setRejecting] = useState<string | null>(null);
-  const [reason, setReason] = useState("");
   const [previewNote, setPreviewNote] = useState<string | null>(null);
+  // THE CONVERSATION PANEL (172/ADR-003): which thread is open (one at a time), whether the panel is
+  // collapsed, the note whose thread opens once the records list it, and what the composer asks about.
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [openingNote, setOpeningNote] = useState<string | null>(null);
+  const [selected, setSelected] = useState("");
+  // The scene's version: a shape added, moved or relabelled re-reads the threads' subjects.
+  const [sceneVersion, setSceneVersion] = useState(0);
   // How many shapes the canvas holds: an empty diagram is offered a first draft.
   const [liveCount, setLiveCount] = useState(0);
 
@@ -133,6 +142,9 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
   const remember = useCallback((elements: Parameters<typeof serializeAsJSON>[0], appState: Parameters<typeof serializeAsJSON>[1], files: Parameters<typeof serializeAsJSON>[2]) => {
     const scene = JSON.parse(serializeAsJSON(elements, appState, files, "local")) as Scene;
     setLiveCount(scene.elements.filter((element) => element.isDeleted !== true && element.type !== "text").length);
+    setSceneVersion(getSceneVersion(elements));
+    const ids = (appState as unknown as { selectedElementIds?: Record<string, boolean> }).selectedElementIds ?? {};
+    setSelected(Object.values(ids).some(Boolean) ? selectionLabel(elements as never, ids) : "");
     const fingerprint = sceneFingerprint(scene);
     if (baseline.current === null) baseline.current = fingerprint;
     markDirty(fingerprint !== baseline.current);
@@ -150,6 +162,7 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
       setReview({ requests: answer.requests ?? [], proposals: answer.proposals ?? [] });
       setReviewError(null);
     } catch (reason) { setReviewError(failure(reason)); }
+    finally { setReviewRead(true); }
   }, [post]);
 
   // A draft saved elsewhere, taken into the canvas in place: the canvas is clean, or the operator
@@ -285,14 +298,14 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
   };
   // A question's own invocation, then the batch when other notes wait (171/04 Q1).
   const launch = (_command: string, requestId: string) => deliverAsk(reviewInvocations({ ref: itemRef, file, requestId, waiting: waitingNotes() }));
-  const note = async () => {
-    if (!question.trim()) throw new Error("Enter a note first.");
+  const note = async (text: string) => {
+    if (!text.trim()) throw new Error("Enter a note first.");
     setNotice(null); setInvocation(null);
-    const id = await recordRequest(question.trim());
-    setQuestion("");
+    const id = await recordRequest(text.trim());
     const outcome = id && onDeliver ? onDeliver(reviewInvocations({ ref: itemRef, file, requestId: id }), "note") : "waiting";
     setNotice(outcome === "typed" ? NOTE_SENT : outcome === "not-running" ? NOTE_NOT_RUNNING
       : `Note recorded. Run ${diagramReviewInvocation(itemRef, file)} in a Claude session, or Review notes, to have the architect examine it.`);
+    if (id) setOpeningNote(id);
     await refreshReview();
   };
   // ASK ARCHITECT, from the bar or at the selection on the canvas: one path (171/ADR-001). Either
@@ -305,11 +318,13 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
       record: async (request) => (await post<{ request?: { id?: string } }>({ action: "request", ...request })).request?.id ?? null,
       launch, invocation: (requestId) => diagramReviewInvocation(itemRef, file, requestId),
     });
+    // The new note's thread opens at the top of the panel once the records list it.
+    if (id) setOpeningNote(id);
     await refreshReview();
     return id;
   };
   const selectedElementIds = () => { const ids = api.current?.getAppState().selectedElementIds ?? {}; return Object.keys(ids).filter((id) => ids[id]); };
-  const ask = async () => { if (await askAt(question, selectedElementIds())) setQuestion(""); };
+  const ask = async (text: string) => Boolean(await askAt(text, selectedElementIds()));
   const askAtSelection = async (text: string, elementIds: string[]) => {
     if (busyRef.current) throw new Error("The editor is busy; try again in a moment.");
     busyRef.current = true; setBusy(true); setError(null);
@@ -318,8 +333,8 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
     finally { busyRef.current = false; setBusy(false); afterWrite(); }
   };
   const reviewNotes = async () => { setNotice(null); setInvocation(null); deliverAsk(reviewInvocations({ ref: itemRef, file })); };
-  // A REPLY in a note's thread beside its shape (171/ADR-006): recorded on the note, then delivered as
-  // a note is — typed into the architect's running session, or left to wait (ADR-005).
+  // A REPLY in a note's thread (171/ADR-006), read in the panel since 172/ADR-003: recorded on the note,
+  // then delivered as a note is — typed into the architect's running session, or left to wait (ADR-005).
   const replyInThread = async (note: ThreadNote, text: string) => {
     const outcome = await replyToNote({
       requestId: note.id, text, record: (reply) => post({ action: "reply", ...reply }),
@@ -408,13 +423,13 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
       // Bring what the proposal changed into view: an accepted change off-screen reads as nothing.
       const changed = touchedIds(proposal);
       if (!changed.length || selectAndShow(changed) === 0) live.scrollToContent(undefined, { fitToContent: true, animate: false });
-      setNotice("Proposal accepted and saved to the diagram.");
+      setNotice("Proposal accepted and saved to the diagram."); setPreviewNote(null);
     } finally { await refreshReview(); }
   };
-  const reject = async (proposal: ReviewProposal) => {
+  const reject = async (proposal: ReviewProposal, reason: string) => {
     try {
       await post({ action: "reject", proposalId: proposal.id, ...(reason.trim() ? { reason: reason.trim() } : {}) });
-      setRejecting(null); setReason(""); setNotice("Proposal rejected.");
+      setNotice("Proposal rejected."); setPreviewNote(null);
     } finally { await refreshReview(); }
   };
   // PUBLISH: the SVG — and a PNG, written when the project owes one — exported from this canvas, written
@@ -438,13 +453,42 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
   const close = () => { if (!busy && (!dirty || window.confirm("Discard unsaved diagram edits?"))) onRequestClose(); };
 
   const notes = openNotes(review.requests);
-  // The column scrolls: with the architect's dock open the shell's box is shorter than the canvas,
-  // panel and bar together, and the bar is where a note is added to that open session (171/04).
-  return <section className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background" aria-label="Excalidraw architecture diagram">
-    <header className="sticky top-0 z-10 flex shrink-0 flex-wrap items-center gap-2 border-b border-border bg-background px-4 py-2 text-xs">
+  // THE PANEL'S MODEL (172/ADR-003 §2): threads read from the records and the scene as it is now.
+  const conversation = useMemo(
+    () => conversationOf(review.requests, review.proposals, (api.current?.getSceneElements() ?? []) as never),
+    // `sceneVersion` stands for the canvas's elements, which the API holds.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [review, sceneVersion, ready],
+  );
+  // A note just asked or saved opens its thread once the records list it; an open thread that is gone
+  // (withdrawn, or its shapes regrouped) closes.
+  useEffect(() => {
+    if (openingNote) {
+      const thread = threadHolding(conversation.threads, openingNote);
+      if (thread) { setOpenKey(thread.key); setPanelCollapsed(false); setOpeningNote(null); }
+    } else if (openKey && !conversation.threads.some((thread) => thread.key === openKey)) setOpenKey(null);
+  }, [conversation, openingNote, openKey]);
+  // A pin opens its thread, and the panel with it; one thread is open at a time.
+  const openThread = (key: string | null) => { setOpenKey(key); setPreviewNote(null); if (key) setPanelCollapsed(false); };
+  // A write the panel waits on: busy while it runs, its failure handed back to the card that asked.
+  const performFor = async (operation: () => Promise<void>) => {
+    if (busyRef.current) throw new Error("The editor is busy; try again in a moment.");
+    busyRef.current = true; setBusy(true); setError(null);
+    try { await operation(); }
+    catch (reason) { throw new Error(failure(reason)); }
+    finally { busyRef.current = false; setBusy(false); afterWrite(); }
+  };
+  const askFromPanel = async (text: string) => { let asked = false; await performFor(async () => { asked = await ask(text); }); return asked; };
+  const noteFromPanel = async (text: string) => { await performFor(() => note(text)); return true; };
+  const showOnCanvas = (thread: Thread<ReviewRequest, ReviewProposal>) => { selectAndShow(thread.selectedIds); };
+  const copyCommand = (command: string) => void navigator.clipboard.writeText(command).catch(() => setError("Clipboard unavailable; select and copy the command manually."));
+
+  return <section className="flex min-h-0 flex-1 flex-col bg-background" aria-label="Excalidraw architecture diagram">
+    <header className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border bg-background px-4 py-2 text-xs">
       <strong>{file}</strong>
       <span role="status">{loaded?.readOnly ? "Read-only" : dirty ? "Unsaved changes" : canvasNote ? canvasNote : !loaded?.present ? "New diagram — not saved" : publishedRevision && publishedRevision === loaded.revision ? "Saved and published" : "Saved"}</span>
-      <button type="button" disabled={!ready || busy || loaded?.readOnly} onClick={() => void perform(async () => { await saveSnapshot(); setNotice("Saved."); })} className="ml-auto rounded border px-3 py-1 disabled:opacity-50">{busy ? "Working…" : "Save"}</button>
+      <button type="button" aria-label="Show the Mermaid view" disabled={!ready} onClick={() => (view ? setView(null) : showView())} className="ml-auto rounded border px-3 py-1 disabled:opacity-50">Mermaid view</button>
+      <button type="button" disabled={!ready || busy || loaded?.readOnly} onClick={() => void perform(async () => { await saveSnapshot(); setNotice("Saved."); })} className="rounded border px-3 py-1 disabled:opacity-50">{busy ? "Working…" : "Save"}</button>
       <button type="button" aria-label="Publish figure" disabled={!ready || busy || loaded?.readOnly || liveCount === 0} onClick={() => void perform(publish)} className="rounded border px-3 py-1 disabled:opacity-50">Publish</button>
       <button type="button" disabled={busy} onClick={close} className="rounded border px-3 py-1 disabled:opacity-50">Close editor</button>
     </header>
@@ -453,64 +497,37 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
       <button type="button" disabled={reloading} onClick={() => streamDispatch.current({ type: "reload" })} className="rounded border border-amber-900/30 px-3 py-0.5 disabled:opacity-50">{reloading ? "Reloading…" : "Reload"}</button>
     </p> : null}
     {!loaded && !error ? <p className="px-4 py-2 text-sm">Loading the diagram…</p> : null}
-    {loaded && ready && liveCount === 0 && !loaded.readOnly ? <p className="border-b bg-amber-50 px-4 py-2 text-sm text-amber-950">This diagram is empty. Request a first draft from the ADR below, draw it, or drag items in from your libraries.</p> : null}
+    {loaded && ready && liveCount === 0 && !loaded.readOnly ? <p className="border-b bg-amber-50 px-4 py-2 text-sm text-amber-950">This diagram is empty. Request a first draft from the ADR in the panel, draw it, or drag items in from your libraries.</p> : null}
     {error ? <p role="alert" className="border-b px-4 py-2 text-sm text-red-700">{error} Your canvas has not been replaced.</p> : null}
-    <p className="px-4 py-1 text-xs text-muted-foreground">Save keeps the drawing; Publish writes the figure the ADR shows. The architect reads it as Mermaid — a note waits for a review session, Ask architect starts one now. Nothing changes until you accept a proposal.</p>
-    {loaded ? <div className="min-h-0 flex-1" style={{ minHeight: "40vh" }}><Excalidraw
-      initialData={{ elements: loaded.scene.elements as never, appState: { viewBackgroundColor: "#ffffff", ...loaded.scene.appState, ...canvasDefaults(loaded.palette as never) }, files: loaded.scene.files as never, libraryItems: libraryItems as never, scrollToContent: true }}
-      viewModeEnabled={loaded.readOnly}
-      validateEmbeddable={() => false}
-      excalidrawAPI={(value) => { api.current = value; setCanvasApi(value); setReady(true); }}
-      onChange={remember}
-      UIOptions={{ canvasActions: { loadScene: false, saveToActiveFile: false } }}
-    ><CanvasOverlay api={canvasApi} readOnly={loaded.readOnly} onAsk={askAtSelection} notes={review.requests} onReply={replyInThread} />
-      <LibrarySearchSidebar api={canvasApi} libraries={libraries} libraryItems={libraryItems} /></Excalidraw></div> : null}
-
-    <section className="shrink-0 border-t border-border px-4 py-2 text-xs" aria-label="Architect review">
-      <div className="flex items-center gap-2"><strong>Review</strong>
-        <span className="text-muted-foreground">{pendingProposals(review.proposals).length} pending proposal{pendingProposals(review.proposals).length === 1 ? "" : "s"}</span>
-        <button type="button" aria-label="Show the Mermaid view" disabled={!ready} onClick={showView} className="ml-auto rounded border px-2 py-0.5">Mermaid view</button>
-        <button type="button" aria-expanded={reviewOpen} aria-label={reviewOpen ? "Collapse review panel" : "Expand review panel"} onClick={() => setReviewOpen((value) => !value)} className="rounded border px-2 py-0.5">{reviewOpen ? "Collapse" : "Expand"}</button></div>
-      {view ? <div className="mt-2"><p className="text-muted-foreground">What the architect reads (unsaved shapes get their ids on save):</p><textarea aria-label="Mermaid view" readOnly value={view} className="mt-1 h-28 w-full rounded border p-2 font-mono text-xs" /><button type="button" onClick={() => setView(null)} className="rounded border px-2 py-0.5">Hide</button></div> : null}
-      {reviewOpen ? <div className="mt-2 max-h-48 space-y-2 overflow-auto">
-        {reviewError ? <p role="alert" className="text-red-700">{reviewError}</p> : null}
-        {previewNote ? <p role="status">{previewNote}</p> : null}
-        {review.requests.length === 0 && review.proposals.length === 0 ? <p className="text-muted-foreground">No notes or requests yet.</p> : null}
-        {review.requests.length ? <div><h3 className="font-semibold">Notes and requests</h3>
-          <p className="text-muted-foreground">{notes.length} open note{notes.length === 1 ? "" : "s"}</p>
-          <ul className="space-y-1">{review.requests.slice(0, 10).map((item) => <li key={item.id} className="rounded border px-2 py-1">
-            <span className="font-medium">{item.request}</span> <span className="text-muted-foreground">— {item.status}{item.selectedIds?.length ? ` · ${item.selectedIds.join(", ")}` : " · whole diagram"}</span>
-            {item.status === "open" && !loaded?.readOnly ? <button type="button" aria-label={`Withdraw note: ${item.request}`} disabled={busy} onClick={() => void perform(() => withdraw(item))} className="ml-2 rounded border px-2 py-0.5 disabled:opacity-50">Withdraw</button> : null}
-            {item.answer ? <p className="mt-1 whitespace-pre-wrap">{item.answer}</p> : null}</li>)}</ul></div> : null}
-        {review.proposals.length ? <div><h3 className="font-semibold">Proposals</h3><ul className="space-y-1">{review.proposals.slice(0, 10).map((item) => <li key={item.id} className="rounded border px-2 py-1">
-          <p><span className="font-medium">{item.summary}</span> <span className="text-muted-foreground">— {item.status} · {describeCounts(item)}</span></p>
-          {item.rationale ? <p className="mt-1 whitespace-pre-wrap">{item.rationale}</p> : null}
-          {item.reason ? <p className="mt-1 text-muted-foreground">Reason: {item.reason}</p> : null}
-          {item.status === "pending" ? <div className="mt-1 flex flex-wrap items-center gap-2">
-            <button type="button" aria-label={`Preview proposal: ${item.summary}`} disabled={!ready} onClick={() => preview(item)} className="rounded border px-2 py-0.5 disabled:opacity-50">Preview</button>
-            <button type="button" aria-label={`Accept proposal: ${item.summary}`} disabled={!ready || busy || loaded?.readOnly} onClick={() => void perform(() => accept(item))} className="rounded border px-2 py-0.5 disabled:opacity-50">Accept</button>
-            {rejecting === item.id ? <>
-              <input aria-label="Rejection reason (optional)" value={reason} maxLength={2000} onChange={(event) => setReason(event.target.value)} className="min-w-0 flex-1 rounded border px-2 py-0.5" placeholder="Reason (optional)" />
-              <button type="button" aria-label={`Confirm reject proposal: ${item.summary}`} disabled={busy || loaded?.readOnly} onClick={() => void perform(() => reject(item))} className="rounded border px-2 py-0.5 disabled:opacity-50">Confirm reject</button>
-              <button type="button" onClick={() => { setRejecting(null); setReason(""); }} className="rounded border px-2 py-0.5">Cancel</button></> :
-              <button type="button" aria-label={`Reject proposal: ${item.summary}`} disabled={busy || loaded?.readOnly} onClick={() => setRejecting(item.id)} className="rounded border px-2 py-0.5 disabled:opacity-50">Reject</button>}
-          </div> : null}</li>)}</ul></div> : null}
-      </div> : null}
-    </section>
-    <div className="shrink-0 border-t border-border px-4 py-2">
-      <label className="text-xs" htmlFor="architect-request">Note, question or requested change about the selected shapes (no selection means the whole diagram)</label>
-      <div className="mt-1 flex gap-2"><input id="architect-request" value={question} maxLength={10000} onChange={(event) => setQuestion(event.target.value)} className="min-w-0 flex-1 rounded border px-2 py-1 text-sm" placeholder="Why does this service write directly to the database?" />
-        <button type="button" aria-label="Add note" disabled={!ready || busy || !question.trim() || loaded?.readOnly} onClick={() => void perform(note)} className="rounded border px-3 py-1 text-xs disabled:opacity-50">Add note</button>
-        <button type="button" aria-label="Ask architect" disabled={!ready || busy || !question.trim() || loaded?.readOnly} onClick={() => void perform(ask)} className="rounded border px-3 py-1 text-xs disabled:opacity-50">Ask architect</button></div>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {notes.length ? <button type="button" aria-label="Review notes" disabled={!ready || busy || loaded?.readOnly} onClick={() => void perform(reviewNotes)} className="rounded border px-3 py-1 text-xs disabled:opacity-50">Review {notes.length} note{notes.length === 1 ? "" : "s"} with the architect</button> : null}
-        {loaded && ready && !loaded.readOnly && liveCount === 0 ? <button type="button" aria-label="Request a first draft" disabled={busy} onClick={() => void perform(firstDraft)} className="rounded border px-3 py-1 text-xs disabled:opacity-50">Request a first draft from the ADR</button> : null}
-      </div>
-      {notice ? <p role="status" className="mt-2 text-xs">{notice}</p> : null}
-      {invocation ? <div className="mt-1 flex items-center gap-2"><code className="min-w-0 flex-1 truncate rounded border px-2 py-1 text-xs" aria-label="Architect command">{invocation}</code>
-        <button type="button" aria-label="Copy architect command" onClick={() => void navigator.clipboard.writeText(invocation).catch(() => setError("Clipboard unavailable; select and copy the command manually."))} className="rounded border px-2 py-1 text-xs">Copy command</button></div> : null}
-      {block ? <div className="mt-2"><textarea aria-label="ADR diagram block" readOnly value={block} className="h-16 w-full rounded border p-2 font-mono text-xs" />
-        <button type="button" onClick={() => void navigator.clipboard.writeText(block).catch(() => setError("Clipboard unavailable; select and copy the block manually."))} className="rounded border px-2 py-1 text-xs">Copy block</button></div> : null}
+    {notice ? <p role="status" data-aof-editor-notice="" className="border-b px-4 py-1 text-xs text-muted-foreground">{notice}</p> : null}
+    {view ? <div className="shrink-0 border-b px-4 py-2 text-xs"><p className="text-muted-foreground">What the architect reads (unsaved shapes get their ids on save):</p><textarea aria-label="Mermaid view" readOnly value={view} className="mt-1 h-28 w-full rounded border p-2 font-mono text-xs" /><button type="button" onClick={() => setView(null)} className="rounded border px-2 py-0.5">Hide</button></div> : null}
+    {block ? <div className="shrink-0 border-b px-4 py-2 text-xs"><textarea aria-label="ADR diagram block" readOnly value={block} className="h-16 w-full rounded border p-2 font-mono text-xs" />
+      <button type="button" onClick={() => void navigator.clipboard.writeText(block).catch(() => setError("Clipboard unavailable; select and copy the block manually."))} className="rounded border px-2 py-1 text-xs">Copy block</button></div> : null}
+    <div className="relative flex min-h-0 flex-1" style={{ minHeight: "40vh" }}>
+      {loaded ? <div className="min-h-0 min-w-0 flex-1"><Excalidraw
+        initialData={{ elements: loaded.scene.elements as never, appState: { viewBackgroundColor: "#ffffff", ...loaded.scene.appState, ...canvasDefaults(loaded.palette as never) }, files: loaded.scene.files as never, libraryItems: libraryItems as never, scrollToContent: true }}
+        viewModeEnabled={loaded.readOnly}
+        validateEmbeddable={() => false}
+        excalidrawAPI={(value) => { api.current = value; setCanvasApi(value); setReady(true); }}
+        onChange={remember}
+        UIOptions={{ canvasActions: { loadScene: false, saveToActiveFile: false } }}
+      ><CanvasOverlay api={canvasApi} readOnly={loaded.readOnly} onAsk={askAtSelection} threads={conversation.threads as never} openKey={openKey} onOpenThread={openThread} />
+        <LibrarySearchSidebar api={canvasApi} libraries={libraries} libraryItems={libraryItems} /></Excalidraw></div> : <div className="min-w-0 flex-1" />}
+      <ConversationPanel<ReviewRequest, ReviewProposal>
+        conversation={conversation} openKey={openKey} onOpen={openThread}
+        collapsed={panelCollapsed} onCollapse={setPanelCollapsed}
+        selectionLabel={selected} readOnly={loaded?.readOnly ?? true} ready={ready} busy={busy} loading={!reviewRead} error={reviewError}
+        session={{ label: "Not started" }}
+        waiting={notes.length} canFirstDraft={Boolean(loaded && ready && !loaded.readOnly && liveCount === 0)}
+        notice={null} invocation={invocation} previewNote={previewNote}
+        onAsk={askFromPanel} onSaveNote={noteFromPanel}
+        onReviewNotes={() => void perform(reviewNotes)} onFirstDraft={() => void perform(firstDraft)}
+        onReply={(target: ConversationNote<ReviewRequest, ReviewProposal>, text: string) => replyInThread(target, text)}
+        onWithdraw={(target: ConversationNote<ReviewRequest, ReviewProposal>) => void perform(() => withdraw(target))}
+        onShowOnCanvas={showOnCanvas} onPreview={preview}
+        onAccept={(proposal: ReviewProposal) => performFor(() => accept(proposal))}
+        onReject={(proposal: ReviewProposal, reason: string) => performFor(() => reject(proposal, reason))}
+        onCopyCommand={copyCommand} />
     </div>
   </section>;
 }
