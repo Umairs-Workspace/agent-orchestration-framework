@@ -15,7 +15,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { conversationLaunchArgs } from "@aof/execution/conversation-session";
-import { functionBody, stripComments } from "../../support/source-slice.mjs";
+import { functionBody, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MODULE = "packages/execution/src/conversation-session.mjs";
@@ -34,8 +34,10 @@ function launchViolations(code) {
   const spawns = [...code.matchAll(/\bspawnChild\(/gu)];
   if (spawns.length !== 1) hits.push(`spawns ${spawns.length} times, not once`);
   for (const match of spawns) {
-    const call = code.slice(match.index, code.indexOf(");", match.index));
-    if (!/\bshell:\s*false\b/u.test(call)) hits.push("spawns without shell: false");
+    // The call's own argument list, by its matched parentheses (F-47-04-ARCH-2; 172 F-172-06).
+    const call = matchedParenSpan(code, match.index);
+    if (!call) hits.push("has a spawnChild( call whose arguments do not close");
+    else if (!/\bshell:\s*false\b/u.test(call.body)) hits.push("spawns without shell: false");
   }
   if (/\bshell:\s*true\b/u.test(code) || /\bexec\(/u.test(code)) hits.push("reaches a shell");
   return hits;

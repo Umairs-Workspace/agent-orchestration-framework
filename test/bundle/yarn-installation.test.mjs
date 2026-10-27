@@ -143,6 +143,8 @@ export const yarnInstallationTests = [
         'pty.mjs': ['node:module', 'node-pty'],
         'session-driver.mjs': ['node:path', 'node:child_process', 'node:fs/promises', 'node:crypto', '@aof/contracts/loop-bounds', '@aof/contracts/tui-ready'],
         'codex-app-server.mjs': ['node:child_process', 'node:path', '@aof/contracts/loop-bounds'],
+        // 172/ADR-001: the architect's headless conversation spawns one stream-json claude per diagram and ends its tree.
+        'conversation-session.mjs': ['node:child_process'],
         // 156: Windows Codex discovery (package bin, Store install) and the sandboxed child's PATH.
         'codex-executable.mjs': ['node:fs', 'node:fs/promises', 'node:child_process', 'node:module', 'node:path'],
         'codex-process-environment.mjs': ['node:fs', 'node:path'],

@@ -96,8 +96,13 @@ const TEMPLATE = /`(?:[^`\\]|\\[\s\S])*`/g;
 // (`command.includes("/aof:refine")`), and banning that would either red a delivered file
 // or force the ban to be softened into uselessness. Authoring needs the ref interpolated;
 // reading does not.
+//
+// The command is an ASSIGNMENT PHASE's, named from the closed set rather than any `/aof:` verb:
+// 172/ADR-002 gives `/aof:diagram-review` its own one home (review-session.mjs, FF-17202), and
+// a review command is not an assignment phase (172 VERIFICATION F-172-02).
+const PHASE_COMMAND = new RegExp(`/aof:(?:${ASSIGNMENT_PHASES.join("|")})(?![\\w-])`);
 function authorsSlashCommand(code) {
-  return [...code.matchAll(TEMPLATE)].map((m) => m[0]).filter((literal) => /\/aof:[a-z-]+/.test(literal));
+  return [...code.matchAll(TEMPLATE)].map((m) => m[0]).filter((literal) => PHASE_COMMAND.test(literal));
 }
 
 // programLiteralProblems(code) — ADR-010 §2 in the FORM the defect would actually take

@@ -112,6 +112,14 @@
     "reason": "Locates a tool or runs its version probe; resolved executable is a provisioned tool, not an application source entry."
   },
   {
+    "file": "packages/execution/src/conversation-session.mjs",
+    "kind": "child-process",
+    "expression": "execFile(\"taskkill.exe\", [\"/PID\", String(child.pid), \"/T\", \"/F\"], { timeout: 2000, windowsHide: true }, (error) => { if (error) child.kill(\"SIGKILL\"); resolve(); })",
+    "digest": "bf5b294fbee8d57480f53d2e604cd7f71714497cc1b378a7dd0e0f08c5e67daa",
+    "sourceDigest": "f3fb6f2e897554d11a127dd8592e0134f9b861047c86c763766b4171ea1ac27a",
+    "reason": "172/ADR-001: bounded termination of the architect conversation's own process tree on Windows (taskkill /T, the way codex-app-server ends its own), falling back to SIGKILL; explicit argv, no shell, the owned child's pid only. The session itself is spawned through the injected spawnChild with an argument vector and shell:false (FF-17201)."
+  },
+  {
     "file": "packages/execution/src/rubric-process.mjs",
     "kind": "child-process",
     "expression": "spawnChild(program, args, {\n        cwd: options.cwd,\n        env: options.env,\n        stdio: options.stdio,\n        shell: options.shell,\n      })",

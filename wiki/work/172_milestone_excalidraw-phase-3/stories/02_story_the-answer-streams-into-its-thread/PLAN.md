@@ -23,7 +23,7 @@
   `unavailable` and shows the copyable command (`diagramReviewInvocation`). The panel gets the
   merged threads and the session; the overlay's pins get the answering halo.
 - `DiagramSurface.tsx`: renders the editor alone — no dock, no `onDeliver`, no delivery state.
-- `test/smoke/stand-in-architect.mjs` + the smoke: start `aof work ui` with
+- The stand-in architect beside the smoke, and the smoke itself: start `aof work ui` with
   `AOF_ARCHITECT_EXECUTABLE` pointing at the stand-in; it answers each user message with a few
   deltas spaced ~100 ms apart, then runs `aof diagram scene … --action respond`.
 

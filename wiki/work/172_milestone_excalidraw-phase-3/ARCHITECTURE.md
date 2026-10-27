@@ -203,5 +203,5 @@ one place a thread is read or replied to.
 
 | id | invariant | enforced by (arch-test) | from |
 |---|---|---|---|
-| FF-17201 | The architect's conversation launch never bypasses permissions: its argument vector carries `--permission-prompts none` and an explicit `--allowedTools`, never `--dangerously-skip-permissions`, `--allow-dangerously-skip-permissions` or `bypassPermissions`, and it is spawned with an argument vector, never through a shell. | `test/arch/diagrams/acd-architect-session-never-bypasses-permissions.test.mjs` — pending (172/00) | ADR-001 |
-| FF-17202 | The `/aof:diagram-review` invocation and the architect session's tool list are spelled only in `packages/diagrams/src/review-session.mjs`. | `test/arch/diagrams/acd-diagram-review-session-one-home.test.mjs` — pending (172/00) | ADR-002 |
+| FF-17201 | The architect's conversation launch never bypasses permissions: its argument vector carries `--permission-prompts none` and an explicit `--allowedTools`, never `--dangerously-skip-permissions`, `--allow-dangerously-skip-permissions` or `bypassPermissions`, and it is spawned with an argument vector, never through a shell. | `test/arch/diagrams/acd-architect-session-never-bypasses-permissions.test.mjs` | ADR-001 |
+| FF-17202 | The `/aof:diagram-review` invocation and the architect session's tool list are spelled only in `packages/diagrams/src/review-session.mjs`. | `test/arch/diagrams/acd-diagram-review-session-one-home.test.mjs` | ADR-002 |

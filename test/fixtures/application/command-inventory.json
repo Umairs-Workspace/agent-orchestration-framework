@@ -2564,7 +2564,8 @@
             "publish",
             "libraries",
             "stamp",
-            "reply"
+            "reply",
+            "session"
           ]
         },
         "baseRevision": {
@@ -2628,11 +2629,11 @@
         "scene"
       ],
       "spec": {
-        "usage": "aof diagram scene <ref> <ADR-NNN-slug.excalidraw> [--action read|save|context|request|withdraw|respond|reply|propose|proposals|accept|reject|publish|libraries|stamp] [--input path] [--json]",
+        "usage": "aof diagram scene <ref> <ADR-NNN-slug.excalidraw> [--action read|save|context|request|withdraw|respond|reply|propose|proposals|accept|reject|publish|libraries|stamp|session] [--input path] [--json]",
         "flags": {
           "action": {
             "type": "string",
-            "description": "read, save, context, request, withdraw, respond, reply, propose, proposals, accept, reject, publish, libraries, or stamp"
+            "description": "read, save, context, request, withdraw, respond, reply, propose, proposals, accept, reject, publish, libraries, stamp, or session"
           },
           "input": {
             "type": "string",
