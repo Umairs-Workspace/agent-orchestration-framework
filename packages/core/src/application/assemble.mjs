@@ -232,7 +232,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const dsl = assembleDsl({ fsServices: fs, workspaceServices: workspace });
   const configInspect = assembleConfigInspect({ dslServices: dsl, fsServices: fs, workspaceServices: workspace, degradeServices: degrade });
   const configEditor = assembleConfigEditor({ configInspectServices: configInspect, dslServices: dsl, fsServices: fs, workspaceServices: workspace });
-  const boardUi = assembleBoardUi({ commandCoreServices: commandPort, degradeServices: degrade });
+  const boardUi = assembleBoardUi({ commandCoreServices: commandPort, degradeServices: degrade, terminalProvidersServices: terminalProviders });
   const terminalSessions = assembleTerminalSessions({ degradeServices: degrade });
   const terminalWs = assembleTerminalWs({ workServices: work, claudeTrustServices: claudeTrust, terminalProvidersServices: terminalProviders, terminalSessionsServices: terminalSessions, degradeServices: degrade });
   const setupUi = assembleSetupUi({ configEditorServices: configEditor, boardUiServices: boardUi, terminalWsServices: terminalWs });

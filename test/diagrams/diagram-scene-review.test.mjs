@@ -334,6 +334,18 @@ export const diagramSceneReviewTests = [
     assert.match(context.view, /C\[""\]/);
     await rejected(fx.run("context", { requestId: "deadbeefdeadbeef" }), "diagram-review-unknown");
   }) },
+  // milestone 172 / story 00 (ADR-002 §1) — `session`: what the architect's session is typed, and its tools.
+  { name: "172/00 task02 · session answers the review invocation and the tools for a request the diagram holds, and the batch review for none", run: () => withFixture(async (fx) => {
+    const { request } = await seeded(fx);
+    const tools = ["Read", "Grep", "Glob", "Write", "Bash(aof diagram scene:*)"];
+    assert.deepEqual(await fx.run("session", { requestId: request.id }), { ref: "07", file, requestId: request.id, invocation: `/aof:diagram-review 07 ${file} ${request.id}`, tools });
+    assert.deepEqual(await fx.run("session"), { ref: "07", file, requestId: null, invocation: `/aof:diagram-review 07 ${file}`, tools });
+  }) },
+  { name: "172/00 task02 E12 · session refuses a request id the diagram does not hold, naming it", run: () => withFixture(async (fx) => {
+    await seeded(fx);
+    await assert.rejects(fx.run("session", { requestId: "deadbeefdeadbeef" }), (error) => error.code === "diagram-review-unknown" && /deadbeefdeadbeef/.test(error.message));
+    await rejected(fx.run("session", { requestId: "../x" }), "diagram-review-id-invalid");
+  }) },
   { name: "review: respond records the answer and never touches the diagram", run: () => withFixture(async (fx) => {
     const { request } = await seeded(fx);
     const before = await readFile(fx.target, "utf8");

@@ -50,6 +50,11 @@ or the file is missing, say so and stop.
    - **A question** (explain, why, what, how does it work): answer it in this session, then record a
      concise answer with `--action respond`, input `{"requestId": "...", "answer": "..."}`. The answer
      is at most 10000 characters and changes nothing in the diagram.
+
+     **In a conversation** — the board's headless session, where the editor shows this turn being
+     written into the note's thread — write the answer as this turn's final text, then record that
+     same text with `respond`. The streamed text is never kept; the recorded answer replaces it, so
+     what the human watched being written and what the thread keeps read the same.
    - **A change request** (add, move, relabel, remove, connect, recolour, group), or **a first draft**
      (the editor's "Request a first draft" writes `Draw a first draft of this diagram from its ADR and
      diagram brief.`; any request to draw an empty diagram is the same): edit the view (step 4) and

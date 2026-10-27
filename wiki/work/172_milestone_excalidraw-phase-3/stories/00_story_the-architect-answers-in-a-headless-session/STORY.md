@@ -4,7 +4,7 @@ number: 00
 slug: the-architect-answers-in-a-headless-session
 title: "The architect answers in a headless session — one stream-json claude per open diagram, its turns streamed on the diagram's events stream"
 parent: 172
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-10-27
 updated: 2026-10-27

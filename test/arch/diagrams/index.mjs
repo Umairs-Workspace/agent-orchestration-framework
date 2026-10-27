@@ -14,6 +14,10 @@ import { archTests as acdDiagramsPackageOneWayTests } from "./acd-diagrams-packa
 import { archTests as acdDiagramCanvasAnchorOneHomeTests } from "./acd-diagram-canvas-anchor-one-home.test.mjs";
 // milestone 171 / story 02 — FF-17101 (the face's diagram routes, the stream included, import nothing of the package).
 import { archTests as acdDiagramFaceImportsNothingTests } from "./acd-diagram-face-imports-nothing.test.mjs";
+// milestone 172 / story 00 — FF-17201 (the architect's session never bypasses permissions) and FF-17202
+// (the review invocation and the session's tools have one home).
+import { archTests as acdArchitectSessionNeverBypassesPermissionsTests } from "./acd-architect-session-never-bypasses-permissions.test.mjs";
+import { archTests as acdDiagramReviewSessionOneHomeTests } from "./acd-diagram-review-session-one-home.test.mjs";
 
 export const tests = [
   ...acdDiagramGeneratorNamedOnceTests,
@@ -22,4 +26,6 @@ export const tests = [
   ...acdDiagramsPackageOneWayTests,
   ...acdDiagramCanvasAnchorOneHomeTests,
   ...acdDiagramFaceImportsNothingTests,
+  ...acdArchitectSessionNeverBypassesPermissionsTests,
+  ...acdDiagramReviewSessionOneHomeTests,
 ];

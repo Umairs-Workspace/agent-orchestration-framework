@@ -40,6 +40,23 @@
 // pin it and so a future rename is one token, never a scatter.
 export const SESSION_MODEL_CONFIG_PATH = "work.agents.session";
 
+// ── THE SESSION-ATTACHMENT VECTOR (63/02; hoisted here at 172/00, ADR-001 §3) — its one home ──
+//
+// The env keys a spawned `claude` must never inherit from the process that spawns it: an IDE's
+// attachment (`VSCODE_*`, `TERM_PROGRAM*`, `CLAUDE_CODE_SSE_PORT`) and a parent Claude Code session's
+// identity (`CLAUDECODE`, `CLAUDE_CODE_*`, `CLAUDE_PID`), plus `CLAUDE_EFFORT`, which would override
+// the resolved `--effort`. The loop's driver (`session-driver.mjs`) and the board's headless
+// conversation (`conversation-session.mjs`) both scrub with this one predicate; the measurements
+// behind each key are recorded at the driver's scrub loop.
+export const isSessionAttachmentKey = (key) => key.startsWith("VSCODE_")
+  || key === "TERM_PROGRAM"
+  || key === "TERM_PROGRAM_VERSION"
+  || key.startsWith("CLAUDE_CODE_")   // includes CLAUDE_CODE_SSE_PORT, the original IDE vector
+  || key === "CLAUDECODE"
+  || key === "CLAUDE_PID"
+  || key === "CLAUDE_EFFORT"
+  || key === "CLAUDE_AGENT_SDK_VERSION";
+
 // ── THE EFFORT VOCABULARY (story 141) — its one home ──
 //
 // Claude Code's five `--effort` levels, plus `extra-high` as the operator's name for `xhigh`. Every

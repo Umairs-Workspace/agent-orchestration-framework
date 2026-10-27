@@ -6,6 +6,7 @@ import { DEFAULT_HEARTBEAT_MS } from "@aof/contracts/loop-bounds";
 import { BRACKETED_PASTE_END, BRACKETED_PASTE_START, PASTE_SUBMIT_SETTLE_MS } from "@aof/contracts/tui-ready";
 import { createTerminalSpawn, releasePtyAfterTreeTermination } from "./pty.mjs";
 import { createCodexAppServerAdapter, codexServerCommand } from "./codex-app-server.mjs";
+import { isSessionAttachmentKey } from "./session-model.mjs";
 
 // Execution owns the driver. Core supplies transcript readers, launch policy, screen
 // observation and diagnostics; this module imports no application or transport layer.
@@ -633,16 +634,10 @@ const SUBMIT_KEY = String.fromCharCode(13);
 // ── the SESSION-ATTACHMENT VECTOR (the env keys a spawned run must never inherit) ──
 //
 // Hoisted out of the scrub loop below at 63/02 so the unattended branch can reuse the ONE
-// predicate rather than carry a second copy of the list. The list itself, the reasoning for
-// every key on it and the measurements behind them are unchanged and stay at the loop.
-const isSessionAttachmentKey = (key) => key.startsWith("VSCODE_")
-  || key === "TERM_PROGRAM"
-  || key === "TERM_PROGRAM_VERSION"
-  || key.startsWith("CLAUDE_CODE_")   // includes CLAUDE_CODE_SSE_PORT, the original IDE vector
-  || key === "CLAUDECODE"
-  || key === "CLAUDE_PID"
-  || key === "CLAUDE_EFFORT"
-  || key === "CLAUDE_AGENT_SDK_VERSION";
+// predicate rather than carry a second copy of the list, and hoisted again at 172/00 into
+// `session-model.mjs`, the pure launch leaf the board's headless conversation also reads, so the
+// two launches of `claude` never disagree on what a child must not inherit. The reasoning for the
+// keys and the measurements behind them stay at the loop below.
 
 // ── the FOURTH ENFORCEMENT POINT's refusal vocabulary (63/ADR-005 §2) ──
 //

@@ -4,6 +4,8 @@
 // diagramming became its own package pair (@aof/diagrams for the node half, this one for the
 // browser half), so the board carries only the figure and reaches the editor by one lazy import.
 //
+import { reviewInvocation } from "@aof/diagrams/review-session";
+
 // ---- Excalidraw editor: scene draft ----
 // Document fingerprints intentionally exclude SDK session state (camera, selections, tools).
 // All element properties, including bindings, customData, labels and deletion, are retained.
@@ -23,11 +25,10 @@ export function sceneFingerprint(scene) {
   });
 }
 
-// The slash command that asks the architect to review a recorded request (same style as action.mjs).
-// With no request id it is the BATCH form (170/06): the command examines every open note.
-export function diagramReviewInvocation(ref, file, requestId) {
-  return requestId ? `/aof:diagram-review ${ref} ${file} ${requestId}` : `/aof:diagram-review ${ref} ${file}`;
-}
+// The slash command that asks the architect to review a recorded request; with no request id it is
+// the BATCH form (170/06). Spelled once, in @aof/diagrams' review-session (172/ADR-002, FF-17202) —
+// the editor keeps the name it has always called it by.
+export const diagramReviewInvocation = reviewInvocation;
 
 // What one delivery hands the architect (171/ADR-005, 171/04 Q1): a request's own review invocation,
 // then — when other notes are waiting — the batch invocation that examines them, so a session started

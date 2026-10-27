@@ -23,7 +23,8 @@ import { functionBody, stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FACE = "packages/server/src/board-ui.mjs";
-const ROUTES = ["async function handleDiagramApi(", "async function streamDiagramEvents("];
+// 172/ADR-002 — the conversation route joins them: it learns what to type from `diagram:scene --action session`.
+const ROUTES = ["async function handleDiagramApi(", "async function streamDiagramEvents(", "async function deliverConversation("];
 
 // What, in the face, reaches the package: by name, or by a path into its sources.
 function packageReferences(file, text) {
@@ -67,6 +68,8 @@ export const archTests = [
         assert.deepEqual(routeViolations(body), [], header);
       }
       assert.match(functionBody(code, ROUTES[1]), /action: "stamp"/u, "the stream learns what to watch from the stamp");
+      assert.match(functionBody(code, ROUTES[2]), /action: "session"/u, "the conversation route learns what to type from the session action");
+      assert.doesNotMatch(functionBody(code, ROUTES[2]), /\/aof:/u, "and spells no slash command of its own");
     },
   },
   {
