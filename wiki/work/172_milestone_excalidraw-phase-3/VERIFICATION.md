@@ -136,10 +136,57 @@ Readings against `mocks/conversation-streaming.png` (1280) and `mocks/conversati
 | the panel while the architect answers | 1280 | **CONFORMS, one minor gap.** The chip reads "Answering" on a `primary` tint; the open thread's state reads "Architect is answering… · 3 notes" in `primary`; the live turn reads "Architect · now", then its activity list (a tick per finished step), then the answer growing with a `primary` caret at its end; the thread's pin carries the 3 px `primary` halo. **Gap:** an activity step reads as the command it ran ("aof diagram scene … --action context") where the mock reads what it did ("Read the diagram as Mermaid"). |
 | the drawer while the architect answers | 768 | **CONFORMS.** As at 1280, in the 340 px drawer. The thread follows the growing answer to its caret: the first run did not, because the window resize read as the operator scrolling up, and it was fixed (only an upward wheel, touch or key stops the follow). |
 
+### 172/04 tasks 00 and 01 — F-171-03 measured in a real browser, and ruled out (2026-10-27)
+
+`test/smoke/diagram-editor.smoke.mjs`'s new `right-click:` section, run on the Mac at `08e9f0a` plus
+this story's diff, against the built UI in the installed Chrome. The device pixel ratio is 2, as the
+operator's display drew it. The smoke serves a copy of 171's `ADR-003-push-stream.excalidraw` (36
+elements: 3 frames, 7 boxes, 10 arrows, 16 labels), with its figure and its review records, so the
+overlay draws the same pins it drew at 171's `@uat`. **80/80 checks passed.** Story 01's panel had
+landed before this build, so every gesture was measured on the overhauled editor (E6). The 171 tree
+the skew was seen on was not re-run.
+
+Each gesture opens the diagram fresh and is measured on two levels:
+
+- **The drawing.** The static canvas, which holds the drawing alone, is compared pixel by pixel
+  before the gesture and after the menu closes. The selection outline and the menu paint elsewhere.
+- **The scene.** Every arrow's position and points, and every label's container and position, are
+  read from the SDK's live scene and compared with the saved file. At load all 26 already matched.
+
+| gesture | drawing changed | off the saved scene after | screenshots |
+|---|---|---|---|
+| E1 · right-click on empty canvas, then Escape | 0.000% | none | `172-04-E1-empty-canvas-{before,after}.png` |
+| E2 · right-click on the architect-session → review-store edge's label, then Escape | 0.000% | none; the label stays on `aof-jn8y5bq1t9qu` | `172-04-E2-edge-label-{before,after}.png` |
+| E3 · right-click on "Review store", Copy, then a click on empty canvas | 0.000% | none | `172-04-E3-copy-{before,after}.png` |
+| right-click on that edge's body, then Escape | 0.000% | none | `172-04-arrow-body-{before,after}.png` |
+| right-click on a frame's name, then Escape | 0.000% | none | `172-04-frame-name-{before,after}.png` |
+| E4 · right-click and Escape, then a 100 px pan and one zoom step (100% → 110%) | 0.000% against the same pan and zoom with no right-click; the view is identical | none | `172-04-E4-pan-zoom-{alone,after-right-click}-{before,after}.png` |
+
+The shape gestures (E2, E3, the edge's body, the frame) were run with the whole drawing in view (the
+SDK's Shift+1, 30%), so each lands on its shape rather than under the panel.
+
+**The measures are not vacuous.** This is a check of its own in the smoke:
+
+- each of the four shape gestures opened that element's own menu (it offers Delete);
+- the pan alone changed 4.7% of the drawing's pixels;
+- the drift measure names a label moved by 5 px.
+
+Every screenshot pair was read: arrows whole and joined to their boxes, each label on its own edge,
+and at 110% the drawing moved as one.
+
+- **E5 does not apply:** no gesture reproduced the skew, so there was no layer to bisect.
+- **Outcome: F-171-03 is ruled out** on the editor as it now stands. The `right-click:` checks stay in
+  the smoke as the standing guard, so a skew that returns turns them red.
+- **Not tried:** 171's editor itself, which also rendered a terminal dock under the canvas. 172/02
+  retired the dock. Any cause tied to the dock left with it, and nothing here shows whether there was
+  one.
+- **Observation:** a right-click on a shape enables Undo. The SDK (0.18.0) records the selection it
+  makes in its history. The scene does not change.
+
 ## Findings
 
 | id | observed | type | severity | triage | routed-to | status |
 |---|---|---|---|---|---|---|
-| F-171-03 | Carried from 171 VERIFICATION: after a right-click the drawing skewed until a reload; the saved scene was clean; not reproduced at 171's verify. | defect | minor | in scope — reproduce first | 172/04 | open |
+| F-171-03 | Carried from 171 VERIFICATION: after a right-click the drawing skewed until a reload; the saved scene was clean; not reproduced at 171's verify. | defect | minor | in scope — reproduce first | 172/04 | ruled out (172/04, 2026-10-27): six gestures over 171's scene drew exactly as before, and the smoke keeps them as checks |
 | (172/00 review) | The architect's session ran `mktemp -d`, outside `Bash(aof diagram scene:*)`, without a denial (Claude Code's own allowance for safe commands, presumably), and its `Write` grant is not path-scoped. | observation | minor | to triage at verify | | open |
 | F-171-04 | Carried from 171 VERIFICATION: every ask and reply opens or types into a visible terminal dock; the conversation surfaces need a proper design. | design-gap | major | in scope | 172/00, 01, 02, 03 | open |

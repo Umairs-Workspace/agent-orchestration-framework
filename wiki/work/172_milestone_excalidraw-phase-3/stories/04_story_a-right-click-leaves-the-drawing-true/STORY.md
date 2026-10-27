@@ -4,7 +4,7 @@ number: 04
 slug: a-right-click-leaves-the-drawing-true
 title: "A right-click leaves the drawing true — F-171-03 reproduced first, then fixed or ruled out"
 parent: 172
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-27
 updated: 2026-10-27
@@ -24,8 +24,8 @@ one edge, and never have to reload to trust what I see (F-171-03).**
 
 ## Tasks
 
-- [ ] `tasks/00_the-skew-is-reproduced-first.feature` — the gestures driven in a real browser over 171's diagram, the outcome recorded either way
-- [ ] `tasks/01_the-drawing-holds-after-a-right-click.feature` — the browser check that holds the drawing true after each gesture
+- [x] `tasks/00_the-skew-is-reproduced-first.feature` — the gestures driven in a real browser over 171's diagram, the outcome recorded either way
+- [x] `tasks/01_the-drawing-holds-after-a-right-click.feature` — the browser check that holds the drawing true after each gesture
 
 ## Notes
 

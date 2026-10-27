@@ -131,6 +131,70 @@ doc: state
 - **Task 03 is the operator's `@uat`** (a real architect answering in the deployed build). It is left
   for `aof:verify`.
 
+### 172/03 — build and review close (2026-10-27, solo)
+
+- **The declared read set was incomplete by two controls.** The importer sweep (171 R2) found two
+  pins outside `files:` that counted what this story removed:
+  - `apps/ui/test/terminal-harness-drives-a-grid.suite.mjs` counts the socket suite's lanes (23 → 17);
+  - `apps/ui/test/terminals-home-route.suite.mjs` pins `TerminalControl.tsx`'s line count (839 → 834).
+
+  Both were re-measured and updated here. Lesson: a story that removes lanes or lines owes every
+  suite that counts them, and a grep of the tests for the removed file's name or the suite's export
+  finds them.
+- **The surface-table scenario lives in `invariant-4-amended`, not in the gate.** Adding it as an
+  eighth lane of `acd-fleet-terminal-input-constrained` broke that file's own seven-lane census, which
+  `invariant-4-amended` pins on purpose. It went beside that census instead.
+- **The near-miss recall ran after the build, not before** (missed at the lane's start). It surfaced
+  132 R4 (a comment moves a digest pin) and 151 R2 (a budget left over). Both were already honoured:
+  FF-5307 was re-pinned from the measured diff, and the `diagram/` ceiling was lowered 5 → 3.
+- **`aof test --scope impacted --story 172/03` widened to scope all** (1,247 suites, about 35 minutes
+  on the Mac). Seven of the story's declared paths had no registered dependent in the graph. It
+  reported **30 reds, none of them 03's.** 03's own suites and the importer sweep are green, and no
+  failing file touches the terminal, the dock or the budgets. Attributed from their messages, for
+  `aof:verify 172`'s regression gate:
+  - **Caused by 172's earlier stories:**
+    - FF-6306: `packages/diagrams/src/review-session.mjs` (00) is a second module that spells an
+      assignment phase's slash command.
+    - FF-9603: 02's `PLAN.md` restates the declared path `test/smoke/stand-in-architect.mjs`.
+    - FF-12603 leg 6: 02's re-pin comment widened the `RE-PINNED by 127/04` window in
+      `acd-loop-state-rides-the-run-record` from 3,618 to 4,161 characters, against a ceiling of
+      3,900. This was measured at `1bbdfdc` and is unchanged by 03.
+    - F-47-04-ARCH-2: `acd-architect-session-never-bypasses-permissions` (00) cuts source with an
+      `indexOf` sentinel slice.
+    - workspace-boundaries: `packages/execution/src/conversation-session.mjs` (00) has an
+      unaudited `execFile("taskkill.exe", …)`.
+  - **Not attributed, and likely 174's commit `08e9f0a`** (new graph verbs):
+    - application registration;
+    - the command-core and work-memory goldens;
+    - FF-16004 (`aof work find` evaluates 739 modules against a ceiling of 737).
+  - **Look environmental:**
+    - release-fingerprint-pin, yarn-installation, core-workspace and distribution-workspaces;
+    - a child process whose cwd was removed (lane-is-local-slot);
+    - 81/00, 154/11, 69/04, 156, loops-commands and autonomous-shell-out;
+    - FF-5301 (a TypeError in its plant) and 171/02's stamp test.
+- **Recorded (Q5):** m171/ARCHITECTURE.md's ADR-005 still reads "Accepted". 172/ADR-003 states that it
+  supersedes it, but the old record does not say so. Marking a delivered ADR superseded is the PO's call
+  at verify.
+
+### 172/04 — build and review close (2026-10-27, solo)
+
+- **F-171-03 ruled out, not fixed.** Six gestures over 171's own scene (at device pixel ratio 2, on
+  the editor with 01's panel) drew exactly as before, and the scene matched the saved file. The smoke
+  keeps all six as `right-click:` checks. Details are in VERIFICATION. The 171 tree itself was not
+  re-run: 01 had landed first.
+- **Contract wording, flagged and not changed:** the scenarios name "the 'propose' edge's label", but
+  no label in the scene reads "propose". The architect-session → review-store edge is labelled
+  "3 writes a record", and only its source box reads `--action propose`. The checks drive that label.
+- **Measuring needed the drawing in view.** At 100% the label sits under the panel, and the first
+  right-click opened no menu. The shape gestures now fit the drawing first, and the smoke asserts
+  each one opened its own element's menu, so a gesture that misses fails rather than reading green.
+- **Fixed at close (Q2):** the smoke read 171's scene from its live folder only. It now finds it under
+  `archive/` too, so archiving 171 does not break the smoke.
+- **Recorded (Q5):** a right-click on a shape enables Undo, because SDK 0.18.0 records the selection
+  it makes in its history. The scene is unchanged, so this is not a defect.
+- **The near-miss recall ran after the build** (missed at the lane's start). Four of its five lessons
+  were already honoured: the real corpus over a fixture, and the screenshots read and not only the checks.
+
 ## Verification
 
 - [ ] `@executable` suite green

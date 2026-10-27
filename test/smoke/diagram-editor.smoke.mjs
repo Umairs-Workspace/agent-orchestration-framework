@@ -16,7 +16,7 @@
 // paid agent session starts unattended; a live review is a separate, human-run check.
 // `apps/ui/dist` must be built (`node scripts/ui-build.mjs`).
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import net from "node:net";
 import os from "node:os";
@@ -128,6 +128,70 @@ async function canvasPoint(page, fx, fy) {
 // shapes start in the house style (171/03).
 const on = project("on", { generator: "diagram-design", formats: ["svg", "png"], style: "style.md" });
 writeFileSync(path.join(on.root, "style.md"), readFileSync(path.join(repoRoot, ".aof", "diagrams", "style.md"), "utf8"));
+// 172/04 (F-171-03): a copy of the very scene the right-click skew was seen on at 171's `@uat` — its
+// 36 elements, its figure and its review records (so the overlay draws the pins it drew then).
+const SKEW = "ADR-003-push-stream";
+// Live in the stream, or under `archive/` once `aof:archive` has moved it — the folder name is verbatim.
+const skewSource = ["", "archive"].map((under) => path.join(repoRoot, "wiki", "work", under, "171_milestone_excalidraw-phase-2", "diagrams")).find((dir) => existsSync(dir));
+for (const ext of [".excalidraw", ".svg", ".review"]) cpSync(path.join(skewSource, `${SKEW}${ext}`), path.join(on.item, "diagrams", `${SKEW}${ext}`), { recursive: true });
+const skewSaved = JSON.parse(readFileSync(path.join(skewSource, `${SKEW}.excalidraw`), "utf8")).elements.filter((e) => !e.isDeleted);
+const skewShape = (mermaidId) => skewSaved.find((e) => e.customData?.aof?.id === mermaidId && e.type !== "text");
+// The architect-session → review-store edge, its label ("3 writes a record") and the store's box.
+const SKEW_STORE = skewShape("store");
+const SKEW_EDGE = skewSaved.find((e) => e.type === "arrow" && e.startBinding?.elementId === skewShape("architect").id && e.endBinding?.elementId === SKEW_STORE.id);
+const SKEW_LABEL = skewSaved.find((e) => e.type === "text" && e.containerId === SKEW_EDGE.id);
+const SKEW_FRAME = skewSaved.find((e) => e.type === "frame");
+
+// The live scene and the drawn canvas, read from the SDK's own App instance — the editor exposes no
+// handle and the smoke adds none to it. The STATIC canvas holds the drawing alone: the selection
+// outline and the context menu paint elsewhere, so a pixel that moved there is the drawing moving.
+const liveCanvas = (page) => page.evaluate(() => {
+  const host = document.querySelector(".excalidraw");
+  const key = host && Object.keys(host).find((k) => k.startsWith("__reactFiber$"));
+  for (let fiber = key ? host[key] : null; fiber; fiber = fiber.return) {
+    const app = fiber.stateNode;
+    if (!app?.scene?.getNonDeletedElements || !app.state?.zoom) continue;
+    const { scrollX, scrollY, zoom, offsetLeft, offsetTop } = app.state;
+    return { view: { scrollX, scrollY, zoom: zoom.value, offsetLeft, offsetTop }, elements: app.scene.getNonDeletedElements().map((e) => ({ id: e.id, type: e.type, x: e.x, y: e.y, width: e.width, height: e.height, points: e.points ?? null, containerId: e.containerId ?? null, text: e.text ?? null })) };
+  }
+  return null;
+});
+// The static canvas's pixels, carried out of the page so two loads can be compared.
+const drawnPixels = (page) => page.evaluate(() => {
+  const canvas = document.querySelector(".excalidraw canvas.excalidraw__canvas:not(.interactive)");
+  const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+  let binary = "";
+  for (let i = 0; i < data.length; i += 0x8000) binary += String.fromCharCode.apply(null, data.subarray(i, i + 0x8000));
+  return btoa(binary);
+}).then((base64) => Buffer.from(base64, "base64"));
+// The share of pixels that differ between two snapshots (1 when the canvas changed size).
+const drawnDiff = (a, b) => {
+  if (a.length !== b.length) return 1;
+  let differ = 0;
+  for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2] || a[i + 3] !== b[i + 3]) differ += 1;
+  return differ / (a.length / 4);
+};
+// Every arrow's points and position, and every label's container and position, that differ from the
+// saved scene's — the scene-level half, which points at a different cause than a render-only skew.
+const sceneDrift = (live) => {
+  const round = (n) => Math.round(n * 100) / 100;
+  const shape = (e) => e.type === "arrow" ? JSON.stringify([round(e.x), round(e.y), e.points.map(([x, y]) => [round(x), round(y)])]) : e.type === "text" ? JSON.stringify([e.containerId, round(e.x), round(e.y)]) : null;
+  const now = new Map(live.elements.map((e) => [e.id, e]));
+  return skewSaved.filter((e) => shape(e) != null && (!now.has(e.id) || shape(now.get(e.id)) !== shape(e))).map((e) => e.id);
+};
+// A scene point on the page, through the view the SDK draws with.
+const onPage = ({ view }, x, y) => ({ x: (x + view.scrollX) * view.zoom + view.offsetLeft, y: (y + view.scrollY) * view.zoom + view.offsetTop });
+// A point of canvas well clear of every element, the overlay's pins and the SDK's own toolbars.
+async function emptyCanvas(page, live) {
+  const area = await page.locator(".excalidraw").first().boundingBox();
+  const boxes = live.elements.map((e) => { const a = onPage(live, e.x, e.y); return { x0: a.x, y0: a.y, x1: a.x + e.width * live.view.zoom, y1: a.y + e.height * live.view.zoom }; });
+  for (let fy = 0.3; fy <= 0.8; fy += 0.05) for (let fx = 0.2; fx <= 0.8; fx += 0.05) {
+    const p = { x: area.x + area.width * fx, y: area.y + area.height * fy };
+    if (boxes.every((b) => p.x < b.x0 - 40 || p.x > b.x1 + 40 || p.y < b.y0 - 40 || p.y > b.y1 + 40)) return p;
+  }
+  throw new Error("no empty canvas clear of the scene");
+}
+const settleDrawing = (page) => page.waitForTimeout(400).then(() => page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))));
 const PAPER = "#f3f5f7";
 const INK = "#1b1f27";
 const element = (fixture, mermaidId, type) => stored(fixture).elements.find((e) => e.customData?.aof?.id === mermaidId && (!type || e.type === type) && !e.isDeleted);
@@ -140,6 +204,106 @@ const stored = (fixture) => JSON.parse(readFileSync(fixture.diagram, "utf8"));
 try {
   const ON = (servers[servers.push(await serve(on, ARCHITECT)) - 1]).origin;
   const OFF = (servers[servers.push(await serve(off)) - 1]).origin;
+  // ── 172/04 (F-171-03): a right-click leaves the drawing true ───────────────────────────────
+  // Reproduced FIRST, then checked: each gesture the operator could have made at 171's `@uat` is
+  // driven over a copy of that scene, measured before and after (the static canvas's pixels, and every
+  // arrow and label against the saved scene), and every measurement is logged before any check runs,
+  // so one gesture that reproduces the skew does not hide what the others did.
+  {
+    // At a device pixel ratio of 2, as the operator's display drew it.
+    const skewPage = await (await browser.newContext({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2, permissions: ["clipboard-read", "clipboard-write"] })).newPage();
+    const openSkew = async () => {
+      await skewPage.goto(`${ON}/diagram?ref=07&file=${SKEW}.svg`, { waitUntil: "load" });
+      await skewPage.locator(".excalidraw canvas").first().waitFor({ timeout: 30000 });
+      await skewPage.locator("header [role=status]").filter({ hasText: /^Saved$/ }).first().waitFor({ timeout: 30000 });
+      await settleDrawing(skewPage);
+      return liveCanvas(skewPage);
+    };
+    const menu = skewPage.locator(".context-menu");
+    // Which menu a right-click opened: an element's offers Delete, the canvas's does not.
+    const hits = {};
+    const rightClick = async (point, name = null) => {
+      await skewPage.mouse.click(point.x, point.y, { button: "right" });
+      await menu.waitFor({ timeout: 5000 });
+      if (name) hits[name] = await menu.getByText("Delete", { exact: true }).count() > 0;
+    };
+    const escape = async () => { await skewPage.keyboard.press("Escape"); await menu.waitFor({ state: "detached", timeout: 5000 }); };
+    const centreOf = (live, id) => { const e = live.elements.find((el) => el.id === id); return onPage(live, e.x + e.width / 2, e.y + e.height / 2); };
+    // `fit` brings the whole drawing into view first (the SDK's own Shift+1), as the operator had it, so a
+    // gesture aimed at a shape lands on it rather than under the panel; the keys need the canvas focused.
+    const measure = async (name, gesture, { fit = false } = {}) => {
+      let live = await openSkew();
+      if (fit) {
+        const empty = await emptyCanvas(skewPage, live);
+        await skewPage.mouse.click(empty.x, empty.y);
+        await skewPage.keyboard.press("Shift+Digit1");
+        await settleDrawing(skewPage);
+        live = await liveCanvas(skewPage);
+      }
+      const before = await drawnPixels(skewPage);
+      await skewPage.locator(".excalidraw").first().screenshot({ path: path.join(shots, `172-04-${name}-before.png`) });
+      await gesture(live);
+      // The selection a right-click on a shape makes is cleared (Escape does not clear a line's), so the
+      // screenshots show the drawing alone; the static canvas never held the outline either way.
+      const clear = await emptyCanvas(skewPage, await liveCanvas(skewPage));
+      await skewPage.mouse.click(clear.x, clear.y);
+      await settleDrawing(skewPage);
+      const drawn = await drawnPixels(skewPage);
+      await skewPage.locator(".excalidraw").first().screenshot({ path: path.join(shots, `172-04-${name}-after.png`) });
+      const after = await liveCanvas(skewPage);
+      const result = { name, loaded: sceneDrift(live), drift: sceneDrift(after), pixels: drawnDiff(before, drawn), after, drawn };
+      console.log(`     right-click: ${name} — ${(result.pixels * 100).toFixed(3)}% of the drawing's pixels changed; ${result.drift.length} element(s) off the saved scene after (${result.loaded.length} at load)${result.drift.length ? ` ${JSON.stringify(result.drift)}` : ""}`);
+      return result;
+    };
+    const e1 = await measure("E1-empty-canvas", async (live) => { await rightClick(await emptyCanvas(skewPage, live)); await escape(); });
+    const e2 = await measure("E2-edge-label", async (live) => { await rightClick(centreOf(live, SKEW_LABEL.id), "label"); await escape(); }, { fit: true });
+    const e3 = await measure("E3-copy", async (live) => {
+      await rightClick(centreOf(live, SKEW_STORE.id), "store");
+      await menu.getByText("Copy", { exact: true }).first().click();
+      await menu.waitFor({ state: "detached", timeout: 5000 });
+      const empty = await emptyCanvas(skewPage, live);
+      await skewPage.mouse.click(empty.x, empty.y);
+    }, { fit: true });
+    const body = await measure("arrow-body", async (live) => {
+      const arrow = live.elements.find((e) => e.id === SKEW_EDGE.id);
+      const [[x0, y0], [x1, y1]] = arrow.points;
+      await rightClick(onPage(live, arrow.x + x0 + (x1 - x0) * 0.3, arrow.y + y0 + (y1 - y0) * 0.3), "arrow");
+      await escape();
+    }, { fit: true });
+    // A frame is selected by its name, drawn just above its top-left corner.
+    const frame = await measure("frame-name", async (live) => {
+      const corner = onPage(live, SKEW_FRAME.x, SKEW_FRAME.y);
+      await rightClick({ x: corner.x + 12, y: corner.y - 8 }, "frame");
+      await escape();
+    }, { fit: true });
+    // E4: a pan of 100 px and one zoom step, after a right-click — compared with the same pan and zoom
+    // on a fresh load, since the view itself moves.
+    const panAndZoom = async (live) => {
+      const empty = await emptyCanvas(skewPage, live);
+      await skewPage.mouse.click(empty.x, empty.y);
+      await skewPage.mouse.wheel(0, 100);
+      await skewPage.keyboard.press(`${META}+Equal`);
+      await settleDrawing(skewPage);
+    };
+    const plain = await measure("E4-pan-zoom-alone", panAndZoom);
+    const e4 = await measure("E4-pan-zoom-after-right-click", async (live) => { await rightClick(await emptyCanvas(skewPage, live)); await escape(); await panAndZoom(live); });
+    const e4pixels = drawnDiff(plain.drawn, e4.drawn);
+    console.log(`     right-click: E4 — the view after is ${JSON.stringify(e4.after.view)} (alone: ${JSON.stringify(plain.after.view)}); ${(e4pixels * 100).toFixed(3)}% of its pixels differ from the same pan and zoom with no right-click`);
+
+    // The measures are not vacuous: each shape gesture opened that shape's own menu, a pan moves the
+    // drawn pixels, and the drift measure names a label moved by 5 px.
+    const nudged = { elements: skewSaved.map((e) => (e.id === SKEW_LABEL.id ? { ...e, x: e.x + 5 } : e)) };
+    check("right-click: self-check — every shape gesture opened its element's menu, the pan moved pixels, and a moved label is named", Object.values(hits).length === 4 && Object.values(hits).every(Boolean) && plain.pixels > 0.01 && JSON.stringify(sceneDrift(nudged)) === JSON.stringify([SKEW_LABEL.id]), JSON.stringify({ hits, pan: plain.pixels }));
+    check("right-click: 172/04 E1 a right-click on empty canvas and Escape leave the drawing and every arrow as saved", e1.pixels < 0.005 && e1.drift.length === 0, `${(e1.pixels * 100).toFixed(3)}% · ${JSON.stringify(e1.drift)}`);
+    const label = e2.after.elements.find((e) => e.id === SKEW_LABEL.id);
+    check("right-click: 172/04 E2 a right-click on an edge's label leaves it on the architect-session → review-store edge, and no other label moves", label?.containerId === SKEW_EDGE.id && e2.pixels < 0.005 && e2.drift.length === 0, `${JSON.stringify(SKEW_LABEL.text)} on ${label?.containerId} · ${(e2.pixels * 100).toFixed(3)}% · ${JSON.stringify(e2.drift)}`);
+    check("right-click: 172/04 E3 Copy from the menu, then a click on empty canvas, moves nothing", e3.pixels < 0.005 && e3.drift.length === 0, `${(e3.pixels * 100).toFixed(3)}% · ${JSON.stringify(e3.drift)}`);
+    check("right-click: 172/04 a right-click on an arrow's body leaves the drawing as saved", body.pixels < 0.005 && body.drift.length === 0, `${(body.pixels * 100).toFixed(3)}% · ${JSON.stringify(body.drift)}`);
+    check("right-click: 172/04 a right-click on a frame's name leaves the drawing as saved", frame.pixels < 0.005 && frame.drift.length === 0, `${(frame.pixels * 100).toFixed(3)}% · ${JSON.stringify(frame.drift)}`);
+    check("right-click: 172/04 E4 a pan and a zoom after a right-click draw exactly what they draw without one", e4pixels < 0.005 && e4.drift.length === 0 && JSON.stringify(e4.after.view) === JSON.stringify(plain.after.view), `${(e4pixels * 100).toFixed(3)}% · ${JSON.stringify(e4.drift)}`);
+    await skewPage.context().close();
+  }
+
   const page = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
   const requests = [];
   page.on("request", (request) => requests.push(request.url()));
