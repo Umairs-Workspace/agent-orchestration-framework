@@ -519,7 +519,9 @@ export const terminalsHomeRouteTests = [
         // 840 -> 839 by 171/04 (ADR-005): the later-input seam paid for itself by an EXTRACTION — the
         // mount command's once-per-session typing moved to `input-policy.mjs` beside the later-input
         // rule, its account moved with it, and the control keeps only the socket wiring. One line of headroom.
-        ["apps/ui/src/terminal/TerminalControl.tsx", 839, 840, "story 05's wiring, then 171/04's later-input seam paid for by moving the command typing to input-policy.mjs"],
+        // 839 -> 834 by 172/03 (172/ADR-003 §4): the later-input props and their effect left with the
+        // diagram dock, their only consumer. Six lines of headroom.
+        ["apps/ui/src/terminal/TerminalControl.tsx", 834, 840, "story 05's wiring, then 171/04's later-input seam paid for by moving the command typing to input-policy.mjs, then 172/03 removed that seam"],
         // 1000 -> 994 on 2026-09-15 by 127/04: `humanizeSlug` moved to `model.ts` (the backlog row
         // shares it) and the archived pill joined the header cluster — net −6, so the ZERO
         // headroom this row was really about is now six lines. The re-aim is the Fleet.tsx row's idiom.

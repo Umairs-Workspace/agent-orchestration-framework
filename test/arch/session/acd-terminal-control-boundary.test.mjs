@@ -738,4 +738,23 @@ export const archTests = [
       }
     },
   },
+  // 172/03 (ADR-003 §4) — the later-input seam m171/ADR-005 gave the control left with its only
+  // consumer, the diagram surface's dock. A seam nothing calls is one someone re-wires by accident,
+  // so its absence is held here, on the control's own props and the policy module's own exports.
+  {
+    name: "172/03 task00 · the terminal control takes no later input",
+    run: async () => {
+      const control = stripComments(await readFile(path.join(TERMINAL_DIR, "TerminalControl.tsx"), "utf8"));
+      const signature = control.match(/export function TerminalControl\(\{([\s\S]*?)\}: \{([\s\S]*?)\n\}\) \{/u);
+      assert.ok(signature, "self-check: the control's props signature is found");
+      const props = signature[1].split(",").map((name) => name.trim()).filter(Boolean);
+      assert.deepEqual(props, ["host", "mount", "onClose", "origins", "standing"], "the props the control destructures");
+      for (const gone of ["laterInputs", "onLaterInput", "onSessionReady"]) {
+        assert.doesNotMatch(signature[2], new RegExp(`\\b${gone}\\??:`, "u"), `no prop is named ${gone}`);
+      }
+      const policy = await import("../../../apps/ui/src/terminal/input-policy.mjs");
+      assert.equal("flushLaterInputs" in policy, false, "input-policy.mjs exports no flushLaterInputs");
+      assert.equal("laterInputDecision" in policy, false, "…nor the later-input rule it carried out");
+    },
+  },
 ];

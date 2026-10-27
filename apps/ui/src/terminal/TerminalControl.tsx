@@ -75,8 +75,8 @@ import {
 import { emitFit, geometryPlanFor, GEOMETRY_FIT } from "./geometry.mjs";
 import type { ResizeMessage } from "./geometry.mjs";
 import { terminalSocketUrl, REFUSAL_MISSING_ORIGIN, REFUSAL_UNRESOLVABLE_ORIGIN } from "./socket-url.mjs";
-import { COMMAND_READY_CAP_MS, flushLaterInputs, mountModelFor, sessionClosed, sessionInputs, sessionOpened, sessionOutput, typeCommand } from "./input-policy.mjs";
-import type { LaterInput, LaterInputReport, MountPostureName } from "./input-policy.mjs";
+import { COMMAND_READY_CAP_MS, mountModelFor, sessionClosed, sessionInputs, sessionOpened, sessionOutput, typeCommand } from "./input-policy.mjs";
+import type { MountPostureName } from "./input-policy.mjs";
 import { terminalPaneIdentity, terminalPaneLabel } from "./pane-identity.mjs";
 import { clampDockHeight, contentRegionHeight, dockHeightBounds } from "./clamp.mjs";
 import { fullscreenOpenerFor } from "./fullscreen-request.mjs";
@@ -182,7 +182,6 @@ export function TerminalControl({
   onClose,
   origins,
   standing,
-  laterInputs, onLaterInput, onSessionReady,
 }: {
   host: TerminalHost;
   mount: TerminalMount;
@@ -193,8 +192,6 @@ export function TerminalControl({
   // mount's frozen shape does not carry. Its whole meaning is in `terminalPaneStanding`; ABSENT is
   // m46's behaviour, unchanged, at every host that ships today.
   standing?: TerminalPaneStandingInput | null;
-  // 171/ADR-005 — input a surface types into the live session once it is READY (input-policy.mjs's rule).
-  laterInputs?: ReadonlyArray<LaterInput>; onLaterInput?: (report: LaterInputReport) => void; onSessionReady?: (ready: boolean) => void;
 }) {
   const affordances = hostAffordances(host);
   const isDock = host === HOST_BOARD_DOCK;
@@ -234,10 +231,8 @@ export function TerminalControl({
   // The re-fit, reachable from the RE-LAYOUT effect, which owns boxes this effect's observer
   // cannot see (the overlay's). One home for the account: `sendFit`, below.
   const sendFitRef = useRef<(() => void) | null>(null);
-  // What the live session is TYPED — its own command, then any later input — held across renders.
+  // What the live session is TYPED — its own command, once — held across renders.
   const typed = useRef(sessionInputs());
-  Object.assign(typed.current, { inputs: laterInputs ?? [], onLaterInput, onSessionReady });
-  useEffect(() => flushLaterInputs(typed.current), [laterInputs]);
 
   // WHETHER THERE IS A DOOR AT ALL. Asked once, at first render, and never re-asked — the same
   // rule and the same reason as `SurfaceSlot`'s: whether an app shell exists is a property of the
@@ -416,8 +411,8 @@ export function TerminalControl({
     ws.binaryType = "arraybuffer";
     let lastFit: ResizeMessage | null = null;
 
-    // The state-aware command is typed ONCE per session, and later input after it, through the one
-    // record (`input-policy.mjs`, where the account of both lives); this effect only wires the socket.
+    // The state-aware command is typed ONCE per session, through the one record (`input-policy.mjs`,
+    // where its account lives); this effect only wires the socket.
     let commandTimer: ReturnType<typeof setTimeout> | null = null;
     const sendCommand = (force = false) => { typeCommand(typed.current, { force }); if (typed.current.commandSent && commandTimer !== null) { clearTimeout(commandTimer); commandTimer = null; } };
 

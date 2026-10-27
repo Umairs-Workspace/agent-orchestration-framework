@@ -263,9 +263,9 @@ export const invariant4AmendedTests = [
         ["apps/ui/src/fleet", "apps/ui/src/board", "apps/ui/src/home"],
         "the swept set of the authorship clause is exactly the three SURFACE directories",
       );
-      // A surface added since 49 is swept the same way: 170/ADR-003's `/diagram` surface authors its own
-      // dock posture (`diagram/dock-mount.mjs`). It is a surface directory, never `terminal/`.
-      assert.deepEqual(POSTURE_HOMES.slice(3).map((entry) => entry.dir), ["apps/ui/src/diagram"], "…and the one surface added since is 170's diagram editor");
+      // 170/ADR-003's `/diagram` surface authored its own dock posture (`diagram/dock-mount.mjs`) until
+      // 172/ADR-003 §4 took the terminal off it: the sweep holds no diagram entry, and nothing since.
+      assert.deepEqual(POSTURE_HOMES.slice(3).map((entry) => entry.dir), [], "…and no surface has been added since — the diagram editor's dock left at 172/03");
       assert.ok(!POSTURE_HOMES.some((entry) => entry.dir.includes("terminal")), "…and `apps/ui/src/terminal/` is not among them");
       // THE TRAP, DRIVEN: the shipped control writes `posture: mount.posture` — a READ-THROUGH of
       // the value this gate protects. A sweep extended over `apps/ui/src/**` would report the product.
@@ -808,6 +808,20 @@ export const invariant4AmendedTests = [
       // — a FILE-TYPE rule, not a permission for a file — and it is unchanged.
       assert.match(source, /!entry\.name\.endsWith\("\.d\.mts"\)/, "the `.d.mts` exclusion is the sweep's own file-type filter, unchanged");
       assert.equal((source.match(/\.d\.mts/g) ?? []).length, 2, "…and it appears exactly where it always did: in the filter and in its comment");
+    },
+  },
+  // 172/03 (ADR-003 §4) — the diagram editor renders no terminal, so the table that names every
+  // surface's posture author has no row for it. Held here rather than as an eighth lane of the gate,
+  // whose seven-lane census above is this file's own pin.
+  {
+    name: "172/03 task00 · the surface table lists only the surfaces that render a terminal",
+    run: () => {
+      assert.deepEqual(
+        POSTURE_HOMES.map((entry) => entry.surface),
+        ["the fleet page (the monitor)", "the board dock", "the terminals home"],
+        "the fleet page, the board dock and the terminals home",
+      );
+      assert.equal(POSTURE_HOMES.some((entry) => entry.dir === "apps/ui/src/diagram" || /diagram/iu.test(entry.surface)), false, "no row for the diagram editor");
     },
   },
 ];

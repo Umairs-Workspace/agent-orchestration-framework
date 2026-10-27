@@ -4,7 +4,7 @@ number: 03
 slug: the-diagram-surface-has-no-terminal
 title: "The diagram surface has no terminal — the dock's posture author and the terminal's later-input seam leave with the dock"
 parent: 172
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-27
 updated: 2026-10-27
@@ -26,7 +26,7 @@ dock that no surface renders.**
 
 ## Tasks
 
-- [ ] `tasks/00_the-dock-modules-leave-the-diagram-surface.feature` — the diagram's posture author and the later-input seam are removed, and every control that listed them says so
+- [x] `tasks/00_the-dock-modules-leave-the-diagram-surface.feature` — the diagram's posture author and the later-input seam are removed, and every control that listed them says so
 
 ## Notes
 

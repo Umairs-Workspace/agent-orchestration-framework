@@ -40,14 +40,12 @@ import {
   mountPosture,
   inputPolicyFor,
   mountModelFor,
-  laterInputDecision,
   COMMAND_READY_CAP_MS,
   sessionInputs,
   sessionOpened,
   sessionOutput,
   typeCommand,
   sessionClosed,
-  flushLaterInputs,
 } from "../src/terminal/input-policy.mjs";
 import { PASTE_SUBMIT_SETTLE_MS, pasteFrame } from "@aof/contracts/tui-ready";
 
@@ -532,20 +530,6 @@ export const terminalCoreInputPolicyTests = [
       );
     },
   },
-  // milestone 171 / story 04 (ADR-005) — the later-input rule the control carries out: typed once per
-  // sequence number, only into a ready session, and otherwise answered as not delivered.
-  {
-    name: "171/04 · the later-input rule: typed once per sequence into a ready session; refused read-only or not connected; skipped when already answered",
-    run: () => {
-      const input = { seq: 2, text: "/aof:diagram-review 171 X.excalidraw n2" };
-      assert.deepEqual(laterInputDecision({ lastSeq: 1, input, inputEnabled: true, ready: true }), { action: "type", reason: null, data: input.text });
-      assert.equal(laterInputDecision({ lastSeq: 2, input, inputEnabled: true, ready: true }).action, "skip", "the same sequence is never typed twice");
-      assert.equal(laterInputDecision({ lastSeq: 5, input, inputEnabled: true, ready: true }).reason, "already-answered");
-      assert.deepEqual(laterInputDecision({ lastSeq: 1, input, inputEnabled: false, ready: true }), { action: "refuse", reason: "read-only" });
-      assert.deepEqual(laterInputDecision({ lastSeq: 1, input, inputEnabled: true, ready: false }), { action: "refuse", reason: "not-connected" });
-      for (const bad of [null, { seq: 3 }, { seq: 3, text: "" }, { seq: 1.5, text: "x" }]) assert.equal(laterInputDecision({ lastSeq: 0, input: bad, inputEnabled: true, ready: true }).action, "skip");
-    },
-  },
   // @bug @finding-F-171-01 — the mount's command waits for the TUI's readiness, or for the cap; every
   // input is typed as the session driver types: one paste, then its Enter as a separate write.
   {
@@ -562,7 +546,6 @@ export const terminalCoreInputPolicyTests = [
       typeCommand(record, { force: true });
       await settle();
       assert.deepEqual(sent, ["/aof:x a1b2", "\r"], "the cap types it once — raw, since paste mode never went on — and its Enter after");
-      assert.equal(record.ready, true, "and the session is ready for later input");
       sessionClosed(record);
     },
   },
@@ -585,22 +568,22 @@ export const terminalCoreInputPolicyTests = [
     },
   },
   {
-    name: "171/04 F-171-01 · inputs go out one at a time — each paste's Enter before the next paste — and a closed session drops what is left",
+    name: "171/04 F-171-01 · the command's Enter follows its paste as a write of its own, and a session closed before it settles never receives it",
     run: async () => {
       const sent = [];
       const record = sessionInputs();
-      record.inputs = [{ seq: 1, text: "/aof:n1" }, { seq: 2, text: "/aof:n2" }];
       sessionOpened(record, { send: (data) => sent.push(data), command: "/aof:first", inputEnabled: true });
       sessionOutput(record, "\u001b[?2004h> ");
       typeCommand(record);
-      assert.deepEqual(sent, [pasteFrame("/aof:first")], "the later inputs wait behind the command's Enter");
-      await settle(3);
-      assert.deepEqual(sent, [pasteFrame("/aof:first"), "\r", pasteFrame("/aof:n1"), "\r", pasteFrame("/aof:n2"), "\r"]);
-      record.inputs = [{ seq: 3, text: "/aof:n3" }, { seq: 4, text: "/aof:n4" }];
-      flushLaterInputs(record);
+      assert.deepEqual(sent, [pasteFrame("/aof:first")], "the Enter waits for the paste to settle");
+      await settle();
+      assert.deepEqual(sent, [pasteFrame("/aof:first"), "\r"]);
+      sessionOpened(record, { send: (data) => sent.push(data), command: "/aof:second", inputEnabled: true });
+      sessionOutput(record, "\u001b[?2004h> ");
+      typeCommand(record);
       sessionClosed(record);
       await settle();
-      assert.deepEqual(sent.slice(6), [pasteFrame("/aof:n3")], "n3's Enter and n4 never reach a closed session");
+      assert.deepEqual(sent.slice(2), [pasteFrame("/aof:second")], "the second session's Enter never reaches it once closed");
     },
   },
 ];

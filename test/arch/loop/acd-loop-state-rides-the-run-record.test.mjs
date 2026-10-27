@@ -295,7 +295,14 @@ function assertUiFrozen(pairs) {
   // no dock, no `onDeliver`, no delivery state — because the editor now posts each ask to the board's
   // server, whose headless architect session answers into the panel. Only that file changed; it reads
   // nothing new (its one read is still `/api/diagram/capability`), and the dock's modules are retired in 172/03.
-  assert.equal(hash.digest("hex"), "ec4f87638883d7ad1e54afbb6bba709d596baf295b55bf2b064f609d14a4d5d0", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED by 172/03 (172/ADR-003 §4, superseding m171/ADR-005), measured: `git diff --numstat HEAD --
+  // apps/ui/src` is FIVE files, all removal. `diagram/dock-mount.mjs` (−87) and `.d.mts` (−31) are deleted:
+  // the surface's dock posture author and its delivery decision, with no caller since 172/02.
+  // `terminal/input-policy.mjs` (+12 −51) and `.d.mts` (+1 −27) lose the later-input rule, `flushLaterInputs`
+  // and the record's later-input fields; the mount command's readiness gate and outbox (F-171-01) stay.
+  // `terminal/TerminalControl.tsx` (+5 −10) loses the three later-input props and their effect. Nothing new
+  // is read: no fleet or home file, run-record key, cycle, level or loop state.
+  assert.equal(hash.digest("hex"), "2cb0cef0558dc1e9b9c8af41d36dbd49e699a4e86864189375d5afa4a060f12b", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [
