@@ -23,7 +23,6 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderDiagramBlock } from "@aof/diagrams/layout";
-import { BRACKETED_PASTE_END, BRACKETED_PASTE_START, TUI_READY_MARKER } from "@aof/contracts/tui-ready";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cli = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
@@ -66,9 +65,20 @@ function project(name, diagrams) {
 const freePort = () => new Promise((resolve, reject) => { const s = net.createServer(); s.once("error", reject); s.listen(0, "127.0.0.1", () => { const { port } = s.address(); s.close(() => resolve(port)); }); });
 const home = path.join(work, "global");
 const env = { ...process.env, AOF_GLOBAL_HOME: home };
-async function serve(fixture) {
+// 172/02: the board's headless architect session is the stand-in, launched through the one test seam
+// (172/ADR-001 §5). It answers the notes the 172/02 checks ask, records them with the real CLI, and
+// only acknowledges the rest — the older checks record their own answers — leaving the session then,
+// so a later ask starts a fresh one. What it was handed is read from its log.
+const architectLog = path.join(work, "stand-in-architect.jsonl");
+const ARCHITECT = {
+  AOF_ARCHITECT_EXECUTABLE: path.join(repoRoot, "test", "smoke", "stand-in-architect.mjs"),
+  STAND_IN_LOG: architectLog, STAND_IN_RESPOND_TO: "re-stamp|watch cannot start", STAND_IN_EXIT_NOTED: "1",
+};
+const architectSaw = () => (existsSync(architectLog) ? readFileSync(architectLog, "utf8").split("\n").filter(Boolean).map((line) => JSON.parse(line)) : []);
+const architectReceived = () => architectSaw().filter((entry) => "received" in entry).map((entry) => entry.received);
+async function serve(fixture, extra = {}) {
   const port = await freePort();
-  const child = spawn(process.execPath, [cli, "work", "ui", "--port", String(port), "--target", fixture.root], { env, stdio: "ignore" });
+  const child = spawn(process.execPath, [cli, "work", "ui", "--port", String(port), "--target", fixture.root], { env: { ...env, ...extra }, stdio: "ignore" });
   const origin = `http://127.0.0.1:${port}`;
   for (let i = 0; i < 100; i += 1) {
     try { if ((await fetch(`${origin}/api/diagram/capability`)).ok) return { origin, child }; } catch { /* not listening yet */ }
@@ -128,25 +138,11 @@ let failed = false;
 const view = (fixture) => scene(fixture, "context", { selectedIds: [] }).view;
 const stored = (fixture) => JSON.parse(readFileSync(fixture.diagram, "utf8"));
 try {
-  const ON = (servers[servers.push(await serve(on)) - 1]).origin;
+  const ON = (servers[servers.push(await serve(on, ARCHITECT)) - 1]).origin;
   const OFF = (servers[servers.push(await serve(off)) - 1]).origin;
   const page = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
   const requests = [];
   page.on("request", (request) => requests.push(request.url()));
-  // The dock's terminal socket is answered HERE and never reaches the server, so Ask architect's
-  // invocation is read off the socket as typed and no session starts (171/00). It stands in for
-  // claude's TUI, so it says it is ready the way the TUI does (bracketed paste on, then a drawn banner —
-  // F-171-01's byte gate): the dock
-  // types nothing before that, then pastes each input and sends its Enter once the paste settles.
-  const typedToDock = [];
-  await page.routeWebSocket(/\/ws\/terminal(?:\?|$)/, (ws) => {
-    ws.onMessage((message) => { if (typeof message === "string" && !message.startsWith("{")) typedToDock.push(message); });
-    // Once the page's socket is open (a frame sent from the route handler itself arrives before it
-    // is): paste mode on, then something drawn — the REPL's banner — which is what "ready" means.
-    setTimeout(() => { try { ws.send(`${TUI_READY_MARKER}stand-in claude ready\r\n`); } catch { /* closed already */ } }, 300);
-  });
-  // Each input the dock submitted, its paste framing removed.
-  const submitted = (frames = typedToDock) => frames.join("").split(BRACKETED_PASTE_START).join("").split(BRACKETED_PASTE_END).join("").split("\r").slice(0, -1);
 
   // ── the board links to the editor and loads none of it ────────────────────────────────────
   await openFigure(page, ON);
@@ -339,7 +335,6 @@ try {
   check("canvas: the open field is drawn over everything around it, the SDK's panels included", uncovered);
   await page.screenshot({ path: path.join(shots, "08-ask-field-open.png") });
   await field.press("Enter");
-  await waitForText(page, "Architect session started in the dock", 20000);
   const asked = scene(on, "proposals").requests.find((request) => request.request === "Why is this box here?");
   check("canvas: the unsaved box was saved first, and the request names it", Boolean(asked) && asked.selectedIds?.length === 1 && new RegExp(`\\b${asked.selectedIds[0]}\\b`).test(view(on)) && (await page.locator("header [role=status]").first().innerText()) === "Saved", JSON.stringify(asked));
   const drawnBox = element(on, asked.selectedIds[0]);
@@ -347,23 +342,23 @@ try {
   await openThread(page).getByText("Why is this box here?").waitFor({ timeout: 15000 });
   const firstCard = await page.locator("[data-aof-conversation-panel] [data-aof-thread]").first().getAttribute("data-open");
   const invocation = `/aof:diagram-review 07 ${FILE} ${asked.id}`;
-  for (let i = 0; i < 50 && !submitted().includes(invocation); i += 1) await page.waitForTimeout(100);
+  for (let i = 0; i < 50 && !architectReceived().includes(invocation); i += 1) await page.waitForTimeout(100);
   check("172/01 · asking at the selection opens the new thread at the top of the panel holding that question", firstCard === "" && (await openThread(page).innerText()).includes(asked.selectedIds[0]));
-  check("canvas: the dock was handed the ask's invocation", submitted().includes(invocation), JSON.stringify(typedToDock));
+  check("172/02 · E1 the ask reached the server's architect session as its invocation, and no terminal opened", architectReceived().includes(invocation) && await page.locator(".xterm").count() === 0, JSON.stringify(architectReceived()));
   check("canvas: the field closed once asked", await field.count() === 0);
   await page.screenshot({ path: path.join(shots, "09-asked.png") });
 
-  // ── 171/04: with the architect's session open in the dock, a note is typed into it ──────────
-  const typedBefore = typedToDock.length;
+  // ── 171/04 → 172/02: a note saved while the session runs sends nothing ────────────────────────
+  const receivedBefore = architectReceived().length;
   check("172/01 · E8 with a box selected the composer names it", (await composerLabel()) === `Ask the architect · about ${asked.selectedIds[0]}`, await composerLabel());
   await composer(page).fill("Is the cache needed at all?");
   await page.screenshot({ path: path.join(shots, "09a-note-typed.png") });
   await page.getByRole("button", { name: "Save as note" }).click();
-  await waitForText(page, "Note recorded and sent to the architect's session", 15000);
+  await waitForText(page, "Note recorded.", 15000);
   const sentNote = scene(on, "proposals").requests.find((request) => request.request === "Is the cache needed at all?");
-  for (let i = 0; i < 30 && submitted(typedToDock.slice(typedBefore)).length === 0; i += 1) await page.waitForTimeout(100);
-  check("dock: a note added while the session runs is typed into it, once, as its own review", Boolean(sentNote) && JSON.stringify(submitted(typedToDock.slice(typedBefore))) === JSON.stringify([`/aof:diagram-review 07 ${FILE} ${sentNote.id}`]), JSON.stringify(typedToDock.slice(typedBefore)));
-  await page.screenshot({ path: path.join(shots, "09b-note-sent-to-session.png") });
+  await page.waitForTimeout(1500);
+  check("172/02 · E6 Save as note records the note and hands the architect's session nothing", Boolean(sentNote) && sentNote.status === "open" && architectReceived().length === receivedBefore, JSON.stringify(architectReceived().slice(receivedBefore)));
+  await page.screenshot({ path: path.join(shots, "09b-note-saved.png") });
 
   // ── 171/01: Find in libraries, over a real-sized set ─────────────────────────────────────────
   // A 30-item library in the global home, written now — after the checks that read the project's
@@ -528,9 +523,11 @@ try {
   check("172/01 · E7 Show on canvas selects the thread's shapes and brings them into the visible canvas", await action.count() === 1 && Boolean(shownBox) && shownBox.x >= canvasNow.x && shownBox.y >= canvasNow.y && shownBox.y <= canvasNow.y + canvasNow.height, JSON.stringify({ shownBox, canvasNow }));
   await page.getByLabel("Reply to the architect").fill("Should it be a write-through cache?");
   await threadBox.getByRole("button", { name: "Reply", exact: true }).click();
-  await threadBox.getByText("it waits for a review session").waitFor({ timeout: 10000 });
+  await threadBox.getByText("Should it be a write-through cache?").waitFor({ timeout: 10000 });
   const latest = scene(on, "proposals").requests.find((request) => request.request === "Is the cache needed at all?");
-  check("thread: a reply is the thread's next turn, reopening the note, with no session running", latest.status === "open" && latest.thread.at(-1).text === "Should it be a write-through cache?" && latest.thread.length === 2, JSON.stringify(latest.thread));
+  const replyInvocation = `/aof:diagram-review 07 ${FILE} ${latest.id}`;
+  for (let i = 0; i < 50 && !architectReceived().includes(replyInvocation); i += 1) await page.waitForTimeout(100);
+  check("thread: a reply is the thread's next turn, reopening the note, and is posted to the architect's session (172/02 E4/E5)", latest.status === "open" && latest.thread.at(-1).text === "Should it be a write-through cache?" && latest.thread.length === 2 && architectReceived().includes(replyInvocation), JSON.stringify(latest.thread));
   scene(on, "respond", { requestId: latest.id, answer: "Write-through would double the writes; keep it read-through." });
   await threadBox.getByText("keep it read-through").waitFor({ timeout: 4000 });
   check("thread: the architect's answer appears in the open thread, pushed, with no reload", await page.evaluate(() => window.__aofNoReload === true));
@@ -560,6 +557,49 @@ try {
   const k = zoomTo / zoomFrom;
   const expected = { x: zoomAbout.x + (panned.x - zoomAbout.x) * k, y: zoomAbout.y + (panned.y - zoomAbout.y) * k };
   check("thread: the pin stays on the box's corner as the canvas pans and zooms", near(panned.x, pinBefore.x) && near(panned.y, pinBefore.y + 40) && zoomTo !== zoomFrom && Math.abs(zoomed.x - expected.x) <= 4 && Math.abs(zoomed.y - expected.y) <= 4, JSON.stringify({ pinBefore, panned, zoomed, expected, zoomFrom, zoomTo }));
+
+  // ── 172/02: the answer streams into its thread, and a reply's answer does too ─────────────────
+  // The earlier sessions ended once the stand-in had acknowledged them, so this ask starts a fresh one.
+  const liveText = () => openThread(page).locator("[data-aof-live-text]").first().innerText().catch(() => "");
+  const lengthsWhileStreaming = async (name) => {
+    await openThread(page).locator("[data-aof-live-text]").filter({ hasText: /Stand-in answer/ }).first().waitFor({ timeout: 15000 });
+    const first = (await liveText()).length;
+    await page.screenshot({ path: path.join(shots, `${name}-a.png`) });
+    await page.waitForTimeout(500);
+    const second = (await liveText()).length;
+    await page.screenshot({ path: path.join(shots, `${name}-b.png`) });
+    return { first, second };
+  };
+  await threadBox.getByRole("button", { name: "Show on canvas" }).click();
+  await action.waitFor({ timeout: 10000 });
+  await action.click();
+  await field.fill("Why does the route re-stamp?");
+  await field.press("Enter");
+  await openThread(page).getByText("Why does the route re-stamp?").waitFor({ timeout: 15000 });
+  await openThread(page).getByText("Starting the architect…").waitFor({ timeout: 5000 });
+  check("172/02 · E1 the new thread opens in the panel reading \"Starting the architect…\", the chip starting", (await page.locator("[data-aof-session-chip]").innerText()).trim() === "Starting…");
+  const grew = await lengthsWhileStreaming("172-streaming-1280");
+  check("172/02 · E1 the answer visibly grows in its thread, and no terminal appears", grew.second > grew.first && await page.locator(".xterm").count() === 0 && (await page.locator("[data-aof-session-chip]").innerText()).trim() === "Answering", JSON.stringify(grew));
+  const restamp = () => scene(on, "proposals").requests.find((request) => request.request === "Why does the route re-stamp?");
+  for (let i = 0; i < 100 && restamp()?.status !== "answered"; i += 1) await page.waitForTimeout(100);
+  await openThread(page).locator("[data-aof-live-turn]").waitFor({ state: "detached", timeout: 5000 });
+  check("172/02 · E8 the stand-in's recorded answer replaces the live turn: no caret and no activity list",
+    restamp()?.status === "answered" && (await openThread(page).innerText()).includes('Stand-in answer to "Why does the route re-stamp?"') && await page.locator("[data-aof-caret]").count() === 0 && await openThread(page).getByLabel("What the architect has done").count() === 0);
+  check("172/02 · E8 the thread's pin reads answered", /the architect answered/.test(await pin.getAttribute("aria-label") ?? ""), await pin.getAttribute("aria-label"));
+  await page.screenshot({ path: path.join(shots, "172-recorded-1280.png") });
+  // The reply's answer at DESIGN's second breakpoint, the panel a drawer (mocks/conversation-streaming-768.png).
+  await page.setViewportSize({ width: 768, height: 800 });
+  await page.waitForTimeout(500);
+  await page.getByLabel("Reply to the architect").fill("And if the watch cannot start?");
+  await openThread(page).getByRole("button", { name: "Reply", exact: true }).click();
+  await openThread(page).getByText("And if the watch cannot start?").waitFor({ timeout: 10000 });
+  const grewAgain = await lengthsWhileStreaming("172-streaming-768");
+  const watch = () => scene(on, "proposals").requests.find((request) => request.request === "Why does the route re-stamp?");
+  for (let i = 0; i < 100 && !(watch()?.thread ?? []).some((turn) => turn.by === "architect" && /watch cannot start/.test(turn.text)); i += 1) await page.waitForTimeout(100);
+  await openThread(page).locator("[data-aof-live-turn]").waitFor({ state: "detached", timeout: 5000 });
+  check("172/02 · E4 a reply's answer streams under it, then is replaced by its recorded turn", grewAgain.second > grewAgain.first && (await openThread(page).innerText()).includes('Stand-in answer to "And if the watch cannot start?"') && await page.locator(".xterm").count() === 0, JSON.stringify(grewAgain));
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.waitForTimeout(500);
 
   // ── reload, close, the board shows the new figure, a hostile address ───────────────────────
   await page.reload({ waitUntil: "load" });

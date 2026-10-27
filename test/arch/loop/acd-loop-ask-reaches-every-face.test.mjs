@@ -691,7 +691,8 @@ export const archTests = [
       const units = await srcUnits();
       const board = unitOf(units, BOARD);
       const reads = bodyReads(board.code);
-      assertRead(`the body reads of ${BOARD}`, reads.length, 4, "branch(es)");
+      // 172/00 (172/ADR-002 §1) adds the fifth: `/api/diagram/conversation`, which admits before its body too.
+      assertRead(`the body reads of ${BOARD}`, reads.length, 5, "branch(es)");
       const unadmitted = reads.filter(({ admitted }) => !admitted).map(({ route }) => route);
       assert.deepEqual(unadmitted, [], `every POST branch calls admitWriteRequest( before readJsonBody( — ${unadmitted.join(", ")} reads its body first`);
       assert.deepEqual(bodyReads('if (pathname === "/api/x") {\n const body = await readJsonBody(request);\n if (!admitWriteRequest(request, response)) return true;\n}'), [{ route: "/api/x", admitted: false }], "self-check: a body read above its admission is seen and named");

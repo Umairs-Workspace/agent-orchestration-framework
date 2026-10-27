@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
-import { clockOf, composerSubject, proposalOutcome, replyTarget, turnAuthor } from "./conversation-model.mjs";
-import type { Conversation, ConversationNote, ListedProposal, Thread, ThreadNote, ThreadProposal, Turn } from "./conversation-model.mjs";
+import { STATE, STOPPED_LINE, clockOf, composerSubject, proposalOutcome, replyTarget, turnAuthor } from "./conversation-model.mjs";
+import type { Conversation, ConversationNote, ListedProposal, LiveThread, ThreadLiveTurn, ThreadNote, ThreadProposal, Turn } from "./conversation-model.mjs";
+import { denialLine } from "./conversation-stream.mjs";
 import { describeCounts } from "./editor-state.mjs";
 
 // THE CONVERSATION PANEL (milestone 172 / ADR-003 §1, DESIGN "The conversation panel"): one panel beside
@@ -11,15 +12,15 @@ import { describeCounts } from "./editor-state.mjs";
 // edge, and collapsing it leaves a slim tab to reopen it. It sits beside the SDK's container, not in it.
 
 type Props<N extends ThreadNote, P extends ThreadProposal> = {
-  conversation: Conversation<N, P>;
+  conversation: Omit<Conversation<N, P>, "threads"> & { threads: LiveThread<N, P>[] };
   openKey: string | null; onOpen: (key: string | null) => void;
   collapsed: boolean; onCollapse: (collapsed: boolean) => void;
   selectionLabel: string; readOnly: boolean; ready: boolean; busy: boolean; loading: boolean; error: string | null;
-  session: { label: string; title?: string; live?: boolean };
+  session: { label: string; title?: string; live?: boolean }; batchLine?: string | null;
   waiting: number; canFirstDraft: boolean; notice: string | null; invocation: string | null; previewNote: string | null;
   onAsk: (text: string) => Promise<boolean>; onSaveNote: (text: string) => Promise<boolean>; onReviewNotes: () => void; onFirstDraft: () => void;
   onReply: (note: ConversationNote<N, P>, text: string) => Promise<string | null>; onWithdraw: (note: ConversationNote<N, P>) => void;
-  onShowOnCanvas: (thread: Thread<N, P>) => void; onPreview: (proposal: P) => void;
+  onShowOnCanvas: (thread: LiveThread<N, P>) => void; onPreview: (proposal: P) => void; onAskAgain?: (requestId: string) => void;
   onAccept: (proposal: P) => Promise<void>; onReject: (proposal: P, reason: string) => Promise<void>;
   onCopyCommand: (command: string) => void;
 };
@@ -37,6 +38,34 @@ function TurnView({ turn }: { turn: Turn }) {
   return <li className="space-y-1">
     <p><span className="font-semibold">{turnAuthor(turn)}</span> <span className="text-[11px] text-muted-foreground">{clockOf(turn.at)}</span></p>
     <p className={mine ? "whitespace-pre-wrap rounded-lg bg-muted px-2 py-1.5" : "whitespace-pre-wrap"}>{turn.text}</p>
+  </li>;
+}
+
+// Whether the open thread follows a growing answer: it does until the operator scrolls up in the list,
+// and again once they scroll back to the bottom (DESIGN "The architect's session state").
+const Following = createContext<boolean>(true);
+
+// THE LIVE TURN (172/ADR-002 §3): what the architect has done so far — a tick per finished step, a ring
+// on the current one — and the answer growing, with a primary caret at its end. When the answer is
+// recorded the model drops the live turn and the recorded one reads as any other.
+function LiveTurnView({ turn, readOnly, onAskAgain }: { turn: ThreadLiveTurn; readOnly: boolean; onAskAgain?: (requestId: string) => void }) {
+  const end = useRef<HTMLSpanElement | null>(null);
+  const following = useContext(Following);
+  const writing = turn.outcome == null;
+  useEffect(() => { if (following && writing) end.current?.scrollIntoView?.({ block: "nearest" }); }, [following, writing, turn.text, turn.activity.length]);
+  if (turn.stopped) {
+    return <li className="space-y-1" data-aof-live-turn="stopped">
+      <p className="text-muted-foreground">{STOPPED_LINE}</p>
+      {readOnly || !onAskAgain ? null : <button type="button" onClick={() => onAskAgain(turn.requestId)} className={BUTTON}>Ask again</button>}
+    </li>;
+  }
+  return <li className="space-y-1" data-aof-live-turn={writing ? "writing" : "done"}>
+    <p><span className="font-semibold">Architect</span> <span className="text-[11px] text-muted-foreground">now</span></p>
+    {turn.activity.length ? <ul aria-label="What the architect has done" className="space-y-0.5 text-[11px] text-muted-foreground">
+      {turn.activity.map((step, index) => <li key={index}>{writing && index === turn.activity.length - 1 && !turn.text ? "○" : "✓"} {step.label || step.tool}</li>)}
+    </ul> : null}
+    {turn.startingLine ? <p className="text-muted-foreground">{turn.startingLine}</p> : null}
+    {turn.text || writing ? <p className="whitespace-pre-wrap" data-aof-live-text="">{turn.text}{writing ? <span ref={end} aria-hidden="true" data-aof-caret="" className="ml-px inline-block h-3.5 w-1.5 translate-y-0.5 animate-pulse bg-primary" /> : null}</p> : null}
   </li>;
 }
 
@@ -100,7 +129,7 @@ function ReplyField({ onReply }: { onReply: (text: string) => Promise<string | n
   </div>;
 }
 
-function ThreadCard<N extends ThreadNote, P extends ThreadProposal>({ thread, open, props }: { thread: Thread<N, P>; open: boolean; props: Props<N, P> }) {
+function ThreadCard<N extends ThreadNote, P extends ThreadProposal>({ thread, open, props }: { thread: LiveThread<N, P>; open: boolean; props: Props<N, P> }) {
   const card = useRef<HTMLElement | null>(null);
   useEffect(() => { if (open) card.current?.scrollIntoView?.({ block: "nearest" }); }, [open]);
   const count = thread.notes.length;
@@ -108,7 +137,7 @@ function ThreadCard<N extends ThreadNote, P extends ThreadProposal>({ thread, op
   if (!open) {
     return <button type="button" data-aof-thread={thread.key} aria-expanded={false} aria-label={`Open the conversation on ${thread.subject}`} onClick={() => props.onOpen(thread.key)}
       className={`block w-full rounded-lg border border-border bg-card px-3 py-2 text-left hover:bg-muted/40 ${RING}`}>
-      <span className="flex items-baseline gap-2"><span className="min-w-0 flex-1 truncate font-semibold">{thread.subject}</span><span className="shrink-0 text-[11px] text-muted-foreground">{state}</span></span>
+      <span className="flex items-baseline gap-2"><span className="min-w-0 flex-1 truncate font-semibold">{thread.subject}</span><span className={`shrink-0 text-[11px] ${thread.state === STATE.answering ? "font-semibold text-primary" : "text-muted-foreground"}`}>{state}</span></span>
       {thread.lastTurn ? <span className="block truncate text-muted-foreground">{turnAuthor(thread.lastTurn)}: {oneLine(thread.lastTurn.text)}</span> : null}
     </button>;
   }
@@ -116,7 +145,7 @@ function ThreadCard<N extends ThreadNote, P extends ThreadProposal>({ thread, op
   return <section ref={card} data-aof-thread={thread.key} data-open="" aria-label={`Conversation on ${thread.subject}`} className="rounded-lg border border-primary bg-card ring-1 ring-primary">
     <header className="flex items-baseline gap-2 border-b border-border px-3 py-2">
       <button type="button" aria-expanded={true} aria-label={`Collapse the conversation on ${thread.subject}`} onClick={() => props.onOpen(null)} className={`min-w-0 flex-1 truncate text-left font-semibold ${RING}`}>{thread.subject}</button>
-      <span className="shrink-0 text-[11px] text-muted-foreground">{state}</span>
+      <span data-aof-thread-state="" className={`shrink-0 text-[11px] ${thread.state === STATE.answering ? "font-semibold text-primary" : "text-muted-foreground"}`}>{state}</span>
       {thread.selectedIds.length ? <button type="button" disabled={!props.ready} onClick={() => props.onShowOnCanvas(thread)} className={`shrink-0 text-[11px] text-muted-foreground hover:text-foreground ${RING}`}>Show on canvas</button> : null}
     </header>
     <ol className="space-y-3 px-3 py-2" aria-label="Turns, oldest first">
@@ -127,9 +156,11 @@ function ThreadCard<N extends ThreadNote, P extends ThreadProposal>({ thread, op
           {proposal.rationale ? <p className="whitespace-pre-wrap">Proposed: {proposal.rationale}</p> : null}
           <ProposalCard proposal={proposal} readOnly={props.readOnly} ready={props.ready} busy={props.busy} onPreview={props.onPreview} onAccept={props.onAccept} onReject={props.onReject} />
         </li>),
-        ...(note.status === "open" && !props.readOnly ? [<li key={`${note.id}-withdraw`}><button type="button" aria-label={`Withdraw note: ${note.request ?? ""}`} disabled={props.busy} onClick={() => props.onWithdraw(note)} className={`text-[11px] text-muted-foreground underline hover:text-foreground disabled:opacity-50 ${RING}`}>Withdraw this note</button></li>] : []),
+        ...(thread.live?.requestId === note.id ? [<LiveTurnView key={`${note.id}-live`} turn={thread.live} readOnly={props.readOnly} onAskAgain={props.onAskAgain} />] : []),
+        ...(note.status === "open" && !props.readOnly && thread.live?.requestId !== note.id ? [<li key={`${note.id}-withdraw`}><button type="button" aria-label={`Withdraw note: ${note.request ?? ""}`} disabled={props.busy} onClick={() => props.onWithdraw(note)} className={`text-[11px] text-muted-foreground underline hover:text-foreground disabled:opacity-50 ${RING}`}>Withdraw this note</button></li>] : []),
       ])}
     </ol>
+    {thread.denials?.length ? <ul className="px-3 pb-2 text-muted-foreground">{thread.denials.map((denial, index) => <li key={index}>{denialLine(denial)}</li>)}</ul> : null}
     {!props.readOnly && target ? <ReplyField onReply={(text) => props.onReply(target, text)} /> : null}
   </section>;
 }
@@ -170,6 +201,7 @@ function Tab({ selected, onSelect, children, count }: { selected: boolean; onSel
 
 export function ConversationPanel<N extends ThreadNote, P extends ThreadProposal>(props: Props<N, P>) {
   const [tab, setTab] = useState<"conversations" | "proposals">("conversations");
+  const [following, setFollowing] = useState(true);
   const { threads, proposals, pending } = props.conversation;
   // A pin or an ask opens a thread on the Conversations tab.
   useEffect(() => { if (props.openKey) setTab("conversations"); }, [props.openKey]);
@@ -195,7 +227,15 @@ export function ConversationPanel<N extends ThreadNote, P extends ThreadProposal
       <Tab selected={tab === "conversations"} onSelect={() => setTab("conversations")} count={threads.length}>Conversations</Tab>
       <Tab selected={tab === "proposals"} onSelect={() => setTab("proposals")} count={pending}>Proposals</Tab>
     </div>
-    <div role="tabpanel" className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+    {props.batchLine ? <p role="status" data-aof-batch-line="" className="truncate border-b border-border px-3 py-1.5 font-semibold text-primary">{props.batchLine}</p> : null}
+    <div role="tabpanel" className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3"
+      // Only the operator's own upward gesture stops the follow — a resize or the browser's own scroll
+      // adjustment is not them scrolling up — and any scroll that reaches the bottom resumes it.
+      onScroll={(event) => { const box = event.currentTarget; if (box.scrollHeight - box.scrollTop - box.clientHeight < 24) setFollowing(true); }}
+      onWheel={(event) => { if (event.deltaY < 0) setFollowing(false); }}
+      onTouchMove={() => setFollowing(false)}
+      onKeyDown={(event) => { if (["ArrowUp", "PageUp", "Home"].includes(event.key)) setFollowing(false); }}>
+      <Following.Provider value={following}>
       {props.error ? <p role="alert" className="text-destructive">{props.error}</p> : null}
       {props.previewNote ? <p role="status" data-aof-preview-note="" className="text-muted-foreground">{props.previewNote}</p> : null}
       {props.loading ? <div aria-hidden="true" className="space-y-2">{[0, 1, 2].map((row) => <div key={row} className="h-12 animate-pulse rounded-lg bg-muted" />)}</div>
@@ -204,6 +244,7 @@ export function ConversationPanel<N extends ThreadNote, P extends ThreadProposal
             : ordered.map((thread) => <ThreadCard key={thread.key} thread={thread} open={thread === open} props={props} />)
           : proposals.length === 0 ? <p className="text-muted-foreground">No proposals yet. The architect proposes a change when a note asks for one.</p>
             : proposals.map((proposal: ListedProposal<P>) => <ProposalCard key={proposal.id} proposal={proposal} subject={proposal.subject ?? undefined} readOnly={props.readOnly} ready={props.ready} busy={props.busy} onPreview={props.onPreview} onAccept={props.onAccept} onReject={props.onReject} />)}
+      </Following.Provider>
     </div>
     {props.readOnly ? null : <Composer props={props} />}
   </aside>;

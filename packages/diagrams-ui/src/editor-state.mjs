@@ -40,6 +40,29 @@ export function reviewInvocations({ ref, file, requestId = null, waiting = 0 } =
   return waiting > 0 ? [own, diagramReviewInvocation(ref, file)] : [own];
 }
 
+// DELIVERY TO THE ARCHITECT'S SESSION (172/ADR-002 §1). The editor names request ids; the board's
+// conversation route derives what to type from them and hands it to the server's session, which answers
+// one turn at a time in the order it was handed them. `deliveryFor(action, facts)` answers the bodies an
+// action posts, in order: a question (or a first draft) its own request, then — when other notes wait —
+// one batch review, so the session takes them after it (171/04 Q1); a reply and Ask again their note's
+// request; Review with the architect one batch review; saving a note or withdrawing one, nothing.
+export const DELIVERY_ACTIONS = Object.freeze(["ask", "first-draft", "reply", "ask-again", "review", "note", "withdraw"]);
+export function deliveryFor(action, { requestId = null, waiting = 0 } = {}) {
+  switch (action) {
+    case "ask":
+    case "first-draft":
+      if (!requestId) return [];
+      return waiting > 0 ? [{ requestId }, {}] : [{ requestId }];
+    case "reply":
+    case "ask-again":
+      return requestId ? [{ requestId }] : [];
+    case "review":
+      return [{}];
+    default:
+      return [];
+  }
+}
+
 // THE ONE ASK PATH (171/ADR-001): the bar's Ask architect and the canvas overlay's both come here, so
 // a canvas ask and a bar ask are the same record and the same launch. An unsaved canvas is saved
 // first and the request is recorded against the revision that save answered. The selection is named

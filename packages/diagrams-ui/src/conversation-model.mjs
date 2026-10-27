@@ -15,7 +15,12 @@ export const STATE = Object.freeze({
   proposed: "A proposal answers this",
   accepted: "Proposal accepted",
   rejected: "Proposal rejected",
+  // While the architect's session works on a thread (172/02).
+  answering: "Architect is answering…",
+  queued: "Queued — the architect is answering another note",
 });
+export const STARTING_LINE = "Starting the architect…";
+export const STOPPED_LINE = "The architect stopped before it answered";
 
 // A withdrawn note is gone from the panel and the canvas; an open, answered or proposed one is a live
 // conversation.
@@ -119,12 +124,44 @@ export function conversationOf(requests, proposals, elements) {
 export const replyTarget = (thread) => thread?.notes?.at(-1) ?? null;
 
 // One pin per thread on the canvas — a "Whole diagram" thread has none. `answered` is true unless the
-// thread waits on the architect (the pin then reads in the console's primary colour; otherwise muted).
+// thread waits on the architect (the pin then reads in the console's primary colour; otherwise muted);
+// `answering` while the architect's session is writing into it (the pin gains a halo).
 export function notePins(threads) {
   return (Array.isArray(threads) ? threads : []).filter((thread) => thread.elementIds.length > 0).map((thread) => ({
     key: thread.key, elementIds: thread.elementIds, label: thread.subject, notes: thread.notes,
-    count: thread.notes.length, answered: thread.state !== STATE.waiting,
+    count: thread.notes.length, answered: thread.state !== STATE.waiting, answering: Boolean(thread.live && !thread.live.outcome),
   }));
+}
+
+// THE LIVE TURN ON ITS THREAD (172/ADR-002 §4, ADR-003 §2). `conversation` is `conversation-stream.mjs`'s
+// state. A note's live turn rides its thread until the records hold what replaces it — an architect
+// turn, or a proposal, at or after the moment the live turn began — because streamed text is never
+// kept: the recorded turn is the answer. A turn that failed with nothing recorded says the architect
+// stopped, and offers to ask again. A note waiting behind another turn reads as queued. A tool the
+// architect was denied stays named under its thread.
+const recordedSince = (note, since) => {
+  if (typeof since !== "string" || since.length === 0) return false;
+  return note.turns.some((turn) => turn.by === "architect" && String(turn.at ?? "") >= since)
+    || note.proposals.some((proposal) => String(proposal.createdAt ?? "") >= since);
+};
+export function withLiveTurns(threads, conversation) {
+  const live = conversation?.live ?? {};
+  const queued = new Set(Array.isArray(conversation?.queued) ? conversation.queued : []);
+  const starting = conversation?.session === "starting";
+  return (Array.isArray(threads) ? threads : []).map((thread) => {
+    let turn = null;
+    let waiting = false;
+    const denials = [];
+    for (const note of thread.notes) {
+      const own = live[note.id];
+      if (own) denials.push(...own.denials);
+      if (own && !recordedSince(note, own.startedAt)) turn = { ...own, requestId: note.id, stopped: own.outcome === "failed", startingLine: starting && !own.text ? STARTING_LINE : null };
+      else if (!own && queued.has(note.id)) waiting = true;
+    }
+    if (!turn && !waiting && denials.length === 0) return thread;
+    const state = turn && !turn.outcome ? STATE.answering : waiting ? STATE.queued : thread.state;
+    return { ...thread, live: turn, state, denials };
+  });
 }
 
 // The thread holding a note, by the note's id: asking opens the new note's thread.

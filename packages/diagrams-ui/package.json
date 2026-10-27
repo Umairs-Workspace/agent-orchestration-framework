@@ -11,7 +11,8 @@
     "./fonts": "./src/fonts.mjs",
     "./compile": "./src/compile.mjs",
     "./review-stream": "./src/review-stream.mjs",
-    "./conversation-model": "./src/conversation-model.mjs"
+    "./conversation-model": "./src/conversation-model.mjs",
+    "./conversation-stream": "./src/conversation-stream.mjs"
   },
   "files": [
     "src"

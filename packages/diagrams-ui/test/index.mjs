@@ -4,7 +4,7 @@
 
 // The editor's pure state (scene draft and review state), moved here from apps/ui's board suite
 // with its subject when the editor became its own package.
-import { sceneDraftTests, reviewStateTests, notesAndDraftsTests } from "./editor-state.suite.mjs";
+import { sceneDraftTests, reviewStateTests, notesAndDraftsTests, deliveryTests } from "./editor-state.suite.mjs";
 // milestone 170 / ADR-012 — a proposal compiled into the stored scene, read back as the proposal.
 import { compileTests } from "./compile.suite.mjs";
 // milestone 171 / story 00 — Ask architect at the selection: the overlay's anchor and the one ask path.
@@ -16,14 +16,18 @@ import { reviewStreamTests } from "./review-stream.suite.mjs";
 // milestone 172 / story 01 — the conversation panel's one model: threads, their states and proposals,
 // and 171/05's pins and replies, which it took over.
 import { conversationModelTests } from "./conversation-model.suite.mjs";
+// milestone 172 / story 02 — the stream's conversation events become each thread's live turn.
+import { conversationStreamTests } from "./conversation-stream.suite.mjs";
 
 export const tests = [
   ...sceneDraftTests,
   ...reviewStateTests,
   ...notesAndDraftsTests,
+  ...deliveryTests,
   ...compileTests,
   ...canvasAnchorTests,
   ...librarySearchTests,
   ...reviewStreamTests,
   ...conversationModelTests,
+  ...conversationStreamTests,
 ];

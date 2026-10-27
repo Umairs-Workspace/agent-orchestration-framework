@@ -43,15 +43,16 @@ const RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring
 
 // A THREAD'S PIN (171/ADR-006, moved here from `NoteThread.tsx` at 172/01): a small filled circle on the
 // shape's corner — the console's primary colour when the architect has the last word, muted while the
-// thread waits — with a count when the shape holds more than one note. Choosing it opens the thread.
+// thread waits, with a primary halo while the architect is answering it (172/02) — and a count when
+// the shape holds more than one note. Choosing it opens the thread.
 export const PIN_SIZE = 12;
 export const pinSize = (pin: NotePin) => ({ width: pin.count > 1 ? 20 : PIN_SIZE, height: PIN_SIZE });
 export function NotePinButton({ pin, at, open, onOpen }: { pin: NotePin; at: { x: number; y: number }; open: boolean; onOpen: () => void }) {
   const size = pinSize(pin);
   return <button type="button" data-aof-note-pin={pin.key} aria-expanded={open}
-    aria-label={`${pin.count} note${pin.count === 1 ? "" : "s"} on ${pin.label}${pin.answered ? ", the architect answered" : ""}`}
+    aria-label={`${pin.count} note${pin.count === 1 ? "" : "s"} on ${pin.label}${pin.answering ? ", the architect is answering" : pin.answered ? ", the architect answered" : ""}`}
     onClick={onOpen} style={{ left: at.x, top: at.y, width: size.width, height: size.height }}
-    className={`pointer-events-auto absolute flex items-center justify-center rounded-full text-[9px] font-semibold leading-none text-white shadow-sm ${pin.answered ? "bg-primary" : "bg-muted-foreground"} ${RING}`}>
+    className={`pointer-events-auto absolute flex items-center justify-center rounded-full text-[9px] font-semibold leading-none text-white shadow-sm ${pin.answered ? "bg-primary" : "bg-muted-foreground"} ${pin.answering ? "ring-[3px] ring-primary/30" : ""} ${RING}`}>
     {pin.count > 1 ? pin.count : null}
   </button>;
 }

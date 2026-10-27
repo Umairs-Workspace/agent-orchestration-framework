@@ -31,7 +31,7 @@ const addressTests = [
       assert.equal(nav.items.length, 4);
       assert.deepEqual(nav.gaps ?? [], [], "…so the four-item budget reports no gap");
       assert.equal(nav.items.some((item) => item.current), false, "no item claims the editor's address as its own");
-      assert.equal(contentModeFor("diagram").mode, CONTENT_MODE_FIXED, "the editor hosts a canvas and the dock: content:fixed, like the board");
+      assert.equal(contentModeFor("diagram").mode, CONTENT_MODE_FIXED, "the editor hosts a canvas and its conversation panel (172/02 retired the dock from this surface): content:fixed, like the board");
     },
   },
   {

@@ -69,7 +69,7 @@ export const conversationModelTests = [
     assert.equal(holding(threadsOf(notes(), proposals, ELEMENTS), "Events route").state, state);
   } })),
   { name: "172/01 task00 · the states read as the panel shows them", run: () => {
-    assert.deepEqual(STATE, { answered: "Answered", waiting: "Waiting for the architect", proposed: "A proposal answers this", accepted: "Proposal accepted", rejected: "Proposal rejected" });
+    assert.deepEqual(STATE, { answered: "Answered", waiting: "Waiting for the architect", proposed: "A proposal answers this", accepted: "Proposal accepted", rejected: "Proposal rejected", answering: "Architect is answering…", queued: "Queued — the architect is answering another note" });
   } },
   { name: "172/01 task00 · threads are listed with the most recent activity first", run: () => {
     const threads = threadsOf([note(["Events"], { minute: 2 }), note(["Editor"], { minute: 5 })], [], ELEMENTS);

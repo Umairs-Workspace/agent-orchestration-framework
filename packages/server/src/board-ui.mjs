@@ -384,8 +384,8 @@ const CONVERSATION_UNAVAILABLE = "architect-session-unavailable";
 const conversationKey = (answer) => `${answer.ref}\n${answer.file}`;
 async function deliverConversation(request, response, options, params) {
   response.setHeader("cache-control", "no-store");
-  if (!admitWriteRequest(request, response)) return true;
   try {
+    if (!admitWriteRequest(request, response)) return true;
     const body = await readJsonBody(request);
     if (!conversations) { sendApiError(response, 503, "This board was started without an architect session.", CONVERSATION_UNAVAILABLE); return true; }
     const workspace = await loadWorkspace(path.resolve(options.projectDir ?? process.cwd()));

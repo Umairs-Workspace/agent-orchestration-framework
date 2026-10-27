@@ -3,7 +3,10 @@
 // the poll rule). Moved from apps/ui's board suite with their subject. node:assert/strict,
 // `{ name, run }` shape.
 import assert from "node:assert/strict";
-import { POLL_MS, describeCounts, describeError, diagramReviewInvocation, openNotes, operationCounts, pendingProposals, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, staleConflictIds, touchedIds } from "@aof/diagrams-ui/editor-state";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { DELIVERY_ACTIONS, deliveryFor, POLL_MS, describeCounts, describeError, diagramReviewInvocation, openNotes, operationCounts, pendingProposals, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, staleConflictIds, touchedIds } from "@aof/diagrams-ui/editor-state";
 
 const scene = () => ({ elements: [{ id: "api", type: "text", text: "API", x: 10, y: 20, customData: { adr: "ADR-002" } }], files: {}, appState: { viewBackgroundColor: "#fff", gridSize: 20 } });
 export const sceneDraftTests = [
@@ -77,5 +80,55 @@ export const notesAndDraftsTests = [
   { name: "review invocation: with no request id it is the batch form that examines every open note", run: () => {
     assert.equal(diagramReviewInvocation("133", "ADR-002-service.excalidraw"), "/aof:diagram-review 133 ADR-002-service.excalidraw");
     assert.equal(diagramReviewInvocation("133", "ADR-002-service.excalidraw", null), "/aof:diagram-review 133 ADR-002-service.excalidraw");
+  } },
+];
+
+// Milestone 172 / story 02 / task 01 — asking and replying reach the architect's session on the server
+// (172/ADR-002 §1): one pure decision per action names the bodies it posts to the conversation route,
+// and the diagram surface renders no terminal (172/ADR-003 §4).
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const sourceOf = (rel) => readFile(path.join(repoRoot, rel), "utf8");
+export const deliveryTests = [
+  { name: "172/02 task01 E1 · asking posts the new note's request id", run: () => {
+    assert.deepEqual(deliveryFor("ask", { requestId: "r7", waiting: 0 }), [{ requestId: "r7" }]);
+  } },
+  { name: "172/02 task01 E2 · asking with notes waiting posts the question, then one batch review", run: () => {
+    assert.deepEqual(deliveryFor("ask", { requestId: "r7", waiting: 2 }), [{ requestId: "r7" }, {}]);
+  } },
+  { name: "172/02 task01 E4 / E5 · a reply posts its note's request id, session running or not", run: () => {
+    assert.deepEqual(deliveryFor("reply", { requestId: "r7" }), [{ requestId: "r7" }]);
+    assert.deepEqual(deliveryFor("reply", { requestId: "r7", waiting: 3 }), [{ requestId: "r7" }], "a reply never sweeps the other notes in");
+  } },
+  { name: "172/02 task01 E6 · Save as note posts nothing", run: () => {
+    assert.deepEqual(deliveryFor("note", { requestId: "r9", waiting: 1 }), []);
+  } },
+  { name: "172/02 task01 E7 · reviewing the waiting notes posts one batch review", run: () => {
+    assert.deepEqual(deliveryFor("review", { waiting: 2 }), [{}]);
+  } },
+  ...[
+    ["requests a first draft recorded as \"r9\", no note waiting", "first-draft", { requestId: "r9", waiting: 0 }, [{ requestId: "r9" }]],
+    ["chooses Ask again in the thread of \"r7\"", "ask-again", { requestId: "r7" }, [{ requestId: "r7" }]],
+    ["withdraws the waiting note \"r1\"", "withdraw", { requestId: "r1" }, []],
+  ].map(([label, action, facts, posted]) => ({ name: `172/02 task01 · each action delivers exactly what it names: the operator ${label}`, run: () => {
+    assert.deepEqual(deliveryFor(action, facts), posted);
+  } })),
+  { name: "172/02 task01 · every action has a delivery, and an action with no request posts no request", run: () => {
+    assert.deepEqual([...DELIVERY_ACTIONS], ["ask", "first-draft", "reply", "ask-again", "review", "note", "withdraw"]);
+    assert.deepEqual(deliveryFor("ask", {}), [], "no request id, nothing to ask about");
+  } },
+  { name: "172/02 task01 E1 · the diagram surface renders no terminal and the editor types into none", run: async () => {
+    const surface = await sourceOf("apps/ui/src/diagram/DiagramSurface.tsx");
+    for (const gone of ["TerminalControl", "SurfaceDock", "dock-mount", "onDeliver"]) assert.doesNotMatch(surface, new RegExp(gone), `the surface names no ${gone}`);
+    const editor = await sourceOf("packages/diagrams-ui/src/ExcalidrawEditor.tsx");
+    assert.doesNotMatch(editor, /onDeliver|\bdock\b/u, "the editor has no dock to deliver through");
+    assert.match(editor, /\/api\/diagram\/conversation\?ref=/u, "it posts to the conversation route");
+    assert.match(editor, /deliveryFor\(action, \{ requestId, waiting: waitingNotes\(requestId\) \}\)/u, "every post is deliveryFor's answer");
+  } },
+  { name: "172/02 task01 E12 · an unavailable session shows the command to run instead", run: async () => {
+    const editor = await sourceOf("packages/diagrams-ui/src/ExcalidrawEditor.tsx");
+    const branch = /if \(response\.status === 503 && answer\.code === UNAVAILABLE\) \{([\s\S]*?)\n {6}\}/u.exec(editor)?.[1] ?? "";
+    assert.match(branch, /step\(\{ type: "session", state: "unavailable"/u, "the session state becomes unavailable");
+    assert.match(branch, /setInvocation\(diagramReviewInvocation\(itemRef, file\)\)/u, "the batch command is shown, with Copy, in the composer");
+    assert.equal(diagramReviewInvocation("171", "ADR-003-push-stream.excalidraw"), "/aof:diagram-review 171 ADR-003-push-stream.excalidraw");
   } },
 ];

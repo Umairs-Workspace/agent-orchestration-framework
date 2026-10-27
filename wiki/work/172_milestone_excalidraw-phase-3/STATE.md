@@ -106,6 +106,31 @@ doc: state
   `packages/diagrams-ui/test` exemption still lists its seven members by name; the names now match
   the tree.
 
+### 172/02 — build and review close (2026-10-27, solo)
+
+- **A red left by 172/00, caught here.** 00 changed `packages/server/src/board-ui.mjs` (+39 −1), which
+  FF-5307 (`acd-loop-state-rides-the-run-record`) pins byte for byte. FF-13109
+  (`acd-loop-ask-reaches-every-face`) also counts the board's body reads and looks for the admission
+  inside the same block as the read. 00's lane ran neither: its `files:` declared neither control,
+  and `aof test --scope impacted` never finished on this machine. Both were repaired here. 00's
+  conversation route now admits inside the block that reads the body, and the digest is re-pinned with
+  the measured diff. Lesson: a story that touches a byte-frozen file owes the control that freezes
+  it, and a grep of `test/arch` for the file's path names it.
+- **The events 00 emits and the reducer 02 specifies did not quite match.** 00 emits `session: started`
+  where 02's examples say "starting", and 00 emits no queued list. The reducer accepts both spellings.
+  The queued list comes from the editor's own POST answers, so only the posting editor shows "Queued";
+  a second editor on the same diagram would not.
+- **Fixed at close (Q2):** a window resize turned the follow off (the scroll it fires read as the
+  operator scrolling up). Now only an upward wheel, touch or key does, and reaching the bottom resumes.
+- **Recorded (Q5), design gap, minor:** activity steps read as the command run ("aof diagram scene …
+  --action context") where `mocks/conversation-streaming.png` reads what the step did ("Read the diagram
+  as Mermaid"). A friendly label needs a vocabulary of the review command's steps.
+- **Recorded (Q5):** E12 (an unavailable session shows the command to copy) is proven by the reducer, the
+  delivery decision and a source check of the editor's 503 branch; the browser smoke never runs a
+  board with no architect session to launch.
+- **Task 03 is the operator's `@uat`** (a real architect answering in the deployed build). It is left
+  for `aof:verify`.
+
 ## Verification
 
 - [ ] `@executable` suite green

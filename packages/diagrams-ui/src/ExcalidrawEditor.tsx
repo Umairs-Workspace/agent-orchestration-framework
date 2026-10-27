@@ -10,11 +10,13 @@ import { selectionLabel } from "./canvas-anchor.mjs";
 import { CanvasOverlay } from "./CanvasOverlay";
 import { ConversationPanel } from "./ConversationPanel";
 import { LibrarySearchSidebar } from "./LibrarySearch";
-import { conversationOf, replyToNote, threadHolding } from "./conversation-model.mjs";
+import { conversationOf, replyToNote, threadHolding, withLiveTurns } from "./conversation-model.mjs";
 import type { ConversationNote, Thread, ThreadNote } from "./conversation-model.mjs";
+import { CONVERSATION_INITIAL, batchLine, conversationStep, sessionChip } from "./conversation-stream.mjs";
+import type { ConversationEvent, ConversationState } from "./conversation-stream.mjs";
 import { CANVAS_UPDATED, CHANGED_ELSEWHERE, STREAM_INITIAL, streamStep } from "./review-stream.mjs";
 import type { StreamEvent, StreamState } from "./review-stream.mjs";
-import { POLL_MS, askArchitect, reviewInvocations, describeCounts, describeError, diagramReviewInvocation, openNotes, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, touchedIds } from "./editor-state.mjs";
+import { POLL_MS, askArchitect, deliveryFor, describeCounts, describeError, diagramReviewInvocation, openNotes, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, touchedIds } from "./editor-state.mjs";
 
 // THE EDITOR (milestone 170, ADR-010..ADR-013). The diagram is stored as Excalidraw's own scene, so
 // this canvas IS the diagram: anything can be drawn, and your project's libraries are in the Library
@@ -41,10 +43,8 @@ async function jsonResponse<T>(response: Response): Promise<T> {
   return body as T;
 }
 const failure = (reason: unknown) => reason instanceof ApiError ? describeError(reason.code, reason.message) : reason instanceof Error ? reason.message : "Diagram operation failed";
-const ARCHITECT_NOTICE = "Architect session started in the dock below the canvas. Answers and proposals appear in the conversation panel.";
-const SENT_NOTICE = "Sent to the architect's session in the dock. Answers and proposals appear in the conversation panel.";
-const NOTE_SENT = "Note recorded and sent to the architect's session in the dock.";
-const NOTE_NOT_RUNNING = "Note recorded. The architect session in the dock is not running — Review notes starts one.";
+const NOTE_WAITING = "Note recorded. It waits until you review the waiting notes with the architect.";
+const UNAVAILABLE = "architect-session-unavailable";
 const FIRST_DRAFT_REQUEST = "Draw a first draft of this diagram from its ADR and diagram brief.";
 const toElements = (skeletons: unknown[]) => convertToExcalidrawElements(skeletons as never, { regenerateIds: false }) as unknown as CanvasElement[];
 // Bytes per `String.fromCharCode` call: well under the engine's argument-count limit.
@@ -62,9 +62,7 @@ async function converted(text: string) {
   return (await parseMermaidToExcalidraw(text)).elements as unknown as Array<Record<string, unknown> & { id: string; type: string; x: number; y: number; width: number; height: number }>;
 }
 
-type Delivery = "typed" | "started" | "waiting" | "not-running";
-
-export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }: { itemRef: string; svgFile: string; onRequestClose: () => void; onDeliver?: (invocations: string[], kind: "ask" | "note") => Delivery }) {
+export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose }: { itemRef: string; svgFile: string; onRequestClose: () => void }) {
   const file = sceneFileName(svgFile);
   const url = `/api/diagram/scene?ref=${encodeURIComponent(itemRef)}&file=${encodeURIComponent(file)}`;
   const [loaded, setLoaded] = useState<SceneResponse | null>(null);
@@ -109,6 +107,9 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
   const [selected, setSelected] = useState("");
   // The scene's version: a shape added, moved or relabelled re-reads the threads' subjects.
   const [sceneVersion, setSceneVersion] = useState(0);
+  // THE ARCHITECT'S SESSION AS THE STREAM REPORTS IT (172/ADR-002 §3): its state and each live turn.
+  const [live, setLive] = useState<ConversationState>(CONVERSATION_INITIAL);
+  const step = useCallback((event: ConversationEvent) => setLive((prior) => conversationStep(prior, { at: new Date().toISOString(), ...event })), []);
   // How many shapes the canvas holds: an empty diagram is offered a first draft.
   const [liveCount, setLiveCount] = useState(0);
 
@@ -211,6 +212,8 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
       next.addEventListener("stamp", (message) => dispatch({ type: "stamp", ...data(message) }));
       next.addEventListener("review", (message) => dispatch({ type: "review", ...data(message) }));
       next.addEventListener("scene", (message) => dispatch({ type: "scene", ...data(message) }));
+      // The architect's live turn rides the same stream; a connection opens with the session's snapshot.
+      next.addEventListener("conversation", (message) => step(data(message) as ConversationEvent));
     };
     const dispatch = (event: StreamEvent) => {
       const { state, effects } = streamStep(stream.current, event, { revision: revision.current, dirty: dirtyRef.current, writing: busyRef.current });
@@ -238,7 +241,7 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
       streamDispatch.current = () => {};
       stream.current = STREAM_INITIAL;
     };
-  }, [isLoaded, itemRef, file, refreshReview, reloadSaved]);
+  }, [isLoaded, itemRef, file, refreshReview, reloadSaved, step]);
   // A draft event that arrived during one of this editor's own writes is decided once the write has
   // answered — by then the revision it wrote is known, and its own save is not a change made elsewhere.
   const afterWrite = () => {
@@ -289,22 +292,39 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
     const answer = await post<{ request?: { id?: string } }>({ action: "request", baseRevision: revision.current, selectedIds: selectedIdsNow(), request: text });
     return answer.request?.id ?? null;
   };
-  // DELIVERY (171/ADR-005): the surface types into the architect's running session, starts one, or
-  // lets a note wait — its one decision. With no surface to deliver through, the command is shown to copy.
-  const waitingNotes = () => openNotes(review.requests).length;
-  const deliverAsk = (invocations: string[]) => {
-    if (!onDeliver) { setInvocation(invocations[0]); setNotice("Run this command in your architect session."); return; }
-    setNotice(onDeliver(invocations, "ask") === "typed" ? SENT_NOTICE : ARCHITECT_NOTICE);
+  // DELIVERY (172/ADR-002 §1): each action posts the request ids `deliveryFor` names to the board's
+  // conversation route, in order; the server's session answers them one turn at a time and the answer
+  // streams back on the events stream. A delivery answered `queued` waits behind the turn in flight; a
+  // server with no architect session to launch answers 503, and the command to run is shown instead.
+  const conversationUrl = `/api/diagram/conversation?ref=${encodeURIComponent(itemRef)}&file=${encodeURIComponent(file)}`;
+  const waitingNotes = (except: string | null = null) => openNotes(review.requests).filter((note) => note.id !== except).length;
+  const sendDeliveries = async (bodies: Array<{ requestId?: string }>) => {
+    let outcome: "sent" | "unavailable" = "sent";
+    for (const body of bodies) {
+      const response = await fetch(conversationUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      const answer = await response.json().catch(() => ({}));
+      if (response.status === 503 && answer.code === UNAVAILABLE) {
+        step({ type: "session", state: "unavailable", reason: answer.error ?? null });
+        setInvocation(diagramReviewInvocation(itemRef, file));
+        outcome = "unavailable";
+        break;
+      }
+      if (!response.ok || answer.ok === false) throw new ApiError(answer.error ?? `Request failed (${response.status})`, answer.code ?? null);
+      if (answer.outcome === "queued" && body.requestId) step({ type: "session", queued: [body.requestId] });
+    }
+    return outcome;
   };
-  // A question's own invocation, then the batch when other notes wait (171/04 Q1).
-  const launch = (_command: string, requestId: string) => deliverAsk(reviewInvocations({ ref: itemRef, file, requestId, waiting: waitingNotes() }));
+  const deliver = (action: Parameters<typeof deliveryFor>[0], requestId: string | null = null) => sendDeliveries(deliveryFor(action, { requestId, waiting: waitingNotes(requestId) }));
+  // A question's own request, then the batch when other notes wait (171/04 Q1).
+  const launch = (_command: string, requestId: string) => {
+    deliver("ask", requestId).catch((reason: unknown) => setError(failure(reason)));
+  };
+  // A NOTE is recorded and NOTHING is sent: it waits for Review with the architect.
   const note = async (text: string) => {
     if (!text.trim()) throw new Error("Enter a note first.");
     setNotice(null); setInvocation(null);
     const id = await recordRequest(text.trim());
-    const outcome = id && onDeliver ? onDeliver(reviewInvocations({ ref: itemRef, file, requestId: id }), "note") : "waiting";
-    setNotice(outcome === "typed" ? NOTE_SENT : outcome === "not-running" ? NOTE_NOT_RUNNING
-      : `Note recorded. Run ${diagramReviewInvocation(itemRef, file)} in a Claude session, or Review notes, to have the architect examine it.`);
+    setNotice(NOTE_WAITING);
     if (id) setOpeningNote(id);
     await refreshReview();
   };
@@ -332,22 +352,25 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
     catch (reason) { throw new Error(failure(reason)); }
     finally { busyRef.current = false; setBusy(false); afterWrite(); }
   };
-  const reviewNotes = async () => { setNotice(null); setInvocation(null); deliverAsk(reviewInvocations({ ref: itemRef, file })); };
-  // A REPLY in a note's thread (171/ADR-006), read in the panel since 172/ADR-003: recorded on the note,
-  // then delivered as a note is — typed into the architect's running session, or left to wait (ADR-005).
+  const reviewNotes = async () => { setNotice(null); setInvocation(null); await deliver("review"); };
+  // A REPLY in a note's thread (171/ADR-006), read in the panel (172/ADR-003): recorded on the note, then
+  // posted to the architect's session, which the server starts when none runs (172/02 E5).
   const replyInThread = async (note: ThreadNote, text: string) => {
+    setInvocation(null);
     const outcome = await replyToNote({
       requestId: note.id, text, record: (reply) => post({ action: "reply", ...reply }),
-      deliver: onDeliver ? (invocations) => onDeliver(invocations, "note") : null,
-      invocations: (requestId) => reviewInvocations({ ref: itemRef, file, requestId }),
+      deliver: (bodies) => sendDeliveries(bodies as Array<{ requestId?: string }>),
+      invocations: (requestId) => deliveryFor("reply", { requestId }) as never,
     });
     await refreshReview();
-    return outcome === "typed" ? "Sent to the architect's session." : "Reply recorded — it waits for a review session.";
+    return outcome === "unavailable" ? "Reply recorded. No architect session could start here — run the command below." : null;
   };
+  // ASK AGAIN: a turn that ended with nothing recorded re-delivers its note.
+  const askAgain = async (requestId: string) => { setInvocation(null); await deliver("ask-again", requestId); };
   const firstDraft = async () => {
     setNotice(null); setInvocation(null);
     const id = await recordRequest(FIRST_DRAFT_REQUEST);
-    if (id) launch("", id);
+    if (id) { setOpeningNote(id); await deliver("first-draft", id); }
     await refreshReview();
   };
   const withdraw = async (request: ReviewRequest) => {
@@ -454,12 +477,14 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
 
   const notes = openNotes(review.requests);
   // THE PANEL'S MODEL (172/ADR-003 §2): threads read from the records and the scene as it is now.
-  const conversation = useMemo(
+  const recorded = useMemo(
     () => conversationOf(review.requests, review.proposals, (api.current?.getSceneElements() ?? []) as never),
     // `sceneVersion` stands for the canvas's elements, which the API holds.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [review, sceneVersion, ready],
   );
+  // The live turn merged into its thread until the recorded turn replaces it (172/ADR-002 §4).
+  const conversation = useMemo(() => ({ ...recorded, threads: withLiveTurns(recorded.threads, live) }), [recorded, live]);
   // A note just asked or saved opens its thread once the records list it; an open thread that is gone
   // (withdrawn, or its shapes regrouped) closes.
   useEffect(() => {
@@ -517,11 +542,12 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onDeliver }
         conversation={conversation} openKey={openKey} onOpen={openThread}
         collapsed={panelCollapsed} onCollapse={setPanelCollapsed}
         selectionLabel={selected} readOnly={loaded?.readOnly ?? true} ready={ready} busy={busy} loading={!reviewRead} error={reviewError}
-        session={{ label: "Not started" }}
+        session={sessionChip(live)} batchLine={batchLine(live)}
         waiting={notes.length} canFirstDraft={Boolean(loaded && ready && !loaded.readOnly && liveCount === 0)}
         notice={null} invocation={invocation} previewNote={previewNote}
         onAsk={askFromPanel} onSaveNote={noteFromPanel}
         onReviewNotes={() => void perform(reviewNotes)} onFirstDraft={() => void perform(firstDraft)}
+        onAskAgain={(requestId: string) => void perform(() => askAgain(requestId))}
         onReply={(target: ConversationNote<ReviewRequest, ReviewProposal>, text: string) => replyInThread(target, text)}
         onWithdraw={(target: ConversationNote<ReviewRequest, ReviewProposal>) => void perform(() => withdraw(target))}
         onShowOnCanvas={showOnCanvas} onPreview={preview}

@@ -108,6 +108,34 @@ Screenshots from the same run, read against each surface's mock and DESIGN's bin
 | a pending proposal in its thread | 1280 | `mocks/conversation-proposal.png` | **CONFORMS, one minor gap.** The architect's "Proposed: …" turn carries the card: `accent` left edge, summary at 600, changes line in `muted-foreground`, Preview, Accept (primary) and Reject; the thread reads "A proposal answers this"; decided proposals show their outcome. **Gap:** the changes line reads the counts ("1 changed") where the mock reads the change ("1 edge relabelled · nothing else changes"). |
 | console colours inside the SDK's container | — | — | **CONFORMS:** the answered pin and the open thread's border compute to teal `rgb(19, 118, 109)`. |
 
+### 172/02 task 02 — an answer is seen streaming into its thread, in a real browser (2026-10-27)
+
+The same smoke, now served with the stand-in architect: `test/smoke/stand-in-architect.mjs`, launched
+by the real `aof work ui` through `AOF_ARCHITECT_EXECUTABLE`. It speaks stream-json, streams its answer
+in deltas and records it with the real `aof diagram scene --action respond`. No paid session ran.
+**73/73 checks passed.** The dock checks are gone with the dock; what reached the server's session is
+read from the stand-in's log.
+
+- **E1:** the canvas ask posted its note, and the server's session received
+  `/aof:diagram-review 07 ADR-002-scene.excalidraw <id>`. The new thread opened reading "Starting the
+  architect…" with the chip at "Starting…". The live text read longer in a second screenshot taken
+  500 ms after the first, and the chip read "Answering". No `.xterm` exists anywhere on the page.
+- **E8:** once the stand-in recorded its answer, the live turn left: no caret, no activity list. The
+  thread showed the recorded answer, and the pin read "the architect answered".
+- **E4:** a reply in the same thread appeared as the operator's turn. The stand-in's second answer grew
+  under it, at 768 with the panel as a drawer, then was replaced by its recorded turn.
+- **E6:** Save as note recorded the note and handed the session nothing (its log is unchanged 1.5 s
+  later).
+- **E5:** a reply posted with no session running reached a freshly started session.
+
+Readings against `mocks/conversation-streaming.png` (1280) and `mocks/conversation-streaming-768.png`
+(768):
+
+| surface | width | reading |
+|---|---|---|
+| the panel while the architect answers | 1280 | **CONFORMS, one minor gap.** The chip reads "Answering" on a `primary` tint; the open thread's state reads "Architect is answering… · 3 notes" in `primary`; the live turn reads "Architect · now", then its activity list (a tick per finished step), then the answer growing with a `primary` caret at its end; the thread's pin carries the 3 px `primary` halo. **Gap:** an activity step reads as the command it ran ("aof diagram scene … --action context") where the mock reads what it did ("Read the diagram as Mermaid"). |
+| the drawer while the architect answers | 768 | **CONFORMS.** As at 1280, in the 340 px drawer. The thread follows the growing answer to its caret: the first run did not, because the window resize read as the operator scrolling up, and it was fixed (only an upward wheel, touch or key stops the follow). |
+
 ## Findings
 
 | id | observed | type | severity | triage | routed-to | status |
