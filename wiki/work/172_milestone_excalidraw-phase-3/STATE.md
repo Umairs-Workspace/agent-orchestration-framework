@@ -42,6 +42,40 @@ doc: state
 
 ## Feedback (for retro)
 
+### 172/00 — build and review close (2026-10-27, solo)
+
+- **The declared write set was incomplete (refine).** FF-7106 named two tracked renders missing from
+  `files:` (`.agents/skills/aof-diagram-review/agents/openai.yaml`,
+  `.codex/aof/workflows/workflow-contract.md`). The build also wrote four files nobody had declared:
+  `packages/core/assets/manifest.json` and `.aof/aof.lock.json` (both derived), plus
+  `packages/core/assets/variants/codex/workflow.md`. That last one is a **fourth copy of the
+  diagram-review prose**, the source the codex skill renders from; refine named three renders and
+  missed it. All five are now declared on the story. Lesson: a command's tracked renders are not
+  its only copies — the codex variant is a second source.
+- **The conditional prose could not be read by the model (task 03).** The first draft of the
+  diagram-review paragraph applied "in a conversation", and a session cannot tell it is in one,
+  because the invocation is identical. The real run answered with `respond` first and then wrote a
+  different summary. The paragraph is now unconditional. 171 R1, testing against a real session
+  before review closes, caught it.
+- **Routed at close — `story (operator)` (Q3):** execution now holds three copies of the
+  owned-process tree kill (`codex-app-server.mjs` `terminateOwned`, `session-driver.mjs`, and
+  `conversation-session.mjs` `terminateTree`). Shape: hoist one `terminateProcessTree(child)` into
+  an execution leaf that all three import. It was not fixed at this close because it edits two
+  modules outside this story and raises the `execution/src` budget again.
+- **Recorded (Q5):** the architect's session ran a bare `mktemp -d`, outside
+  `Bash(aof diagram scene:*)`, without a denial, and its `Write` grant is not path-scoped (it wrote
+  its input files under `/tmp`). Logged in VERIFICATION's register for triage at verify.
+- **Recorded (Q5):** `aof test --scope impacted --story 172/00` widened to most of the tree (the
+  story declares 40+ paths, several of them new) and was still running at 89 minutes on the Mac.
+  It was stopped, and its scope was covered by focused runs of every declared suite.
+- **Recorded (Q5), not caused by 172:** on macOS, `/var` vs `/private/var` reds the 171 stamp-via-CLI
+  case (`diagram-scene-review.test.mjs`) and FF-5301's two-hop laundering probe; four opencode
+  renders (`aof-architect`, `add-diagram`, `explain`, `review`) differ from a fresh render. The
+  shared tree also holds another session's uncommitted graph/knowledge work (174), which reds
+  FF-11904 on four layers that are not 172's.
+- **Doctor advisory:** 172/00's example map holds six rules, over the limit of four, so the story is
+  large. It built in one pass, with no rounds lost to no-progress.
+
 ## Verification
 
 - [ ] `@executable` suite green

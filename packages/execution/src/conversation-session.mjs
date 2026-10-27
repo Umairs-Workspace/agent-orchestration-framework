@@ -215,8 +215,12 @@ export function createConversations({
     endings.delete(key);
     try { await start(session, cwd, tools); }
     catch (error) {
+      // A delivery queued while the session was starting was told `queued`; its subscribers learn here
+      // that no session came, and its note stays open for the next ask.
       session.ended = true;
-      if (sessions.get(key) === session) sessions.delete(key);
+      if (sessions.get(key) === session) { sessions.delete(key); endings.set(key, "unavailable"); }
+      session.queue.length = 0;
+      emit(key, { type: "session", state: "ended", reason: "unavailable" });
       throw error;
     }
     next(session);

@@ -148,7 +148,10 @@ const sessionTests = [
     const { outcome } = await conversations.deliver("171 ADR-001-overlay.excalidraw", { cwd: process.cwd(), text: "/aof:diagram-review 171 ADR-001-overlay.excalidraw r2", requestId: "r2", tools: TOOLS });
     assert.equal(outcome, "started");
     assert.equal(children.length, 2, "two stand-in processes run, one per key");
-    assert.notEqual(spawns[0], spawns[1]);
+    assert.ok(children.every(running) && children[0].pid !== children[1].pid, "both run, as separate processes");
+    assert.equal(conversations.snapshot(KEY).state === "none", false);
+    assert.equal(conversations.snapshot("171 ADR-001-overlay.excalidraw").state === "none", false);
+    void spawns;
   }) },
   { name: "172/00 task01 E4 · a delivery during a turn waits for the turn to end", run: () => withConversations(async ({ conversations, received, order, release }) => {
     const seen = recorder(); conversations.subscribe(KEY, seen.listener);
@@ -215,7 +218,7 @@ const idleTests = [
     assert.ok(running(fx.children[0]), "the stand-in is still running");
   }) },
   { name: "172/00 task01 · a turn in flight holds the session even with no subscriber", run: () => withConversations(async (fx) => {
-    const { seen, leave } = await idleSession(fx, { hold: true });
+    const { leave } = await idleSession(fx, { hold: true });
     leave();
     fx.clock.advance(15 * MINUTE);
     await new Promise((resolve) => setTimeout(resolve, 50));
@@ -229,7 +232,6 @@ const idleTests = [
     assert.ok(running(fx.children[0]), "still running 9:59 after the result");
     fx.clock.advance(1000);
     await until(() => fx.terminated.length === 1, "ended 10 minutes after the result");
-    void seen;
   }, { env: { STAND_IN_HOLD_DIR: "__dir__" } }) },
   { name: "172/00 task01 E8 · a process that exits mid-turn ends the turn as failed and the session as ended", run: () => withConversations(async (fx) => {
     const seen = recorder(); fx.conversations.subscribe(KEY, seen.listener);
@@ -292,7 +294,19 @@ const launchTests = [
   { name: "172/00 task01 · with no claude to launch the delivery is refused as unavailable and nothing is kept", run: async () => {
     const conversations = createConversations({ resolveExecutable: () => null });
     await assert.rejects(conversations.deliver(KEY, { cwd: process.cwd(), text: INVOKE("r7"), requestId: "r7", tools: TOOLS }), (error) => error.code === "architect-session-unavailable" && error.status === 503);
-    assert.equal(conversations.snapshot(KEY).state, "none");
+    assert.deepEqual(conversations.snapshot(KEY), { type: "snapshot", state: "ended", reason: "unavailable", requestId: null, text: "", queued: 0 }, "no session is kept, and the key says why");
+  } },
+  { name: "172/00 task01 · a delivery queued while the session was starting learns that no session came", run: async () => {
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    const conversations = createConversations({ resolveExecutable: async () => { await gate; return null; } });
+    const seen = recorder(); conversations.subscribe(KEY, seen.listener);
+    const first = conversations.deliver(KEY, { cwd: process.cwd(), text: INVOKE("r7"), requestId: "r7", tools: TOOLS });
+    assert.deepEqual(await conversations.deliver(KEY, { cwd: process.cwd(), text: INVOKE("r5"), requestId: "r5", tools: TOOLS }), { outcome: "queued" });
+    release();
+    await assert.rejects(first, (error) => error.code === "architect-session-unavailable");
+    assert.deepEqual(seen.events, [{ type: "session", state: "ended", reason: "unavailable" }]);
+    assert.equal(conversations.snapshot(KEY).state, "ended");
   } },
   { name: "172/00 task01 · a snapshot carries the turn in flight and the text written so far", run: () => withConversations(async ({ conversations, received, release }) => {
     const seen = recorder(); conversations.subscribe(KEY, seen.listener);
