@@ -14,7 +14,7 @@ test('core constructs independent applications with the same command catalog', a
     // 154/06 adds the native independent review driver to the existing catalog; 163 adds work:questions;
     // 166 adds graph:export and graph:import; diagram:scene (PR #13) adds the Excalidraw draft command;
     // diagram:capability (the diagrams package) adds the opt-out seam's read; 168 adds work:prototype.
-    assert.equal(first.listCommands().length, 130); // + the five hyperagent:* verbs (@aof/integration-hyperagent; 169/02 adds package)
+    assert.equal(first.listCommands().length, 133); // + the five hyperagent:* verbs (@aof/integration-hyperagent; 169/02 adds package); 174 adds graph:fetch, graph:publish and graph:prune
     assert.deepEqual(JSON.parse(JSON.stringify(first.listCommands())), JSON.parse(JSON.stringify(second.listCommands())));
     assert.notEqual(first.getCommand('work:list'), second.getCommand('work:list'));
     assert.equal(typeof first.getCommand('work:list').run, 'function');

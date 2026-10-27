@@ -74,6 +74,12 @@ const GRAPH_REACHING_ALLOWLIST = new Set([
   path.join("packages", "knowledge", "src", "commands", "graph-export.mjs"),
   path.join("packages", "knowledge", "src", "commands", "graph-import.mjs"),
   path.join("packages/core/src/application/bindings/commands/graph/import.mjs"),
+  // 174 — the graph shared through the project's own remote: fetch lays a published graph out as
+  // import does (the driver's resolver for the local graphify version), and publish stamps the
+  // bundle with the graph's build time (the normalizer's one derivation of it). The command modules
+  // themselves import neither; they receive these from their bindings. Neither builds or spawns.
+  path.join("packages/core/src/application/bindings/commands/graph/fetch.mjs"),
+  path.join("packages/core/src/application/bindings/commands/graph/publish.mjs"),
   path.join("packages/core/src/application/bindings/story-contract-derive.mjs"), // configured knowledge ports
   path.join("packages", "work", "src/story-contract-derive.mjs"),      // imports the normalizer (96/ADR-004): the read/write-set
                                                       // derivation reaches the graph by the pure read — never a

@@ -1,8 +1,8 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 import { graphArtifactBuiltAt, graphJsonPath } from "../graph-normalize.mjs";
-import { cacheGraphifyVersion, gitRead, listBundleFiles, packBundle, readProjectIdentity } from "../graph-bundle.mjs";
+import { bundleGraph } from "../graph-bundle.mjs";
 
 // Configured application services are supplied by core; construction performs no I/O.
 export function createGraphExportCommand({ git }) {
@@ -47,17 +47,7 @@ const graphExportCommand = {
       }
     }
 
-    const outDir = path.dirname(graphPath);
-    const identity = await readProjectIdentity({ config: ctx.workspace.config, git, projectRoot });
-    const stamp = {
-      sourceCommit: readBuiltAtCommit(graphPath) ?? await gitRead(git, ["rev-parse", "HEAD"], projectRoot),
-      builtAt: graphArtifactBuiltAt(graphPath),
-      graphifyVersion: cacheGraphifyVersion(listBundleFiles(outDir)),
-      workspaceId: identity.workspaceId,
-      rootCommits: identity.rootCommits,
-      exportedAt: new Date().toISOString(),
-    };
-    const { bytes, fileCount } = packBundle({ outDir, stamp });
+    const { bytes, fileCount, stamp } = await bundleGraph({ outDir: path.dirname(graphPath), builtAt: graphArtifactBuiltAt(graphPath), config: ctx.workspace.config, git, projectRoot });
 
     // Written beside the target and renamed over it, so a failed write never leaves a torn bundle
     // where the operator expects a whole one.
@@ -99,17 +89,6 @@ const graphExportCommand = {
 };
 
 return { graphExportCommand };
-}
-
-// The commit graphify stamped into graph.json at build time — the commit the graph describes,
-// which is not necessarily HEAD at export.
-function readBuiltAtCommit(graphPath) {
-  try {
-    const commit = JSON.parse(readFileSync(graphPath, "utf8"))?.built_at_commit;
-    return typeof commit === "string" && commit ? commit : null;
-  } catch {
-    return null;
-  }
 }
 
 export function formatBytes(bytes) {

@@ -1,9 +1,10 @@
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 import { GRAPHIFY_BACKENDS } from "../graphify-backends.mjs";
-import { hashTree, inputsCurrent, listCloneFiles, stampInputs } from "../graph-bundle.mjs";
+import { gitRead, hashTree, inputsCurrent, listCloneFiles, stampInputs } from "../graph-bundle.mjs";
+import { fetchGraph, listRemote, publishGraph, readShareSettings } from "../graph-share.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
-export function createGraphBuildCommand({ resolveGraphifyBinary, runGraphifyBuild, readGraph, normalizeGraph, graphJsonPath, graphArtifactBuiltAt, isCodeOnlyWholeRootBuild, git }) {
+export function createGraphBuildCommand({ resolveGraphifyBinary, runGraphifyBuild, readGraph, normalizeGraph, graphJsonPath, graphArtifactBuiltAt, isCodeOnlyWholeRootBuild, git, ensureGraphifyOutGitignore }) {
 // graph:build — build the queryable graph from a folder (ADR-001). Spawns the
 // pinned graphify binary (via the ADR-002 driver — the ONLY spawn site), reads
 // the resulting graph.json, and returns a BuildResult whose counts are derived
@@ -11,7 +12,7 @@ export function createGraphBuildCommand({ resolveGraphifyBinary, runGraphifyBuil
 //
 //   input  { path, backend?, tokenBudget?, offline?, outRoot? }
 //   result BuildResult { graphPath, projectRoot, nodeCount, edgeCount,
-//                        hyperedgeCount, builtAt, backend, egress, unchanged, stdout }
+//                        hyperedgeCount, builtAt, backend, egress, unchanged, stdout, share? }
 //
 // Paths are RAW ABSOLUTE (basis-neutral, 08/ADR-002); the CLI face relativises
 // for display. `egress` reports whether the doc/media backend HOP ran: "none"
@@ -19,6 +20,13 @@ export function createGraphBuildCommand({ resolveGraphifyBinary, runGraphifyBuil
 // ran — aof reports "the hop ran", never re-classifies by network reachability,
 // never widens graphify's own egress (ADR-005). When the binary is absent, `run`
 // throws a structured graphify-missing error (ADR-002/004) BEFORE any spawn.
+//
+// SHARING (174/ADR-001). With `graph.share: "git-refs"`, a code-only build of the codebase graph
+// at the project root that finds no current local graph first takes the one published for HEAD
+// on the project's own remote, and publishes a clean build there afterwards (graph-share.mjs).
+// The remote is advisory: every failure is a warning in `share`, never a failed build. `share` is
+// absent when sharing is off, so the result is today's, byte for byte. The memory work graph
+// builds under its own `outRoot` and never reaches this (ADR-002).
 //
 // WHY IT IS REGISTERED — the comment that stood above this module's entry in `src/command-core.mjs`,
 // moved here unedited (119/02, FF-11908: the registry cites, it does not explain).
@@ -138,6 +146,13 @@ const graphBuildCommand = {
       );
     }
 
+    // Only the codebase graph at the project root may be shared (174/ADR-002), and an --offline
+    // build reaches no remote. The setting is read — and an unknown one refused — before anything runs.
+    const request = { path: input.path, backend, tokenBudget: input.tokenBudget };
+    const codeOnly = isCodeOnlyWholeRootBuild(request, outRoot, projectRoot);
+    const settings = codeOnly && path.resolve(outRoot) === path.resolve(projectRoot) && input.offline !== true ? readShareSettings(ctx.workspace.config) : null;
+    const share = settings?.share === "git-refs" ? { remote: settings.remote, fetched: null, published: null, pruned: [], warnings: [] } : null;
+
     // Guard the binary-absent path BEFORE any spawn (ADR-002/004): surface a
     // clear, guidance-bearing failure (the install hint), never an opaque ENOENT.
     const resolved = resolveGraphifyBinary();
@@ -148,18 +163,27 @@ const graphBuildCommand = {
     // A code-only whole-root build is skipped when nothing it read has changed since the graph was
     // stamped (166 F-01: `graphify update` re-extracts everything, every time). The tree is
     // snapshotted BEFORE the spawn, so an edit made while graphify runs is never stamped as read.
-    const request = { path: input.path, backend, tokenBudget: input.tokenBudget };
     const outDir = path.dirname(graphJsonPath(outRoot));
-    const tree = isCodeOnlyWholeRootBuild(request, outRoot, projectRoot) ? await snapshotTree(projectRoot) : null;
+    const tree = codeOnly ? await snapshotTree(projectRoot) : null;
 
     // egress: "none" when no backend ran (code/AST only); "docs-media" when ANY
     // --backend drove the doc/media hop (ADR-001/005). ollama is still
     // "docs-media" — the hop RAN; locality is a separate privacy property.
     const egress = classifyEgress(backend);
 
-    if (tree && inputsCurrent({ outDir, ...tree, graphifyVersion: resolved.version })) {
+    const current = () => tree && inputsCurrent({ outDir, ...tree, graphifyVersion: resolved.version });
+    const unchanged = (stdout) => {
       const graphPath = graphJsonPath(outRoot);
-      return buildResult({ graphPath, projectRoot, backend, egress, normalized: readBuiltGraph(graphPath), builtAt: graphArtifactBuiltAt(graphPath), unchanged: true, stdout: INPUTS_UNCHANGED });
+      return buildResult({ graphPath, projectRoot, backend, egress, normalized: readBuiltGraph(graphPath), builtAt: graphArtifactBuiltAt(graphPath), unchanged: true, stdout, share });
+    };
+    if (current()) return unchanged(INPUTS_UNCHANGED);
+
+    // A miss: ask the remote for HEAD's graph, and keep it only when its inputs are this tree's.
+    const listing = share && tree ? await takePublished({ projectRoot, share, config: ctx.workspace.config }) : null;
+    if (share?.fetched) {
+      if (current()) return unchanged(FETCHED_CURRENT);
+      share.fetched.used = false;
+      share.fetched.reason = "its inputs differ from this tree, so it was rebuilt";
     }
 
     // Spawn the pinned binary via the sole driver seam (cwd = projectRoot, #756;
@@ -170,7 +194,14 @@ const graphBuildCommand = {
     const normalized = readBuiltGraph(built.graphPath);
     if (tree) stampInputs(outDir, tree, resolved.version);
 
-    return buildResult({ graphPath: graphJsonPath(outRoot), projectRoot, backend, egress, normalized, builtAt: built.builtAt, unchanged: built.unchanged, stdout: built.stdout });
+    if (listing) {
+      const outcome = await publishGraph(git, { projectRoot, outDir, builtAt: graphArtifactBuiltAt(graphJsonPath(outRoot)), config: ctx.workspace.config, remote: share.remote, listing });
+      share.published = outcome.published;
+      share.pruned = outcome.pruned;
+      share.warnings.push(...outcome.warnings);
+    }
+
+    return buildResult({ graphPath: graphJsonPath(outRoot), projectRoot, backend, egress, normalized, builtAt: built.builtAt, unchanged: built.unchanged, stdout: built.stdout, share });
   },
 
   cli: {
@@ -202,7 +233,9 @@ const graphBuildCommand = {
     render(result) {
       const verb = result.unchanged ? "Already current at" : "Built";
       const summary = `${verb} ${result.nodeCount} nodes, ${result.edgeCount} edges, ${result.hyperedgeCount} hyperedges (egress: ${result.egress}, built ${result.builtAt}).`;
-      return result.stdout ? `${result.stdout}\n${summary}` : summary;
+      const lines = [result.stdout ? `${result.stdout}\n${summary}` : summary];
+      if (result.share) lines.push(...renderShare(result.share));
+      return lines.join("\n");
     },
 
     // --json face projection: relativise the raw absolute paths to cwd, mirroring
@@ -214,8 +247,9 @@ const graphBuildCommand = {
 // Relativise graphPath/projectRoot to process.cwd() for the CLI --json face
 // (08/ADR-002 path-display projection). Leaves every other field untouched.
 const INPUTS_UNCHANGED = "aof: no file this graph was built from has changed since it was built — graphify was not run.";
+const FETCHED_CURRENT = "aof: took the graph already published for this commit — graphify was not run.";
 
-function buildResult({ graphPath, projectRoot, backend, egress, normalized, builtAt, unchanged, stdout }) {
+function buildResult({ graphPath, projectRoot, backend, egress, normalized, builtAt, unchanged, stdout, share }) {
   return {
     graphPath,
     projectRoot,
@@ -230,7 +264,43 @@ function buildResult({ graphPath, projectRoot, backend, egress, normalized, buil
     // not a soft failure. Surfaced so a caller can tell it from a rebuild without re-stat'ing.
     unchanged,
     stdout,
+    ...(share ? { share } : {}),
   };
+}
+
+// takePublished({ projectRoot, share, config }) → the remote's listing (null when it could not be
+// asked), having laid out HEAD's published graph when there is one. Every failure lands in
+// `share.warnings`, named by the remote, and the build carries on as if nothing was published.
+async function takePublished({ projectRoot, share, config }) {
+  const listing = await listRemote(git, { cwd: projectRoot, remote: share.remote });
+  if (!listing.ok) {
+    share.warnings.push(`${share.remote}: ${listing.reason}`);
+    return null;
+  }
+  const head = await gitRead(git, ["rev-parse", "HEAD"], projectRoot);
+  const blob = head ? listing.graphs.get(head) : null;
+  if (!blob) return listing;
+  try {
+    await fetchGraph(git, { projectRoot, remote: share.remote, commit: head, blob, config, force: true, resolveGraphifyBinary, ensureGraphifyOutGitignore });
+    share.fetched = { remote: share.remote, commit: head, blob, used: true };
+  } catch (error) {
+    share.warnings.push(`${share.remote}: ${error.message}`);
+  }
+  return listing;
+}
+
+function renderShare(share) {
+  const lines = [];
+  const short = (sha) => sha.slice(0, 7);
+  if (share.fetched?.used) lines.push(`Fetched the graph for ${short(share.fetched.commit)} from ${share.remote}.`);
+  else if (share.fetched) lines.push(`Fetched the graph for ${short(share.fetched.commit)} from ${share.remote}, but ${share.fetched.reason}.`);
+  const published = share.published;
+  if (published?.outcome === "published") lines.push(`Published the graph for ${short(published.commit)} to ${share.remote} (${published.ref}).`);
+  else if (published?.outcome === "already-published") lines.push(`The graph for ${short(published.commit)} is already published on ${share.remote}.`);
+  else if (published?.outcome === "skipped") lines.push(`Not published: ${published.reason}.`);
+  if (share.pruned.length) lines.push(`Pruned ${share.pruned.length} old graph${share.pruned.length === 1 ? "" : "s"} from ${share.remote}: ${share.pruned.map(short).join(", ")}.`);
+  for (const warning of share.warnings) lines.push(`warning: ${warning}`);
+  return lines;
 }
 
 // The git-visible files and their content hashes, or null when git cannot list them (no stamp is

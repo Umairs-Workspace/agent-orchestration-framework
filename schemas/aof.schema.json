@@ -76,6 +76,7 @@
     "settings": { "$ref": "#/$defs/settings" },
     "work": { "$ref": "#/$defs/work" },
     "memory": { "$ref": "#/$defs/memory" },
+    "graph": { "$ref": "#/$defs/graph" },
     "items": {
       "type": "array",
       "items": { "type": "string" }
@@ -86,6 +87,23 @@
     }
   },
   "$defs": {
+    "graph": {
+      "type": "object",
+      "description": "The codebase graph (174). OPTIONAL — an absent `graph` key, or `share: \"off\"`, keeps every build local exactly as before.",
+      "properties": {
+        "share": {
+          "enum": ["git-refs", "off"],
+          "description": "`git-refs` shares the codebase graph through the project's own git remote: `aof graph build` takes the graph published for HEAD under refs/aof/graph/v<bundle version>/<commit> instead of running graphify, and publishes a clean build of a default-branch commit there, keeping the newest 20. The memory work graph and index are never shared. Each project opts in; `aof init` writes no setting."
+        },
+        "remote": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^-]",
+          "description": "The git remote a shared graph travels through. Defaults to `origin`. A node without push access to it fetches only."
+        }
+      },
+      "additionalProperties": false
+    },
     "runtimePhaseChoices": {
       "type": "object",
       "properties": {

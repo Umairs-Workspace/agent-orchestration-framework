@@ -108,9 +108,16 @@ export const yarnInstallationTests = [
         'commands/graph-serve.mjs': ['@aof/contracts/error'],
         // 166: the graph carry — one bundle module (gzip + sha256, no archive dependency) and its
         // two verbs; git and the graphify probe arrive injected.
-        'graph-bundle.mjs': ['node:crypto', 'node:zlib', 'node:fs', 'node:path'],
+        // 174: the bundle leaf also owns the staged swap fetch and import share, so it raises their
+        // coded refusals.
+        'graph-bundle.mjs': ['node:crypto', 'node:zlib', 'node:fs', 'node:path', '@aof/contracts/error'],
         'commands/graph-export.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
         'commands/graph-import.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
+        // 174: the ref transport and its three verbs — git arrives injected, and no memory or mesh module.
+        'graph-share.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
+        'commands/graph-fetch.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
+        'commands/graph-publish.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
+        'commands/graph-prune.mjs': ['@aof/contracts/error'],
       } : name === 'messaging' ? {
         'secret.mjs': ['node:crypto', 'node:fs/promises', 'node:path'],
         'ask-messages.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],

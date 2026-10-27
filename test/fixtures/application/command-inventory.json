@@ -918,6 +918,69 @@
     }
   },
   {
+    "id": "graph:fetch",
+    "input": {
+      "type": "object",
+      "properties": {
+        "force": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "graph",
+        "fetch"
+      ],
+      "spec": {
+        "usage": "aof graph fetch [--force] [--json]",
+        "flags": {
+          "force": {
+            "type": "boolean",
+            "description": "replace this clone's existing graph"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "graph:publish",
+    "input": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "graph",
+        "publish"
+      ],
+      "spec": {
+        "usage": "aof graph publish [--json]",
+        "flags": {}
+      }
+    }
+  },
+  {
+    "id": "graph:prune",
+    "input": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "graph",
+        "prune"
+      ],
+      "spec": {
+        "usage": "aof graph prune [--json]",
+        "flags": {}
+      }
+    }
+  },
+  {
     "id": "test",
     "input": {
       "type": "object",

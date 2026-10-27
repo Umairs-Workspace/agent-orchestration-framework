@@ -1,10 +1,14 @@
 import { createHash } from "node:crypto";
 import { gunzipSync, gzipSync } from "node:zlib";
-import { readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { commandError } from "@aof/contracts/error";
 // src/graph-bundle.mjs — the codebase graph as ONE portable file (166). Pure fs + zlib, and the
 // spawn-free half of `aof graph export` / `aof graph import`: it never spawns git or graphify, so
 // the two command modules stay inside the no-face-spawn guard and receive those reads injected.
+// 174 shares it with the remote route: `bundleGraph` is the one way a bundle is made (export and
+// publish), and `layOutBundle` the one staged swap that lays one out (import, fetch, and a build's
+// fetch on a miss), so a graph from the remote is refused for exactly what a file is.
 //
 // THE FORMAT. One gzip stream: a single JSON header line, then every carried file's bytes in the
 // header's order. The header names each file with its size and sha256, so a bundle truncated by a
@@ -21,6 +25,11 @@ import path from "node:path";
 
 export const BUNDLE_FORMAT = "aof-graph-bundle";
 export const BUNDLE_VERSION = 1;
+// How many default-branch commits keep a graph published on the remote (174/ADR-003). A constant
+// beside the format version, not a setting, until someone needs it to differ.
+export const PUBLISHED_GRAPHS_KEPT = 20;
+
+const GRAPHIFY_OUT = "graphify-out";
 
 const MACHINE_LOCAL = new Set([".gitignore", ".graphify_root", ".pending_changes", ".rebuild.lock", "cache/stat-index.json"]);
 const MACHINE_LOCAL_PATTERN = /^cache\/stat-index\.[^/]*\.tmp$/u;
@@ -70,6 +79,33 @@ export function packBundle({ outDir, stamp }) {
   };
   const headerLine = Buffer.from(`${JSON.stringify(header)}\n`, "utf8");
   return { bytes: gzipSync(Buffer.concat([headerLine, ...blobs])), fileCount: files.length };
+}
+
+// The commit graphify stamped into graph.json at build time — the commit the graph describes,
+// which is not necessarily HEAD at export.
+export function readBuiltAtCommit(outDir) {
+  try {
+    const commit = JSON.parse(readFileSync(path.join(outDir, "graph.json"), "utf8"))?.built_at_commit;
+    return typeof commit === "string" && commit ? commit : null;
+  } catch {
+    return null;
+  }
+}
+
+// bundleGraph({ outDir, builtAt, config, git, projectRoot }) → { bytes, fileCount, stamp }: the
+// stamp a receiver checks, and the packed bundle. The one way a bundle is made, so `aof graph
+// export` and a publish to the remote (174) write the same thing.
+export async function bundleGraph({ outDir, builtAt, config, git, projectRoot }) {
+  const identity = await readProjectIdentity({ config, git, projectRoot });
+  const stamp = {
+    sourceCommit: readBuiltAtCommit(outDir) ?? await gitRead(git, ["rev-parse", "HEAD"], projectRoot),
+    builtAt,
+    graphifyVersion: cacheGraphifyVersion(listBundleFiles(outDir)),
+    workspaceId: identity.workspaceId,
+    rootCommits: identity.rootCommits,
+    exportedAt: new Date().toISOString(),
+  };
+  return { ...packBundle({ outDir, stamp }), stamp };
 }
 
 function invalid(reason) {
@@ -172,6 +208,119 @@ export async function listCloneFiles(git, projectRoot) {
   const listed = await gitRead(git, ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], projectRoot);
   if (listed == null) return null;
   return [...new Set(listed.split("\0").filter(Boolean))].filter((rel) => !rel.split("/")[0].startsWith("graphify-out")).sort();
+}
+
+// ------------------------------------------------------------- the staged swap ----
+//
+// layOutBundle({ bundle, source, projectRoot, config, force, git, resolveGraphifyBinary,
+// ensureGraphifyOutGitignore }) → import's result. The one way an unpacked bundle becomes this
+// clone's `graphify-out/`, whether it came from a file (`aof graph import`) or from the remote
+// (`aof graph fetch`, and `aof graph build` on a miss — 174/ADR-001). `source` names where it came
+// from in every message. The order of refusals is the order of what the operator can fix: a
+// bundle of another project (graph-import-wrong-project — no override, 166 Q4), then a graph
+// already here (graph-import-graph-exists — only `force` replaces it, and whole, 166 Q2).
+// Everything is staged in a sibling folder and swapped in only once the whole bundle has landed,
+// so a failed lay-out leaves the old graph byte-identical.
+export async function layOutBundle({ bundle, source, projectRoot, config, force, git, resolveGraphifyBinary, ensureGraphifyOutGitignore }) {
+  const local = await readProjectIdentity({ config, git, projectRoot });
+  if (!sameProject(bundle.stamp, local).same) {
+    throw commandError(
+      `${source} holds the graph of ${describeProject(bundle.stamp)}, and this clone is ${describeProject(local)} — a graph of another codebase would answer with the wrong coupling.`,
+      "graph-import-wrong-project",
+      409
+    );
+  }
+
+  const outDir = path.join(projectRoot, GRAPHIFY_OUT);
+  if (existsSync(outDir) && force !== true) {
+    throw commandError(`${outDir} already holds a graph — pass --force to replace it.`, "graph-import-graph-exists", 409);
+  }
+
+  const tag = `${process.pid}-${Date.now().toString(36)}`;
+  const staged = path.join(projectRoot, `${GRAPHIFY_OUT}.import-${tag}`);
+  const replaced = path.join(projectRoot, `${GRAPHIFY_OUT}.replaced-${tag}`);
+  let cache;
+  try {
+    for (const file of bundle.files) {
+      const target = path.join(staged, ...file.path.split("/"));
+      mkdirSync(path.dirname(target), { recursive: true });
+      writeFileSync(target, file.bytes);
+    }
+    // The receiving clone's own root, in the shape aof's builds write it (`update <absRoot>`).
+    writeFileSync(path.join(staged, ".graphify_root"), projectRoot, "utf8");
+    // An unlistable clone carries the cache unchanged: re-keying against an empty file list
+    // would read every entry as orphaned and drop the whole cache.
+    const files = await listCloneFiles(git, projectRoot);
+    cache = files ? rekeyCache({ outDir: staged, projectRoot, files }) : null;
+    // `builtAt` IS graph.json's mtime (graphArtifactBuiltAt), so the graph keeps the age it was
+    // built with rather than looking as new as the import (166 E14).
+    const builtAt = Date.parse(bundle.stamp.builtAt ?? "");
+    if (Number.isFinite(builtAt)) {
+      const when = new Date(builtAt);
+      utimesSync(path.join(staged, "graph.json"), when, when);
+    }
+    if (existsSync(outDir)) renameSync(outDir, replaced);
+    try {
+      renameSync(staged, outDir);
+    } catch (error) {
+      if (existsSync(replaced)) renameSync(replaced, outDir);
+      throw error;
+    }
+  } catch (error) {
+    rmSync(staged, { recursive: true, force: true });
+    throw commandError(`import of ${source} failed, and this clone's graph is unchanged: ${error.message}`, "graph-import-failed", 500);
+  }
+  rmSync(replaced, { recursive: true, force: true });
+  await ensureGraphifyOutGitignore(projectRoot);
+
+  const staleness = await readStaleness({ git, projectRoot, sourceCommit: bundle.stamp.sourceCommit ?? null });
+  return {
+    graphPath: path.join(outDir, "graph.json"),
+    fileCount: bundle.files.length,
+    sourceCommit: bundle.stamp.sourceCommit ?? null,
+    builtAt: bundle.stamp.builtAt ?? null,
+    ...staleness,
+    graphifyVersion: bundle.stamp.graphifyVersion ?? null,
+    cache,
+    warnings: [
+      ...versionWarnings(resolveGraphifyBinary, bundle.stamp.graphifyVersion ?? null),
+      ...(cache ? [] : ["git could not list this clone's files, so the carried cache was not re-keyed — it is kept as exported."]),
+    ],
+  };
+}
+
+// How far the graph's commit is behind this clone's HEAD (166 R3). A commit this clone never
+// fetched, or one HEAD does not descend from, is named and never counted.
+async function readStaleness({ git, projectRoot, sourceCommit }) {
+  const head = await gitRead(git, ["rev-parse", "HEAD"], projectRoot);
+  if (!sourceCommit || !head) return { commitsBehind: null, commitState: "unknown" };
+  if (await gitRead(git, ["cat-file", "-e", `${sourceCommit}^{commit}`], projectRoot) == null) {
+    return { commitsBehind: null, commitState: "not-in-clone" };
+  }
+  if (await gitRead(git, ["merge-base", "--is-ancestor", sourceCommit, head], projectRoot) == null) {
+    return { commitsBehind: null, commitState: "not-ancestor" };
+  }
+  const count = Number.parseInt(await gitRead(git, ["rev-list", "--count", `${sourceCommit}..${head}`], projectRoot) ?? "", 10);
+  if (!Number.isFinite(count)) return { commitsBehind: null, commitState: "unknown" };
+  return { commitsBehind: count, commitState: count === 0 ? "at-head" : "behind" };
+}
+
+// A graphify version mismatch is a warning, never a refusal (166 Q3): graph.json answers at once,
+// and graphify's next run sweeps a cache folder that is not its own version.
+function versionWarnings(resolveGraphifyBinary, bundleVersion) {
+  let local;
+  try {
+    local = resolveGraphifyBinary();
+  } catch {
+    local = { found: false };
+  }
+  if (!local?.found) {
+    return ["graphify is not installed here, so the carried cache cannot be checked against it — run `aof project provision graphify` before the next build."];
+  }
+  if (bundleVersion && local.version && local.version !== bundleVersion) {
+    return [`the bundle's cache was written by graphify ${bundleVersion} and this machine runs ${local.version} — graphify will discard the carried cache, so the next build re-extracts everything.`];
+  }
+  return [];
 }
 
 // ------------------------------------------------------------- the inputs stamp ----

@@ -54,6 +54,10 @@ import { graphifyStoreFirstTests } from "./graphify-store-first.test.mjs";
 // 166 — a built graph travels to another machine: aof graph export / import, the bundle, its
 // staleness report and the cache re-key across line endings; @executable traceability
 import { graphBundleTests } from "./graph-bundle.test.mjs";
+// 174 — a built graph is shared through the project's own remote: aof graph build fetches the
+// graph published for HEAD on a miss and publishes a clean default-branch build; aof graph
+// fetch / publish / prune; @executable traceability
+import { graphShareTests } from "./graph-share.test.mjs";
 
 export const tests = [
   ...graphCommandCoreTests,
@@ -67,4 +71,5 @@ export const tests = [
   ...graphifyDegradeTests,
   ...graphifyStoreFirstTests,
   ...graphBundleTests,
+  ...graphShareTests,
 ];

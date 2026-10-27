@@ -1,0 +1,73 @@
+{
+  "runId": "20261027T161434720Z-0000",
+  "itemRef": "174",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "90a6e18d-59d5-400e-b62b-e6acd4a1371f",
+  "brief": {
+    "answers": [
+      {
+        "token": "174 Q1",
+        "question": "174 Q1 · With sharing on, should `aof graph build` publish to the remote by itself after a clean build, or only fetch by itself and leave publishing to an explicit `aof graph publish`? (Each published graph is ~1.3 MB on your GitHub remote, and stays fetchable by hash even after it's pruned.)",
+        "answer": "Fetch and publish (Recommended)",
+        "toolUseId": "toolu_01NTSq69yeqdbh4aiK5mcnA5",
+        "sessionId": "90a6e18d-59d5-400e-b62b-e6acd4a1371f",
+        "at": "2026-10-27T16:31:49.637Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "174 Q2",
+        "question": "174 Q2 · Which commits may have their graph published? Loop lanes and feature branches push many commits; the default branch is where most clones and worktrees start from.",
+        "answer": "Default branch only (Recommended)",
+        "toolUseId": "toolu_01NTSq69yeqdbh4aiK5mcnA5",
+        "sessionId": "90a6e18d-59d5-400e-b62b-e6acd4a1371f",
+        "at": "2026-10-27T16:31:49.637Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "174 Q3",
+        "question": "174 Q3 · How should old published graphs be pruned?",
+        "answer": "Keep last 20, after publish (Recommended)",
+        "toolUseId": "toolu_01NTSq69yeqdbh4aiK5mcnA5",
+        "sessionId": "90a6e18d-59d5-400e-b62b-e6acd4a1371f",
+        "at": "2026-10-27T16:31:49.637Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "174 Q4",
+        "question": "174 Q4 · Should new projects get sharing turned on by `aof init`, or should every project opt in itself?",
+        "answer": "Each project opts in (Recommended)",
+        "toolUseId": "toolu_01NTSq69yeqdbh4aiK5mcnA5",
+        "sessionId": "90a6e18d-59d5-400e-b62b-e6acd4a1371f",
+        "at": "2026-10-27T16:31:49.637Z",
+        "entrypoint": "claude-vscode"
+      }
+    ]
+  },
+  "createdAt": "2026-10-27T16:14:34.720Z",
+  "updatedAt": "2026-10-27T16:43:58.584Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": {
+    "model": "<synthetic>|claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 410,
+      "output": 203839,
+      "cacheRead": 24829383,
+      "cacheCreate": 472340
+    },
+    "costUsd": 12.278904899999999,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 194,
+    "toolCalls": 93,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

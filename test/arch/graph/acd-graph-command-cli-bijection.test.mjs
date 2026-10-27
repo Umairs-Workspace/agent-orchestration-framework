@@ -39,7 +39,9 @@ const CLI_MJS = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
 // like the others (gap caught at the ADR-007 structural review).
 // `export` / `import` carry the graph between clones (166) — each refuses a missing path with the
 // structured envelope, which is what the spawn-and-parse proof below reads.
-const GRAPH_VERBS = ["build", "query", "triage", "impact", "export", "import"];
+// `fetch` / `publish` / `prune` share the graph through the project's own remote (174) — in the
+// fixture (no git on PATH, no graph) each answers its structured refusal envelope.
+const GRAPH_VERBS = ["build", "query", "triage", "impact", "export", "import", "fetch", "publish", "prune"];
 const GRAPH_COMMAND_IDS = GRAPH_VERBS.map((verb) => `graph:${verb}`);
 
 function stripComments(source) {
@@ -91,6 +93,9 @@ function argsFor(verb) {
     // export/import with no path resolve to their no-path envelope — one JSON document each.
     case "export": return ["graph", "export", "--json"];
     case "import": return ["graph", "import", "--json"];
+    case "fetch": return ["graph", "fetch", "--json"];
+    case "publish": return ["graph", "publish", "--json"];
+    case "prune": return ["graph", "prune", "--json"];
     default: throw new Error(`unmapped graph verb ${verb}`);
   }
 }
