@@ -4,10 +4,10 @@ number: 04
 slug: a-right-click-leaves-the-drawing-true
 title: "A right-click leaves the drawing true — F-171-03 reproduced first, then fixed or ruled out"
 parent: 172
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-27
-updated: 2026-10-27
+updated: 2026-10-28
 schema: 1
 aofVersion: 0.1.0
 reads: [wiki/work/171_milestone_excalidraw-phase-2/VERIFICATION.md, wiki/work/171_milestone_excalidraw-phase-2/diagrams/ADR-003-push-stream.excalidraw, packages/diagrams-ui/src/canvas-anchor.mjs]

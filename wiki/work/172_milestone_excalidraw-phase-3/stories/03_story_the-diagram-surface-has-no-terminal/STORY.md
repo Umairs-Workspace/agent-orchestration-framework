@@ -4,10 +4,10 @@ number: 03
 slug: the-diagram-surface-has-no-terminal
 title: "The diagram surface has no terminal — the dock's posture author and the terminal's later-input seam leave with the dock"
 parent: 172
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-27
-updated: 2026-10-27
+updated: 2026-10-28
 depends: [02]
 reads: [wiki/work/172_milestone_excalidraw-phase-3/ARCHITECTURE.md#adr-003, wiki/work/171_milestone_excalidraw-phase-2/ARCHITECTURE.md#adr-005, apps/ui/src/diagram/DiagramSurface.tsx, apps/ui/src/terminal/source-table.mjs, apps/ui/src/board/dock-mount.mjs, packages/contracts/src/tui-ready.mjs]
 files: [apps/ui/src/diagram/dock-mount.mjs, apps/ui/src/diagram/dock-mount.d.mts, apps/ui/src/terminal/TerminalControl.tsx, apps/ui/src/terminal/input-policy.mjs, apps/ui/src/terminal/input-policy.d.mts, apps/ui/test/terminal-core-input-policy.suite.mjs, apps/ui/test/terminal-control-opens-its-socket.suite.mjs, apps/ui/test/diagram-address.suite.mjs, test/arch/ui/acd-fleet-terminal-input-constrained.test.mjs, test/arch/session/acd-terminal-control-boundary.test.mjs, test/loop/invariant-4-amended.test.mjs, test/surfaces/fleet-terminal-view-surface.test.mjs, test/arch/testing/acd-ui-directory-budget.test.mjs, test/arch/testing/acd-source-directory-budget.test.mjs, test/arch/loop/acd-loop-state-rides-the-run-record.test.mjs]

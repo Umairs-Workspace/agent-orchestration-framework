@@ -54,6 +54,11 @@ SDK shadows them (171 RETROSPECTIVE R4). The overlay never uses the diagram's ow
   activity list (a tick per finished step, a ring on the current one) and the answer text growing,
   with a primary-coloured caret at its end. When the answer is recorded the caret and activity go and
   the turn reads as any recorded turn.
+- **Activity step wording (F-172-10):** now, with no step vocabulary, a step reads as the command it
+  ran, shortened to the verb and its action ("aof diagram scene … --action context"), never a full
+  path — the accepted fallback. Target (backlog: a vocabulary of the review command's steps): each
+  step reads what it did, as the mock does ("Read the diagram as Mermaid", "Writing the answer"); a
+  step outside the vocabulary keeps the fallback. Tick, ring and 11 px `muted-foreground` are unchanged.
 - **Component choices:** cards, not a chat log — each note is its own conversation about its own
   shape, so a panel of cards keeps "what is this about" visible. "Show on canvas" selects and scrolls
   to the thread's shapes. Choosing a collapsed card opens it and closes the one that was open.
@@ -134,6 +139,11 @@ SDK shadows them (171 RETROSPECTIVE R4). The overlay never uses the diagram's ow
   answers; a decided proposal shows its outcome in place of the buttons.
 - **Component choices:** the card's left edge is `accent` — the one place the panel uses the focal
   colour, because a pending proposal is the one thing waiting on the operator.
+- **Changes line wording (F-172-09):** now, while the proposal record carries counts but not the
+  change's kind, the line reads the counts it has ("1 changed", "2 added · 1 removed"), zero counts
+  omitted, and never names a kind it cannot know — the accepted fallback. Target (backlog: a
+  change-kind on the proposal record): the line reads the change, as the mock does ("1 edge
+  relabelled · nothing else changes").
 
 #### Binding checklist (mandatory)
 

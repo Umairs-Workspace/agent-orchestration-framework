@@ -201,7 +201,7 @@ doc: state
 - [x] Fitness functions green: FF-17201, FF-17202 (`pending` markers dropped from ARCHITECTURE's register)
 - [x] `@manual` signed off (agent-run evidence in VERIFICATION for 00/03, 01/01–02, 02/02, 04/00–01)
 - [x] `aof work validate 172`: PASS. `aof work doctor 172`: warnings only, no `control-unresolved`
-- [ ] **Regression gate: not yet green.** See the handoff below
+- [x] Regression gate green on Windows at `4e7d2fe` (REGRESSION row 3; row 2 red at `0a4fb09`, F-172-15 fixed)
 - [ ] `@uat` 02 task 03 (a live answer streams into the thread): the operator's run, not yet reported
 
 ### `aof:verify 172` in flight — handoff (2026-10-28, from the Mac)

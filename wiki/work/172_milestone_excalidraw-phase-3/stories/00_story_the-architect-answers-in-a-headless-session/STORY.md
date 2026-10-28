@@ -4,10 +4,10 @@ number: 00
 slug: the-architect-answers-in-a-headless-session
 title: "The architect answers in a headless session — one stream-json claude per open diagram, its turns streamed on the diagram's events stream"
 parent: 172
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-27
-updated: 2026-10-27
+updated: 2026-10-28
 schema: 1
 aofVersion: 0.1.0
 reads: [wiki/work/172_milestone_excalidraw-phase-3/ARCHITECTURE.md#adr-001, wiki/work/172_milestone_excalidraw-phase-3/ARCHITECTURE.md#adr-002, wiki/work/172_milestone_excalidraw-phase-3/RESEARCH.md, wiki/work/171_milestone_excalidraw-phase-2/ARCHITECTURE.md#adr-003, packages/execution/src/session-driver.mjs, packages/execution/src/providers.mjs, packages/execution/src/codex-app-server.mjs, packages/core/src/application/bindings/terminal-providers.mjs, packages/diagrams/src/layout.mjs, packages/server/src/static-serve.mjs, test/diagrams/diagram-scene-api.test.mjs, test/arch/diagrams/acd-diagrams-package-one-way.test.mjs, test/arch/session/acd-session-driver-mesh-blind.test.mjs]

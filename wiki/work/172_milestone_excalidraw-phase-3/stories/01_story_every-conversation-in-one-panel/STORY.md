@@ -4,10 +4,10 @@ number: 01
 slug: every-conversation-in-one-panel
 title: "Every conversation in one panel — threads, proposals and the composer beside the canvas, as the committed mocks draw them"
 parent: 172
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-27
-updated: 2026-10-27
+updated: 2026-10-28
 schema: 1
 aofVersion: 0.1.0
 reads: [wiki/work/172_milestone_excalidraw-phase-3/ARCHITECTURE.md#adr-003, wiki/work/172_milestone_excalidraw-phase-3/DESIGN.md, wiki/work/172_milestone_excalidraw-phase-3/mocks/conversation-streaming.png, wiki/work/172_milestone_excalidraw-phase-3/mocks/conversation-streaming-768.png, wiki/work/172_milestone_excalidraw-phase-3/mocks/conversation-ask.png, wiki/work/172_milestone_excalidraw-phase-3/mocks/conversation-proposal.png, wiki/work/171_milestone_excalidraw-phase-2/ARCHITECTURE.md#adr-001, wiki/work/171_milestone_excalidraw-phase-2/ARCHITECTURE.md#adr-006, packages/diagrams-ui/src/canvas-anchor.mjs, packages/diagrams-ui/src/editor-state.mjs, packages/diagrams/src/scene-view.mjs, apps/ui/src/index.css]
