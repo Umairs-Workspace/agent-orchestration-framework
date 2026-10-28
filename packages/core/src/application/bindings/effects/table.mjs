@@ -5,7 +5,7 @@ import { createMeshEffects } from "@aof/mesh/effects";
 import { createNotionEffects } from "@aof/integration-notion/effects";
 import * as api0 from "@aof/effects/registry";
 
-export function assembleEffectsTable({ degradeServices, provideWork, provideRunStore, provideWorkAcceptorStore, provideGlobalWorkPublisher, provideGlobalWorkStore, provideEffectsAssignmentTransitions, provideMeshParkResume, provideNotionSyncWork, provideNotionMapping }) {
+export function assembleEffectsTable({ degradeServices, provideWork, provideRunStore, provideWorkAcceptorStore, provideGlobalWorkPublisher, provideGlobalWorkStore, provideEffectsAssignmentTransitions, provideMeshParkResume, provideIntegrations }) {
   // Core assembles domain-owned contributions. Event names are REFUSED — by `applicableReactors`
   // before append; the generic journal remains vocabulary-blind. Array order is cascade order.
 
@@ -56,10 +56,9 @@ export function assembleEffectsTable({ degradeServices, provideWork, provideRunS
   });
 
   const notion = createNotionEffects(async () => {
-    const [items, sync, mapping] = await Promise.all([
-      provideWork(), provideNotionSyncWork(), provideNotionMapping(),
-    ]);
-    return { loadWorkspace: items.loadWorkspace, syncMilestoneWork: sync.syncMilestoneWork, remapMappingRefs: mapping.remapMappingRefs };
+    const [items, integrations] = await Promise.all([provideWork(), provideIntegrations()]);
+    const { syncWork, mapping } = integrations.built.notion;
+    return { loadWorkspace: items.loadWorkspace, syncMilestoneWork: syncWork.syncMilestoneWork, remapMappingRefs: mapping.remapMappingRefs };
   });
 
   // Preserve public event order independently of contribution order. The same Notion package

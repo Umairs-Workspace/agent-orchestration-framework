@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./contribution": "./src/contribution.mjs",
     "./effects": "./src/effects.mjs",
     "./mapping": "./src/mapping.mjs",
     "./projection": "./src/projection.mjs",
@@ -12,7 +13,6 @@
     "./sync-work": "./src/sync-work.mjs",
     "./notion-associate": "./src/notion-associate.mjs",
     "./notion-sync-work": "./src/notion-sync-work.mjs",
-    "./commands": "./src/commands.mjs",
     "./routing": "./src/routing.mjs",
     "./store-metadata": "./src/store-metadata.mjs"
   },
