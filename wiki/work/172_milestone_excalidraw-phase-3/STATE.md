@@ -7,11 +7,11 @@ doc: state
 
 - [x] Refined 2026-10-27 (`aof:refine 172 --autonomous`, solo): RESEARCH Q1, ADR-001..003, DESIGN with
   committed mocks, five stories
-- [ ] 00 · the architect answers in a headless session — contracted (172/00 Q1 answered: 10 minutes)
-- [ ] 01 · every conversation in one panel — contracted (172/01 Q1: the panel; Q2: the drafted mocks)
-- [ ] 02 · the answer streams into its thread — contracted
-- [ ] 03 · the diagram surface has no terminal — contracted
-- [ ] 04 · a right-click leaves the drawing true — contracted
+- [ ] 00 · the architect answers in a headless session — built and reviewed (in-review); verify repairs F-172-02..06, F-172-12, F-172-13
+- [ ] 01 · every conversation in one panel — built and reviewed (in-review)
+- [ ] 02 · the answer streams into its thread — built and reviewed (in-review); task 03 `@uat` open; verify repairs F-172-07, F-172-08
+- [ ] 03 · the diagram surface has no terminal — built and reviewed (in-review)
+- [ ] 04 · a right-click leaves the drawing true — built and reviewed (in-review); F-171-03 ruled out
 
 ## Notes & decisions in flight
 
@@ -197,7 +197,51 @@ doc: state
 
 ## Verification
 
-- [ ] `@executable` suite green
-- [ ] Fitness functions green (FF-17201, FF-17202 — both pending, story 00)
-- [ ] `@manual` signed off
-- [ ] `@uat` — 02 task 03 (a live answer streams into the thread)
+- [x] `@executable` suite: story lanes green at each story's close
+- [x] Fitness functions green: FF-17201, FF-17202 (`pending` markers dropped from ARCHITECTURE's register)
+- [x] `@manual` signed off (agent-run evidence in VERIFICATION for 00/03, 01/01–02, 02/02, 04/00–01)
+- [x] `aof work validate 172`: PASS. `aof work doctor 172`: warnings only, no `control-unresolved`
+- [ ] **Regression gate: not yet green.** See the handoff below
+- [ ] `@uat` 02 task 03 (a live answer streams into the thread): the operator's run, not yet reported
+
+### `aof:verify 172` in flight — handoff (2026-10-28, from the Mac)
+
+Resume with `aof:verify 172`. Accept the milestone once both open gates above are closed. The verify
+so far is recorded in VERIFICATION (`### aof:verify 172 — the controls the story lanes never selected`,
+plus findings F-172-01 to F-172-14) and in two commits, `8a810a8` and `1b0f4f5`.
+
+**Done:**
+- Every red that 172's own code caused is repaired and committed: F-172-02 to F-172-08 before the
+  gate, and F-172-12 and F-172-13 from it. Each finding's triage carries its prior-occurrence
+  recall; twelve recall observations are recorded on 172.
+- Gate run 1, on the Mac at `8a810a8`, is recorded red in `REGRESSION.md`. Its 172 reds are fixed
+  in `1b0f4f5`. What stays red on the Mac is environmental: F-172-11 (`/var` vs `/private/var`
+  tmpdir paths) and F-172-14 (the gpg keyring lock, Node 24's spec reporter, three timing-bound
+  fixtures). None of them is in code 172 changed.
+- The design render at verify was INCONCLUSIVE (no `work.ui.baseUrl`). The stories' readings
+  against the committed mocks stand as the conformance evidence.
+
+**Open, in order:**
+1. **Regression gate on the Windows control node** (operator's choice, 2026-10-28). Quit the
+   desktop app first: its daemon holds `:4182`, which a case binds. Run it on a clean checkout at
+   `1b0f4f5` or later:
+   `node packages/core/bin/aof.mjs work regression-gate 172`, with `AOF_GLOBAL_HOME` set to a fresh
+   temp directory. Commit the `REGRESSION.md` row it writes.
+   - If the run is red, attribute each red the way F-172-12 and F-172-14 were: re-run the file
+     alone, then read 172's diff for the code the file tests.
+   - Do not use `--gate-override` unless the operator says so.
+2. **`@uat` 02 task 03.** On the Mac, a worktree at `8a810a8` was set up for it (scratchpad
+   `uat-172`; `aof work ui --port 4199 --target <worktree>`, with the VS Code extension's `claude`
+   on PATH). On Windows, run it on the desktop app's board, on the ADR-002 diagram of 172 via Edit
+   draft. 170 and 171 are `done`, so their diagrams are read-only.
+   - R1: ask about a shape, and the answer streams into the thread with no terminal.
+   - R2: reply, and the next answer streams the same way.
+   - Record the result under VERIFICATION `## User sign-off`. A pass closes F-171-04.
+3. **Then accept.**
+   - `aof work status 172/00 … 172/04 done`, ticking each in SPEC `## Stories`.
+   - Mark m171/ADR-005 `Superseded by m172/ADR-003` (172/03's close, Q5).
+   - Spawn `aof-designer` to set the `DESIGN.md` rules for F-172-09 and F-172-10.
+   - Write a per-story and a milestone `RETROSPECTIVE.md`, then run `aof work memory ingest`.
+   - Write an `OUTCOME.md` for each story and one for the milestone. The milestone's states what no
+     single story does: the conversation is an editor surface with no terminal.
+   - `aof work status 172 done`, record `## Accept decision`, and compact this STATE.
