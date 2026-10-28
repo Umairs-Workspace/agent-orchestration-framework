@@ -81,7 +81,9 @@ function manualTimers() {
   };
 }
 
-const until = async (predicate, what, withinMs = 5000) => {
+// A hang guard, not a measure: each wait is on a real child process, and under the whole-tree
+// pool (eight workers) a stand-in's start and turn outlasted 5 s (172 VERIFICATION F-172-13).
+const until = async (predicate, what, withinMs = 20_000) => {
   const started = Date.now();
   while (!(await predicate())) {
     if (Date.now() - started > withinMs) throw new Error(`timed out waiting for ${what}`);

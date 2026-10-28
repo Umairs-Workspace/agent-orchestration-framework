@@ -1496,7 +1496,11 @@ function boardAnswerTests() {
         assert.ok(source.includes('pathname === "/api/work/answer"'));
         // Excalidraw drafts (PR #13): the fifth call site is `handleDiagramApi`'s `/api/diagram/scene` POST
         // (save, review request/respond/propose/accept/reject), outside `/api/work`, admitted before its body is read.
-        assert.equal((source.match(/(?<!function )\badmitWriteRequest\(/gu) ?? []).length, 5, "five call sites");
+        // 172/00 (ADR-002 §1): the sixth is the `/api/diagram/conversation` POST, admitted inside the block that
+        // reads its body, before the read (172 VERIFICATION F-172-12).
+        assert.equal((source.match(/(?<!function )\badmitWriteRequest\(/gu) ?? []).length, 6, "six call sites");
+        const conversation = matchedBraceBody(source, source.indexOf("async function deliverConversation(")) ?? "";
+        assert.ok(conversation.includes("admitWriteRequest(") && conversation.indexOf("admitWriteRequest(") < conversation.indexOf("readJsonBody("), "the conversation route admits before it reads its body");
         const helper = matchedBraceBody(source, source.indexOf("function admitWriteRequest(")) ?? "";
         const order = ['request.method !== "POST"', "originHeader !==", "isLoopbackHost(", "application\\/json"].map((marker) => helper.indexOf(marker));
         assert.ok(order.every((at) => at >= 0), `every check is present: ${order}`);
