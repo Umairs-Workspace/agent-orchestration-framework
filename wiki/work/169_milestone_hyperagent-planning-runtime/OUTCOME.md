@@ -12,6 +12,6 @@ Everything Hyperagent ships (verbs, `/aof:hyperplan`, planner files) lives in `p
 ## Gaps
 
 ### Notion is still imported across core
-- **Status:** open
+- **Status:** discharged (2026-10-28, by chores 175, 176 and 177)
 - **Discharge condition:** `@aof/integration-notion` reaches core only through `integrations.mjs`, and FF-16901's named exception is removed.
-Ten core modules import `@aof/integration-notion` directly. FF-16901 names it as an exception (ADR-003, as amended).
+Ten core modules imported `@aof/integration-notion` directly, and FF-16901 named it as an exception (ADR-003, as amended). Chore 175 moved Notion's verbs and composition onto its contribution. Chore 176 moved its effects, routing and store metadata there too. Chore 177 removed the exception. `integrations.mjs` is now the only core module that names the package.

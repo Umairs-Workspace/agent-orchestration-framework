@@ -235,5 +235,5 @@ uploaded a trial zip with that layout and saved the seven drafts, and the accoun
 
 | id | invariant | enforced by (arch-test) | from |
 |---|---|---|---|
-| FF-16901 | No module under `packages/core/src` imports `@aof/integration-*`, except `integrations.mjs`. The Notion package is the one named exception (ADR-003, amended), removed by the chore | `test/arch/command/acd-integration-registry-one-home.test.mjs` | ADR-003 |
+| FF-16901 | No module under `packages/core/src` imports `@aof/integration-*`, except `integrations.mjs`. No exceptions: the Notion exception (ADR-003, amended) was removed by chore 177 | `test/arch/command/acd-integration-registry-one-home.test.mjs` | ADR-003 |
 | FF-16902 | `packages/core/assets` holds no file that only an integration renders, and the model's runtimes are exactly claude, codex and opencode | `test/arch/command/acd-integration-registry-one-home.test.mjs` | ADR-001, ADR-004 |

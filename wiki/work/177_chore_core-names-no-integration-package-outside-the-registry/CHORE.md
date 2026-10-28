@@ -22,8 +22,18 @@ exceptions.
 
 ## Definition of Done
 
-- [ ] `grep -rl "@aof/integration-notion" packages/core/src` names `integrations.mjs` alone.
-- [ ] `test/arch/command/acd-integration-registry-one-home.test.mjs` has no `EXCEPTION`, and its
+- [x] `grep -rl "@aof/integration-notion" packages/core/src` names `integrations.mjs` alone.
+- [x] `test/arch/command/acd-integration-registry-one-home.test.mjs` has no `EXCEPTION`, and its
       planted-import case covers a Notion import too.
-- [ ] 169's OUTCOME gap "Notion is still imported across core" is marked `discharged`.
-- [ ] `aof work validate` is green (no regression).
+- [x] 169's OUTCOME gap "Notion is still imported across core" is marked `discharged`.
+- [x] `aof work validate` is green (no regression).
+
+## Resolution
+
+- `grep -rl "@aof/integration-notion" packages/core/src` names `packages/core/src/integrations.mjs`
+  alone.
+- FF-16901 has no `EXCEPTION`. Any `@aof/integration-*` specifier outside the registry is now a
+  violation. E1 asserts that the registry names both contributions. E2 plants a Notion import
+  (`@aof/integration-notion/store-metadata`) beside the Hyperagent one, and both are reported.
+- 169's OUTCOME gap "Notion is still imported across core" is `discharged`. The FF-16901 register
+  row in 169's ARCHITECTURE.md no longer names an exception.
