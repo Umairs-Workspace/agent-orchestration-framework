@@ -27,6 +27,7 @@
     "./run-transitions": "./src/run-transitions.mjs",
     "./reconcile": "./src/reconcile.mjs",
     "./session-model": "./src/session-model.mjs",
+    "./conversation-session": "./src/conversation-session.mjs",
     "./otel-attribution": "./src/otel-attribution.mjs",
     "./svg-rasterizer": "./src/svg-rasterizer.mjs",
     "./journal-queries": "./src/journal-queries.mjs",

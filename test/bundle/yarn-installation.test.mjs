@@ -108,9 +108,16 @@ export const yarnInstallationTests = [
         'commands/graph-serve.mjs': ['@aof/contracts/error'],
         // 166: the graph carry — one bundle module (gzip + sha256, no archive dependency) and its
         // two verbs; git and the graphify probe arrive injected.
-        'graph-bundle.mjs': ['node:crypto', 'node:zlib', 'node:fs', 'node:path'],
+        // 174: the bundle leaf also owns the staged swap fetch and import share, so it raises their
+        // coded refusals.
+        'graph-bundle.mjs': ['node:crypto', 'node:zlib', 'node:fs', 'node:path', '@aof/contracts/error'],
         'commands/graph-export.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
         'commands/graph-import.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
+        // 174: the ref transport and its three verbs — git arrives injected, and no memory or mesh module.
+        'graph-share.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
+        'commands/graph-fetch.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
+        'commands/graph-publish.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
+        'commands/graph-prune.mjs': ['@aof/contracts/error'],
       } : name === 'messaging' ? {
         'secret.mjs': ['node:crypto', 'node:fs/promises', 'node:path'],
         'ask-messages.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
@@ -136,6 +143,8 @@ export const yarnInstallationTests = [
         'pty.mjs': ['node:module', 'node-pty'],
         'session-driver.mjs': ['node:path', 'node:child_process', 'node:fs/promises', 'node:crypto', '@aof/contracts/loop-bounds', '@aof/contracts/tui-ready'],
         'codex-app-server.mjs': ['node:child_process', 'node:path', '@aof/contracts/loop-bounds'],
+        // 172/ADR-001: the architect's headless conversation spawns one stream-json claude per diagram and ends its tree.
+        'conversation-session.mjs': ['node:child_process'],
         // 156: Windows Codex discovery (package bin, Store install) and the sandboxed child's PATH.
         'codex-executable.mjs': ['node:fs', 'node:fs/promises', 'node:child_process', 'node:module', 'node:path'],
         'codex-process-environment.mjs': ['node:fs', 'node:path'],

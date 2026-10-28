@@ -291,7 +291,18 @@ function assertUiFrozen(pairs) {
   // landed its carriage return as a new line: `input-policy.mjs` types every input through one serial
   // outbox — a bracketed paste, then its Enter as a separate write after the settle (the driver's 70/06 rule).
   // Nothing new is read: no fleet or home file, run-record key, cycle, level or loop state.
-  assert.equal(hash.digest("hex"), "64a15068dfa61e7d604a9dc2ae6308eda717b4d5c266bf314bad4f57dffde128", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED by 172/02 (172/ADR-003 §4): `diagram/DiagramSurface.tsx` (+6 −61) renders the editor alone —
+  // no dock, no `onDeliver`, no delivery state — because the editor now posts each ask to the board's
+  // server, whose headless architect session answers into the panel. Only that file changed; it reads
+  // nothing new (its one read is still `/api/diagram/capability`), and the dock's modules are retired in 172/03.
+  // RE-PINNED by 172/03 (172/ADR-003 §4, superseding m171/ADR-005), measured: `git diff --numstat HEAD --
+  // apps/ui/src` is FIVE files, all removal. `diagram/dock-mount.mjs` (−87) and `.d.mts` (−31) are deleted:
+  // the surface's dock posture author and its delivery decision, with no caller since 172/02.
+  // `terminal/input-policy.mjs` (+12 −51) and `.d.mts` (+1 −27) lose the later-input rule, `flushLaterInputs`
+  // and the record's later-input fields; the mount command's readiness gate and outbox (F-171-01) stay.
+  // `terminal/TerminalControl.tsx` (+5 −10) loses the three later-input props and their effect. Nothing new
+  // is read: no fleet or home file, run-record key, cycle, level or loop state.
+  assert.equal(hash.digest("hex"), "2cb0cef0558dc1e9b9c8af41d36dbd49e699a4e86864189375d5afa4a060f12b", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [
@@ -462,7 +473,12 @@ export const archTests = [
         // `streamDiagramEvents`: an event stream that invokes `diagram:scene` `stamp`/`read` only and carries no
         // record; its watcher and degrade reporter arrive from core's binding (171 verify: no `node:fs` here, no
         // silent catch). No admission, write route or run key; `handleWorkApi` byte-identical.
-        ["packages/server/src/board-ui.mjs", "c0d178827b3ad4d6b6cb42616a5c5106ef8cad0c42ddd9804e8f6f3e7ef6f99c"],
+        // RE-PINNED at 172/02 for 172/00 (ADR-002 §1, §3; +39 −1), whose own lane missed it: one POST
+        // `/api/diagram/conversation` branch and its `deliverConversation` (it passes `admitWriteRequest`
+        // before its body, invokes `diagram:scene` `session` only, and hands the answer to the injected
+        // `conversations` port, or answers 503 without one), and `streamDiagramEvents` forwarding that port's
+        // events as `conversation` events. No run key, cycle or loop state is read; `handleWorkApi` byte-identical.
+        ["packages/server/src/board-ui.mjs", "499d77cf10ae861061472363874bda600ed4fcca67818935d992a9bcadb90600"],
       ]);
       for (const [rel, digest] of pins) assert.equal(await normalizedDigest(path.join(root, rel)), digest, `${rel}: frozen run/board seam changed`);
       const uiPairs = await uiTreePairs();

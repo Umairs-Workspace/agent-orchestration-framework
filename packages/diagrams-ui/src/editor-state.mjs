@@ -4,6 +4,8 @@
 // diagramming became its own package pair (@aof/diagrams for the node half, this one for the
 // browser half), so the board carries only the figure and reaches the editor by one lazy import.
 //
+import { reviewInvocation } from "@aof/diagrams/review-session";
+
 // ---- Excalidraw editor: scene draft ----
 // Document fingerprints intentionally exclude SDK session state (camera, selections, tools).
 // All element properties, including bindings, customData, labels and deletion, are retained.
@@ -23,11 +25,10 @@ export function sceneFingerprint(scene) {
   });
 }
 
-// The slash command that asks the architect to review a recorded request (same style as action.mjs).
-// With no request id it is the BATCH form (170/06): the command examines every open note.
-export function diagramReviewInvocation(ref, file, requestId) {
-  return requestId ? `/aof:diagram-review ${ref} ${file} ${requestId}` : `/aof:diagram-review ${ref} ${file}`;
-}
+// The slash command that asks the architect to review a recorded request; with no request id it is
+// the BATCH form (170/06). Spelled once, in @aof/diagrams' review-session (172/ADR-002, FF-17202) —
+// the editor keeps the name it has always called it by.
+export const diagramReviewInvocation = reviewInvocation;
 
 // What one delivery hands the architect (171/ADR-005, 171/04 Q1): a request's own review invocation,
 // then — when other notes are waiting — the batch invocation that examines them, so a session started
@@ -37,6 +38,29 @@ export function reviewInvocations({ ref, file, requestId = null, waiting = 0 } =
   if (!requestId) return [diagramReviewInvocation(ref, file)];
   const own = diagramReviewInvocation(ref, file, requestId);
   return waiting > 0 ? [own, diagramReviewInvocation(ref, file)] : [own];
+}
+
+// DELIVERY TO THE ARCHITECT'S SESSION (172/ADR-002 §1). The editor names request ids; the board's
+// conversation route derives what to type from them and hands it to the server's session, which answers
+// one turn at a time in the order it was handed them. `deliveryFor(action, facts)` answers the bodies an
+// action posts, in order: a question (or a first draft) its own request, then — when other notes wait —
+// one batch review, so the session takes them after it (171/04 Q1); a reply and Ask again their note's
+// request; Review with the architect one batch review; saving a note or withdrawing one, nothing.
+export const DELIVERY_ACTIONS = Object.freeze(["ask", "first-draft", "reply", "ask-again", "review", "note", "withdraw"]);
+export function deliveryFor(action, { requestId = null, waiting = 0 } = {}) {
+  switch (action) {
+    case "ask":
+    case "first-draft":
+      if (!requestId) return [];
+      return waiting > 0 ? [{ requestId }, {}] : [{ requestId }];
+    case "reply":
+    case "ask-again":
+      return requestId ? [{ requestId }] : [];
+    case "review":
+      return [{}];
+    default:
+      return [];
+  }
 }
 
 // THE ONE ASK PATH (171/ADR-001): the bar's Ask architect and the canvas overlay's both come here, so
@@ -124,6 +148,12 @@ export function describeError(code, message) {
     default:
       return text || "Request failed.";
   }
+}
+
+// What Publish says (F-172-16): that it published, and — only when the ADR does not show the figure
+// yet — that the architect links it. The link block is the architect's, never the operator's to paste.
+export function publishNotice({ linked = true } = {}) {
+  return linked ? "Diagram published." : "Diagram published. The ADR does not show this figure yet — ask the architect to link it.";
 }
 
 // Poll only while the editor is open and the tab is visible — and, since 171/ADR-003, only while the

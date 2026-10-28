@@ -17,6 +17,8 @@ import { addDiagramCommandTests } from "./add-diagram-command.test.mjs";
 import { diagramSceneCommandTests } from "./diagram-scene-command.test.mjs";
 import { diagramSceneReviewTests } from "./diagram-scene-review.test.mjs";
 import { diagramSceneApiTests } from "./diagram-scene-api.test.mjs";
+// 172/00 — the architect's conversation route and its events on the diagram's stream (ADR-002).
+import { diagramConversationApiTests } from "./diagram-conversation-api.test.mjs";
 
 export const tests = [
   ...diagramPlanCommandTests,
@@ -26,4 +28,5 @@ export const tests = [
   ...diagramSceneCommandTests,
   ...diagramSceneReviewTests,
   ...diagramSceneApiTests,
+  ...diagramConversationApiTests,
 ];

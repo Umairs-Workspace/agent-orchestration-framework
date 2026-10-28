@@ -4,7 +4,9 @@ import { isLoopbackHost, sendTaggedJson } from "./static-serve.mjs";
 // Application services enter through explicit ports; constructing a transport binds no listener.
 // 167/ADR-001 — `countRequest(route, clientHeader)` counts each `/api/work*` request on the
 // process's cost meter; core supplies it, and its absence counts nothing.
-export function createBoardApi({ invoke, loadWorkspace, resolveCacheStalenessSeconds, countRequest = () => {}, watchDirectory = null, reportDegrade = () => {} }) {
+// 172/ADR-001 §5 — `conversations` is the architect's headless session port (`deliver`, `subscribe`,
+// `snapshot`); core composes it, and its absence answers the conversation route 503.
+export function createBoardApi({ invoke, loadWorkspace, resolveCacheStalenessSeconds, countRequest = () => {}, watchDirectory = null, reportDegrade = () => {}, conversations = null }) {
 // `/api/work*` — the work board's read-mostly HTTP API (milestone 03, story 01;
 // re-homed onto the command core in milestone 08, story 02).
 //
@@ -329,6 +331,7 @@ async function handleDiagramApi(request, response, options = {}) {
     }
   }
   if (request.method === "GET" && requestUrl.pathname === "/api/diagram/events") return streamDiagramEvents(request, response, options, requestUrl.searchParams);
+  if (requestUrl.pathname === "/api/diagram/conversation") return deliverConversation(request, response, options, requestUrl.searchParams);
   if (requestUrl.pathname === "/api/diagram/scene") {
     response.setHeader("cache-control", "no-store");
     try {
@@ -372,6 +375,31 @@ async function handleDiagramApi(request, response, options = {}) {
   return true;
 }
 
+// `/api/diagram/conversation` — milestone 172 / ADR-002 §1. The editor names a request id (or none, for
+// the batch review); the face asks `diagram:scene --action session` what to type and which tools to
+// allow — refusing a request id the diagram does not hold — and hands that, keyed by ref and file and
+// run in the project root, to the `conversations` port. The browser never sends the invocation: the
+// server derives it from a request it holds. No port answers 503 `architect-session-unavailable`.
+const CONVERSATION_UNAVAILABLE = "architect-session-unavailable";
+const conversationKey = (answer) => `${answer.ref}\n${answer.file}`;
+async function deliverConversation(request, response, options, params) {
+  response.setHeader("cache-control", "no-store");
+  try {
+    if (!admitWriteRequest(request, response)) return true;
+    const body = await readJsonBody(request);
+    if (!conversations) { sendApiError(response, 503, "This board was started without an architect session.", CONVERSATION_UNAVAILABLE); return true; }
+    const workspace = await loadWorkspace(path.resolve(options.projectDir ?? process.cwd()));
+    const target = { ref: (params.get("ref") ?? "").trim(), file: (params.get("file") ?? "").trim() };
+    const session = await invoke("diagram:scene", { ...target, action: "session", ...(body.requestId !== undefined ? { requestId: body.requestId } : {}) }, { workspace });
+    const cwd = workspace.projectRoot ?? path.resolve(options.projectDir ?? process.cwd());
+    const { outcome } = await conversations.deliver(conversationKey(session), { cwd, text: session.invocation, requestId: session.requestId, tools: session.tools });
+    sendJson(response, 200, { outcome, requestId: session.requestId });
+  } catch (error) {
+    sendApiError(response, error.status ?? (error.code === CONVERSATION_UNAVAILABLE ? 503 : 500), error.message, error.code ?? "diagram-conversation-api-failed");
+  }
+  return true;
+}
+
 // `/api/diagram/events` — milestone 171 / ADR-003. One "look now" stream per open diagram: an event
 // says only WHAT moved (`review` or `scene`) with the stamp that moved, never a record, so the editor
 // re-reads through `proposals` and `read` and the records keep one reader. The face names no diagram
@@ -382,6 +410,9 @@ async function handleDiagramApi(request, response, options = {}) {
 // are the caller's to inject (`options.timers`, `options.watch`), so a suite drives them by hand; the
 // production watcher and the degrade reporter arrive with the API (`watchDirectory`, `reportDegrade`) from
 // core's binding, so this transport imports no filesystem of its own (ADR-004 inv.3). With no watcher it ticks.
+// 172/ADR-002 §3 — the same stream carries the architect's live turn: while the editor is connected it
+// subscribes the `conversations` port for its diagram and forwards each event as a `conversation`
+// event, opening with the session's snapshot so an editor that connects mid-answer catches up.
 const EVENTS_DEBOUNCE_MS = 150;
 const EVENTS_SAFETY_MS = 30_000;
 const EVENTS_TICK_MS = 2_000;
@@ -409,9 +440,11 @@ async function streamDiagramEvents(request, response, options, params) {
   let safety = null;
   let keepalive = null;
   const watchers = [];
+  let leave = null;
   // The response closes when the client goes (a request's own close can fire once its empty body is read).
   response.on("close", () => {
     closed = true;
+    if (leave) { leave(); leave = null; }
     for (const handle of [safety, keepalive, tick]) if (handle) timers.clearInterval(handle);
     if (debounce) timers.clearTimeout(debounce);
     for (const watcher of watchers) { try { watcher.close(); } catch (error) { degraded(error); } }
@@ -421,6 +454,11 @@ async function streamDiagramEvents(request, response, options, params) {
   const revisionOf = async () => (await invoke("diagram:scene", { ...target, action: "read" }, ctx)).revision ?? null;
   emit("stamp", { review: last.review, scene: last.scene, revision: last.scene ? await revisionOf().catch(() => null) : null });
   if (closed) return true;
+  if (conversations) {
+    const key = conversationKey(last);
+    emit("conversation", conversations.snapshot(key));
+    leave = conversations.subscribe(key, (event) => emit("conversation", event));
+  }
   const restamp = async () => {
     if (closed) return;
     if (running) { again = true; return; }

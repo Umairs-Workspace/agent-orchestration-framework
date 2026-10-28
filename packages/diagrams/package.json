@@ -15,7 +15,8 @@
     "./commands/scene": "./src/commands/scene.mjs",
     "./commands/capability": "./src/commands/capability.mjs",
     "./scene-view": "./src/scene-view.mjs",
-    "./house-style": "./src/house-style.mjs"
+    "./house-style": "./src/house-style.mjs",
+    "./review-session": "./src/review-session.mjs"
   },
   "files": [
     "src"

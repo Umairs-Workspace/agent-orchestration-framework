@@ -209,12 +209,13 @@ export const archTests = [
       // the last ones sit under 142's parity note, so its window widens by their length too. 170's import
       // review stacks one more (`readJsonBody` decodes the body once), and every window widens by 300.
       // 171/02 stacks the events stream's reason (171/ADR-003: one GET route, no write, no run key), and
-      // every window widens by 500.
-      assert.match(control, /RE-PINNED by 127\/04[\s\S]{0,3900}\["packages\/server\/src\/board-ui\.mjs"/u, "the board-ui re-pin carries its reason and names the story that moved it");
+      // every window widens by 500. 172/02 stacks the conversation route's reason for 172/00 (172/ADR-002
+      // §1, §3: one POST route, admitted before its body, no run key), and every window widens by 600.
+      assert.match(control, /RE-PINNED by 127\/04[\s\S]{0,4500}\["packages\/server\/src\/board-ui\.mjs"/u, "the board-ui re-pin carries its reason and names the story that moved it");
       // 142 adds the factory-relocation evidence beside the same entry.
-      assert.match(control, /RE-PINNED by 133\/04[\s\S]{0,3400}\["packages\/server\/src\/board-ui\.mjs"/u, "the 133/04 board-ui re-pin carries its reason and names the story that moved it");
-      assert.match(control, /RE-PINNED by 131\/04[\s\S]{0,2800}\["packages\/server\/src\/board-ui\.mjs"/u, "the 131/04 board-ui re-pin carries its reason and names the story that moved it");
-      assert.match(control, /RE-PINNED by 142: transport factory relocation only;[\s\S]{0,2000}\["packages\/server\/src\/board-ui\.mjs"/u, "the package move carries its parity evidence");
+      assert.match(control, /RE-PINNED by 133\/04[\s\S]{0,4000}\["packages\/server\/src\/board-ui\.mjs"/u, "the 133/04 board-ui re-pin carries its reason and names the story that moved it");
+      assert.match(control, /RE-PINNED by 131\/04[\s\S]{0,3400}\["packages\/server\/src\/board-ui\.mjs"/u, "the 131/04 board-ui re-pin carries its reason and names the story that moved it");
+      assert.match(control, /RE-PINNED by 142: transport factory relocation only;[\s\S]{0,2600}\["packages\/server\/src\/board-ui\.mjs"/u, "the package move carries its parity evidence");
       assert.equal((control.match(/\["(?:src|packages)\/[^"]+", "[0-9a-f]{64}"\]/gu) ?? []).length, 3, "three file entries beside the ui/ tree hash");
 
       // The moved pin names this story and why the file moved, as 119/01's re-pin does.

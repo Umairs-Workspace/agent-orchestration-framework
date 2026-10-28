@@ -508,7 +508,9 @@ export const terminalHarnessDrivesAGridTests = [
       // callbacks arrive by a `setProps` re-render, never a `props:` option). The 13 are unchanged.
       // 20 -> 23 by 171 F-171-01: three lanes on when the mount's command is typed (the TUI's readiness),
       // on the same shipping signature.
-      assert.equal(terminalControlOpensItsSocketTests.length, 23, "all 23 lanes of the socket suite are still there");
+      // 23 -> 17 by 172/03 (172/ADR-003 §4): the seven later-input lanes left with the seam, and one lane
+      // on the mount's own command typed once the session is ready joined the three F-171-01 lanes.
+      assert.equal(terminalControlOpensItsSocketTests.length, 17, "all 17 lanes of the socket suite are still there");
       assert.equal(terminalControlHeaderYieldTests.length, 9, "…and all 9 of the header-yield suite");
     },
   },

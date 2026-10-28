@@ -40,6 +40,11 @@ import { archTests as acdCodebaseGroundingNoParseTests } from "./acd-codebase-gr
 import { archTests as acdCodebaseGroundingViaCommandsTests } from "./acd-codebase-grounding-via-commands.test.mjs";
 import { archTests as acdCodebaseGroundingAdvisoryTests } from "./acd-codebase-grounding-advisory.test.mjs";
 import { archTests as acdCodebaseGraphDerivedTests } from "./acd-codebase-graph-derived.test.mjs";
+// 174 — a built graph is shared through the project's own remote (story-level ADR-001..003): the
+// ref transport carries only the codebase graph and touches no memory or mesh module (FF-17401),
+// and it never forces a push and never reaches the remote with a prompt open (FF-17402)
+import { archTests as acdGraphShareCodeGraphOnlyTests } from "./acd-graph-share-code-graph-only.test.mjs";
+import { archTests as acdGraphShareNeverForcesTests } from "./acd-graph-share-never-forces.test.mjs";
 
 export const tests = [
   ...acdGraphCommandCliBijectionTests,
@@ -58,4 +63,6 @@ export const tests = [
   ...acdCodebaseGroundingViaCommandsTests,
   ...acdCodebaseGroundingAdvisoryTests,
   ...acdCodebaseGraphDerivedTests,
+  ...acdGraphShareCodeGraphOnlyTests,
+  ...acdGraphShareNeverForcesTests,
 ];

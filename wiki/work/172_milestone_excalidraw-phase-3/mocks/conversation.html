@@ -1,0 +1,219 @@
+<!doctype html>
+<!-- 172 DESIGN mock — the editor's conversation surfaces. One page, three states chosen by the
+     query string: ?state=streaming (default), ?state=ask, ?state=proposal. Rendered to the PNGs
+     beside it with headless Chromium at 1280×800 and 768×800. Colours are the console's @theme
+     tokens (apps/ui/src/index.css); the diagram's boxes use the house style (paper / ink). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagram editor — conversation mock</title>
+<style>
+  :root {
+    --background: hsl(210 18% 96%); --foreground: hsl(220 18% 13%); --card: hsl(0 0% 100%);
+    --primary: hsl(174 72% 27%); --primary-foreground: #fff; --muted: hsl(215 18% 91%);
+    --muted-foreground: hsl(218 9% 38%); --accent: hsl(347 66% 44%); --border: hsl(214 16% 78%);
+    --destructive: hsl(0 73% 43%); --primary-tint: hsl(174 45% 94%);
+    --paper: #f3f5f7; --ink: #1b1f27;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--background); color: var(--foreground);
+    font: 12px/1.45 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .shell { height: 40px; display: flex; align-items: center; gap: 16px; padding: 0 16px; background: var(--card);
+    border-bottom: 1px solid var(--border); font-size: 13px; }
+  .shell b { color: var(--primary); }
+  .shell span { color: var(--muted-foreground); }
+  header.editor { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--border);
+    background: var(--background); }
+  header.editor strong { font-size: 12px; }
+  .status { color: var(--muted-foreground); }
+  .btn { border: 1px solid var(--border); background: var(--card); color: var(--foreground); border-radius: 6px;
+    padding: 4px 12px; font: inherit; }
+  .btn.primary { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+  .btn.ghost { background: transparent; border-color: transparent; color: var(--muted-foreground); padding: 4px 6px; }
+  .btn.small { padding: 2px 8px; }
+  .ml-auto { margin-left: auto; }
+  .body { flex: 1; display: flex; min-height: 0; position: relative; }
+  .canvas { flex: 1; position: relative; background: #fff; overflow: hidden; }
+  .toolbar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; padding: 4px;
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+  .toolbar i { width: 28px; height: 28px; border-radius: 6px; display: block; background: #f1f0ff; }
+  .toolbar i:nth-child(n+2) { background: transparent; border: 1px solid #ececf4; }
+  .menu { position: absolute; top: 12px; left: 12px; width: 36px; height: 36px; border-radius: 8px; background: #ececf4; }
+  .zoom { position: absolute; bottom: 12px; left: 12px; padding: 6px 10px; border-radius: 8px; background: #ececf4; color: #555; }
+  svg.diagram { position: absolute; left: 0; top: 0; width: 900px; height: 712px; }
+  .btn { white-space: nowrap; }
+  .pin { position: absolute; height: 12px; min-width: 12px; border-radius: 6px; color: #fff; font-size: 9px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; padding: 0 4px; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+  .pin.answered { background: var(--primary); } .pin.waiting { background: var(--muted-foreground); }
+  .pin.live { background: var(--primary); box-shadow: 0 0 0 3px var(--primary-tint), 0 1px 2px rgba(0,0,0,.25); }
+  .ask-action { position: absolute; background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .ask-field { position: absolute; width: 340px; background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.14); display: flex; gap: 6px; align-items: flex-start; }
+  .ask-field .input { flex: 1; border: 1px solid var(--primary); border-radius: 6px; padding: 4px 8px; min-height: 26px;
+    box-shadow: 0 0 0 2px var(--primary-tint); }
+  .ask-field .hint { position: absolute; left: 8px; bottom: -18px; color: var(--muted-foreground); font-size: 11px; }
+  /* The conversation panel */
+  aside.panel { width: 380px; flex: none; display: flex; flex-direction: column; background: var(--card);
+    border-left: 1px solid var(--border); min-height: 0; }
+  .panel-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .panel-head h2 { margin: 0; font-size: 13px; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 1px 8px; font-size: 11px;
+    background: var(--muted); color: var(--muted-foreground); }
+  .chip.working { background: var(--primary-tint); color: var(--primary); }
+  .dot { width: 6px; height: 6px; border-radius: 3px; background: currentColor; }
+  .tabs { display: flex; gap: 4px; padding: 8px 12px 0; border-bottom: 1px solid var(--border); }
+  .tab { padding: 6px 8px; color: var(--muted-foreground); border-bottom: 2px solid transparent; }
+  .tab.on { color: var(--foreground); border-color: var(--primary); font-weight: 600; }
+  .tab .n { margin-left: 4px; background: var(--muted); border-radius: 8px; padding: 0 5px; font-size: 10px; }
+  .threads { flex: 1; overflow: auto; padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .thread { border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
+  .thread.closed { padding: 8px 10px; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; }
+  .thread.closed .subject { font-weight: 600; }
+  .thread.closed .last { grid-column: 1 / -1; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .thread.open { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+  .thread-head { display: flex; align-items: baseline; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .thread-head .subject { font-weight: 600; flex: 1; }
+  .state { color: var(--muted-foreground); font-size: 11px; }
+  .state.live { color: var(--primary); font-weight: 600; }
+  .turns { padding: 8px 10px; display: flex; flex-direction: column; gap: 10px; }
+  .turn .who { font-weight: 600; } .turn .when { color: var(--muted-foreground); margin-left: 6px; font-size: 11px; }
+  .turn p { margin: 2px 0 0; white-space: pre-wrap; }
+  .turn.you p { background: var(--muted); border-radius: 8px; padding: 6px 8px; }
+  .activity { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; color: var(--muted-foreground); font-size: 11px; }
+  .activity span::before { content: "✓ "; color: var(--primary); }
+  .activity span.now::before { content: "◌ "; color: var(--primary); }
+  .caret { display: inline-block; width: 7px; height: 13px; margin-left: 1px; vertical-align: -2px; background: var(--primary); }
+  .proposal { margin-top: 6px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 6px; padding: 8px; background: var(--background); }
+  .proposal .title { font-weight: 600; }
+  .proposal .changes { color: var(--muted-foreground); margin: 2px 0 6px; }
+  .proposal .row { display: flex; gap: 6px; }
+  .reply { border-top: 1px solid var(--border); padding: 8px 10px; display: flex; gap: 6px; align-items: flex-start; }
+  .reply .input, .composer .input { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; min-height: 26px; color: var(--muted-foreground); background: var(--background); }
+  .composer { border-top: 1px solid var(--border); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--card); }
+  .composer label { font-weight: 600; }
+  .composer .about { color: var(--muted-foreground); font-weight: 400; }
+  .composer .row { display: flex; gap: 6px; }
+  .composer .note { color: var(--muted-foreground); font-size: 11px; }
+  .hidden { display: none !important; }
+  .callout { position: absolute; font-size: 11px; color: var(--accent); font-weight: 600; }
+  /* 768: the panel is a drawer over the canvas's right edge */
+  @media (max-width: 900px) {
+    aside.panel { position: absolute; right: 0; top: 0; bottom: 0; width: 340px; box-shadow: -4px 0 12px rgba(0,0,0,.12); }
+    .toolbar { left: 40%; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="shell"><b>aof</b><span>Board</span><span>Fleet</span><span class="ml-auto">aof · 172</span></div>
+  <header class="editor">
+    <strong>ADR-003-push-stream.excalidraw</strong><span class="status">Saved</span>
+    <button class="btn ml-auto">Mermaid view</button>
+    <button class="btn">Save</button><button class="btn">Publish</button><button class="btn">Close editor</button>
+  </header>
+  <div class="body">
+    <div class="canvas">
+      <div class="menu"></div>
+      <div class="toolbar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="zoom">− 100% +</div>
+      <svg class="diagram" viewBox="0 0 900 712" preserveAspectRatio="xMinYMin meet">
+        <defs><marker id="a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8" fill="none" stroke="#1b1f27" stroke-width="1.4"/></marker></defs>
+        <g font-family="Segoe Print, Comic Sans MS, cursive" font-size="16" fill="#1b1f27" text-anchor="middle">
+          <rect x="70" y="150" width="170" height="70" rx="10" fill="#f3f5f7" stroke="#1b1f27" stroke-width="1.6"/><text x="155" y="191">Architect session</text>
+          <rect x="350" y="150" width="170" height="70" rx="10" fill="#f3f5f7" stroke="#1b1f27" stroke-width="1.6"/><text x="435" y="191">Review store</text>
+          <rect x="350" y="360" width="170" height="70" rx="10" fill="#f3f5f7" stroke="#1b1f27" stroke-width="1.6"/><text x="435" y="401">Events route</text>
+          <rect x="630" y="360" width="170" height="70" rx="10" fill="#f3f5f7" stroke="#1b1f27" stroke-width="1.6"/><text x="715" y="401">Editor</text>
+          <line x1="240" y1="185" x2="348" y2="185" stroke="#1b1f27" stroke-width="1.6" marker-end="url(#a)"/>
+          <line x1="435" y1="220" x2="435" y2="358" stroke="#1b1f27" stroke-width="1.6" marker-end="url(#a)"/>
+          <line x1="520" y1="395" x2="628" y2="395" stroke="#1b1f27" stroke-width="1.6" marker-end="url(#a)"/>
+          <text x="295" y="175" font-size="13">propose</text><text x="470" y="295" font-size="13">watch</text><text x="574" y="385" font-size="13">review</text>
+        </g>
+        <!-- the selection on "Events route" -->
+        <rect id="sel" x="342" y="352" width="186" height="86" fill="none" stroke="#6965db" stroke-width="1.2" stroke-dasharray="4 3"/>
+      </svg>
+      <!-- pins: top-right corner of each shape that holds a note -->
+      <div class="pin answered" style="left:252px; top:157px">2</div>
+      <div class="pin live" id="pin-events" style="left:532px; top:367px"></div>
+      <div class="pin waiting" style="left:812px; top:367px"></div>
+      <!-- ask at the selection -->
+      <div class="ask-action hidden" id="ask-action" style="left:385px; top:312px">Ask architect</div>
+      <div class="ask-field hidden" id="ask-field" style="left:265px; top:304px">
+        <div class="input">Why does the route re-stamp instead of forwarding the write?</div>
+        <button class="btn primary small">Ask</button><button class="btn small">Cancel</button>
+        <div class="hint">Enter asks · Shift+Enter new line · Esc closes</div>
+      </div>
+    </div>
+
+    <aside class="panel" aria-label="Architect conversation">
+      <div class="panel-head">
+        <h2>Architect</h2>
+        <span class="chip working" id="chip"><span class="dot"></span><span id="chip-text">Answering</span></span>
+        <button class="btn ghost ml-auto" title="Collapse panel">⇥</button>
+      </div>
+      <div class="tabs"><span class="tab on">Conversations<span class="n">3</span></span><span class="tab">Proposals<span class="n" id="pcount">0</span></span></div>
+      <div class="threads">
+        <section class="thread open">
+          <div class="thread-head"><span class="subject">Events route</span><span class="state live" id="tstate">Architect is answering…</span><button class="btn ghost small">Show on canvas</button></div>
+          <div class="turns">
+            <div class="turn you"><span class="who">You</span><span class="when">14:02</span>
+              <p>Why does the route re-stamp instead of forwarding the write?</p></div>
+            <div class="turn arch" id="streaming">
+              <span class="who">Architect</span><span class="when">now</span>
+              <div class="activity"><span>Read the diagram as Mermaid</span><span>Read ADR-003 in ARCHITECTURE.md</span><span class="now">Writing the answer</span></div>
+              <p>The writer is another process: the architect records its answer with <code>aof diagram scene --action respond</code>, so the board never sees the write happen — it only sees the review folder change. Re-stamping turns that file change into one event without the route learning where the records live, which keeps<span class="caret"></span></p>
+            </div>
+            <div class="turn arch hidden" id="proposed">
+              <span class="who">Architect</span><span class="when">14:03</span>
+              <p>Proposed: label the watch edge with its debounce, so the 150 ms is visible on the figure.</p>
+              <div class="proposal">
+                <div class="title">Label the watch edge "watch · 150 ms debounce"</div>
+                <div class="changes">1 edge relabelled · nothing else changes</div>
+                <div class="row"><button class="btn small">Preview</button><button class="btn primary small">Accept</button><button class="btn small">Reject</button></div>
+              </div>
+            </div>
+          </div>
+          <div class="reply"><div class="input">Reply…</div><button class="btn small">Reply</button></div>
+        </section>
+        <section class="thread closed"><span class="subject">Architect session</span><span class="state">Answered · 2 notes</span>
+          <span class="last">Architect: It is one session per open diagram, started by the first question…</span></section>
+        <section class="thread closed"><span class="subject">Editor</span><span class="state">Waiting — saved as a note</span>
+          <span class="last">You: Should a hidden tab stop the stream?</span></section>
+      </div>
+      <div class="composer">
+        <label>Ask the architect <span class="about" id="about">· about Events route</span></label>
+        <div class="row"><div class="input">Ask a question or request a change…</div></div>
+        <div class="row"><button class="btn primary small">Ask</button><button class="btn small">Save as note</button>
+          <span class="note ml-auto">1 note waiting · <u>Review with the architect</u></span></div>
+      </div>
+    </aside>
+  </div>
+</div>
+<script>
+  const state = new URLSearchParams(location.search).get("state") || "streaming";
+  const show = (id, on) => document.getElementById(id).classList.toggle("hidden", !on);
+  if (state === "ask") {
+    show("ask-field", true);
+    document.getElementById("chip").className = "chip"; document.getElementById("chip-text").textContent = "Idle";
+    document.getElementById("tstate").textContent = "Answered"; document.getElementById("tstate").className = "state";
+    document.querySelector("#streaming .caret").remove();
+    document.querySelector("#streaming .activity").remove();
+    document.querySelector("#streaming .when").textContent = "14:02";
+    document.querySelector("#streaming p").textContent += " the board's face free of any diagram path (FF-17101).";
+    document.getElementById("pin-events").className = "pin answered";
+  }
+  if (state === "proposal") {
+    document.getElementById("chip").className = "chip"; document.getElementById("chip-text").textContent = "Idle";
+    document.getElementById("tstate").textContent = "A proposal answers this"; document.getElementById("tstate").className = "state";
+    document.querySelector("#streaming .caret").remove();
+    document.querySelector("#streaming .activity").remove();
+    document.querySelector("#streaming .when").textContent = "14:02";
+    document.querySelector("#streaming p").textContent += " the board's face free of any diagram path (FF-17101).";
+    show("proposed", true); document.getElementById("pcount").textContent = "1";
+    document.getElementById("pin-events").className = "pin answered";
+  }
+</script>
+</body>
+</html>

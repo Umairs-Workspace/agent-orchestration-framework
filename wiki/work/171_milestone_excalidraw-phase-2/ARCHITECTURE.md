@@ -160,7 +160,7 @@ palette. Nothing copies the palette into config: the style guide is the one sour
 
 ## ADR-005: A note lands in an open architect session by being typed into it
 
-**Status:** Accepted
+**Status:** Superseded by m172/ADR-003 (2026-10-28) — the conversation is a headless session on the board's server (m172/ADR-001), its answer streams into the thread (m172/ADR-002), and the dock and its typed delivery leave the diagram surface (172/03).
 **Date:** 2026-10-24
 
 **Context.** PRD phase 2: a note typed while the architect session is open should reach it as it is

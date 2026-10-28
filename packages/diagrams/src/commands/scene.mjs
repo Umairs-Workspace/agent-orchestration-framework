@@ -3,9 +3,10 @@ import { readFileSync } from "node:fs";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
-import { diagramFile, diagramLibrariesDir, diagramPaths, globalDiagramLibrariesDir, diagramReviewPaths, hasAdrSection, isReviewId, readAdrTitle, readDiagramBrief, renderDiagramBlock, reviewRecordPath, stemAdr } from "../layout.mjs";
+import { diagramFile, diagramLibrariesDir, diagramPaths, globalDiagramLibrariesDir, diagramReviewPaths, hasAdrSection, isReviewId, parseDiagramLinks, readAdrTitle, readDiagramBrief, renderDiagramBlock, reviewRecordPath, stemAdr } from "../layout.mjs";
 import { LIMITS, diffModels, parseProfile, serializeProfile, validateModel } from "../mermaid-profile.mjs";
 import { assignAliases, projectScene } from "../scene-view.mjs";
+import { REVIEW_SESSION_TOOLS, reviewInvocation } from "../review-session.mjs";
 
 // diagram:scene — `aof diagram scene <ref> <ADR-NNN-slug.excalidraw>` (milestone 170, ADR-010..ADR-013).
 // A diagram is stored as Excalidraw's own scene: it holds everything the editor draws, library items
@@ -28,7 +29,7 @@ const MAX_LISTED = 50;
 const MAX_SVG = 4 * 1024 * 1024;
 const MAX_PNG = 6 * 1024 * 1024;
 const MAX_LIBRARY_BYTES = 8 * 1024 * 1024;
-const SCENE_ACTIONS = new Set(["read", "save", "context", "request", "withdraw", "respond", "propose", "proposals", "accept", "reject", "publish", "libraries", "stamp", "reply"]);
+const SCENE_ACTIONS = new Set(["read", "save", "context", "request", "withdraw", "respond", "propose", "proposals", "accept", "reject", "publish", "libraries", "stamp", "reply", "session"]);
 const WRITE_ACTIONS = new Set(["save", "request", "withdraw", "respond", "reply", "propose", "accept", "reject", "publish"]);
 const REVISION = /^[0-9a-f]{64}$/;
 const RECORD_FILE = /^([a-z0-9]{8,32})\.json$/;
@@ -572,6 +573,14 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
       // recursive watch on the folder also covers before it exists).
       if (action === "stamp") return { ref: item.ref, file: spec.name, scene: await statStamp(file), review: await reviewStamp(review), watch: [diagramDir, path.resolve(review.dir)] };
       if (action === "context") return sceneContext(input, await readCurrent());
+      // SESSION (172/ADR-002 §1): what the architect's session is typed for a request this diagram holds
+      // — or, with no request id, the batch review — and the tools it may use. A request id the diagram
+      // does not hold is refused, so the board never types an invocation for a note that is not there.
+      if (action === "session") {
+        let requestId = null;
+        if (input.requestId !== undefined) requestId = (await readRecord(review, "request", reviewIdInput(input.requestId, "requestId"))).id;
+        return { ref: item.ref, file: spec.name, requestId, invocation: reviewInvocation(item.ref, spec.name, requestId), tools: [...REVIEW_SESSION_TOOLS] };
+      }
       if (action === "proposals") {
         const out = await readCurrent();
         const requests = await listRecords(review, "request");
@@ -658,7 +667,7 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
           const createdAt = new Date().toISOString();
           const record = { id: newReviewId(), kind: "request", createdAt, revision, selectedIds, request, status: "open", answer: null, answeredAt: null, thread: [{ by: "operator", text: request, at: createdAt }] };
           await writeRecord(review, record, { create: true });
-          // The agent invocation is composed by the editor: exactly one src module authors slash commands (FF-6306).
+          // The agent invocation is not answered here: `session` answers it, from review-session.mjs (FF-6306, FF-17202).
           return { ref: item.ref, file: spec.name, request: record };
         });
       }
@@ -791,8 +800,9 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
       }
 
       // PUBLISH: the editor exports the SVG — and the PNG when `work.diagrams.formats` owes one — from the
-      // canvas, and this writes them where the ADR's block links. It answers that block: the architect
-      // pastes it under the ADR (the single writer of ARCHITECTURE.md).
+      // canvas, and this writes them where the ADR's block links. It answers that block — the architect
+      // pastes it under the ADR (the single writer of ARCHITECTURE.md) — and whether the ADR already
+      // shows the figure, so the editor names a missing link instead of handing over the block (F-172-16).
       if (action === "publish") {
         if (typeof input.svg !== "string" || byteLength(input.svg) > MAX_SVG || !SVG_DOCUMENT.test(input.svg)) fail("svg must be one SVG document of at most 4 MB.", "diagram-publish-invalid");
         const owed = resolveWorkDiagrams(ctx?.workspace?.config ?? {});
@@ -810,7 +820,8 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
           if (png) await writeAtomic(path.resolve(paths.png), png);
           const written = [paths.svg, ...(png ? [paths.png] : [])].map((target) => path.relative(item.dir, path.resolve(target)).split(path.sep).join("/"));
           const block = renderDiagramBlock({ adrId: adr, title: readAdrTitle(architecture, adr) ?? adr, stem: spec.stem, sourceExt: ".excalidraw", formats });
-          return { ref: item.ref, file: spec.name, revision, written, block };
+          const linked = parseDiagramLinks(architecture).some((link) => link.adr === adr && link.kind === "image" && link.stem === spec.stem);
+          return { ref: item.ref, file: spec.name, revision, written, block, linked };
         });
       }
 
@@ -828,7 +839,7 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
     },
     cli: {
       route: ["diagram", "scene"],
-      spec: { usage: "aof diagram scene <ref> <ADR-NNN-slug.excalidraw> [--action read|save|context|request|withdraw|respond|reply|propose|proposals|accept|reject|publish|libraries|stamp] [--input path] [--json]", flags: { action: { type: "string", description: "read, save, context, request, withdraw, respond, reply, propose, proposals, accept, reject, publish, libraries, or stamp" }, input: { type: "string", description: "JSON request file (scene, text, selectedIds, requestId, proposalId, operations, svg, png, …)" } } },
+      spec: { usage: "aof diagram scene <ref> <ADR-NNN-slug.excalidraw> [--action read|save|context|request|withdraw|respond|reply|propose|proposals|accept|reject|publish|libraries|stamp|session] [--input path] [--json]", flags: { action: { type: "string", description: "read, save, context, request, withdraw, respond, reply, propose, proposals, accept, reject, publish, libraries, stamp, or session" }, input: { type: "string", description: "JSON request file (scene, text, selectedIds, requestId, proposalId, operations, svg, png, …)" } } },
       argv: (positionals, options) => {
         let extra = {};
         if (options.input) { const raw = readFileSync(options.input, "utf8"); if (byteLength(raw) > MAX_RECORD_BYTES + MAX_SVG + MAX_PNG * 2) fail("Input is too large.", "diagram-scene-too-large", 413); extra = JSON.parse(raw); if (!plainObject(extra)) fail("Input JSON must be an object."); }

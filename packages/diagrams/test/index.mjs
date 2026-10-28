@@ -14,6 +14,8 @@ import { mermaidProfileTests } from "./mermaid-profile.suite.mjs";
 import { sceneViewTests } from "./scene-view.suite.mjs";
 // milestone 171 / ADR-004 — the house style, read from the style guide.
 import { houseStyleTests } from "./house-style.suite.mjs";
+// milestone 172 / ADR-002 — the architect's review vocabulary, spelled once.
+import { reviewSessionTests } from "./review-session.suite.mjs";
 
 export const tests = [
   ...diagramLayoutTests,
@@ -22,4 +24,5 @@ export const tests = [
   ...mermaidProfileTests,
   ...sceneViewTests,
   ...houseStyleTests,
+  ...reviewSessionTests,
 ];

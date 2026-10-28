@@ -73,12 +73,15 @@ export const canvasAnchorTests = [
     }
     assert.ok(actionFor({ appState: at(0, 0, 1, { selectedElementsAreBeingDragged: false, contextMenu: null, openMenu: null }) }), "an unset flag hides nothing");
   } },
-  { name: "171/00 E3 · with nothing selected, the bar still offers Add note and Ask architect", run: async () => {
-    const editor = await source("ExcalidrawEditor.tsx");
-    for (const label of ["Add note", "Ask architect"]) {
-      const button = new RegExp(`<button type="button" aria-label="${label}" disabled=\\{([^}]*)\\}`).exec(editor);
-      assert.ok(button, `the bar renders its ${label} button`);
-      assert.doesNotMatch(button[1], /select/i, `${label} is not gated on a selection: ${button[1]}`);
+  // 172/01 retired the bar under the canvas into the conversation panel's composer (172/ADR-003): its
+  // Save as note and Ask are the bar's Add note and Ask architect, and are still not gated on a selection.
+  { name: "171/00 E3 · with nothing selected, the panel's composer still offers Save as note and Ask", run: async () => {
+    const panel = await source("ConversationPanel.tsx");
+    const gate = /const disabled = ([^;]*);/.exec(panel);
+    assert.ok(gate, "the composer gates its two buttons on one expression");
+    assert.doesNotMatch(gate[1], /select/i, `not gated on a selection: ${gate[1]}`);
+    for (const label of ["Save as note", "Ask architect"]) {
+      assert.match(panel, new RegExp(`<button type="button" aria-label="${label}" disabled=\\{disabled\\}`), `the composer renders its ${label} button`);
     }
   } },
   { name: "171/00 · the field's placeholder names the selection: the shape's label, or a count", run: () => {
@@ -112,7 +115,7 @@ export const canvasAnchorTests = [
     // overlay's `onAsk` each reach `askAt`, the only caller of `askArchitect`.
     const editor = await source("ExcalidrawEditor.tsx");
     assert.equal(editor.match(/askArchitect\(/g)?.length, 1, "one ask path in the editor");
-    assert.match(editor, /const ask = async \(\) => \{[^\n]*askAt\(question, selectedElementIds\(\)\)/, "the bar asks through askAt");
+    assert.match(editor, /const ask = async \(text: string\) => [^\n]*askAt\(text, selectedElementIds\(\)\)/, "the panel's composer asks through askAt");
     assert.match(editor, /const askAtSelection = async[\s\S]*?askAt\(text, elementIds\)/, "the canvas asks through askAt");
     assert.match(editor, /<CanvasOverlay [^>]*onAsk=\{askAtSelection\}/, "the overlay is handed that ask");
   } },

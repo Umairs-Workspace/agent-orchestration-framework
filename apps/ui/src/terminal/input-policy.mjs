@@ -147,49 +147,29 @@ export function mountModelFor({ source, mount, reason = null } = {}) {
   });
 }
 
-// LATER INPUT (milestone 171 / ADR-005) — further input a surface types into its live session, such as
-// a note's review invocation. It travels the raw path a keystroke takes (never a JSON frame), once per
-// sequence number and in the order handed. Only a READY session takes it: input enabled by the
-// posture, the socket open, and the mount's own first command already typed, so a later input never
-// lands ahead of it. Anything else is answered as not delivered, here, and is never queued by the
-// control — holding input for later is the surface's call, not the terminal's. `data` is the text to
-// type; HOW it is typed (a paste, then its Enter) is the record's outbox below.
-export const LATER_INPUT_TYPED = "type";
-export const LATER_INPUT_SKIPPED = "skip";
-export const LATER_INPUT_REFUSED = "refuse";
-export function laterInputDecision({ lastSeq = 0, input, inputEnabled, ready } = {}) {
-  if (input == null || typeof input.text !== "string" || input.text.length === 0 || !Number.isInteger(input.seq)) {
-    return Object.freeze({ action: LATER_INPUT_SKIPPED, reason: "no-input" });
-  }
-  if (input.seq <= lastSeq) return Object.freeze({ action: LATER_INPUT_SKIPPED, reason: "already-answered" });
-  // A session not yet connected (or gone) is that, whatever its posture.
-  if (ready !== true) return Object.freeze({ action: LATER_INPUT_REFUSED, reason: "not-connected" });
-  if (inputEnabled !== true) return Object.freeze({ action: LATER_INPUT_REFUSED, reason: "read-only" });
-  return Object.freeze({ action: LATER_INPUT_TYPED, reason: null, data: input.text });
-}
-
-// WHAT THE LIVE SESSION IS TYPED — the mount's own command and a surface's later inputs, from ONE
-// record the control holds across renders (moved out of `TerminalControl.tsx` with 171/ADR-005, under
-// `acd-ui-surface-file-budget`'s remedy). The control wires its socket's events to these functions;
-// WHAT is typed, and WHEN, is decided here, where a suite reads it without React.
+// WHAT THE LIVE SESSION IS TYPED — the mount's own command, from ONE record the control holds across
+// renders (moved out of `TerminalControl.tsx` under `acd-ui-surface-file-budget`'s remedy). The
+// control wires its socket's events to these functions; WHAT is typed, and WHEN, is decided here,
+// where a suite reads it without React.
 //
 // The state-aware command, typed ONCE per session as ordinary input on the same raw path a
 // keystroke takes (never a JSON frame — the envelope is unchanged). A mount with no input
 // path cannot type it, which is the honest consequence of the posture rather than a guard.
-// Once it is typed — or at the socket's open, for a mount with none — the session is READY, and the
-// later inputs handed so far are typed through `laterInputDecision`.
+//
+// 172/ADR-003 §4 removed the later-input seam m171/ADR-005 added here: its only consumer was the
+// diagram surface's dock, which no longer exists, and a surface that wants a session typed into now
+// mounts one with a command, as the board's dock and the home grid do.
 //
 // 171 F-171-01 — TYPED AS THE SESSION DRIVER TYPES (`@aof/contracts/tui-ready`). The command was
 // written as `text\r` on the session's FIRST painted bytes, before claude's REPL mounted, and its
 // carriage return was lost; written as `text\r` once the REPL was up, the carriage return landed as a
 // new line. So the command waits for the TUI's own readiness (or `COMMAND_READY_CAP_MS`, for a
-// program that never signals it), and every input goes through ONE serial outbox: the text as a
-// bracketed paste (raw, when the program never turned paste mode on), then — after
-// `PASTE_SUBMIT_SETTLE_MS` — its Enter as a separate write, and only then the next input, so two
-// notes never land in one input box as one message.
+// program that never signals it), and goes through the outbox: the text as a bracketed paste (raw,
+// when the program never turned paste mode on), then — after `PASTE_SUBMIT_SETTLE_MS` — its Enter as
+// a separate write, which a session closed in between never receives.
 export const COMMAND_READY_CAP_MS = 30_000;
 export function sessionInputs() {
-  return { send: null, command: null, commandSent: true, inputEnabled: false, ready: false, lastSeq: 0, inputs: [], onLaterInput: null, onSessionReady: null, gate: createTuiReadyGate(), decoder: null, outbox: [], submitTimer: null };
+  return { send: null, command: null, commandSent: true, inputEnabled: false, gate: createTuiReadyGate(), decoder: null, outbox: [], submitTimer: null };
 }
 // The socket opened. Answers whether a command is owed, so the control can arm its cap timer.
 export function sessionOpened(record, { send, command, inputEnabled }) {
@@ -200,7 +180,6 @@ export function sessionOpened(record, { send, command, inputEnabled }) {
   record.commandSent = record.command == null;
   record.gate = createTuiReadyGate();
   record.decoder = null;
-  if (record.commandSent) markSessionReady(record, true);
   return !record.commandSent;
 }
 // The session's output, read for its TUI's readiness: the control hands every painted chunk here.
@@ -216,28 +195,10 @@ export function typeCommand(record, { force = false } = {}) {
   if (!force && !record.gate.ready) return;
   record.commandSent = true;
   enqueue(record, record.command);
-  markSessionReady(record, true);
 }
 export function sessionClosed(record) {
   stopOutbox(record);
   record.send = null;
-  markSessionReady(record, false);
-}
-// Every later input not yet answered: typed, or answered as not delivered — never held here.
-export function flushLaterInputs(record) {
-  for (const input of record.inputs ?? []) {
-    const decision = laterInputDecision({ lastSeq: record.lastSeq, input, inputEnabled: record.inputEnabled, ready: record.ready });
-    if (decision.action === LATER_INPUT_SKIPPED) continue;
-    record.lastSeq = input.seq;
-    if (decision.action === LATER_INPUT_TYPED) enqueue(record, decision.data);
-    record.onLaterInput?.({ seq: input.seq, delivered: decision.action === LATER_INPUT_TYPED, reason: decision.reason });
-  }
-}
-function markSessionReady(record, ready) {
-  if (record.ready === ready) return;
-  record.ready = ready;
-  record.onSessionReady?.(ready);
-  if (ready) flushLaterInputs(record);
 }
 // The outbox: one input at a time — its text, then its Enter once the paste has settled.
 function enqueue(record, text) {

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The architect's answer streams into the editor · Sequence</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #f3f5f7; color: #1b1f27; padding: 2rem; }
+    .frame { max-width: 1040px; margin: 0 auto; }
+    svg { width: 100%; min-width: 840px; display: block; }
+  </style>
+</head>
+<body>
+  <!-- Assumptions (reader not reachable): the editor's events stream is already open (171/ADR-003),
+       so its GET is not drawn; the snapshot a late editor receives is left out to stay inside the
+       12-message budget; "start or queue" is one self-call on the session. -->
+  <div class="frame">
+    <svg viewBox="0 0 1000 790" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t d">
+      <title id="t">The architect's answer streams into the editor</title>
+      <desc id="d">The editor posts a request id to the board face. The face asks the diagram scene command what to type and which tools to allow, and hands that to the conversation session, which starts a headless claude or queues the turn. Each text delta of the answer is forwarded on the editor's events stream into the thread. The architect then records its answer with respond; the review stamp moves, the face sends a review event, the editor re-reads the records, and the recorded turn replaces the live one.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#585f6a"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ba2646"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#13766d"/></marker>
+        <marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#585f6a" stroke-width="1.2"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f3f5f7"/>
+
+      <!-- LIFELINES — editor 100 · face 300 · scene 500 · session 700 · store 900 -->
+      <line x1="100" y1="128" x2="100" y2="700" stroke="rgba(27,31,39,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="300" y1="128" x2="300" y2="700" stroke="rgba(27,31,39,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="500" y1="128" x2="500" y2="700" stroke="rgba(27,31,39,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="700" y1="128" x2="700" y2="700" stroke="rgba(27,31,39,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="900" y1="128" x2="900" y2="700" stroke="rgba(27,31,39,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+
+      <!-- ACTIVATION — the face holds the stream; the session runs the turn -->
+      <rect x="296" y="168" width="8" height="488" fill="rgba(27,31,39,0.06)" stroke="#585f6a" stroke-width="0.8"/>
+      <rect x="696" y="264" width="8" height="216" fill="rgba(27,31,39,0.06)" stroke="#585f6a" stroke-width="0.8"/>
+
+      <!-- M1 editor → face: post the request id -->
+      <line x1="100" y1="168" x2="294" y2="168" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="136" y="148" width="128" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="200" y="157" fill="#13766d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">POST /CONVERSATION</text>
+
+      <!-- M2 face → scene: session -->
+      <line x1="304" y1="200" x2="496" y2="200" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="352" y="180" width="96" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="400" y="189" fill="#13766d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">ACTION SESSION</text>
+
+      <!-- M3 scene → face: invocation + tools (return) -->
+      <line x1="500" y1="232" x2="306" y2="232" stroke="#585f6a" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <rect x="344" y="212" width="112" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="400" y="221" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">INVOCATION · TOOLS</text>
+
+      <!-- M4 face → session: deliver -->
+      <line x1="304" y1="264" x2="694" y2="264" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="560" y="244" width="80" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="600" y="253" fill="#13766d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">DELIVER</text>
+
+      <!-- M5 session self: start a headless claude, or queue the turn -->
+      <path d="M 704 288 L 736 288 Q 744 288 744 296 L 744 304 Q 744 312 736 312 L 708 312" fill="none" stroke="#585f6a" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <text x="756" y="304" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.06em">START OR QUEUE</text>
+
+      <!-- LOOP fragment: each text delta -->
+      <rect x="64" y="332" width="704" height="100" rx="4" fill="rgba(27,31,39,0.02)" stroke="rgba(27,31,39,0.22)" stroke-width="1"/>
+      <rect x="64" y="332" width="44" height="16" rx="2" fill="#f3f5f7" stroke="rgba(27,31,39,0.22)" stroke-width="1"/>
+      <text x="86" y="344" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.12em">LOOP</text>
+      <text x="120" y="344" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.04em">[each text delta of the turn]</text>
+
+      <!-- M6 session → face: text delta (async) -->
+      <line x1="696" y1="376" x2="306" y2="376" stroke="#585f6a" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-open)"/>
+      <rect x="452" y="356" width="96" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="500" y="365" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">TEXT DELTA</text>
+
+      <!-- M7 face → editor: the live turn (headline) -->
+      <line x1="296" y1="408" x2="106" y2="408" stroke="#ba2646" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <rect x="128" y="388" width="144" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="200" y="397" fill="#ba2646" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">EVENT: CONVERSATION</text>
+
+      <!-- M8 session → store: the architect records its answer -->
+      <line x1="704" y1="464" x2="894" y2="464" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="760" y="444" width="80" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="800" y="453" fill="#13766d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">RESPOND</text>
+
+      <!-- M9 store → face: the review stamp moves (watch) -->
+      <line x1="900" y1="512" x2="306" y2="512" stroke="#585f6a" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-open)"/>
+      <rect x="548" y="492" width="104" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="600" y="501" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">STAMP MOVES</text>
+
+      <!-- M10 face → editor: look now -->
+      <line x1="296" y1="552" x2="106" y2="552" stroke="#585f6a" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="148" y="532" width="104" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="200" y="541" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">EVENT: REVIEW</text>
+
+      <!-- M11 editor → face: re-read the records -->
+      <line x1="100" y1="592" x2="294" y2="592" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="140" y="572" width="120" height="12" rx="2" fill="#f3f5f7"/>
+      <text x="200" y="581" fill="#13766d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">POST PROPOSALS</text>
+
+      <!-- M12 editor self: the recorded turn replaces the live one -->
+      <path d="M 92 624 L 60 624 Q 52 624 52 632 L 52 640 Q 52 648 60 648 L 92 648" fill="none" stroke="#585f6a" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <text x="112" y="640" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.06em">RECORDED TURN REPLACES THE LIVE ONE</text>
+
+      <!-- ACTORS — drawn after arrows -->
+      <!-- editor: UI -->
+      <rect x="24" y="72" width="152" height="56" rx="8" fill="#f3f5f7"/>
+      <rect x="24" y="72" width="152" height="56" rx="8" fill="#ffffff" stroke="#1b1f27" stroke-width="1"/>
+      <rect x="32" y="80" width="28" height="12" rx="2" fill="transparent" stroke="rgba(27,31,39,0.30)" stroke-width="0.8"/>
+      <text x="46" y="89" fill="#585f6a" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.08em">UI</text>
+      <text x="100" y="104" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, sans-serif" text-anchor="middle">Editor</text>
+      <text x="100" y="119" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle">panel · EventSource</text>
+
+      <!-- board face: focal -->
+      <rect x="224" y="72" width="152" height="56" rx="8" fill="#f3f5f7"/>
+      <rect x="224" y="72" width="152" height="56" rx="8" fill="rgba(186,38,70,0.08)" stroke="#ba2646" stroke-width="1"/>
+      <rect x="232" y="80" width="32" height="12" rx="2" fill="transparent" stroke="rgba(186,38,70,0.50)" stroke-width="0.8"/>
+      <text x="248" y="89" fill="#ba2646" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.08em">FACE</text>
+      <text x="300" y="104" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, sans-serif" text-anchor="middle">Board face</text>
+      <text x="300" y="119" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle">conversation · events</text>
+
+      <!-- scene command -->
+      <rect x="424" y="72" width="152" height="56" rx="8" fill="#f3f5f7"/>
+      <rect x="424" y="72" width="152" height="56" rx="8" fill="#ffffff" stroke="#1b1f27" stroke-width="1"/>
+      <rect x="432" y="80" width="32" height="12" rx="2" fill="transparent" stroke="rgba(27,31,39,0.30)" stroke-width="0.8"/>
+      <text x="448" y="89" fill="#585f6a" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.08em">CMD</text>
+      <text x="500" y="104" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, sans-serif" text-anchor="middle">Scene command</text>
+      <text x="500" y="119" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle">diagram:scene</text>
+
+      <!-- conversation session: external process -->
+      <rect x="624" y="72" width="152" height="56" rx="8" fill="#f3f5f7"/>
+      <rect x="624" y="72" width="152" height="56" rx="8" fill="rgba(27,31,39,0.03)" stroke="rgba(27,31,39,0.30)" stroke-width="1"/>
+      <rect x="632" y="80" width="36" height="12" rx="2" fill="transparent" stroke="rgba(27,31,39,0.30)" stroke-width="0.8"/>
+      <text x="650" y="89" fill="#585f6a" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.08em">PROC</text>
+      <text x="700" y="104" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, sans-serif" text-anchor="middle">Conversation</text>
+      <text x="700" y="119" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle">claude · stream-json</text>
+
+      <!-- review store -->
+      <rect x="824" y="72" width="152" height="56" rx="8" fill="#f3f5f7"/>
+      <rect x="824" y="72" width="152" height="56" rx="8" fill="rgba(27,31,39,0.05)" stroke="#585f6a" stroke-width="1"/>
+      <rect x="832" y="80" width="36" height="12" rx="2" fill="transparent" stroke="rgba(88,95,106,0.40)" stroke-width="0.8"/>
+      <text x="850" y="89" fill="#585f6a" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle" letter-spacing="0.08em">STORE</text>
+      <text x="900" y="104" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, sans-serif" text-anchor="middle">Review records</text>
+      <text x="900" y="119" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" text-anchor="middle">&lt;stem&gt;.review/</text>
+
+      <!-- LEGEND -->
+      <line x1="24" y1="718" x2="976" y2="718" stroke="rgba(27,31,39,0.12)" stroke-width="0.8"/>
+      <text x="24" y="738" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.18em">LEGEND</text>
+      <line x1="24" y1="758" x2="52" y2="758" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <text x="60" y="761" fill="#585f6a" font-size="8.5" font-family="Inter, ui-sans-serif, system-ui, sans-serif">Call</text>
+      <line x1="160" y1="758" x2="188" y2="758" stroke="#585f6a" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <text x="196" y="761" fill="#585f6a" font-size="8.5" font-family="Inter, ui-sans-serif, system-ui, sans-serif">Return</text>
+      <line x1="296" y1="758" x2="324" y2="758" stroke="#585f6a" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-open)"/>
+      <text x="332" y="761" fill="#585f6a" font-size="8.5" font-family="Inter, ui-sans-serif, system-ui, sans-serif">Asynchronous (stdout, file-system event)</text>
+      <line x1="560" y1="758" x2="588" y2="758" stroke="#ba2646" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <text x="596" y="761" fill="#585f6a" font-size="8.5" font-family="Inter, ui-sans-serif, system-ui, sans-serif">The live turn, pushed to the thread</text>
+    </svg>
+  </div>
+</body>
+</html>
