@@ -142,6 +142,9 @@
   "memory": {
     "backend": "graphify"
   },
+  "graph": {
+    "share": "git-refs"
+  },
   "resources": [],
   "packages": [],
   "runtimes": [
