@@ -80,6 +80,8 @@ function runCli(cwd, args, home) {
   const result = spawnCliSync(process.execPath, [cliPath, ...args], {
     cwd,
     encoding: "utf8",
+    // doctor --json over the whole stream outgrew spawnSync's 1 MB default (ENOBUFS → SIGTERM, status null).
+    maxBuffer: 64 * 1024 * 1024,
     env: { ...process.env, NODE_NO_WARNINGS: "1", AOF_GLOBAL_HOME: home },
   });
   return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
