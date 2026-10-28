@@ -3,10 +3,10 @@ type: chore
 number: 175
 slug: notion-verbs-reach-core-through-one-contribution
 title: "Notion's verbs reach core through one contribution"
-status: not-started
+status: done
 owner: developer
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-28
 depends: [169]
 schema: 1
 aofVersion: 0.1.0
