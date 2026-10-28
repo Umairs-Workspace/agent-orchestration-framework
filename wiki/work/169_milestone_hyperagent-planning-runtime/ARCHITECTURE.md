@@ -67,6 +67,26 @@ implementation, so FF-16004's per-verb module ceilings move by at most the one m
 `createHyperagentContribution` is replaced by the contribution's `commands` member, so there is no
 second spelling.
 
+**Amended by chores 175 and 176 (2026-10-28).** Notion moved onto the seam, and the contribution
+gained optional members for what Notion contributes beyond verbs. Core reads each member generically
+from the registry. Hyperagent carries none of them.
+
+```js
+{ id, name, assets?,                                   // as above
+  services?: (core) => built,                          // the package's own composition, built once
+                                                       //   per application (bindings/integrations/services.mjs)
+  commands: (services, built) => [...],                // `built` is what `services` returned
+  effects?: (provide) => ({ local?, integration? }),   // reactors (bindings/effects/table.mjs); `provide`
+                                                       //   resolves { loadWorkspace, own: built } when one runs
+  routing?: ({ readRouting }) => ({ ... }),            // routing members (bindings/integrations/routing.mjs)
+  storeMetadata?: { tables?, fileStores? } }           // store classification (effects/stores.mjs)
+```
+
+Cascade order holds: every integration's `local` reactors run before mesh projection, and every
+`integration` reactor runs after publication. Notion's contribution imports its composition
+(`services.mjs`), so its sync body is part of the contribution's static closure. FF-16004's ceilings
+still fell, because core's six Notion bindings went (`aof work find`: 739 → 735).
+
 ## ADR-003: One registry module is the only core module that names an integration package
 
 **Status:** Accepted

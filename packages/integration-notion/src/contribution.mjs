@@ -5,13 +5,19 @@
 //   services the package's composition (./services.mjs) — mapping, apply, CLI seam and sync body —
 //            built once per application from core's injected collaborators
 //   commands the two `notion:*` verbs, built from core's injected services plus what `services` built
+//   effects  its effects-journal reactors (chore 176): `local` cascades before mesh projection (the
+//            sidecar remap on a reindex), `integration` after publication (the board sync)
+//   routing  its board routing over core's one descriptor reader (`.aof/integrations.json`)
+//   storeMetadata  the stores it owns, for core's store classification (`effects/stores.mjs`)
 //
 // Notion ships no bundle members, so it carries no `assets`. The verb modules are descriptor
 // factories: neither imports the sync body, which arrives through `services`.
 import { createNotionServices } from "./services.mjs";
 import { createNotionAssociateCommand } from "./notion-associate.mjs";
 import { createNotionSyncWorkCommand } from "./notion-sync-work.mjs";
-import { isPageId, asBoardsRegistry } from "./routing.mjs";
+import { createNotionEffects } from "./effects.mjs";
+import { createNotionRouting, isPageId, classifyParent, asBoardsRegistry, RoutingError } from "./routing.mjs";
+import { FILE_STORE_CLASSIFICATION } from "./store-metadata.mjs";
 
 export const contribution = Object.freeze({
   id: "notion",
@@ -28,4 +34,15 @@ export const contribution = Object.freeze({
     });
     return [syncWork, associate];
   },
+  // `provide` resolves, only when a reactor runs, core's workspace loader and what `services` built.
+  effects(provide) {
+    return createNotionEffects(async () => {
+      const { loadWorkspace, own } = await provide();
+      return { loadWorkspace, syncMilestoneWork: own.syncWork.syncMilestoneWork, remapMappingRefs: own.mapping.remapMappingRefs };
+    });
+  },
+  routing({ readRouting }) {
+    return Object.freeze({ isPageId, classifyParent, asBoardsRegistry, RoutingError, ...createNotionRouting({ readRouting }) });
+  },
+  storeMetadata: Object.freeze({ fileStores: FILE_STORE_CLASSIFICATION }),
 });

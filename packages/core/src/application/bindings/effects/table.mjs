@@ -2,10 +2,10 @@
 import { createReactorRegistry } from "@aof/effects/registry";
 import { createWorkEffects } from "@aof/work/effects";
 import { createMeshEffects } from "@aof/mesh/effects";
-import { createNotionEffects } from "@aof/integration-notion/effects";
+import { INTEGRATIONS } from "../../../integrations.mjs";
 import * as api0 from "@aof/effects/registry";
 
-export function assembleEffectsTable({ degradeServices, provideWork, provideRunStore, provideWorkAcceptorStore, provideGlobalWorkPublisher, provideGlobalWorkStore, provideEffectsAssignmentTransitions, provideMeshParkResume, provideIntegrations }) {
+export function assembleEffectsTable({ degradeServices, provideWork, provideRunStore, provideWorkAcceptorStore, provideGlobalWorkPublisher, provideGlobalWorkStore, provideEffectsAssignmentTransitions, provideMeshParkResume, provideIntegrations }, integrations = INTEGRATIONS) {
   // Core assembles domain-owned contributions. Event names are REFUSED — by `applicableReactors`
   // before append; the generic journal remains vocabulary-blind. Array order is cascade order.
 
@@ -55,21 +55,24 @@ export function assembleEffectsTable({ degradeServices, provideWork, provideRunS
     };
   });
 
-  const notion = createNotionEffects(async () => {
-    const [items, integrations] = await Promise.all([provideWork(), provideIntegrations()]);
-    const { syncWork, mapping } = integrations.built.notion;
-    return { loadWorkspace: items.loadWorkspace, syncMilestoneWork: syncWork.syncMilestoneWork, remapMappingRefs: mapping.remapMappingRefs };
-  });
+  // Each registered integration's reactors (chore 176), from its contribution in the one registry. An
+  // integration is handed the workspace loader and what its own `services` built, when a reactor runs.
+  const contributed = integrations
+    .filter((integration) => typeof integration.effects === "function")
+    .map((integration) => integration.effects(async () => {
+      const [items, built] = await Promise.all([provideWork(), provideIntegrations()]);
+      return { loadWorkspace: items.loadWorkspace, own: built.built[integration.id] };
+    }));
 
-  // Preserve public event order independently of contribution order. The same Notion package
-  // contributes local remapping BEFORE mesh projection and external sync AFTER publication.
+  // Preserve public event order independently of contribution order. An integration contributes local
+  // reactors (e.g. Notion's sidecar remap) BEFORE mesh projection and external sync AFTER publication.
   const eventOrder = [
     "run.started", "run.completed", "feedback.recorded", "item-status.changed", "stream.reindexed",
     "stream.archived", "workspace.changed", "assignment.reported", "terminal.resume-refused", "assignment.settled", "harness.ruled",
   ];
   const registry = createReactorRegistry([
     { name: "aof", events: Object.fromEntries(eventOrder.map(name => [name, []])) },
-    work, notion.local, mesh, notion.integration,
+    work, ...contributed.map((effects) => effects.local).filter(Boolean), mesh, ...contributed.map((effects) => effects.integration).filter(Boolean),
   ], { reportDegrade, isKnownLocus });
 
   const EFFECTS = registry.table;
