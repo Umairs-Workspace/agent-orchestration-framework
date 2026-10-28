@@ -1,6 +1,6 @@
 ---
 type: milestone
-number:
+number: 179
 slug: human-led-problem-solving
 title: "AOF guides the human through problem solving without taking over"
 status: not-started
@@ -10,9 +10,9 @@ updated: 2026-10-23
 schema: 1
 aofVersion: 0.1.0
 origin: wiki/planning/PRD-human-led-learning.md
-depends: [guided-mode-boundary, 149, 150]
+depends: [178, 149, 150]
 ---
-# AOF guides the human through problem solving without taking over
+# 179 · AOF guides the human through problem solving without taking over
 
 ## Objective
 

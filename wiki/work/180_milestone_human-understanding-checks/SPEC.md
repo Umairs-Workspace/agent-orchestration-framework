@@ -1,6 +1,6 @@
 ---
 type: milestone
-number:
+number: 180
 slug: human-understanding-checks
 title: "The human can check understanding separately from shipping success"
 status: not-started
@@ -10,9 +10,9 @@ updated: 2026-10-23
 schema: 1
 aofVersion: 0.1.0
 origin: wiki/planning/PRD-human-led-learning.md
-depends: [human-led-problem-solving]
+depends: [179]
 ---
-# The human can check understanding separately from shipping success
+# 180 · The human can check understanding separately from shipping success
 
 ## Objective
 

@@ -1,6 +1,6 @@
 ---
 type: spike
-number:
+number: 178
 slug: guided-mode-boundary
 title: "Which runtime paths can preserve a human-owned guided session?"
 status: not-started
@@ -13,7 +13,7 @@ aofVersion: 0.1.0
 origin: wiki/planning/PRD-human-led-learning.md
 depends: [149, 150]
 ---
-# Which runtime paths can preserve a human-owned guided session?
+# 178 · Which runtime paths can preserve a human-owned guided session?
 
 ## Question
 
