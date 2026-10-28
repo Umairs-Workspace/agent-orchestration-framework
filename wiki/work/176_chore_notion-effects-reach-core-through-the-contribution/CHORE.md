@@ -3,10 +3,10 @@ type: chore
 number: 176
 slug: notion-effects-reach-core-through-the-contribution
 title: "Notion's effects, routing and store metadata reach core through the contribution"
-status: not-started
+status: done
 owner: developer
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-28
 depends: [175]
 schema: 1
 aofVersion: 0.1.0
