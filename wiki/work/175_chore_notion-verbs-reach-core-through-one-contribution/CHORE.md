@@ -1,6 +1,6 @@
 ---
 type: chore
-number:
+number: 175
 slug: notion-verbs-reach-core-through-one-contribution
 title: "Notion's verbs reach core through one contribution"
 status: not-started
@@ -11,7 +11,7 @@ depends: [169]
 schema: 1
 aofVersion: 0.1.0
 ---
-# Notion's verbs reach core through one contribution
+# 175 · Notion's verbs reach core through one contribution
 
 ## Intent
 

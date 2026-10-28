@@ -1,17 +1,17 @@
 ---
 type: chore
-number:
+number: 177
 slug: core-names-no-integration-package-outside-the-registry
 title: "Core names no integration package outside the registry — FF-16901 drops its Notion exception"
 status: not-started
 owner: developer
 created: 2026-10-23
 updated: 2026-10-23
-depends: [notion-verbs-reach-core-through-one-contribution, notion-effects-reach-core-through-the-contribution]
+depends: [175, 176]
 schema: 1
 aofVersion: 0.1.0
 ---
-# Core names no integration package outside the registry
+# 177 · Core names no integration package outside the registry
 
 ## Intent
 
