@@ -78,3 +78,21 @@ app quit, is where the whole tree has run green; a Mac gate is red on F-172-11 a
 the code is.
 
 **Refs:** VERIFICATION `@finding-F-172-11`, `@finding-F-172-14`; REGRESSION row at 8a810a8.
+
+## R5 · The `@uat` fix changed what the notice said and kept the bar the operator objected to
+
+**Kind:** mistake · **Area:** code · **Stage:** verify · **Owner:** verifier · **Raised by:** operator · **Promoted to:** none
+
+**What happened:** At 02's `@uat` the operator asked why Publish showed a block to paste rather than
+something simpler. The fix (F-172-16) removed the block and kept the full-width notice bar under the
+header. The operator's answer was that a confirmation belongs in a toast, not in a bar that takes
+vertical room (F-172-17), and the milestone was approved with that left open.
+
+**Why:** The fix answered the words of the question (what is shown) and not the complaint behind it
+(the surface spends layout on a passing confirmation); the notice's form was taken as given.
+
+**Lesson:** When an operator objects to a surface at `@uat`, name the form as well as the content
+(bar, toast, modal, inline) and propose the change to both before building; a passing confirmation
+should take no layout room.
+
+**Refs:** VERIFICATION `@finding-F-172-16`, `@finding-F-172-17`.

@@ -4,7 +4,7 @@
 ## Delivered
 
 ### The architect conversation is an editor surface with no terminal
-A question or reply at a shape reaches a headless session on the board's server (m172/00), its answer is written into that shape's thread in the one conversation panel as it is produced (m172/01, m172/02), and the diagram surface renders no terminal and holds no code to type into one (m172/03); F-171-04 is discharged by this, subject to the operator's `@uat` (VERIFICATION `## User sign-off`).
+A question or reply at a shape reaches a headless session on the board's server (m172/00), its answer is written into that shape's thread in the one conversation panel as it is produced (m172/01, m172/02), and the diagram surface renders no terminal and holds no code to type into one (m172/03); the operator approved it live on 2026-10-28, which closes F-171-04 (VERIFICATION `## User sign-off`).
 
 ### The conversation surfaces have a committed design baseline
 `mocks/conversation*.png` (accepted 2026-10-27) are the conformance source of truth for the panel, the canvas ask, a proposal and the session state, with `DESIGN.md` stating the accepted fallback wherever the shipped surface cannot yet say what the mock says (F-172-09, F-172-10).

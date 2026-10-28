@@ -4,7 +4,7 @@ number: 02
 slug: the-answer-streams-into-its-thread
 title: "The answer streams into its thread — asking or replying reaches the server's session, and the answer is written into the thread with no terminal opened"
 parent: 172
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-27
 updated: 2026-10-28
@@ -29,7 +29,7 @@ opening beside the canvas for every question (F-171-04).**
 - [x] `tasks/00_conversation-events-become-the-live-turn.feature` — the pure reducer from the stream's `conversation` events to each thread's live turn and the session's state
 - [x] `tasks/01_asking-and-replying-reach-the-server-session.feature` — what each editor action delivers, and the surface that opens no dock
 - [x] `tasks/02_seen-streaming-in-the-browser.feature` — a stand-in session streams into a real browser
-- [ ] `tasks/03_a-live-answer-streams-into-the-thread.feature` — the operator's run with the real architect
+- [x] `tasks/03_a-live-answer-streams-into-the-thread.feature` — the operator's run with the real architect
 - [x] `tasks/04_publish-says-it-published.feature` — Publish says it published; the ADR link stays the architect's (`@bug`, F-172-16)
 
 ## Notes

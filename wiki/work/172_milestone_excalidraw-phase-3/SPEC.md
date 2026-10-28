@@ -3,7 +3,7 @@ type: milestone
 number: 172
 slug: excalidraw-phase-3
 title: "Excalidraw phase 3 — the architect conversation streams into the editor, through a designed UI"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-25
 updated: 2026-10-28
@@ -46,7 +46,7 @@ Out of scope:
 
 - [x] `stories/00_story_the-architect-answers-in-a-headless-session/` — one stream-json `claude` per open diagram on the board's server, its turns streamed on the diagram's events stream (ADR-001, ADR-002)
 - [x] `stories/01_story_every-conversation-in-one-panel/` — threads, proposals and the composer in one panel beside the canvas, as the committed mocks draw them (ADR-003)
-- [ ] `stories/02_story_the-answer-streams-into-its-thread/` — asking and replying reach the server's session and the answer is written into the thread, no terminal opened (depends 00, 01)
+- [x] `stories/02_story_the-answer-streams-into-its-thread/` — asking and replying reach the server's session and the answer is written into the thread, no terminal opened (depends 00, 01)
 - [x] `stories/03_story_the-diagram-surface-has-no-terminal/` — the dock's posture author and the terminal's later-input seam leave with the dock (depends 02)
 - [x] `stories/04_story_a-right-click-leaves-the-drawing-true/` — F-171-03 reproduced first, then fixed or ruled out
 
