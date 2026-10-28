@@ -503,6 +503,18 @@ export const diagramSceneReviewTests = [
     assert.deepEqual(published.written, ["diagrams/ADR-002-scene.svg", "diagrams/ADR-002-scene.png"]);
     assert.equal(published.block, "![ADR-002 — Scene](diagrams/ADR-002-scene.svg)\n\nSource: [ADR-002-scene.excalidraw](diagrams/ADR-002-scene.excalidraw) · PNG: [ADR-002-scene.png](diagrams/ADR-002-scene.png)");
   }) },
+  { name: "172/02 task04 E2 E3 · publish answers whether the figure's own ADR shows it — a quoted block or another ADR's link does not", run: () => withFixture(async (fx) => {
+    const saved = await fx.saved(TWO);
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>';
+    const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from("rest")]).toString("base64");
+    const published = await fx.run("publish", { baseRevision: saved.revision, svg, png });
+    assert.equal(published.linked, false);
+    const architecture = path.join(fx.item, "ARCHITECTURE.md");
+    await writeFile(architecture, `# Demo\n\n## ADR-002 — Scene\n\n\`${published.block.split("\n")[0]}\`\n\n## ADR-003 — Other\n\n${published.block}\n`);
+    assert.equal((await fx.run("publish", { baseRevision: saved.revision, svg, png })).linked, false);
+    await writeFile(architecture, `# Demo\n\n## ADR-002 — Scene\n\n${published.block}\n`);
+    assert.equal((await fx.run("publish", { baseRevision: saved.revision, svg, png })).linked, true);
+  }) },
   { name: "review: delivered items refuse writes but proposals and context still read", run: () => withFixture(async (fx) => {
     const { saved, request } = await seeded(fx);
     const { proposal } = await propose(fx, request, saved.revision);

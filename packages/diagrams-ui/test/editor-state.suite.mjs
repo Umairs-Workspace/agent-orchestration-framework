@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { DELIVERY_ACTIONS, deliveryFor, POLL_MS, describeCounts, describeError, diagramReviewInvocation, openNotes, operationCounts, pendingProposals, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, staleConflictIds, touchedIds } from "@aof/diagrams-ui/editor-state";
+import { DELIVERY_ACTIONS, deliveryFor, POLL_MS, describeCounts, describeError, diagramReviewInvocation, openNotes, operationCounts, pendingProposals, publishNotice, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, staleConflictIds, touchedIds } from "@aof/diagrams-ui/editor-state";
 
 const scene = () => ({ elements: [{ id: "api", type: "text", text: "API", x: 10, y: 20, customData: { adr: "ADR-002" } }], files: {}, appState: { viewBackgroundColor: "#fff", gridSize: 20 } });
 export const sceneDraftTests = [
@@ -69,6 +69,11 @@ export const reviewStateTests = [
     assert.equal(shouldPoll({ open: true, visible: true }), true);
     assert.equal(shouldPoll({ open: true, visible: false }), false);
     assert.equal(shouldPoll({ open: false, visible: true }), false);
+  } },
+  { name: "172/02 task04 E1 E2 · Publish says it published, and names a missing ADR link without a block to paste", run: () => {
+    assert.equal(publishNotice({ linked: true }), "Diagram published.");
+    assert.equal(publishNotice({ linked: false }), "Diagram published. The ADR does not show this figure yet — ask the architect to link it.");
+    assert.doesNotMatch(publishNotice({ linked: false }), /paste|block|\]\(/i);
   } },
 ];
 

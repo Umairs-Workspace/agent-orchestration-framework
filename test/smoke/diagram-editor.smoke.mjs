@@ -412,12 +412,13 @@ try {
 
   // ── Publish: the figure the ADR shows is exported from this canvas ─────────────────────────
   await page.getByRole("button", { name: "Publish figure" }).click();
-  await waitForText(page, "Published diagrams/", 60000);
+  await waitForText(page, "Diagram published.", 60000);
   const svg = readFileSync(path.join(on.item, "diagrams", "ADR-002-scene.svg"), "utf8");
   const png = readFileSync(path.join(on.item, "diagrams", "ADR-002-scene.png"));
   check("publish: the SVG the ADR links is the editor's export, and the owed PNG is written", svg.includes("<svg") && !svg.includes("old figure") && png.subarray(1, 4).toString() === "PNG", `${svg.length} B svg, ${png.length} B png`);
   check("publish: the status line says the saved diagram is published", (await page.locator("header [role=status]").first().innerText()) === "Saved and published");
-  check("publish: the editor shows the block to paste under the ADR", (await page.getByLabel("ADR diagram block").inputValue()).includes("Source: [ADR-002-scene.excalidraw](diagrams/ADR-002-scene.excalidraw)"));
+  // F-172-16: the ADR already links the figure, so the notice says only that it published, and no block is handed over.
+  check("publish: 172/02 task04 E1 · the notice says the diagram was published, with no block to paste", (await page.locator("[data-aof-editor-notice]").innerText()) === "Diagram published." && await page.getByLabel("ADR diagram block").count() === 0 && await page.getByRole("button", { name: "Copy block" }).count() === 0);
   await page.screenshot({ path: path.join(shots, "04-published.png") });
 
   // ── 171/00: Ask architect at the selection, on the drawn canvas ─────────────────────────────

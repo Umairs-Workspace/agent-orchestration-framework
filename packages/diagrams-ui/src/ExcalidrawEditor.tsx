@@ -16,7 +16,7 @@ import { CONVERSATION_INITIAL, batchLine, conversationStep, sessionChip } from "
 import type { ConversationEvent, ConversationState } from "./conversation-stream.mjs";
 import { CANVAS_UPDATED, CHANGED_ELSEWHERE, STREAM_INITIAL, streamStep } from "./review-stream.mjs";
 import type { StreamEvent, StreamState } from "./review-stream.mjs";
-import { POLL_MS, askArchitect, deliveryFor, describeCounts, describeError, diagramReviewInvocation, openNotes, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, touchedIds } from "./editor-state.mjs";
+import { POLL_MS, askArchitect, deliveryFor, describeCounts, describeError, diagramReviewInvocation, openNotes, publishNotice, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, touchedIds } from "./editor-state.mjs";
 
 // THE EDITOR (milestone 170, ADR-010..ADR-013). The diagram is stored as Excalidraw's own scene, so
 // this canvas IS the diagram: anything can be drawn, and your project's libraries are in the Library
@@ -92,7 +92,6 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose }: { itemRef
   const [ready, setReady] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [invocation, setInvocation] = useState<string | null>(null);
-  const [block, setBlock] = useState<string | null>(null);
   const [view, setView] = useState<string | null>(null);
   const [review, setReview] = useState<ReviewList>({ requests: [], proposals: [] });
   // The records are read once before the panel lists anything; until then it shows its skeleton.
@@ -456,7 +455,7 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose }: { itemRef
     } finally { await refreshReview(); }
   };
   // PUBLISH: the SVG — and a PNG, written when the project owes one — exported from this canvas, written
-  // where the ADR links them. The answer is the block the architect pastes.
+  // where the ADR links them. The notice says so, and names a missing ADR link (F-172-16).
   const publish = async () => {
     if (dirty || !loaded?.present) await saveSnapshot();
     const live = api.current;
@@ -467,10 +466,9 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose }: { itemRef
     const svgElement = await exportToSvg({ elements, appState, files, exportPadding: 16 });
     const svg = new XMLSerializer().serializeToString(svgElement);
     const png = await base64Of(await exportToBlob({ elements, appState, files, mimeType: "image/png", exportPadding: 16 }));
-    const answer = await post<{ written: string[]; block: string; revision: string }>({ action: "publish", baseRevision: revision.current, svg, png });
+    const answer = await post<{ written: string[]; linked: boolean; revision: string }>({ action: "publish", baseRevision: revision.current, svg, png });
     setPublishedRevision(answer.revision);
-    setBlock(answer.block);
-    setNotice(`Published ${answer.written.join(" and ")}. The ADR shows the new figure; paste the block below under the ADR if it is not linked yet.`);
+    setNotice(publishNotice(answer));
   };
   const showView = () => setView(sceneView((api.current?.getSceneElements() ?? []) as never));
   const close = () => { if (!busy && (!dirty || window.confirm("Discard unsaved diagram edits?"))) onRequestClose(); };
@@ -526,8 +524,6 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose }: { itemRef
     {error ? <p role="alert" className="border-b px-4 py-2 text-sm text-red-700">{error} Your canvas has not been replaced.</p> : null}
     {notice ? <p role="status" data-aof-editor-notice="" className="border-b px-4 py-1 text-xs text-muted-foreground">{notice}</p> : null}
     {view ? <div className="shrink-0 border-b px-4 py-2 text-xs"><p className="text-muted-foreground">What the architect reads (unsaved shapes get their ids on save):</p><textarea aria-label="Mermaid view" readOnly value={view} className="mt-1 h-28 w-full rounded border p-2 font-mono text-xs" /><button type="button" onClick={() => setView(null)} className="rounded border px-2 py-0.5">Hide</button></div> : null}
-    {block ? <div className="shrink-0 border-b px-4 py-2 text-xs"><textarea aria-label="ADR diagram block" readOnly value={block} className="h-16 w-full rounded border p-2 font-mono text-xs" />
-      <button type="button" onClick={() => void navigator.clipboard.writeText(block).catch(() => setError("Clipboard unavailable; select and copy the block manually."))} className="rounded border px-2 py-1 text-xs">Copy block</button></div> : null}
     <div className="relative flex min-h-0 flex-1" style={{ minHeight: "40vh" }}>
       {loaded ? <div className="min-h-0 min-w-0 flex-1"><Excalidraw
         initialData={{ elements: loaded.scene.elements as never, appState: { viewBackgroundColor: "#ffffff", ...loaded.scene.appState, ...canvasDefaults(loaded.palette as never) }, files: loaded.scene.files as never, libraryItems: libraryItems as never, scrollToContent: true }}

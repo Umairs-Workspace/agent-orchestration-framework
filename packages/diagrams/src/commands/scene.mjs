@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
-import { diagramFile, diagramLibrariesDir, diagramPaths, globalDiagramLibrariesDir, diagramReviewPaths, hasAdrSection, isReviewId, readAdrTitle, readDiagramBrief, renderDiagramBlock, reviewRecordPath, stemAdr } from "../layout.mjs";
+import { diagramFile, diagramLibrariesDir, diagramPaths, globalDiagramLibrariesDir, diagramReviewPaths, hasAdrSection, isReviewId, parseDiagramLinks, readAdrTitle, readDiagramBrief, renderDiagramBlock, reviewRecordPath, stemAdr } from "../layout.mjs";
 import { LIMITS, diffModels, parseProfile, serializeProfile, validateModel } from "../mermaid-profile.mjs";
 import { assignAliases, projectScene } from "../scene-view.mjs";
 import { REVIEW_SESSION_TOOLS, reviewInvocation } from "../review-session.mjs";
@@ -800,8 +800,9 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
       }
 
       // PUBLISH: the editor exports the SVG — and the PNG when `work.diagrams.formats` owes one — from the
-      // canvas, and this writes them where the ADR's block links. It answers that block: the architect
-      // pastes it under the ADR (the single writer of ARCHITECTURE.md).
+      // canvas, and this writes them where the ADR's block links. It answers that block — the architect
+      // pastes it under the ADR (the single writer of ARCHITECTURE.md) — and whether the ADR already
+      // shows the figure, so the editor names a missing link instead of handing over the block (F-172-16).
       if (action === "publish") {
         if (typeof input.svg !== "string" || byteLength(input.svg) > MAX_SVG || !SVG_DOCUMENT.test(input.svg)) fail("svg must be one SVG document of at most 4 MB.", "diagram-publish-invalid");
         const owed = resolveWorkDiagrams(ctx?.workspace?.config ?? {});
@@ -819,7 +820,8 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
           if (png) await writeAtomic(path.resolve(paths.png), png);
           const written = [paths.svg, ...(png ? [paths.png] : [])].map((target) => path.relative(item.dir, path.resolve(target)).split(path.sep).join("/"));
           const block = renderDiagramBlock({ adrId: adr, title: readAdrTitle(architecture, adr) ?? adr, stem: spec.stem, sourceExt: ".excalidraw", formats });
-          return { ref: item.ref, file: spec.name, revision, written, block };
+          const linked = parseDiagramLinks(architecture).some((link) => link.adr === adr && link.kind === "image" && link.stem === spec.stem);
+          return { ref: item.ref, file: spec.name, revision, written, block, linked };
         });
       }
 

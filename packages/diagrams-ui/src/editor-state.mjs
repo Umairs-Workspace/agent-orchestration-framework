@@ -150,6 +150,12 @@ export function describeError(code, message) {
   }
 }
 
+// What Publish says (F-172-16): that it published, and — only when the ADR does not show the figure
+// yet — that the architect links it. The link block is the architect's, never the operator's to paste.
+export function publishNotice({ linked = true } = {}) {
+  return linked ? "Diagram published." : "Diagram published. The ADR does not show this figure yet — ask the architect to link it.";
+}
+
 // Poll only while the editor is open and the tab is visible — and, since 171/ADR-003, only while the
 // review stream is not open: the poll is the stream's fallback, not a second channel.
 export function shouldPoll({ open = true, visible = true, stream = "down" } = {}) {

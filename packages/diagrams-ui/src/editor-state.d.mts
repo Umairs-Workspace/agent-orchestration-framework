@@ -18,5 +18,6 @@ export declare function touchedIds(proposal: { changes?: ReadonlyArray<{ key: st
 export declare function selectionFor(ids: string[]): Record<string, true>;
 export declare function staleConflictIds(message: string | null | undefined): string[];
 export declare function describeError(code: string | null | undefined, message: string | null | undefined): string;
+export declare function publishNotice(answer?: { linked?: boolean }): string;
 export declare function shouldPoll(state?: { open?: boolean; visible?: boolean; stream?: "connecting" | "open" | "down" | "closed" }): boolean;
 export declare function openNotes<T extends { status: string }>(requests: T[] | null | undefined): T[];
