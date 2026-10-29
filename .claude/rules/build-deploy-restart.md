@@ -173,12 +173,17 @@ tile. Only x86_64 is verified; arm64 builds the same way but is unmeasured (175 
    aof mesh relay --json          # → "nodeId": "<id>"
    ```
    then set it in the GLOBAL config `~/.aof/aof.config.json`, the one the supervisor's cwd-less
-   `mesh status` reads. Merge it into the file if one exists:
+   `mesh status` reads, together with the fabric. Merge it into the file if one exists:
    ```json
-   { "mesh": { "relay": { "controlNode": "<id>" } } }
+   { "mesh": { "fabric": "direct", "address": "127.0.0.1", "relay": { "controlNode": "<id>" } } }
    ```
    `aof mesh status --json` must now answer `isControlNode: true`. There is no verb for this. It
    is a config key, as on the Windows control node.
+   - **The fabric is not optional.** Without `mesh.fabric`, `mesh serve --serve` refuses with
+     `fabric-undeclared` and the app restarts it about once a second, so the icon flashes
+     degraded (175/F-03). `direct` is the no-overlay fabric. `address: "127.0.0.1"` keeps
+     `:4182` on loopback, because this laptop has no peers. Without it, `direct` binds the first
+     LAN IPv4.
 4. **Install the app and register login autostart**, from a shell whose PATH resolves `claude`.
    The LaunchAgent captures THIS shell's PATH, and the daemons spawn `claude` by name:
    ```

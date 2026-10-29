@@ -7,7 +7,9 @@
   <key>CFBundleExecutable</key>
   <string>aof-mesh-desktop</string>
   <key>CFBundleName</key>
-  <string>aof mesh</string>
+  <string>AOF Desktop</string>
+  <key>CFBundleDisplayName</key>
+  <string>AOF Desktop</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleInfoDictionaryVersion</key>

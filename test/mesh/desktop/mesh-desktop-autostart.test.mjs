@@ -757,6 +757,7 @@ export const meshDesktopAutostartTests = [
       const PATH = "/Users/u/.nvm/versions/node/v24.14.1/bin:/usr/bin:/bin";
       const xml = renderLaunchAgent({ label: "com.aof.mesh.desktop", executable: "/x/aof-mesh-desktop.app/Contents/MacOS/aof-mesh-desktop", path: PATH });
       assert.equal(readLaunchAgentPath(xml), PATH);
+      assert.deepEqual(parseLaunchAgent(xml).AssociatedBundleIdentifiers, ["com.aof.mesh.desktop"], "Login Items names the job by its app (175/F-05)");
       assert.equal(readLaunchAgentPath(renderLaunchAgent({ label: "l", executable: "/x", path: "/a&b<c>" })), "/a&b<c>", "an escaped PATH reads back as given");
       assert.equal(readLaunchAgentPath("not a plist"), null, "anything else reads as no PATH");
     },

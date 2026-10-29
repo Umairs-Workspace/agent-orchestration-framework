@@ -27,8 +27,8 @@ mod supervisor;
 use mesh_desktop_core::icon::{icon_state, AppSupervisionState, FleetSummary, ServerProcessState};
 use mesh_desktop_core::read_only_inventory::{window_affordance_inventory, ALLOWED_MESH_VERBS};
 use mesh_desktop_core::tray_menu::{
-    tray_menu, FleetHeaderSummary, MenuItemId, MenuItemKind, Role, ServerState, UiState,
-    WindowVisibility,
+    menu_needs_replacing, tray_menu, FleetHeaderSummary, MenuItem as CoreMenuItem, MenuItemId,
+    MenuItemKind, Role, ServerState, UiState, WindowVisibility,
 };
 use mesh_desktop_core::view_model::node_rows;
 use serde::Serialize;
@@ -256,10 +256,8 @@ fn do_toggle_window(app: &AppHandle, shared: &SharedState) {
     }
 }
 
-/// Build the native tray menu from the core's PURE `tray_menu()` model — this function
-/// only translates the returned descriptor into `tauri::menu` items; it makes NO
-/// menu-shape decisions of its own (those live in `mesh_desktop_core::tray_menu`).
-fn build_tray_menu(app: &AppHandle, s: &SupervisorState) -> tauri::Result<Menu<tauri::Wry>> {
+/// The core's PURE `tray_menu()` descriptor for the current supervisor state.
+fn tray_menu_items(s: &SupervisorState) -> Vec<CoreMenuItem> {
     let role = if s.is_control_node { Role::Control } else { Role::Worker };
     // A non-stopped local server ("running"/"restarting") shows the "Stop mesh" control.
     let server = if s.server_signal() == "stopped" { ServerState::Stopped } else { ServerState::Running };
@@ -274,7 +272,13 @@ fn build_tray_menu(app: &AppHandle, s: &SupervisorState) -> tauri::Result<Menu<t
         None => FleetHeaderSummary::Loading,
     };
 
-    let items = tray_menu(role, server, ui, window, fleet);
+    tray_menu(role, server, ui, window, fleet)
+}
+
+/// Build the native tray menu from the core's descriptor — this function only translates
+/// it into `tauri::menu` items; it makes NO menu-shape decisions of its own (those live in
+/// `mesh_desktop_core::tray_menu`).
+fn build_tray_menu(app: &AppHandle, items: &[CoreMenuItem]) -> tauri::Result<Menu<tauri::Wry>> {
     let builder = Menu::new(app)?;
     for item in items {
         match item.kind {
@@ -341,20 +345,32 @@ fn tray_icon_bytes(s: &SupervisorState) -> &'static [u8] {
     }
 }
 
-/// Rebuild the tray menu + icon from the current supervisor state. MUST run on the main
-/// thread (the only thread that may touch the native tray on Windows) — `supervisor::
-/// refresh_tray` marshals here via `run_on_main_thread`.
+/// What the native tray last showed: the menu descriptor and the glyph. Touched only on
+/// the main thread, inside `rebuild_tray`.
+static APPLIED_TRAY: Mutex<(Option<Vec<CoreMenuItem>>, Option<&'static [u8]>)> = Mutex::new((None, None));
+
+/// Refresh the tray menu + icon from the current supervisor state, replacing each only when
+/// it changed (175/F-04): on macOS a replaced menu closes while the operator has it open.
+/// MUST run on the main thread (the only thread that may touch the native tray on
+/// Windows) — `supervisor::refresh_tray` marshals here via `run_on_main_thread`.
 pub fn rebuild_tray(app: &AppHandle, shared: &SharedState) {
     if let Some(tray) = app.tray_by_id("main-tray") {
-        let (menu, icon_bytes) = {
+        let (items, icon_bytes) = {
             let g = shared.lock().expect("supervisor state mutex poisoned");
-            (build_tray_menu(app, &g).ok(), tray_icon_bytes(&g))
+            (tray_menu_items(&g), tray_icon_bytes(&g))
         };
-        if let Some(menu) = menu {
-            let _ = tray.set_menu(Some(menu));
+        let mut applied = APPLIED_TRAY.lock().expect("applied tray mutex poisoned");
+        if menu_needs_replacing(applied.0.as_deref(), &items) {
+            if let Ok(menu) = build_tray_menu(app, &items) {
+                let _ = tray.set_menu(Some(menu));
+                applied.0 = Some(items);
+            }
         }
-        if let Ok(img) = tauri::image::Image::from_bytes(icon_bytes) {
-            let _ = tray.set_icon(Some(img));
+        if !applied.1.is_some_and(|shown| std::ptr::eq(shown, icon_bytes)) {
+            if let Ok(img) = tauri::image::Image::from_bytes(icon_bytes) {
+                let _ = tray.set_icon(Some(img));
+                applied.1 = Some(icon_bytes);
+            }
         }
     }
 }
@@ -456,7 +472,11 @@ fn main() {
 
             let (menu, icon_bytes) = {
                 let g = shared.lock().expect("supervisor state mutex poisoned");
-                (build_tray_menu(&handle, &g)?, tray_icon_bytes(&g))
+                let items = tray_menu_items(&g);
+                let menu = build_tray_menu(&handle, &items)?;
+                let icon_bytes = tray_icon_bytes(&g);
+                *APPLIED_TRAY.lock().expect("applied tray mutex poisoned") = (Some(items), Some(icon_bytes));
+                (menu, icon_bytes)
             };
 
             let _tray = TrayIconBuilder::with_id("main-tray")

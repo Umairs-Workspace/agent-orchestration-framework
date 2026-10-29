@@ -11,7 +11,9 @@
 //     the login keychain (and so `claude`'s credentials) is unlocked (RESEARCH P1, P4);
 //   KeepAlive false: Quit stays quit, as with the Windows Run key;
 //   EnvironmentVariables.PATH: the installing shell's PATH, because launchd hands a job
-//     `/usr/bin:/bin:/usr/sbin:/sbin` and `claude` is spawned by name.
+//     `/usr/bin:/bin:/usr/sbin:/sbin` and `claude` is spawned by name;
+//   AssociatedBundleIdentifiers: the label, which is the app's bundle id (ADR-004 §1), so
+//     Login Items names the job by the app ("AOF Desktop"), not by its executable (175/F-05).
 export function renderLaunchAgent({ label, executable, path }) {
   const string = (value) => `<string>${escapeXml(value)}</string>`;
   return [
@@ -24,6 +26,10 @@ export function renderLaunchAgent({ label, executable, path }) {
     "  <key>ProgramArguments</key>",
     "  <array>",
     `    ${string(executable)}`,
+    "  </array>",
+    "  <key>AssociatedBundleIdentifiers</key>",
+    "  <array>",
+    `    ${string(label)}`,
     "  </array>",
     "  <key>RunAtLoad</key>",
     "  <true/>",
