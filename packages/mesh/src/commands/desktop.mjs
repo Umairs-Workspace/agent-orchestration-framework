@@ -482,20 +482,28 @@ async function launchDesktopApp(options = {}) {
 }
 
 // launchThroughLaunchd(options, layout) -> the launch answer when launchd started the app, or
-// null when no LaunchAgent is registered (175/ADR-003 §2). A loaded job is kickstarted; a plist
-// on disk that is not loaded is bootstrapped, which starts it (RunAtLoad). launchd starts the job
-// inside the login session even when asked from SSH. Every `launchctl` goes through the one
-// injected runner.
+// null when no LaunchAgent is registered (175/ADR-003 §2). A plist on disk is bootstrapped,
+// which starts it (RunAtLoad). If the job is already loaded but not running, it is booted out
+// first, because a loaded job keeps the definition it was loaded with: after
+// `install --autostart` rewrote the plist (a new PATH, a renamed executable), a kickstart would
+// start the stale copy (175/F-08). A running job, or a loaded one whose plist is gone, is
+// kickstarted. launchd starts the job inside the login session even when asked from SSH. Every
+// `launchctl` goes through the one injected runner.
 async function launchThroughLaunchd(options, layout) {
   const run = typeof options.runner === "function" ? options.runner : defaultRunner();
   const uid = options.uid ?? process.getuid?.();
   const domain = `gui/${uid}`;
   const service = `${domain}/${LAUNCH_AGENT_LABEL}`;
 
-  const loaded = (await run("launchctl", ["print", service]))?.code === 0;
+  const printed = await run("launchctl", ["print", service]);
+  const loaded = printed?.code === 0;
+  const running = loaded && /^\s*state = running\s*$/m.test(printed?.stdout ?? "");
+  const onDisk = await pathExists(layout.launchAgent);
   let argv;
-  if (loaded) argv = ["kickstart", service];
-  else if (await pathExists(layout.launchAgent)) argv = ["bootstrap", domain, layout.launchAgent];
+  if (onDisk && !running) {
+    if (loaded) await run("launchctl", ["bootout", service]);
+    argv = ["bootstrap", domain, layout.launchAgent];
+  } else if (loaded) argv = ["kickstart", service];
   else return null;
 
   const answer = await run("launchctl", argv);

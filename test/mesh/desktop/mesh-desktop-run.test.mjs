@@ -29,16 +29,22 @@ import { withMeshDesktopFixture, seedInstalledApp } from "../../support/mesh-des
 // 175/02 — a fake launchd that MODELS one job, `com.aof.mesh.desktop` in `gui/501`, and records
 // every command as one line. `print` exits 0 for a loaded job and 113 (launchd's "could not
 // find service") otherwise; `bootstrap` loads the job.
-function makeFakeLaunchd({ loaded = false } = {}) {
+function makeFakeLaunchd({ loaded = false, state = "running" } = {}) {
   const asked = [];
   let isLoaded = loaded;
   const runner = async (file, args) => {
     asked.push([file, ...args].join(" "));
     if (file !== "launchctl") return { stdout: "", stderr: "", code: -1 };
     const [verb] = args;
-    if (verb === "print") return isLoaded ? { stdout: "state = running", stderr: "", code: 0 } : { stdout: "", stderr: "Could not find service", code: 113 };
+    if (verb === "print") return isLoaded ? { stdout: `\tstate = ${state}\n`, stderr: "", code: 0 } : { stdout: "", stderr: "Could not find service", code: 113 };
     if (verb === "kickstart") return { stdout: "", stderr: "", code: isLoaded ? 0 : 113 };
+    if (verb === "bootout") {
+      const was = isLoaded;
+      isLoaded = false;
+      return { stdout: "", stderr: "", code: was ? 0 : 113 };
+    }
     if (verb === "bootstrap") {
+      if (isLoaded) return { stdout: "", stderr: "Bootstrap failed: 5: Input/output error", code: 5 };
       isLoaded = true;
       return { stdout: "", stderr: "", code: 0 };
     }
@@ -306,6 +312,28 @@ export const meshDesktopRunTests = [
         const { spawnFn, calls } = makeFixtureSpawn();
         const result = await launchDesktopApp({ platform: "darwin", installDir, home, uid: 501, runner: launchd.runner, spawnFn, env: {} });
         assert.ok(launchd.asked.includes(`launchctl bootstrap gui/501 ${plist}`), launchd.asked.join(" | "));
+        assert.equal(calls.length, 0, "spawnFn was never called");
+        assert.equal(result.launch, "launchd");
+      });
+    },
+  },
+
+  // 175/F-08 · a loaded job that is not running is reloaded from the plist on disk, so a
+  // re-registration (a new PATH, a renamed executable) is what starts, not the stale definition
+  {
+    name: "175/F-08 · a loaded but stopped job is booted out and bootstrapped from the plist on disk, never kickstarted",
+    async run() {
+      await withDarwinInstall(async ({ installDir, home }) => {
+        const plist = path.join(home, "Library", "LaunchAgents", "com.aof.mesh.desktop.plist");
+        await mkdir(path.dirname(plist), { recursive: true });
+        await writeFile(plist, "<plist/>", "utf8");
+        const launchd = makeFakeLaunchd({ loaded: true, state: "not running" });
+        const { spawnFn, calls } = makeFixtureSpawn();
+        const result = await launchDesktopApp({ platform: "darwin", installDir, home, uid: 501, runner: launchd.runner, spawnFn, env: {} });
+        const bootout = launchd.asked.indexOf("launchctl bootout gui/501/com.aof.mesh.desktop");
+        const bootstrap = launchd.asked.indexOf(`launchctl bootstrap gui/501 ${plist}`);
+        assert.ok(bootout >= 0 && bootstrap > bootout, launchd.asked.join(" | "));
+        assert.ok(!launchd.asked.some((c) => /launchctl kickstart/.test(c)), "the stale definition is never kickstarted");
         assert.equal(calls.length, 0, "spawnFn was never called");
         assert.equal(result.launch, "launchd");
       });
