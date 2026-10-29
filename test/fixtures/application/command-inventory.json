@@ -3087,7 +3087,156 @@
         "memory"
       ],
       "spec": {
-        "usage": "aof work memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--lessons] [--input <file>] [--exclude <item>/R<n>] [--json]",
+        "usage": "aof memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--lessons] [--input <file>] [--exclude <item>/R<n>] [--json]",
+        "flags": {
+          "block": {
+            "type": "boolean",
+            "description": "recall only: render the compact injection block a read hook pastes into agent context"
+          },
+          "all": {
+            "type": "boolean",
+            "description": "reindex/ingest: rebuild over the whole stream; recall: return the whole scoped result, overriding --limit"
+          },
+          "lessons": {
+            "type": "boolean",
+            "description": "status only: also report observed effectiveness per lesson"
+          },
+          "input": {
+            "type": "string",
+            "description": "record-recall only: the JSON file holding the completed recall observation"
+          },
+          "exclude": {
+            "type": "string",
+            "description": "recurrence only: the <item>/R<n> lesson being written, never its own candidate"
+          },
+          "limit": {
+            "type": "string",
+            "description": "recall: cap the records returned (a non-positive or non-numeric value means the backend default)"
+          },
+          "area": {
+            "type": "string",
+            "description": "filter recall by area"
+          },
+          "stage": {
+            "type": "string",
+            "description": "filter recall by stage"
+          },
+          "kind": {
+            "type": "string",
+            "description": "filter recall by kind"
+          },
+          "owner": {
+            "type": "string",
+            "description": "filter recall by owner"
+          },
+          "item": {
+            "type": "string",
+            "description": "filter recall by item (also the reindex/ingest rebuild scope)"
+          },
+          "status": {
+            "type": "string",
+            "description": "filter recall by status"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "memory",
+    "input": {
+      "type": "object",
+      "properties": {
+        "verb": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "query": {
+          "type": "string"
+        },
+        "only": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "inputFile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "exclude": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scope": {
+          "type": "object",
+          "properties": {
+            "area": {
+              "type": "string"
+            },
+            "stage": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string"
+            },
+            "owner": {
+              "type": "string"
+            },
+            "item": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "opts": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "all": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "block": {
+          "type": "boolean"
+        },
+        "lessons": {
+          "type": "boolean"
+        },
+        "help": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "verb"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "memory"
+      ],
+      "spec": {
+        "usage": "aof memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--lessons] [--input <file>] [--exclude <item>/R<n>] [--json]",
         "flags": {
           "block": {
             "type": "boolean",

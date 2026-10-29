@@ -150,7 +150,7 @@ async function resolveConfiguredBackend(config, registry = BACKEND_REGISTRY) {
 
 // ----------------------------------------------------------------- argv ----
 
-// Parse `aof work memory <verb> [query] [<ref>] [--scope-flags] [--limit N] [--json]`.
+// Parse `aof memory <verb> [query] [<ref>] [--scope-flags] [--limit N] [--json]`.
 //   recall : a free-text query string (first positional).
 //   record-recall : the owning item's <ref> (first positional) and `--input <json-file>`.
 //   recurrence : the new lesson's text (the positionals, as recall's query) and `--exclude <item>/R<n>`,
@@ -311,7 +311,10 @@ function renderRecallBlock(recallResult, { limit } = {}) {
     // in it), after the title and before the tags, so the source stays last. Every other record's
     // line is byte-for-byte what it was.
     const summary = layerOf(record.recordType) === "episodic" && record.summary ? ` · ${record.summary}` : "";
-    return `${id} · ${record.kind || record.recordType} · ${record.area} · ${record.title}${summary}${tags} · ${record.source}`;
+    // 178/ADR-002 — the planning documents the record's item came from, after the tags and before
+    // the source. A record with none, and one from a store before version 4, renders as before.
+    const origin = Array.isArray(record.origin) && record.origin.length > 0 ? ` · origin ${record.origin.join("; ")}` : "";
+    return `${id} · ${record.kind || record.recordType} · ${record.area} · ${record.title}${summary}${tags}${origin} · ${record.source}`;
   });
   return lines.join("\n") + "\n";
 }
@@ -364,7 +367,7 @@ function renderMemory(verb, result, { block = false, limit, help = false, render
     // rebuilds it, rather than reported as if its numbers were current.
     const index = result.index;
     if (index?.stale) {
-      lines.push(`memory: the index is version ${index.version}, this build writes ${index.current} — run \`aof work memory ingest\` to rebuild it`);
+      lines.push(`memory: the index is version ${index.version}, this build writes ${index.current} — run \`aof memory ingest\` to rebuild it`);
     }
     return lines.join("\n");
   }
@@ -448,7 +451,7 @@ function defaultRender(verb, result, { json, block, limit, help }, log) {
 // this same constant — two spellings of the flag vocabulary had already drifted once
 // (`--all`/`--block` present in one and absent from the other), and a usage line that
 // disagrees with itself is the seam saying two things about its own surface.
-const MEMORY_USAGE = "aof work memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--lessons] [--input <file>] [--exclude <item>/R<n>] [--json]";
+const MEMORY_USAGE = "aof memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--lessons] [--input <file>] [--exclude <item>/R<n>] [--json]";
 
 function memoryUsage() {
   return [

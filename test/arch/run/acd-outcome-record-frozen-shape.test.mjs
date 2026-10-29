@@ -89,13 +89,14 @@ async function outcomeParser() {
 
 export const archTests = [
   {
-    name: "arch/39 ADR-001: INDEX_VERSION === GRAPHIFY_INDEX_VERSION === 3 (delivery memory added no field; 148/ADR-003 added tags, 157/ADR-002 a JSON locator, in lockstep) — LIVE, non-vacuous",
+    name: "arch/39 ADR-001: INDEX_VERSION === GRAPHIFY_INDEX_VERSION === 4 (delivery memory added no field; 148/ADR-003 added tags, 157/ADR-002 a JSON locator, 178/ADR-002 origin, in lockstep) — LIVE, non-vacuous",
     run: () => {
       // 39's delivery records added no field, so 39 left the version at 1. 148/ADR-003 added
       // `tags` to every record and moved BOTH constants to 2 together — the lockstep this pins.
       // 157/ADR-002 moved both to 3 the same way: a source may now be a JSON locator.
-      assert.equal(INDEX_VERSION, 3, "local INDEX_VERSION is 3 (157/ADR-002 extended the source grammar)");
-      assert.equal(GRAPHIFY_INDEX_VERSION, 3, "graphify GRAPHIFY_INDEX_VERSION is 3, in lockstep");
+      // 178/ADR-002 moved both to 4: every record gained `origin`.
+      assert.equal(INDEX_VERSION, 4, "local INDEX_VERSION is 4 (178/ADR-002 added origin)");
+      assert.equal(GRAPHIFY_INDEX_VERSION, 4, "graphify GRAPHIFY_INDEX_VERSION is 4, in lockstep");
       assert.equal(
         INDEX_VERSION,
         GRAPHIFY_INDEX_VERSION,

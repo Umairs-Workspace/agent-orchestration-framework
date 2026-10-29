@@ -182,7 +182,7 @@ aof work validate [ref] [--json]     # folder↔frontmatter, tag vocabulary, dep
 aof work doc <ref> <DOC> [--json]    # read a record doc (SPEC / STATE / ARCHITECTURE / …)
 aof work tasks <ref> [--json]        # an item's task list
 aof work feedback <ref> --note "…" [--actor …]   # append an attributed feedback bullet (the only CLI write)
-aof work memory <verb> [args] [--json]           # recall / brief / ingest / reindex / status
+aof memory <verb> [args] [--json]                # recall / record-recall / recurrence / ingest / reindex / status
 aof work ui [--port 4180]            # serve the local board UI (built apps/ui/dist) — one origin
 aof work orchestrator [fable|opus] [--show]      # pick the main-session (orchestrator) model — Fable 5 or Opus 4.8
 aof work delegation [on|off] [--gpt-model <id>] [--show]   # toggle bulk-work delegation (default off), optionally set the model
@@ -218,9 +218,9 @@ Agents recall prior decisions, ADRs, and lessons across milestones through a con
 - **AOF.md digest** — a recallable per-milestone summary as a memory source (milestone 14).
 
 ```sh
-aof work memory status
-aof work memory reindex            # rebuild the derived index from the work stream
-aof work memory recall "pin line endings"
+aof memory status
+aof memory reindex                 # rebuild the derived index from the work stream
+aof memory recall "pin line endings"
 ```
 
 The derived index is git-ignored and re-derivable — never an authoritative second copy.

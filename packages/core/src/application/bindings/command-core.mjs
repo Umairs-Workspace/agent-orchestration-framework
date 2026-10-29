@@ -183,8 +183,9 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
   // work:find — m42, m12 — see ./commands/find.mjs's header.
   const { findCommand } = commandsFindServices;
   const { observeCommand } = commandsObserveServices;
-  // work:memory — story 128, 05/ADR-003, 05/ADR-004 — see ./commands/work/memory.mjs's header.
+  // memory and its alias work:memory — story 128, 178/ADR-001 — see ./commands/work/memory.mjs's header.
   const { memoryCommand } = commandsWorkMemoryServices;
+  const { memoryAliasCommand } = commandsWorkMemoryServices;
 
   // work:init / work:init-config / work:update — chore 51 — see ./commands/init-update.mjs's header.
   const { workInitCommand } = commandsInitUpdateServices;
@@ -315,6 +316,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
       observeCommand,
     ]),
     createKnowledgeContribution([
+      memoryAliasCommand,
       memoryCommand,
     ]),
     { name: "aof", commands: [

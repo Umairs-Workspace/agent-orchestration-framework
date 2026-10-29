@@ -263,6 +263,7 @@ export function createClaudeAutoMemory({ memoryDirFor, reportDegrade, fs = { rea
         owner: AUTO_MEMORY_OWNER,
         status: "",
         tags: [parsed.type],
+        origin: [], // 178/ADR-002: an operator memory is no stream item, so it names no planning document
         summary: parsed.summary,
         text: parsed.text,
         source: `${path.join(root, file)}:1`,

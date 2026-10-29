@@ -207,9 +207,9 @@ Feature: Episodic memory records — findings, raw feedback and terminal runs re
   Scenario: E12 · a store written before this change is stale until ingest
     Given a local store and a graphify store each written at index version 2
     When "aof work memory status --json" runs
-    Then each reports its index stale against version 3
+    Then each reports its index stale against version 4
     And recall over each still answers from the existing records
-    And after "aof work memory ingest" each reports version 3 and fresh
+    And after "aof work memory ingest" each reports version 4 and fresh
 
   Scenario: local and graphify index the same episodic identities
     Given the stream holds findings, raw feedback and terminal runs on items "39", "39/02" and "41"

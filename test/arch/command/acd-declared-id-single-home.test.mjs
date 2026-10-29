@@ -160,6 +160,7 @@ export function goldenRecords(text, kind, { item, itemSlug, workRelPath }) {
       return {
         recordType: "adr", id, item, itemSlug, title,
         area: "architecture", stage: "", kind: "", owner: "", status, tags: [],
+        origin: [], // 178/ADR-002: a parser emits [], and the indexer's walk stamps the item's
         summary: decision || invariant,
         text: [title, context, decision, invariant].filter(Boolean).join(" \n "),
         source,
@@ -192,6 +193,7 @@ export function goldenRecords(text, kind, { item, itemSlug, workRelPath }) {
       recordType: "lesson", id, item, itemSlug, title,
       area: indexed.area, stage: indexed.stage, kind: indexed.kind, owner: meta.owner ?? "",
       status: forward.status, tags: collectTags([...indexed.tags, forward.recursTag]),
+      origin: [], // 178/ADR-002: a parser emits [], and the indexer's walk stamps the item's
       summary: lesson,
       text: [title, what, why, lesson].filter(Boolean).join(" \n "),
       source,
@@ -410,8 +412,9 @@ export const archTests = [
         const golden = goldenRecords(text, kind, meta);
         assert.deepEqual(records, golden, `${file}: a record moved across the extraction`);
         // The field set is frozen (ADR-005), and asserting it here is what makes "all of them" a
-        // checked claim rather than a comment. 13 until 148/ADR-003 added `tags`, under index v2.
-        for (const record of records) assert.equal(Object.keys(record).length, 14, `${file}: ${record.id} carries the frozen 14 fields`);
+        // checked claim rather than a comment. 13 until 148/ADR-003 added `tags`, under index v2;
+        // 15 since 178/ADR-002 added `origin`, under index v4.
+        for (const record of records) assert.equal(Object.keys(record).length, 15, `${file}: ${record.id} carries the frozen 15 fields`);
         compared += records.length;
       }
       assert.equal(compared, totals.adr + totals.lesson, `every record was compared field for field (${compared})`);

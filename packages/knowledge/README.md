@@ -2,7 +2,7 @@
 
 Owns Graphify binary integration, graph normalization/impact, memory selection and projections,
 local indexing/retrieval, Graphify-backed memory, source recovery, imported-document storage and
-digest materialization. Its commands are the five graph commands, `work:memory` and `import:milestone`.
+digest materialization. Its commands are the five graph commands, `memory`, its alias `work:memory`, and `import:milestone`.
 Core assembles those descriptors through ordered `createKnowledgeContribution` groups, retaining
 the existing command order and the shared `work` namespace.
 

@@ -92,7 +92,9 @@ export const yarnInstallationTests = [
         'graphify-backends.mjs': ['@aof/contracts/error'],
         'memory/local-retrieval.mjs': ['@aof/work/ref-scope', '@aof/work/memory-vocabulary'],
         // 148/ADR-001: the lesson grammar and its vocabulary have one home, in @aof/work.
-        'memory/local-indexing.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/work/declared-id', '@aof/work/memory-vocabulary', '@aof/work/ref-scope', '@aof/foundation/fs', '@aof/foundation/markdown', '@aof/foundation/text'],
+        // 178/ADR-002 (178/F-01): `origin:` is read from the item's record doc through work's one frontmatter
+        // parser, and the record doc and the archive root are named by work's identity home.
+        'memory/local-indexing.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/work/declared-id', '@aof/work/memory-vocabulary', '@aof/work/ref-scope', '@aof/work/records', '@aof/work/identity', '@aof/foundation/fs', '@aof/foundation/markdown', '@aof/foundation/text'],
         // 157/ADR-001: the episodic leaf reads its register through the declared-id home; its
         // run, snapshot and feedback readers are injected, never imported.
         'memory/episodic-indexing.mjs': ['node:path', 'node:fs/promises', '@aof/work/declared-id'],

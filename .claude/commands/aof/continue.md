@@ -334,7 +334,7 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      </build_terminator>
 
      **Recall prior gotchas first.** Before building, the developer runs (unconditionally — memory may
-     be off) `aof work memory recall "<milestone domain / story keywords>" --kind near-miss --block` and
+     be off) `aof memory recall "<milestone domain / story keywords>" --kind near-miss --block` and
      considers the surfaced gotchas, recording at `aof:verify` (in `VERIFICATION.md`) any that shaped the
      build. An **empty block means nothing to surface** (memory may be off) — proceed unchanged.
      **Keep the result; capture it once, when the build decision is made.** The developer retains
@@ -347,12 +347,12 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      `actor` `developer`, `query` (verbatim), `scope` `{"kind":"near-miss"}` and `records` — one
      `{item, id, recordType, verdict}` per returned line, each with an explicit verdict `honoured`,
      `departed` or `irrelevant`, never a default. Submit it ONCE on the story:
-     `aof work memory record-recall <ref> --input <observation file>`. An empty block is still
+     `aof memory record-recall <ref> --input <observation file>`. An empty block is still
      submitted, as `"records": []` — no verdict and no extra retrieval is invented.
      **Recall the prior attempt on a retry (attempt 2 or later).** When this build is the story's
      attempt 2 or later — its minted run's `attempt` is 2 or more — the developer refreshes the
      index and recalls the story's whole delivery history BEFORE any implementation: first
-     `aof work memory ingest`, then `aof work memory recall "" --item <ref> --area delivery --all --json`.
+     `aof memory ingest`, then `aof memory recall "" --item <ref> --area delivery --all --json`.
      No stage filter is added: it would hide the verify findings. Attempt 1 has no episodic edge, so
      a first attempt skips this block entirely. From the actual result, identify the prior attempt —
      the run this run's `retryOf` names, otherwise the latest terminal earlier attempt — and, before
@@ -369,7 +369,7 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      `scope` `{"item":"<ref>","area":"delivery"}` and `records` — one `{item, id, recordType,
      verdict}` per returned record, each with an explicit verdict `honoured`, `departed` or
      `irrelevant`, never a default. Submit it ONCE on the story:
-     `aof work memory record-recall <ref> --input <episodic observation file>`. An empty block is still
+     `aof memory record-recall <ref> --input <episodic observation file>`. An empty block is still
      submitted, as `"records": []` — no verdict and no extra retrieval is invented. This edge is in
      addition to the near-miss recall above, which is unchanged.
   4. **Gate** — the free deterministic ladder, walked BEFORE any review lane is spawned.

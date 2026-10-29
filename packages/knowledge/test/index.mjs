@@ -20,6 +20,8 @@ import { episodicRecordsTests } from "./episodic-records.suite.mjs";
 
 // milestone 159 / story 01 — the opt-in operator auto-memory source: grammar, leaf, composition and resolver.
 import { claudeAutoMemoryTests } from "./claude-auto-memory.suite.mjs";
+// milestone 178 / story 03 — a work record carries its item's resolved origin, shown and never scored.
+import { memoryRecordOriginTests } from "./memory-record-origin.suite.mjs";
 
 export const tests = [
   ...memoryBackendConfigTests,
@@ -37,4 +39,5 @@ export const tests = [
   ...memoryEffectivenessTests,
   ...episodicRecordsTests,
   ...claudeAutoMemoryTests,
+  ...memoryRecordOriginTests,
 ];

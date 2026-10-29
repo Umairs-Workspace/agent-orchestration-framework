@@ -37,6 +37,7 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createImportMilestoneCommand } from "@aof/knowledge/commands/import-milestone";
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 const getCommand = _aofApplication.getCommand;
 const invoke = _aofApplication.invoke;
@@ -727,6 +728,37 @@ export const importCommandCoreTests = [
         await rm(repo, { recursive: true, force: true });
         await rm(src, { recursive: true, force: true });
       }
+    },
+  },
+  // 178/01 — the reindex warning names the canonical door (178/ADR-001, ratified in 01's
+  // contract). The factory is built with stub collaborators so the reindex can throw on demand.
+  {
+    name: "178/01 an import whose memory reindex fails warns `Run \`aof memory reindex\` to index it.`",
+    async run() {
+      const { repo, workDir } = await makeRepo();
+      const src = await makeSourceRepo(["00"]);
+      const { importMilestoneCommand } = createImportMilestoneCommand({
+        listRecoverableMilestones: async () => [{ ref: "00", dir: path.join(src, "wiki", "work", "00_milestone_demo-00") }],
+        resolveCandidate: (candidates) => candidates[0],
+        recoverMilestone: async () => ({ meta: { ref: "00" } }),
+        writeColocatedDigest: async ({ targetDir }) => ({ dir: targetDir, artifacts: [], recordCount: 0 }),
+        slugifySource: (value) => value,
+        resolveConfiguredBackend: async () => ({ reindex: async () => { throw new Error("disk full"); } }),
+      });
+      const errors = [];
+      const original = console.error;
+      console.error = (line) => errors.push(String(line));
+      try {
+        const result = await importMilestoneCommand.run({ repo: src, selector: "00" }, { workspace: { projectRoot: repo, workDir, config: {} } });
+        assert.equal(result.imported, true, "the import completes");
+      } finally {
+        console.error = original;
+        await rm(repo, { recursive: true, force: true });
+        await rm(src, { recursive: true, force: true });
+      }
+      assert.equal(errors.length, 1, `one warning (${errors.join(" | ")})`);
+      assert.ok(errors[0].includes("(disk full)"), "it carries the reindex error");
+      assert.ok(errors[0].endsWith("Run `aof memory reindex` to index it."), `it names aof memory reindex: ${errors[0]}`);
     },
   },
 ];

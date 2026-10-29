@@ -48,9 +48,9 @@ existing configured resolver selects another bounded value. Resolve these polici
 findings once at close: contract amendment, cheap confirmed fix, or `story (operator)` shape;
 record Nits. No new item or finding id is allocated by continue/review.
 
-Recall uses `aof work memory recall "<domain / keywords>" --kind near-miss --block` before build,
+Recall uses `aof memory recall "<domain / keywords>" --kind near-miss --block` before build,
 and unfiltered domain recall before framing. An empty block is harmless, including memory off.
-After authoring lessons, `aof work memory ingest` indexes the existing records without inventing
+After authoring lessons, `aof memory ingest` indexes the existing records without inventing
 another vocabulary. Lessons use Kind mistake / blocker / near-miss / misunderstanding,
 Area code / architecture / contract / security / process, Stage refine / build / verify, and Owner.
 Keep stable lesson ids; never renumber old entries.

@@ -27,7 +27,7 @@ For each target item (a milestone NN, or a story — the steps are the same, rea
 own folder; a story has no `STATE.md`/`VERIFICATION.md` of its own, so its evidence is its review
 findings, its `## Findings` section and any recorded blocker stop):
 
-Before triage, recall the target's domain with `aof work memory recall "<domain / keywords>" --block`.
+Before triage, recall the target's domain with `aof memory recall "<domain / keywords>" --block`.
 Use existing lessons to deduplicate, never as invented evidence; an empty block is harmless.
 
 1. **Refresh observability (on by default).** Run `aof work observe NN --write --if-enabled` — the
@@ -37,8 +37,8 @@ Use existing lessons to deduplicate, never as invented evidence; an empty block 
    `NN/observability/{report.md,agents.json}` — the per-agent time / token / **stall** record mined
    from the session transcripts. It re-reads every transcript and overwrites, so a partial run is
    never wrong, only less complete; the close's run (all stories done) is the authoritative snapshot.
-2. **Gather the evidence through recall** (read-only). First `aof work memory ingest`, then
-   `aof work memory recall "" --item <ref> --area delivery --all --json` — ONE recall of the item's
+2. **Gather the evidence through recall** (read-only). First `aof memory ingest`, then
+   `aof memory recall "" --item <ref> --area delivery --all --json` — ONE recall of the item's
    whole delivery history, after the observability refresh above. What it returns is the evidence,
    each record cited by its `source`:
    - **findings** → the defects/gaps caught at review, with their triage — the richest source for an
@@ -73,7 +73,7 @@ Use existing lessons to deduplicate, never as invented evidence; an empty block 
    - **Watermark first.** Before the first new `R<n>` is appended to a document, write
      `promotionFrom: <the next R number>` in its frontmatter (`1` for a new document). Lessons
      below it are legacy: never rewritten, never backfilled.
-   - **Match before you write.** For each NEW lesson, run `aof work memory recurrence "<the
+   - **Match before you write.** For each NEW lesson, run `aof memory recurrence "<the
      lesson's what-happened and lesson text>" --exclude <new lesson id> --json`, where `<new lesson id>` (`<item>/R<n>`) is
      the identity the new lesson is about to take. When `qualifying` names a reference, the meta
      line carries `**Recurs:** <item>/R<n>`; when it is null, the lesson has no Recurs field. The
@@ -86,7 +86,7 @@ Use existing lessons to deduplicate, never as invented evidence; an empty block 
    or promotion (absence is information). Never manufacture entries to fill the page. The
    `observability/` folder (when the opt-in is on) is written regardless — it is a diagnostic, not
    a lesson doc.
-6. **Index the authored records.** Run `aof work memory ingest` only AFTER the lesson pass has
+6. **Index the authored records.** Run `aof memory ingest` only AFTER the lesson pass has
    authored `promotionFrom`, `Recurs` and `Promoted to`; this is safe when memory is off. Keep the
    shared Kind / Area / Stage / Owner vocabulary above.
 </process>

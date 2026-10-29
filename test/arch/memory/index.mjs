@@ -46,7 +46,12 @@ import { archTests as acdMemoryIndexNeverOnMeshTests } from "./acd-memory-index-
 // a third cutter cannot arrive without one; and all three tracked renders of the edited member
 // match a fresh re-render.
 import { archTests as acdLearningEdgeReachesEveryCutTests } from "./acd-learning-edge-reaches-every-cut.test.mjs";
-// milestone 148 / story 01 — FF-14801: the base ranking keeps every cited eval pair within the
+// milestone 178 / story 02 — FF-17802: no shipped asset spells the alias `aof work memory`.
+import { archTests as acdAssetsSpellAofMemoryTests } from "./acd-assets-spell-aof-memory.test.mjs";
+// milestone 178 / story 03 — FF-17803: every origin path in the live index names an existing file.
+import { archTests as acdRecordOriginResolvesTests } from "./acd-record-origin-resolves.test.mjs";
+
+// milestone 148 / story 01 — FF-14801: the base ranking keeps every cited eval pair within the
 // first five over the live corpus, and a pair whose record is gone reds as gone (ADR-005).
 import { archTests as acdMemoryRetrievalEvalTests } from "./acd-memory-retrieval-eval.test.mjs";
 // milestone 148 / story 05 — FF-14803: every emitted record type has a layer, and the composed
@@ -99,4 +104,8 @@ export const tests = [
   ...acdEpisodicSourceProvenanceTests,
   // milestone 159 / story 01 — FF-15901..FF-15903 (see the import note).
   ...acdAutoMemorySourceTests,
+  // milestone 178 / story 02 — FF-17802 (see the import note).
+  ...acdAssetsSpellAofMemoryTests,
+  // milestone 178 / story 03 — FF-17803 (see the import note).
+  ...acdRecordOriginResolvesTests,
 ];
