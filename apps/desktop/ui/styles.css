@@ -128,9 +128,11 @@ body {
 .dot.stale  { background:transparent; border:1.6px solid var(--dot-stale-ring); } /* quiet grey ring — NEVER red */
 .dot.offline{ background:transparent; border:1.6px dashed var(--dot-dim); }
 .node-id { display:flex; flex-direction:column; justify-content:center; gap:1px; width:212px; flex:none; min-width:0; }
-.node-title { display:flex; align-items:center; gap:8px; }
-.node-name { font-family:var(--mono); font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; }
-.node-sub { font-family:var(--mono); font-size:11px; color:var(--text-3); white-space:nowrap; }
+/* A long hostname truncates inside the column; the chip beside it never moves (175 DESIGN M3). */
+.node-title { display:flex; align-items:center; gap:8px; min-width:0; }
+.node-title .chip { flex:none; }
+.node-name { font-family:var(--mono); font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.node-sub { font-family:var(--mono); font-size:11px; color:var(--text-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .chip { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-3); border:1px solid var(--stroke-2); border-radius:5px; padding:2px 6px; white-space:nowrap; }
 .role-badge { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-3); border:1px solid var(--stroke-2); border-radius:5px; padding:2px 0; width:70px; text-align:center; flex:none; }
 .node-ver { font-family:var(--mono); font-size:12px; color:var(--text-3); width:52px; flex:none; }

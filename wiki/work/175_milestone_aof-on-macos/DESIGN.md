@@ -67,6 +67,17 @@ much as the Windows ones feel like a Windows 11 utility.
 - **No macOS mock was supplied** (asked at refine, 2026-10-28). This checklist and the m36 mocks
   are the baseline.
 
+### Surface M3 — the window's node row holds a real hostname (binding rule, added at verify)
+
+On a Mac the node's name is its hostname, and a home network makes it long
+(`MacBookPro.communityfibre.co.uk`). The m36 mock assumed short ids. Found at verify (175/F-12).
+
+- [ ] The node name stays inside its column. A name too long for it truncates with an ellipsis,
+      and the full name shows on hover. It never wraps and never overflows.
+- [ ] The `this node` chip, the role badge and the version keep their positions whatever the
+      name's length. The chip stays whole beside the truncated name, never clipped or overlapped.
+- [ ] The node id line beneath truncates the same way.
+
 ## Review notes
 
 - A Mac render that matches the m36 regions but uses Windows chrome (Segoe glyphs, acrylic) is
