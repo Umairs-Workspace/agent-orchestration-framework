@@ -184,6 +184,11 @@ tile. Only x86_64 is verified; arm64 builds the same way but is unmeasured (175 
      degraded (175/F-03). `direct` is the no-overlay fabric. `address: "127.0.0.1"` keeps
      `:4182` on loopback, because this laptop has no peers. Without it, `direct` binds the first
      LAN IPv4.
+   - **Then publish this node's record:** `aof mesh identity`. The fleet lists only nodes with a
+     record under `~/.aof/mesh/nodes/`, and nothing else writes the control node's own record:
+     not `mesh serve`, and not its heartbeats. Without it the fleet is empty, and the board
+     refuses to start a session or dispatch work ("no mesh identity yet", 175/F-10). It reads
+     `mesh.address`, so the record advertises `127.0.0.1`.
 4. **Install the app and register login autostart**, from a shell whose PATH resolves `claude`.
    The LaunchAgent captures THIS shell's PATH, and the daemons spawn `claude` by name:
    ```
