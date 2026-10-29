@@ -130,11 +130,12 @@ async function withMesh(body, { testRepoPropagates = true } = {}) {
     const launch = path.join(tmp, "launch");
     await mkdir(launch, { recursive: true });
     fx.launchDir = launch;
-    fx.start = async ({ from = launch, ...extra } = {}) => {
+    fx.start = async ({ from = launch, meshEnabled = true, ...extra } = {}) => {
       const ws = await loadWorkspace(from, undefined, { env });
       // The desktop's launch: the machine-wide mesh enable (what `aof mesh join` writes into the
-      // global config) reaches a folder that has no aof config of its own.
-      ws.config = { ...ws.config, mesh: { ...(ws.config?.mesh ?? {}), enabled: true, nodeId: NODE, fabric: "tailscale", relay: { controlNode: NODE } } };
+      // global config) reaches a folder that has no aof config of its own. `meshEnabled: false` is
+      // a control node that never joined, as a standalone Mac is (175/F-11).
+      ws.config = { ...ws.config, mesh: { ...(ws.config?.mesh ?? {}), ...(meshEnabled ? { enabled: true } : {}), nodeId: NODE, fabric: "tailscale", relay: { controlNode: NODE } } };
       const ticker = manualTicker();
       const handle = await startLauncher(ws, {
         exec: async () => ({ stdout: JSON.stringify(STATUS_FIXTURE), status: 0 }),
@@ -665,6 +666,21 @@ export const meshLauncherSyncsEveryWorkspaceTests = [
       await until(() => warnings().slice(seen).some((warning) => warning.code === "mesh-global-disabled" && warning.workspaceId === TEST_REPO.id), "a mesh-global-disabled warning naming aof-test-repo");
       assert.deepEqual(rowsOf(fx, TEST_REPO), [], "nothing is written to the store for aof-test-repo");
     }, { testRepoPropagates: false }),
+  },
+  {
+    name: "175/F-11 · on a control node that never joined, a launch folder with no aof config is skipped quietly on every tick, and aof still syncs",
+    run: () => withMesh(async (fx) => {
+      const { tick, warnings } = await fx.start({ meshEnabled: false });
+      await setStory(fx, AOF, "in-progress");
+      tick();
+      tick();
+      await until(() => row(fx, AOF, "164/00")?.status === "in-progress", "aof to sync");
+      assert.deepEqual(
+        warnings().filter((warning) => warning.path === fx.launchDir),
+        [],
+        "launchd's cwd is not a workspace, so no tick warns about it",
+      );
+    }),
   },
   {
     name: "164/01 E6 · a store that cannot be opened on one tick does not stop the daemon, and the next tick syncs both workspaces",

@@ -38,6 +38,27 @@ export function createGlobalWorkPublisher({ globalMeshPaths, openGlobalWorkProje
 function meshGlobalPropagationDecision(workspaceOrConfig) {
   const config = workspaceOrConfig?.config ?? workspaceOrConfig ?? {};
   const mesh = config?.mesh;
+  // A DIRECTORY is not a workspace just because a daemon was launched from it (measured
+  // 2026-07-26: Task Scheduler's default cwd published C:\WINDOWS\system32, and an installer-dir
+  // launch published ~/.aof/bin, as fleet "workspaces"). When the caller supplies a real
+  // workspace (it has a projectRoot), propagation requires the workspace's OWN config on disk —
+  // the committed .aof/aof.config.json (or the legacy root aof.config.json). This is asked
+  // BEFORE the enable arm: a folder with no config is not a workspace whether or not the mesh
+  // is enabled, and on a control node that never joined (no mesh.enabled), asking it after
+  // reported launchd's cwd `/` as a disabled WORKSPACE every sync tick (175/F-11, TECH_DEBT 4).
+  // A pure config-shaped argument (no projectRoot to check) is unaffected.
+  const projectRoot = typeof workspaceOrConfig?.projectRoot === "string" ? workspaceOrConfig.projectRoot : null;
+  if (projectRoot != null && projectRoot.length > 0) {
+    const hasOwnConfig = existsSync(path.join(projectRoot, ".aof", "aof.config.json"))
+      || existsSync(path.join(projectRoot, "aof.config.json"));
+    if (!hasOwnConfig) {
+      return {
+        enabled: false,
+        code: MESH_WORKSPACE_UNCONFIGURED_CODE,
+        guidance: `Not publishing ${projectRoot}: it has no aof config — a launch directory is not a workspace.`,
+      };
+    }
+  }
   // A workspace opts into machine-wide propagation EITHER by the global mesh enable
   // (mesh?.enabled === true — set by `aof mesh join` into the global config, merged
   // into every workspace) OR by an explicit per-repo publish marker written by
@@ -47,15 +68,6 @@ function meshGlobalPropagationDecision(workspaceOrConfig) {
   // (acd-global-propagation-single-predicate) holds: this ONE function is still the sole
   // decision, and it still literally requires mesh?.enabled === true as one arm.
   if (mesh?.enabled === true || mesh?.repo?.published === true) {
-    // …but a DIRECTORY is not a workspace just because a daemon was launched from it
-    // (measured 2026-07-26: Task Scheduler's default cwd published C:\WINDOWS\system32
-    // — and an installer-dir launch published ~/.aof/bin — as fleet "workspaces": the
-    // machine-wide mesh.enabled merges into ANY cwd, so the enable arm alone cannot
-    // gate). When the caller supplies a real workspace (it has a projectRoot),
-    // propagation additionally requires the workspace's OWN config on disk — the
-    // committed .aof/aof.config.json (or the legacy root aof.config.json). A pure
-    // config-shaped argument (no projectRoot to check) keeps the enable-arm behaviour.
-    const projectRoot = typeof workspaceOrConfig?.projectRoot === "string" ? workspaceOrConfig.projectRoot : null;
     // …nor is a LANE: a dispatch, session or assignment checkout carries the repository's own
     // committed config, so the test below admits it, and every verb its session ran registered it
     // as a separate fleet workspace (2026-10-06). The lane's work reaches the fleet through its
@@ -78,17 +90,6 @@ function meshGlobalPropagationDecision(workspaceOrConfig) {
         code: MESH_WORKSPACE_SECONDARY_CHECKOUT_CODE,
         guidance: `Not publishing ${projectRoot}: it is a linked git worktree of its repository, not the workspace's checkout.`,
       };
-    }
-    if (projectRoot != null && projectRoot.length > 0) {
-      const hasOwnConfig = existsSync(path.join(projectRoot, ".aof", "aof.config.json"))
-        || existsSync(path.join(projectRoot, "aof.config.json"));
-      if (!hasOwnConfig) {
-        return {
-          enabled: false,
-          code: MESH_WORKSPACE_UNCONFIGURED_CODE,
-          guidance: `Not publishing ${projectRoot}: it has no aof config — a launch directory is not a workspace.`,
-        };
-      }
     }
     return { enabled: true };
   }
