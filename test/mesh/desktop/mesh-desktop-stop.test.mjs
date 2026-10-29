@@ -68,7 +68,7 @@ export const meshDesktopStopTests = [
     name: "mesh-desktop-stop: the process name is the placed exe on win32 and the bare binary elsewhere",
     run: () => {
       assert.equal(desktopProcessName("win32"), DESKTOP_APP_EXE);
-      assert.equal(desktopProcessName("darwin"), "aof-mesh-desktop");
+      assert.equal(desktopProcessName("darwin"), "AOF Desktop", "the bundle's executable (175/F-05)");
       assert.equal(desktopProcessName("linux"), "aof-mesh-desktop");
     },
   },
@@ -98,7 +98,11 @@ export const meshDesktopStopTests = [
 
       const posix = recorder([{ stdout: "777\n", code: 0 }]);
       assert.deepEqual(await findDesktopProcesses({ platform: "darwin", listFn: posix.run }), [777]);
-      assert.deepEqual(posix.calls[0], { file: "pgrep", args: ["-x", "aof-mesh-desktop"] });
+      assert.deepEqual(posix.calls[0], { file: "pgrep", args: ["-x", "AOF Desktop"] }, "the macOS executable (175/F-05)");
+
+      const linux = recorder([{ stdout: "778\n", code: 0 }]);
+      assert.deepEqual(await findDesktopProcesses({ platform: "linux", listFn: linux.run }), [778]);
+      assert.deepEqual(linux.calls[0], { file: "pgrep", args: ["-x", "aof-mesh-desktop"] }, "linux keeps its name");
     },
   },
 

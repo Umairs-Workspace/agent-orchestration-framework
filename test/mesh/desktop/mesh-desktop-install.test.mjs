@@ -27,11 +27,11 @@ const invoke = _aofApplication.invoke;
 const runCommandFace = _aofApplication.cli.runCommandFace;
 import { withMeshDesktopFixture, seedInstalledApp } from "../../support/mesh-desktop-fixture.mjs";
 
-// 175/02 — a fixture `.app` bundle: `Contents/MacOS/aof-mesh-desktop` (executable unless told
+// 175/02 — a fixture `.app` bundle: `Contents/MacOS/AOF Desktop` (executable unless told
 // otherwise) and an `Info.plist`. Spelled here as the contract states it; the code under test
 // takes the names from its layout module.
 const BUNDLE = "aof-mesh-desktop.app";
-const INNER = ["Contents", "MacOS", "aof-mesh-desktop"];
+const INNER = ["Contents", "MacOS", "AOF Desktop"];
 async function seedBundle(dir, { bytes = "fixture-bundle-exe", executable = true } = {}) {
   const bundle = path.join(dir, BUNDLE);
   await mkdir(path.join(bundle, "Contents", "MacOS"), { recursive: true });

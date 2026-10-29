@@ -5,7 +5,7 @@
   <key>CFBundleIdentifier</key>
   <string>com.aof.mesh.desktop</string>
   <key>CFBundleExecutable</key>
-  <string>aof-mesh-desktop</string>
+  <string>AOF Desktop</string>
   <key>CFBundleName</key>
   <string>AOF Desktop</string>
   <key>CFBundleDisplayName</key>

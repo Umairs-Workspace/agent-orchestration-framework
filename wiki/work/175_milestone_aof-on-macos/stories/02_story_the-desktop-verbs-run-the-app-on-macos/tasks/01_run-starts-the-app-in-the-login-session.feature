@@ -27,7 +27,7 @@ Feature: run starts the app in the login session
     Scenario: E6 · with no LaunchAgent, a GUI terminal spawns the bundle's executable detached
       Given no plist exists and the environment has no "SSH_CONNECTION"
       When "aof mesh desktop run --json" runs with platform "darwin"
-      Then spawnFn was called once with "<installDir>/aof-mesh-desktop.app/Contents/MacOS/aof-mesh-desktop", detached, stdio ignored
+      Then spawnFn was called once with "<installDir>/aof-mesh-desktop.app/Contents/MacOS/AOF Desktop", detached, stdio ignored
       And the runner was asked for no "launchctl kickstart" or "launchctl bootstrap"
 
     Scenario: E7 · with no LaunchAgent, SSH is refused and nothing starts

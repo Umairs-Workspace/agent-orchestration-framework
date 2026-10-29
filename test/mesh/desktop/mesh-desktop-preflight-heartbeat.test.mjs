@@ -647,7 +647,7 @@ const PLIST = path.join(HOME, "Library", "LaunchAgents", "com.aof.mesh.desktop.p
 const DARWIN_CHECKS = ["macos-command-line-tools", "rust-toolchain", "app-not-quarantined", "daemon-claude-authenticated"];
 const SIGNED_IN = JSON.stringify({ loggedIn: true, authMethod: "claude.ai" });
 
-const plistWith = (PATH) => renderLaunchAgent({ label: "com.aof.mesh.desktop", executable: path.join(BUNDLE, "Contents", "MacOS", "aof-mesh-desktop"), path: PATH });
+const plistWith = (PATH) => renderLaunchAgent({ label: "com.aof.mesh.desktop", executable: path.join(BUNDLE, "Contents", "MacOS", "AOF Desktop"), path: PATH });
 
 // A runner that answers by command line and records every call with the env it was handed.
 // Unless a row overrides it, every darwin probe answers well: the tools resolve, the bundle

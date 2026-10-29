@@ -6,16 +6,16 @@ Feature: install places the app bundle on macOS, with no bootstrapper
   refusals; only what it places changes with the platform it is handed.
 
   Background:
-    Given an isolated install dir and a fixture bundle "aof-mesh-desktop.app" whose "Contents/MacOS/aof-mesh-desktop" is executable
+    Given an isolated install dir and a fixture bundle "aof-mesh-desktop.app" whose "Contents/MacOS/AOF Desktop" is executable
 
   Rule: R1 · On macOS, install places the app bundle and needs no bootstrapper
 
     Scenario: E1 · a bundle is placed whole on darwin, and run then finds its executable
       When "aof mesh desktop install --app-artifact <fixture bundle> --json" runs with platform "darwin"
       Then it answers ok with appPath "<installDir>/aof-mesh-desktop.app"
-      And "<installDir>/aof-mesh-desktop.app/Contents/MacOS/aof-mesh-desktop" exists and is executable
+      And "<installDir>/aof-mesh-desktop.app/Contents/MacOS/AOF Desktop" exists and is executable
       And the answer names no bootstrapper path
-      And discovery with platform "darwin" answers "<installDir>/aof-mesh-desktop.app/Contents/MacOS/aof-mesh-desktop"
+      And discovery with platform "darwin" answers "<installDir>/aof-mesh-desktop.app/Contents/MacOS/AOF Desktop"
 
     Scenario: E2 · a bundle with no executable inside is refused, and nothing is placed
       Given a fixture directory "aof-mesh-desktop.app" holding only "Contents/Info.plist"
@@ -31,7 +31,7 @@ Feature: install places the app bundle on macOS, with no bootstrapper
     Scenario: a re-install over a placed bundle replaces it in place
       Given the fixture bundle was installed once with platform "darwin"
       When it is installed again with a fixture whose executable prints "v2"
-      Then "<installDir>/aof-mesh-desktop.app/Contents/MacOS/aof-mesh-desktop" prints "v2"
+      Then "<installDir>/aof-mesh-desktop.app/Contents/MacOS/AOF Desktop" prints "v2"
       And exactly one "aof-mesh-desktop.app" directory sits in the install dir beside at most one "aof-mesh-desktop.app.bak.<ts>"
 
     Scenario Outline: discovery on darwin refuses a bundle it cannot run

@@ -33,7 +33,7 @@ Feature: This laptop goes from clone to a supervised single-node mesh with only 
       Given both daemons are up under the app
       When "aof mesh desktop stop" runs
       Then it returns
-      And straight away "pgrep -x aof-mesh-desktop" and "pgrep -fl 'aof mesh'" print nothing
+      And straight away "pgrep -x 'AOF Desktop'" and "pgrep -fl 'aof mesh'" print nothing
 
   Rule: R3 · Logging out and back in brings it back
 

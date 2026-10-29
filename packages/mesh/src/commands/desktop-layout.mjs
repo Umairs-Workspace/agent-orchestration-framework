@@ -15,10 +15,14 @@ export const WEBVIEW2_BOOTSTRAPPER = "MicrosoftEdgeWebview2Setup.exe";
 export const AUTOSTART_RUN_KEY = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 export const AUTOSTART_VALUE_NAME = "aof-mesh-desktop";
 
-// macOS: an `.app` bundle (175/ADR-002 §1). The inner executable's name is 16 characters,
-// exactly macOS's MAXCOMLEN, so `pgrep -x` finds it by name (RESEARCH M4).
+// macOS: an `.app` bundle (175/ADR-002 §1). The inner executable is named "AOF Desktop"
+// because Login Items names an ad-hoc-signed app's LaunchAgent by its executable
+// (175/F-05). That is 11 characters, inside macOS's MAXCOMLEN of 16, so `pgrep -x` finds it
+// by name (RESEARCH M4).
 export const DESKTOP_APP_BUNDLE = "aof-mesh-desktop.app";
-export const DESKTOP_BUNDLE_EXECUTABLE = "aof-mesh-desktop";
+export const DESKTOP_BUNDLE_EXECUTABLE = "AOF Desktop";
+// Every other POSIX platform keeps the process name the verbs have always used.
+export const DESKTOP_POSIX_PROCESS_NAME = "aof-mesh-desktop";
 // The identifier `tauri.conf.json` declares, and the LaunchAgent's label (175/ADR-004 §1).
 export const DESKTOP_BUNDLE_ID = "com.aof.mesh.desktop";
 export const LAUNCH_AGENT_LABEL = DESKTOP_BUNDLE_ID;
@@ -66,7 +70,7 @@ export function desktopLayout({ platform, installDir, home }) {
     installDir,
     placed,
     executable: placed,
-    processName: platform === "win32" ? DESKTOP_APP_EXE : DESKTOP_BUNDLE_EXECUTABLE,
+    processName: platform === "win32" ? DESKTOP_APP_EXE : DESKTOP_POSIX_PROCESS_NAME,
     bootstrapper: path.join(installDir, WEBVIEW2_BOOTSTRAPPER),
     launchAgent: null,
   };

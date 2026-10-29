@@ -19,7 +19,7 @@ import { parseLaunchAgent } from "@aof/mesh/commands/desktop-launch-agent";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SCRIPT = path.join(repoRoot, "scripts", "install-local.mjs");
 const BUNDLE = "aof-mesh-desktop.app";
-const INNER = ["Contents", "MacOS", "aof-mesh-desktop"];
+const INNER = ["Contents", "MacOS", "AOF Desktop"];
 
 // The plan's prose with this host's separators read as `/`, and the release dir as `<target>`,
 // so a row reads the same on every host.
@@ -55,7 +55,7 @@ export const installLocalDesktopTests = [
     run: () => {
       assert.deepEqual(steps("darwin"), [
         "cargo build --release --manifest-path apps/desktop/crates/app/Cargo.toml",
-        "copy the built binary to <staged>/aof-mesh-desktop.app/Contents/MacOS/aof-mesh-desktop",
+        "copy the built binary to <staged>/aof-mesh-desktop.app/Contents/MacOS/AOF Desktop",
         "copy apps/desktop/crates/app/Info.plist to <staged>/aof-mesh-desktop.app/Contents/Info.plist",
         "codesign --force --deep --sign - <staged>/aof-mesh-desktop.app",
         "place <staged>/aof-mesh-desktop.app at <installDir>/aof-mesh-desktop.app",
@@ -158,7 +158,7 @@ export const installLocalDesktopTests = [
       assert.equal(plist.LSUIElement, true, "LSUIElement is true");
       assert.equal(plist.CFBundleIdentifier, "com.aof.mesh.desktop");
       assert.equal(plist.CFBundleIdentifier, conf.identifier, "the identifier in tauri.conf.json");
-      assert.equal(plist.CFBundleExecutable, "aof-mesh-desktop");
+      assert.equal(plist.CFBundleExecutable, "AOF Desktop");
     },
   },
 

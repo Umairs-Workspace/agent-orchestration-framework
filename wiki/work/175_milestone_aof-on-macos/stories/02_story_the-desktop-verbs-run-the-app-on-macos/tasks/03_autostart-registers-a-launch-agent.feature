@@ -16,7 +16,7 @@ Feature: --autostart registers a LaunchAgent on macOS
       Then "<home>/Library/LaunchAgents/com.aof.mesh.desktop.plist" holds:
         | key                       | value                                                             |
         | Label                     | com.aof.mesh.desktop                                              |
-        | ProgramArguments          | <installDir>/aof-mesh-desktop.app/Contents/MacOS/aof-mesh-desktop |
+        | ProgramArguments          | <installDir>/aof-mesh-desktop.app/Contents/MacOS/AOF Desktop |
         | RunAtLoad                 | true                                                              |
         | LimitLoadToSessionType    | Aqua                                                              |
         | ProcessType               | Interactive                                                       |

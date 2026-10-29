@@ -15,7 +15,7 @@ Feature: --desktop builds and places the app bundle on macOS
       Then its steps are, in order:
         | step                                                                                       |
         | cargo build --release --manifest-path apps/desktop/crates/app/Cargo.toml                   |
-        | copy the built binary to <staged>/aof-mesh-desktop.app/Contents/MacOS/aof-mesh-desktop     |
+        | copy the built binary to <staged>/aof-mesh-desktop.app/Contents/MacOS/AOF Desktop     |
         | copy apps/desktop/crates/app/Info.plist to <staged>/aof-mesh-desktop.app/Contents/Info.plist |
         | codesign --force --deep --sign - <staged>/aof-mesh-desktop.app                             |
         | place <staged>/aof-mesh-desktop.app at <installDir>/aof-mesh-desktop.app                   |
@@ -45,7 +45,7 @@ Feature: --desktop builds and places the app bundle on macOS
     Scenario: E4 · the live bundle is renamed aside, never deleted, before the new one lands
       Given the install dir holds "aof-mesh-desktop.app" whose executable prints "v1"
       When a bundle whose executable prints "v2" is placed
-      Then "aof-mesh-desktop.app/Contents/MacOS/aof-mesh-desktop" prints "v2"
+      Then "aof-mesh-desktop.app/Contents/MacOS/AOF Desktop" prints "v2"
       And one "aof-mesh-desktop.app.bak.<ts>" holds the executable that prints "v1"
 
   Rule: R4 · The app sits in the menu bar only

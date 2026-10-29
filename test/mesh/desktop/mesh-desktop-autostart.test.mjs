@@ -50,7 +50,7 @@ function makeFakeFiles() {
 // 175/02 — a fixture `.app` bundle with an executable inside.
 async function seedBundle(dir) {
   const { chmod, mkdir, writeFile } = await import("node:fs/promises");
-  const inner = path.join(dir, "aof-mesh-desktop.app", "Contents", "MacOS", "aof-mesh-desktop");
+  const inner = path.join(dir, "aof-mesh-desktop.app", "Contents", "MacOS", "AOF Desktop");
   await mkdir(path.dirname(inner), { recursive: true });
   await writeFile(inner, "fixture-bundle-exe", "utf8");
   await chmod(inner, 0o755);
@@ -649,7 +649,7 @@ export const meshDesktopAutostartTests = [
         const plist = parseLaunchAgent(files.read(plistPath));
         assert.ok(plist, "the plist was written and parses");
         assert.equal(plist.Label, "com.aof.mesh.desktop");
-        assert.deepEqual(plist.ProgramArguments, [path.join(installDir, "aof-mesh-desktop.app", "Contents", "MacOS", "aof-mesh-desktop")]);
+        assert.deepEqual(plist.ProgramArguments, [path.join(installDir, "aof-mesh-desktop.app", "Contents", "MacOS", "AOF Desktop")]);
         assert.equal(plist.RunAtLoad, true);
         assert.equal(plist.LimitLoadToSessionType, "Aqua");
         assert.equal(plist.ProcessType, "Interactive");
@@ -711,7 +711,7 @@ export const meshDesktopAutostartTests = [
       for (const row of rows) {
         await withMeshDesktopFixture(async ({ installDir, home }) => {
           const plistPath = path.join(home, "Library", "LaunchAgents", "com.aof.mesh.desktop.plist");
-          const executable = path.join(installDir, "aof-mesh-desktop.app", "Contents", "MacOS", "aof-mesh-desktop");
+          const executable = path.join(installDir, "aof-mesh-desktop.app", "Contents", "MacOS", "AOF Desktop");
           const files = makeFakeFiles();
           if (row.before !== "absent") {
             const priorPath = row.before === "old" ? "/usr/bin:/bin" : current;
@@ -755,7 +755,7 @@ export const meshDesktopAutostartTests = [
     name: "175/02 task03 the rendered plist reads back the PATH it was given",
     run: () => {
       const PATH = "/Users/u/.nvm/versions/node/v24.14.1/bin:/usr/bin:/bin";
-      const xml = renderLaunchAgent({ label: "com.aof.mesh.desktop", executable: "/x/aof-mesh-desktop.app/Contents/MacOS/aof-mesh-desktop", path: PATH });
+      const xml = renderLaunchAgent({ label: "com.aof.mesh.desktop", executable: "/x/aof-mesh-desktop.app/Contents/MacOS/AOF Desktop", path: PATH });
       assert.equal(readLaunchAgentPath(xml), PATH);
       assert.deepEqual(parseLaunchAgent(xml).AssociatedBundleIdentifiers, ["com.aof.mesh.desktop"], "Login Items names the job by its app (175/F-05)");
       assert.equal(readLaunchAgentPath(renderLaunchAgent({ label: "l", executable: "/x", path: "/a&b<c>" })), "/a&b<c>", "an escaped PATH reads back as given");

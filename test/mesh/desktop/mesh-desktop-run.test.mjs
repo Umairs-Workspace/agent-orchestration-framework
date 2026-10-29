@@ -51,7 +51,7 @@ function makeFakeLaunchd({ loaded = false } = {}) {
 async function withDarwinInstall(fn) {
   await withMeshDesktopFixture(async (fixture) => {
     const bundle = path.join(fixture.installDir, "aof-mesh-desktop.app");
-    const inner = path.join(bundle, "Contents", "MacOS", "aof-mesh-desktop");
+    const inner = path.join(bundle, "Contents", "MacOS", "AOF Desktop");
     await mkdir(path.dirname(inner), { recursive: true });
     await writeFile(inner, "fixture-bundle-exe", "utf8");
     await chmod(inner, 0o755);
@@ -321,7 +321,7 @@ export const meshDesktopRunTests = [
         const { spawnFn, calls } = makeFixtureSpawn();
         const result = await launchDesktopApp({ platform: "darwin", installDir, home, uid: 501, runner: launchd.runner, spawnFn, env: {} });
         assert.equal(calls.length, 1, "spawnFn was called once");
-        assert.equal(calls[0].command, path.join(installDir, "aof-mesh-desktop.app", "Contents", "MacOS", "aof-mesh-desktop"));
+        assert.equal(calls[0].command, path.join(installDir, "aof-mesh-desktop.app", "Contents", "MacOS", "AOF Desktop"));
         assert.equal(calls[0].options.detached, true, "detached");
         assert.equal(calls[0].options.stdio, "ignore", "stdio ignored");
         assert.ok(!launchd.asked.some((c) => /launchctl (kickstart|bootstrap)/.test(c)), "no kickstart or bootstrap was asked for");

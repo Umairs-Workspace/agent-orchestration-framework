@@ -248,8 +248,10 @@ aof mesh desktop stop && aof mesh desktop run
   turns FAIL while your terminal's `claude-authenticated` stays ok. The fix is to re-run
   `aof mesh desktop install --app-artifact ~/.aof/bin/aof-mesh-desktop.app --autostart` from the
   new shell, then restart.
-- **The process name is `aof-mesh-desktop`,** exactly 16 characters, macOS's `MAXCOMLEN`. That is
-  why `pgrep -x aof-mesh-desktop` finds it. A longer name would silently stop matching.
+- **The process name is `AOF Desktop`** (the bundle's executable, so Login Items shows that
+  name), 11 characters, inside macOS's 16-character `MAXCOMLEN`. That is why
+  `pgrep -x 'AOF Desktop'` finds it. A name over 16 characters would silently stop matching.
+  The bundle directory is still `aof-mesh-desktop.app`.
 - **Quarantine.** A locally built app is not quarantined. One that arrived by download is, and
   macOS refuses to open it. `app-not-quarantined` names the fix:
   `xattr -dr com.apple.quarantine ~/.aof/bin/aof-mesh-desktop.app`.

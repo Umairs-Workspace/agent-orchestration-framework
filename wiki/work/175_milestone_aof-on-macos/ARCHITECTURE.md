@@ -111,12 +111,17 @@ says it "mirrors" `desktop.mjs`, and the graph shows the two files share no impo
 **Decision.**
 1. **Assembly.** `install-local --desktop` on darwin runs the same `cargo build --release`, then
    assembles `~/.aof/bin/aof-mesh-desktop.app`:
-   - `Contents/MacOS/aof-mesh-desktop` (the release binary);
+   - `Contents/MacOS/AOF Desktop` (the release binary);
    - `Contents/Info.plist`, copied from the committed `apps/desktop/crates/app/Info.plist`.
    The bundle is ad-hoc signed with `codesign --force --deep --sign -`. `CFBundleIdentifier` is
    `com.aof.mesh.desktop`, the identifier `tauri.conf.json` already declares.
-2. **The executable name is `aof-mesh-desktop`,** 16 characters, so `pgrep -x` matches it (M4).
-   The FF-17502 sweep includes this name.
+2. **The executable name is `AOF Desktop`,** 11 characters, inside `MAXCOMLEN`, so `pgrep -x`
+   matches it (M4). The FF-17502 sweep includes this name.
+   *Amended at verify, 2026-10-29 (175/F-05).* It was `aof-mesh-desktop`. Login Items lists an
+   ad-hoc-signed app's LaunchAgent as a "legacy agent" named after its executable, and
+   `AssociatedBundleIdentifiers` is honoured only under a Developer Team ID. So the executable
+   is the one name the operator sees. The bundle directory, bundle id and label are unchanged.
+   Linux keeps `aof-mesh-desktop` as its `pgrep` name.
 3. **Re-install and prune.** A re-install renames the live bundle to
    `aof-mesh-desktop.app.bak.<ts>` and then places the new one; a running app keeps its mapped
    image. Bundles are pruned to the newest 3, as binaries are. A bundle is a directory, so the

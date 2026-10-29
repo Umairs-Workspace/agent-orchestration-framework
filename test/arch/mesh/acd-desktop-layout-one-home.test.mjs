@@ -40,9 +40,9 @@ const MAC_NAMES = [
   /aof-mesh-desktop\.app\b/,
   /com\.aof\.mesh\.desktop/,
   /\bLaunchAgents\b/,
-  /["'`]Contents["'`]\s*,\s*["'`]MacOS["'`]\s*,\s*["'`]aof-mesh-desktop|Contents\/MacOS\/aof-mesh-desktop/,
+  /["'`]Contents["'`]\s*,\s*["'`]MacOS["'`]\s*,\s*["'`](?:aof-mesh-desktop|AOF Desktop)|Contents\/MacOS\/(?:aof-mesh-desktop|AOF Desktop)/,
 ];
-const WINDOWS_AND_BARE_NAMES = [/aof-mesh-desktop\.exe/, /MicrosoftEdgeWebview2Setup\.exe/, /["'`]aof-mesh-desktop["'`]/];
+const WINDOWS_AND_BARE_NAMES = [/aof-mesh-desktop\.exe/, /MicrosoftEdgeWebview2Setup\.exe/, /["'`]aof-mesh-desktop["'`]/, /["'`]AOF Desktop["'`]/];
 
 const spelled = (code, names) => names.filter((name) => name.test(code)).map(String);
 
@@ -122,6 +122,8 @@ export const archTests = [
       assert.ok(spelled('const app = path.join(installDir, "aof-mesh-desktop.app");', all).length > 0, "a bundle name trips");
       assert.ok(spelled('run("launchctl", ["kickstart", `gui/${uid}/com.aof.mesh.desktop`]);', all).length > 0, "a bundle id trips");
       assert.ok(spelled('run("pgrep", ["-x", "aof-mesh-desktop"]);', all).length > 0, "a bare executable name trips");
+      assert.ok(spelled('run("pgrep", ["-x", "AOF Desktop"]);', all).length > 0, "the macOS executable name trips (175/F-05)");
+      assert.ok(spelled('path.join(bundle, "Contents", "MacOS", "AOF Desktop")', all).length > 0, "its inner path trips");
       assert.ok(spelled('path.join(bundle, "Contents", "MacOS", "aof-mesh-desktop")', all).length > 0, "the inner path trips");
       assert.deepEqual(spelled('chrome: ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"]', all), [], "another app's bundle path is not this app's name");
       assert.ok(spelled('path.join(home, "Library", "LaunchAgents")', all).length > 0, "the LaunchAgents directory trips");
