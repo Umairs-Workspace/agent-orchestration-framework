@@ -232,12 +232,14 @@ aof mesh desktop stop && aof mesh desktop run
 - `aof mesh status --json` answers `isControlNode: true`. `http://127.0.0.1:4181/?mode=fleet`
   lists one node, this one.
 - **Verify auth in the DAEMONS' environment, not the terminal's.** launchd hands the app the
-  plist's PATH and nothing of your shell. Run `claude` with exactly that PATH and HOME, from a
-  terminal at the laptop:
+  plist's PATH, plus the per-user variables it always sets (`HOME`, `USER`, `LOGNAME`), and
+  nothing of your shell. Run `claude` with exactly those, from a terminal at the laptop:
   ```bash
   P="$(plutil -extract EnvironmentVariables.PATH raw -o - ~/Library/LaunchAgents/com.aof.mesh.desktop.plist)"
-  env -i PATH="$P" HOME="$HOME" claude -p "Reply with exactly: MESH_AUTH_OK"
+  env -i PATH="$P" HOME="$HOME" USER="$(id -un)" LOGNAME="$(id -un)" claude -p "Reply with exactly: MESH_AUTH_OK"
   ```
+  Leave out `USER` and a signed-in `claude` reports "Not logged in". It finds its macOS sign-in
+  in the login keychain under that account (175/F-09).
   The preflight's `daemon-claude-authenticated` asks the same question with `claude auth status`,
   which spends no tokens.
 

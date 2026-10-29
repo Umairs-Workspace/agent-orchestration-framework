@@ -314,7 +314,7 @@ export const archTests = [
   // and the daemons' `claude` is asked through the SAME `loggedIn` parse as the terminal's, in
   // an env of exactly the plist's PATH and HOME.
   {
-    name: "arch/175 FF-12607: the darwin checks are one frozen list run inside the guard, and the daemon probe reuses the one loggedIn parse in an env of exactly PATH and HOME",
+    name: "arch/175 FF-12607: the darwin checks are one frozen list run inside the guard, and the daemon probe reuses the one loggedIn parse in an env of exactly launchd's PATH, HOME, USER and LOGNAME",
     run: async () => {
       const source = await preflightSource();
       assert.match(
@@ -336,7 +336,7 @@ export const archTests = [
       const daemonBody = functionBody(source, "async function checkDaemonClaudeAuthenticated");
       assert.ok(daemonBody != null, "the daemon check's region was found");
       assert.match(daemonBody, /return await checkClaudeAuthenticated\(runner,/, "it asks through the terminal check's parse, via the injected runner");
-      assert.match(daemonBody, /env: \{ PATH, HOME: home \}/, "with an env of exactly the plist's PATH and HOME");
+      assert.match(daemonBody, /env: \{ PATH, HOME: home, USER: user, LOGNAME: user \}/, "with an env of exactly the plist's PATH and launchd's HOME, USER and LOGNAME (175/F-09)");
       assert.doesNotMatch(daemonBody, /process\.env/, "and nothing of the terminal's environment");
     },
   },

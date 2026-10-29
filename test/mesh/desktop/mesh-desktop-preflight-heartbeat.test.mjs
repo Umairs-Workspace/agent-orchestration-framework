@@ -685,6 +685,7 @@ function darwinProbes({ platform = "darwin", runner = fakeRunner(), files = fake
     runner: runner.runner,
     files: files.seam,
     home: HOME,
+    user: "u",
     installDir: INSTALL_DIR,
     env: {},
     nodeId: "fixture-node",
@@ -821,7 +822,7 @@ export const meshDesktopPreflightMacosTests = [
 
   // Scenario: E8 · a LaunchAgent PATH that holds a signed-in claude passes
   {
-    name: "175/03 task01 E8 · a LaunchAgent PATH holding a signed-in claude passes, and the probe's env is exactly PATH and HOME",
+    name: "175/03 task01 E8 · a LaunchAgent PATH holding a signed-in claude passes, and the probe's env is exactly launchd's PATH, HOME, USER and LOGNAME",
     async run() {
       const PATH = "/Users/u/.local/bin:/usr/bin:/bin";
       const runner = fakeRunner();
@@ -830,7 +831,7 @@ export const meshDesktopPreflightMacosTests = [
       assert.equal(daemon.status, "pass", daemon.message);
       assert.ok(daemon.message.includes("claude.ai"), daemon.message);
       const probe = runner.calls.find((call) => call.line === "claude auth status");
-      assert.deepEqual(probe.env, { PATH, HOME }, "an env of exactly PATH and HOME — nothing of the terminal's leaks in");
+      assert.deepEqual(probe.env, { PATH, HOME, USER: "u", LOGNAME: "u" }, "launchd's per-user env, nothing of the terminal's; USER finds the keychain sign-in (175/F-09)");
     },
   },
 

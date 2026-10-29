@@ -36,6 +36,8 @@ export const PREFLIGHT_SEAMS = Object.freeze([
   "files",
   "home",
   "installDir",
+  // 175/F-09 — the account the daemons run as: `claude` finds its keychain sign-in under USER.
+  "user",
 ]);
 
 // Core supplies configured services; constructing command definitions performs no I/O.
@@ -591,10 +593,13 @@ async function checkAppNotQuarantined(runner, bundle) {
 // The daemons' `claude`, asked in the daemons' environment. launchd hands the app the plist's
 // PATH, not the terminal's (RESEARCH P1), and the supervisor spawns `claude` by name — so a
 // probe run with the terminal's PATH would pass while every supervised run died on "claude not
-// found". The env is EXACTLY `{ PATH, HOME }`: anything more would be the terminal leaking in.
+// found". The env is EXACTLY what launchd hands a per-user job and `claude` reads, `{ PATH,
+// HOME, USER, LOGNAME }`: anything more would be the terminal leaking in. `USER` is not
+// optional: `claude` finds its macOS sign-in in the login keychain under that account, so a
+// probe without it read every signed-in daemon as logged out (175/F-09).
 //
 // No plist is not a failure and not a pass: nothing was probed, so the check does not apply.
-async function checkDaemonClaudeAuthenticated({ runner, files, plistPath, home }) {
+async function checkDaemonClaudeAuthenticated({ runner, files, plistPath, home, user }) {
   const code = "daemon-claude-authenticated";
   const xml = await files.read(plistPath);
   if (xml == null) {
@@ -612,7 +617,7 @@ async function checkDaemonClaudeAuthenticated({ runner, files, plistPath, home }
     where: `the LaunchAgent's PATH (${PATH})`,
     remedy: "re-run `aof mesh desktop install --autostart` from a shell where `claude` resolves",
     loggedOut: "The `claude` on the LaunchAgent's PATH is logged out — run `claude` once interactively to sign in.",
-    env: { PATH, HOME: home },
+    env: { PATH, HOME: home, USER: user, LOGNAME: user },
   });
 }
 
@@ -630,14 +635,14 @@ const defaultFiles = {
 };
 
 // The four, in `PREFLIGHT_CHECKS_DARWIN`' order, each inside the guard.
-async function runDarwinChecks({ runner, files, layout, home }) {
+async function runDarwinChecks({ runner, files, layout, home, user }) {
   return [
     await guarded("macos-command-line-tools", () =>
       checkBuildTool(runner, { code: "macos-command-line-tools", file: "xcode-select", args: ["-p"], missing: "The macOS command-line tools", are: "are", remedy: "`xcode-select --install` installs them" })),
     await guarded("rust-toolchain", () =>
       checkBuildTool(runner, { code: "rust-toolchain", file: "cargo", args: ["--version"], missing: "Rust", are: "is", remedy: "install it with `rustup` (https://rustup.rs)" })),
     await guarded("app-not-quarantined", () => checkAppNotQuarantined(runner, layout.placed)),
-    await guarded("daemon-claude-authenticated", () => checkDaemonClaudeAuthenticated({ runner, files, plistPath: layout.launchAgent, home })),
+    await guarded("daemon-claude-authenticated", () => checkDaemonClaudeAuthenticated({ runner, files, plistPath: layout.launchAgent, home, user })),
   ];
 }
 
@@ -715,6 +720,7 @@ async function runPreflight(options = {}) {
   if (platform !== "darwin") return checks;
 
   const home = options.home ?? os.homedir();
+  const user = options.user ?? os.userInfo().username;
   const layout = desktopLayout({ platform, installDir: resolveDesktopInstallDir({ installDir: options.installDir, env }), home });
   return [
     ...checks,
@@ -723,6 +729,7 @@ async function runPreflight(options = {}) {
       files: { ...defaultFiles, ...(options.files ?? {}) },
       layout,
       home,
+      user,
     })),
   ];
 }

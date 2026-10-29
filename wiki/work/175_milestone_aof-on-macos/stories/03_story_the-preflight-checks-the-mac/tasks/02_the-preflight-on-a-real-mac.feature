@@ -11,7 +11,7 @@ Feature: The preflight on a real Mac
       Given the app installed with "--autostart" from a shell whose PATH holds a signed-in claude
       When "aof mesh desktop run" reports the preflight
       Then "daemon-claude-authenticated" reads "ok"
-      And the deploy rules' auth probe, run with the plist's PATH and HOME only, prints "MESH_AUTH_OK"
+      And the deploy rules' auth probe, run with the plist's PATH and launchd's HOME, USER and LOGNAME only, prints "MESH_AUTH_OK"
 
     Scenario: a stale LaunchAgent PATH is caught before a run burns
       Given the LaunchAgent was registered from a shell whose PATH has no claude

@@ -24,7 +24,7 @@ Feature: The daemons' claude is probed in the daemons' own environment
       When the preflight runs with platform "darwin"
       Then "daemon-claude-authenticated" is "pass"
       And its message names "claude.ai"
-      And the runner ran "claude auth status" with an env of exactly PATH "/Users/u/.local/bin:/usr/bin:/bin" and HOME "<home>"
+      And the runner ran "claude auth status" with an env of exactly PATH "/Users/u/.local/bin:/usr/bin:/bin", HOME "<home>", and USER and LOGNAME "<user>"
 
     Scenario: E9 · no LaunchAgent means there is nothing to probe
       Given no LaunchAgent plist exists under the injected home

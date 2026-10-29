@@ -234,7 +234,7 @@ lesson was to probe the daemon's environment, not the terminal's (`.claude/rules
    - `rust-toolchain`: `cargo --version`. This one and the one above are needed only to build the
      app, and their messages say so;
    - `app-not-quarantined`: `xattr -p com.apple.quarantine` on the bundle finds nothing;
-   - `daemon-claude-authenticated`: `claude auth status` run with the plist's PATH and `HOME`, and
+   - `daemon-claude-authenticated`: `claude auth status` run with the plist's PATH, `HOME`, `USER` and `LOGNAME` (amended at verify, 175/F-09: `claude` finds its keychain sign-in under `USER`), and
      nothing else, reports `loggedIn: true`. With no plist registered, it reports that the check
      does not apply.
    Windows reports the same four checks it does today. The platform is an input, as in the
