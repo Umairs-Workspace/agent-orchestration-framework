@@ -41,6 +41,8 @@
     "./commands": "./src/commands/contribution.mjs",
     "./commands/desktop-preflight": "./src/commands/desktop-preflight.mjs",
     "./commands/desktop": "./src/commands/desktop.mjs",
+    "./commands/desktop-layout": "./src/commands/desktop-layout.mjs",
+    "./commands/desktop-launch-agent": "./src/commands/desktop-launch-agent.mjs",
     "./commands/face-shared": "./src/commands/face-shared.mjs",
     "./commands/gate": "./src/commands/gate.mjs",
     "./commands/heartbeat": "./src/commands/heartbeat.mjs",

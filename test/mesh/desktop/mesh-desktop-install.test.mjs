@@ -9,9 +9,10 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // $HOME (test/support/mesh-desktop-fixture.mjs) — never the real machine, never a
 // live signed artifact (the story's Build notes / RESOLVED block).
 import assert from "node:assert/strict";
-import { readFile, readdir, stat } from "node:fs/promises";
+import { chmod, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 const installDesktopApp = _aofApplication.mesh.commandTools.mesh.desktop.installDesktopApp;
+const discoverDesktopApp = _aofApplication.mesh.commandTools.mesh.desktop.discoverDesktopApp;
 const DESKTOP_APP_EXE = _aofApplication.mesh.commandTools.mesh.desktop.DESKTOP_APP_EXE;
 const WEBVIEW2_BOOTSTRAPPER = _aofApplication.mesh.commandTools.mesh.desktop.WEBVIEW2_BOOTSTRAPPER;
 // The preflight is its own module since 126/06’s post-hoc review; the verbs report it.
@@ -25,6 +26,20 @@ const getCommand = _aofApplication.getCommand;
 const invoke = _aofApplication.invoke;
 const runCommandFace = _aofApplication.cli.runCommandFace;
 import { withMeshDesktopFixture, seedInstalledApp } from "../../support/mesh-desktop-fixture.mjs";
+
+// 175/02 — a fixture `.app` bundle: `Contents/MacOS/aof-mesh-desktop` (executable unless told
+// otherwise) and an `Info.plist`. Spelled here as the contract states it; the code under test
+// takes the names from its layout module.
+const BUNDLE = "aof-mesh-desktop.app";
+const INNER = ["Contents", "MacOS", "aof-mesh-desktop"];
+async function seedBundle(dir, { bytes = "fixture-bundle-exe", executable = true } = {}) {
+  const bundle = path.join(dir, BUNDLE);
+  await mkdir(path.join(bundle, "Contents", "MacOS"), { recursive: true });
+  await writeFile(path.join(bundle, "Contents", "Info.plist"), "<plist/>", "utf8");
+  await writeFile(path.join(bundle, ...INNER), bytes, "utf8");
+  await chmod(path.join(bundle, ...INNER), executable ? 0o755 : 0o644);
+  return bundle;
+}
 
 // Capture console.log/console.error output around a call (the CLI-face --json
 // envelope tests need the printed line, not just the return value).
@@ -80,6 +95,13 @@ function preflightProbes(overrides = {}) {
     // The bundle declaration is injected for the same reason: a preflight probe that reads
     // the real bundle is one more thing this suite reaches that it did not choose to.
     bundleHookFn: overrides.bundleHookFn ?? (() => ({ id: "claude-run-heartbeat", event: "PostToolUse" })),
+    // 175/03 — the preflight's answer is PINNED to Windows' four, so this suite answers the same
+    // on a Mac host; a row that installs for darwin names its platform AFTER this spread. The
+    // darwin seams are inert all the same, so such a row reaches no real `xcode-select`, `xattr`
+    // or `claude`, and reads no real LaunchAgent.
+    platform: "win32",
+    runner: async () => ({ stdout: "", stderr: "", code: 0 }),
+    files: { read: async () => null },
   };
 }
 
@@ -90,7 +112,7 @@ export const meshDesktopInstallTests = [
     name: "mesh-desktop-install/01 install places the app executable(s) into $HOME/.aof/bin, leaving the m28 aof binary untouched beside them",
     async run() {
       await withMeshDesktopFixture(async ({ installDir, appArtifactPath, bootstrapperArtifactPath }) => {
-        const result = await installDesktopApp({ installDir, appArtifactPath, bootstrapperArtifactPath });
+        const result = await installDesktopApp({ platform: "win32", installDir, appArtifactPath, bootstrapperArtifactPath });
         assert.equal(result.ok, true, "install reports ok:true");
         assert.equal(result.installDir, installDir, "reports the resolved install dir");
 
@@ -116,7 +138,7 @@ export const meshDesktopInstallTests = [
         const before = await readdir(installDir);
         assert.equal(before.length, 3, `sanity: aof.exe + prior app + prior bootstrapper only (got ${JSON.stringify(before)})`);
 
-        const result = await installDesktopApp({ installDir, appArtifactPath, bootstrapperArtifactPath });
+        const result = await installDesktopApp({ platform: "win32", installDir, appArtifactPath, bootstrapperArtifactPath });
         assert.equal(result.ok, true);
 
         const after = await readdir(installDir);
@@ -134,7 +156,7 @@ export const meshDesktopInstallTests = [
     name: "mesh-desktop-install/01 install places/records the WebView2 Evergreen Bootstrapper as a discoverable placed file",
     async run() {
       await withMeshDesktopFixture(async ({ installDir, appArtifactPath, bootstrapperArtifactPath }) => {
-        const result = await installDesktopApp({ installDir, appArtifactPath, bootstrapperArtifactPath });
+        const result = await installDesktopApp({ platform: "win32", installDir, appArtifactPath, bootstrapperArtifactPath });
         assert.equal(result.ok, true);
         assert.equal(path.basename(result.bootstrapperPath), WEBVIEW2_BOOTSTRAPPER, "the bootstrapper's placed filename is reported");
 
@@ -154,7 +176,7 @@ export const meshDesktopInstallTests = [
       // fault is injected deterministically rather than attempted on-disk.
       await withMeshDesktopFixture(async ({ installDir, appArtifactPath, bootstrapperArtifactPath }) => {
         await assert.rejects(
-          () => installDesktopApp({ installDir, appArtifactPath, bootstrapperArtifactPath, isWritableDirFn: async () => false }),
+          () => installDesktopApp({ platform: "win32", installDir, appArtifactPath, bootstrapperArtifactPath, isWritableDirFn: async () => false }),
           (error) => {
             assert.equal(error.code, "install-dir-not-writable", "coded refusal names the unwritable dir");
             assert.match(error.message, /not writable/i, "one friendly sentence carrying a permissions hint");
@@ -169,7 +191,7 @@ export const meshDesktopInstallTests = [
       // Row 2: the packaged app artifact is missing.
       await withMeshDesktopFixture(async ({ installDir, bootstrapperArtifactPath }) => {
         await assert.rejects(
-          () => installDesktopApp({ installDir, appArtifactPath: path.join(installDir, "does-not-exist.exe"), bootstrapperArtifactPath }),
+          () => installDesktopApp({ platform: "win32", installDir, appArtifactPath: path.join(installDir, "does-not-exist.exe"), bootstrapperArtifactPath }),
           (error) => {
             assert.equal(error.code, "app-artifact-missing");
             assert.match(error.message, /artifact is missing/i, "names the missing artifact with a re-download/re-build hint");
@@ -183,7 +205,7 @@ export const meshDesktopInstallTests = [
       // Row 3: the WebView2 bootstrapper artifact is missing.
       await withMeshDesktopFixture(async ({ installDir, appArtifactPath }) => {
         await assert.rejects(
-          () => installDesktopApp({ installDir, appArtifactPath, bootstrapperArtifactPath: path.join(installDir, "does-not-exist-bootstrapper.exe") }),
+          () => installDesktopApp({ platform: "win32", installDir, appArtifactPath, bootstrapperArtifactPath: path.join(installDir, "does-not-exist-bootstrapper.exe") }),
           (error) => {
             assert.equal(error.code, "bootstrapper-artifact-missing");
             assert.match(error.message, /bootstrapper.*is missing/i, "names the missing bootstrapper from the bundle");
@@ -215,7 +237,7 @@ export const meshDesktopInstallTests = [
           calls += 1;
           return calls === 1;
         };
-        await assert.rejects(() => installDesktopApp({ installDir, appArtifactPath, bootstrapperArtifactPath, isWritableDirFn }));
+        await assert.rejects(() => installDesktopApp({ platform: "win32", installDir, appArtifactPath, bootstrapperArtifactPath, isWritableDirFn }));
         assert.ok(calls >= 2, "the writability check ran again mid-install (the window the fault lands in)");
         const appBytes = await readFile(path.join(installDir, DESKTOP_APP_EXE), "utf8");
         assert.equal(appBytes, "prior-stable-bytes", "the prior app install is completely untouched — no partial overwrite");
@@ -260,14 +282,15 @@ export const meshDesktopInstallTests = [
   {
     name: "mesh-desktop-install/01 the routed face installs successfully end-to-end and reports ok:true under --json",
     async run() {
-      await withMeshDesktopFixture(async ({ installDir, appArtifactPath, bootstrapperArtifactPath }) => {
+      // The face takes no ctx, so the platform is the host's (175/02): a Mac host installs a
+      // bundle and asks for no bootstrapper; every other host installs the exe beside it.
+      await withMeshDesktopFixture(async ({ installDir, appArtifactPath, bootstrapperArtifactPath, artifactsDir }) => {
+        const onMac = process.platform === "darwin";
+        const artifacts = onMac
+          ? ["--app-artifact", await seedBundle(artifactsDir)]
+          : ["--app-artifact", appArtifactPath, "--bootstrapper-artifact", bootstrapperArtifactPath];
         const { logs } = await captureConsole(() =>
-          runCommandFace(getCommand("mesh:desktop-install"), [
-            "--install-dir", installDir,
-            "--app-artifact", appArtifactPath,
-            "--bootstrapper-artifact", bootstrapperArtifactPath,
-            "--json",
-          ]),
+          runCommandFace(getCommand("mesh:desktop-install"), ["--install-dir", installDir, ...artifacts, "--json"]),
         );
         assert.equal(logs.length, 1);
         const parsed = JSON.parse(logs[0]);
@@ -276,7 +299,8 @@ export const meshDesktopInstallTests = [
         assert.equal(typeof parsed.message, "undefined", "the message/help text is never part of the JSON body — only ok + the verb's result fields");
 
         const entries = await readdir(installDir);
-        assert.ok(entries.includes(DESKTOP_APP_EXE) && entries.includes(WEBVIEW2_BOOTSTRAPPER));
+        if (onMac) assert.ok(entries.includes(BUNDLE), `the bundle is placed (entries: ${entries})`);
+        else assert.ok(entries.includes(DESKTOP_APP_EXE) && entries.includes(WEBVIEW2_BOOTSTRAPPER));
       });
     },
   },
@@ -492,7 +516,7 @@ export const meshDesktopInstallTests = [
         const launched = await invoke(
           "mesh:desktop-run",
           { installDir },
-          { ...failing, spawnFn: () => ({ pid: 1, on() {}, unref() {} }) },
+          { ...failing, platform: "win32", spawnFn: () => ({ pid: 1, on() {}, unref() {} }) },
         );
 
         assert.deepEqual(
@@ -534,6 +558,8 @@ export const meshDesktopInstallTests = [
         },
         nodeId: "fixture-node",
         env: {},
+        // 175/03 — the four this row was written for, on any host.
+        platform: "win32",
       });
 
       assert.ok(preflight.every((entry) => entry.status === "fail"), "probes that fail every check");
@@ -573,6 +599,144 @@ export const meshDesktopInstallTests = [
       );
       assert.equal(claudeCalls, 0, "no `claude` was spawned behind the refusal");
       assert.equal(storeOpens, 0, "and no store was opened");
+    },
+  },
+
+  // ── milestone 175 / story 02, task 00_install-places-the-app-bundle-on-macos.feature ──
+  //
+  // On darwin the artifact is an `.app` directory and no bootstrapper is asked for. The
+  // platform is handed in, so every row runs on any host; only the execute-bit reads are
+  // host-bound, because a Windows disk carries no execute bit to read.
+
+  // Scenario: E1 · a bundle is placed whole on darwin, and run then finds its executable
+  {
+    name: "175/02 task00 E1 · a bundle is placed whole on darwin, and run then finds its executable",
+    async run() {
+      await withMeshDesktopFixture(async ({ installDir, artifactsDir }) => {
+        const bundle = await seedBundle(artifactsDir);
+        const result = await invoke("mesh:desktop-install", { installDir, appArtifact: bundle }, { ...preflightProbes(), platform: "darwin" });
+        assert.equal(result.ok, true);
+        assert.equal(result.appPath, path.join(installDir, BUNDLE));
+        const inner = path.join(installDir, BUNDLE, ...INNER);
+        const placed = await stat(inner);
+        assert.ok(placed.isFile(), "the inner executable exists");
+        if (process.platform !== "win32") assert.ok((placed.mode & 0o111) !== 0, "and is executable");
+        assert.equal(result.bootstrapperPath, undefined, "the answer names no bootstrapper path");
+        assert.equal(await discoverDesktopApp({ installDir, platform: "darwin" }), inner, "discovery answers the inner executable");
+      }, { seedArtifacts: false });
+    },
+  },
+
+  // 175/03 — the preflight checks the bundle THIS install placed. `--install-dir` arrives on the
+  // input, not the ctx, so a preflight handed ctx alone would ask `xattr` about the default
+  // bundle and report on an app nobody just installed.
+  {
+    name: "175/03 the darwin preflight asks xattr about the bundle the verb placed, including under --install-dir",
+    async run() {
+      await withMeshDesktopFixture(async ({ installDir, artifactsDir }) => {
+        const asked = [];
+        const runner = async (file, args) => {
+          asked.push([file, ...args].join(" "));
+          return { stdout: "", stderr: "", code: 1 };
+        };
+        const { installDir: _ignored, ...ctx } = { ...preflightProbes(), platform: "darwin", runner };
+        await invoke("mesh:desktop-install", { installDir, appArtifact: await seedBundle(artifactsDir) }, ctx);
+        assert.ok(asked.includes(`xattr -p com.apple.quarantine ${path.join(installDir, BUNDLE)}`), `xattr was asked about the placed bundle: ${asked.join(" | ")}`);
+      }, { seedArtifacts: false });
+    },
+  },
+
+  // Scenario: E2 · a bundle with no executable inside is refused, and nothing is placed
+  {
+    name: "175/02 task00 E2 · a bundle with no executable inside is refused app-artifact-missing, and nothing is placed",
+    async run() {
+      await withMeshDesktopFixture(async ({ installDir, artifactsDir }) => {
+        const hollow = path.join(artifactsDir, BUNDLE);
+        await mkdir(path.join(hollow, "Contents"), { recursive: true });
+        await writeFile(path.join(hollow, "Contents", "Info.plist"), "<plist/>", "utf8");
+        const before = (await readdir(installDir)).sort();
+        await assert.rejects(
+          invoke("mesh:desktop-install", { installDir, appArtifact: hollow }, { ...preflightProbes(), platform: "darwin" }),
+          (error) => error.code === "app-artifact-missing",
+        );
+        assert.deepEqual((await readdir(installDir)).sort(), before, "the install dir holds exactly what it held before");
+      }, { seedArtifacts: false });
+    },
+  },
+
+  // Scenario: E3 · Windows still requires the bootstrapper
+  {
+    name: "175/02 task00 E3 · Windows still requires the bootstrapper",
+    async run() {
+      await withMeshDesktopFixture(async ({ installDir, appArtifactPath }) => {
+        await assert.rejects(
+          invoke("mesh:desktop-install", { installDir, appArtifact: appArtifactPath }, { platform: "win32", ...preflightProbes() }),
+          (error) => error.code === "bootstrapper-artifact-missing",
+        );
+      });
+    },
+  },
+
+  // Scenario: a re-install over a placed bundle replaces it in place
+  {
+    name: "175/02 task00 a re-install over a placed bundle replaces it in place, beside at most one backup",
+    async run() {
+      await withMeshDesktopFixture(async ({ installDir, artifactsDir }) => {
+        await installDesktopApp({ installDir, platform: "darwin", appArtifactPath: await seedBundle(path.join(artifactsDir, "v1"), { bytes: "v1" }) });
+        await installDesktopApp({ installDir, platform: "darwin", appArtifactPath: await seedBundle(path.join(artifactsDir, "v2"), { bytes: "v2" }) });
+        assert.equal(await readFile(path.join(installDir, BUNDLE, ...INNER), "utf8"), "v2", "the placed executable is the new one");
+        const entries = await readdir(installDir);
+        assert.equal(entries.filter((e) => e === BUNDLE).length, 1, "exactly one bundle");
+        const backups = entries.filter((e) => e.startsWith(`${BUNDLE}.bak.`));
+        assert.ok(backups.length <= 1, `at most one backup: ${entries}`);
+        if (backups.length === 1) assert.match(backups[0], /^aof-mesh-desktop\.app\.bak\.\d{8}T\d{6}/, "named <bundle>.bak.<ts>");
+      }, { seedArtifacts: false });
+    },
+  },
+
+  // Scenario Outline: discovery on darwin refuses a bundle it cannot run
+  {
+    name: "175/02 task00 discovery on darwin refuses a bundle it cannot run",
+    async run() {
+      const rows = [
+        { placed: "nothing", code: "desktop-not-installed", seed: async () => {} },
+        {
+          placed: "a bundle whose inner executable has no execute bit",
+          code: "desktop-not-runnable",
+          posixOnly: true,
+          seed: async (dir) => seedBundle(dir, { executable: false }),
+        },
+        {
+          placed: 'a regular file named "aof-mesh-desktop.app"',
+          code: "desktop-not-runnable",
+          seed: async (dir) => writeFile(path.join(dir, BUNDLE), "not a bundle", "utf8"),
+        },
+      ];
+      for (const row of rows) {
+        if (row.posixOnly && process.platform === "win32") continue; // no execute bit to read on a Windows disk
+        await withMeshDesktopFixture(async ({ installDir }) => {
+          await row.seed(installDir);
+          await assert.rejects(discoverDesktopApp({ installDir, platform: "darwin" }), (error) => {
+            assert.equal(error.code, row.code, row.placed);
+            return true;
+          });
+        }, { seedArtifacts: false });
+      }
+    },
+  },
+
+  // Scenario: --dry-run on darwin names the bundle it would place and places nothing
+  {
+    name: "175/02 task00 --dry-run on darwin names the bundle it would place and places nothing",
+    async run() {
+      await withMeshDesktopFixture(async ({ installDir, artifactsDir }) => {
+        const bundle = await seedBundle(artifactsDir);
+        const before = (await readdir(installDir)).sort();
+        const result = await invoke("mesh:desktop-install", { installDir, appArtifact: bundle, dryRun: true }, { ...preflightProbes(), platform: "darwin" });
+        assert.equal(result.dryRun, true);
+        assert.equal(result.appPath, path.join(installDir, BUNDLE));
+        assert.deepEqual((await readdir(installDir)).sort(), before, "the install dir is unchanged");
+      }, { seedArtifacts: false });
     },
   },
 ];

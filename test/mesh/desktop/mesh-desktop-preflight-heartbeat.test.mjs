@@ -39,6 +39,8 @@ const renderPreflight = _aofApplication.mesh.commandTools.mesh.desktopPreflight.
 const getCommand = _aofApplication.getCommand;
 const invoke = _aofApplication.invoke;
 import { withMeshDesktopFixture, seedInstalledApp, DESKTOP_APP_EXE } from "../../support/mesh-desktop-fixture.mjs";
+import { renderLaunchAgent } from "@aof/mesh/commands/desktop-launch-agent";
+import { PREFLIGHT_CHECKS_DARWIN } from "@aof/mesh/commands/desktop-preflight";
 
 // The argv `markedEntry` writes: the script resolved at run time through the harness's own
 // token, never a checkout's absolute path. The check reads the file to probe FROM HERE, which
@@ -68,6 +70,8 @@ function probes(overrides = {}) {
     settingsFn: overrides.settingsFn ?? (async () => REGISTERED),
     hookFileFn: overrides.hookFileFn ?? (async () => true),
     bundleHookFn: overrides.bundleHookFn ?? (() => DECLARATION),
+    // 175/03 — pinned to Windows' four, so a Mac host answers the same and reaches no darwin probe.
+    platform: "win32",
   };
 }
 
@@ -113,7 +117,7 @@ export const meshDesktopPreflightHeartbeatTests = [
         const launched = await invoke(
           "mesh:desktop-run",
           { installDir },
-          { ...seams, spawnFn: () => ({ pid: 1, on() {}, unref() {} }) },
+          { ...seams, platform: "win32", spawnFn: () => ({ pid: 1, on() {}, unref() {} }) },
         );
 
         for (const [face, result] of [["mesh:desktop-install", installed], ["mesh:desktop-run", launched]]) {
@@ -148,7 +152,7 @@ export const meshDesktopPreflightHeartbeatTests = [
 
         for (const [face, input, extra] of [
           ["mesh:desktop-install", { installDir, appArtifact: appArtifactPath, bootstrapperArtifact: bootstrapperArtifactPath }, { platform: "win32" }],
-          ["mesh:desktop-run", { installDir }, { spawnFn: () => ({ pid: 1, on() {}, unref() {} }) }],
+          ["mesh:desktop-run", { installDir }, { platform: "win32", spawnFn: () => ({ pid: 1, on() {}, unref() {} }) }],
         ]) {
           const settingsCalls = [];
           const hookFileCalls = [];
@@ -206,7 +210,8 @@ export const meshDesktopPreflightHeartbeatTests = [
         "utf8",
       );
       assert.equal(
-        [...face.matchAll(/runPreflight\(preflightSeams\(ctx\)\)/g)].length,
+        // 175/03: each verb overrides exactly one key — the install dir it resolved.
+        [...face.matchAll(/runPreflight\(preflightSeams\(\{ \.\.\.ctx, installDir: [^,{}]+ \}\)\)/g)].length,
         2,
         "and both verbs forward that one list rather than spelling keys of their own",
       );
@@ -550,6 +555,7 @@ export const meshDesktopPreflightHeartbeatTests = [
                 throw new Error("probe exploded");
               },
             }),
+            platform: "win32",
             spawnFn: () => ({ pid: 1, on() {}, unref() {} }),
           },
         );
@@ -610,6 +616,264 @@ export const meshDesktopPreflightHeartbeatTests = [
       const identity = preflight.find((item) => item.code === "workspace-identity-pinned");
       assert.ok(identity.message.includes("1 registered workspace(s)"), "the identity check read the one answer");
       assert.ok(only(preflight).message.includes("1 registered workspace(s)"), "and so did the heartbeat check — the same one");
+    },
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// milestone 175 / story 03 — the preflight checks the Mac:
+//   tasks/00_the-mac-adds-its-prerequisite-checks.feature
+//   tasks/01_the-daemons-claude-is-probed-in-their-environment.feature
+//
+// They live in the preflight's own suite rather than a file of their own: FF-11904's row for
+// this directory gave the preflight ONE file at 126/06 and said the next one is a case on an
+// existing suite.
+//
+// On darwin the preflight appends four checks after the four it has always reported
+// (175/ADR-004 §4): the command-line tools and Rust (needed only to BUILD the app), no
+// quarantine on the bundle, and the daemons' `claude` asked in the LaunchAgent's own
+// environment. That last one is the WSL lesson: launchd hands the app the plist's PATH, not the
+// terminal's, so a check run with the terminal's PATH passes while every supervised run dies.
+//
+// NOTHING HERE REACHES THE REAL MACHINE. The platform is handed in, every darwin probe is asked
+// of a fake runner that records the env it was given, and the plist is read through a fake file
+// seam — so these rows answer the same on a Mac host as on Windows.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const HOME = "/Users/u";
+const INSTALL_DIR = "/Users/u/.aof/bin";
+const BUNDLE = path.join(INSTALL_DIR, "aof-mesh-desktop.app");
+const PLIST = path.join(HOME, "Library", "LaunchAgents", "com.aof.mesh.desktop.plist");
+const DARWIN_CHECKS = ["macos-command-line-tools", "rust-toolchain", "app-not-quarantined", "daemon-claude-authenticated"];
+const SIGNED_IN = JSON.stringify({ loggedIn: true, authMethod: "claude.ai" });
+
+const plistWith = (PATH) => renderLaunchAgent({ label: "com.aof.mesh.desktop", executable: path.join(BUNDLE, "Contents", "MacOS", "aof-mesh-desktop"), path: PATH });
+
+// A runner that answers by command line and records every call with the env it was handed.
+// Unless a row overrides it, every darwin probe answers well: the tools resolve, the bundle
+// carries no quarantine (xattr's exit 1), and `claude` is signed in.
+function fakeRunner(answers = {}) {
+  const calls = [];
+  const defaults = {
+    "xcode-select -p": { stdout: "/Library/Developer/CommandLineTools\n", stderr: "", code: 0 },
+    "cargo --version": { stdout: "cargo 1.82.0\n", stderr: "", code: 0 },
+    [`xattr -p com.apple.quarantine ${BUNDLE}`]: { stdout: "", stderr: `xattr: ${BUNDLE}: No such xattr: com.apple.quarantine`, code: 1 },
+    "claude auth status": { stdout: SIGNED_IN, stderr: "", code: 0 },
+  };
+  return {
+    calls,
+    runner: async (file, args, options) => {
+      const line = [file, ...args].join(" ");
+      calls.push({ line, env: options?.env });
+      const answer = line in answers ? answers[line] : defaults[line];
+      const resolved = typeof answer === "function" ? await answer(options) : answer;
+      if (resolved === undefined) throw new Error(`the fake runner has no answer for ${line}`);
+      return resolved;
+    },
+  };
+}
+
+function fakeFiles(seeded = {}) {
+  const disk = new Map(Object.entries(seeded));
+  return { disk, seam: { read: async (file) => (disk.has(file) ? disk.get(file) : null) } };
+}
+
+// The four checks that are not this story's subject answer green, so a red here is a darwin one.
+function darwinProbes({ platform = "darwin", runner = fakeRunner(), files = fakeFiles({ [PLIST]: plistWith("/Users/u/.local/bin:/usr/bin:/bin") }), claudeFn } = {}) {
+  return {
+    platform,
+    runner: runner.runner,
+    files: files.seam,
+    home: HOME,
+    installDir: INSTALL_DIR,
+    env: {},
+    nodeId: "fixture-node",
+    claudeFn: claudeFn ?? (async () => ({ stdout: SIGNED_IN, stderr: "", code: 0 })),
+    buildInfoFn: () => ({ mode: "payload", buildId: "fixture.20261028T000000", installedAt: null }),
+    workspacesFn: async () => ({ ok: true, workspaces: [], skipped: [] }),
+    workspaceConfigFn: async () => ({ mesh: { workspaceId: "fixture-ws" } }),
+    settingsFn: async () => ({}),
+    hookFileFn: async () => true,
+    bundleHookFn: () => ({ id: "claude-run-heartbeat", event: "PostToolUse" }),
+  };
+}
+
+const find = (preflight, code) => preflight.find((entry) => entry.code === code);
+
+export const meshDesktopPreflightMacosTests = [
+  // ── task 00 · On macOS the preflight adds its prerequisite checks ──
+
+  // Scenario: E1 · darwin reports eight checks in a fixed order
+  {
+    name: "175/03 task00 E1 · darwin reports eight checks in a fixed order, the last four passing",
+    async run() {
+      const preflight = await runPreflight(darwinProbes());
+      assert.deepEqual(preflight.map((entry) => entry.code), [...PREFLIGHT_CHECKS, ...DARWIN_CHECKS], "the four, then the darwin four");
+      assert.deepEqual([...PREFLIGHT_CHECKS_DARWIN], DARWIN_CHECKS, "the darwin list is its own frozen list");
+      for (const code of DARWIN_CHECKS) assert.equal(find(preflight, code).status, "pass", `${code}: ${find(preflight, code).message}`);
+    },
+  },
+
+  // Scenario: E2 · Windows reports the existing four and runs no darwin probe
+  {
+    name: "175/03 task00 E2 · Windows reports exactly the existing four and the runner is asked for no darwin probe",
+    async run() {
+      const runner = fakeRunner();
+      const preflight = await runPreflight(darwinProbes({ platform: "win32", runner }));
+      assert.deepEqual(preflight.map((entry) => entry.code), [...PREFLIGHT_CHECKS]);
+      assert.deepEqual(runner.calls, [], "no xcode-select, cargo, xattr or daemon claude was asked");
+    },
+  },
+
+  // Scenario Outline: a missing build tool fails with the step that installs it
+  {
+    name: "175/03 task00 E3/E4 · a missing build tool fails, says it is needed only to build the desktop app, and names its remedy",
+    async run() {
+      const rows = [
+        { example: "E3", probe: "cargo --version", answer: { stdout: "", stderr: "", code: -1 }, code: "rust-toolchain", remedy: "rustup" },
+        { example: "E4", probe: "xcode-select -p", answer: { stdout: "", stderr: "xcode-select: error: unable to get active developer directory", code: 2 }, code: "macos-command-line-tools", remedy: "xcode-select --install" },
+        { example: "--", probe: "cargo --version", answer: { stdout: "", stderr: "error: rustup could not choose a version", code: 101 }, code: "rust-toolchain", remedy: "rustup" },
+      ];
+      for (const row of rows) {
+        const preflight = await runPreflight(darwinProbes({ runner: fakeRunner({ [row.probe]: row.answer }) }));
+        const entry = find(preflight, row.code);
+        assert.equal(entry.status, "fail", `${row.example}: ${row.code} fails`);
+        assert.match(entry.message, /needed only to build the desktop app/, `${row.example}: ${entry.message}`);
+        assert.ok(entry.message.includes(row.remedy), `${row.example}: names ${row.remedy} — ${entry.message}`);
+      }
+    },
+  },
+
+  // Scenario: E5 · a quarantine attribute fails the check and names its removal
+  {
+    name: "175/03 task00 E5 · a quarantine attribute fails app-not-quarantined and names the xattr -dr that clears it",
+    async run() {
+      const runner = fakeRunner({ [`xattr -p com.apple.quarantine ${BUNDLE}`]: { stdout: "0083;6720d2a1;Safari;\n", stderr: "", code: 0 } });
+      const entry = find(await runPreflight(darwinProbes({ runner })), "app-not-quarantined");
+      assert.equal(entry.status, "fail");
+      assert.ok(entry.message.includes(`xattr -dr com.apple.quarantine ${BUNDLE}`), entry.message);
+    },
+  },
+
+  // Scenario: E6 · no quarantine attribute passes
+  {
+    name: "175/03 task00 E6 · xattr's exit 1 for an absent attribute passes app-not-quarantined — and a missing bundle never does",
+    async run() {
+      const entry = find(await runPreflight(darwinProbes()), "app-not-quarantined");
+      assert.equal(entry.status, "pass", entry.message);
+
+      // The same exit 1 for a bundle that is not there is no answer at all, so it is not a pass.
+      const missing = fakeRunner({ [`xattr -p com.apple.quarantine ${BUNDLE}`]: { stdout: "", stderr: `xattr: No such file: ${BUNDLE}`, code: 1 } });
+      const absent = find(await runPreflight(darwinProbes({ runner: missing })), "app-not-quarantined");
+      assert.equal(absent.status, "fail", absent.message);
+      assert.ok(absent.message.includes(BUNDLE), "naming where it looked");
+    },
+  },
+
+  // Scenario: a probe that throws is reported by its code and does not end the preflight
+  {
+    name: "175/03 task00 a probe that throws is reported by its code and the preflight carries on to the daemon check",
+    async run() {
+      const runner = fakeRunner({ [`xattr -p com.apple.quarantine ${BUNDLE}`]: () => { throw new Error("spawn EACCES"); } });
+      const preflight = await runPreflight(darwinProbes({ runner }));
+      assert.equal(find(preflight, "app-not-quarantined").status, "fail");
+      const codes = preflight.map((entry) => entry.code);
+      assert.ok(codes.indexOf("daemon-claude-authenticated") > codes.indexOf("app-not-quarantined"), "daemon-claude-authenticated is still reported after it");
+      assert.equal(find(preflight, "daemon-claude-authenticated").status, "pass");
+    },
+  },
+
+  // Scenario: the render shows each check's status word
+  {
+    name: "175/03 task00 the render shows ok, -- and FAIL for pass, skip and fail",
+    run() {
+      const lines = renderPreflight([
+        { code: "a", status: "pass", message: "fine." },
+        { code: "b", status: "skip", message: "does not apply." },
+        { code: "c", status: "fail", message: "broken." },
+      ]);
+      assert.deepEqual(lines.map((line) => line.trim().split(/\s+/)[0]), ["ok", "--", "FAIL"]);
+    },
+  },
+
+  // ── task 01 · The daemons' claude is probed in the daemons' own environment ──
+
+  // Scenario: E7 · a LaunchAgent PATH with no claude fails, though the terminal's claude is signed in
+  {
+    name: "175/03 task01 E7 · a LaunchAgent PATH with no claude fails daemon-claude-authenticated while claude-authenticated passes",
+    async run() {
+      const runner = fakeRunner({
+        "claude auth status": (options) =>
+          options?.env?.PATH === "/usr/bin:/bin" ? { stdout: "", stderr: "", code: -1 } : { stdout: SIGNED_IN, stderr: "", code: 0 },
+      });
+      const preflight = await runPreflight(darwinProbes({
+        runner,
+        files: fakeFiles({ [PLIST]: plistWith("/usr/bin:/bin") }),
+        // The terminal's claude goes through the same runner, with no env of its own.
+        claudeFn: runner.runner,
+      }));
+      assert.equal(find(preflight, "claude-authenticated").status, "pass", "the terminal's claude is signed in");
+      const daemon = find(preflight, "daemon-claude-authenticated");
+      assert.equal(daemon.status, "fail");
+      assert.match(daemon.message, /`claude` is not on the LaunchAgent's PATH/, daemon.message);
+    },
+  },
+
+  // Scenario: E8 · a LaunchAgent PATH that holds a signed-in claude passes
+  {
+    name: "175/03 task01 E8 · a LaunchAgent PATH holding a signed-in claude passes, and the probe's env is exactly PATH and HOME",
+    async run() {
+      const PATH = "/Users/u/.local/bin:/usr/bin:/bin";
+      const runner = fakeRunner();
+      const preflight = await runPreflight(darwinProbes({ runner, files: fakeFiles({ [PLIST]: plistWith(PATH) }) }));
+      const daemon = find(preflight, "daemon-claude-authenticated");
+      assert.equal(daemon.status, "pass", daemon.message);
+      assert.ok(daemon.message.includes("claude.ai"), daemon.message);
+      const probe = runner.calls.find((call) => call.line === "claude auth status");
+      assert.deepEqual(probe.env, { PATH, HOME }, "an env of exactly PATH and HOME — nothing of the terminal's leaks in");
+    },
+  },
+
+  // Scenario: E9 · no LaunchAgent means there is nothing to probe
+  {
+    name: "175/03 task01 E9 · no LaunchAgent is a skip naming install --autostart, and no claude is asked with a LaunchAgent env",
+    async run() {
+      const runner = fakeRunner();
+      const preflight = await runPreflight(darwinProbes({ runner, files: fakeFiles() }));
+      const daemon = find(preflight, "daemon-claude-authenticated");
+      assert.equal(daemon.status, "skip");
+      assert.ok(daemon.message.includes("aof mesh desktop install --autostart"), daemon.message);
+      assert.equal(runner.calls.filter((call) => call.line === "claude auth status" && call.env != null).length, 0);
+      assert.ok(renderPreflight([daemon])[0].trim().startsWith("--"), "rendered --, never ok");
+    },
+  },
+
+  // Scenario Outline: what the daemons' claude answers decides the check
+  {
+    name: "175/03 task01 what the daemons' claude answers decides the check — loggedIn is read, never the exit code alone",
+    async run() {
+      const rows = [
+        { stdout: '{"loggedIn": false}', exit: 0, status: "fail" },
+        { stdout: "not json", exit: 0, status: "fail" },
+        { stdout: '{"loggedIn": true, "authMethod": "claude.ai"}', exit: 1, status: "fail" },
+      ];
+      for (const row of rows) {
+        const runner = fakeRunner({ "claude auth status": { stdout: row.stdout, stderr: "", code: row.exit } });
+        const daemon = find(await runPreflight(darwinProbes({ runner })), "daemon-claude-authenticated");
+        assert.equal(daemon.status, row.status, `${row.stdout} / exit ${row.exit}: ${daemon.message}`);
+      }
+    },
+  },
+
+  // Scenario: the check writes nothing
+  {
+    name: "175/03 task01 the daemon check writes nothing — the plist is byte-identical and the seam it is handed has no writer",
+    async run() {
+      const xml = plistWith("/Users/u/.local/bin:/usr/bin:/bin");
+      const files = fakeFiles({ [PLIST]: xml });
+      await runPreflight(darwinProbes({ files }));
+      assert.equal(files.disk.get(PLIST), xml, "the plist is byte-identical afterwards");
+      assert.deepEqual([...files.disk.keys()], [PLIST], "and nothing else appeared");
     },
   },
 ];

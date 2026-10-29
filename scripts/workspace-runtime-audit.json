@@ -306,10 +306,10 @@
   {
     "file": "packages/mesh/src/commands/desktop-preflight.mjs",
     "kind": "child-process",
-    "expression": "spawn(file, args, { windowsHide: true })",
-    "digest": "26f2e89914d3671ebcb5c4b4defb22731afb3fe17bc94139b2c04b40d8e0ffa9",
-    "sourceDigest": "5deeb2fc4610c0f8f4e734215fd06d961e91699bfc22a84fffbdedd8aaa71806",
-    "reason": "Preflight process port probes the desktop executable selected by the desktop resolver. Native app paths remain Plan 04 current layout."
+    "expression": "spawn(file, args, { windowsHide: true, ...(spawnOptions?.env ? { env: spawnOptions.env } : {}) })",
+    "digest": "5d30e9e3a26063a12637d6a2691dc9a2146bf2d0681763f22b946fab3cc9cddf",
+    "sourceDigest": "0f3f409b4d98274b5a23087e897fa90a0f2f2100571f069e917149eb296d92ba",
+    "reason": "Preflight process port probes the desktop executable selected by the desktop resolver. Native app paths remain Plan 04 current layout. 175/03 re-reviewed: still the one injected runner, spawning only the file and argv it is handed with no shell; an optional env is passed through so the darwin daemon probe runs `claude auth status` with exactly the LaunchAgent PATH and HOME."
   },
   {
     "file": "packages/mesh/src/fabric.mjs",
@@ -484,32 +484,32 @@
     "kind": "child-process",
     "expression": "execFileSync(cmd, args, { cwd: repoRoot, stdio: \"inherit\", ...(env ? { env } : {}) })",
     "digest": "6c0e065f874be5002eac80843f45791322d0432d5a88f5e898f1eaa7a2070255",
-    "sourceDigest": "e0d67dba768fe6aebf9cb16acd19a007b335135bdd82d9ae359c2a9e5a35b658",
-    "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
+    "sourceDigest": "839845a7c11efd008a57cdd24456a5fdb03350dcdaf06823fdf6ab822a172bfa",
+    "reason": "Installation orchestration executes explicit build steps (the UI build, the SEA build, the desktop cargo build and, on macOS, the ad-hoc codesign of its bundle — 175/ADR-002), Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
     "file": "scripts/install-local.mjs",
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"rev-parse\", \"--short\", \"HEAD\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "e5b76471fa26f27e749c4d4e89ff5e9767b86f8bfa43b4eee809429ea2fc160a",
-    "sourceDigest": "e0d67dba768fe6aebf9cb16acd19a007b335135bdd82d9ae359c2a9e5a35b658",
-    "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
+    "sourceDigest": "839845a7c11efd008a57cdd24456a5fdb03350dcdaf06823fdf6ab822a172bfa",
+    "reason": "Installation orchestration executes explicit build steps (the UI build, the SEA build, the desktop cargo build and, on macOS, the ad-hoc codesign of its bundle — 175/ADR-002), Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
     "file": "scripts/install-local.mjs",
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"status\", \"--porcelain\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "bcb5d022dfff4ea486b70da39afee9842948e82b039add25aaf5b245376f5149",
-    "sourceDigest": "e0d67dba768fe6aebf9cb16acd19a007b335135bdd82d9ae359c2a9e5a35b658",
-    "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
+    "sourceDigest": "839845a7c11efd008a57cdd24456a5fdb03350dcdaf06823fdf6ab822a172bfa",
+    "reason": "Installation orchestration executes explicit build steps (the UI build, the SEA build, the desktop cargo build and, on macOS, the ad-hoc codesign of its bundle — 175/ADR-002), Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
     "file": "scripts/install-local.mjs",
     "kind": "child-process",
     "expression": "execFileSync(\"wsl.exe\", args, { stdio: \"inherit\" })",
     "digest": "c677935b9ede259885b57613afb2c5e042050ce0246fa6020ececd1a38ecb1db",
-    "sourceDigest": "e0d67dba768fe6aebf9cb16acd19a007b335135bdd82d9ae359c2a9e5a35b658",
-    "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
+    "sourceDigest": "839845a7c11efd008a57cdd24456a5fdb03350dcdaf06823fdf6ab822a172bfa",
+    "reason": "Installation orchestration executes explicit build steps (the UI build, the SEA build, the desktop cargo build and, on macOS, the ad-hoc codesign of its bundle — 175/ADR-002), Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
     "file": "scripts/refresh-harness-reference.mjs",

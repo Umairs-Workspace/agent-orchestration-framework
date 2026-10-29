@@ -145,6 +145,121 @@ Gotchas that bite:
 - The guest's NAT IP changes when the distro restarts. That does **not** break the stream —
   admission is by enrollment credential, not remote address. It only affects roster display.
 
+## This MacBook — a standalone single-node mesh (macOS, milestone 175)
+
+This laptop is isolated and in no mesh: it is its own control node, and nothing below assumes any
+other machine (175/ADR-005). The desktop app supervises both daemons exactly as on Windows,
+from an ad-hoc-signed `~/.aof/bin/aof-mesh-desktop.app` that lives in the menu bar, with no Dock
+tile. Only x86_64 is verified; arm64 builds the same way but is unmeasured (175 RESEARCH Q3).
+
+**Two halves of one deploy loop.** The `aof` you type is the npm link into this checkout, so a
+`packages/` change reaches the CLI live and needs no install. The daemons run the PAYLOAD, through
+`~/.aof/bin/aof` (the supervisor never runs the npm-linked `aof`, 175/ADR-002 §6), so they need
+`install-local` and a restart, exactly as on Windows.
+
+### First-time setup, in this order
+
+1. **The build prerequisites.** These are needed only to BUILD the app, never to run it:
+   - the Xcode command-line tools: `xcode-select --install`, or Xcode itself; `xcode-select -p`
+     must resolve;
+   - Rust through `rustup` (https://rustup.rs), then a new shell so `cargo` is on PATH.
+2. **Build and place everything:** `node scripts/install-local.mjs --desktop`. This builds the
+   payload and the release app, assembles and ad-hoc signs the `.app`, and places both in
+   `~/.aof/bin`. It never edits a shell profile.
+3. **Nominate this laptop as its own control node** (175/ADR-005). Without it, `mesh status`
+   answers `isControlNode: false` and the app starts `mesh ui` only. Read the id, never type it
+   from memory:
+   ```
+   aof mesh relay --json          # → "nodeId": "<id>"
+   ```
+   then set it in the GLOBAL config `~/.aof/aof.config.json`, the one the supervisor's cwd-less
+   `mesh status` reads. Merge it into the file if one exists:
+   ```json
+   { "mesh": { "relay": { "controlNode": "<id>" } } }
+   ```
+   `aof mesh status --json` must now answer `isControlNode: true`. There is no verb for this. It
+   is a config key, as on the Windows control node.
+4. **Install the app and register login autostart**, from a shell whose PATH resolves `claude`.
+   The LaunchAgent captures THIS shell's PATH, and the daemons spawn `claude` by name:
+   ```
+   aof mesh desktop install --app-artifact ~/.aof/bin/aof-mesh-desktop.app --autostart
+   ```
+   This writes `~/Library/LaunchAgents/com.aof.mesh.desktop.plist` (`RunAtLoad`, Aqua session,
+   `KeepAlive` false). It starts nothing.
+5. **Start it:** `aof mesh desktop run`. With the LaunchAgent registered, launchd starts it, in
+   the login session.
+
+Read the preflight both verbs print. On a Mac it adds `macos-command-line-tools`,
+`rust-toolchain`, `app-not-quarantined` and `daemon-claude-authenticated`. The last one asks
+`claude` in the LaunchAgent's own environment. `--` means no LaunchAgent is registered, so there
+was nothing to probe.
+
+### Deploy
+
+```
+node scripts/install-local.mjs --skip-ui             # a packages/ change (add nothing for the CLI)
+node scripts/install-local.mjs --skip-ui --desktop   # ALSO when apps/desktop/ changed
+```
+
+Drop `--skip-ui` when `apps/ui/` changed. Then restart. Modules load once at daemon start.
+
+### Restart: the one restart that is legal over SSH
+
+```
+aof mesh desktop stop && aof mesh desktop run
+```
+
+- `stop` sends the app a SIGTERM (a graceful Quit that reaps both daemons' process groups). It
+  then waits until the app has gone, and never force-kills. If it times out, it names the pid and
+  leaves it alone.
+- `run` then starts the app THROUGH LAUNCHD, inside the login session. That is what makes this
+  pair legal from `ssh` as well as from a terminal at the laptop, but ONLY with the LaunchAgent
+  registered. Without one, `run` over SSH refuses with `desktop-run-needs-gui-session`.
+- Starting a daemon (or the app's executable) by hand over SSH is still forbidden. An SSH session
+  is outside the Aqua login session, so it has no login keychain, which is where `claude` keeps
+  its credentials on macOS. The daemon would run, and every supervised run would die on auth.
+
+### Verify at the source
+
+- `~/.aof/bin/aof --version` answers `0.1.0 (payload <buildId>)`, with the buildId in
+  `~/.aof/bin/BUILD_ID.json`. `embedded`, or a stale id, means the payload did not land.
+- Both daemons print `Build: payload <buildId>` at startup.
+- `aof mesh status --json` answers `isControlNode: true`. `http://127.0.0.1:4181/?mode=fleet`
+  lists one node, this one.
+- **Verify auth in the DAEMONS' environment, not the terminal's.** launchd hands the app the
+  plist's PATH and nothing of your shell. Run `claude` with exactly that PATH and HOME, from a
+  terminal at the laptop:
+  ```bash
+  P="$(plutil -extract EnvironmentVariables.PATH raw -o - ~/Library/LaunchAgents/com.aof.mesh.desktop.plist)"
+  env -i PATH="$P" HOME="$HOME" claude -p "Reply with exactly: MESH_AUTH_OK"
+  ```
+  The preflight's `daemon-claude-authenticated` asks the same question with `claude auth status`,
+  which spends no tokens.
+
+### Gotchas
+
+- **A Node version bump makes the captured PATH stale.** The plist still names the old nvm
+  `bin`, so `claude` and `node` stop resolving for the daemons. `daemon-claude-authenticated`
+  turns FAIL while your terminal's `claude-authenticated` stays ok. The fix is to re-run
+  `aof mesh desktop install --app-artifact ~/.aof/bin/aof-mesh-desktop.app --autostart` from the
+  new shell, then restart.
+- **The process name is `aof-mesh-desktop`,** exactly 16 characters, macOS's `MAXCOMLEN`. That is
+  why `pgrep -x aof-mesh-desktop` finds it. A longer name would silently stop matching.
+- **Quarantine.** A locally built app is not quarantined. One that arrived by download is, and
+  macOS refuses to open it. `app-not-quarantined` names the fix:
+  `xattr -dr com.apple.quarantine ~/.aof/bin/aof-mesh-desktop.app`.
+- **Recovery after a supervisor crash.** Quit, `stop` and a logout reap everything. But if the app
+  is killed with SIGKILL or crashes, its daemons survive: macOS has no parent-death signal, and
+  containment is deferred (`wiki/work/ROADMAP.md`, 175/ADR-001 §5). The next `run` then meets
+  `:4181`/`:4182` in use. Recover by hand:
+  ```
+  pgrep -fl "aof mesh"              # the orphaned daemons
+  kill -TERM <pid> ...              # SIGTERM each: they shut down cleanly on it
+  aof mesh desktop run
+  ```
+  This is a recovery, not part of the restart. A pty session that ignores its daemon's shutdown
+  can outlive even a clean Quit's SIGKILL rung. `pgrep -fl "aof mesh"` finds it the same way.
+
 ## Tests (hook-enforced, but know why)
 
 Never run aof tests without `AOF_GLOBAL_HOME=$(mktemp -d)` — unisolated runs write fixtures into the
