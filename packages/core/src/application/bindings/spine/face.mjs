@@ -157,6 +157,10 @@ export function assembleSpineFace({ commandCoreServices, effectsJournalServices,
       const body = cli.launch(options);
       if (body != null) {
         const input = await cli.argv(options._, options);
+        // A launcher that takes a workspace resolves it exactly as the invoke path does, so a
+        // daemon's `--workspace` is honoured rather than declared and ignored (TECH_DEBT 4).
+        // Its body loads `faceCtx.workspaceRoot`, which is the cwd only when none was asked for.
+        if (spec.workspace !== false) faceCtx.workspaceRoot = await resolveWorkspaceRoot(options);
         try {
           await body(input, faceCtx);
         } catch (error) {
