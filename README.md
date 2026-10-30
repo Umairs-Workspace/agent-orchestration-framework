@@ -24,6 +24,16 @@ Each installer detects your OS/arch, downloads the matching signed release asset
 
 This is a separate, greenfield distribution path from the local dev setup below — it does not require cloning the repo or installing Node.
 
+## Renumber an existing work item
+
+Use `aof work renumber <ref> --to <number>` to move one live numbered item to a vacant number without shifting other work. A nested story keeps its parent. Archived items and occupied numbers are refused.
+
+`aof work renumber 175 --to 181 --dry-run` previews the paths and references; omit `--dry-run` to apply. The verb preserves status, updates current work-document references, publishes the existing stream remap, and rebuilds the full configured memory index. Held items are refused before writing.
+
+Recall observations and captured test evidence remain original. The stream's `.renumber-history.json` lets recall accounting follow earlier observations to the moved lesson; include that file when transferring the work stream to another checkout. It is not a permanent alias: a later item may reuse the old number. Source-code labels and bare prose numbers are not rewritten automatically. Inspect the returned remap when integrating across branches.
+
+If memory refresh fails after the move, the result reports `moved: true` and exits nonzero; run `aof work memory ingest` to recover. An abrupt interruption during filesystem edits requires inspecting the source, destination and history before retrying. Do not renumber work held by a running phase.
+
 ## Local setup
 
 Local development uses the checked-in Yarn 4.18.1 executable and a single root `yarn.lock`.
@@ -191,6 +201,8 @@ aof work use-headroom | unuse-headroom           # toggle the headroom context-c
 ```
 
 ### The loop machinery (milestones 52 · 53 · 61 · 62 · 63 · 78 · 79)
+
+A declared `work.rubric` must include a non-empty `command` argv array of strings, with a non-empty executable first. Doctor reports an unusable command, and loop launch (including dry-run and resume) refuses it before starting sessions. Rubrics use `shell: false`: on Windows, invoke an executable directly, for example `["node", "node_modules/vitest/vitest.mjs", "run"]`, rather than a `pnpm` or `npx` `.cmd` shim.
 
 `aof work` runs as a set of **declared control loops** — build-to-green, review → fix → re-review, verify → triage → accept, the autonomous cascade — each a record in the loop registry (`.aof/loops/`, shipped with the bundle) naming its reference, measurement, actuator, cadence and ceiling. The registry is read-only framework data; these verbs read it and drive it:
 

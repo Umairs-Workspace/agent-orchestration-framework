@@ -61,3 +61,21 @@ export const loopCommandGateTests = [
     },
   },
 ];
+
+loopCommandGateTests.push({
+  name: "181/01 a running loop continues the declined story before verifying it again",
+  async run() {
+    const fx = await loopFixture({ storyStatus: "in-review" });
+    try {
+      let verifies = 0;
+      const driver = completingDriver(fx, { onCommand(command) {
+        if (command === "/aof:verify 03/01") replaceStatus(path.join(fx.storyDir, "STORY.md"), ++verifies === 1 ? "in-progress" : "done");
+        if (command === "/aof:continue 03/01 --solo") replaceStatus(path.join(fx.storyDir, "STORY.md"), "in-review");
+        if (command === "/aof:verify 03") replaceStatus(path.join(fx.milestoneDir, "SPEC.md"), "done");
+      } });
+      const state = await runLoopBody({ scope: "03" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, report: () => {} });
+      assert.deepEqual(driver.typed.slice(0, 3).map(t => t.split("\n\n")[0]), ["/aof:verify 03/01", "/aof:continue 03/01 --solo", "/aof:verify 03/01"]);
+      assert.equal(state.state, "done");
+    } finally { await fx.cleanup(); }
+  },
+});

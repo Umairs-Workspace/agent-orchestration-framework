@@ -120,6 +120,8 @@ const BOARD_DEFERRED = new Set([
   // the board HOST move folders in a checkout it does not own. A deliberate carve-out recorded
   // here, not an oversight.
   "archive",
+  // 182/ADR-001: renumber mutates the operator checkout; no board-host write route.
+  "renumber",
   // milestone 168 / story 01 (168/ADR-004 §1, ADR-001 §4) — `prototype` inherits `promote`'s carve-out:
   // its start move mints a number, and a prototype is built in the operator's OWN session on the
   // current branch. A served `/api/work/prototype` would let the board host mint and move a

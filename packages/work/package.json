@@ -125,7 +125,10 @@
     "./integration-routing": "./src/integration-routing.mjs",
     "./legacy-milestone-discovery": "./src/legacy-milestone-discovery.mjs",
     "./store-metadata": "./src/store-metadata.mjs",
-    "./citation-history": "./src/citation-history.mjs"
+    "./citation-history": "./src/citation-history.mjs",
+    "./renumber": "./src/renumber.mjs",
+    "./ref-history": "./src/ref-history.mjs",
+    "./commands/renumber": "./src/commands/renumber.mjs"
   },
   "files": [
     "src"

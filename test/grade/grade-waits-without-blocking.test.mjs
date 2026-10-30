@@ -19,6 +19,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // test's own event loop turning while the runner works: a callback that fires during the
 // grade is an observation `spawnSync` makes impossible, not an inference from the source.
 import assert from "node:assert/strict";
+import { stripComments } from "../support/source-slice.mjs";
 import { existsSync, readFileSync } from "node:fs";
 import { rm, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -35,7 +36,7 @@ const rubricSpawnOptions = _aofApplication.work.commandTools.grade.rubricSpawnOp
 const spawnRubricAsync = _aofApplication.work.commandTools.grade.spawnRubricAsync;
 const GRADE_REENTRANCY_ENV = _aofApplication.work.commandTools.grade.GRADE_REENTRANCY_ENV;
 import { readRuntimeFiles } from "../support/read-src-files.mjs";
-import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
+import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn, spawnsDeclaredRubric } from "../support/grade-fixture.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "../loop/loop-command-probe.test.mjs";
 import { capturingReport, emitsPassing, gradingCtx, stubRubric } from "../support/loop-grade-fixture.mjs";
 
@@ -520,13 +521,19 @@ export const gradeWaitsWithoutBlockingTests = [
   {
     name: "81/00 exactly one module still spawns the declared rubric, and the pure leaf still spawns nothing",
     run: async () => {
-      const strip = (text) => text.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+      const strip = stripComments;
+      // 181: diagnostic strings are not config reads and RegExp.exec is not a process.
+      // Inspect syntax so sharing the command-shape predicate cannot invent a spawner.
+      assert.equal(spawnsDeclaredRubric('const message = "work.rubric.command"; execFile("git", []);'), false);
+      assert.equal(spawnsDeclaredRubric('const rubric = config?.work?.rubric; RESULT_LINE.exec(text);'), false);
+      for (const fn of ["spawn", "spawnSync", "spawnRubricAsync", "execFile", "exec"]) {
+        assert.equal(spawnsDeclaredRubric('const rubric = config?.work?.rubric; ' + fn + '(rubric.command);'), true);
+      }
+      assert.equal(spawnsDeclaredRubric('import * as cp from "node:child_process"; cp.exec(config.work.rubric.command);'), true);
+      assert.equal(spawnsDeclaredRubric('import { spawn as launch } from "node:child_process"; launch(config.work.rubric.command);'), true);
       const spawners = [];
       for (const file of await readRuntimeFiles(repoRoot)) {
-        const code = strip(await readFile(file.path, "utf8"));
-        const readsTheRubric = /work\?\.rubric|work\.rubric|RUBRIC_CONFIG_KEY/.test(code);
-        const spawns = /\bspawnSync\s*\(|\bspawn\w*\s*\(|\bexecFile|\bexec\s*\(/.test(code);
-        if (readsTheRubric && spawns) spawners.push(file.rel);
+        if (spawnsDeclaredRubric(await readFile(file.path, "utf8"))) spawners.push(file.rel);
       }
       assert.deepEqual(spawners, ["packages/work/src/commands/grade.mjs"], "exactly one module spawns the declared rubric argv, and it is the registered grade command");
 

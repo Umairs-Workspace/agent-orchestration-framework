@@ -710,3 +710,33 @@ export const loopCommandSessionTests = [
     },
   },
 ];
+
+loopCommandRefusalTests.push({
+  name: "181/02 An unusable rubric is reported before any session starts",
+  async run() {
+    assert.equal(_aofApplication.work.doctor.CHECK_GROUPS.filter(group => group.name === "rubricConfigurationGroup").length, 1, "rubric configuration is checked once per snapshot");
+    const fx = await loopFixture();
+    try {
+      for (const command of [undefined, null, [], "node test.mjs", [""], ["node", 1]]) {
+        fx.workspace.config.work.rubric = { ...(command === undefined ? {} : { command }), report: { path: ".turbo/bdd-results.tap", format: "tap" } };
+        assert.equal(_aofApplication.work.commandTools.grade.usableCommand(command), false);
+        const findings = await _aofApplication.work.doctor.doctorWork(fx.workDir, fx.workspace.config, "03/01");
+        assert.ok(findings.some(f => f.code === "rubric-command-unusable" && f.severity === "error" && f.message.includes("work.rubric.command")), JSON.stringify(findings));
+        for (const input of [{ scope: "03", dryRun: true }, { scope: "03", resume: true }, { scope: "03" }, { scope: "03", level: "L3" }]) {
+          const driver = completingDriver(fx);
+          await assert.rejects(() => loopCommand.run(input, { ...fx.ctx, agentSessionDriverOptions: driver.options, report: () => {} }), e => e.code === "rubric-command-unusable" && /work.rubric.command/.test(e.message));
+          assert.equal(driver.spawnCalls.length, 0);
+        }
+        const grade = await _aofApplication.invoke("work:grade", { ref: "03/01", run: true }, fx.ctx);
+        assert.equal(grade.grade.verdict, "indeterminate");
+        assert.ok(grade.grade.codes.includes("runner-spawn-failed"));
+      }
+      for (const rubric of [undefined, null, { command: ["node", "test.mjs"] }, { command: ["node", ""] }, { command: [" "] }]) {
+        fx.workspace.config.work.rubric = rubric;
+        const findings = await _aofApplication.work.doctor.doctorWork(fx.workDir, fx.workspace.config, "03/01");
+        assert.ok(findings.every(f => f.code !== "rubric-command-unusable"));
+        await loopCommand.run({ scope: "03", dryRun: true }, fx.ctx);
+      }
+    } finally { await fx.cleanup(); }
+  },
+});

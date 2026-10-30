@@ -113,7 +113,14 @@ export const RUNNERS_CONFIG_KEY = "work.controls.runners";
 // staging prohibition with it — a `FooTests.cs` staged under `<work.dir>` is a staged
 // control — which is the one-predicate rule above working as designed, and is a strict
 // superset of ADR-004 §4's `*.test.*`/`*.spec.*`, so that invariant still holds.
-const CONTROL_FILE_NAME = /\.(?:test|spec)\.[A-Za-z0-9]+$|Tests?\.(?:cs|fs|vb)$/;
+//
+// A THIRD ECOSYSTEM, PYTHON. pytest's default discovery collects `test_*.py` and
+// `*_test.py`, so a downstream Python milestone citing
+// `backend/tests/architecture/test_contract_isolation.py` got `control-unresolved` on
+// every row. The `test_` prefix is anchored at the start of the name (or of a path
+// segment, since the predicate also sees repo-relative paths), so a source that merely
+// contains it (`latest_test_data.py`) and the fixture module `conftest.py` stay out.
+const CONTROL_FILE_NAME = /\.(?:test|spec)\.[A-Za-z0-9]+$|Tests?\.(?:cs|fs|vb)$|(?:^|\/)test_[A-Za-z0-9_]*\.py$|_test\.py$/;
 
 export function isControlFileName(name) {
   return CONTROL_FILE_NAME.test(String(name ?? ""));

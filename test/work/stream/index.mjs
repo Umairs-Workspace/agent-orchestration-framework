@@ -15,6 +15,7 @@
 // byte-identical frontmatter discipline (task 02), the two number-space axes
 // (task 03), and the pure count primitive (task 04) — all against
 // packages/core/src/work/reindex.mjs, story 01 has no command surface.
+import { workRenumberTests } from "./work-renumber.test.mjs";
 import { workReindexSlotOpenTests } from "./work-reindex-slot-open.test.mjs";
 import { workReindexDependsParentRewriteTests } from "./work-reindex-depends-parent-rewrite.test.mjs";
 import { workReindexSurgicalFrontmatterTests } from "./work-reindex-surgical-frontmatter.test.mjs";
@@ -116,6 +117,7 @@ import { workThisTreeHoldsWhatIsLiveTests } from "./work-this-tree-holds-what-is
 
 export const tests = [
   // milestone 41 / story 01 — reindex-engine task traceability
+  ...workRenumberTests,
   ...workReindexSlotOpenTests,
   ...workReindexDependsParentRewriteTests,
   ...workReindexSurgicalFrontmatterTests,

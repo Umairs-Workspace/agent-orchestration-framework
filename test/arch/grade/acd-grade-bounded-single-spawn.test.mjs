@@ -19,12 +19,14 @@ import { fileURLToPath } from "node:url";
 const rubricSpawnOptions = _aofApplication.work.commandTools.grade.rubricSpawnOptions;
 const rubricChildEnv = _aofApplication.work.commandTools.grade.rubricChildEnv;
 const GRADE_REENTRANCY_ENV = _aofApplication.work.commandTools.grade.GRADE_REENTRANCY_ENV;
+import { spawnsDeclaredRubric } from "../../support/grade-fixture.mjs";
+import { stripComments } from "../../support/source-slice.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const stripComments = (text) => text.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+
 
 export const archTests = [
   {
@@ -54,15 +56,7 @@ export const archTests = [
     run: async () => {
       const spawners = [];
       for (const file of await readRuntimeFiles(repoRoot)) {
-        const code = stripComments(await readFile(file.path, "utf8"));
-        // The declared rubric is reached through the `work.rubric` KEY — that, and nothing
-        // looser, is what makes a module the rubric's reader. (`plan.command` is deliberately
-        // NOT part of the predicate: `commands/project-provision.mjs` plans argv arrays and
-        // spawns them, and it is a provisioner, not a second grader. A guard that named it
-        // would be checking something other than what its name claims — `m45/R5`.)
-        const readsTheRubric = /work\?\.rubric|work\.rubric|RUBRIC_CONFIG_KEY/.test(code);
-        const spawns = /\bspawnSync\s*\(|\bspawn\s*\(|\bexecFile|\bexec\s*\(/.test(code);
-        if (readsTheRubric && spawns) spawners.push(file.rel);
+        if (spawnsDeclaredRubric(await readFile(file.path, "utf8"))) spawners.push(file.rel);
       }
       assert.deepEqual(spawners, ["packages/work/src/commands/grade.mjs"], `exactly one module spawns the declared rubric argv (found: ${spawners.join(", ")})`);
       const composition = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/commands/grade.mjs"), "utf8"));

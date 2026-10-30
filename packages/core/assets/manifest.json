@@ -714,7 +714,7 @@
         "id": "aof-verify",
         "kind": "skill"
       },
-      "hash": "sha256:0ff4e5890b762b2b2662998a265812b24156bd5fe3ef7df2907af243ce1b0485"
+      "hash": "sha256:a89e9a8d687daed2b1a302d715fb4ad2f99a5181d448ffbb0c852fda21f68384"
     },
     {
       "path": ".aof/frozen-set.jsonc",
@@ -1470,7 +1470,7 @@
         "id": "verify",
         "kind": "command"
       },
-      "hash": "sha256:5a85e1b4ecdbf8ef12fe085ae41b766ce42f1b9a9ff90a7626c5282489b52331"
+      "hash": "sha256:d5e7b3289dd8c2ca36fb2681f46f395663afab45b65df48e87ff5d2e18f186c1"
     },
     {
       "path": ".claude/hooks/aof/artifact-sync-enqueue.mjs",

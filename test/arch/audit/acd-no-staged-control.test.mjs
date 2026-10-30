@@ -49,7 +49,8 @@ const workDir = path.join(repoRoot, "wiki", "work");
 // lockstep with `isControlFileName` — a strict superset of ADR-004 §4's glob, never a
 // relaxation of it. aof's own tree holds no `.cs`, so the agreement loop below cannot
 // see that branch; the enumerated shapes in the next test assert it for both spellings.
-const STAGED = /\.(?:test|spec)\.[A-Za-z0-9]+$|Tests?\.(?:cs|fs|vb)$/;
+// pytest's `test_*.py` / `*_test.py` widens it the same way, and for the same reason.
+const STAGED = /\.(?:test|spec)\.[A-Za-z0-9]+$|Tests?\.(?:cs|fs|vb)$|(?:^|\/)test_[A-Za-z0-9_]*\.py$|_test\.py$/;
 
 async function walk(dir, out = []) {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -113,6 +114,13 @@ export const archTests = [
         ["Program.cs", false],
         ["TestSupport.cs", false],
         ["Latest.cs", false],
+        // the pytest spellings, and the Python sources they must leave admitted
+        ["test_contract_isolation.py", true],
+        ["engine_test.py", true],
+        ["backend/tests/architecture/test_legacy_name.py", true],
+        ["conftest.py", false],
+        ["latest_test_data.py", false],
+        ["tap_report.py", false],
       ]) {
         assert.equal(isControlFileName(name), staged, name);
         assert.equal(STAGED.test(name), staged, `the gate's own glob agrees on ${name}`);

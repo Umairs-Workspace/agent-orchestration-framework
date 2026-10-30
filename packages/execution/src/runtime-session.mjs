@@ -2,6 +2,8 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 import { stripVTControlCharacters } from "node:util";
 
+export const PHASE_COMPLETION_CONTRACT = "Phase completion is independent of acceptance or a positive verdict. For every phase, including refine, continue and verify, completion means the requested procedure ran to its decision, all spawned agents finished, and the verdict and findings were recorded and routed. A declined acceptance, failed check, or request for developer rework is a completed procedure when its findings are recorded and routed; the item may remain unfinished. Report a phase failure only when the procedure could not be carried out. A blocking business question requiring an answer is needs_input instead of completion.";
+
 // Runtime policy ends at this boundary; adapters own their native lifecycle and cleanup.
 export function createRuntimeSession({ adapters }) {
   const registered = new Map(Object.entries(adapters ?? {}));

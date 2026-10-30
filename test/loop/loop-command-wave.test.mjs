@@ -413,7 +413,9 @@ export const loopCommandWaveTests = [
       // to cycle.mjs's `repairLaneHalt` at review, beside the drive/settle it reuses; what stays is the
       // `--no-repair` flag in its three homes, the `work.loop.repair` guard, and the launch's re-entry
       // loop with its account lines — the launch is the one door that may resume, so it cannot move.
-      assert.ok(lines <= 2219, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2219 it was at 147 — extract, or raise this bound with a reason`);
+      // 181/ADR-003: four lines reject an unusable declared rubric at the invocation door,
+      // before promotion or runtime startup. The predicate remains in the grade leaf.
+      assert.ok(lines <= 2223, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2223 it was at 181 — extract, or raise this bound with a reason`);
     },
   },
 
