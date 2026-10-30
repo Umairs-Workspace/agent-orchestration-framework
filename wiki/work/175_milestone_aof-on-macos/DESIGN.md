@@ -74,9 +74,27 @@ On a Mac the node's name is its hostname, and a home network makes it long
 
 - [ ] The node name stays inside its column. A name too long for it truncates with an ellipsis,
       and the full name shows on hover. It never wraps and never overflows.
-- [ ] The `this node` chip, the role badge and the version keep their positions whatever the
-      name's length. The chip stays whole beside the truncated name, never clipped or overlapped.
+- [ ] The name column takes the room the row can spare: a hostname that fits shows whole, and
+      only a name too long for the window truncates. Every row's column shrinks alike, so the
+      columns stay aligned.
+- [ ] The role badge and the `this node` chip sit in ONE group, role first, centred on the row.
+      Both share one box (height, type, border), so neither sits higher than the other, and the
+      role badge lines up across rows. The group and the version keep their positions whatever
+      the name's length (amended at verify, 175/F-13: the chip had sat on the name's line, above
+      the row-centred role badge).
 - [ ] The node id line beneath truncates the same way.
+- [ ] The control bar's pills, toggles and button are one height (26 px), and no label wraps.
+
+### Surface M4 — the window's title bar on a Mac (binding rule, added at verify)
+
+The m36 chrome is Windows chrome: a frameless window with drawn –/☐/✕ caption buttons. On a Mac
+those read as foreign (175/F-13).
+
+- [ ] On macOS the window keeps the native traffic lights, overlaid on the app's own title bar
+      (`tauri.macos.conf.json`: `titleBarStyle: Overlay`, hidden title). The drawn caption buttons
+      are hidden, and the logo clears the lights.
+- [ ] The red light hides the window to the tray, exactly as ✕ does on Windows (the native
+      `CloseRequested` handler). Windows keeps its frameless chrome unchanged.
 
 ## Review notes
 
