@@ -13,12 +13,13 @@ import {
 import { readJson, writeText } from "@aof/foundation/fs";
 import { graphJsonPath, readGraph, normalizeGraph } from "../graph-normalize.mjs";
 import { LEGACY_GRAPHIFY_BACKEND, resolveGraphifyExtraction } from "../graphify-backends.mjs";
+import { RECORD_CORPORA } from "../engine.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
 export function createGraphifyBackend({ coreInvoke, loadWorkspace, buildRecords, ensureAofGitignore, ensureGraphifyOutGitignore }) {
 // The `graphify` memory backend (milestone 10, story 00 — the SPINE).
 //
 // It satisfies the FROZEN 05 backend interface (05/ADR-003): the default export is
-// EXACTLY { name, recall, reindex, status } with name === "graphify". It is a thin
+// EXACTLY { name, corpora, recall, reindex, status } (179/ADR-003) with name === "graphify". It is a thin
 // composition of two independently-frozen halves (ADR-001):
 //   - RECORDS come from milestone-05's markdown parsers, REUSED untouched: the pure
 //     `buildRecords` (05 indexing) + `rankRecords`/`applyScope`/`normalizeScope`/
@@ -641,8 +642,11 @@ function rerank(records, normalizedGraph, query, scope = {}, opts = {}) {
 // Apply the 05 scope pre-filter (re-exported so callers / fitness tests can assert the
 // pre-filter-before-rank ordering without reaching into local-retrieval).
 
+// 179/ADR-003: the port sees a record backend. The work-stream graph is a private ranking signal
+// (10/ADR-001), not a corpus, so the declaration is the shared record one and nothing else.
 const defaultBackend = {
   name: "graphify",
+  corpora: RECORD_CORPORA,
   recall,
   reindex,
   status,

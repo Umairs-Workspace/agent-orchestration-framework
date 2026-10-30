@@ -28,19 +28,17 @@ test('testing ports preserve bounded argv execution and supplied changed-set ref
 test('selector consumes supplied graph facts and widens an unknown without launching anything',async()=>{
   const parent=await realpath(os.tmpdir()),root=await mkdtemp(path.join(parent,'aof-testing-package-'));
   try{
-    const artifact=path.join(root,'graph.json');await writeFile(artifact,'fixture');let reads=0;
+    // 179/ADR-004: the supplied graph fact is the code corpus's `relations`, asked once per selection.
+    const artifact=path.join(root,'graph.json');let reads=0;
     const selector=createTestSelector({
-      graphJsonPath:()=>artifact,graphArtifactBuiltAt:()=> 'artifact-instant',
-      readGraph:file=>{assert.equal(file,artifact);reads++;return 'raw';},
-      normalizeGraph:raw=>{assert.equal(raw,'raw');return 'normalized';},
-      computeImpact:(graph,files)=>{assert.equal(graph,'normalized');return files.map(file=>({present:file==='src/known.mjs',dependents:['test/known.test.mjs']}));},
+      relations:async(files,{projectRoot})=>{assert.equal(projectRoot,root);reads++;return {served:true,available:true,unavailable:null,artifact,builtAt:'artifact-instant',files:files.map(file=>({file,present:file==='src/known.mjs',dependencies:[],dependents:['test/known.test.mjs']}))};},
       registrationDecision:()=>({fixture:true}),
     });
     assert.equal(reads,0);
     const allSuites=['test/known.test.mjs','test/other.test.mjs'];
-    const known=selector.selectSuites({projectRoot:root,changed:['src/known.mjs'],allSuites,roots:['test']});
-    assert.deepEqual(known.selected,['test/known.test.mjs']);assert.equal(known.builtAt,'artifact-instant');
-    const unknown=selector.selectSuites({projectRoot:root,changed:['src/new.mjs'],allSuites,roots:['test']});
+    const known=await selector.selectSuites({projectRoot:root,changed:['src/known.mjs'],allSuites,roots:['test']});
+    assert.deepEqual(known.selected,['test/known.test.mjs']);assert.equal(known.builtAt,'artifact-instant');assert.equal(known.graphPath,artifact);
+    const unknown=await selector.selectSuites({projectRoot:root,changed:['src/new.mjs'],allSuites,roots:['test']});
     assert.equal(unknown.scope,'all');assert.deepEqual(unknown.selected,allSuites);assert.equal(unknown.widened[0].reason,'not-in-graph');
   }finally{assert.equal(path.dirname(await realpath(root)),parent);await rm(root,{recursive:true,force:true});}
 });

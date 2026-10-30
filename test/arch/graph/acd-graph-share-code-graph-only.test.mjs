@@ -7,9 +7,15 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createGraphBuildCommand } from "@aof/knowledge/commands/graph-build";
 import { defaultGitExec } from "@aof/execution/worktrees";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
+import { createGraphBuildCommand } from "@aof/knowledge/commands/graph-build";
+import { createGraphifyCodeBackend } from "@aof/knowledge/graphify-code-backend";
+import { createKnowledgeEngine } from "@aof/knowledge/engine";
+
+// graph:build is a face over the port since 179/ADR-002: the services build the graphify code
+// backend, the port routes the face's `ingest("code")` to it, and the face keeps the share wrapping.
+const composeGraphBuild = (services) => createGraphBuildCommand({ ...services, engine: createKnowledgeEngine({ backends: [createGraphifyCodeBackend(services).graphifyCodeBackend] }) });
 // FF-17401 (story 174, ADR-002) — only the codebase graph rides the ref transport.
 //
 // "`refs/aof/graph/` is named in exactly one source module, `graph-share.mjs`; no memory module
@@ -116,7 +122,7 @@ export const archTests = [
 
         const graphify = _aofApplication.knowledge.graphify;
         const remote = [];
-        const { graphBuildCommand } = createGraphBuildCommand({
+        const { graphBuildCommand } = composeGraphBuild({
           resolveGraphifyBinary: () => ({ found: true, version: "0.8.44" }),
           runGraphifyBuild: (_request, { outRoot }) => {
             const graphPath = graphify.graphJsonPath(outRoot);

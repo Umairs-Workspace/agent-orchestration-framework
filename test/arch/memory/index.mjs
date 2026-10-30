@@ -50,6 +50,9 @@ import { archTests as acdLearningEdgeReachesEveryCutTests } from "./acd-learning
 import { archTests as acdAssetsSpellAofMemoryTests } from "./acd-assets-spell-aof-memory.test.mjs";
 // milestone 178 / story 03 — FF-17803: every origin path in the live index names an existing file.
 import { archTests as acdRecordOriginResolvesTests } from "./acd-record-origin-resolves.test.mjs";
+// milestone 179 / story 01 — FF-17901: the knowledge-engine port answers exactly four verbs, and a
+// misdeclared backend is refused at construction (ADR-001).
+import { archTests as acdKnowledgeEnginePortTests } from "./acd-knowledge-engine-port.test.mjs";
 
 // milestone 148 / story 01 — FF-14801: the base ranking keeps every cited eval pair within the
 // first five over the live corpus, and a pair whose record is gone reds as gone (ADR-005).
@@ -108,4 +111,6 @@ export const tests = [
   ...acdAssetsSpellAofMemoryTests,
   // milestone 178 / story 03 — FF-17803 (see the import note).
   ...acdRecordOriginResolvesTests,
+  // milestone 179 / story 01 — FF-17901 (see the import note).
+  ...acdKnowledgeEnginePortTests,
 ];

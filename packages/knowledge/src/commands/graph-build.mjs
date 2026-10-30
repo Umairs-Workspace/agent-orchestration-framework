@@ -1,14 +1,13 @@
 import path from "node:path";
-import { commandError } from "@aof/contracts/error";
-import { GRAPHIFY_BACKENDS } from "../graphify-backends.mjs";
-import { gitRead, hashTree, inputsCurrent, listCloneFiles, stampInputs } from "../graph-bundle.mjs";
+import { gitRead } from "../graph-bundle.mjs";
 import { fetchGraph, listRemote, publishGraph, readShareSettings } from "../graph-share.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
-export function createGraphBuildCommand({ resolveGraphifyBinary, runGraphifyBuild, readGraph, normalizeGraph, graphJsonPath, graphArtifactBuiltAt, isCodeOnlyWholeRootBuild, git, ensureGraphifyOutGitignore }) {
-// graph:build — build the queryable graph from a folder (ADR-001). Spawns the
-// pinned graphify binary (via the ADR-002 driver — the ONLY spawn site), reads
-// the resulting graph.json, and returns a BuildResult whose counts are derived
-// from the graph (RESEARCH §C/§D), NEVER parsed from graphify's markdown stdout.
+export function createGraphBuildCommand({ engine, isCodeOnlyWholeRootBuild, resolveGraphifyBinary, git, ensureGraphifyOutGitignore }) {
+// graph:build — build the queryable graph from a folder (ADR-001). Since 179/ADR-002 this is a FACE
+// over the knowledge-engine port: the build is `engine.ingest("code", …)`, which the graphify code
+// backend answers (`../graphify-code-backend.mjs`) — binary resolution, the one spawn, the artifact
+// honesty check, egress and the nested ignore all live there. This command keeps its id, schema,
+// route and render, and 174's share wrapping, which is transport rather than engine work.
 //
 //   input  { path, backend?, tokenBudget?, offline?, outRoot? }
 //   result BuildResult { graphPath, projectRoot, nodeCount, edgeCount,
@@ -18,8 +17,8 @@ export function createGraphBuildCommand({ resolveGraphifyBinary, runGraphifyBuil
 // for display. `egress` reports whether the doc/media backend HOP ran: "none"
 // when no backend (code/AST only, fully local), "docs-media" when ANY --backend
 // ran — aof reports "the hop ran", never re-classifies by network reachability,
-// never widens graphify's own egress (ADR-005). When the binary is absent, `run`
-// throws a structured graphify-missing error (ADR-002/004) BEFORE any spawn.
+// never widens graphify's own egress (ADR-005). When the binary is absent, the
+// port answers a structured graphify-missing error (ADR-002/004) BEFORE any spawn.
 //
 // SHARING (174/ADR-001). With `graph.share: "git-refs"`, a code-only build of the codebase graph
 // at the project root that finds no current local graph first takes the one published for HEAD
@@ -33,79 +32,6 @@ export function createGraphBuildCommand({ resolveGraphifyBinary, runGraphifyBuil
 //
 //   milestone 09 — graphify command core (graph:build/query/triage register into
 //   the SAME core; ADR-001). The driver (src/graphify.mjs) is the sole spawn site.
-
-// Backend classification (RESEARCH §F). A NETWORK backend reaches a remote API
-// (claude/gemini/openai/kimi/deepseek/claude-cli); ollama is LOCAL (runs on-box).
-// The distinction drives the ADR-001 offline guard ONLY — it is NOT the egress
-// field: egress reports whether the doc/media HOP ran, regardless of locality
-// (ADR-005).
-//
-// `claude-cli` is graphify's native credential-local default (10/ADR-003): it
-// shells the user's logged-in `claude -p` (no metered ANTHROPIC_API_KEY; billed to
-// the plan). It is registered here BY KNOWLEDGE so the classification is by
-// enumeration, not by the unknown-name network fall-through: billed-to-plan is
-// orthogonal to egress — the prose IS still sent to Anthropic for inference, so it
-// DOES cross the network (isNetworkBackend === true). It is NOT data-local; `ollama`
-// remains the ONLY data-resident (on-box) backend. Both still egress "docs-media"
-// (the doc/media hop ran) — locality is a separate privacy property (ADR-005).
-const NETWORK_BACKENDS = new Set(GRAPHIFY_BACKENDS.filter(entry => entry.network).map(entry => entry.backend));
-const LOCAL_BACKENDS = new Set(GRAPHIFY_BACKENDS.filter(entry => !entry.network).map(entry => entry.backend));
-
-// True when `backend` names a backend that crosses the network (a remote API).
-// null/absent/local (ollama) → false. A KNOWN network backend (NETWORK_BACKENDS,
-// claude-cli INCLUDED — 10/ADR-003) is classified network by ENUMERATION, never by
-// accident. An UNKNOWN name still falls closed to NETWORK (an unrecognised backend
-// is assumed to egress until proven local) — but the known set is the by-knowledge
-// path, so adding claude-cli to NETWORK_BACKENDS makes its classification a
-// deliberate fact, not a fall-through the moment the default ever changes.
-function isNetworkBackend(backend) {
-  if (backend == null) return false;
-  if (LOCAL_BACKENDS.has(backend)) return false;
-  if (NETWORK_BACKENDS.has(backend)) return true;
-  return true; // fail-closed: unknown names are assumed to egress until proven local
-}
-
-// True when `backend` is a KNOWN network backend (registered in NETWORK_BACKENDS),
-// i.e. its network classification is BY KNOWLEDGE, not by the unknown-name
-// fall-through. `isNetworkBackend` returns true for BOTH a known-network name and an
-// unknown one (fail-closed); this distinguishes them so the 10/ADR-003 contract —
-// "claude-cli is network by enumeration" — is observable, not merely incidental.
-function isKnownNetworkBackend(backend) {
-  return backend != null && NETWORK_BACKENDS.has(backend);
-}
-
-// classifyEgress(backend) → the egress field for a BuildResult (ADR-001/ADR-005).
-// "none" when NO backend ran (code/AST only, fully local); "docs-media" when ANY
-// --backend drove the doc/media hop — ollama INCLUDED, because the hop RAN even
-// though it ran locally. Locality is a SEPARATE privacy property, never folded
-// into egress; aof reports "the hop ran", never re-classifies by reachability.
-function classifyEgress(backend) {
-  return backend == null ? "none" : "docs-media";
-}
-
-// readBuiltGraph(graphPath) — the normalizing read of the artifact a build just
-// verified, and the build's LAST honesty check. Exported pure (the graphifyBuildArgs /
-// classifyEgress idiom) so the failure path is drivable without the live binary: a real
-// spawn would simply overwrite any corrupt fixture, so this cannot be reached through
-// `invoke` at all.
-//
-// The driver can only see THAT a file exists. Here we find out whether it is a graph. A
-// zero exit over a truncated, corrupt or unparseable artifact is a failed build however
-// cheerful the process was — and this is the honest remnant of the artifact-unchanged
-// guard it replaces: it asserts a USABLE graph, rather than guessing at staleness from
-// mtimes graphify deliberately does not update. Structured, so the caller sees a build
-// failure instead of a SyntaxError escaping as a stack trace.
-function readBuiltGraph(graphPath) {
-  try {
-    return normalizeGraph(readGraph(graphPath));
-  } catch (error) {
-    throw commandError(
-      `graphify exited successfully but ${graphPath} is not a readable graph: ${error.message}`,
-      "graphify-no-persist",
-      424
-    );
-  }
-}
 
 const graphBuildCommand = {
   id: "graph:build",
@@ -124,84 +50,41 @@ const graphBuildCommand = {
 
   async run(input, ctx) {
     const projectRoot = ctx.workspace.projectRoot;
-    // The artifact root: the directory whose graphify-out/graph.json this build writes
-    // and reports. Defaults to projectRoot — the CODEBASE graph every graph:impact /
-    // graph:query read resolves. An in-process caller building a DIFFERENT graph over
-    // the same repo (the memory backend's work-stream graph) passes its own root so the
-    // replacing extraction cannot evict the codebase graph. Not a CLI flag: the CLI face
-    // has exactly one graph, and a user-supplied root would put the artifact somewhere
-    // the query family cannot find (#756).
     const outRoot = input.outRoot ?? projectRoot;
-    const backend = input.backend ?? null;
-
-    // ADR-001 enforcement: offline:true FORBIDS a network backend. Reject BEFORE
-    // any spawn (and before the binary check) with a structured conflict error.
-    // offline:true + ollama (local) or + no backend is allowed — the hop, if any,
-    // never leaves the box. An unknown backend is treated as network (fail-closed).
-    if (input.offline === true && isNetworkBackend(backend)) {
-      throw commandError(
-        `offline:true forbids the network backend "${backend}" (only the local "ollama" backend or no backend may run offline).`,
-        "offline-backend-conflict",
-        409
-      );
-    }
 
     // Only the codebase graph at the project root may be shared (174/ADR-002), and an --offline
     // build reaches no remote. The setting is read — and an unknown one refused — before anything runs.
-    const request = { path: input.path, backend, tokenBudget: input.tokenBudget };
+    const request = { path: input.path, backend: input.backend ?? null, tokenBudget: input.tokenBudget };
     const codeOnly = isCodeOnlyWholeRootBuild(request, outRoot, projectRoot);
     const settings = codeOnly && path.resolve(outRoot) === path.resolve(projectRoot) && input.offline !== true ? readShareSettings(ctx.workspace.config) : null;
     const share = settings?.share === "git-refs" ? { remote: settings.remote, fetched: null, published: null, pruned: [], warnings: [] } : null;
 
-    // Guard the binary-absent path BEFORE any spawn (ADR-002/004): surface a
-    // clear, guidance-bearing failure (the install hint), never an opaque ENOENT.
-    const resolved = resolveGraphifyBinary();
-    if (!resolved.found) {
-      throw commandError(resolved.hint, "graphify-missing", 424);
-    }
-
-    // A code-only whole-root build is skipped when nothing it read has changed since the graph was
-    // stamped (166 F-01: `graphify update` re-extracts everything, every time). The tree is
-    // snapshotted BEFORE the spawn, so an edit made while graphify runs is never stamped as read.
-    const outDir = path.dirname(graphJsonPath(outRoot));
-    const tree = codeOnly ? await snapshotTree(projectRoot) : null;
-
-    // egress: "none" when no backend ran (code/AST only); "docs-media" when ANY
-    // --backend drove the doc/media hop (ADR-001/005). ollama is still
-    // "docs-media" — the hop RAN; locality is a separate privacy property.
-    const egress = classifyEgress(backend);
-
-    const current = () => tree && inputsCurrent({ outDir, ...tree, graphifyVersion: resolved.version });
-    const unchanged = (stdout) => {
-      const graphPath = graphJsonPath(outRoot);
-      return buildResult({ graphPath, projectRoot, backend, egress, normalized: readBuiltGraph(graphPath), builtAt: graphArtifactBuiltAt(graphPath), unchanged: true, stdout, share });
-    };
-    if (current()) return unchanged(INPUTS_UNCHANGED);
-
-    // A miss: ask the remote for HEAD's graph, and keep it only when its inputs are this tree's.
-    const listing = share && tree ? await takePublished({ projectRoot, share, config: ctx.workspace.config }) : null;
-    if (share?.fetched) {
-      if (current()) return unchanged(FETCHED_CURRENT);
+    // On a miss, ask the remote for HEAD's graph, and keep it only when its inputs are this tree's.
+    let listing = null;
+    let took = false;
+    const onMiss = share ? async ({ current }) => {
+      listing = await takePublished({ projectRoot, share, config: ctx.workspace.config });
+      if (!share.fetched) return null;
+      if (current()) {
+        took = true;
+        return FETCHED_CURRENT;
+      }
       share.fetched.used = false;
       share.fetched.reason = "its inputs differ from this tree, so it was rebuilt";
-    }
+      return null;
+    } : undefined;
 
-    // Spawn the pinned binary via the sole driver seam (cwd = projectRoot, #756;
-    // the artifact lands under outRoot).
-    const built = runGraphifyBuild(request, { projectRoot, outRoot });
+    const result = await engine.ingest("code", { ...input, ...(onMiss ? { onMiss } : {}) }, { projectRoot });
+    if (result?.served === false) throw new Error(`graph:build: the knowledge engine serves no code ingest (${result.code})`);
 
-    // Counts come from graph.json (ADR-001 invariant), never from stdout.
-    const normalized = readBuiltGraph(built.graphPath);
-    if (tree) stampInputs(outDir, tree, resolved.version);
-
-    if (listing) {
-      const outcome = await publishGraph(git, { projectRoot, outDir, builtAt: graphArtifactBuiltAt(graphJsonPath(outRoot)), config: ctx.workspace.config, remote: share.remote, listing });
+    if (listing && !took) {
+      const outcome = await publishGraph(git, { projectRoot, outDir: path.dirname(result.graphPath), builtAt: result.builtAt, config: ctx.workspace.config, remote: share.remote, listing });
       share.published = outcome.published;
       share.pruned = outcome.pruned;
       share.warnings.push(...outcome.warnings);
     }
 
-    return buildResult({ graphPath: graphJsonPath(outRoot), projectRoot, backend, egress, normalized, builtAt: built.builtAt, unchanged: built.unchanged, stdout: built.stdout, share });
+    return share ? { ...result, share } : result;
   },
 
   cli: {
@@ -246,27 +129,7 @@ const graphBuildCommand = {
 
 // Relativise graphPath/projectRoot to process.cwd() for the CLI --json face
 // (08/ADR-002 path-display projection). Leaves every other field untouched.
-const INPUTS_UNCHANGED = "aof: no file this graph was built from has changed since it was built — graphify was not run.";
 const FETCHED_CURRENT = "aof: took the graph already published for this commit — graphify was not run.";
-
-function buildResult({ graphPath, projectRoot, backend, egress, normalized, builtAt, unchanged, stdout, share }) {
-  return {
-    graphPath,
-    projectRoot,
-    nodeCount: normalized.nodes.length,
-    edgeCount: normalized.edges.length,
-    hyperedgeCount: normalized.hyperedges.length,
-    builtAt,
-    backend,
-    egress,
-    // true when the artifact was left untouched — by graphify finding nothing to change, or by
-    // aof finding nothing it read had changed — a SUCCESS meaning "the graph is already current",
-    // not a soft failure. Surfaced so a caller can tell it from a rebuild without re-stat'ing.
-    unchanged,
-    stdout,
-    ...(share ? { share } : {}),
-  };
-}
 
 // takePublished({ projectRoot, share, config }) → the remote's listing (null when it could not be
 // asked), having laid out HEAD's published graph when there is one. Every failure lands in
@@ -303,13 +166,6 @@ function renderShare(share) {
   return lines;
 }
 
-// The git-visible files and their content hashes, or null when git cannot list them (no stamp is
-// then read or written, and every build runs graphify as before).
-async function snapshotTree(projectRoot) {
-  const visible = await listCloneFiles(git, projectRoot);
-  return visible ? { visible, hashes: hashTree(projectRoot, visible) } : null;
-}
-
 function relativisePaths(result) {
   const out = { ...result };
   if (typeof out.graphPath === "string") out.graphPath = path.relative(process.cwd(), out.graphPath);
@@ -317,5 +173,5 @@ function relativisePaths(result) {
   return out;
 }
 
-return { isNetworkBackend, isKnownNetworkBackend, classifyEgress, readBuiltGraph, graphBuildCommand };
+return { graphBuildCommand };
 }

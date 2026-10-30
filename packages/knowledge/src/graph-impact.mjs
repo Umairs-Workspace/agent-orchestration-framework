@@ -27,46 +27,62 @@
 // and dependents (edges INTO a target node) — deduped, self-file dropped. Pure over the normalized
 // graph; the whole testable core (no fs, no spawn).
 //
-// COMPLEXITY IS O(paths × (nodes + edges)) AND THAT IS PRICED, NOT MISSED (ADR-002's consequences):
-// it re-walks all 35,577 edges once per changed path — ~80 ms for one changed file and ~400 ms for
-// fifty, measured on the live 17 MB artifact. The obvious optimisation, hoisting the walk and
-// caching the normalised graph across calls, is precisely what the selector's purity clause
-// forbids, because a cached graph is how two calls in one process stop being two answers.
+// ONE PASS OVER THE EDGES PER CALL, however many paths are asked (179/ADR-002). Each requested path
+// is resolved to its node ids first; the edges are then walked once, and every edge adds to each
+// requested file whose id set holds its source or target. The matching rule and the output are
+// unchanged — `graph-impact.suite.mjs` holds the cases — so a caller can ask about every file at
+// once rather than pay one walk of all ~46,000 edges per path, the O(paths × edges) cost this
+// comment used to price. Nothing is cached across calls: a cached graph is how two calls in one
+// process stop being two answers (72/ADR-002).
 export function computeImpact(graph, paths) {
   const byId = new Map(graph.nodes.map((node) => [node.id, node]));
+  const fileOf = (node) => node.sourceFile?.replace(/\\/g, "/");
   // Normalize requested paths to the graph's separator convention (graphify writes POSIX-style
   // source_file). Match on suffix so an agent may pass an absolute or a repo-relative path; the
   // graph stores repo-relative POSIX paths.
   const wanted = paths.map((p) => p.replace(/\\/g, "/"));
 
-  return wanted.map((requested) => {
+  const answers = wanted.map((requested) => {
     // The node ids whose source_file resolves to this requested path.
     const fileNodes = graph.nodes.filter((n) => {
       if (!n.sourceFile) return false;
-      const sf = n.sourceFile.replace(/\\/g, "/");
+      const sf = fileOf(n);
       return sf === requested || sf.endsWith(`/${requested}`) || requested.endsWith(`/${sf}`);
     });
-    const ids = new Set(fileNodes.map((n) => n.id));
-    const resolvedFile = fileNodes[0]?.sourceFile ?? requested;
-
-    const dependencies = new Set();
-    const dependents = new Set();
-    for (const edge of graph.edges) {
-      const src = byId.get(edge.source);
-      const tgt = byId.get(edge.target);
-      if (!src || !tgt) continue;
-      const srcFile = src.sourceFile?.replace(/\\/g, "/");
-      const tgtFile = tgt.sourceFile?.replace(/\\/g, "/");
-      // OUT edge: a node in this file points at another file → a dependency.
-      if (ids.has(edge.source) && tgtFile && tgtFile !== resolvedFile) dependencies.add(tgtFile);
-      // IN edge: another file points at a node in this file → a dependent.
-      if (ids.has(edge.target) && srcFile && srcFile !== resolvedFile) dependents.add(srcFile);
-    }
     return {
-      file: resolvedFile,
+      ids: new Set(fileNodes.map((n) => n.id)),
+      file: fileNodes[0]?.sourceFile ?? requested,
       present: fileNodes.length > 0,
-      dependencies: [...dependencies].sort(),
-      dependents: [...dependents].sort(),
+      dependencies: new Set(),
+      dependents: new Set(),
     };
   });
+
+  // Every requested answer a node id belongs to, so one edge reaches all of them.
+  const answersById = new Map();
+  for (const answer of answers) {
+    for (const id of answer.ids) {
+      if (!answersById.has(id)) answersById.set(id, []);
+      answersById.get(id).push(answer);
+    }
+  }
+
+  for (const edge of graph.edges) {
+    const src = byId.get(edge.source);
+    const tgt = byId.get(edge.target);
+    if (!src || !tgt) continue;
+    const srcFile = fileOf(src);
+    const tgtFile = fileOf(tgt);
+    // OUT edge: a node in this file points at another file → a dependency.
+    for (const answer of answersById.get(edge.source) ?? []) if (tgtFile && tgtFile !== answer.file) answer.dependencies.add(tgtFile);
+    // IN edge: another file points at a node in this file → a dependent.
+    for (const answer of answersById.get(edge.target) ?? []) if (srcFile && srcFile !== answer.file) answer.dependents.add(srcFile);
+  }
+
+  return answers.map((answer) => ({
+    file: answer.file,
+    present: answer.present,
+    dependencies: [...answer.dependencies].sort(),
+    dependents: [...answer.dependents].sort(),
+  }));
 }

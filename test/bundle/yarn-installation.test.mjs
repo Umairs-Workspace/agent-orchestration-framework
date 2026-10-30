@@ -90,6 +90,10 @@ export const yarnInstallationTests = [
         'memory.mjs': ['@aof/contracts/error', '@aof/work/memory-vocabulary', '@aof/work/memory-accounting'],
         // 154/09: the pure extractor catalog raises the shared coded error; no I/O/provider port.
         'graphify-backends.mjs': ['@aof/contracts/error'],
+        // 179/ADR-001: the knowledge-engine port is a pure router; it imports no backend, config or fs.
+        'engine.mjs': [],
+        // 179/ADR-002: the graphify code backend checks the artifact and raises the build's coded errors.
+        'graphify-code-backend.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
         'memory/local-retrieval.mjs': ['@aof/work/ref-scope', '@aof/work/memory-vocabulary'],
         // 148/ADR-001: the lesson grammar and its vocabulary have one home, in @aof/work.
         // 178/ADR-002 (178/F-01): `origin:` is read from the item's record doc through work's one frontmatter
@@ -103,8 +107,10 @@ export const yarnInstallationTests = [
         'memory/local-backend.mjs': ['node:fs/promises', 'node:fs'],
         'memory/graphify-backend.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs'],
         'commands/shared.mjs': ['node:path'],
-        'commands/graph-impact.mjs': ['node:fs', '@aof/contracts/error'],
-        'commands/graph-build.mjs': ['node:path', '@aof/contracts/error'],
+        // 179/ADR-002: graph:impact asks the port's `relations`; it reads no artifact.
+        'commands/graph-impact.mjs': ['@aof/contracts/error'],
+        // 179/ADR-002: graph:build is a face over the port's `ingest("code")`; the build body moved out.
+        'commands/graph-build.mjs': ['node:path'],
         'commands/graph-query.mjs': ['node:fs', '@aof/contracts/error'],
         'commands/graph-triage.mjs': ['node:fs', '@aof/contracts/error'],
         'commands/graph-serve.mjs': ['@aof/contracts/error'],

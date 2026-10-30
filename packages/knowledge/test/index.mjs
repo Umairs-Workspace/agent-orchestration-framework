@@ -22,6 +22,8 @@ import { episodicRecordsTests } from "./episodic-records.suite.mjs";
 import { claudeAutoMemoryTests } from "./claude-auto-memory.suite.mjs";
 // milestone 178 / story 03 — a work record carries its item's resolved origin, shown and never scored.
 import { memoryRecordOriginTests } from "./memory-record-origin.suite.mjs";
+// milestone 179 / story 01 — the knowledge-engine port: four verbs routed by declared corpora, and the miss.
+import { engineTests } from "./engine.suite.mjs";
 
 export const tests = [
   ...memoryBackendConfigTests,
@@ -40,4 +42,5 @@ export const tests = [
   ...episodicRecordsTests,
   ...claudeAutoMemoryTests,
   ...memoryRecordOriginTests,
+  ...engineTests,
 ];

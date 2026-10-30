@@ -6,8 +6,10 @@ import { ACCOUNTING_COUNTERS, accountMemory } from "@aof/work/memory-accounting"
 import { commandError } from "@aof/contracts/error";
 import { resolveGraphifyExtraction } from "./graphify-backends.mjs";
 import { resolveMemorySources } from "./memory/claude-auto-memory.mjs";
+import { createKnowledgeEngine } from "./engine.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
-export function createMemory({ loadLocalBackend, loadGraphifyBackend }) {
+// `createEngine` composes the knowledge-engine port (179/ADR-003); a harness injects a recording one.
+export function createMemory({ loadLocalBackend, loadGraphifyBackend, createEngine = createKnowledgeEngine }) {
 // `aof work memory <verb>` — the memory SEAM (milestone 05, story 00).
 //
 // This module owns the agent-facing verb surface (recall / record-recall / ingest /
@@ -499,31 +501,37 @@ function gateMemoryVerb(verb) {
 // doors run the same routing: `runMemory` below (argv in, collector out) and the routed
 // `work:memory` command (the face's input in, data out).
 //
-// Routing (ADR-003):
-//   recall  -> backend.recall(query, scope, opts, ctx)
-//   recurrence -> backend.recall(query, {}, { limit: Infinity }, ctx), scored by the calibrated matcher
-//   reindex -> backend.reindex(only, ctx)
-//   ingest  -> backend.reindex(only, ctx)  ALIAS (no `ingest` interface method)
-//   status  -> backend.status(ctx)
+// THROUGH THE PORT (179/ADR-003). The resolved backend is wrapped in the knowledge-engine port,
+// composed here once per call, and every verb reaches it through the port's own verb. A backend
+// whose declaration the port cannot honour is refused at that construction — loudly, before any
+// verb runs — so the seam never meets a `corpus-unserved` miss and does not tolerate one.
+//
+// Routing (05/ADR-003, through the port):
+//   recall  -> port.recall(query, scope, opts, ctx)              -> backend.recall
+//   recurrence -> port.recall(query, {}, { limit: Infinity }, ctx), scored by the calibrated matcher
+//   reindex -> port.ingest("work", { only }, ctx)                -> backend.reindex(only, ctx)
+//   ingest  -> port.ingest("work", { only }, ctx)  ALIAS (no `ingest` interface method)
+//   status  -> port.status("work", ctx)                          -> backend.status(ctx)
 // The verb is the caller's to gate; an unknown one reaches no method and yields undefined.
 async function executeMemoryVerb({ verb, query = "", only = null, exclude = null, scope = {}, opts = {}, lessons = false } = {}, { backend, ctx = {} } = {}) {
-  if (verb === "recall") return backend.recall(query, scope, opts, ctx);
+  const port = createEngine({ backends: [backend] });
+  if (verb === "recall") return port.recall(query, scope, opts, ctx);
   if (verb === RECURRENCE_VERB) {
     // 153/ADR-002 — whole-index candidates (no scope: recall's kind filter is NOT applied, because a
     // recurrence crosses kinds), then the matcher's own score. Retrieval only nominates; the order,
     // the threshold and the qualifying reference are the matcher's, so both backends agree.
-    const recalled = await backend.recall(query, {}, { limit: Infinity }, ctx);
+    const recalled = await port.recall(query, {}, { limit: Infinity }, ctx);
     return evaluateRecurrence({ text: query, records: recalled?.records ?? [], exclude });
   }
-  // ingest is an ALIAS of reindex (ADR-003, FINDINGS §4): same interface method.
-  if (verb === "reindex" || verb === "ingest") return backend.reindex(only, ctx);
+  // ingest is an ALIAS of reindex (ADR-003, FINDINGS §4): the port's ingest of "work" calls reindex.
+  if (verb === "reindex" || verb === "ingest") return port.ingest("work", { only }, ctx);
   if (verb === "status") {
     // 148/ADR-004 §2 — status is COMPOSED here: the backend's own facts,
     // unchanged, then one unbounded recall, over which the seam adds `types`, `layers` and
     // `conformance`. Counting at the seam rather than per backend is what keeps the two backends
     // from disagreeing about what the store holds (m40/R3: graphify's own split names two types).
-    const base = await backend.status(ctx);
-    const recalled = await backend.recall("", {}, { limit: Infinity }, ctx);
+    const base = await port.status("work", ctx);
+    const recalled = await port.recall("", {}, { limit: Infinity }, ctx);
     const records = recalled?.records ?? [];
     const status = { ...base, ...statusPartition(records) };
     // 153/ADR-003 — observed effectiveness is the work-owned accounting reader's, over the ledgers and

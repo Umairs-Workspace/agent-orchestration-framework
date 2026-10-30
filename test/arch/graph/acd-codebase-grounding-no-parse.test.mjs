@@ -52,52 +52,24 @@ const GRAPH_READER_ALLOWLIST = new Set([
   path.join("packages/core/src/application/bindings/graphify.mjs"), // Compatibility export of the same configured reader.
   // Transitional core adapters supply the configured graph services.
   path.join("packages/core/src/application/bindings/graphify.mjs"),
-  path.join("packages/core/src/application/bindings/commands/graph/build.mjs"),
   path.join("packages/core/src/application/bindings/commands/graph/query.mjs"),
   path.join("packages/core/src/application/bindings/commands/graph/triage.mjs"),
   path.join("packages", "knowledge", "src/graphify.mjs"),           // imports + re-exports the normalizer
   path.join("packages", "knowledge", "src", "graph-normalize.mjs"),    // DEFINES readGraph/normalizeGraph; reads graph.json
-  path.join("packages", "knowledge", "src", "commands", "graph-build.mjs"),
   path.join("packages", "knowledge", "src", "commands", "graph-export.mjs"), // 166: carries the artifact whole; its
   path.join("packages", "knowledge", "src", "commands", "graph-import.mjs"), // one parse reads the build commit graphify
                                                     // stamped (`built_at_commit`), never the coupling — no second reader.
   path.join("packages", "knowledge", "src", "commands", "graph-query.mjs"),
   path.join("packages", "knowledge", "src", "commands", "graph-triage.mjs"),
-  path.join("packages", "knowledge", "src", "commands", "graph-impact.mjs"), // ADR-007: the deterministic, edge-based coupling
-                                                    // command the running agents consume — reads the
-                                                    // STRUCTURED graph.json via the pure normalizer (the
-                                                    // 09/ADR-001 permitted handle, exactly as 10's backend
-                                                    // does), NOT graphify's opaque markdown stdout. No spawn.
-  path.join("packages/core/src/application/bindings/work/test-select.mjs"), // Composition supplies shared graph services.
-  path.join("packages", "work", "src", "testing", "select.mjs"), // 72/ADR-002 §1: test selection READS the artifact, through the
-                                            // SAME normalizeGraph + computeImpact the shipped command uses,
-                                            // and authors no second reader. packages/core/src/graph-impact.mjs — the pure
-                                            // core moved down out of commands/ so a src-level selector could
-                                            // legally import it — is deliberately NOT listed: it takes an
-                                            // already-normalized graph and names no reader symbol at all.
+  // 179/ADR-002 — the graphify code backend reads graph.json for `relations` and `status`, the code
+  // corpus's one reader behind the port; its core binding supplies the normalizer's services. The
+  // graph:build and graph:impact faces, and the build binding, read no artifact since, so they left.
+  path.join("packages", "knowledge", "src", "graphify-code-backend.mjs"),
+  path.join("packages/core/src/application/bindings/knowledge-engine.mjs"),
+  // 179/ADR-004 — test selection, the story-contract derivation and the seam-liveness lane, with
+  // their three core bindings, left this list: each asks the code corpus's `relations` through the
+  // port, so the code backend above is the one reader they share.
   path.join("packages", "knowledge", "src/memory/graphify-backend.mjs"),
-  path.join("packages/core/src/application/bindings/story-contract-derive.mjs"), // configured knowledge ports
-  path.join("packages", "work", "src/story-contract-derive.mjs"), // 96/ADR-004: the read/write-set derivation READS the artifact
-                                                 // through the SAME normalizeGraph + computeImpact the shipped
-                                                 // command uses, and is asserted by its OWN control (FF-9602) to
-                                                 // reach the graph through those two and nothing else — no second
-                                                 // JSON.parse, no `graph build` of any form, no child process.
-                                                 // It PROPOSES a set for an author to subtract from and writes no
-                                                 // document, so it adds a reader and no authority. Listed here in
-                                                 // the same beat that made the read legal: an ADR that sanctions a
-                                                 // new reader without extending this census leaves the decision and
-                                                 // the control disagreeing, which is 96/F-96-A.
-  path.join("packages/core/src/application/bindings/work-audit/seam-liveness.mjs"), // Core supplies the existing graph adapter.
-  path.join("packages", "work", "src", "audit", "seam-liveness.mjs"), // 77/ADR-006 §1: the seam-liveness audit lane READS the
-                                                       // artifact through this same shipped reader and never
-                                                       // builds one — a build is minutes even on the unchanged
-                                                       // path, and a command an agent must be willing to run
-                                                       // cannot cost minutes before it costs seconds. It adds no
-                                                       // second reader and no second parse: the ONE thing it does
-                                                       // differently is invert the dependents index in a single
-                                                       // pass rather than asking the per-path question ~150 times
-                                                       // (ADR-006 §1a — a different composition of these readers,
-                                                       // not another one).
 ]);
 
 // Strip line + block comments AND string/template literals (the exact 09/10

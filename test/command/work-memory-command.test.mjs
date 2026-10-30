@@ -50,6 +50,8 @@ import assert from "node:assert/strict";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { stripComments, functionBody } from "../support/source-slice.mjs";
 import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
+import { existsSync, realpathSync } from "node:fs";
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -405,6 +407,121 @@ function helpSections(text) {
   }
   return sections;
 }
+
+// 179/03 — the pre-port answers, spread by the task-01 outline at the end of the array below.
+const PRE_PORT_ANSWERS = [
+ {
+  "door": "memory",
+  "argv": [
+   "recall",
+   "pin line endings",
+   "--block"
+  ],
+  "status": 0,
+  "stdout": "ADR-001 (m39) · adr · architecture · pin line endings · 39_milestone_fixture/ARCHITECTURE.md:6\nR1 (m39) · near-miss · tooling · Line endings drifted on a generated file · 39_milestone_fixture/RETROSPECTIVE.md:6\n\n",
+  "stderr": ""
+ },
+ {
+  "door": "memory",
+  "argv": [
+   "recall",
+   "pin line endings",
+   "--json"
+  ],
+  "status": 0,
+  "stdout": "[\n  {\n    \"recordType\": \"adr\",\n    \"id\": \"ADR-001\",\n    \"item\": \"39\",\n    \"itemSlug\": \"fixture\",\n    \"title\": \"pin line endings\",\n    \"area\": \"architecture\",\n    \"stage\": \"\",\n    \"kind\": \"\",\n    \"owner\": \"\",\n    \"status\": \"Accepted\",\n    \"tags\": [],\n    \"origin\": [],\n    \"summary\": \"Pin line endings at the writer.\",\n    \"text\": \"pin line endings \\n Pin line endings at the writer.\",\n    \"source\": \"39_milestone_fixture/ARCHITECTURE.md:6\",\n    \"score\": 2.622478820841673\n  },\n  {\n    \"recordType\": \"lesson\",\n    \"id\": \"R1\",\n    \"item\": \"39\",\n    \"itemSlug\": \"fixture\",\n    \"title\": \"Line endings drifted on a generated file\",\n    \"area\": \"tooling\",\n    \"stage\": \"build\",\n    \"kind\": \"near-miss\",\n    \"owner\": \"developer\",\n    \"status\": \"\",\n    \"tags\": [],\n    \"origin\": [],\n    \"summary\": \"pin line endings at the writer.\",\n    \"text\": \"Line endings drifted on a generated file \\n a generated file shipped with CRLF. \\n pin line endings at the writer.\",\n    \"source\": \"39_milestone_fixture/RETROSPECTIVE.md:6\",\n    \"score\": 1.9739856637439013\n  }\n]\n",
+  "stderr": ""
+ },
+ {
+  "door": "memory",
+  "argv": [
+   "recall",
+   "pin line endings",
+   "--kind",
+   "near-miss",
+   "--json"
+  ],
+  "status": 0,
+  "stdout": "[\n  {\n    \"recordType\": \"lesson\",\n    \"id\": \"R1\",\n    \"item\": \"39\",\n    \"itemSlug\": \"fixture\",\n    \"title\": \"Line endings drifted on a generated file\",\n    \"area\": \"tooling\",\n    \"stage\": \"build\",\n    \"kind\": \"near-miss\",\n    \"owner\": \"developer\",\n    \"status\": \"\",\n    \"tags\": [],\n    \"origin\": [],\n    \"summary\": \"pin line endings at the writer.\",\n    \"text\": \"Line endings drifted on a generated file \\n a generated file shipped with CRLF. \\n pin line endings at the writer.\",\n    \"source\": \"39_milestone_fixture/RETROSPECTIVE.md:6\",\n    \"score\": 2.4288077716941783\n  }\n]\n",
+  "stderr": ""
+ },
+ {
+  "door": "memory",
+  "argv": [
+   "recall",
+   "no-such-term-xyzzy",
+   "--kind",
+   "no-such-kind",
+   "--block"
+  ],
+  "status": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "door": "memory",
+  "argv": [
+   "recurrence",
+   "line endings drift",
+   "--json"
+  ],
+  "status": 0,
+  "stdout": "{\n  \"qualifying\": \"39/R1\",\n  \"score\": 0.599789,\n  \"threshold\": 0.23,\n  \"calibration\": \"153.02-1\",\n  \"candidates\": [\n    {\n      \"ref\": \"39/R1\",\n      \"score\": 0.599789,\n      \"kind\": \"near-miss\",\n      \"title\": \"Line endings drifted on a generated file\",\n      \"source\": \"39_milestone_fixture/RETROSPECTIVE.md:6\"\n    }\n  ]\n}\n",
+  "stderr": ""
+ },
+ {
+  "door": "memory",
+  "argv": [
+   "status",
+   "--json"
+  ],
+  "status": 0,
+  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"present\": true,\n  \"lessons\": 1,\n  \"adrs\": 1,\n  \"summaries\": 0,\n  \"capabilities\": 0,\n  \"gaps\": 0,\n  \"findings\": 0,\n  \"feedback\": 0,\n  \"runs\": 0,\n  \"index\": {\n    \"version\": 4,\n    \"current\": 4,\n    \"stale\": false\n  },\n  \"origin\": {\n    \"unresolved\": 0\n  },\n  \"types\": {\n    \"adr\": {\n      \"count\": 1,\n      \"layer\": \"semantic\"\n    },\n    \"lesson\": {\n      \"count\": 1,\n      \"layer\": \"procedural\"\n    }\n  },\n  \"layers\": {\n    \"episodic\": 0,\n    \"semantic\": 1,\n    \"procedural\": 1\n  },\n  \"conformance\": {\n    \"kind\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"area\": {\n      \"blank\": 0,\n      \"nonEnum\": 1\n    },\n    \"stage\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"owner\": {\n      \"blank\": 0\n    },\n    \"gapStatus\": {\n      \"nonEnum\": 0\n    }\n  },\n  \"effectiveness\": {\n    \"basis\": \"observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake\",\n    \"complete\": true,\n    \"diagnostics\": [],\n    \"types\": {\n      \"lesson\": {\n        \"surfaced\": 0,\n        \"honoured\": 0,\n        \"departed\": 0,\n        \"irrelevant\": 0,\n        \"recurred\": 0\n      }\n    }\n  }\n}\n",
+  "stderr": ""
+ },
+ {
+  "door": "memory",
+  "argv": [
+   "reindex",
+   "39",
+   "--json"
+  ],
+  "status": 0,
+  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"version\": 4\n}\n",
+  "stderr": ""
+ },
+ {
+  "door": "memory",
+  "argv": [
+   "ingest",
+   "--json"
+  ],
+  "status": 0,
+  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"version\": 4\n}\n",
+  "stderr": ""
+ },
+ {
+  "door": "work memory",
+  "argv": [
+   "recall",
+   "pin line endings",
+   "--block"
+  ],
+  "status": 0,
+  "stdout": "ADR-001 (m39) · adr · architecture · pin line endings · 39_milestone_fixture/ARCHITECTURE.md:6\nR1 (m39) · near-miss · tooling · Line endings drifted on a generated file · 39_milestone_fixture/RETROSPECTIVE.md:6\n\n",
+  "stderr": ""
+ },
+ {
+  "door": "work memory",
+  "argv": [
+   "status",
+   "--json"
+  ],
+  "status": 0,
+  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"present\": true,\n  \"lessons\": 1,\n  \"adrs\": 1,\n  \"summaries\": 0,\n  \"capabilities\": 0,\n  \"gaps\": 0,\n  \"findings\": 0,\n  \"feedback\": 0,\n  \"runs\": 0,\n  \"index\": {\n    \"version\": 4,\n    \"current\": 4,\n    \"stale\": false\n  },\n  \"origin\": {\n    \"unresolved\": 0\n  },\n  \"types\": {\n    \"adr\": {\n      \"count\": 1,\n      \"layer\": \"semantic\"\n    },\n    \"lesson\": {\n      \"count\": 1,\n      \"layer\": \"procedural\"\n    }\n  },\n  \"layers\": {\n    \"episodic\": 0,\n    \"semantic\": 1,\n    \"procedural\": 1\n  },\n  \"conformance\": {\n    \"kind\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"area\": {\n      \"blank\": 0,\n      \"nonEnum\": 1\n    },\n    \"stage\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"owner\": {\n      \"blank\": 0\n    },\n    \"gapStatus\": {\n      \"nonEnum\": 0\n    }\n  },\n  \"effectiveness\": {\n    \"basis\": \"observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake\",\n    \"complete\": true,\n    \"diagnostics\": [],\n    \"types\": {\n      \"lesson\": {\n        \"surfaced\": 0,\n        \"honoured\": 0,\n        \"departed\": 0,\n        \"irrelevant\": 0,\n        \"recurred\": 0\n      }\n    }\n  }\n}\n",
+  "stderr": ""
+ }
+];
 
 export const workMemoryCommandTests = [
   {
@@ -1048,6 +1165,51 @@ export const workMemoryCommandTests = [
         const text = `${result.stdout}${result.stderr}`;
         assert.ok(text.includes("aof memory recall \"pin line endings\""), `the examples list names aof memory (output: ${text.slice(0, 300)})`);
         assert.ok(!text.includes("aof work memory"), "…and never the alias");
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+  // ── 179/03 task 01 — both doors answer the bytes they answered before the port ────────────
+  // PRE_PORT_ANSWERS was captured over the 178/01 fixture (makeRoot39) on the tree before 179/03,
+  // each row on a fresh ingested fixture with its own AOF_GLOBAL_HOME. The one normalisation is the
+  // index path this file already tokenises as <STORE>, taken through the root's realpath because
+  // that is the path the CLI reports.
+  ...PRE_PORT_ANSWERS.map((row) => ({
+    name: `179/03 task 01 outline: each verb answers its pre-port bytes through both doors — aof ${row.door} ${row.argv.join(" ")}`,
+    async run() {
+      const fx = await makeRoot39();
+      try {
+        const result = fx.run([...row.door.split(" "), ...row.argv]);
+        const store = JSON.stringify(path.join(realpathSync(fx.root), ".aof", "aof.memory.index.json")).slice(1, -1);
+        const normalise = (text) => text.split(store).join("<STORE>");
+        assert.equal(result.status, row.status, "the exit code");
+        assert.equal(normalise(result.stdout), row.stdout, "stdout");
+        assert.equal(normalise(result.stderr), row.stderr, "stderr");
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  })),
+  {
+    name: "179/03 task 01: every recalled record's source still resolves to a path and line in the stream",
+    async run() {
+      const fx = await makeRoot39();
+      try {
+        const result = fx.run(["memory", "recall", "pin line endings", "--json"]);
+        assert.equal(result.status, 0, result.stderr);
+        const records = JSON.parse(result.stdout);
+        assert.ok(records.length > 0, "non-vacuous: the fixture recalls records");
+        for (const record of records) {
+          const match = /^(.+):(\d+)$/u.exec(record.source);
+          assert.ok(match, `${record.id}'s source is <path>:<line> (${record.source})`);
+          const file = path.join(fx.root, "wiki", "work", match[1]);
+          assert.ok(existsSync(file), `${record.source} names a file under the work stream`);
+          const lineCount = (await readFile(file, "utf8")).split("\n").length;
+          assert.ok(Number(match[2]) >= 1 && Number(match[2]) <= lineCount, `${record.source} names a line in that file`);
+          const extra = Object.keys(record).filter((key) => key !== "score" && !MEMORY_RECORD_FIELDS.includes(key));
+          assert.deepEqual(extra, [], `${record.id} carries only fields the parser leaves produce`);
+        }
       } finally {
         await dropRoot39(fx);
       }

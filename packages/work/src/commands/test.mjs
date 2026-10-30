@@ -307,7 +307,7 @@ async function runTest(input, deps = {}) {
       return refused(askedScope, set.code, set.message, { verbose, story });
     }
     changed = [...set.changed];
-    const selection = select({ projectRoot, changed, allSuites: whole, roots: toolchain.roots });
+    const selection = await select({ projectRoot, changed, allSuites: whole, roots: toolchain.roots });
     if (selection.refusal != null) {
       return refused(askedScope, selection.refusal.code, selection.refusal.message, { verbose, changed, story });
     }

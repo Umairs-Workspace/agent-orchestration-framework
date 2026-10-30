@@ -4,9 +4,11 @@
 // configured (or `memory.backend` is "none"): every verb succeeds and returns the
 // empty/zero shape the interface specifies, never erroring.
 //
-// The frozen interface is exactly { name, recall, reindex, status } (all async).
-// `brief` and `ingest` are seam-level compositions over recall/reindex — NOT
-// interface methods — so this module exposes no such method (ADR-003).
+// The frozen interface is exactly { name, corpora, recall, reindex, status } (05/ADR-003 as
+// amended by 179/ADR-003). `corpora` declares the shared record corpora, so memory off is
+// "served, empty" through the knowledge-engine port, never `corpus-unserved`. `ingest` is a
+// seam-level alias of reindex — NOT an interface method — so this module exposes no such method.
+import { RECORD_CORPORA } from "../engine.mjs";
 
 // Render an empty RecallResult's human text view. The structured `records` array
 // is the contract (ADR-004); this text is a projection of it.
@@ -17,6 +19,7 @@ function renderEmpty(query) {
 
 export default {
   name: "none",
+  corpora: RECORD_CORPORA,
 
   // READ. Returns an empty RecallResult: { query, scope, records: [], text }.
   async recall(query, scope, _opts, _ctx) {

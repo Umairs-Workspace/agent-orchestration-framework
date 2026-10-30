@@ -21,6 +21,10 @@ import os from "node:os";
 import path from "node:path";
 
 import { graphArtifactBuiltAt, graphJsonPath } from "@aof/knowledge/graph-normalize";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { stripComments } from "../../support/source-slice.mjs";
+import { createTestSelector } from "@aof/work/testing/select";
 const CHANGED_SET_EMPTY = _aofApplication.work.testSelect.CHANGED_SET_EMPTY;
 const SINCE_REV_UNRESOLVABLE = _aofApplication.work.testSelect.SINCE_REV_UNRESOLVABLE;
 const WIDENING_REASONS = _aofApplication.work.testSelect.WIDENING_REASONS;
@@ -96,11 +100,11 @@ export const workTestSelectTests = [
   // ── tasks/00 ────────────────────────────────────────────────────────────────────────────────
   {
     name: "72/01 task00: coupling the graph knows narrows the selection to the suites that can break",
-    run: () => {
+    run: async () => {
       const root = tempRoot();
       try {
         couplingGraph(root);
-        const result = selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        const result = await selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
         assert.deepEqual([...result.selected], ["test/a.test.mjs"], "the selected suites are the suites among its dependents");
         assert.deepEqual([...result.widened], [], "the selection did not widen");
         assert.equal(result.scope, "impacted", "…so the scope is the impacted subset");
@@ -113,7 +117,7 @@ export const workTestSelectTests = [
 
   {
     name: "72/01 task00: each of the four unknowns widens to the whole suite and names the file that caused it",
-    run: () => {
+    run: async () => {
       const rows = [
         { state: "absent — no artifact on disk", reason: "no-graph", plant: () => {} },
         { state: "an artifact holding no node for that file", reason: "not-in-graph", plant: (root) => writeGraph(root, { nodes: ["src/other.mjs"], links: [] }) },
@@ -131,7 +135,7 @@ export const workTestSelectTests = [
         try {
           row.plant(root);
           const changed = row.changed ?? "src/a.mjs";
-          const result = selectSuites({ projectRoot: root, changed: [changed], allSuites: ALL_SUITES, roots: ROOTS });
+          const result = await selectSuites({ projectRoot: root, changed: [changed], allSuites: ALL_SUITES, roots: ROOTS });
 
           assert.equal(result.scope, "all", `${row.state}: the whole suite is selected`);
           assert.deepEqual([...result.selected].sort(), [...ALL_SUITES].sort(), `${row.state}: …and it really is the whole suite`);
@@ -148,7 +152,7 @@ export const workTestSelectTests = [
 
   {
     name: "72/01 task00: the four reasons are the whole vocabulary, and no widening carries a reason outside them",
-    run: () => {
+    run: async () => {
       assert.deepEqual([...WIDENING_REASONS], ["no-graph", "not-in-graph", "no-registered-dependent", "graph-unreadable"], "four, named");
       assert.equal(WIDENING_REASONS.length, 4, "…and exactly four");
 
@@ -164,7 +168,7 @@ export const workTestSelectTests = [
         const root = tempRoot();
         try {
           plant(root);
-          for (const entry of selectSuites({ projectRoot: root, changed: ["src/lonely.mjs"], allSuites: ALL_SUITES, roots: ROOTS }).widened) {
+          for (const entry of (await selectSuites({ projectRoot: root, changed: ["src/lonely.mjs"], allSuites: ALL_SUITES, roots: ROOTS })).widened) {
             produced.add(entry.reason);
           }
         } finally {
@@ -178,7 +182,7 @@ export const workTestSelectTests = [
 
   {
     name: "72/01 task00: the rule is checked from BOTH sides, so neither side passes unexamined",
-    run: () => {
+    run: async () => {
       const base = { builtAt: null, graphPath: "g", refusal: null };
       const rows = [
         {
@@ -218,23 +222,23 @@ export const workTestSelectTests = [
 
   {
     name: "72/01 task00: no option this selection accepts can turn a widened result narrow",
-    run: () => {
+    run: async () => {
       const root = tempRoot();
       try {
         writeGraph(root, { nodes: ["src/other.mjs"], links: [] });
         const base = { projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS };
-        const widened = selectSuites(base);
+        const widened = await selectSuites(base);
         assert.equal(widened.scope, "all", "the baseline widens");
 
         // The suppressors that must not exist, offered anyway. A resolver that admitted any of
         // them would answer differently here; one that does not, cannot.
         const suppressors = { noWiden: true, strictScope: true, narrow: true, assumeFresh: true, skipWidening: true, widen: false, scope: "impacted" };
         for (const [key, value] of Object.entries(suppressors)) {
-          const result = selectSuites({ ...base, [key]: value });
+          const result = await selectSuites({ ...base, [key]: value });
           assert.equal(result.scope, "all", `${key}: the whole suite is still selected`);
           assert.deepEqual([...result.widened], [...widened.widened], `${key}: the widening is still named`);
         }
-        const all = selectSuites({ ...base, ...suppressors });
+        const all = await selectSuites({ ...base, ...suppressors });
         assert.equal(all.scope, "all", "and all of them together change nothing either");
         assert.deepEqual([...all.selected].sort(), [...ALL_SUITES].sort(), "…the whole suite is still selected");
 
@@ -242,7 +246,7 @@ export const workTestSelectTests = [
         // changes WHAT is asked, never whether an unknown is reported.
         for (const key of ["roots", "allSuites"]) {
           const value = key === "roots" ? [...ROOTS, "test/integration"] : [...ALL_SUITES, "test/d.test.mjs"];
-          const result = selectSuites({ ...base, [key]: value });
+          const result = await selectSuites({ ...base, [key]: value });
           assert.equal(result.scope, "all", `${key}: still widened`);
           assert.ok(result.widened.length > 0, `${key}: and the widening is still named`);
         }
@@ -254,7 +258,7 @@ export const workTestSelectTests = [
 
   {
     name: "72/01 task00: a changed file that is itself a suite is in its own selection — the union is taken before the predicate",
-    run: () => {
+    run: async () => {
       const rows = [
         {
           changedFile: "a registered suite file whose only dependent is the runner",
@@ -294,7 +298,7 @@ export const workTestSelectTests = [
         const root = tempRoot();
         try {
           writeGraph(root, { nodes: row.nodes, links: row.links });
-          const result = selectSuites({ projectRoot: root, changed: [row.changed], allSuites: ALL_SUITES, roots: ROOTS });
+          const result = await selectSuites({ projectRoot: root, changed: [row.changed], allSuites: ALL_SUITES, roots: ROOTS });
           assert.deepEqual([...result.selected].sort(), [...row.selected].sort(), `${row.changedFile}: the selected suites`);
           assert.equal(result.widened.length > 0, row.widens, `${row.changedFile}: ${row.widens ? "widened, naming it" : "did not widen"}`);
           if (row.widens) assert.equal(result.widened[0].file, row.changed, `${row.changedFile}: …and it names the file`);
@@ -307,14 +311,14 @@ export const workTestSelectTests = [
 
   {
     name: "72/01 task00: PRESENCE OUTRANKS THE UNION — a suite file the graph does not cover widens rather than selecting itself",
-    run: () => {
+    run: async () => {
       // A test file created this turn: it satisfies the suite PREDICATE and the graph has never
       // seen it. Union-first alone would select it silently, and every other row passes either
       // way — which is why the precedence is an invariant rather than an implementation note.
       const root = tempRoot();
       try {
         writeGraph(root, { nodes: ["src/a.mjs"], links: [] });
-        const result = selectSuites({ projectRoot: root, changed: ["test/brand-new.test.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        const result = await selectSuites({ projectRoot: root, changed: ["test/brand-new.test.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
         assert.equal(result.scope, "all", "it widens");
         assert.deepEqual([...result.widened], [{ file: "test/brand-new.test.mjs", reason: "not-in-graph" }], "…naming it as absent from the graph");
         assert.equal(result.selected.includes("test/brand-new.test.mjs"), false, "and it was NOT quietly selected by the union");
@@ -326,7 +330,7 @@ export const workTestSelectTests = [
 
   {
     name: "72/01 task00: every result reports the ARTIFACT's own build time, widened or not — and never a clock",
-    run: () => {
+    run: async () => {
       const rows = [
         { case: "resolves entirely in the graph", changed: "src/a.mjs", plant: couplingGraph, hasBuiltAt: true },
         { case: "widens because a file is not in the graph", changed: "src/absent.mjs", plant: couplingGraph, hasBuiltAt: true },
@@ -342,7 +346,7 @@ export const workTestSelectTests = [
           // distinguishable from "now" rather than merely plausible.
           const past = new Date("2020-01-02T03:04:05.000Z");
           if (row.hasBuiltAt) utimesSync(graphJsonPath(root), past, past);
-          const result = selectSuites({ projectRoot: root, changed: [row.changed], allSuites: ALL_SUITES, roots: ROOTS });
+          const result = await selectSuites({ projectRoot: root, changed: [row.changed], allSuites: ALL_SUITES, roots: ROOTS });
 
           if (row.hasBuiltAt) {
             assert.equal(result.builtAt, graphArtifactBuiltAt(graphJsonPath(root)), `${row.case}: the artifact's instant, through the one shared derivation`);
@@ -369,9 +373,9 @@ export const workTestSelectTests = [
         const past = new Date("2019-05-06T07:08:09.000Z");
         utimesSync(graphJsonPath(root), past, past);
 
-        const first = selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        const first = await selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
         await new Promise((resolve) => { setTimeout(resolve, 25); });
-        const second = selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        const second = await selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
         assert.equal(first.builtAt, second.builtAt, "both results report that same instant");
         assert.ok(Date.parse(first.builtAt) < Date.now(), "and neither reports an instant later than the artifact's");
       } finally {
@@ -382,22 +386,22 @@ export const workTestSelectTests = [
 
   {
     name: "72/01 task00: selection is PURE — two graphs coupling one changed set differently give two answers in one process, in either order",
-    run: () => {
+    run: async () => {
       const plantA = (root) => writeGraph(root, { nodes: ["src/a.mjs", "test/a.test.mjs"], links: [edge(1, 0)] });
       const plantB = (root) => writeGraph(root, { nodes: ["src/a.mjs", "test/b.test.mjs"], links: [edge(1, 0)] });
-      const answer = (plant) => {
+      const answer = async (plant) => {
         const root = tempRoot();
         try {
           plant(root);
-          return [...selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS }).selected];
+          return [...(await selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS })).selected];
         } finally {
           rmSync(root, { recursive: true, force: true });
         }
       };
 
       for (const [first, second, plantFirst, plantSecond] of [["A", "B", plantA, plantB], ["B", "A", plantB, plantA]]) {
-        const one = answer(plantFirst);
-        const two = answer(plantSecond);
+        const one = await answer(plantFirst);
+        const two = await answer(plantSecond);
         assert.notDeepEqual(one, two, `graph ${first} then graph ${second}: the second answers from ${second} rather than repeating the first`);
         assert.deepEqual(two, second === "A" ? ["test/a.test.mjs"] : ["test/b.test.mjs"], `graph ${first} then graph ${second}: …and it is ${second}'s own answer`);
       }
@@ -450,7 +454,7 @@ export const workTestSelectTests = [
         assert.equal(clean.code, CHANGED_SET_EMPTY, "…named as such");
 
         // …and the selector refuses it too, rather than reporting a green run over zero tests.
-        const result = selectSuites({ projectRoot: root, changed: [], allSuites: ALL_SUITES, roots: ROOTS });
+        const result = await selectSuites({ projectRoot: root, changed: [], allSuites: ALL_SUITES, roots: ROOTS });
         assert.equal(result.refusal?.code, CHANGED_SET_EMPTY, "the selector refuses an empty changed set for the same reason");
         assert.deepEqual([...result.selected], [], "…and selects nothing rather than pretending");
         assert.equal(result.gate, false, "…and it is no gate");
@@ -462,7 +466,7 @@ export const workTestSelectTests = [
 
   {
     name: "72/01 task00: the porcelain reader keeps untracked files and both ends of a rename, and the suite predicate is a path test",
-    run: () => {
+    run: async () => {
       const parsed = parsePorcelain([
         " M src/a.mjs",
         "?? test/brand-new.test.mjs",
@@ -484,7 +488,7 @@ export const workTestSelectTests = [
   // ── tasks/01 ────────────────────────────────────────────────────────────────────────────────
   {
     name: "72/01 task01: what the runner ASSEMBLES decides what is reported, in each registration state a selection can meet",
-    run: () => {
+    run: async () => {
       const rows = [
         {
           state: "on disk and every test it exports is in the assembled array",
@@ -552,7 +556,7 @@ export const workTestSelectTests = [
 
   {
     name: "72/01 task01: the unregistered verdict is the census's OWN code and message, never a re-phrasing",
-    run: () => {
+    run: async () => {
       const rows = [
         { code: "audit-suite-unregistered", suiteNames: new Map([["test/b.test.mjs", ["b one"]]]), assembled: new Set(), importedBy: new Set() },
         { code: "audit-suite-imported-never-spread", suiteNames: new Map([["test/b.test.mjs", ["b one"]]]), assembled: new Set(), importedBy: new Set(["test/b.test.mjs"]) },
@@ -582,11 +586,11 @@ export const workTestSelectTests = [
 
   {
     name: "72/01 task01: a changed file that is not a suite is never reported as one",
-    run: () => {
+    run: async () => {
       const root = tempRoot();
       try {
         couplingGraph(root);
-        const result = selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        const result = await selectSuites({ projectRoot: root, changed: ["src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
         assert.equal(result.selected.includes("src/a.mjs"), false, "it does not appear among the selected suites");
 
         const report = registrationReport({
@@ -602,4 +606,94 @@ export const workTestSelectTests = [
       }
     },
   },
+
+  // ── 179/04 task 00 — test selection asks relations, and selects and widens as before ───────
+  // The fixture is 179/02 task 01's graph. The selector is one-hop, so "the suites of src/a.mjs and
+  // src/c.mjs" are suites that import the changed src/b.mjs (STATE records the wording). Each run
+  // composes the selector as core does, over the application's own code port, with a `relations`
+  // that records every call it receives.
+  {
+    name: "179/04 task 00 outline: each reader asks relations once, with every path it needs — test selection for the changed set src/b.mjs",
+    run: () => withReaderFixture(READER_GRAPH, async (root, { selector, asked }) => {
+      await selector.selectSuites({ projectRoot: root, changed: ["src/b.mjs"], allSuites: READER_SUITES, roots: ["test"] });
+      assert.deepEqual(asked, [["src/b.mjs"]], "relations was called exactly once, with the changed set");
+      assert.doesNotMatch(stripCommentsOf("packages/work/src/testing/select.mjs"), /\b(?:readFile|readFileSync|existsSync)\s*\(/u, "the reader opened no graph file itself");
+    }),
+  },
+  {
+    name: "179/04 task 00: test selection selects through relations what it selected before",
+    run: () => withReaderFixture(READER_GRAPH, async (root, { selector }) => {
+      const result = await selector.selectSuites({ projectRoot: root, changed: ["src/b.mjs"], allSuites: READER_SUITES, roots: ["test"] });
+      assert.deepEqual([...result.selected], ["test/a.test.mjs", "test/c.test.mjs"]);
+      assert.equal(result.builtAt, graphArtifactBuiltAt(graphJsonPath(root)), "builtAt is the artifact's own modification instant");
+    }),
+  },
+  ...[
+    { state: "absent", graph: null, reason: "no-graph" },
+    { state: 'a file holding "{not json"', graph: "{not json", reason: "graph-unreadable" },
+  ].map((row) => ({
+    name: `179/04 task 00 outline: test selection widens for the same reasons as before — ${row.state}`,
+    run: () => withReaderFixture(row.graph, async (root, { selector }) => {
+      const result = await selector.selectSuites({ projectRoot: root, changed: ["src/b.mjs"], allSuites: READER_SUITES, roots: ["test"] });
+      assert.equal(result.scope, "all");
+      assert.deepEqual([...result.selected], [...READER_SUITES].sort(), "it widens to every suite");
+      assert.deepEqual(result.widened.map((entry) => entry.reason), [row.reason]);
+      assert.equal(result.builtAt, null);
+    }),
+  })),
+  {
+    name: "179/04 task 00: two selections in one process each read the artifact, so a rebuilt graph is seen",
+    run: () => withReaderFixture(READER_GRAPH, async (root, { selector }) => {
+      const first = await selector.selectSuites({ projectRoot: root, changed: ["src/b.mjs"], allSuites: READER_SUITES, roots: ["test"] });
+      assert.ok(!first.selected.includes("test/lonely.test.mjs"));
+      writeFileSync(graphJsonPath(root), JSON.stringify(readerGraph({ lonelyImportsB: true })));
+      const second = await selector.selectSuites({ projectRoot: root, changed: ["src/b.mjs"], allSuites: READER_SUITES, roots: ["test"] });
+      assert.ok(second.selected.includes("test/lonely.test.mjs"), "the suites of src/lonely.mjs are now selected too");
+    }),
+  },
 ];
+
+// ── 179/04 fixture ──────────────────────────────────────────────────────────────────────────────
+
+const READER_SUITES = ["test/a.test.mjs", "test/c.test.mjs", "test/lonely.test.mjs"];
+
+// 179/02 task 01's graph — a imports b, c calls a, lonely has no edges — plus the three suites:
+// a's and c's import b; lonely's imports b only once the graph is rebuilt.
+function readerGraph({ lonelyImportsB = false } = {}) {
+  const files = ["src/a.mjs", "src/b.mjs", "src/c.mjs", "src/lonely.mjs", ...READER_SUITES];
+  const id = (file) => `n${files.indexOf(file)}`;
+  const link = (from, into, relation = "imports") => ({ source: id(from), target: id(into), relation, confidence: "EXPLICIT" });
+  return {
+    directed: true, multigraph: false, graph: {},
+    nodes: files.map((file) => ({ id: id(file), label: file, source_file: file })),
+    links: [
+      link("src/a.mjs", "src/b.mjs"), link("src/c.mjs", "src/a.mjs", "calls"),
+      link("test/a.test.mjs", "src/b.mjs"), link("test/c.test.mjs", "src/b.mjs"),
+      ...(lonelyImportsB ? [link("test/lonely.test.mjs", "src/b.mjs")] : []),
+    ],
+  };
+}
+const READER_GRAPH = JSON.stringify(readerGraph());
+
+async function withReaderFixture(graphText, body) {
+  const root = mkdtempSync(path.join(os.tmpdir(), "aof-179-04-select-"));
+  try {
+    if (graphText != null) {
+      mkdirSync(path.join(root, "graphify-out"), { recursive: true });
+      writeFileSync(graphJsonPath(root), graphText);
+    }
+    const asked = [];
+    const real = _aofApplication.knowledge.engine.codeEngine.relations;
+    const selector = createTestSelector({
+      relations: async (paths, ctx) => { asked.push([...paths]); return real(paths, ctx); },
+      registrationDecision: _aofApplication.work.audit.census.registrationDecision,
+    });
+    return await body(root, { selector, asked });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function stripCommentsOf(rel) {
+  return stripComments(readFileSync(path.join(fileURLToPath(new URL("../../../", import.meta.url)), rel), "utf8"));
+}

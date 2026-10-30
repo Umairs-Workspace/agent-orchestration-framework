@@ -5,12 +5,18 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSyn
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createGraphBuildCommand } from "@aof/knowledge/commands/graph-build";
 import { createGraphPublishCommand } from "@aof/knowledge/commands/graph-publish";
 import { graphifyCacheKey, unpackBundle } from "@aof/knowledge/graph-bundle";
 import { GRAPH_REF_PREFIX } from "@aof/knowledge/graph-share";
 import { defaultGitExec } from "@aof/execution/worktrees";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
+import { createGraphBuildCommand } from "@aof/knowledge/commands/graph-build";
+import { createGraphifyCodeBackend } from "@aof/knowledge/graphify-code-backend";
+import { createKnowledgeEngine } from "@aof/knowledge/engine";
+
+// graph:build is a face over the port since 179/ADR-002: the services build the graphify code
+// backend, the port routes the face's `ingest("code")` to it, and the face keeps the share wrapping.
+const composeGraphBuild = (services) => createGraphBuildCommand({ ...services, engine: createKnowledgeEngine({ backends: [createGraphifyCodeBackend(services).graphifyCodeBackend] }) });
 // 174 — a built graph is shared through the project's own remote. With `graph.share: "git-refs"`,
 // `aof graph build` takes the graph published for HEAD as the blob behind
 // `refs/aof/graph/v1/<commit>` instead of running graphify, and publishes a clean build of a
@@ -128,7 +134,7 @@ async function build(repo, { stamp, wrap, input = { path: "." } } = {}) {
     calls.push({ args, env: options?.env });
     return defaultGitExec(args, options);
   };
-  const { graphBuildCommand } = createGraphBuildCommand({
+  const { graphBuildCommand } = composeGraphBuild({
     resolveGraphifyBinary: () => ({ found: true, binary: "graphify", path: "graphify", version: VERSION }),
     runGraphifyBuild: (request, options) => {
       ran.push(request);

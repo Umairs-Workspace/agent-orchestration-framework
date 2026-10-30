@@ -2,7 +2,7 @@
 // task 00 — 00_claude-cli-classified-and-surfaced.feature.
 //
 // Covers EVERY @executable scenario AND every Scenario-Outline Examples row of that
-// feature against the REAL pure classifiers in ../packages/core/src/commands/graph-build.mjs
+// feature against the REAL pure classifiers in packages/knowledge/src/graphify-code-backend.mjs
 // (isNetworkBackend / isKnownNetworkBackend / classifyEgress) and the REAL graphify
 // backend's `status` surface, driven through the REAL seam (`runMemory`). No live
 // graphify binary is touched: the classifiers are pure functions of the backend name,
@@ -20,7 +20,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir } from "node:fs/promises";
-import { createGraphBuildCommand } from "@aof/knowledge/commands/graph-build";
+import { classifyEgress, isKnownNetworkBackend, isNetworkBackend } from "@aof/knowledge/graphify-code-backend";
 import { createMemory } from "@aof/knowledge/memory";
 import { createGraphifyBackend } from "@aof/knowledge/memory/graphify-backend";
 
@@ -28,13 +28,8 @@ import { createGraphifyBackend } from "@aof/knowledge/memory/graphify-backend";
 // `status` reads an absent store, so no graphify driver port, no command core, no record builder and
 // no gitignore writer is reached: each refuses.
 const refuse = (what) => () => { throw new Error(`the posture suite must not reach ${what}`); };
-const { isNetworkBackend, isKnownNetworkBackend, classifyEgress } = createGraphBuildCommand({
-  resolveGraphifyBinary: refuse("resolveGraphifyBinary"),
-  runGraphifyBuild: refuse("runGraphifyBuild"),
-  readGraph: refuse("readGraph"),
-  normalizeGraph: refuse("normalizeGraph"),
-  graphJsonPath: refuse("graphJsonPath"),
-});
+// The classifiers are pure module exports of the graphify code backend (179/ADR-002), so no factory
+// is built to reach them.
 const graphifyBackend = createGraphifyBackend({
   coreInvoke: refuse("coreInvoke"),
   loadWorkspace: refuse("loadWorkspace"),
