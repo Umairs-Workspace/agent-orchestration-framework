@@ -1,7 +1,8 @@
 import path from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { activeScopeHolders, executionScopeRef, restoreParkedAssignmentResume } from "./assignment-record.mjs";
 import { isMeshLaneTree } from "./worktrees.mjs";
+import { hasOwnWorkspaceConfig } from "./workspace-identity.mjs";
 import { workTreeStatDigest } from "@aof/work/discovery";
 
 export const MESH_GLOBAL_DISABLED_CODE = "mesh-global-disabled";
@@ -49,9 +50,7 @@ function meshGlobalPropagationDecision(workspaceOrConfig) {
   // A pure config-shaped argument (no projectRoot to check) is unaffected.
   const projectRoot = typeof workspaceOrConfig?.projectRoot === "string" ? workspaceOrConfig.projectRoot : null;
   if (projectRoot != null && projectRoot.length > 0) {
-    const hasOwnConfig = existsSync(path.join(projectRoot, ".aof", "aof.config.json"))
-      || existsSync(path.join(projectRoot, "aof.config.json"));
-    if (!hasOwnConfig) {
+    if (!hasOwnWorkspaceConfig(projectRoot)) {
       return {
         enabled: false,
         code: MESH_WORKSPACE_UNCONFIGURED_CODE,

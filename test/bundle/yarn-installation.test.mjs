@@ -162,7 +162,7 @@ export const yarnInstallationTests = [
       } : name === 'mesh' ? {
         "artifact-sync.mjs": ["node:fs/promises","node:path","@aof/work/artifacts"],
         "node-identity.mjs": ["node:path","node:crypto","@aof/foundation/fs","@aof/foundation/text","node:fs/promises"],
-        "workspace-identity.mjs": ["node:crypto","node:path"],
+        "workspace-identity.mjs": ["node:crypto","node:fs","node:path"],
         "cache-read.mjs": ["@aof/contracts/cache-provenance","@aof/work/artifacts"],
         "commands/resync.mjs": ["@aof/contracts/error"],
         'assignment-transitions.mjs': [],

@@ -683,6 +683,22 @@ export const meshLauncherSyncsEveryWorkspaceTests = [
     }),
   },
   {
+    name: "175/F-14 · a launch folder with no aof config is not in the tick's set: no watch is armed on it and presence reads no items from it",
+    run: () => withMesh(async (fx) => {
+      const fake = fakeWatch();
+      const armed = [];
+      const listed = [];
+      const watch = (dir, options, listener) => { armed.push(dir); return fake.watch(dir, options, listener); };
+      const listItems = async (workDir) => { listed.push(workDir); return []; };
+      const { tick } = await startWatched(fx, { fake: { ...fake, watch }, listItems });
+      await tick();
+      const inLaunch = (dir) => path.resolve(dir).startsWith(fx.launchDir);
+      assert.ok(listed.includes(workDirOf(fx, AOF)) && armed.includes(workDirOf(fx, AOF)), "presence read aof and its tree is watched (non-vacuous)");
+      assert.deepEqual(listed.filter(inLaunch), [], "presence reads no items from launchd's cwd, so no tick asks a cache nobody writes");
+      assert.deepEqual(armed.filter(inLaunch), [], "no watch is armed on launchd's cwd, so none fails on `/wiki/work`");
+    }),
+  },
+  {
     name: "164/01 E6 · a store that cannot be opened on one tick does not stop the daemon, and the next tick syncs both workspaces",
     run: () => withMesh(async (fx) => {
       const { tick, warnings, handle } = await fx.start();
