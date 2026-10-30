@@ -3,7 +3,7 @@ type: milestone
 number: 180
 slug: memory-config-node
 title: "One memory node in the config — backend, corpora, graph and per-backend settings live under memory, and the old shape is migrated by aof work update"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-28
 updated: 2026-10-30
@@ -76,9 +76,9 @@ test move unchanged.
 
 ## Stories
 
-- [ ] `stories/01_story_the-memory-node-is-read-in-one-place/` — the schema's one memory node, and one module that reads it in either spelling; the faces print the new paths (wave 1)
-- [ ] `stories/02_story_aof-work-update-migrates-the-old-shape/` — `aof work update` rewrites the old shape by filling, never re-authoring; `aof work init` writes only the new shape (wave 2)
-- [ ] `stories/03_story_the-config-editor-edits-the-memory-node/` — the config editor's Memory section shows the new shape and saves only the new shape (wave 2)
+- [x] `stories/01_story_the-memory-node-is-read-in-one-place/` — the schema's one memory node, and one module that reads it in either spelling; the faces print the new paths (wave 1)
+- [x] `stories/02_story_aof-work-update-migrates-the-old-shape/` — `aof work update` rewrites the old shape by filling, never re-authoring; `aof work init` writes only the new shape (wave 2)
+- [x] `stories/03_story_the-config-editor-edits-the-memory-node/` — the config editor's Memory section shows the new shape and saves only the new shape (wave 2)
 
 ## Dependencies
 

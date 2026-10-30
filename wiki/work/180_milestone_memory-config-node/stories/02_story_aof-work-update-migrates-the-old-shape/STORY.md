@@ -4,7 +4,7 @@ number: 02
 slug: aof-work-update-migrates-the-old-shape
 title: "aof work update rewrites an old-shape memory config to the new node, and aof work init writes only the new shape"
 parent: 180
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-30
 updated: 2026-10-30

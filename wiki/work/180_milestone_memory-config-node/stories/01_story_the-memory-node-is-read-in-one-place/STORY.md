@@ -4,7 +4,7 @@ number: 01
 slug: the-memory-node-is-read-in-one-place
 title: "The memory node holds backend, corpora, graph and per-engine settings, and one module reads it in either spelling"
 parent: 180
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-30
 updated: 2026-10-30

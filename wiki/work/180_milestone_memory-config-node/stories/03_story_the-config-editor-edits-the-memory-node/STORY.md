@@ -4,7 +4,7 @@ number: 03
 slug: the-config-editor-edits-the-memory-node
 title: "The config editor has a Memory section that shows the node in the new shape and saves only the new shape"
 parent: 180
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-30
 updated: 2026-10-30

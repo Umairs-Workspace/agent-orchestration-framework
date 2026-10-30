@@ -12,6 +12,25 @@ doc: verification
 
 ## Verification evidence
 
+- **The `@executable` suite** (all three stories) — verifies → every `@executable` scenario under
+  `stories/0{1,2,3}_*/tasks/`. Procedure: under an isolated `AOF_GLOBAL_HOME`, ran
+  `aof test --scope impacted --story 180/01`, then the same for `180/02` and `180/03`. Each widened to
+  all 1,259 suites, through 15 widenings (new or graph-unknown files). There were 34 distinct reds.
+  Each red file was re-run alone at `bd4fb4bd` (the build) and at `e9aec287` (179's accept), and
+  every red reproduced with the same case names at both, with three exceptions. Those three were
+  180/03's `App.tsx` controls (F-02), fixed at `c8a236e3`. The rest are the reds recorded before 180
+  (STATE's Feedback), and they are not routed:
+  - `acd-hook-rule-detects-never-writes`, FF-5301's two-hop plant, FF-5810, and `command-core`'s
+    two native knowledge cases;
+  - `workspace-boundaries`, from 175's unaudited mesh child-process entries;
+  - the Mac `/var` → `/private/var` realpath class (`yarn-installation`, `distribution-workspaces`,
+    `loops-commands`, `work-memory/00`, 171/02, `board-api` 133/04, `work-ui-fleet-origin/01`);
+  - the gpg trustdb lock (`release-fingerprint-pin`);
+  - the timeouts: 156 retained lanes, 154/11, 69/04, 81/00 and the autonomous black-box.
+
+  `arch/46 ADR-004` and `audit-spawn/03` were red only under the three-lanes-at-once contention,
+  and are green alone. After `c8a236e3`, `yarn ui:build` is green. So are the UI, surfaces and arch
+  ui/testing/loop/bundle/audit indexes (2,335 cases), apart from the recorded reds above.
 - **The documentation describes one memory node** (`@manual`, 180/01 task 03) — verifies →
   `stories/01_story_the-memory-node-is-read-in-one-place/tasks/03_the-faces-print-the-new-paths.feature`.
   Procedure: grep `README.md`, `wiki/memory.md`, `wiki/codex-support.md` and
@@ -62,3 +81,23 @@ doc: verification
 | id | observed | type | severity | triage | routed-to | status |
 |---|---|---|---|---|---|---|
 | F-01 | The config editor's Memory section (DESIGN Surface 1) cannot be rendered for a design judgement. `work.ui.baseUrl` is unset, and DESIGN.md declares no `Route` for the surface, so 03's `@manual` DESIGN scenario is INCONCLUSIVE rather than CONFORMS. The recall names the same cause at m135/F-135-03, on the board's task-card surface. This is a distinct incident of that cause on a different surface and a different server (the config editor, not the board), so it is not a duplicate. | gap | minor | non-blocker: the checklist's states are asserted by 03's mounted-App `@executable` cases. Fidelity stays unjudged until a render exists. | DESIGN.md (a `Route` for Surface 1) and an `aof:verify 180 --url <config editor>` re-run against a served `aof ui` | open |
+| F-02 | The scoped lanes (`aof test --scope impacted --story 180/0N`, which widened to all 1,259 suites) reddened three UI controls on 180/03's change to `apps/ui/src/config/App.tsx`. The file was at 1,318 lines, over its 1,300-line ratchet (ADR-015/F2), FF-5307's `apps/ui/src` digest was not re-pinned, and home-route/00 pins the file at exactly 1,300. Each file is red at `bd4fb4bd` and green at `e9aec287` (179's accept); every other red has the same names at both. The recall names the same class at m135/F-135-01 (`DetailPanel.tsx`), which makes this a distinct incident on a different surface. | defect | major | blocker: fixed at verify | `c8a236e3`: the section list and its label, JSON, count and hint helpers moved whole to `apps/ui/src/config/sections.tsx`, as the ceiling's note asks, and `App.tsx` is 1,282. The config directory's budget went 5 → 6 with the reason stated. FF-5307 was re-pinned with the measured diff, and home-route/00 was re-aimed to 1282. `yarn ui:build` is green, and the UI, surfaces and arch ui/testing/loop/bundle/audit indexes are green apart from the reds recorded before 180. | closed |
+
+## Accept decision
+
+**Accepted 2026-10-30** (product-owner, `aof:verify 180`).
+
+- Stories 01, 02 and 03 are accepted, each with its `OUTCOME.md` and `RETROSPECTIVE.md`.
+- FF-18001 and FF-18002 are green, each with its red probe, and both are registered in
+  `test/arch/memory/index.mjs`.
+- `aof:validate 180` passes. `aof work validate 180` passes, `aof work loops validate` exits 0 with
+  warnings only, and the agent layer is clean: all 57 `@executable` scenarios map to passing cases,
+  and every `@manual` scenario has an evidence row.
+- `aof work doctor 180` shows no `control-unresolved` at either severity, and no error.
+- F-02 (blocker) is fixed at verify and closed (`c8a236e3`). F-01 (non-blocker) stays open, routed
+  to DESIGN and a `--url` re-run. It is carried as 03's outcome gap. No blocker is open.
+- Regression gate: not run. This MacBook cannot host the whole-tree run while its live control
+  daemon (`aof mesh serve --serve`, pid 77647) holds `:4182`, the same condition as m175's and
+  m179's overrides. Accepted through an environment `--gate-override`, whose reason is recorded in
+  `REGRESSION.md`. The evidence is the three whole-tree-wide lanes and the per-file baseline
+  comparison above. The gate goes green on a node that can host the whole-tree run.
