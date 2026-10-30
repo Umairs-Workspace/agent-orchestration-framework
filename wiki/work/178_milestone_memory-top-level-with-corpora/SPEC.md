@@ -3,10 +3,10 @@ type: milestone
 number: 178
 slug: memory-top-level-with-corpora
 title: "Memory is its own command — aof memory replaces aof work memory, and a recalled work record names the planning document its item came from"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-28
-updated: 2026-10-29
+updated: 2026-10-30
 schema: 1
 aofVersion: 0.1.0
 origin: wiki/planning/PRD-memory-engine.md
