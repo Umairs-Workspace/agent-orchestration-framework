@@ -1,6 +1,6 @@
 import path from "node:path";
 import { execFile } from "node:child_process";
-import { mkdir, rm, writeFile, readFile } from "node:fs/promises";
+import { access, mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { isPlainObject, isWellFormedCloneUrl, writeRepoPublishedMarker } from "./repo-marker.mjs";
 import { writeText } from "@aof/foundation/fs";
@@ -172,9 +172,36 @@ async function localNodeWorkspaceMembership(nodeId, workspaceId, options = {}) {
 // must proxy via `global_node_workspaces` + `workspaces.last_published_at`, STATE.md
 // Feedback), the WORKER-side check reads its OWN local marker AND its OWN local
 // registry table directly — both genuine per-node facts, not a workspace-level proxy.
+//
+// TECH_DEBT 4 (D) / item 21 — the local half has a SECOND arm: the managed checkout itself. A
+// clone-on-miss pins `mesh.workspaceId` into `checkouts/<workspaceId>`, and that pin, read from
+// DISK, is per-repo and always current. The launch marker is neither: the launch workspace's
+// config holds ONE `mesh.repo.workspaceId`, so a second repo's clone overwrote the first's; the
+// daemon's in-memory `ws` is loaded once, so a marker written after start was never seen again
+// and every later dispatch re-cloned into an existing checkout ("dispatchable exactly once",
+// item 21); and a launchd-started daemon's launch folder is `/`, which cannot be written at all.
 async function workerHasRepo(ws, workspaceId, nodeId, options = {}) {
-  if (!localMeshRepoPublished(ws, workspaceId)) return false;
+  const local = localMeshRepoPublished(ws, workspaceId)
+    || await managedCheckoutPinned(workspaceId, options.globalWorkStoreOptions ?? {});
+  if (!local) return false;
   return localNodeWorkspaceMembership(nodeId, workspaceId, options);
+}
+
+// managedCheckoutPinned(workspaceId, globalWorkStoreOptions) -> true when this node's managed
+// checkout for `workspaceId` is a git checkout whose OWN config pins exactly that id — the
+// clone-time pin `cloneRepoForWorkspace` writes. A directory that is not a repo, or that pins
+// another id (or none), is not this workspace's checkout.
+async function managedCheckoutPinned(workspaceId, globalWorkStoreOptions = {}) {
+  if (typeof workspaceId !== "string" || workspaceId.length === 0) return false;
+  const checkoutPath = meshCheckoutPath(workspaceId, globalWorkStoreOptions);
+  if (!isUnderMeshCheckoutsRoot(checkoutPath, globalWorkStoreOptions)) return false;
+  try {
+    await access(path.join(checkoutPath, ".git"));
+    const config = JSON.parse(await readFile(path.join(checkoutPath, ".aof", "aof.config.json"), "utf8"));
+    return config?.mesh?.workspaceId === workspaceId;
+  } catch {
+    return false;
+  }
 }
 
 // ============================================================================
@@ -412,6 +439,15 @@ async function cloneRepoForWorkspace(ws, { workspaceId, nodeId, assignmentId, cl
     throw error;
   }
 
+  // TECH_DEBT 21 — a checkout already here, pinned to this workspace, is this repo: reuse it and
+  // re-assert the membership row, rather than `git clone` into a non-empty directory (which
+  // failed every dispatch after the first). A directory that does not pin this id is left
+  // alone, and the clone below fails loudly on it as before — nothing unknown is clobbered.
+  if (await managedCheckoutPinned(workspaceId, options.globalWorkStoreOptions ?? {})) {
+    await writeNodeWorkspaceMembership(nodeId, workspaceId, options);
+    return checkoutPath;
+  }
+
   await mkdir(meshCheckoutsRoot(options.globalWorkStoreOptions ?? {}), { recursive: true });
 
   // ADR-009 — resolve the credential BEFORE any exec call (see doc comment above).
@@ -488,17 +524,33 @@ async function cloneRepoForWorkspace(ws, { workspaceId, nodeId, assignmentId, cl
   // writing either fact leaves NO half-registered state readable as available (the
   // re-check below would still fail the join), matching the "neither fact on
   // failure" invariant task 02 pins.
-  await writeRepoPublishedMarker({ configPath: ws.configPath, workspaceId, now });
-  await writeNodeWorkspaceMembership(nodeId, workspaceId, options);
   // m42 wave (b) / item 4 — CLONE-TIME IDENTITY PIN. The checkout's identity used
   // to be re-derived from ITS OWN path on this machine (a different id per machine
   // for the same repo — the class that refused the worker's launch-workspace frames
   // and spammed workspace-workdir-unresolvable every 5s, forever). The id the
   // assignment arrived under IS the fleet's canonical id for this repo; pin it into
   // the checkout's own config so resolveWorkspaceId answers it on every machine.
+  // It is written FIRST because it is also the repo-availability fact (`managedCheckoutPinned`):
+  // a fault after it leaves a pinned checkout, which the next clone-on-miss reuses.
   await pinWorkspaceIdInCheckout(checkoutPath, workspaceId);
+  await writeNodeWorkspaceMembership(nodeId, workspaceId, options);
+  // The launch marker only where the launch folder IS a workspace (its own config on disk).
+  // A daemon launched from `/` (launchd) or a home folder has none: writing one there failed
+  // outright (`/` is not writable) or turned the folder into a bogus workspace (TECH_DEBT 4).
+  if (await launchWorkspaceConfigured(ws)) await writeRepoPublishedMarker({ configPath: ws.configPath, workspaceId, now });
 
   return checkoutPath;
+}
+
+// launchWorkspaceConfigured(ws) -> true when the launch workspace's config exists on disk.
+async function launchWorkspaceConfigured(ws) {
+  if (typeof ws?.configPath !== "string" || ws.configPath.length === 0) return false;
+  try {
+    await access(ws.configPath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // pinWorkspaceIdInCheckout(checkoutPath, workspaceId) — m42 wave (b) / item 4: write
