@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { contentType, isLoopbackHost, safeStaticPath, sendTaggedJson, shouldServeAppShell } from "@aof/server/static-serve";
 import { isAssignmentPhase } from "./assignment-directive.mjs";
+import { resolveWorkspaceId } from "./workspace-identity.mjs";
 import { WebSocketServer } from "ws";
 import { buildSessionSpawnFrame, buildSessionSpawnEnvelope } from "./session-spawn-directive.mjs";
 import { createSpawnOutcomeRegistry } from "./session-spawn-outcome.mjs";
@@ -13,7 +14,7 @@ export const DEFAULT_MESH_UI_PORT = 4181;
 export const MAX_TERMINAL_INPUT_BYTES = 32 * 1024;
 
 // Configured runtime services are supplied by core. Construction starts no I/O or timers.
-export function createMeshUiServer({ assetPath, serveBoard, queryGlobalMeshStatus, workspaceIdForProjectRoot, resolveCacheStalenessSeconds, loadWorkspace, assignWork, STOP_REFUSALS, stopLoop, createTerminalMirror, buildTerminalInputEnvelope, PROVIDER_IDS, reportDegrade, costMeter = processCostMeter }) {
+export function createMeshUiServer({ assetPath, serveBoard, queryGlobalMeshStatus, resolveCacheStalenessSeconds, loadWorkspace, assignWork, STOP_REFUSALS, stopLoop, createTerminalMirror, buildTerminalInputEnvelope, PROVIDER_IDS, reportDegrade, costMeter = processCostMeter }) {
 // The `aof mesh ui` fleet serve-face — the "fleet mission-control" web surface
 // (milestone 25 / story 02; ARCHITECTURE ADR-003/ADR-004). A SIBLING to
 // `board-serve.mjs`, NOT an extension of the work UI: it stands up its OWN single
@@ -540,7 +541,7 @@ async function serveMeshUi({
         // VERB-IDENTICAL expression checks the very value the mint will stamp,
         // not a lookalike, and makes minting against a workspace other than the
         // one clicked structurally impossible rather than merely unlikely.
-        const ownWorkspaceId = assignWorkspace.config?.mesh?.workspaceId ?? workspaceIdForProjectRoot(assignWorkspace.projectRoot);
+        const ownWorkspaceId = resolveWorkspaceId(assignWorkspace);
         if (ownWorkspaceId !== workspaceId) {
           sendApiError(response, 409, `The workspace resolved for "${workspaceId}" identifies itself as "${ownWorkspaceId}".`, "workspace-id-mismatch");
           return;
@@ -828,7 +829,7 @@ async function serveMeshUi({
         // (inv.6): the verb stamps the request's `workspaceId` from the workspace it is
         // handed, so the value it will stamp is the value checked, not a lookalike.
         const stopWorkspace = await loadWorkspace(row.projectRoot, undefined, { env: globalStoreOptions?.env });
-        const ownWorkspaceId = stopWorkspace.config?.mesh?.workspaceId ?? workspaceIdForProjectRoot(stopWorkspace.projectRoot);
+        const ownWorkspaceId = resolveWorkspaceId(stopWorkspace);
         if (ownWorkspaceId !== workspaceId) {
           sendApiError(response, 409, `The workspace resolved for "${workspaceId}" identifies itself as "${ownWorkspaceId}".`, "workspace-id-mismatch");
           return;
@@ -958,7 +959,12 @@ async function serveMeshUi({
         // A server STARTED with --local always scopes to its own workspace; a globally-
         // started server honours a ?scope=local deep-link the same way.
         const effectiveScope = scope === "local" ? "local" : (requestedScope ?? "global");
-        const workspaceId = effectiveScope === "local" ? workspaceIdForProjectRoot(resolvedProjectDir) : null;
+        // The local scope's id through the ONE identity home, so a checkout that pins
+        // `mesh.workspaceId` is filtered by that id, not by a hash of this server's launch path
+        // (TECH_DEBT 4: the raw path derivation here ignored the pin).
+        const workspaceId = effectiveScope === "local"
+          ? resolveWorkspaceId(await loadWorkspace(resolvedProjectDir, undefined, { env: globalStoreOptions?.env }))
+          : null;
         const result = await queryGlobalMeshStatus({
           ...globalStoreOptions,
           workspaceId,
