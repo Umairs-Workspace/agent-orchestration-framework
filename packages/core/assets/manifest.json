@@ -318,7 +318,7 @@
         "id": "aof-init",
         "kind": "skill"
       },
-      "hash": "sha256:38acc221dbf9dfae45dbb2a002be3cd31a46612c89e1880f26ba4d8ee342b2a4"
+      "hash": "sha256:c2ecb2c4dd4c92b705b3dc6c7306ed7d7eaa953a499aa7310beb41bdb81dfac7"
     },
     {
       "path": ".agents/skills/aof-init/agents/openai.yaml",
@@ -1299,7 +1299,7 @@
         "id": "init",
         "kind": "command"
       },
-      "hash": "sha256:a66423625a874f96f50fa28551dc8ff8b0b22e05d07d51d0ba23489da74e00b2"
+      "hash": "sha256:812efa3d93f39c94d156c57b94d4653c1221fb18fd2b882ef90ddde61a58fdd0"
     },
     {
       "path": ".claude/commands/aof/insert-chore.md",

@@ -449,6 +449,8 @@ async function status(ctx = {}) {
     // story-03 acd-graphify-backend-classified arch-test over graph-build.mjs.
     extractionBackend: extraction.backend,
     extractionSource: extraction.source,
+    // 180/ADR-004 — the key the setting was read from, as the author spelled it.
+    extractionPath: extraction.path,
     extractionDependencies: extraction.dependencies,
     memoryAlternative: extraction.alternative,
     extractionEgress: GRAPHIFY_EXTRACTION_EGRESS,

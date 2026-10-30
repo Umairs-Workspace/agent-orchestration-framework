@@ -88,8 +88,11 @@ export const yarnInstallationTests = [
         'graphify.mjs': ['node:child_process', 'node:fs', 'node:path'],
         // 153/02-03: recurrence reads the canonical Recurs form and status reads the shared accounting.
         'memory.mjs': ['@aof/contracts/error', '@aof/work/memory-vocabulary', '@aof/work/memory-accounting'],
-        // 154/09: the pure extractor catalog raises the shared coded error; no I/O/provider port.
-        'graphify-backends.mjs': ['@aof/contracts/error'],
+        // 154/09: the pure extractor catalog; 180/ADR-004: its setting is read, and refused, by the memory node.
+        'graphify-backends.mjs': [],
+        // 180/ADR-001: the memory node's one reader is pure configuration — the coded error and the
+        // port's corpus vocabulary (relative), and no index, backend or transport (FF-18001).
+        'memory-config.mjs': ['@aof/contracts/error'],
         // 179/ADR-001: the knowledge-engine port is a pure router; it imports no backend, config or fs.
         'engine.mjs': [],
         // 179/ADR-002: the graphify code backend checks the artifact and raises the build's coded errors.
@@ -103,7 +106,8 @@ export const yarnInstallationTests = [
         // run, snapshot and feedback readers are injected, never imported.
         'memory/episodic-indexing.mjs': ['node:path', 'node:fs/promises', '@aof/work/declared-id'],
         // 159/ADR-001: the auto-memory leaf reads the selected project's memory folder; its resolver and reporter are injected.
-        'memory/claude-auto-memory.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
+        // 180/ADR-002: its source list is the `operator` corpus, read and refused by the memory node.
+        'memory/claude-auto-memory.mjs': ['node:path', 'node:fs/promises'],
         'memory/local-backend.mjs': ['node:fs/promises', 'node:fs'],
         'memory/graphify-backend.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs'],
         'commands/shared.mjs': ['node:path'],

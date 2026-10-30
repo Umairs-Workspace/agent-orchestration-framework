@@ -26,10 +26,13 @@ const composeGraphBuild = (services) => createGraphBuildCommand({ ...services, e
 // codebase graph at the project root only — never the memory work graph (`.aof/memory-graph/`) or
 // the memory index. Four proofs:
 //   (a) the ref namespace is spelled in one runtime module, so no second door to the remote exists;
-//   (b) that module imports nothing from memory and nothing from a mesh transport;
+//   (b) that module imports nothing from memory and nothing from a mesh transport — except the
+//       config reader `memory-config.mjs`, which reaches no index, backend or transport and whose own
+//       imports FF-18001 pins (amended by 180/ADR-001);
 //   (c) its importers are exactly the four graph commands that share, and no memory module;
 //   (d) live: a graph:build the way the memory backend invokes it — under its own `outRoot` —
-//       makes no remote git call with `graph.share: "git-refs"`, and the backend still invokes it so.
+//       makes no remote git call with `memory.graph.share: "git-refs"` (the new spelling, 180/ADR-003),
+//       and the backend still invokes it so.
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SHARE_MODULE = path.join("packages", "knowledge", "src", "graph-share.mjs");
@@ -41,6 +44,8 @@ const SHARE_IMPORTERS = new Set([
 ]);
 const REF_NAMESPACE = /refs\/aof\/graph\//u;
 const MEMORY_OR_MESH = /(?:^|\/)memory(?:[-/.]|$)|@aof\/mesh(?:\/|$)|(?:^|\/)mesh[-/]|@aof\/messaging|^ws$/u;
+// The one memory-named module graph-share.mjs may import: configuration only (180/ADR-001).
+const CONFIG_READER = "./memory-config.mjs";
 const IMPORTS_SHARE = /(?:^|\/)graph-share(?:\.mjs)?$/u;
 const MEMORY_MODULE = /(?:^|[\\/])memory(?:[\\/]|[-.][^\\/]*$)/u;
 
@@ -77,11 +82,11 @@ export const archTests = [
     },
   },
   {
-    name: "arch/174 FF-17401: graph-share.mjs imports no memory module and no mesh transport",
+    name: "arch/174 FF-17401: graph-share.mjs imports no memory module but the config reader, and no mesh transport",
     run: async () => {
       const share = (await runtimeSources()).find((source) => source.rel === SHARE_MODULE);
       assert.ok(share, `${SHARE_MODULE} exists`);
-      const offenders = share.specs.filter((spec) => MEMORY_OR_MESH.test(spec));
+      const offenders = share.specs.filter((spec) => spec !== CONFIG_READER && MEMORY_OR_MESH.test(spec));
       assert.deepEqual(offenders, [], `graph-share.mjs imports ${offenders.join(", ")}`);
       for (const planted of ["./memory/graphify-backend.mjs", "../memory.mjs", "@aof/mesh/stream", "ws"]) {
         assert.ok(MEMORY_OR_MESH.test(planted), `the import guard catches ${planted}`);
@@ -100,7 +105,7 @@ export const archTests = [
     },
   },
   {
-    name: "arch/174 FF-17401: a graph:build under the memory work graph's own root makes no remote call, and the memory backend builds under that root",
+    name: "arch/174 FF-17401 + 180/01 task 02: a memory backend's work-graph build makes no remote call with sharing on in the new spelling, and the memory backend builds under that root",
     run: async () => {
       const backend = readFileSync(path.join(repoRoot, "packages", "knowledge", "src", "memory", "graphify-backend.mjs"), "utf8");
       assert.match(stripComments(backend), /invoke\(\s*"graph:build",\s*\{[^}]*outRoot:\s*workGraphRoot\(/u, "the memory backend builds under its own outRoot");
@@ -113,7 +118,7 @@ export const archTests = [
         };
         mkdirSync(path.join(root, ".aof"), { recursive: true });
         mkdirSync(path.join(root, "wiki", "work"), { recursive: true });
-        writeFileSync(path.join(root, ".aof", "aof.config.json"), JSON.stringify({ name: "f", work: { dir: "./wiki/work" }, graph: { share: "git-refs" } }));
+        writeFileSync(path.join(root, ".aof", "aof.config.json"), JSON.stringify({ name: "f", work: { dir: "./wiki/work" }, memory: { backend: "graphify", graph: { share: "git-refs" } } }));
         writeFileSync(path.join(root, "wiki", "work", "a.md"), "# a\n");
         git("init", "-q", "-b", "main");
         git("add", "-A");

@@ -24,6 +24,17 @@ Configured services are factories:
 | `graphify-code-backend` / `createGraphifyCodeBackend` | The graphify driver and normalizer services, git and the nested-ignore writer. Returns the engine backend that serves `code` (ingest, relations, status) behind the port (179/ADR-002). |
 | `commands/*` | Configured graph/memory operations. The serve descriptor receives its MCP transport/probe and workspace loader. |
 
+`memory-config` / `readMemoryConfig(config)` is the memory node's one reader (180/ADR-001). It takes
+the root config and answers `{ corpora, corporaSource, graph, backends, paths, legacy }` in the new
+shape — `memory.corpora`, `memory.graph.share` / `memory.graph.remote` and
+`memory.backends.graphify.extractionBackend` — reading the old spellings (`memory.sources`,
+`memory.graphify`, a root `graph`, which `aof work update` rewrites) for one release and listing each in `legacy`. A setting spelled both
+ways is refused with `memory-config-conflict`. `rewriteLegacyMemoryConfig(config)` returns the
+rewritten config with its `moves` and `conflicts`, and `LEGACY_MEMORY_KEYS` is the one old-to-new
+table both use. `replaceMemoryNode(config, node)` swaps the node in and drops the root `graph` it
+supersedes, for the config editor's Memory save. It imports only the error contract and the corpus vocabulary. `memory.backend` is not
+read there: `selectBackendName` stays its one reader.
+
 Factories perform no I/O when constructed. Graphify-backed memory reaches the binary through the
 registered graph commands; only the Graphify driver starts that binary. Package dependencies are
 contracts, foundation and the work package's public identity/heading helpers. No knowledge module

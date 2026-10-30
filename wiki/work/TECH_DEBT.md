@@ -3469,3 +3469,16 @@ only bound on its size is a line ceiling (`test/loop/loop-command-wave.test.mjs`
 **The fix.** Split the doors (probe/stop/hand-off) from the launch body along the seams the
 wave and cycle extractions used; `packages/work-loop/src` is at its file budget, so the split
 needs a stated row raise. `packages/work-loop/src/commands/loop.mjs:91`
+
+---
+
+## 93. `readMemoryConfig` still reads the pre-180 spellings — a bounded legacy read that must be removed in 0.2.0
+
+**Status:** open (raised 2026-10-30 by developer, at `180/ADR-001`). **Severity:** low.
+**What's wrong.** `memory.sources`, `memory.graphify` and the root `graph` are still read, warned
+about and admitted by the schema, so every memory setting keeps two spellings for one release.
+**How it bites.** Two homes per setting: the conflict refusal, the legacy list, `LEGACY_MEMORY_KEYS`
+and three deprecated schema properties all exist only to carry them.
+**The fix.** In 0.2.0, the release after the one that ships 180, drop the legacy branches from
+`readMemoryConfig` and the deprecated `sources`, `graphify` and root `graph` from the schema, keeping
+`rewriteLegacyMemoryConfig` until `aof work update` stops finding moves. `packages/knowledge/src/memory-config.mjs:176`

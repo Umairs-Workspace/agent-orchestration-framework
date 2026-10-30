@@ -118,7 +118,9 @@ const HUMAN_GOLDENS = [
       + "layers: episodic 0 · semantic 1 · procedural 1\n"
       + "conformance: kind blank 0 non-enum 0 · area blank 0 non-enum 1 · stage blank 0 non-enum 0 · owner blank 0 · gap status non-enum 0\n"
       // 153/03 — observed effectiveness follows conformance; this fixture has no ledger and no recurrence.
-      + "effectiveness: lesson surfaced 0 honoured 0 departed 0 irrelevant 0 recurred 0\n",
+      + "effectiveness: lesson surfaced 0 honoured 0 departed 0 irrelevant 0 recurred 0\n"
+      // 180/ADR-005 — the corpora the memory node serves; this fixture spells no old key, so no legacy line.
+      + "corpora: work, imports, code\n",
   },
   { invocation: ["reindex"], stdout: "reindex: 2 record(s)\n" },
   { invocation: ["ingest"], stdout: "reindex: 2 record(s)\n" },
@@ -274,6 +276,16 @@ const JSON_GOLDENS = [
       + "        \"recurred\": 0\n"
       + "      }\n"
       + "    }\n"
+      + "  },\n"
+      // 180/ADR-005 — the memory node as it was read, the answer's last key; the fields above are untouched.
+      + "  \"config\": {\n"
+      + "    \"corpora\": [\n"
+      + "      \"work\",\n"
+      + "      \"imports\",\n"
+      + "      \"code\"\n"
+      + "    ],\n"
+      + "    \"corporaSource\": \"default\",\n"
+      + "    \"legacy\": []\n"
       + "  }\n"
       + "}\n",
     check: (doc) => { assert.equal(doc.backend, "local"); assert.equal(doc.recordCount, 2); },
@@ -476,7 +488,7 @@ const PRE_PORT_ANSWERS = [
    "--json"
   ],
   "status": 0,
-  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"present\": true,\n  \"lessons\": 1,\n  \"adrs\": 1,\n  \"summaries\": 0,\n  \"capabilities\": 0,\n  \"gaps\": 0,\n  \"findings\": 0,\n  \"feedback\": 0,\n  \"runs\": 0,\n  \"index\": {\n    \"version\": 4,\n    \"current\": 4,\n    \"stale\": false\n  },\n  \"origin\": {\n    \"unresolved\": 0\n  },\n  \"types\": {\n    \"adr\": {\n      \"count\": 1,\n      \"layer\": \"semantic\"\n    },\n    \"lesson\": {\n      \"count\": 1,\n      \"layer\": \"procedural\"\n    }\n  },\n  \"layers\": {\n    \"episodic\": 0,\n    \"semantic\": 1,\n    \"procedural\": 1\n  },\n  \"conformance\": {\n    \"kind\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"area\": {\n      \"blank\": 0,\n      \"nonEnum\": 1\n    },\n    \"stage\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"owner\": {\n      \"blank\": 0\n    },\n    \"gapStatus\": {\n      \"nonEnum\": 0\n    }\n  },\n  \"effectiveness\": {\n    \"basis\": \"observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake\",\n    \"complete\": true,\n    \"diagnostics\": [],\n    \"types\": {\n      \"lesson\": {\n        \"surfaced\": 0,\n        \"honoured\": 0,\n        \"departed\": 0,\n        \"irrelevant\": 0,\n        \"recurred\": 0\n      }\n    }\n  }\n}\n",
+  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"present\": true,\n  \"lessons\": 1,\n  \"adrs\": 1,\n  \"summaries\": 0,\n  \"capabilities\": 0,\n  \"gaps\": 0,\n  \"findings\": 0,\n  \"feedback\": 0,\n  \"runs\": 0,\n  \"index\": {\n    \"version\": 4,\n    \"current\": 4,\n    \"stale\": false\n  },\n  \"origin\": {\n    \"unresolved\": 0\n  },\n  \"types\": {\n    \"adr\": {\n      \"count\": 1,\n      \"layer\": \"semantic\"\n    },\n    \"lesson\": {\n      \"count\": 1,\n      \"layer\": \"procedural\"\n    }\n  },\n  \"layers\": {\n    \"episodic\": 0,\n    \"semantic\": 1,\n    \"procedural\": 1\n  },\n  \"conformance\": {\n    \"kind\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"area\": {\n      \"blank\": 0,\n      \"nonEnum\": 1\n    },\n    \"stage\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"owner\": {\n      \"blank\": 0\n    },\n    \"gapStatus\": {\n      \"nonEnum\": 0\n    }\n  },\n  \"effectiveness\": {\n    \"basis\": \"observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake\",\n    \"complete\": true,\n    \"diagnostics\": [],\n    \"types\": {\n      \"lesson\": {\n        \"surfaced\": 0,\n        \"honoured\": 0,\n        \"departed\": 0,\n        \"irrelevant\": 0,\n        \"recurred\": 0\n      }\n    }\n  },\n  \"config\": {\n    \"corpora\": [\n      \"work\",\n      \"imports\",\n      \"code\"\n    ],\n    \"corporaSource\": \"default\",\n    \"legacy\": []\n  }\n}\n",
   "stderr": ""
  },
  {
@@ -518,7 +530,7 @@ const PRE_PORT_ANSWERS = [
    "--json"
   ],
   "status": 0,
-  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"present\": true,\n  \"lessons\": 1,\n  \"adrs\": 1,\n  \"summaries\": 0,\n  \"capabilities\": 0,\n  \"gaps\": 0,\n  \"findings\": 0,\n  \"feedback\": 0,\n  \"runs\": 0,\n  \"index\": {\n    \"version\": 4,\n    \"current\": 4,\n    \"stale\": false\n  },\n  \"origin\": {\n    \"unresolved\": 0\n  },\n  \"types\": {\n    \"adr\": {\n      \"count\": 1,\n      \"layer\": \"semantic\"\n    },\n    \"lesson\": {\n      \"count\": 1,\n      \"layer\": \"procedural\"\n    }\n  },\n  \"layers\": {\n    \"episodic\": 0,\n    \"semantic\": 1,\n    \"procedural\": 1\n  },\n  \"conformance\": {\n    \"kind\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"area\": {\n      \"blank\": 0,\n      \"nonEnum\": 1\n    },\n    \"stage\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"owner\": {\n      \"blank\": 0\n    },\n    \"gapStatus\": {\n      \"nonEnum\": 0\n    }\n  },\n  \"effectiveness\": {\n    \"basis\": \"observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake\",\n    \"complete\": true,\n    \"diagnostics\": [],\n    \"types\": {\n      \"lesson\": {\n        \"surfaced\": 0,\n        \"honoured\": 0,\n        \"departed\": 0,\n        \"irrelevant\": 0,\n        \"recurred\": 0\n      }\n    }\n  }\n}\n",
+  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"present\": true,\n  \"lessons\": 1,\n  \"adrs\": 1,\n  \"summaries\": 0,\n  \"capabilities\": 0,\n  \"gaps\": 0,\n  \"findings\": 0,\n  \"feedback\": 0,\n  \"runs\": 0,\n  \"index\": {\n    \"version\": 4,\n    \"current\": 4,\n    \"stale\": false\n  },\n  \"origin\": {\n    \"unresolved\": 0\n  },\n  \"types\": {\n    \"adr\": {\n      \"count\": 1,\n      \"layer\": \"semantic\"\n    },\n    \"lesson\": {\n      \"count\": 1,\n      \"layer\": \"procedural\"\n    }\n  },\n  \"layers\": {\n    \"episodic\": 0,\n    \"semantic\": 1,\n    \"procedural\": 1\n  },\n  \"conformance\": {\n    \"kind\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"area\": {\n      \"blank\": 0,\n      \"nonEnum\": 1\n    },\n    \"stage\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"owner\": {\n      \"blank\": 0\n    },\n    \"gapStatus\": {\n      \"nonEnum\": 0\n    }\n  },\n  \"effectiveness\": {\n    \"basis\": \"observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake\",\n    \"complete\": true,\n    \"diagnostics\": [],\n    \"types\": {\n      \"lesson\": {\n        \"surfaced\": 0,\n        \"honoured\": 0,\n        \"departed\": 0,\n        \"irrelevant\": 0,\n        \"recurred\": 0\n      }\n    }\n  },\n  \"config\": {\n    \"corpora\": [\n      \"work\",\n      \"imports\",\n      \"code\"\n    ],\n    \"corporaSource\": \"default\",\n    \"legacy\": []\n  }\n}\n",
   "stderr": ""
  }
 ];
@@ -801,6 +813,8 @@ export const workMemoryCommandTests = [
             diagnostics: [],
             types: { lesson: { surfaced: 0, honoured: 0, departed: 0, irrelevant: 0, recurred: 0 } },
           },
+          // 180/ADR-005 — the memory node as it was read: the default corpora, nothing legacy.
+          config: { corpora: ["work", "imports", "code"], corporaSource: "default", legacy: [] },
         }, "the none backend's honest status");
         assert.equal(probe.stdout, `${JSON.stringify(doc, null, 2)}\n`, "and nothing else on stdout");
       } finally {
@@ -1172,6 +1186,7 @@ export const workMemoryCommandTests = [
   },
   // ── 179/03 task 01 — both doors answer the bytes they answered before the port ────────────
   // PRE_PORT_ANSWERS was captured over the 178/01 fixture (makeRoot39) on the tree before 179/03,
+  // and its two `status --json` rows gained the `config` object 180/ADR-005 adds, as their last key,
   // each row on a fresh ingested fixture with its own AOF_GLOBAL_HOME. The one normalisation is the
   // index path this file already tokenises as <STORE>, taken through the root's realpath because
   // that is the path the CLI reports.

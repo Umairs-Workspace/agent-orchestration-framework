@@ -255,7 +255,10 @@ export function assembleWorkInit({ workspaceServices, workMemoryServices }) {
   // A config that does not exist yet is CREATED carrying the schema's required root
   // keys (`name`/`resources`, plus `$schema`), so the document this verb writes is a
   // valid aof config on its own.
-  const DEFAULT_MEMORY_BACKEND = "graphify";
+  // 180/02 Q1 (operator, 2026-10-30) — a NEW project selects `local`, which sends nothing to a hosted
+  // model; graphify's work-stream extraction sends the stream on every ingest (180/ADR-005). The
+  // default fills only a hole, so an existing selection is never changed.
+  const DEFAULT_MEMORY_BACKEND = "local";
 
   // The three groups of the closed project vocabulary, in the order work.mjs unions
   // them (`tagConfig.layers ∪ refinements ∪ domains`) and the schema declares them.

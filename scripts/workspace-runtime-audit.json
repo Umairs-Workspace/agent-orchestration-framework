@@ -948,8 +948,8 @@
     "kind": "child-process",
     "expression": "spawnSync(locator, [binary], { encoding: \"utf8\" })",
     "digest": "dc5db708145856b8186e5cca621b17108ba30b7c9b88167999c0d2962c14ec42",
-    "sourceDigest": "56f3d0e05d09c79e985ed899f806b991050cb52e1e4ed203fdb64e5b68064d5a",
-    "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed. 154/01 adds runtime execution inspection; the platform binary locator call and its argv are unchanged."
+    "sourceDigest": "446019038c123e490d5adbe78d526f4303c2a713d37ee0087c258b33d930f588",
+    "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed. 154/01 adds runtime execution inspection; the platform binary locator call and its argv are unchanged. 180/01 adds the memory node's legacy warnings and doctor check; the locator call and its argv are unchanged."
   },
   {
     "file": "packages/mesh/src/worker-execution.mjs",

@@ -1,6 +1,6 @@
 import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
-import { commandError } from "@aof/contracts/error";
+import { OPTIONAL_CORPUS, readMemoryConfig } from "../memory-config.mjs";
 
 // 159/ADR-001..003 — THE OPERATOR AUTO-MEMORY LEAF. An opt-in source of `lesson` records read
 // from the selected project's Claude Code auto-memory folder (`<claude projects>/<slug>/memory/*.md`).
@@ -20,7 +20,6 @@ export const AUTO_MEMORY_OWNER = "operator";
 // ADR-002: the operator-approved fixed mapping — both admitted types are `near-miss`.
 const AUTO_MEMORY_KIND = "near-miss";
 export const AUTO_MEMORY_TYPES = Object.freeze(["feedback", "project"]);
-export const SOURCES_CONFIG_PATH = ["memory", "sources"].join(".");
 
 const INDEX_FILE = "MEMORY.md";
 // Bounds: an entry larger than this is diagnosed and skipped, and a build reports at most this many
@@ -30,22 +29,12 @@ const MAX_DIAGNOSTICS = 20;
 
 // ------------------------------------------------------------ configuration ----
 
-// memory.sources → the validated list of enabled sources. Absent is [] (today's behaviour); anything
-// else that is not a duplicate-free array of admitted names is a configuration error.
+// The operator corpus as the legacy source list: `["claude-auto-memory"]` when `operator` is served,
+// `[]` otherwise. The memory node is read by `memory-config.mjs` in either spelling — `memory.corpora`
+// or the legacy `memory.sources` — which refuses an invalid list with the codes it has always had
+// (`invalid-memory-sources`, `invalid-memory-corpora`) at the path the author wrote (180/ADR-002).
 export function resolveMemorySources(memory = {}) {
-  const declared = memory?.sources;
-  if (declared === undefined) return [];
-  const refuse = (message, at = SOURCES_CONFIG_PATH) => {
-    const error = commandError(message, "invalid-memory-sources", 400);
-    error.path = at;
-    throw error;
-  };
-  if (!Array.isArray(declared)) refuse(`memory.sources must be an array of source names. Supported: ${AUTO_MEMORY_SOURCES.join(", ")}.`);
-  declared.forEach((entry, index) => {
-    if (typeof entry !== "string" || !AUTO_MEMORY_SOURCES.includes(entry)) refuse(`Unsupported memory source ${JSON.stringify(entry)}. Supported: ${AUTO_MEMORY_SOURCES.join(", ")}.`, `${SOURCES_CONFIG_PATH}.${index}`);
-  });
-  if (new Set(declared).size !== declared.length) refuse("memory.sources must not repeat a source.");
-  return [...declared];
+  return readMemoryConfig({ memory }).corpora.includes(OPTIONAL_CORPUS) ? [...AUTO_MEMORY_SOURCES] : [];
 }
 
 export function autoMemoryEnabled(memory) {

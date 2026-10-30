@@ -5,7 +5,7 @@ import { canonicalRecurrence } from "@aof/work/memory-vocabulary";
 import { ACCOUNTING_COUNTERS, accountMemory } from "@aof/work/memory-accounting";
 import { commandError } from "@aof/contracts/error";
 import { resolveGraphifyExtraction } from "./graphify-backends.mjs";
-import { resolveMemorySources } from "./memory/claude-auto-memory.mjs";
+import { legacyMessage, readMemoryConfig } from "./memory-config.mjs";
 import { createKnowledgeEngine } from "./engine.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
 // `createEngine` composes the knowledge-engine port (179/ADR-003); a harness injects a recording one.
@@ -141,7 +141,7 @@ function applyDefaultBackendSelection(config, defaultBackend) {
 // in-memory stub under any name (e.g. "local") WITHOUT the real module existing.
 async function resolveConfiguredBackend(config, registry = BACKEND_REGISTRY) {
   const name = selectBackendName(config);
-  resolveMemorySources(config?.memory); // 159/ADR-001 — an invalid source list is refused before any verb runs
+  readMemoryConfig(config); // 180/ADR-001 — an invalid or twice-spelled memory node is refused before any verb runs
   const loader = registry[name];
   if (!loader) {
     throw new Error(`Unknown memory backend "${name}". Registered: ${Object.keys(registry).join(", ")}.`);
@@ -365,6 +365,12 @@ function renderMemory(verb, result, { block = false, limit, help = false, render
     }
     if (result.conformance) lines.push(`conformance: ${conformanceText(result.conformance)}`);
     if (result.effectiveness) lines.push(...effectivenessLines(result.effectiveness));
+    // 180/ADR-005 — the corpora served, then one line per old key with its new home. Before the
+    // stale-index line, which stays last (178/01 E9).
+    if (result.config) {
+      lines.push(`corpora: ${result.config.corpora.join(", ")}`);
+      for (const entry of result.config.legacy) lines.push(`legacy: ${legacyMessage(entry)}`);
+    }
     // 148/ADR-003 — a store built before the current index version is named, with the verb that
     // rebuilds it, rather than reported as if its numbers were current.
     const index = result.index;
@@ -572,7 +578,16 @@ async function runMemoryVerb(input, { config, resolveBackend = resolveConfigured
     }
   }
   const backend = await resolveBackend(config);
-  return executeMemoryVerb(input, { backend, ctx: { ...ctx, configMemory: config?.memory ?? ctx.configMemory ?? {} } });
+  const result = await executeMemoryVerb(input, { backend, ctx: { ...ctx, configMemory: config?.memory ?? ctx.configMemory ?? {} } });
+  // 180/ADR-005 — status names the memory node as it was read: the corpora served and every old
+  // key still spelled. Added here, after the port answers, so no backend learns of the config.
+  if (input.verb === "status" && result) result.config = statusConfig(config);
+  return result;
+}
+
+function statusConfig(config) {
+  const { corpora, corporaSource, legacy } = readMemoryConfig(config);
+  return { corpora, corporaSource, legacy };
 }
 
 // THE IN-PROCESS ENTRY over ARGV — a thin composition of the same path the routed door
@@ -636,8 +651,9 @@ export const MEMORY_BACKEND_CONFIG_PATH = ["memory", "backend"].join(".");
 export function inspectMemoryConfiguration(config) {
   const declared = declaredBackendName(config);
   const backend = selectBackendName(config);
-  resolveGraphifyExtraction(config?.memory); // validate an authored nested setting even when inactive
-  resolveMemorySources(config?.memory); // 159/ADR-001 — likewise memory.sources
+  // 180/ADR-001 — the whole node is read, so every block is validated whether or not its engine is
+  // active (154/09), and a setting spelled twice is refused.
+  const node = readMemoryConfig(config);
   if (!['none', 'local', 'graphify'].includes(backend)) {
     const error = commandError(`Unknown memory backend "${backend}". Registered: none, local, graphify.`, 'invalid-memory-backend', 400);
     error.path = MEMORY_BACKEND_CONFIG_PATH;
@@ -645,5 +661,8 @@ export function inspectMemoryConfiguration(config) {
   }
   const extraction = backend === 'graphify' ? resolveGraphifyExtraction(config?.memory) : null;
   return { backend, source: declared === null ? 'default' : 'project setting', path: MEMORY_BACKEND_CONFIG_PATH,
-    dependencies: extraction?.dependencies ?? [], extraction };
+    dependencies: extraction?.dependencies ?? [], extraction,
+    corpora: node.corpora, corporaSource: node.corporaSource,
+    paths: { backend: MEMORY_BACKEND_CONFIG_PATH, corpora: node.paths.corpora, graph: node.paths.graph, extraction: node.paths.extraction },
+    legacy: node.legacy };
 }

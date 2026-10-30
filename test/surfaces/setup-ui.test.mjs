@@ -1,6 +1,6 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { withMountedApp, findAll, textOf } from "../../apps/ui/test/support/react-app-harness.mjs";
@@ -54,7 +54,9 @@ export const setupUiTests = [
   {
     name: "setup UI keeps static paths inside ui root",
     run: keepsStaticPathsInsideUiRoot
-  }
+  },
+  // 180/03 — the config editor's Memory section (see `memorySectionTests`).
+  ...memorySectionTests(),
 ];
 
 const runtimeEntry = path.resolve("apps/ui/src/config/RuntimeSettings.tsx");
@@ -637,4 +639,120 @@ async function fetchJson(url, options) {
     throw new Error(JSON.stringify(payload));
   }
   return payload;
+}
+
+// ------------------------------------------------ 180/03: the Memory section ----
+//
+// THE FIXTURE is the feature's: a temp project under an isolated AOF_GLOBAL_HOME whose config is the
+// scenario's, served by the setup UI and mounted in the REAL config App, project scope selected.
+// The App's own markup, state and fetches are real. Two leaf families are stubbed, as the board's
+// harness stubs them: `lucide-react` (the icons the config sources import, by name) and the six
+// `@/components/ui/*` primitives, which need a `forwardRef` the mini React does not have. Each
+// primitive becomes the plain host element of the same name and props, so the section's own
+// regions, text and handlers are what the tree shows. Declared as a function so the array above
+// can spread it before this module's later bindings are initialised.
+function memorySectionTests() {
+  const configEntry = path.resolve("apps/ui/src/config/App.tsx");
+  const UI_PRIMITIVES = { badge: { Badge: "span" }, button: { Button: "button" }, card: { Card: "div", CardContent: "div", CardDescription: "p", CardHeader: "div", CardTitle: "h3" }, input: { Input: "input" }, label: { Label: "label" }, textarea: { Textarea: "textarea" } };
+  const t = (task, name, run) => ({ name: `180/03 task ${task}: ${name}`, run });
+
+  async function appStubs() {
+    const icons = new Set();
+    const dir = path.dirname(configEntry);
+    for (const file of await readdir(dir)) {
+      if (!/\.tsx?$/.test(file)) continue;
+      for (const match of (await readFile(path.join(dir, file), "utf8")).matchAll(/import \{([^}]*)\} from "lucide-react"/g)) {
+        for (const name of match[1].split(",").map((part) => part.trim()).filter(Boolean)) icons.add(name);
+      }
+    }
+    const stubs = { __icons__: [...icons].map((name) => `export const ${name} = () => null;`).join("\n") };
+    const resolve = [{ filter: /^lucide-react$/, to: "__icons__" }];
+    for (const [module, exports] of Object.entries(UI_PRIMITIVES)) {
+      stubs[`__ui_${module}__`] = `import { jsx } from "react/jsx-runtime";\n${Object.entries(exports).map(([name, tag]) => `export const ${name} = (props) => jsx(${JSON.stringify(tag)}, props);`).join("\n")}`;
+      resolve.push({ filter: new RegExp(`^@/components/ui/${module}$`), to: `__ui_${module}__` });
+    }
+    return { stubs, resolve };
+  }
+
+  async function withMemoryApp(config, run) {
+    const root = await mkdtemp(path.join(os.tmpdir(), "aof-180-03-"));
+    const configPath = path.join(root, ".aof", "aof.config.json");
+    await mkdir(path.dirname(configPath));
+    await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+    const { server, url } = await serveSetupUi({ listItems: () => [], upsertItem: () => {} }, { port: 0, projectDir: root, env: { ...process.env, AOF_GLOBAL_HOME: path.join(root, "global") } });
+    try {
+      await withMountedApp({ entry: configEntry, exportName: "App", url, ...(await appStubs()) }, (app) => run({ app, configPath }));
+    } finally {
+      server.close();
+      assert.ok(path.resolve(root).startsWith(path.resolve(os.tmpdir()) + path.sep));
+      await rm(root, { recursive: true, force: true });
+    }
+  }
+
+  const buttons = (app) => findAll(app.tree(), (node) => node.type === "button");
+  const sidebarEntry = (app, label) => buttons(app).find((node) => textOf(node).startsWith(label) && /^\D+\d+$/.test(textOf(node)));
+  const openMemory = async (app) => { sidebarEntry(app, "Memory").props.onClick(); await app.flush(); };
+  const textarea = (app) => findAll(app.tree(), (node) => node.type === "textarea")[0];
+  const shown = (app) => JSON.parse(textarea(app).props.value);
+  const notice = (app) => findAll(app.tree(), (node) => node.props?.["aria-label"] === "Legacy memory keys")[0];
+  const save = async (app) => { findAll(app.tree(), (node) => node.type === "form" && textOf(node).includes("JSON object"))[0].props.onSubmit({ preventDefault() {} }); await app.flush(); };
+  const expandedGroup = (app) => {
+    const labels = ["MCP Servers", "Hooks", "Project Docs", "Settings", "Memory"];
+    return buttons(app).map((node) => textOf(node).replace(/\d+$/, "")).filter((label) => labels.includes(label));
+  };
+
+  return [
+    t("00", "E1 · a new-shape node is shown as written", () => withMemoryApp({ name: "p", resources: [], memory: { backend: "local" } }, async ({ app }) => {
+      await openMemory(app);
+      assert.deepEqual(shown(app), { backend: "local" });
+      assert.equal(textOf(sidebarEntry(app, "Memory")), "Memory1");
+      assert.equal(notice(app), undefined);
+    })),
+    t("00", "E2 · an old-shape node is shown rewritten, with a notice naming each old key", () => withMemoryApp({ name: "p", resources: [], graph: { share: "git-refs" }, memory: { backend: "local", sources: ["claude-auto-memory"] } }, async ({ app }) => {
+      await openMemory(app);
+      assert.deepEqual(shown(app), { backend: "local", corpora: ["work", "imports", "code", "operator"], graph: { share: "git-refs" } });
+      const lines = findAll(notice(app), (node) => node.type === "p").map(textOf);
+      assert.deepEqual(lines, ["memory.sources → memory.corpora", "graph.share → memory.graph.share", "Saving writes the new shape."]);
+    })),
+    t("00", "E3 · a config without a memory node shows an empty object", () => withMemoryApp({ name: "p", resources: [] }, async ({ app }) => {
+      await openMemory(app);
+      assert.deepEqual(shown(app), {});
+      assert.equal(textOf(sidebarEntry(app, "Memory")), "Memory0");
+    })),
+    t("00", "E7 · a conflicting node is shown as written, with the conflict in the validation panel", () => withMemoryApp({ name: "p", resources: [], graph: { share: "off" }, memory: { graph: { share: "off" } } }, async ({ app }) => {
+      await openMemory(app);
+      assert.deepEqual(shown(app), { graph: { share: "off" } });
+      const text = textOf(app.tree());
+      assert.match(text, /memory-config-conflict|spells it twice/);
+      assert.ok(text.includes('"graph" and "memory.graph"'), "the panel names both paths");
+      assert.equal(notice(app), undefined);
+    })),
+    t("00", "the section sits in the Expanded DSL group in project scope only", () => withMemoryApp({ name: "p", resources: [], memory: { backend: "local" } }, async ({ app }) => {
+      assert.deepEqual(expandedGroup(app), ["MCP Servers", "Hooks", "Project Docs", "Settings", "Memory"]);
+      buttons(app).find((node) => textOf(node) === "global").props.onClick();
+      await app.flush();
+      assert.equal(expandedGroup(app).includes("Memory"), false);
+    })),
+    t("01", "E4 · saving an old-shape config's shown node writes the new shape and drops the old keys", () => withMemoryApp({ name: "p", resources: [], graph: { share: "git-refs" }, memory: { backend: "local", sources: ["claude-auto-memory"] } }, async ({ app, configPath }) => {
+      await openMemory(app);
+      await save(app);
+      const saved = JSON.parse(await readFile(configPath, "utf8"));
+      assert.deepEqual(saved.memory, { backend: "local", corpora: ["work", "imports", "code", "operator"], graph: { share: "git-refs" } });
+      assert.equal("graph" in saved, false);
+      assert.match(textOf(app.tree()), /Saved Memory/);
+      await openMemory(app);
+      assert.equal(notice(app), undefined, "reopening the section shows no legacy notice");
+    })),
+    t("01", "E6 · an invalid node is refused and the draft is kept", () => withMemoryApp({ name: "p", resources: [], memory: { backend: "local" } }, async ({ app, configPath }) => {
+      const before = await readFile(configPath, "utf8");
+      await openMemory(app);
+      const draft = '{"corpora":["work","code"]}';
+      textarea(app).props.onChange({ target: { value: draft } });
+      await app.flush();
+      await save(app);
+      assert.match(textOf(app.tree()), /leaves out "imports"/);
+      assert.equal(textarea(app).props.value, draft);
+      assert.equal(await readFile(configPath, "utf8"), before);
+    })),
+  ];
 }

@@ -10,6 +10,10 @@ import { createMemory, inspectMemoryConfiguration } from '../src/memory.mjs';
 import { createGraphifyBackend } from '../src/memory/graphify-backend.mjs';
 import { GRAPHIFY_BACKENDS } from '../src/graphify-backends.mjs';
 import { MEMORY_RECORD_FIELDS } from '../src/memory/local-retrieval.mjs';
+import { readMemoryConfig, rewriteLegacyMemoryConfig } from '../src/memory-config.mjs';
+import { resolveMemorySources } from '../src/memory/claude-auto-memory.mjs';
+import { resolveGraphifyExtraction } from '../src/graphify-backends.mjs';
+import { readShareSettings } from '../src/graph-share.mjs';
 
 const seam = app.knowledge.work.memory;
 const selected = extractionBackend => ({ memory: { backend: 'graphify', graphify: { extractionBackend } } });
@@ -35,6 +39,13 @@ function graphBackend(events) {
   }).default;
 }
 const test = (name, run) => ({ name: `154/09 ${name}`, run });
+
+// 180/01 — the memory node read in one place (180/ADR-001..005). "read" is `readMemoryConfig` on the
+// scenario's config; each case is named after the scenario, and an outline row after its row.
+const node180 = (task, name, run) => ({ name: `180/01 task ${task}: ${name}`, run });
+const refusedAt = (config, code, at) => assert.throws(() => readMemoryConfig(config), (error) => {
+  assert.equal(error.code, code); assert.equal(error.path, at); return true;
+});
 
 export const memoryBackendConfigTests = [
   test('task00 E1 + task01 runtime changes: real local ingest/recall preserves shared id, vocabulary and links without an assistant or Graphify', async () => {
@@ -131,5 +142,100 @@ export const memoryBackendConfigTests = [
     assert.equal(extraction.extraction.source, 'project setting'); assert.deepEqual(extraction.dependencies, ['Graphify (graphify)', 'Ollama']);
     const local = inspectMemoryConfiguration({ memory: { backend: 'local' } });
     assert.equal(local.source, 'project setting'); assert.deepEqual(local.dependencies, []); assert.equal(local.extraction, null);
+  }),
+
+  // ------------------------------------------------- 180/01 task 00: one home ----
+  node180('00', 'E1 · the new spelling is read and nothing is legacy', () => {
+    const node = readMemoryConfig({ memory: { backend: 'local', graph: { share: 'git-refs' } } });
+    assert.deepEqual(node.graph, { share: 'git-refs', remote: 'origin' });
+    assert.deepEqual(node.legacy, []);
+  }),
+  node180('00', 'E2 · the old spelling is read and each old key names its replacement', () => {
+    const node = readMemoryConfig({ graph: { share: 'git-refs', remote: 'upstream' }, memory: { backend: 'local' } });
+    assert.deepEqual(node.graph, { share: 'git-refs', remote: 'upstream' });
+    assert.deepEqual(node.legacy, [{ path: 'graph.share', replacement: 'memory.graph.share' }, { path: 'graph.remote', replacement: 'memory.graph.remote' }]);
+  }),
+  ...[
+    [{ memory: { backend: 'local', sources: ['claude-auto-memory'] } }, (node) => assert.deepEqual(node.corpora, ['work', 'imports', 'code', 'operator']), 'memory.sources', 'memory.corpora'],
+    [{ memory: { backend: 'graphify', graphify: { extractionBackend: 'ollama' } } }, (node) => assert.equal(node.backends.graphify.extractionBackend, 'ollama'), 'memory.graphify.extractionBackend', 'memory.backends.graphify.extractionBackend'],
+    [{ graph: { share: 'off' } }, (node) => assert.equal(node.graph.share, 'off'), 'graph.share', 'memory.graph.share'],
+  ].map(([config, reads, old, replacement]) => node180('00', `every old key is read and reported with its new path — ${old}`, () => {
+    const node = readMemoryConfig(config);
+    reads(node);
+    assert.deepEqual(node.legacy, [{ path: old, replacement }]);
+  })),
+  node180('00', 'E3 · a setting spelled both ways is refused even when the values agree', () => {
+    assert.throws(() => readMemoryConfig({ graph: { share: 'off' }, memory: { graph: { share: 'off' } } }), (error) => {
+      assert.equal(error.code, 'memory-config-conflict');
+      assert.match(error.message, /"graph"/); assert.match(error.message, /"memory\.graph"/);
+      return true;
+    });
+  }),
+  ...[
+    [{ memory: { sources: ['claude-auto-memory'], corpora: ['work', 'imports', 'code', 'operator'] } }, 'memory.sources', 'memory.corpora'],
+    [{ memory: { graphify: { extractionBackend: 'ollama' }, backends: { graphify: { extractionBackend: 'ollama' } } } }, 'memory.graphify', 'memory.backends.graphify'],
+  ].map(([config, old, replacement]) => node180('00', `each pair of spellings is a conflict — ${old}`, () => {
+    assert.throws(() => readMemoryConfig(config), (error) => {
+      assert.equal(error.code, 'memory-config-conflict');
+      assert.ok(error.message.includes(`"${old}"`) && error.message.includes(`"${replacement}"`), error.message);
+      return true;
+    });
+  })),
+  ...[
+    [{ memory: { sources: ['claude-autosave'] } }, 'invalid-memory-sources', 'memory.sources.0'],
+    [{ memory: { corpora: ['work', 'imports', 'code', 'claude-autosave'] } }, 'invalid-memory-corpora', 'memory.corpora.3'],
+    [{ graph: { remote: '-x' } }, 'graph-share-unknown', 'graph.remote'],
+    [{ memory: { graph: { remote: '-x' } } }, 'graph-share-unknown', 'memory.graph.remote'],
+    [{ memory: { graphify: { extractionBackend: 'codex' } } }, 'invalid-memory-extraction-backend', 'memory.graphify.extractionBackend'],
+  ].map(([config, code, at]) => node180('00', `E4 · an invalid value is refused at the path the author wrote — ${at}`, () => refusedAt(config, code, at))),
+  node180('00', 'the three readers answer the same through either spelling', () => {
+    const legacy = { graph: { share: 'git-refs', remote: 'upstream' }, memory: { backend: 'graphify', sources: ['claude-auto-memory'], graphify: { extractionBackend: 'ollama' } } };
+    const twin = { memory: { backend: 'graphify', corpora: ['work', 'imports', 'code', 'operator'], graph: { share: 'git-refs', remote: 'upstream' }, backends: { graphify: { extractionBackend: 'ollama' } } } };
+    assert.deepEqual(resolveMemorySources(legacy.memory), ['claude-auto-memory']);
+    assert.deepEqual(resolveMemorySources(twin.memory), resolveMemorySources(legacy.memory));
+    const [old, now] = [legacy, twin].map((config) => resolveGraphifyExtraction(config.memory));
+    assert.equal(old.backend, 'ollama');
+    assert.deepEqual({ ...now, path: null }, { ...old, path: null }, 'identical apart from the path');
+    assert.deepEqual([old.path, now.path], ['memory.graphify.extractionBackend', 'memory.backends.graphify.extractionBackend']);
+    assert.deepEqual(readShareSettings(twin), readShareSettings(legacy));
+    assert.deepEqual(readShareSettings(legacy), { share: 'git-refs', remote: 'upstream' });
+  }),
+
+  // -------------------------------- 180/01 task 02: engine settings and sharing ----
+  node180('02', 'E10 · an inactive engine block is still validated', () => {
+    refusedAt({ memory: { backend: 'local', backends: { graphify: { extractionBackend: 'codex' } } } }, 'invalid-memory-extraction-backend', 'memory.backends.graphify.extractionBackend');
+  }),
+  ...[
+    [{ share: 'off' }, { share: 'off', remote: 'origin' }],
+    [{}, { share: 'off', remote: 'origin' }],
+    [{ share: 'always' }, ['graph-share-unknown', 'memory.graph.share']],
+    [{ remote: '' }, ['graph-share-unknown', 'memory.graph.remote']],
+  ].map(([graph, answer]) => node180('02', `memory.graph keeps graph's values and refusals — ${JSON.stringify(graph)}`, () => {
+    // "share absent" is the absent key's default, "off": every build stays local (174/ADR-001).
+    if (!Array.isArray(answer)) return assert.deepEqual(readShareSettings({ memory: { graph } }), answer);
+    assert.throws(() => readShareSettings({ memory: { graph } }), (error) => {
+      assert.equal(error.code, answer[0]); assert.equal(error.path, answer[1]); assert.ok(error.message.startsWith(answer[1]), error.message);
+      return true;
+    });
+  })),
+
+  // The rewrite stories 02 and 03 call (180/ADR-001, ADR-006): one table, never mutating its input.
+  node180('00', 'the rewrite beside the reader moves each old key to its new home and leaves a conflict as written', () => {
+    const legacy = { name: 'p', graph: { share: 'off' }, resources: [], memory: { backend: 'local', sources: ['claude-auto-memory'], graphify: { extractionBackend: 'ollama' } } };
+    const before = JSON.stringify(legacy);
+    const { config, moves, conflicts } = rewriteLegacyMemoryConfig(legacy);
+    assert.equal(JSON.stringify(legacy), before, 'the input is not mutated');
+    assert.deepEqual(moves.map((move) => move.from), ['memory.sources', 'memory.graphify', 'graph']);
+    assert.deepEqual(conflicts, []);
+    assert.deepEqual(Object.keys(config), ['name', 'resources', 'memory']);
+    assert.deepEqual(config.memory, { backend: 'local', corpora: ['work', 'imports', 'code', 'operator'], graph: { share: 'off' }, backends: { graphify: { extractionBackend: 'ollama' } } });
+    assert.deepEqual(readMemoryConfig(config).legacy, [], 'the rewritten config reads with nothing legacy');
+    assert.deepEqual(Object.keys(rewriteLegacyMemoryConfig({ name: 'p', graph: { share: 'off' }, resources: [] }).config), ['name', 'memory', 'resources'], 'a new memory node takes the root graph key\'s place');
+    const twice = rewriteLegacyMemoryConfig({ graph: { share: 'off' }, memory: { graph: { share: 'off' }, sources: [] } });
+    assert.deepEqual(twice.conflicts, [{ path: 'graph', replacement: 'memory.graph' }]);
+    assert.deepEqual(twice.config, { graph: { share: 'off' }, memory: { graph: { share: 'off' } } }, 'the conflict stays; the empty source list is dropped');
+    for (const kept of [{ graph: { share: 'off' }, memory: 'local' }, { memory: { graphify: {}, backends: 'x' } }, { memory: { sources: ['nope'] } }]) {
+      assert.deepEqual(rewriteLegacyMemoryConfig(kept), { config: kept, moves: [], conflicts: [] }, `nothing is overwritten: ${JSON.stringify(kept)}`);
+    }
   }),
 ];

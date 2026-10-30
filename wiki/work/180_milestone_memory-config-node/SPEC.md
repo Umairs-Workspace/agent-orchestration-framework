@@ -3,10 +3,10 @@ type: milestone
 number: 180
 slug: memory-config-node
 title: "One memory node in the config — backend, corpora, graph and per-backend settings live under memory, and the old shape is migrated by aof work update"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-30
 schema: 1
 aofVersion: 0.1.0
 origin: wiki/planning/PRD-memory-engine.md
@@ -76,7 +76,9 @@ test move unchanged.
 
 ## Stories
 
-To be broken down after promotion; no stories or task contracts are authored in this shatter.
+- [ ] `stories/01_story_the-memory-node-is-read-in-one-place/` — the schema's one memory node, and one module that reads it in either spelling; the faces print the new paths (wave 1)
+- [ ] `stories/02_story_aof-work-update-migrates-the-old-shape/` — `aof work update` rewrites the old shape by filling, never re-authoring; `aof work init` writes only the new shape (wave 2)
+- [ ] `stories/03_story_the-config-editor-edits-the-memory-node/` — the config editor's Memory section shows the new shape and saves only the new shape (wave 2)
 
 ## Dependencies
 

@@ -51,12 +51,12 @@ async function freshProjectRoot() {
 }
 
 // Run `aof work memory status --json` through the REAL registry with graphify selected.
-async function runStatusJson() {
+async function runStatusJson(memory = { backend: "graphify" }) {
   const projectRoot = await freshProjectRoot();
   const lines = [];
-  const ctx = { workDir: path.join(projectRoot, "wiki", "work"), projectRoot, configMemory: { backend: "graphify" } };
+  const ctx = { workDir: path.join(projectRoot, "wiki", "work"), projectRoot, configMemory: memory };
   const outcome = await runMemory(["status", "--json"], {
-    config: { memory: { backend: "graphify" } },
+    config: { memory },
     resolveBackend: (cfg) => resolveConfiguredBackend(cfg),
     ctx,
     log: (l) => lines.push(l),
@@ -145,6 +145,28 @@ export const graphifyPostureTests = [
       // extraction backend (claude-cli) + its egress (docs-media) — both pinned above.
       assert.equal(classifyEgress("claude-cli"), "docs-media", "the live row's aof-side contract: claude-cli's hop is docs-media");
       assert.equal(isNetworkBackend("claude-cli"), true, "the live row's aof-side contract: claude-cli crosses the network");
+    },
+  },
+
+  // 180/01 task 02 — the extractor is read from `memory.backends.graphify` and reported at its new
+  // path; an absent one is still the claude-cli legacy default (180/ADR-004).
+  {
+    name: "180/01 task 02: E9 · the graphify extractor is read from backends and reported at its new path",
+    run: async () => {
+      const { outcome, parsed } = await runStatusJson({ backend: "graphify", backends: { graphify: { extractionBackend: "ollama" } } });
+      assert.equal(outcome.exitCode, 0);
+      assert.equal(parsed.extractionBackend, "ollama");
+      assert.equal(parsed.extractionSource, "project setting");
+      assert.equal(parsed.extractionPath, "memory.backends.graphify.extractionBackend");
+    },
+  },
+  {
+    name: "180/01 task 02: an absent extractor still reports claude-cli as the legacy default",
+    run: async () => {
+      const { parsed } = await runStatusJson({ backend: "graphify" });
+      assert.equal(parsed.extractionBackend, "claude-cli");
+      assert.equal(parsed.extractionSource, "legacy default");
+      assert.equal(parsed.extractionEgress, "docs-media");
     },
   },
 ];

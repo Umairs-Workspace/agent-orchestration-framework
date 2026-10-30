@@ -1,0 +1,64 @@
+---
+doc: verification
+---
+# 180 · One memory node in the config — Verification
+
+## Fitness functions
+
+| id | enforced by | result | red probe |
+|---|---|---|---|
+| FF-18001 | `test/arch/memory/acd-memory-config-one-reader.test.mjs` | green, 2/2 (2026-10-30, `aof:verify 180`) | red, then restored: with `export const __probe = (config) => config.graph;` appended to `packages/knowledge/src/graph-share.mjs`, the one-reader case failed with `only packages/knowledge/src/memory-config.mjs reads corpora/sources/graphify/backends/graph off a memory object, or graph off the root config`, its diff naming `rel: 'packages/knowledge/src/graph-share.mjs'`. The selection case stayed green. The file was restored byte-identical (`cmp`). |
+| FF-18002 | `test/arch/memory/acd-memory-node-schema.test.mjs` | green, 1/1 (2026-10-30, `aof:verify 180`) | red, then restored: with an `egress` property (`{ type: "string", enum: ["none", "hosted"] }`) added at `$defs/memory.properties.backends.properties.graphify.properties`, the case failed with `an egress property is declared under $defs/memory`. The schema was restored byte-identical (`cmp`). |
+
+## Verification evidence
+
+- **The documentation describes one memory node** (`@manual`, 180/01 task 03) — verifies →
+  `stories/01_story_the-memory-node-is-read-in-one-place/tasks/03_the-faces-print-the-new-paths.feature`.
+  Procedure: grep `README.md`, `wiki/memory.md`, `wiki/codex-support.md` and
+  `packages/knowledge/README.md` for the four new keys and the three old spellings, and
+  `wiki/work/TECH_DEBT.md` for the legacy-read entry. Result: **pass**. Each of the four names
+  `memory.corpora`, `memory.graph.share`, `memory.graph.remote` and
+  `memory.backends.graphify.extractionBackend`. Every remaining mention of `memory.sources`,
+  `memory.graphify` or a root `graph` is the old spelling that `aof work update` rewrites
+  (`README.md:243`, `wiki/memory.md:375`, `wiki/codex-support.md:137`,
+  `packages/knowledge/README.md:30`). The `"graph":` line at `README.md:234` sits inside the
+  `memory` node's example. TECH_DEBT item 93 names the legacy read and its removal in 0.2.0.
+- **The /aof:init command says new projects get the local backend** (`@manual`, 180/02 task 01) —
+  verifies → `stories/02_story_aof-work-update-migrates-the-old-shape/tasks/01_init-writes-only-the-new-shape-and-selects-local.feature`.
+  Procedure: grep the asset `packages/core/assets/commands/init.md` and its renders
+  (`.claude/commands/aof/init.md`, `.opencode/commands/aof/init.md`,
+  `.agents/skills/aof-init/SKILL.md`, `packages/core/assets/variants/codex/workflow.md`). Result:
+  **pass**. Each says `memory.backend: "local"` is active by default, and that local sends nothing
+  to a hosted model. None describes graphify as active by default.
+- **End-to-end, the legacy read, the conflict and the migration** (01's and 02's PLAN
+  verification; agent-run in temp projects under an isolated `AOF_GLOBAL_HOME`) — verifies →
+  `stories/01_story_the-memory-node-is-read-in-one-place/tasks/00_each-setting-has-one-home.feature`,
+  `stories/02_story_aof-work-update-migrates-the-old-shape/tasks/00_update-moves-the-old-keys-into-the-node.feature`.
+  1. Config `{ "graph": { "share": "off" }, "memory": { "backend": "local", "sources": ["claude-auto-memory"] } }`:
+     `aof project doctor` printed one `memory-config-legacy` warning naming both moves
+     (`memory.sources → memory.corpora`, `graph.share → memory.graph.share`). `aof memory status`
+     printed `corpora: work, imports, code, operator` and the same two `legacy:` lines.
+  2. With `memory.graph` added beside the root `graph`, `aof memory status` exited 1 with
+     `Each memory setting has one home, but this config spells it twice: "graph" and "memory.graph".`
+  3. A config with a root `graph` (`git-refs` / `upstream`), `memory.sources`, `memory.graphify`
+     and a foreign `custom` key: `aof work update .` reported the three moves and wrote
+     `memory: { backend, corpora: [work, imports, code, operator], graph: { share: git-refs, remote: upstream }, backends: { graphify: { extractionBackend: claude-cli } } }`.
+     No root `graph` was left, `custom` survived unchanged, and doctor no longer reported
+     `memory-config-legacy`.
+  4. A fresh `aof work init` + `aof work init-config` wrote `{"memory":{"backend":"local"}}`, with
+     no legacy key.
+- **The section conforms to DESIGN Surface 1** (`@manual`, 180/03 task 00) — verifies →
+  `stories/03_story_the-config-editor-edits-the-memory-node/tasks/00_the-memory-section-shows-the-new-shape.feature`.
+  Verdict: **INCONCLUSIVE**. The renderability precondition failed before any render: there is no
+  base URL (no `--url`, and `.aof/aof.config.json` declares no `work.ui.baseUrl`), and DESIGN.md
+  declares no `Route` for Surface 1. The renderer resolved
+  (`~/Library/Caches/ms-playwright/chromium-1243`), but no render was attempted at any breakpoint,
+  and no designer or QA session was spawned. The baseline is DESIGN's binding checklist (D3a, no
+  mock). Its states are asserted structurally by 03's mounted-App `@executable` cases. That is not
+  a fidelity judgement (F-01).
+
+## Findings
+
+| id | observed | type | severity | triage | routed-to | status |
+|---|---|---|---|---|---|---|
+| F-01 | The config editor's Memory section (DESIGN Surface 1) cannot be rendered for a design judgement. `work.ui.baseUrl` is unset, and DESIGN.md declares no `Route` for the surface, so 03's `@manual` DESIGN scenario is INCONCLUSIVE rather than CONFORMS. The recall names the same cause at m135/F-135-03, on the board's task-card surface. This is a distinct incident of that cause on a different surface and a different server (the config editor, not the board), so it is not a duplicate. | gap | minor | non-blocker: the checklist's states are asserted by 03's mounted-App `@executable` cases. Fidelity stays unjudged until a render exists. | DESIGN.md (a `Route` for Surface 1) and an `aof:verify 180 --url <config editor>` re-run against a served `aof ui` | open |

@@ -37,6 +37,10 @@ import { createLockManifest, executeApplyActions, planApplyActions } from "../sr
 import { loadBundle } from "../src/work/bundle.mjs";
 import { synthesizeBundleConfig } from "../src/work/bundle-synthesis.mjs";
 import { updateWork, workLockPath } from "../src/work/update.mjs";
+import { stat, utimes, mkdir } from "node:fs/promises";
+import { assets } from "./support/assets-services.mjs";
+import { assembleCommandsInitUpdate } from "../src/application/bindings/commands/init-update.mjs";
+import { assembleWorkMemory } from "../src/application/bindings/work/memory.mjs";
 
 async function tempRepo(prefix = "aof-update-test-") {
   return mkdtemp(path.join(os.tmpdir(), prefix));
@@ -677,5 +681,128 @@ export const workUpdateTests = [
         await rm(repo, { recursive: true, force: true });
       }
     }
-  }
+  },
+
+  // ════════════════ milestone 180 / story 02 task 00 — the memory node migration ════════════════
+  ...memoryMigrationTests(),
 ];
+
+// 180/02 task 00 — `aof work update` moves every old memory key into the node (180/ADR-006). THE
+// FIXTURE is the feature's: a temp project initialised by the engine path init uses, whose config is
+// then replaced by the scenario's, written as 2-space JSON. "runs" is the `work:update` command —
+// its `run`, then its `--json` and text faces. Declared as a function so the array above can spread
+// it before the bindings below are initialised.
+function memoryMigrationTests() {
+  const E1 = { name: "p", resources: [], graph: { share: "git-refs", remote: "upstream" }, work: { dir: "./wiki/work" }, memory: { backend: "local", sources: ["claude-auto-memory"], graphify: { extractionBackend: "ollama" } } };
+  const refuse = (name) => async () => { throw new Error(`work:update must not load the ${name} memory backend`); };
+  const { workUpdateCommand } = assembleCommandsInitUpdate({
+    workInitServices: assets.work.init,
+    workMemoryServices: assembleWorkMemory({ provideMemoryLocalBackend: refuse("local"), provideMemoryGraphifyBackend: refuse("graphify") }),
+  });
+  const PAST = new Date("2026-01-01T00:00:00Z");
+  const t = (name, run) => ({ name: `180/02 task 00: ${name}`, run });
+  const configFile = (repo) => p(repo, ".aof", "aof.config.json");
+
+  async function withProject(config, run) {
+    const repo = await tempRepo("aof-180-02-");
+    try {
+      await installBase(repo, loadBundle());
+      if (config !== undefined) {
+        await mkdir(p(repo, ".aof"), { recursive: true });
+        await writeFile(configFile(repo), `${JSON.stringify(config, null, 2)}\n`);
+        await utimes(configFile(repo), PAST, PAST);
+      }
+      await run(repo);
+    } finally {
+      await rm(repo, { recursive: true, force: true });
+    }
+  }
+  async function update(repo, { dryRun = false } = {}) {
+    const result = await workUpdateCommand.run({ targetDir: repo, ...(dryRun ? { dryRun } : {}) });
+    return { result, json: workUpdateCommand.cli.json(result), text: workUpdateCommand.cli.render(result) };
+  }
+  const readConfigFile = async (repo) => JSON.parse(await readFile(configFile(repo), "utf8"));
+  const fileState = async (repo) => ({ bytes: await readFile(configFile(repo), "utf8"), mtime: (await stat(configFile(repo))).mtimeMs });
+  const memoryLines = (text) => text.split("\n").filter((line) => line.startsWith("memory:"));
+  const moves = (memoryConfig) => memoryConfig.moves.map(({ from, to }) => `${from} → ${to}`);
+
+  return [
+    t("E1 · every old key moves into the node, in the node's key order", () => withProject(E1, async (repo) => {
+      const { json, text } = await update(repo);
+      assert.equal(await readFile(configFile(repo), "utf8"), `${JSON.stringify({ name: "p", resources: [], work: { dir: "./wiki/work" }, memory: { backend: "local", corpora: ["work", "imports", "code", "operator"], graph: { share: "git-refs", remote: "upstream" }, backends: { graphify: { extractionBackend: "ollama" } } } }, null, 2)}\n`);
+      assert.deepEqual(moves(json.memoryConfig), ["memory.sources → memory.corpora", "memory.graphify → memory.backends.graphify", "graph → memory.graph"]);
+      assert.equal(json.memoryConfig.written, true);
+      assert.deepEqual(memoryLines(text), ["memory: memory.sources → memory.corpora", "memory: memory.graphify → memory.backends.graphify", "memory: graph → memory.graph"]);
+    })),
+    t("E2 · with no memory node, the node takes the place where graph stood", () => withProject({ name: "p", resources: [], graph: { share: "off" }, work: { dir: "./wiki/work" } }, async (repo) => {
+      await update(repo);
+      const config = await readConfigFile(repo);
+      assert.deepEqual(Object.keys(config), ["name", "resources", "memory", "work"]);
+      assert.deepEqual(config.memory, { graph: { share: "off" } });
+    })),
+    ...[
+      ["E3 ", { backend: "local", sources: [] }, { backend: "local" }],
+      ["", { backend: "local", sources: ["claude-auto-memory"] }, { backend: "local", corpora: ["work", "imports", "code", "operator"] }],
+      ["", { backend: "graphify", graphify: {} }, { backend: "graphify", backends: { graphify: {} } }],
+      ["", { graphify: { extractionBackend: "claude-cli" } }, { backends: { graphify: { extractionBackend: "claude-cli" } } }],
+    ].map(([example, before, after]) => t(`each old key moves on its own — ${example}${JSON.stringify(before)}`, () => withProject({ name: "p", resources: [], memory: before }, async (repo) => {
+      await update(repo);
+      assert.deepEqual((await readConfigFile(repo)).memory, after);
+    }))),
+    t("E4 · every other section serializes exactly as before", () => {
+      const config = { $schema: "https://aof.local/schemas/aof.schema.json", ...E1, work: { dir: "./wiki/work", agents: { mode: "solo" } }, mesh: { fabric: "direct", address: "127.0.0.1" }, settings: { theme: "dark", nested: { a: [1, 2] } } };
+      return withProject(config, async (repo) => {
+        await update(repo);
+        const after = await readConfigFile(repo);
+        for (const key of ["$schema", "name", "resources", "work", "mesh", "settings"]) assert.equal(JSON.stringify(after[key]), JSON.stringify(config[key]), key);
+        assert.equal(after.memory.backend, "local");
+      });
+    }),
+    t("E5 · a new-shape config is not written", () => withProject({ name: "p", resources: [], memory: { backend: "local", corpora: ["work", "imports", "code", "operator"], graph: { share: "off" } } }, async (repo) => {
+      const before = await fileState(repo);
+      const { json, text } = await update(repo);
+      assert.deepEqual(await fileState(repo), before, "bytes and modification time unchanged");
+      assert.deepEqual(json.memoryConfig, { moves: [], conflicts: [], written: false });
+      assert.deepEqual(memoryLines(text), []);
+    })),
+    t("E6 · a second run moves nothing", () => withProject(E1, async (repo) => {
+      await update(repo);
+      await utimes(configFile(repo), PAST, PAST);
+      const first = await fileState(repo);
+      const { json } = await update(repo);
+      assert.deepEqual(json.memoryConfig.moves, []);
+      assert.equal(json.memoryConfig.written, false);
+      assert.deepEqual(await fileState(repo), first);
+    })),
+    t("E7 · a dry run lists the moves and writes nothing", () => withProject(E1, async (repo) => {
+      const before = await fileState(repo);
+      const { json } = await update(repo, { dryRun: true });
+      assert.deepEqual(moves(json.memoryConfig), ["memory.sources → memory.corpora", "memory.graphify → memory.backends.graphify", "graph → memory.graph"]);
+      assert.equal(json.memoryConfig.written, false);
+      assert.deepEqual(await fileState(repo), before);
+      assert.equal(before.bytes, `${JSON.stringify(E1, null, 2)}\n`);
+    })),
+    t("a project without a config still updates, and no config is created", () => withProject(undefined, async (repo) => {
+      const { result, json } = await update(repo);
+      assert.equal(result.manifestWritten, true, "the update completes and rewrites the lock");
+      assert.equal("memoryConfig" in json, false);
+      assert.equal(existsSync(configFile(repo)), false);
+    })),
+    t("E8 · a conflicting pair stays as written while the other keys still move", () => withProject({ name: "p", resources: [], graph: { share: "off" }, memory: { graph: { share: "git-refs" }, sources: ["claude-auto-memory"] } }, async (repo) => {
+      const { json, text } = await update(repo);
+      const config = await readConfigFile(repo);
+      assert.deepEqual(config.graph, { share: "off" });
+      assert.deepEqual(config.memory.graph, { share: "git-refs" });
+      assert.deepEqual(config.memory.corpora, ["work", "imports", "code", "operator"]);
+      assert.equal("sources" in config.memory, false);
+      assert.deepEqual(json.memoryConfig.conflicts, [{ path: "graph", replacement: "memory.graph" }]);
+      assert.deepEqual(moves(json.memoryConfig), ["memory.sources → memory.corpora"]);
+      assert.ok(memoryLines(text).some((line) => line.includes("graph and memory.graph") && /choose one/.test(line)), text);
+    })),
+    t("after the migration, project doctor reports no old key", () => withProject(E1, async (repo) => {
+      await update(repo);
+      const report = await assets.configInspect.doctorConfig(repo);
+      assert.deepEqual(report.diagnostics.filter((item) => item.code === "memory-config-legacy"), []);
+    })),
+  ];
+}
