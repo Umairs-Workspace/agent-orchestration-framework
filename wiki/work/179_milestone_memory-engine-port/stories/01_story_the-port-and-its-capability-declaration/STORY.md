@@ -4,7 +4,7 @@ number: 01
 slug: the-port-and-its-capability-declaration
 title: "The knowledge-engine port answers four verbs and routes each by a backend's declared corpora"
 parent: 179
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-30
 updated: 2026-10-30

@@ -4,7 +4,7 @@ number: 03
 slug: the-record-corpora-sit-behind-the-port
 title: "The record corpora sit behind the port, and aof memory answers byte for byte as it does today"
 parent: 179
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-30
 updated: 2026-10-30

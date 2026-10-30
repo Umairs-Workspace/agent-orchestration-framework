@@ -4,7 +4,7 @@ number: 02
 slug: graphify-serves-the-code-corpus-behind-the-port
 title: "graphify serves the code corpus behind the port, and aof graph build and impact answer through it unchanged"
 parent: 179
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-30
 updated: 2026-10-30

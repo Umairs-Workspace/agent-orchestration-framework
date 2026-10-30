@@ -74,6 +74,27 @@ doc: verification
       package files;
     - the ratchets: FF-16004 at 745, and the budget.
 
+- Milestone gate, scoped lane (2026-10-30, at the build commit `3aae0b5c`, `AOF_GLOBAL_HOME` isolated,
+  through `scripts/test-shard.mjs`):
+  - the ten indexes the stories touched, `packages/knowledge/test`, `packages/work/test`,
+    `test/graph` and `test/arch/{memory,graph,testing,grade,planning,audit,command}`: 1641 cases,
+    0 failures;
+  - the five 179 suites outside those indexes (`work-memory-command`, `work-audit-seam-liveness`,
+    `work-memory-seam`, `work-test-select`, `story-contract-derive`): 160 cases, 1 failure. That one
+    is `work-memory/00`'s `--json` outline, the tmpdir-realpath red that 178/F-02 records at HEAD
+    and that 179/03 recorded red before and after its change;
+  - `yarn-installation` and the source budget: 23 cases, 3 failures, the three
+    `production packaging/workspaces/closure` realpath reds that m175's VERIFICATION records as red
+    at e2eba906, before 175. The budget is green.
+- Traceability: every `@executable` scenario in the four stories' nine features maps by name to a
+  passing case in those runs. The fitness-control scenarios map to their `arch/179/0N FF-1790N` cases
+  (registration, red probe, the code backend's no-recall case, and the registry backends composing
+  into a port). There is no `@manual` or `@uat` scenario.
+- Regression gate: not runnable on this MacBook. The live control daemon (pid 77647) holds `:4182`,
+  which `global-work-propagation` binds, and the deploy rules forbid the whole tree here while it
+  does (m175's override, same reason). Recorded as an override at the accept door; see
+  `REGRESSION.md`.
+
 ## Fitness functions
 
 | id | enforced by | result | red probe |
@@ -83,4 +104,19 @@ doc: verification
 | FF-17903 | `test/arch/graph/acd-graph-command-cli-bijection.test.mjs` (amended) | green, 7/7 (179/02, 2026-10-30) | red, then restored: with `import { computeImpact } from "../graph-impact.mjs";` prepended to `commands/graph-impact.mjs`, the outline case failed. `faceReadFailures` answered `packages/knowledge/src/commands/graph-impact.mjs imports the graph reader module ../graph-impact.mjs` and `packages/knowledge/src/commands/graph-impact.mjs imports computeImpact`. The file was restored byte-identical. |
 | FF-17904 | `test/arch/graph/acd-code-graph-one-reader.test.mjs` | green, 4/4 (179/04, 2026-10-30) | red, then restored: with `import { readGraph } from "@aof/knowledge/graph-normalize";` prepended to `packages/work/src/testing/select.mjs`, the scan failed with `packages/work/src/testing/select.mjs:1 imports readGraph from @aof/knowledge/graph-normalize — the code graph has one reader; ask the code corpus's relations through the port (179/ADR-004)`. The file was restored byte-identical. |
 
-## Findings
+## Accept decision
+
+**Accepted 2026-10-30** (product-owner, `aof:verify 179`).
+
+- Stories 01, 02, 03 and 04 are accepted, each with its `OUTCOME.md`. 02 and 04 also carry a
+  `RETROSPECTIVE.md`; 01 and 03 surfaced no lesson of their own.
+- FF-17901..17904 are green, each with its red probe, and each is registered in its arch index.
+- `aof work validate 179`: PASS. `aof work loops validate`: exit 0, warnings only.
+- `aof work doctor 179`: no `control-unresolved` at either severity, and the four FF register rows
+  no longer carry `pending`.
+- No finding was raised at verify, so no blocker is open. The review-time design questions are
+  carried as outcome gaps (01 and 02 `OUTCOME.md` `## Gaps`).
+- Regression gate: not run. This MacBook cannot host the whole tree while its live control daemon
+  holds `:4182`, the same condition as m175's override. Accepted through an environment
+  `--gate-override`, whose reason is recorded in `REGRESSION.md`. The scoped lane above is the
+  evidence. The gate goes green on a node that can host the whole-tree run.

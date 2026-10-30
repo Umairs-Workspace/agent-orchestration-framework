@@ -4,7 +4,7 @@ number: 04
 slug: every-code-graph-reader-asks-relations
 title: "Test selection, contract derivation and seam liveness ask relations instead of parsing the graph"
 parent: 179
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-30
 updated: 2026-10-30

@@ -3,7 +3,7 @@ type: milestone
 number: 179
 slug: memory-engine-port
 title: "One knowledge engine behind both memory faces — graphify moves behind the port unchanged, and a backend declares which corpora it serves"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-28
 updated: 2026-10-30
@@ -75,10 +75,10 @@ the only record source.
 
 Three waves. 01 first; 02 and 03 in parallel (no shared file); 04 after 02.
 
-- [ ] `stories/01_story_the-port-and-its-capability-declaration` — the port's four verbs, the corpus vocabulary, the declaration check and the `corpus-unserved` miss (ADR-001, FF-17901)
-- [ ] `stories/02_story_graphify-serves-the-code-corpus-behind-the-port` — `graph build` is `ingest("code")` and `graph impact` is `relations`, unchanged; the nested ignore written on every build discharges 149's gap (ADR-002, FF-17903)
-- [ ] `stories/03_story_the-record-corpora-sit-behind-the-port` — every record backend declares work, operator and imports; every `aof memory` verb dispatches through the port, byte for byte (ADR-003, FF-17902)
-- [ ] `stories/04_story_every-code-graph-reader-asks-relations` — test selection, contract derivation and seam liveness ask `relations`; the code graph has one reader (ADR-004, FF-17904)
+- [x] `stories/01_story_the-port-and-its-capability-declaration` — the port's four verbs, the corpus vocabulary, the declaration check and the `corpus-unserved` miss (ADR-001, FF-17901)
+- [x] `stories/02_story_graphify-serves-the-code-corpus-behind-the-port` — `graph build` is `ingest("code")` and `graph impact` is `relations`, unchanged; the nested ignore written on every build discharges 149's gap (ADR-002, FF-17903)
+- [x] `stories/03_story_the-record-corpora-sit-behind-the-port` — every record backend declares work, operator and imports; every `aof memory` verb dispatches through the port, byte for byte (ADR-003, FF-17902)
+- [x] `stories/04_story_every-code-graph-reader-asks-relations` — test selection, contract derivation and seam liveness ask `relations`; the code graph has one reader (ADR-004, FF-17904)
 
 ## Dependencies
 
