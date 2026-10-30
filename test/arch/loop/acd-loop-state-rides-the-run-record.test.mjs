@@ -302,7 +302,12 @@ function assertUiFrozen(pairs) {
   // and the record's later-input fields; the mount command's readiness gate and outbox (F-171-01) stay.
   // `terminal/TerminalControl.tsx` (+5 −10) loses the three later-input props and their effect. Nothing new
   // is read: no fleet or home file, run-record key, cycle, level or loop state.
-  assert.equal(hash.digest("hex"), "2cb0cef0558dc1e9b9c8af41d36dbd49e699a4e86864189375d5afa4a060f12b", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED at 180's verify (F-180-02, 180/DESIGN Surface 1), measured against e9aec287: TWO files.
+  // `config/App.tsx` (+18 −36) gains the Memory section's legacy notice, its payload fields and the
+  // message effect keyed on the section, and its section metadata moves out whole to the new
+  // `config/sections.tsx` (51 lines: the section list, label, JSON, count and hint helpers). Nothing new is
+  // read: no fleet or home file, run-record key, cycle, level or loop state.
+  assert.equal(hash.digest("hex"), "0e21910835c61242fc8c1ffd980cbfa32910fbca23baf697514f4c65a579bd4d", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [
