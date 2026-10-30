@@ -4,10 +4,10 @@ number: 04
 slug: the-mac-runbook-and-acceptance
 title: "The Mac runbook — set this laptop up as a single-node mesh, deploy, restart and verify at the source on macOS, and accept the milestone on it"
 parent: 175
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-28
-updated: 2026-10-29
+updated: 2026-10-30
 schema: 1
 aofVersion: 0.1.0
 depends: [00, 01, 02, 03]

@@ -3,10 +3,10 @@ type: milestone
 number: 175
 slug: aof-on-macos
 title: "aof on macOS — built, installed, supervised by the desktop app and started at login"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-30
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -73,11 +73,11 @@ Out of scope:
 
 ## Stories
 
-- [ ] [00 · Quit reaps the whole tree on macOS](stories/00_story_quit-reaps-the-whole-tree-on-macos/STORY.md) (ADR-001)
-- [ ] [01 · `install-local` builds the app on macOS](stories/01_story_install-local-builds-the-app-on-macos/STORY.md) (ADR-002; after 02)
-- [ ] [02 · The desktop verbs run the app on macOS](stories/02_story_the-desktop-verbs-run-the-app-on-macos/STORY.md) (ADR-002 §5, ADR-003, ADR-004 §1-§3)
-- [ ] [03 · The preflight checks the Mac](stories/03_story_the-preflight-checks-the-mac/STORY.md) (ADR-004 §4; after 02)
-- [ ] [04 · The Mac runbook and acceptance](stories/04_story_the-mac-runbook-and-acceptance/STORY.md) (ADR-005; after 00-03; the milestone's `@uat`)
+- [x] [00 · Quit reaps the whole tree on macOS](stories/00_story_quit-reaps-the-whole-tree-on-macos/STORY.md) (ADR-001)
+- [x] [01 · `install-local` builds the app on macOS](stories/01_story_install-local-builds-the-app-on-macos/STORY.md) (ADR-002; after 02)
+- [x] [02 · The desktop verbs run the app on macOS](stories/02_story_the-desktop-verbs-run-the-app-on-macos/STORY.md) (ADR-002 §5, ADR-003, ADR-004 §1-§3)
+- [x] [03 · The preflight checks the Mac](stories/03_story_the-preflight-checks-the-mac/STORY.md) (ADR-004 §4; after 02)
+- [x] [04 · The Mac runbook and acceptance](stories/04_story_the-mac-runbook-and-acceptance/STORY.md) (ADR-005; after 00-03; the milestone's `@uat`)
 
 Waves: 00 ∥ 02, then 01 ∥ 03, then 04.
 - 00 is Rust-only and shares nothing with the rest; the graph shows `supervisor.rs` reached only

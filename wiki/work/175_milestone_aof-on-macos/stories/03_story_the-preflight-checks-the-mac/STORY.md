@@ -4,10 +4,10 @@ number: 03
 slug: the-preflight-checks-the-mac
 title: "The preflight names the macOS prerequisites and probes `claude` in the daemons' own environment"
 parent: 175
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-28
-updated: 2026-10-29
+updated: 2026-10-30
 schema: 1
 aofVersion: 0.1.0
 depends: [02]

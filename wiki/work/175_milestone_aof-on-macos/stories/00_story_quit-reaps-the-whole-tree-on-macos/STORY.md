@@ -4,10 +4,10 @@ number: 00
 slug: quit-reaps-the-whole-tree-on-macos
 title: "Quitting the desktop app on macOS reaps its whole supervised tree, however the quit arrives, and the app lives in the menu bar"
 parent: 175
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-30
 schema: 1
 aofVersion: 0.1.0
 reads: [wiki/work/175_milestone_aof-on-macos/ARCHITECTURE.md#adr-001, wiki/work/175_milestone_aof-on-macos/DESIGN.md, wiki/work/175_milestone_aof-on-macos/RESEARCH.md, apps/desktop/crates/app/src/supervisor.rs, apps/desktop/crates/app/src/main.rs, apps/desktop/crates/app/src/cpu_sample.rs, apps/desktop/crates/core/src/supervision.rs, apps/desktop/crates/core/src/resolve.rs, apps/desktop/crates/core/src/tray_menu.rs, apps/desktop/crates/core/src/lib.rs, apps/desktop/Cargo.toml, packages/mesh/src/commands/serve.mjs, packages/mesh/src/commands/ui.mjs, test/arch/ui/acd-desktop-trusted-spawn.test.mjs, test/arch/ui/acd-desktop-guard-never-kills.test.mjs, test/arch/ui/acd-desktop-supervises-a-supplied-set.test.mjs]

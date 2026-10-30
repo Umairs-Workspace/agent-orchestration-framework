@@ -105,6 +105,45 @@ doc: verification
   LaunchAgent's PATH (…)`. The agent was then re-registered with the real PATH, which now reads ok.
   `verifies → stories/03_story_the-preflight-checks-the-mac/tasks/02_the-preflight-on-a-real-mac.feature`
 
+### The live control node after login (agent-run, 2026-10-30)
+
+- **The LaunchAgent parses and loads at login.** `plutil -lint` on the plist answers OK. After the
+  operator's 13:32 login, `launchctl print gui/501/com.aof.mesh.desktop` showed the job running,
+  started by launchd at 13:33:05.
+- **Nothing survived the logout.** Every `aof` process listed after the login started after it:
+  the app, `mesh ui` and `mesh serve --serve`, at 13:33, 13:38 and 15:43.
+- **`stop` then `run` is a restart.** It was run at 13:38 to deploy F-14. `mesh serve` printed a
+  new `daemon-started … build payload c81c3b89+dirty.20261030T133830` line, and `mesh ui`
+  printed its own. The same build came back again at 15:43, from a restart this session did not
+  make.
+- **A supervised run would authenticate.** `claude auth status`, run with the plist's PATH and
+  launchd's `HOME`, `USER` and `LOGNAME` only, answered `loggedIn: true` (`claude.ai`). Those are
+  the variables `ps eww` shows on the live `mesh serve`.
+- **The fleet is this one node.** `aof mesh status --json` answers `isControlNode: true` and
+  nodes `['node-6eb3']`, and `http://127.0.0.1:4181/?mode=fleet` answers 200. `degrade.log` holds
+  no line since the F-14 deploy.
+  `verifies → stories/02_story_the-desktop-verbs-run-the-app-on-macos/tasks/04_the-verbs-on-a-real-mac.feature, stories/04_story_the-mac-runbook-and-acceptance/tasks/01_a-mac-goes-from-clone-to-a-supervised-fleet.feature (E1, E2, E5)`
+
+### Not run on this laptop, and why
+
+- **The acceptance bar is the operator's (2026-10-30):** "As long as it works as the control
+  node here that is enough."
+- **The SSH scenarios are descoped by the operator.** They are 02/04 "from SSH, run brings the app
+  up inside the login session" and 04/01 E6. The operator: "Forget ssh." The requirement came from
+  the Mac mini's SSH-spawned daemons (`.claude/rules/build-deploy-restart.md`, the Mac worker
+  section), and this laptop is reached by nobody over SSH. The `run` refusal without a LaunchAgent
+  stays covered by `@executable` (02/01 E7). The runbook's SSH clause is not measured live.
+- **04/01 E5, "a supervised run started from the board reaches its first turn"**, has no run on
+  record. It is stood in for by the daemon-environment auth probe above, which is the failure the
+  scenario exists to catch, under the operator's bar.
+- **00/01 E7, a declaration's Stop at its tree-kill rung,** was not run live: no supervised work
+  loop is declared on this laptop. The reap's E7 case is green in `cargo test` (`reap::tests`).
+- **00/02, the icon in every state.** Healthy was confirmed in Light and Dark. Degraded was seen in
+  Light (the F-03 flashing). Dark-degraded and Light-stopped were not looked at. The menu's header
+  region was confirmed in E8, and its "1 online" text was not recorded separately.
+- **The Windows side:** 00/02 "Windows still shows the window on a left-click" and the app crate's
+  `--target-dir` equivalence (175/01 review). This laptop reaches no Windows node.
+
 ## User sign-off
 
 - **2026-10-29, the operator at this laptop**, after the F-03 to F-05 and F-08 fixes, on payload
@@ -159,4 +198,23 @@ doc: verification
 | F-12 | The window's node row with this laptop's hostname (`MacBookPro.communityfibre.co.uk`): the name overflowed its fixed 212 px column and ran under the `this node` chip, the `control` badge and the version (operator screenshot, reproduced by a fixture render). `.node-name` was `white-space:nowrap` with no overflow handling. The m36 mock assumed short ids. | design-gap | medium | The DESIGN rule came first: 175 DESIGN Surface M3 says a long name truncates with an ellipsis, shows in full on hover, and the chip, badge and version never move. Then the fix: `.node-title`/`.node-name`/`.node-sub` truncate, and the chip is `flex:none`. Rendered before and after at 800 px with headless Chromium 1243 over the window's own fixture with the long hostname: before overlaps; after reads `MacBookPro.commu…` beside a whole THIS NODE chip, with CONTROL and the version in their columns. | product-owner (verify) + designer rule / 175/00 | closed |
 | F-13 | After F-12 the window still looked wrong on the Mac (operator screenshot). The THIS NODE chip sat on the name's line, higher than the CONTROL badge centred on the row, and the two had different boxes. The 212 px name column truncated the hostname with half the row empty. The control bar's pill (≈22 px), toggle (25 px) and button (≈26 px) differed in height. The summary read `1 nodes`. The title bar drew Windows –/☐/✕ caption buttons on macOS. | design-gap | medium | The DESIGN rules came first: Surface M3 is amended (one centred badge group, a flexible name column, one 26 px control height) and Surface M4 is added (native traffic lights on a Mac). Then the fix, in `apps/desktop/ui` and a new `crates/app/tauri.macos.conf.json` (Overlay title bar, hidden title, traffic lights at 14,13). Rendered at 800 and 1280 px in light and dark with headless Chromium 1243 over the fixture with the long hostname: the badges share one centre line, the hostname shows whole, no control-bar label wraps. The traffic lights are a native window feature that a headless render cannot show, so the operator's look at the live window is the check. | product-owner (verify) + designer rule / 175/00 | closed |
 | F-14 | After the login check, `degrade.log` held `work-tree-watch-unavailable` (`ENOENT … watch '/wiki/work'`) at every `mesh serve` start since 2026-10-29 19:16, and `work-read-cache-unavailable` for workspace `8a5edab282632443` every 15 s (78 to 109 lines an hour). That id is `sha256('/')`: launchd's cwd. F-11 kept the SYNC pass off a folder with no aof config, but the launcher's tick set (`resolveAggregationWorkspaces`) still added the launch folder, so presence read its items through the cache every tick and the work-tree watch was armed on it. Not a regression of TECH_DEBT 4: the same cause, one layer on. | defect | low | non-blocker, fixed at verify, as F-11 was. The "has its own aof config" test now has one home, `hasOwnWorkspaceConfig` in `workspace-identity.mjs`. The publisher's decision asks it, and the launcher's tick set leaves the launch folder out when it fails (a launch workspace with no projectRoot to check is unaffected, as in the publisher). New case "175/F-14 · a launch folder with no aof config is not in the tick's set…" in `mesh-launcher-syncs-every-workspace`. Red probe: the old unconditional `addWorkspace(ws.workDir, …)` makes presence list `launch/wiki/work` three times. 40/40 green, and the presence, launcher, clone-pin, identity, sync-coverage and walker suites are green (87 cases; the 3 failures are the known `yarn-installation` `/var` realpath baseline). The bundle allow-list gains `node:fs` for `workspace-identity.mjs`. | product-owner (verify) / 175/02 | closed |
-| F-02 | A renamed `/bin/sleep` called `aof-mesh-desktop` (pid 87074), left by the refine session's `MAXCOMLEN` probe, is stuck in state `UE` and matches `pgrep -x aof-mesh-desktop`. 175/04 E4's "straight away `pgrep -x aof-mesh-desktop` prints nothing" cannot read clean on this laptop until a reboot. | test-gap | low | non-blocker. Environmental: readings exclude pid 87074. A process lesson for the retrospective: a probe named like the product must not outlive its session. | retrospective | open |
+| F-02 | A renamed `/bin/sleep` called `aof-mesh-desktop` (pid 87074), left by the refine session's `MAXCOMLEN` probe, is stuck in state `UE` and matches `pgrep -x aof-mesh-desktop`. 175/04 E4's "straight away `pgrep -x aof-mesh-desktop` prints nothing" cannot read clean on this laptop until a reboot. | test-gap | low | non-blocker. Environmental: readings exclude pid 87074. A process lesson for the retrospective: a probe named like the product must not outlive its session. | retrospective (175/R2) | closed |
+
+## Accept decision
+
+**Accepted 2026-10-30** (product-owner, `aof:verify 175`).
+
+- Stories 00 to 04 accepted, each with its `OUTCOME.md` and `RETROSPECTIVE.md`.
+- FF-17501..17503 are green, each with its red probe.
+- `aof work validate 175`: PASS. `aof work doctor 175`: no error and no `control-unresolved`.
+- No blocker is open. F-01, F-03, F-04, F-05, F-07, F-08, F-09 and F-10 were blockers, and all
+  are closed. F-06 is open, routed to the backlog.
+- The bar is the operator's: this laptop works as its own control node. The SSH scenarios are
+  descoped, and the items not run here are listed under `### Not run on this laptop, and why`.
+- Regression gate: not run here. Accepted through an environment `--gate-override`, with the
+  reason recorded in `REGRESSION.md`. The whole tree cannot run on this laptop, because the deploy
+  rules forbid it while the live control daemon holds `:4182`. The tree is also red here on the
+  `/var` realpath baseline (178's gate row at `30b763b4`). 175's own suites are green apart from
+  the three `yarn-installation` realpath cases, which fail identically at `e2eba906`, before 175.
+- Not done at triage: the memory recall was recorded for F-01 only. F-03 to F-14 were triaged
+  without a recorded recall observation.

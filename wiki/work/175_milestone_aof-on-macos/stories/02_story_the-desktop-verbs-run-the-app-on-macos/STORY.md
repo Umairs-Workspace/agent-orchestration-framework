@@ -4,10 +4,10 @@ number: 02
 slug: the-desktop-verbs-run-the-app-on-macos
 title: "The desktop verbs install, run and stop the app on macOS, and register its login autostart"
 parent: 175
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-30
 schema: 1
 aofVersion: 0.1.0
 reads: [wiki/work/175_milestone_aof-on-macos/ARCHITECTURE.md#adr-002, wiki/work/175_milestone_aof-on-macos/ARCHITECTURE.md#adr-003, wiki/work/175_milestone_aof-on-macos/ARCHITECTURE.md#adr-004, wiki/work/175_milestone_aof-on-macos/RESEARCH.md, packages/mesh/src/commands/desktop.mjs, packages/mesh/src/commands/face-shared.mjs, packages/mesh/src/commands/desktop-preflight.mjs, packages/core/src/application/bindings/commands/mesh/desktop.mjs, test/support/source-slice.mjs, test/mesh/desktop/index.mjs, test/mesh/desktop/mesh-desktop-dispatch.test.mjs, test/arch/mesh/acd-mesh-command-cli-bijection.test.mjs, test/arch/mesh/acd-autostart-is-one-injected-runner.test.mjs, apps/desktop/crates/app/tauri.conf.json]

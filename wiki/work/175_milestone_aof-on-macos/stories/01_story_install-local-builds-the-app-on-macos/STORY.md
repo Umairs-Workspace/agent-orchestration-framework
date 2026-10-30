@@ -4,10 +4,10 @@ number: 01
 slug: install-local-builds-the-app-on-macos
 title: "`install-local` builds the desktop app on macOS and places an ad-hoc-signed `.app` beside `aof`, and never edits a shell profile"
 parent: 175
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-10-30
 schema: 1
 aofVersion: 0.1.0
 depends: [02]
