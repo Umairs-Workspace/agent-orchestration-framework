@@ -140,10 +140,10 @@
     }
   },
   "memory": {
-    "backend": "graphify"
-  },
-  "graph": {
-    "share": "git-refs"
+    "backend": "graphify",
+    "graph": {
+      "share": "git-refs"
+    }
   },
   "resources": [],
   "packages": [],
