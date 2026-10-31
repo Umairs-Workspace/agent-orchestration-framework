@@ -42,6 +42,7 @@ export const MEMORY_RECORD_FIELDS = [
   "owner",
   "status",
   "tags",
+  "origin",
   "summary",
   "text",
   "source"
@@ -114,8 +115,11 @@ export function statusPartition(records = []) {
 // 148/ADR-003 — `tags` is an ARRAY of strings, present on every record and `[]` when there is
 // none. A store built before index version 2 carries no `tags`; its records are read as `[]`
 // rather than refused, because the index is derived and an ingest rebuilds it.
+// 178/ADR-002 — `origin` is read the same way: a store built before version 4 carries none, and its
+// records read as having no origin until an ingest rebuilds it.
 export function withTags(record) {
-  return Array.isArray(record?.tags) ? record : { ...record, tags: [] };
+  if (Array.isArray(record?.tags) && Array.isArray(record?.origin)) return record;
+  return { ...record, tags: Array.isArray(record?.tags) ? record.tags : [], origin: Array.isArray(record?.origin) ? record.origin : [] };
 }
 
 // 148/ADR-003 — each backend's `status` reports its store's index version against the version
@@ -124,6 +128,13 @@ export function withTags(record) {
 export function indexVersionReport(storedVersion, current, present) {
   const version = Number.isInteger(storedVersion) ? storedVersion : null;
   return { version, current, stale: Boolean(present) && version !== current };
+}
+
+// 178/ADR-002 — each backend's `status` reports how many declared origin values its last ingest
+// dropped, nested so status gains no top-level number. A store before version 4 reports 0.
+export function originStatus(store) {
+  const unresolved = store?.origin?.unresolved;
+  return { unresolved: Number.isInteger(unresolved) ? unresolved : 0 };
 }
 
 // The scope dimensions (ADR-006). `item` is a SUBTREE ref match (story 80 — `39`
@@ -390,6 +401,8 @@ export function renderRecallText(result) {
     const gist = (record.summary || record.text || "").replace(/\s+/g, " ").trim().slice(0, 180);
     if (gist) lines.push(`    ${gist}`);
     if (record.source) lines.push(`    ↳ ${record.source}`);
+    // 178/ADR-002 — the planning documents the record's item came from, one line after the source.
+    if (Array.isArray(record.origin) && record.origin.length > 0) lines.push(`    ↳ origin ${record.origin.join("; ")}`);
   }
   return lines.join("\n") + "\n";
 }

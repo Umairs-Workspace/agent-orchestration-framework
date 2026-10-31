@@ -17,7 +17,8 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //        @executable rows; the query/triage SUCCESS rows are @manual)
 import assert from "node:assert/strict";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
-import { statSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -846,4 +847,180 @@ export const graphCommandCoreTests = [
       }
     },
   },
+
+  // ── 179/02 — graph build and impact answer through the port, unchanged ─────────────────────
+  // task 00 (`00_graph-build-ingests-the-code-corpus.feature`): the live rows run the PINNED
+  // graphify from the operator's tool store, put on PATH under the isolated AOF_GLOBAL_HOME; where
+  // it is absent they skip and say so. task 01 (`01_graph-impact-asks-relations.feature`): the CLI
+  // rows over a hand-written graph.json. The port-level rows live in the knowledge suites.
+  {
+    name: "179/02 task 00: a code-only build through the face carries today's BuildResult fields",
+    run: () => withLiveBuild((repo, graphifyPath) => {
+      const result = runCliWith(repo, ["graph", "build", ".", "--json"], graphifyPath);
+      assert.equal(result.status, 0, result.stderr);
+      const built = JSON.parse(result.stdout);
+      for (const field of ["graphPath", "projectRoot", "nodeCount", "edgeCount", "hyperedgeCount", "builtAt", "backend", "egress", "unchanged", "stdout"]) assert.ok(field in built, `carries ${field}`);
+      assert.equal(built.egress, "none");
+      assert.equal(built.backend, null);
+      const graph = normalizeGraph(JSON.parse(readFileSync(path.join(repo, "graphify-out", "graph.json"), "utf8")));
+      assert.equal(built.nodeCount, graph.nodes.length);
+      assert.equal(built.edgeCount, graph.edges.length);
+    }),
+  },
+  {
+    name: "179/02 task 00: a build leaves graphify-out ignored in a repository that did not ignore it",
+    run: () => withLiveBuild((repo, graphifyPath) => {
+      assert.equal(runCliWith(repo, ["graph", "build", ".", "--json"], graphifyPath).status, 0);
+      assert.ok(existsSync(path.join(repo, "graphify-out", ".gitignore")));
+      const porcelain = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: repo, encoding: "utf8" });
+      assert.deepEqual(porcelain.split("\n").filter((line) => line.includes("graphify-out/")), [], porcelain);
+    }),
+  },
+  {
+    name: "179/02 task 00: a rebuild over an unchanged tree still answers unchanged, and the ignore file stays",
+    run: () => withLiveBuild((repo, graphifyPath) => {
+      assert.equal(runCliWith(repo, ["graph", "build", ".", "--json"], graphifyPath).status, 0);
+      const again = runCliWith(repo, ["graph", "build", ".", "--json"], graphifyPath);
+      assert.equal(again.status, 0, again.stderr);
+      assert.equal(JSON.parse(again.stdout).unchanged, true);
+      assert.ok(existsSync(path.join(repo, "graphify-out", ".gitignore")));
+    }),
+  },
+  {
+    name: "179/02 task 00: with the binary absent, the build is refused before any spawn, as today",
+    async run() {
+      const repo = gitRepo();
+      try {
+        const result = runCliWith(repo, ["graph", "build", ".", "--json"], null);
+        assert.equal(result.status, 1, result.stderr);
+        assert.equal(JSON.parse(result.stdout).code, "graphify-missing");
+        assert.ok(!existsSync(path.join(repo, "graphify-out")), "no graphify-out directory was created");
+        // No process: the port's own spawn seam is never reached without a binary.
+        const spawned = [];
+        const { createGraphifyCodeBackend } = await import("@aof/knowledge/graphify-code-backend");
+        const services = _aofApplication.knowledge.graphify;
+        const { graphifyCodeBackend: spied } = createGraphifyCodeBackend({ ...services, resolveGraphifyBinary: () => ({ found: false, hint: "absent" }), runGraphifyBuild: (...args) => spawned.push(args), git: () => null, ensureGraphifyOutGitignore: async () => true });
+        await assert.rejects(spied.ingest("code", { path: "." }, { projectRoot: repo }), { code: "graphify-missing" });
+        assert.deepEqual(spawned, [], "no process was spawned");
+      } finally {
+        rmSync(repo, { recursive: true, force: true });
+      }
+    },
+  },
+  ...[
+    { file: "src/a.mjs", present: true, dependents: ["src/c.mjs"], dependencies: ["src/b.mjs"] },
+    { file: "src/lonely.mjs", present: true, dependents: [], dependencies: [] },
+    { file: "src/missing.mjs", present: false, dependents: [], dependencies: [] },
+  ].map((row) => ({
+    name: `179/02 task 01 outline: impact answers each file's dependents and dependencies through the port — ${row.file}`,
+    run: () => withImpactFixture((root, graphPath) => {
+      const result = runCli(root, ["graph", "impact", row.file, "--json"]);
+      assert.equal(result.status, 0, result.stderr);
+      const answer = JSON.parse(result.stdout);
+      assert.deepEqual(answer.files, [{ file: row.file, present: row.present, dependencies: row.dependencies, dependents: row.dependents }]);
+      assert.equal(answer.builtAt, statSync(graphPath).mtime.toISOString(), "builtAt is the artifact's own modification instant");
+    }),
+  })),
+  {
+    name: "179/02 task 01: the human render still separates a coverage gap from real isolation",
+    run: () => withImpactFixture((root) => {
+      const result = runCli(root, ["graph", "impact", "src/lonely.mjs", "src/missing.mjs"]);
+      assert.equal(result.status, 0, result.stderr);
+      const lines = result.stdout.split("\n");
+      assert.match(lines.find((line) => line.startsWith("# src/lonely.mjs")), /in the graph, no cross-file edges/);
+      assert.match(lines.find((line) => line.startsWith("# src/missing.mjs")), /NOT COVERED BY THIS GRAPH/);
+      assert.match(result.stdout.trimEnd().split("\n").at(-1), /UNKNOWN, not zero: src\/missing\.mjs$/);
+    }),
+  },
+  {
+    name: "179/02 task 01: the impact answer over a fixed artifact matches the golden answer captured before the port",
+    run: () => withImpactFixture((root) => {
+      const result = runCli(root, ["graph", "impact", "src/a.mjs", "src/c.mjs", "src/missing.mjs", "--json"]);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.stdout, IMPACT_GOLDEN);
+    }),
+  },
+  {
+    name: "179/02 task 01: with no artifact, impact is refused with no-graph, ahead of the empty-paths check",
+    run: () => withImpactFixture((root, graphPath) => {
+      rmSync(graphPath);
+      const result = runCli(root, ["graph", "impact", "--json"]);
+      assert.equal(result.status, 1);
+      assert.equal(JSON.parse(result.stdout).code, "no-graph");
+    }),
+  },
 ];
+
+// ── 179/02 helpers ────────────────────────────────────────────────────────────────────────────
+
+// Captured from the pre-port `graph:impact` (HEAD 04cf7a79) over the fixture below with the
+// artifact's mtime pinned to 2024-03-04T05:06:07Z, and committed with the suite.
+const IMPACT_GOLDEN = "{\n  \"graphPath\": \"graphify-out/graph.json\",\n  \"builtAt\": \"2024-03-04T05:06:07.000Z\",\n  \"files\": [\n    {\n      \"file\": \"src/a.mjs\",\n      \"present\": true,\n      \"dependencies\": [\n        \"src/b.mjs\"\n      ],\n      \"dependents\": [\n        \"src/c.mjs\"\n      ]\n    },\n    {\n      \"file\": \"src/c.mjs\",\n      \"present\": true,\n      \"dependencies\": [\n        \"src/a.mjs\"\n      ],\n      \"dependents\": []\n    },\n    {\n      \"file\": \"src/missing.mjs\",\n      \"present\": false,\n      \"dependencies\": [],\n      \"dependents\": []\n    }\n  ]\n}\n";
+const IMPACT_GRAPH = {
+  directed: true, multigraph: false, graph: {},
+  nodes: ["a", "b", "c", "lonely"].map((id) => ({ id, label: `${id}.mjs`, file_type: "code", source_file: `src/${id}.mjs` })),
+  links: [{ source: "a", target: "b", relation: "imports" }, { source: "c", target: "a", relation: "calls" }],
+};
+
+async function withImpactFixture(fn) {
+  const root = mkdtempSync(path.join(os.tmpdir(), "aof-179-02-impact-"));
+  try {
+    mkdirSync(path.join(root, "src"), { recursive: true });
+    for (const name of ["a", "b", "c", "lonely", "missing"]) writeFileSync(path.join(root, "src", `${name}.mjs`), `// ${name}\n`);
+    const graphPath = path.join(root, "graphify-out", "graph.json");
+    mkdirSync(path.dirname(graphPath), { recursive: true });
+    writeFileSync(graphPath, JSON.stringify(IMPACT_GRAPH));
+    const pinned = new Date("2024-03-04T05:06:07.000Z");
+    utimesSync(graphPath, pinned, pinned);
+    return await fn(root, graphPath);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+// A temp git repository holding two .mjs files where one imports the other, and no .gitignore.
+function gitRepo() {
+  const repo = mkdtempSync(path.join(os.tmpdir(), "aof-179-02-build-"));
+  mkdirSync(path.join(repo, "src"));
+  writeFileSync(path.join(repo, "src", "a.mjs"), 'import { b } from "./b.mjs";\nexport const a = () => b();\n');
+  writeFileSync(path.join(repo, "src", "b.mjs"), "export const b = () => 1;\n");
+  const git = (...args) => execFileSync("git", args, { cwd: repo, stdio: "ignore" });
+  git("init", "-q");
+  git("add", "-A");
+  git("-c", "user.email=aof@test", "-c", "user.name=aof", "commit", "-q", "-m", "fixture");
+  return repo;
+}
+
+// The pinned graphify from the operator's own tool store, or null. The test's AOF_GLOBAL_HOME is
+// isolated, so the store resolver misses and the PATH leg finds this one.
+function pinnedGraphifyDir() {
+  const version = _aofApplication.knowledge.graphify.PINNED_GRAPHIFY_VERSION;
+  const dir = path.join(os.homedir(), ".aof", "tools", "graphify", version, "bin");
+  return existsSync(path.join(dir, process.platform === "win32" ? "graphify.exe" : "graphify")) ? dir : null;
+}
+
+async function withLiveBuild(fn) {
+  const graphifyPath = pinnedGraphifyDir();
+  if (!graphifyPath) {
+    console.log("# skip: the pinned graphify is not in ~/.aof/tools, so the live 179/02 build row did not run");
+    return;
+  }
+  const repo = gitRepo();
+  try {
+    await fn(repo, graphifyPath);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+}
+
+// The CLI with PATH holding only the given graphify directory and git's — or no graphify at all.
+function runCliWith(root, args, graphifyDir) {
+  const gitDir = path.dirname(execFileSync(process.platform === "win32" ? "where" : "which", ["git"], { encoding: "utf8" }).split(/\r?\n/)[0]);
+  const PATH = [graphifyDir, graphifyDir ? gitDir : null].filter(Boolean).join(path.delimiter);
+  const result = spawnCliSync(process.execPath, [cliPath, ...args], {
+    cwd: root,
+    encoding: "utf8",
+    env: { ...process.env, NODE_NO_WARNINGS: "1", PATH, Path: PATH },
+  });
+  return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
+}

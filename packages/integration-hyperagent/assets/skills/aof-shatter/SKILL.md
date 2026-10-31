@@ -94,7 +94,7 @@ place the AOF procedure assumes a local shell:
   - `aof work promote` → **never**. A number is minted by the operator's `aof work promote` and by
     nothing else; every driver you create is written **un-numbered in the backlog**, whatever
     `work.intake` says, and the pull request tells the operator to promote it.
-  - `aof work memory recall` → search the repository (code search scoped to `<work.dir>`) for the
+  - `aof memory recall` → search the repository (code search scoped to `<work.dir>`) for the
     keywords in `RETROSPECTIVE.md`, `ARCHITECTURE.md` and `TECH_DEBT.md`; acknowledge a lesson that
     bears on the framing in prose, citing its path. There is no recall ledger to write.
   - `aof graph build` / `aof graph impact` → read the source and its imports directly; say the

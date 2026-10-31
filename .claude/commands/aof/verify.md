@@ -131,9 +131,21 @@ that have content** — no empty "None" placeholders (absence of a section is in
    task scenario + fix (back to `aof:continue`); **non-blocker** → defer to backlog; **design-gap** →
    `aof-designer` sets the `DESIGN.md` rule first. Findings live in `VERIFICATION.md`, never in a task folder.
 
+   **Developer handback on a blocker decline.** After recording the finding and its new `@bug`
+   task, return a declined story that is `in-review` to development with
+   `aof work status <ref> in-progress --if-applicable` (the story ref); a story already
+   `in-progress` stays there, and the flag reads that as data, not a refusal.
+   Use the status verb, never edit frontmatter directly, and check that it succeeded before
+   reporting the handback complete.
+   Record the decline and routing in the accept decision. This status is the loop's durable
+   instruction to run `aof:continue` next, including after restart; a story genuinely awaiting
+   review stays `in-review`. Missing human sign-off alone is not developer rework.
+   A recorded decline with findings routed completes the verify procedure; it is not a phase
+   execution failure, even though the story has not been accepted.
+
    **Recall prior findings at triage.** Before a finding's triage is decided, refresh the index and
-   recall the stream's earlier findings: first `aof work memory ingest`, then
-   `aof work memory recall "<the finding's text>" --kind finding --block` — across the whole stream,
+   recall the stream's earlier findings: first `aof memory ingest`, then
+   `aof memory recall "<the finding's text>" --kind finding --block` — across the whole stream,
    with no item and no stage filter. The candidates support the triage and never decide it: compare
    each by cause and evidence, excluding the finding's own identity (its `item` and `id`). A
    candidate with the same cause and evidence is cited as the prior occurrence (`<item>/<id>`) and
@@ -148,7 +160,7 @@ that have content** — no empty "None" placeholders (absence of a section is in
    `scope` `{"kind":"finding"}` and `records` — one `{item, id, recordType, verdict}` per returned
    line, the finding's own identity included, each with an explicit verdict `honoured`, `departed`
    or `irrelevant`, never a default. Submit it ONCE on the item being verified:
-   `aof work memory record-recall <ref> --input <triage observation file>`. An empty block is still
+   `aof memory record-recall <ref> --input <triage observation file>`. An empty block is still
    submitted, as `"records": []` — no verdict and no extra retrieval is invented.
 
    **Who fills the `id` column, and when.** Reviewers report findings UNNUMBERED — an ordered list,
@@ -194,7 +206,7 @@ that have content** — no empty "None" placeholders (absence of a section is in
    reader of one story finds nothing of that story in the milestone above it. Measured before story
    85: 57 `RETROSPECTIVE.md` at driver level and **zero** under `stories/`. The conditional is
    unchanged — a story that surfaced nothing worth a lesson writes no doc, and says so. Then
-   **fold the just-written lessons into memory**: run `aof work memory ingest` so this milestone's
+   **fold the just-written lessons into memory**: run `aof memory ingest` so this milestone's
    `R<n>` entries + `ADR-NNN` blocks become recallable in the next milestone's `aof:refine`/`aof:continue`
    (a no-op when memory is off — safe to run always). Then **archive** the STATE `## Feedback (for retro)`
    section as part of the compaction — its lessons have graduated, exactly as durable decisions graduate
@@ -244,7 +256,7 @@ that have content** — no empty "None" placeholders (absence of a section is in
      condition that stops the gap being true. Leave NO residual `<…>` placeholder in any section.
 
    **A milestone's outcome is AUTHORED, never a concatenation of its stories'.** The aggregation
-   happens in the INDEX — `aof work memory ingest` unions every item's records into one recall surface
+   happens in the INDEX — `aof memory ingest` unions every item's records into one recall surface
    — so a milestone that restates its stories' capabilities writes one fact twice, and every recall
    then has to dedupe it. State what is true AT THE MILESTONE LEVEL that no single story's outcome
    states alone; where a story states a capability whole, CITE it as `m<NN/SS>/<id>` rather than

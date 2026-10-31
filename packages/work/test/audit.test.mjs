@@ -62,11 +62,12 @@ test('declared bounds use the supplied configuration resolver', () => {
 
 test('seam audit uses supplied graph reads and reports unavailable evidence without building it', () => scratch(async root => {
   const calls = [];
-  const api = createAuditSeamLiveness({ TEST_ROOTS: ['spec'], graphJsonPath: value => { calls.push(value); return 'supplied.graph'; }, readGraph: file => { calls.push(file); throw Object.assign(new Error('absent'), { code: 'ENOENT' }); }, normalizeGraph: () => { throw new Error('no graph to normalize'); }, graphArtifactBuiltAt: () => { throw new Error('no artifact to inspect'); } });
+  // 179/ADR-004: the supplied graph read is the code corpus's `relations`, asked once with every candidate.
+  const api = createAuditSeamLiveness({ TEST_ROOTS: ['spec'], relations: async (paths, ctx) => { calls.push([paths, ctx.projectRoot]); return { served: true, available: false, unavailable: 'no-graph', cause: 'ENOENT', artifact: 'supplied.graph', builtAt: null, files: [] }; } });
   assert.deepEqual(calls, []);
   await mkdir(path.join(root, 'src'));
   await writeFile(path.join(root, 'src', 'seam.mjs'), 'export function seam() {}\n');
   const report = await api.runSeamLiveness({ root });
-  assert.deepEqual(calls, [root, 'supplied.graph']);
+  assert.deepEqual(calls, [[['src/seam.mjs'], root]]);
   assert.ok(report.limits.some(limit => /no code graph was available/.test(limit.consequence)));
 }));

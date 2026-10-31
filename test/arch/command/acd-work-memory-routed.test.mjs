@@ -144,19 +144,23 @@ export const archTests = [
   },
 
   {
-    name: "arch/128/01 (acd-work-memory-routed): `aof --help` lists the verb where the registry puts it — the Work family carries a line beginning `aof work memory`, the static `Also:` tail no longer names it, and the tail still names `aof session`",
+    name: "arch/128/01 (acd-work-memory-routed): `aof --help` lists the verb where the registry puts it — the Work family carries the alias's line, Memory carries the canonical one (178/01), the static `Also:` tail names no memory door, and the tail still names `aof session`",
     run: async () => {
       const result = spawnCliSync(process.execPath, [cliPath, "--help"], { cwd: repoRoot, encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
       assert.equal(result.status, 0, `aof --help exits 0 (stderr: ${result.stderr})`);
       const sections = helpSections(result.stdout ?? "");
       const work = sections.get("Work (ACD work stream)");
       assert.ok(work && work.length > 0, `the help text has a Work section (sections: ${[...sections.keys()].join(" | ")})`);
-      const memoryLine = work.find((line) => line.startsWith("aof work memory"));
-      assert.ok(memoryLine, "the Work family carries a line beginning `aof work memory`");
-      assert.equal(memoryLine, getCommand("work:memory").cli.spec.usage, "…and it is the command's own cli.spec.usage, registry-derived");
+      // 178/01 (178/ADR-001): the alias shares the canonical usage, which spells `aof memory`, so
+      // the Work family's line is that usage, and `memory` has a section of its own as well.
+      const memoryLine = work.find((line) => line === getCommand("work:memory").cli.spec.usage);
+      assert.ok(memoryLine, "the Work family carries the alias's own cli.spec.usage, registry-derived");
+      assert.ok(memoryLine.startsWith("aof memory <verb>"), "…which is the canonical usage, spelling `aof memory`");
+      assert.ok(sections.get("Memory")?.includes(getCommand("memory").cli.spec.usage), "the Memory family carries the canonical command's usage");
+      assert.equal(sections.get("Usage")?.some((line) => line.startsWith("aof memory")), false, "…and the one-word route is not in Usage");
       const also = sections.get("Also");
       assert.ok(also && also.length > 0, "the static `Also:` tail is present");
-      assert.equal(also.some((line) => line.startsWith("aof work memory")), false, "the `Also:` tail no longer names `aof work memory`");
+      assert.equal(also.some((line) => /memory/.test(line)), false, "the `Also:` tail names no memory door");
       assert.ok(also.some((line) => line.startsWith("aof session")), "…and it still names `aof session`, which stays laddered");
       // The tail is hand-written prose in cli.mjs: the source agrees with the spawn.
       const cli = stripComments(await read(...CLI_MJS));
@@ -280,7 +284,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/128/01 (acd-work-memory-routed): story 125's README control goes green — its own \"every command the README spells resolves\" row passes unedited, and the five `aof work memory` lines resolve through deriveRouteTable",
+    name: "arch/128/01 (acd-work-memory-routed): story 125's README control goes green — its own \"every command the README spells resolves\" row passes unedited, and the README's memory lines resolve through deriveRouteTable (178/02: four `aof memory` lines, and the milestone-05 row's `aof work memory`)",
     run: async () => {
       // Lazy, so an absent control reds THIS row rather than the directory's index (header, (6)).
       const { archTests: readmeTests, assessReadme } = await import("./acd-readme-names-what-ships.test.mjs");
@@ -290,13 +294,16 @@ export const archTests = [
 
       const readme = (await readFile(at("README.md"), "utf8")).replace(/\r\n/g, "\n");
       const verdict = assessReadme(readme);
-      const memoryLines = verdict.invocations.filter((entry) => entry.words.slice(0, 2).join(" ") === "work memory");
-      assert.ok(memoryLines.length >= 5, `the README spells \`aof work memory\` at least five times (${memoryLines.length}: lines ${memoryLines.map((entry) => entry.line).join(", ")})`);
-      const resolvedMemory = verdict.resolved.filter((entry) => entry.route === "work memory" && !entry.family);
-      assert.equal(resolvedMemory.length, memoryLines.length, "every one of them resolves to the `work memory` route");
-      assert.equal(verdict.unresolved.filter((entry) => entry.words[0] === "work" && entry.words[1] === "memory").length, 0, "and none is unresolved");
+      // 178/02 moved the README to the canonical door; the milestone-05 row keeps the alias as history.
+      const memoryLines = verdict.invocations.filter((entry) => entry.words[0] === "memory");
+      assert.ok(memoryLines.length >= 4, `the README spells \`aof memory\` at least four times (${memoryLines.length}: lines ${memoryLines.map((entry) => entry.line).join(", ")})`);
+      const resolvedMemory = verdict.resolved.filter((entry) => entry.route === "memory" && !entry.family);
+      assert.equal(resolvedMemory.length, memoryLines.length, "every one of them resolves to the `memory` route");
+      const memoryWords = (entry) => entry.words[0] === "memory" || (entry.words[0] === "work" && entry.words[1] === "memory");
+      assert.equal(verdict.unresolved.filter(memoryWords).length, 0, "and no memory line, through either door, is unresolved");
       // Through the table itself, not the control's verdict alone.
-      assert.equal(deriveRouteTable().get("work memory")?.id, "work:memory", "deriveRouteTable carries `work memory` → work:memory");
+      assert.equal(deriveRouteTable().get("memory")?.id, "memory", "deriveRouteTable carries `memory` → memory");
+      assert.equal(deriveRouteTable().get("work memory")?.id, "work:memory", "…and `work memory` → work:memory, the alias");
     },
   },
 ];

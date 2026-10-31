@@ -38,12 +38,20 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // a golden carries (`store`, an absolute temp path) is normalised to `<STORE>`. The fixture
 // texts are therefore load-bearing: change one byte of them and the goldens are wrong.
 //
+// 178/01 (`00_aof-memory-answers-through-both-doors.feature`, `01_help-and-hints-name-aof-memory.feature`)
+// adds the canonical door. `aof memory` is the command and `aof work memory` its alias
+// (178/ADR-001), so the cases below run each argv through BOTH doors over a milestone-39 fixture
+// and compare stdout, stderr and exit code. The command module's FF-17801 control lives in
+// test/arch/command/acd-memory-alias-one-implementation.test.mjs.
+//
 // Mirrors cli-face-contract.test.mjs: a temp fixture workspace, `spawnCliSync` of the real
 // `bin/aof.mjs` with cwd = the fixture root, exit code + stdout/stderr asserted.
 import assert from "node:assert/strict";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { stripComments, functionBody } from "../support/source-slice.mjs";
 import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
+import { existsSync, realpathSync } from "node:fs";
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -110,7 +118,9 @@ const HUMAN_GOLDENS = [
       + "layers: episodic 0 · semantic 1 · procedural 1\n"
       + "conformance: kind blank 0 non-enum 0 · area blank 0 non-enum 1 · stage blank 0 non-enum 0 · owner blank 0 · gap status non-enum 0\n"
       // 153/03 — observed effectiveness follows conformance; this fixture has no ledger and no recurrence.
-      + "effectiveness: lesson surfaced 0 honoured 0 departed 0 irrelevant 0 recurred 0\n",
+      + "effectiveness: lesson surfaced 0 honoured 0 departed 0 irrelevant 0 recurred 0\n"
+      // 180/ADR-005 — the corpora the memory node serves; this fixture spells no old key, so no legacy line.
+      + "corpora: work, imports, code\n",
   },
   { invocation: ["reindex"], stdout: "reindex: 2 record(s)\n" },
   { invocation: ["ingest"], stdout: "reindex: 2 record(s)\n" },
@@ -152,6 +162,7 @@ const JSON_GOLDENS = [
       + "    \"owner\": \"developer\",\n"
       + "    \"status\": \"\",\n"
       + "    \"tags\": [],\n"
+      + "    \"origin\": [],\n"
       + "    \"summary\": \"pin line endings at the writer, never at the reviewer.\",\n"
       + "    \"text\": \"Pin line endings on every generated file \\n a generated file shipped with CRLF and the diff was every line. \\n nothing pinned the line endings at the writer. \\n pin line endings at the writer, never at the reviewer.\",\n"
       + "    \"source\": \"07_milestone_fixture/RETROSPECTIVE.md:6\",\n"
@@ -169,6 +180,7 @@ const JSON_GOLDENS = [
       + "    \"owner\": \"\",\n"
       + "    \"status\": \"Accepted\",\n"
       + "    \"tags\": [],\n"
+      + "    \"origin\": [],\n"
       + "    \"summary\": \"One ADR, so the brief's split has an adr to count.\",\n"
       + "    \"text\": \"The fixture keeps one decision \\n One ADR, so the brief's split has an adr to count.\",\n"
       + "    \"source\": \"07_milestone_fixture/ARCHITECTURE.md:6\",\n"
@@ -184,7 +196,7 @@ const JSON_GOLDENS = [
       + "  \"backend\": \"local\",\n"
       + "  \"recordCount\": 2,\n"
       + "  \"store\": \"<STORE>\",\n"
-      + "  \"version\": 3\n"
+      + "  \"version\": 4\n"
       + "}\n",
     check: (doc) => { assert.equal("records" in doc, false, "reindex --json carries no `records`"); assert.equal(doc.recordCount, 2); },
   },
@@ -207,9 +219,13 @@ const JSON_GOLDENS = [
       + "  \"feedback\": 0,\n"
       + "  \"runs\": 0,\n"
       + "  \"index\": {\n"
-      + "    \"version\": 3,\n"
-      + "    \"current\": 3,\n"
+      + "    \"version\": 4,\n"
+      + "    \"current\": 4,\n"
       + "    \"stale\": false\n"
+      + "  },\n"
+      // 178/ADR-002 — the declared origin values the ingest dropped; the fixture declares none.
+      + "  \"origin\": {\n"
+      + "    \"unresolved\": 0\n"
       + "  },\n"
       + "  \"types\": {\n"
       + "    \"adr\": {\n"
@@ -260,6 +276,16 @@ const JSON_GOLDENS = [
       + "        \"recurred\": 0\n"
       + "      }\n"
       + "    }\n"
+      + "  },\n"
+      // 180/ADR-005 — the memory node as it was read, the answer's last key; the fields above are untouched.
+      + "  \"config\": {\n"
+      + "    \"corpora\": [\n"
+      + "      \"work\",\n"
+      + "      \"imports\",\n"
+      + "      \"code\"\n"
+      + "    ],\n"
+      + "    \"corporaSource\": \"default\",\n"
+      + "    \"legacy\": []\n"
       + "  }\n"
       + "}\n",
     check: (doc) => { assert.equal(doc.backend, "local"); assert.equal(doc.recordCount, 2); },
@@ -321,6 +347,193 @@ function adapt(tokens) {
   const options = parseSpecArgv(tokens, memoryCommand.cli.spec, memoryCommand.id);
   return memoryCommand.cli.argv(options._, options);
 }
+
+// ------------------------------------------------- 178/01 both doors ----
+
+// THE 178/01 FIXTURE: milestone 39 with one ADR titled "pin line endings" and one near-miss
+// lesson, under the `local` backend, ingested once unless a case says otherwise. Every spawn gets
+// its own isolated AOF_GLOBAL_HOME.
+const DOORS = [["memory"], ["work", "memory"]];
+
+async function makeRoot39({ backend = "local", ingest = true } = {}) {
+  const root = await mkdtemp(path.join(os.tmpdir(), "aof-178-01-"));
+  const home = await mkdtemp(path.join(os.tmpdir(), "aof-178-01-home-"));
+  await mkdir(path.join(root, ".aof"), { recursive: true });
+  const milestone = path.join(root, "wiki", "work", "39_milestone_fixture");
+  await mkdir(milestone, { recursive: true });
+  const config = { name: "fixture", work: { dir: "./wiki/work" }, ...(backend ? { memory: { backend } } : {}) };
+  await writeFile(path.join(root, ".aof", "aof.config.json"), `${JSON.stringify(config, null, 2)}\n`, "utf8");
+  await writeFile(
+    path.join(milestone, "SPEC.md"),
+    "---\ntype: milestone\nnumber: 39\nslug: fixture\nstatus: in-progress\ntitle: \"Fixture\"\ncreated: 2026-10-29\nupdated: 2026-10-29\nschema: 1\n---\n# 39 · Fixture\n",
+    "utf8",
+  );
+  await writeFile(path.join(milestone, "ARCHITECTURE.md"), [
+    "---", "doc: architecture", "---", "# 39 · Fixture — Architecture Decisions", "",
+    "## ADR-001: pin line endings", "", "**Status:** Accepted", "",
+    "**Decision.** Pin line endings at the writer.", "",
+  ].join("\n"), "utf8");
+  await writeFile(path.join(milestone, "RETROSPECTIVE.md"), [
+    "---", "doc: retrospective", "---", "# 39 · Fixture — Retrospective", "",
+    "## R1 — Line endings drifted on a generated file", "",
+    "- **Kind:** near-miss · **Area:** tooling · **Stage:** build · **Owner:** developer",
+    "- **What happened:** a generated file shipped with CRLF.",
+    "- **Lesson:** pin line endings at the writer.", "",
+  ].join("\n"), "utf8");
+  const fx = { root, home, milestone, run: (args) => runIsolated(root, home, args) };
+  if (ingest && backend) assert.equal(fx.run(["memory", "ingest"]).status, 0, "the fixture ingests");
+  return fx;
+}
+
+function runIsolated(root, home, args) {
+  const result = spawnCliSync(process.execPath, [cliPath, ...args], {
+    cwd: root,
+    encoding: "utf8",
+    env: { ...process.env, AOF_GLOBAL_HOME: home, NODE_NO_WARNINGS: "1" },
+  });
+  return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
+}
+
+async function dropRoot39(fx) {
+  await rm(fx.root, { recursive: true, force: true });
+  await rm(fx.home, { recursive: true, force: true });
+}
+
+// A completed recall observation for item 39, as `record-recall --input` reads it.
+async function writeObservation(fx, id = "6f1c2d3e-0000-4000-8000-000000000178") {
+  const file = path.join(fx.root, "obs.json");
+  await writeFile(file, JSON.stringify({
+    id, at: "2026-10-29T12:00:00.000Z", edge: "continue-developer", actor: "developer", query: "pin line endings",
+    scope: { kind: "near-miss" }, records: [{ item: "39", id: "R1", recordType: "lesson", verdict: "honoured" }],
+  }), "utf8");
+  return id;
+}
+
+function helpSections(text) {
+  const sections = new Map();
+  let current = null;
+  for (const line of text.split("\n")) {
+    const heading = /^([A-Z][^:]*):$/.exec(line);
+    if (heading) { current = heading[1]; sections.set(current, []); continue; }
+    if (current && line.startsWith("  ")) sections.get(current).push(line.trim());
+  }
+  return sections;
+}
+
+// 179/03 — the pre-port answers, spread by the task-01 outline at the end of the array below.
+const PRE_PORT_ANSWERS = [
+ {
+  "door": "memory",
+  "argv": [
+   "recall",
+   "pin line endings",
+   "--block"
+  ],
+  "status": 0,
+  "stdout": "ADR-001 (m39) · adr · architecture · pin line endings · 39_milestone_fixture/ARCHITECTURE.md:6\nR1 (m39) · near-miss · tooling · Line endings drifted on a generated file · 39_milestone_fixture/RETROSPECTIVE.md:6\n\n",
+  "stderr": ""
+ },
+ {
+  "door": "memory",
+  "argv": [
+   "recall",
+   "pin line endings",
+   "--json"
+  ],
+  "status": 0,
+  "stdout": "[\n  {\n    \"recordType\": \"adr\",\n    \"id\": \"ADR-001\",\n    \"item\": \"39\",\n    \"itemSlug\": \"fixture\",\n    \"title\": \"pin line endings\",\n    \"area\": \"architecture\",\n    \"stage\": \"\",\n    \"kind\": \"\",\n    \"owner\": \"\",\n    \"status\": \"Accepted\",\n    \"tags\": [],\n    \"origin\": [],\n    \"summary\": \"Pin line endings at the writer.\",\n    \"text\": \"pin line endings \\n Pin line endings at the writer.\",\n    \"source\": \"39_milestone_fixture/ARCHITECTURE.md:6\",\n    \"score\": 2.622478820841673\n  },\n  {\n    \"recordType\": \"lesson\",\n    \"id\": \"R1\",\n    \"item\": \"39\",\n    \"itemSlug\": \"fixture\",\n    \"title\": \"Line endings drifted on a generated file\",\n    \"area\": \"tooling\",\n    \"stage\": \"build\",\n    \"kind\": \"near-miss\",\n    \"owner\": \"developer\",\n    \"status\": \"\",\n    \"tags\": [],\n    \"origin\": [],\n    \"summary\": \"pin line endings at the writer.\",\n    \"text\": \"Line endings drifted on a generated file \\n a generated file shipped with CRLF. \\n pin line endings at the writer.\",\n    \"source\": \"39_milestone_fixture/RETROSPECTIVE.md:6\",\n    \"score\": 1.9739856637439013\n  }\n]\n",
+  "stderr": ""
+ },
+ {
+  "door": "memory",
+  "argv": [
+   "recall",
+   "pin line endings",
+   "--kind",
+   "near-miss",
+   "--json"
+  ],
+  "status": 0,
+  "stdout": "[\n  {\n    \"recordType\": \"lesson\",\n    \"id\": \"R1\",\n    \"item\": \"39\",\n    \"itemSlug\": \"fixture\",\n    \"title\": \"Line endings drifted on a generated file\",\n    \"area\": \"tooling\",\n    \"stage\": \"build\",\n    \"kind\": \"near-miss\",\n    \"owner\": \"developer\",\n    \"status\": \"\",\n    \"tags\": [],\n    \"origin\": [],\n    \"summary\": \"pin line endings at the writer.\",\n    \"text\": \"Line endings drifted on a generated file \\n a generated file shipped with CRLF. \\n pin line endings at the writer.\",\n    \"source\": \"39_milestone_fixture/RETROSPECTIVE.md:6\",\n    \"score\": 2.4288077716941783\n  }\n]\n",
+  "stderr": ""
+ },
+ {
+  "door": "memory",
+  "argv": [
+   "recall",
+   "no-such-term-xyzzy",
+   "--kind",
+   "no-such-kind",
+   "--block"
+  ],
+  "status": 0,
+  "stdout": "",
+  "stderr": ""
+ },
+ {
+  "door": "memory",
+  "argv": [
+   "recurrence",
+   "line endings drift",
+   "--json"
+  ],
+  "status": 0,
+  "stdout": "{\n  \"qualifying\": \"39/R1\",\n  \"score\": 0.599789,\n  \"threshold\": 0.23,\n  \"calibration\": \"153.02-1\",\n  \"candidates\": [\n    {\n      \"ref\": \"39/R1\",\n      \"score\": 0.599789,\n      \"kind\": \"near-miss\",\n      \"title\": \"Line endings drifted on a generated file\",\n      \"source\": \"39_milestone_fixture/RETROSPECTIVE.md:6\"\n    }\n  ]\n}\n",
+  "stderr": ""
+ },
+ {
+  "door": "memory",
+  "argv": [
+   "status",
+   "--json"
+  ],
+  "status": 0,
+  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"present\": true,\n  \"lessons\": 1,\n  \"adrs\": 1,\n  \"summaries\": 0,\n  \"capabilities\": 0,\n  \"gaps\": 0,\n  \"findings\": 0,\n  \"feedback\": 0,\n  \"runs\": 0,\n  \"index\": {\n    \"version\": 4,\n    \"current\": 4,\n    \"stale\": false\n  },\n  \"origin\": {\n    \"unresolved\": 0\n  },\n  \"types\": {\n    \"adr\": {\n      \"count\": 1,\n      \"layer\": \"semantic\"\n    },\n    \"lesson\": {\n      \"count\": 1,\n      \"layer\": \"procedural\"\n    }\n  },\n  \"layers\": {\n    \"episodic\": 0,\n    \"semantic\": 1,\n    \"procedural\": 1\n  },\n  \"conformance\": {\n    \"kind\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"area\": {\n      \"blank\": 0,\n      \"nonEnum\": 1\n    },\n    \"stage\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"owner\": {\n      \"blank\": 0\n    },\n    \"gapStatus\": {\n      \"nonEnum\": 0\n    }\n  },\n  \"effectiveness\": {\n    \"basis\": \"observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake\",\n    \"complete\": true,\n    \"diagnostics\": [],\n    \"types\": {\n      \"lesson\": {\n        \"surfaced\": 0,\n        \"honoured\": 0,\n        \"departed\": 0,\n        \"irrelevant\": 0,\n        \"recurred\": 0\n      }\n    }\n  },\n  \"config\": {\n    \"corpora\": [\n      \"work\",\n      \"imports\",\n      \"code\"\n    ],\n    \"corporaSource\": \"default\",\n    \"legacy\": []\n  }\n}\n",
+  "stderr": ""
+ },
+ {
+  "door": "memory",
+  "argv": [
+   "reindex",
+   "39",
+   "--json"
+  ],
+  "status": 0,
+  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"version\": 4\n}\n",
+  "stderr": ""
+ },
+ {
+  "door": "memory",
+  "argv": [
+   "ingest",
+   "--json"
+  ],
+  "status": 0,
+  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"version\": 4\n}\n",
+  "stderr": ""
+ },
+ {
+  "door": "work memory",
+  "argv": [
+   "recall",
+   "pin line endings",
+   "--block"
+  ],
+  "status": 0,
+  "stdout": "ADR-001 (m39) · adr · architecture · pin line endings · 39_milestone_fixture/ARCHITECTURE.md:6\nR1 (m39) · near-miss · tooling · Line endings drifted on a generated file · 39_milestone_fixture/RETROSPECTIVE.md:6\n\n",
+  "stderr": ""
+ },
+ {
+  "door": "work memory",
+  "argv": [
+   "status",
+   "--json"
+  ],
+  "status": 0,
+  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"present\": true,\n  \"lessons\": 1,\n  \"adrs\": 1,\n  \"summaries\": 0,\n  \"capabilities\": 0,\n  \"gaps\": 0,\n  \"findings\": 0,\n  \"feedback\": 0,\n  \"runs\": 0,\n  \"index\": {\n    \"version\": 4,\n    \"current\": 4,\n    \"stale\": false\n  },\n  \"origin\": {\n    \"unresolved\": 0\n  },\n  \"types\": {\n    \"adr\": {\n      \"count\": 1,\n      \"layer\": \"semantic\"\n    },\n    \"lesson\": {\n      \"count\": 1,\n      \"layer\": \"procedural\"\n    }\n  },\n  \"layers\": {\n    \"episodic\": 0,\n    \"semantic\": 1,\n    \"procedural\": 1\n  },\n  \"conformance\": {\n    \"kind\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"area\": {\n      \"blank\": 0,\n      \"nonEnum\": 1\n    },\n    \"stage\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"owner\": {\n      \"blank\": 0\n    },\n    \"gapStatus\": {\n      \"nonEnum\": 0\n    }\n  },\n  \"effectiveness\": {\n    \"basis\": \"observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake\",\n    \"complete\": true,\n    \"diagnostics\": [],\n    \"types\": {\n      \"lesson\": {\n        \"surfaced\": 0,\n        \"honoured\": 0,\n        \"departed\": 0,\n        \"irrelevant\": 0,\n        \"recurred\": 0\n      }\n    }\n  },\n  \"config\": {\n    \"corpora\": [\n      \"work\",\n      \"imports\",\n      \"code\"\n    ],\n    \"corporaSource\": \"default\",\n    \"legacy\": []\n  }\n}\n",
+  "stderr": ""
+ }
+];
 
 export const workMemoryCommandTests = [
   {
@@ -501,14 +714,14 @@ export const workMemoryCommandTests = [
         const bogus = runCli(root, ["work", "memory", "bogus"]);
         assert.equal(bogus.status, 1, "an unknown verb exits 1");
         assert.ok(bogus.stderr.includes("Unknown memory verb \"bogus\"."), `stderr names the verb (stderr: ${bogus.stderr.slice(0, 200)})`);
-        assert.ok(bogus.stderr.includes("Usage: aof work memory <verb>"), "and carries the seam's usage text");
+        assert.ok(bogus.stderr.includes("Usage: aof memory <verb>"), "and carries the seam's usage text");
         assert.ok(bogus.stderr.includes("Verbs: recall, record-recall, recurrence, ingest, reindex, status"), "…including the verb vocabulary");
         assert.equal(bogus.stdout, "", "nothing on stdout");
 
         const missing = runCli(root, ["work", "memory"]);
         assert.equal(missing.status, 1, "a missing verb exits 1");
         assert.ok(missing.stderr.includes("Missing memory verb."), `stderr says the verb is missing (stderr: ${missing.stderr.slice(0, 200)})`);
-        assert.ok(missing.stderr.includes("Usage: aof work memory <verb>"), "and carries the usage");
+        assert.ok(missing.stderr.includes("Usage: aof memory <verb>"), "and carries the usage");
 
         // `help` TYPED AS A VERB is what it was at HEAD — an unknown verb, refused — never a
         // second spelling of `-h` (the help sentinel is the parse's boolean, not a string).
@@ -600,6 +813,8 @@ export const workMemoryCommandTests = [
             diagnostics: [],
             types: { lesson: { surfaced: 0, honoured: 0, departed: 0, irrelevant: 0, recurred: 0 } },
           },
+          // 180/ADR-005 — the memory node as it was read: the default corpora, nothing legacy.
+          config: { corpora: ["work", "imports", "code"], corporaSource: "default", legacy: [] },
         }, "the none backend's honest status");
         assert.equal(probe.stdout, `${JSON.stringify(doc, null, 2)}\n`, "and nothing else on stdout");
       } finally {
@@ -735,6 +950,283 @@ export const workMemoryCommandTests = [
       } finally {
         await rm(on, { recursive: true, force: true });
         await rm(off, { recursive: true, force: true });
+      }
+    },
+  },
+
+  // ═════════════════════ 178/01 task 00 — both doors answer every verb ═════════════════════
+  {
+    name: "178/01 E1 · the canonical door renders the recall block: `aof memory recall \"pin line endings\" --block` exits 0 with one line per record, the ADR among them, each ending in its source",
+    run: async () => {
+      const fx = await makeRoot39();
+      try {
+        const result = fx.run(["memory", "recall", "pin line endings", "--block"]);
+        assert.equal(result.status, 0, result.stderr);
+        const lines = result.stdout.split("\n").filter(Boolean);
+        assert.ok(lines.length >= 2, `one line per recalled record (stdout: ${result.stdout})`);
+        assert.ok(lines.some((line) => line.startsWith("ADR-001 (m39) · adr")), "the ADR is among them");
+        for (const line of lines) assert.match(line, /· 39_milestone_fixture\/[A-Z]+\.md:\d+$/, `each line ends in its source: ${line}`);
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+  {
+    name: "178/01 E2 · `aof memory status --json` on a project with no memory object answers the none backend's status document at exit 0",
+    run: async () => {
+      const fx = await makeRoot39({ backend: null });
+      try {
+        const result = fx.run(["memory", "status", "--json"]);
+        assert.equal(result.status, 0, result.stderr);
+        const status = JSON.parse(result.stdout);
+        assert.equal(status.backend, "none");
+        assert.equal(status.recordCount, 0);
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+  {
+    name: "178/01 E3 · `aof memory recall <miss> --kind no-such-kind --block` prints zero bytes at exit 0 (a bare miss is never empty under the local backend, which ranks every survivor)",
+    run: async () => {
+      const fx = await makeRoot39();
+      try {
+        const result = fx.run(["memory", "recall", "no-such-term-xyzzy", "--kind", "no-such-kind", "--block"]);
+        assert.equal(result.status, 0, result.stderr);
+        assert.equal(result.stdout, "", "stdout is zero bytes");
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+  {
+    name: "178/01 outline: every verb is routed under `aof memory` — recall | ingest | reindex 39 | status | recurrence | record-recall exit 0, help exits 1, and each resolves to the registered command at route `memory`",
+    run: async () => {
+      const fx = await makeRoot39();
+      try {
+        await writeObservation(fx);
+        const rows = [
+          [["recall", "pin line endings", "--json"], 0],
+          [["ingest"], 0],
+          [["reindex", "39"], 0],
+          [["status", "--json"], 0],
+          [["recurrence", "line endings drift", "--json"], 0],
+          [["record-recall", "39", "--input", "obs.json", "--json"], 0],
+          [["help"], 1],
+        ];
+        for (const [argv, exit] of rows) {
+          const resolved = resolveRoute(["memory", ...argv]);
+          assert.equal(resolved?.command.id, "memory", `aof memory ${argv.join(" ")} resolves to the registered command`);
+          assert.deepEqual(resolved.command.cli.route, ["memory"], "…at route `memory`");
+          const result = fx.run(["memory", ...argv]);
+          assert.equal(result.status, exit, `aof memory ${argv.join(" ")} exits ${exit} (stderr: ${result.stderr})`);
+        }
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+
+  {
+    name: "178/01 E4 outline: both doors print the same bytes — stdout, stderr and exit code — for every verb and projection",
+    run: async () => {
+      const fx = await makeRoot39();
+      try {
+        const rows = [
+          ["recall", "seam", "--json"],
+          ["recall", "pin line endings", "--kind", "near-miss", "--block"],
+          ["recall", "pin line endings", "--item", "39", "--limit", "1"],
+          ["recall", "no-such-term-xyzzy", "--block"],
+          ["status"],
+          ["status", "--json", "--lessons"],
+          ["reindex", "39"],
+          ["recurrence", "line endings drift", "--json"],
+          ["-h"],
+        ];
+        for (const argv of rows) {
+          const [canonical, alias] = DOORS.map((door) => fx.run([...door, ...argv]));
+          const row = argv.join(" ");
+          assert.equal(alias.stdout, canonical.stdout, `${row}: the two stdouts are byte-identical`);
+          assert.equal(alias.stderr, canonical.stderr, `${row}: the two stderrs are byte-identical`);
+          assert.equal(alias.status, canonical.status, `${row}: the two exit codes are equal`);
+        }
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+  {
+    name: "178/01 an undeclared flag is refused alike through both doors, each naming its own command: both exit 1, equal stdout, and stderr equal once the refused command's name is set aside",
+    run: async () => {
+      const fx = await makeRoot39({ ingest: false });
+      try {
+        const [canonical, alias] = DOORS.map((door) => fx.run([...door, "--undeclared-flag"]));
+        assert.deepEqual([canonical.status, alias.status], [1, 1], "both exit 1");
+        assert.equal(alias.stdout, canonical.stdout, "the two stdouts are byte-identical");
+        assert.ok(canonical.stderr.startsWith('Unknown flag "--undeclared-flag" for memory.'), `aof memory refuses it for memory: ${canonical.stderr.split("\n")[0]}`);
+        assert.ok(alias.stderr.startsWith('Unknown flag "--undeclared-flag" for work:memory.'), `aof work memory refuses it for work:memory: ${alias.stderr.split("\n")[0]}`);
+        assert.equal(alias.stderr.replace(" for work:memory.", " for <command>."), canonical.stderr.replace(" for memory.", " for <command>."), "the two stderrs are byte-identical once the name is set aside");
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+  {
+    name: "178/01 E5 · a replayed record-recall is idempotent across the two doors: the second answer is replayed, and milestone 39's ledger holds one row with that id",
+    run: async () => {
+      const fx = await makeRoot39();
+      try {
+        const id = await writeObservation(fx);
+        const first = fx.run(["memory", "record-recall", "39", "--input", "obs.json", "--json"]);
+        assert.equal(first.status, 0, first.stderr);
+        const second = fx.run(["work", "memory", "record-recall", "39", "--input", "obs.json", "--json"]);
+        assert.equal(second.status, 0, second.stderr);
+        assert.equal(JSON.parse(second.stdout).replayed, true, "the second answer carries replayed: true");
+        const ledger = await readFile(path.join(fx.milestone, "FEEDBACK.ndjson"), "utf8");
+        const rows = ledger.split("\n").filter(Boolean).map((line) => JSON.parse(line)).filter((row) => JSON.stringify(row).includes(id));
+        assert.equal(rows.length, 1, `exactly one recall row with that id (ledger: ${ledger})`);
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+  {
+    name: "178/01 E6 · the alias prints nothing extra: `aof work memory status` has an empty stderr and no deprecated/alias/aof memory line",
+    run: async () => {
+      const fx = await makeRoot39();
+      try {
+        const result = fx.run(["work", "memory", "status"]);
+        assert.equal(result.status, 0);
+        assert.equal(result.stderr, "", "stderr is empty");
+        for (const line of result.stdout.split("\n")) assert.doesNotMatch(line, /deprecated|alias|aof memory/i, `no notice: ${line}`);
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+
+  // ══════════════════ 178/01 task 01 — help and every hint name aof memory ══════════════════
+  {
+    name: "178/01 E7 outline: `aof memory -h` and `aof work memory -h` both open `Usage: aof memory <verb>` and hold no `aof work memory`",
+    run: async () => {
+      const fx = await makeRoot39({ ingest: false });
+      try {
+        for (const door of DOORS) {
+          const result = fx.run([...door, "-h"]);
+          assert.equal(result.status, 0, result.stderr);
+          assert.ok(result.stdout.split("\n")[0].startsWith("Usage: aof memory <verb>"), `aof ${door.join(" ")} -h opens the canonical usage: ${result.stdout.split("\n")[0]}`);
+          assert.ok(!result.stdout.includes("aof work memory"), "…and never names the alias");
+        }
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+  {
+    name: "178/01 a refused flag prints the canonical usage through either door: `aof work memory recall x --bogus` exits 1 naming `aof memory <verb>`",
+    run: async () => {
+      const fx = await makeRoot39({ ingest: false });
+      try {
+        const result = fx.run(["work", "memory", "recall", "x", "--bogus"]);
+        assert.equal(result.status, 1);
+        assert.match(result.stderr, /^Usage: aof memory <verb>/m, `the usage line names aof memory (stderr: ${result.stderr})`);
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+  {
+    name: "178/01 E8 · `aof --help` lists memory in a section of its own: a Memory section opening `aof memory <verb>`, none in Usage, the Work section still carries the line, and the Also tail does not mention memory",
+    run: async () => {
+      const fx = await makeRoot39({ ingest: false });
+      try {
+        const result = fx.run(["--help"]);
+        assert.equal(result.status, 0, result.stderr);
+        const sections = helpSections(result.stdout);
+        assert.ok(sections.get("Memory")?.some((line) => line.startsWith("aof memory <verb>")), `a Memory section opens aof memory <verb> (sections: ${[...sections.keys()].join(" | ")})`);
+        assert.equal(sections.get("Usage").some((line) => line.startsWith("aof memory")), false, "the Usage section holds no aof memory line");
+        assert.ok(sections.get("Work (ACD work stream)").some((line) => line.includes("memory <verb>")), "the Work section still holds a memory line");
+        assert.equal(sections.get("Also").some((line) => /memory/.test(line)), false, "the Also tail does not mention memory");
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+  {
+    name: "178/01 E9 · a stale store names `aof memory ingest` as the fix: `aof memory status` over a version-1 index ends naming it, and no line names aof work memory",
+    run: async () => {
+      const fx = await makeRoot39();
+      try {
+        const store = path.join(fx.root, ".aof", "aof.memory.index.json");
+        const index = JSON.parse(await readFile(store, "utf8"));
+        await writeFile(store, JSON.stringify({ ...index, version: 1 }), "utf8");
+        const result = fx.run(["memory", "status"]);
+        assert.equal(result.status, 0, result.stderr);
+        const lines = result.stdout.split("\n").filter(Boolean);
+        assert.match(lines.at(-1), /`aof memory ingest`/, `the last line names the fix: ${lines.at(-1)}`);
+        assert.ok(!result.stdout.includes("aof work memory"), "no line names aof work memory");
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+  {
+    name: "178/01 the unknown-work-command examples name aof memory: `aof work no-such-subcommand` lists `aof memory recall \"pin line endings\"` and no aof work memory",
+    run: async () => {
+      const fx = await makeRoot39({ ingest: false });
+      try {
+        const result = fx.run(["work", "no-such-subcommand"]);
+        const text = `${result.stdout}${result.stderr}`;
+        assert.ok(text.includes("aof memory recall \"pin line endings\""), `the examples list names aof memory (output: ${text.slice(0, 300)})`);
+        assert.ok(!text.includes("aof work memory"), "…and never the alias");
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+  // ── 179/03 task 01 — both doors answer the bytes they answered before the port ────────────
+  // PRE_PORT_ANSWERS was captured over the 178/01 fixture (makeRoot39) on the tree before 179/03,
+  // and its two `status --json` rows gained the `config` object 180/ADR-005 adds, as their last key,
+  // each row on a fresh ingested fixture with its own AOF_GLOBAL_HOME. The one normalisation is the
+  // index path this file already tokenises as <STORE>, taken through the root's realpath because
+  // that is the path the CLI reports.
+  ...PRE_PORT_ANSWERS.map((row) => ({
+    name: `179/03 task 01 outline: each verb answers its pre-port bytes through both doors — aof ${row.door} ${row.argv.join(" ")}`,
+    async run() {
+      const fx = await makeRoot39();
+      try {
+        const result = fx.run([...row.door.split(" "), ...row.argv]);
+        const store = JSON.stringify(path.join(realpathSync(fx.root), ".aof", "aof.memory.index.json")).slice(1, -1);
+        const normalise = (text) => text.split(store).join("<STORE>");
+        assert.equal(result.status, row.status, "the exit code");
+        assert.equal(normalise(result.stdout), row.stdout, "stdout");
+        assert.equal(normalise(result.stderr), row.stderr, "stderr");
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  })),
+  {
+    name: "179/03 task 01: every recalled record's source still resolves to a path and line in the stream",
+    async run() {
+      const fx = await makeRoot39();
+      try {
+        const result = fx.run(["memory", "recall", "pin line endings", "--json"]);
+        assert.equal(result.status, 0, result.stderr);
+        const records = JSON.parse(result.stdout);
+        assert.ok(records.length > 0, "non-vacuous: the fixture recalls records");
+        for (const record of records) {
+          const match = /^(.+):(\d+)$/u.exec(record.source);
+          assert.ok(match, `${record.id}'s source is <path>:<line> (${record.source})`);
+          const file = path.join(fx.root, "wiki", "work", match[1]);
+          assert.ok(existsSync(file), `${record.source} names a file under the work stream`);
+          const lineCount = (await readFile(file, "utf8")).split("\n").length;
+          assert.ok(Number(match[2]) >= 1 && Number(match[2]) <= lineCount, `${record.source} names a line in that file`);
+          const extra = Object.keys(record).filter((key) => key !== "score" && !MEMORY_RECORD_FIELDS.includes(key));
+          assert.deepEqual(extra, [], `${record.id} carries only fields the parser leaves produce`);
+        }
+      } finally {
+        await dropRoot39(fx);
       }
     },
   },

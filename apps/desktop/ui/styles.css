@@ -74,14 +74,15 @@ body {
   display:flex; align-items:center; gap:13px; padding:10px 14px;
 }
 .proc { display:flex; align-items:center; gap:8px; }
-.proc-label { font-size:12px; color:var(--text-2); }
-.pill { display:inline-flex; align-items:center; gap:6px; background:var(--layer-2); border:1px solid var(--stroke); border-radius:6px; padding:3px 9px; }
+.proc-label { font-size:12px; white-space:nowrap; color:var(--text-2); }
+/* Every control in the bar is 26px tall, so pills, toggles and the button share one centre line. */
+.pill { display:inline-flex; align-items:center; gap:6px; height:26px; background:var(--layer-2); border:1px solid var(--stroke); border-radius:6px; padding:0 9px; }
 .pill-dot { width:8px; height:8px; border-radius:50%; flex:none; }
 .pill-dot.running { background:var(--accent); }
 .pill-dot.restarting { background:var(--caution-text); animation:rpulse 1.2s ease-in-out infinite; }
 .pill-dot.stopped { background:transparent; border:1.6px dashed var(--dot-dim); }
 .pill-text { font-size:12px; color:var(--text); font-weight:500; }
-.toggle { width:25px; height:25px; border-radius:6px; background:transparent; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; padding:0; }
+.toggle { width:26px; height:26px; border-radius:6px; background:transparent; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; padding:0; }
 .toggle.primary { border:1px solid var(--accent); }
 .toggle.primary:hover { background:var(--accent-soft); }
 .toggle.subtle { border:1px solid var(--stroke-2); color:var(--text-2); }
@@ -91,14 +92,19 @@ body {
 .toggle.subtle .stop-glyph { background:currentColor; }
 .toggle .play-glyph { width:0; height:0; border-left:8px solid currentColor; border-top:5px solid transparent; border-bottom:5px solid transparent; margin-left:2px; }
 .vsep { width:1px; height:22px; background:var(--stroke); }
-.open-web-ui { display:inline-flex; align-items:center; gap:7px; background:var(--layer-2); border:1px solid var(--stroke-2); border-radius:6px; padding:5px 11px; color:var(--text); font-size:12px; font-family:var(--font); cursor:pointer; }
+.open-web-ui { display:inline-flex; align-items:center; gap:7px; height:26px; background:var(--layer-2); border:1px solid var(--stroke-2); border-radius:6px; padding:0 11px; color:var(--text); font-size:12px; white-space:nowrap; flex:none; font-family:var(--font); cursor:pointer; }
 .open-web-ui:hover { background:var(--hover); }
 .open-web-ui[disabled] { opacity:.45; cursor:default; }
 .open-web-ui .arrow { font-size:12px; line-height:1; color:var(--text-2); }
-.identity { margin-left:auto; display:flex; align-items:center; gap:9px; }
+.identity { margin-left:auto; display:flex; align-items:center; gap:9px; white-space:nowrap; min-width:0; }
 .identity .lead { font-size:11px; color:var(--text-3); }
 .identity .role { font-size:12px; color:var(--text-2); font-weight:500; }
 .identity .ver { font-family:var(--mono); font-size:11px; color:var(--text-3); }
+
+/* ---- macOS: native traffic lights over the title bar (tauri.macos.conf.json), so the
+   Windows-style caption buttons go and the logo clears the lights. ---- */
+:root[data-os="mac"] .wincontrols { display:none; }
+:root[data-os="mac"] .titlebar { padding-left:84px; }
 
 /* ---- Real frameless-window host (Tauri): fill the OS window instead of the
    standalone-mock's fixed 760×520 card on a fake desktop backdrop. app.js sets
@@ -127,12 +133,17 @@ body {
 .dot.online { background:var(--accent); }
 .dot.stale  { background:transparent; border:1.6px solid var(--dot-stale-ring); } /* quiet grey ring — NEVER red */
 .dot.offline{ background:transparent; border:1.6px dashed var(--dot-dim); }
-.node-id { display:flex; flex-direction:column; justify-content:center; gap:1px; width:212px; flex:none; min-width:0; }
-.node-title { display:flex; align-items:center; gap:8px; }
-.node-name { font-family:var(--mono); font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; }
-.node-sub { font-family:var(--mono); font-size:11px; color:var(--text-3); white-space:nowrap; }
-.chip { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-3); border:1px solid var(--stroke-2); border-radius:5px; padding:2px 6px; white-space:nowrap; }
-.role-badge { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-3); border:1px solid var(--stroke-2); border-radius:5px; padding:2px 0; width:70px; text-align:center; flex:none; }
+/* The name column takes the room the row can spare, so a long hostname shows in full where it
+   fits and truncates only when it must; every row shrinks it alike, so the columns stay aligned. */
+.node-id { display:flex; flex-direction:column; justify-content:center; gap:1px; flex:0 1 300px; min-width:120px; }
+.node-name { font-family:var(--mono); font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.node-sub { font-family:var(--mono); font-size:11px; color:var(--text-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* One badge group, centred on the row: the role badge (fixed width, so it lines up across rows)
+   then the `this node` chip. Both share one box — height, type and border — so neither sits
+   higher than the other (175 DESIGN M3). The group's fixed width keeps the version column still. */
+.badges { display:flex; align-items:center; gap:6px; width:148px; flex:none; }
+.chip, .role-badge { display:inline-flex; align-items:center; justify-content:center; height:18px; padding:0 6px; font-size:9px; font-weight:700; line-height:1; text-transform:uppercase; letter-spacing:.06em; color:var(--text-3); border:1px solid var(--stroke-2); border-radius:5px; white-space:nowrap; flex:none; }
+.role-badge { width:70px; }
 .node-ver { font-family:var(--mono); font-size:12px; color:var(--text-3); width:52px; flex:none; }
 .work { flex:1; display:flex; align-items:center; gap:8px; min-width:0; }
 .work-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); flex:none; animation:rpulse 1.7s ease-in-out infinite; }

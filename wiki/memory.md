@@ -168,8 +168,14 @@ recorded informs the next decision:
 
 ```jsonc
 // .aof/aof.config.json
-"memory": { "backend": "local", "sources": ["claude-auto-memory"] }   // absent or [] ≡ off
+"memory": { "backend": "local", "corpora": ["work", "imports", "code", "operator"] }   // no "operator" ≡ off
 ```
+
+`memory.corpora` names the corpora memory serves (milestone 180). `work`, `imports` and `code` are
+always served, so a list that leaves one out is refused; `operator` is this source, and the one corpus
+you may leave out. Absent `corpora` is the default set. The old spelling,
+`"sources": ["claude-auto-memory"]`, is read for one release with a warning naming `memory.corpora`, and
+`aof work update` rewrites it; spelling both is refused.
 
 - **What is read.** The selected project's folder, `<claude home>/projects/<project slug>/memory/*.md`,
   where the claude home is `CLAUDE_CONFIG_DIR` when set, else `~/.claude`, and the project is the
@@ -196,8 +202,8 @@ recorded informs the next decision:
   `--owner operator`; `--item NN` still returns only that work item's records.
 - **When it takes effect.** Records are composed on a **whole-stream** ingest (`aof work memory ingest
   --all`). A scoped ingest (`--item NN`) builds that work item's records only. Each full ingest rebuilds:
-  deleted entries disappear, edits replace the old text, and setting `sources` back to `[]` (or removing
-  it) and ingesting again removes every operator record. Selecting the source does not enable a backend —
+  deleted entries disappear, edits replace the old text, and taking `operator` out of `corpora` (or removing
+  `corpora`) and ingesting again removes every operator record. Selecting the source does not enable a backend —
   with `backend: "none"` nothing is indexed. Both `local` and `graphify` honour it; the graph build only
   ever sees the work stream, never these notes.
 - **Node-local.** The entries exist on the node that holds the Claude home. Knowledge a worker or another
@@ -207,12 +213,12 @@ recorded informs the next decision:
   duplicate or non-string `metadata.type`, an unterminated quote, a blank entry, a permission failure) is
   skipped with a diagnostic naming the file and the failure category — never its contents — and its
   valid siblings still index. An unreadable folder is reported the same way and the work records remain.
-  An invalid `sources` value (not an array, an unknown name, a duplicate, a `null`) is a configuration
-  error that stops the verb.
+  An invalid `corpora` value (not an array, an unknown corpus, a duplicate, a missing `work`, `imports`
+  or `code`) is a configuration error that stops the verb, named at the path you wrote.
 
-Try it end to end in a scratch workspace: set `"sources": ["claude-auto-memory"]`, run `aof work memory
-ingest --all`, then `aof work memory recall "<a phrase from a note>" --owner operator`; set `"sources":
-[]`, ingest again, and the operator lessons are gone.
+Try it end to end in a scratch workspace: set `"corpora": ["work", "imports", "code", "operator"]`, run
+`aof work memory ingest --all`, then `aof work memory recall "<a phrase from a note>" --owner operator`;
+remove `corpora`, ingest again, and the operator lessons are gone.
 
 ## How `recall` ranks
 
@@ -363,9 +369,15 @@ One config key, read in exactly one place, picks the backend:
 - **`local`** — the zero-dependency backend: the records above in `.aof/aof.memory.index.json`.
 - **`graphify`** — the same records, from the same parsers, plus a work-stream graph built through the
   `graph:build` command as a **re-rank signal only** (the graph is never the record source). It keeps its
-  own index and degrades to the base ranking when graphify is absent. `memory.graphify.extractionBackend`
+  own index and degrades to the base ranking when graphify is absent. `memory.backends.graphify.extractionBackend`
   names the extractor (`claude-cli` when unset, `claude`, `gemini`, `openai`, `kimi`, `deepseek` or the
-  offline `ollama`).
+  offline `ollama`). Each engine's settings sit in its own `memory.backends.<name>` block, validated
+  whether or not that engine is selected; the old `memory.graphify` spelling reads for one release, and `aof work update` rewrites it.
+
+The codebase graph's sharing lives in the same node: `memory.graph.share` (`git-refs` or `off`) and
+`memory.graph.remote` (default `origin`), replacing the root `graph` key (milestone 180). It governs the
+code corpus only — the memory work graph and the memory index are never shared. No key configures
+egress: `aof memory status` reports the work corpus's, and `aof graph build` the code corpus's.
 
 An unknown backend name is refused by name, with the registered choices listed. **This page
 does not say which backend, or how many records, a given repository has — both change.** Ask it:

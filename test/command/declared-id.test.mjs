@@ -375,8 +375,9 @@ export const declaredIdTests = [
           goldenRecords(text, kind, meta),
           `${path.relative(repoRoot, file)}: one ${kind} record per heading the golden holds, identical across all 13 fields`,
         );
-        // 13 when 66/01 shipped; 148/ADR-003 added `tags` to the frozen set under index v2.
-        for (const record of parsed) assert.equal(Object.keys(record).length, 14, `${record.id} carries the frozen 14 fields`);
+        // 13 when 66/01 shipped; 148/ADR-003 added `tags` to the frozen set under index v2, and
+        // 178/ADR-002 `origin` under index v4.
+        for (const record of parsed) assert.equal(Object.keys(record).length, 15, `${record.id} carries the frozen 15 fields`);
         // …and the heading positions themselves, which is what "one per heading" means.
         assert.deepEqual(
           parsed.map((record) => Number(record.source.split(":").pop())),

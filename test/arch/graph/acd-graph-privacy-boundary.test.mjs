@@ -34,6 +34,10 @@ const DRIVER = path.join(repoRoot, "packages/knowledge/src/graphify.mjs");
 // (readGraph) lives there now, so the "reads only the graph artifact" guard scans
 // BOTH modules — the egress invariant is unchanged, only the read's home moved.
 const NORMALIZER = path.join(repoRoot, "packages/knowledge/src/graph-normalize.mjs");
+// 179/ADR-002: the build body — offline guard, egress classification and the spawn request — moved
+// out of the graph:build face into the graphify code backend behind the knowledge-engine port, so
+// the build's classifier is read where it now lives.
+const CODE_BACKEND = path.join(repoRoot, "packages/knowledge/src/graphify-code-backend.mjs");
 const GRAPH_COMMANDS = [
   path.join(repoRoot, "packages/knowledge/src/commands/graph-build.mjs"),
   path.join(repoRoot, "packages/knowledge/src/commands/graph-query.mjs"),
@@ -166,7 +170,7 @@ export const archTests = [
       // Behavioural spot-check on the egress classifier (no live binary needed —
       // we stub the driver-fed result by reading the command's egress logic via
       // its own source, then assert the classification rule directly).
-      const buildSrc = stripComments(await readFile(GRAPH_COMMANDS[0], "utf8"));
+      const buildSrc = stripComments(await readFile(CODE_BACKEND, "utf8"));
       // The classifier (extracted to classifyEgress, FIX 1): null/absent backend
       // → "none" (zero egress); ANY backend → "docs-media". A null/absent backend
       // MUST classify "none". Asserted both structurally (the helper body) and
@@ -179,11 +183,11 @@ export const archTests = [
       // the input backend (defaulting to null when absent ⇒ "none").
       assert.ok(
         /egress\s*=\s*classifyEgress\s*\(\s*backend\s*\)/.test(buildSrc),
-        "graph:build computes egress via classifyEgress(backend)"
+        "the code corpus's ingest computes egress via classifyEgress(backend)"
       );
       assert.ok(
         /backend\s*=\s*input\.backend\s*\?\?\s*null/.test(buildSrc),
-        "graph:build defaults an absent backend to null (⇒ egress none, no flag)"
+        "the code corpus's ingest defaults an absent backend to null (⇒ egress none, no flag)"
       );
       // BEHAVIOURAL spot-check on the live exported classifier (no live binary):
       // none → "none", a network backend → "docs-media", and ollama (LOCAL) → STILL

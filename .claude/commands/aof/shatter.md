@@ -50,7 +50,7 @@ the PRD:
    the planner's business — ignore them.
    **Recall prior lessons first — ONCE for this PRD, and before the cut is made.** The
    `aof-product-owner` spawned above — the only role this command spawns — runs, unconditionally
-   (memory may be off, see below): `aof work memory recall "<the PRD's objective and scope
+   (memory may be off, see below): `aof memory recall "<the PRD's objective and scope
    keywords>" --block`. It is keyed to the seam just read rather than to an item: **no `--item`**,
    because shatter *mints* the drivers and no ref exists until step 3; and **no `--area`**, because
    a milestone-level cut is cross-cutting and an area filter hides exactly the near-miss that would
@@ -71,7 +71,7 @@ the PRD:
    `edge` `shatter-po`, `actor` `product-owner`, `query` (verbatim), `scope` `{}` (the original
    unscoped query) and `records` — one `{item, id, recordType, verdict}` per returned line, each
    with an explicit verdict `honoured`, `departed` or `irrelevant`, never a default. Submit it ONCE:
-   `aof work memory record-recall <first driver ref> --input <observation file>`. Every other
+   `aof memory record-recall <first driver ref> --input <observation file>`. Every other
    driver's recall prose cites that owner's ref and recall id and records nothing of its own — the
    recall is never replayed per driver. An empty block is still submitted, as `"records": []`, with
    no verdict invented. If shatter stops before any driver exists, report that no ledger capture

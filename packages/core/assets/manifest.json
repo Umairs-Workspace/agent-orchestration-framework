@@ -156,7 +156,7 @@
         "id": "aof-assimilate-code",
         "kind": "skill"
       },
-      "hash": "sha256:7bbaa856b1b43907ff9076b39166831aa931188ef7bf360ffe974a1d54ee8310"
+      "hash": "sha256:e80e59406300f0c8785278cac2f7b818a8b6e59c277af1992c1ff9a48f99aa45"
     },
     {
       "path": ".agents/skills/aof-assimilate-code/agents/openai.yaml",
@@ -210,7 +210,7 @@
         "id": "aof-continue",
         "kind": "skill"
       },
-      "hash": "sha256:9946b374b0c861f3f26ca7d8771cf2c2ba22304c4a46b98710c896502b83f56d"
+      "hash": "sha256:9a662876b7c2f1841fe6f22b20d1ba83e17d44f834243cc59605932cd7b80179"
     },
     {
       "path": ".agents/skills/aof-delegate/SKILL.md",
@@ -318,7 +318,7 @@
         "id": "aof-init",
         "kind": "skill"
       },
-      "hash": "sha256:38acc221dbf9dfae45dbb2a002be3cd31a46612c89e1880f26ba4d8ee342b2a4"
+      "hash": "sha256:c2ecb2c4dd4c92b705b3dc6c7306ed7d7eaa953a499aa7310beb41bdb81dfac7"
     },
     {
       "path": ".agents/skills/aof-init/agents/openai.yaml",
@@ -570,7 +570,7 @@
         "id": "aof-refine",
         "kind": "skill"
       },
-      "hash": "sha256:e5fceb57335c0727b8d78f14d9ce5bc647cb5e0d7505eab511d2ff7597871bbe"
+      "hash": "sha256:80dee4de3f9e4a9dc745ad81d059b15a0128d4770710b6e9166b6e069c26bb14"
     },
     {
       "path": ".agents/skills/aof-repair/SKILL.md",
@@ -624,7 +624,7 @@
         "id": "aof-retrospective",
         "kind": "skill"
       },
-      "hash": "sha256:b73ae21727318580280064547437469c0704a105e0645ecebb5e10081665123e"
+      "hash": "sha256:2c36c8688404a67911f0fa74796583bfad015df39e302daf916dadad531956af"
     },
     {
       "path": ".agents/skills/aof-review/SKILL.md",
@@ -660,7 +660,7 @@
         "id": "aof-shatter",
         "kind": "skill"
       },
-      "hash": "sha256:5419a581007b4ff9ea333c44f9fe1440f5e234cc05a36de957f4aacd2d717bbd"
+      "hash": "sha256:c416e12580f3ebf1ab6285aa995cb05b29dbff1c6890f13fa818bdf1435319f4"
     },
     {
       "path": ".agents/skills/aof-shatter/agents/openai.yaml",
@@ -714,7 +714,7 @@
         "id": "aof-verify",
         "kind": "skill"
       },
-      "hash": "sha256:a89e9a8d687daed2b1a302d715fb4ad2f99a5181d448ffbb0c852fda21f68384"
+      "hash": "sha256:ffc5f627e7cff8abdf25b6469869ed80dd0f52594da3f63415a920d3c7071c45"
     },
     {
       "path": ".aof/frozen-set.jsonc",
@@ -804,7 +804,7 @@
         "id": "loop-retrospective-memory-ingest",
         "kind": "asset"
       },
-      "hash": "sha256:9429d196926a343ff495c5b5ec8e395c40cd23d13c9f96b1bf9dd2334acccedf"
+      "hash": "sha256:35deaa8eadfc66f0d8bce4d8511bfe585458a68add41431f8717dcbae9865395"
     },
     {
       "path": ".aof/loops/review-fix-rereview-watcher.md",
@@ -1227,7 +1227,7 @@
         "id": "assimilate-code",
         "kind": "command"
       },
-      "hash": "sha256:a7f61cd330de297f6d29d536d1a6d274eaf556ef13e976aeba2aaa237037c1f7"
+      "hash": "sha256:dbd1af7c12764fe1d41ce825e6027acfdf8df1d67da7c3c7eab0674a33a80618"
     },
     {
       "path": ".claude/commands/aof/autonomous.md",
@@ -1245,7 +1245,7 @@
         "id": "continue",
         "kind": "command"
       },
-      "hash": "sha256:a4f18c93e9f59d116e22a569b82e3b1589728e41ea42ab3a07b9f1b173aeac05"
+      "hash": "sha256:b6a3e73245d91529f0196a867b3249e813ef7ec868012b7788e3cd7ce5987bcb"
     },
     {
       "path": ".claude/commands/aof/delegate.md",
@@ -1299,7 +1299,7 @@
         "id": "init",
         "kind": "command"
       },
-      "hash": "sha256:a66423625a874f96f50fa28551dc8ff8b0b22e05d07d51d0ba23489da74e00b2"
+      "hash": "sha256:812efa3d93f39c94d156c57b94d4653c1221fb18fd2b882ef90ddde61a58fdd0"
     },
     {
       "path": ".claude/commands/aof/insert-chore.md",
@@ -1416,7 +1416,7 @@
         "id": "refine",
         "kind": "command"
       },
-      "hash": "sha256:5a279ec5651378311864cd2ac54ddce6a2f25e57de1d2bd8c546dcb07200384b"
+      "hash": "sha256:e5b6f711969eaeb50448bf7be9683de49026d608334e5ed3a516db6dddf04a2e"
     },
     {
       "path": ".claude/commands/aof/repair.md",
@@ -1434,7 +1434,7 @@
         "id": "retrospective",
         "kind": "command"
       },
-      "hash": "sha256:8b0a68b7548575c86e0978e2c600289cfa695c61ab6217973157e8e1830d74c3"
+      "hash": "sha256:1db67e75c963bb307340cbdaf1825efcf86a06d82960b8c5927b1793718ba7f1"
     },
     {
       "path": ".claude/commands/aof/review.md",
@@ -1452,7 +1452,7 @@
         "id": "shatter",
         "kind": "command"
       },
-      "hash": "sha256:138c46d0b71cab223c3fd3869b9a500118285d011fc604bc815d2e96df169546"
+      "hash": "sha256:385cb21bce072961e67c3c473168ff5a0d3f25174abd1d4a0c3dd57d32884ab6"
     },
     {
       "path": ".claude/commands/aof/validate.md",
@@ -1470,7 +1470,7 @@
         "id": "verify",
         "kind": "command"
       },
-      "hash": "sha256:d5e7b3289dd8c2ca36fb2681f46f395663afab45b65df48e87ff5d2e18f186c1"
+      "hash": "sha256:ccbee2c9a153100f2aa2194777d843743783fc4da15c6cdafd41c3e7c57b411f"
     },
     {
       "path": ".claude/hooks/aof/artifact-sync-enqueue.mjs",
@@ -1605,7 +1605,7 @@
         "id": "workflow-contract",
         "kind": "workflow"
       },
-      "hash": "sha256:8f287b2532db8421afe5cb4256cfdf910f8c6cb8b0423f3d0ebcc0338c2932c4"
+      "hash": "sha256:911c019d7c8bcda93205caa8ea6e653a39d0c43199ecc1956750f91783bbb672"
     },
     {
       "path": ".codex/hooks.json",

@@ -131,6 +131,9 @@ import { archTests as acdDesktopSuppliedSetTests } from "./acd-desktop-supervise
 import { rosterTests as acdDesktopSpawnRosterTests } from "./acd-desktop-read-only-fleet.test.mjs";
 // milestone 167 / story 05 — FF-16704: the desktop guard shows and logs an overrun and never kills.
 import { archTests as acdDesktopGuardNeverKillsTests } from "./acd-desktop-guard-never-kills.test.mjs";
+// milestone 175 / story 00 — FF-17501: on unix each supervised child leads its own process group,
+// and every kill and every exit reaches the group.
+import { archTests as acdDesktopReapsProcessGroupsTests } from "./acd-desktop-reaps-process-groups.test.mjs";
 // ── milestone 45 · UI app shell & path routing — the fitness functions authored at refine.
 // EXPECTED RED until 45's stories land; that is the house convention (an arch test written
 // at refine time is part of the CONTRACT, not a report on the present), and they are
@@ -247,6 +250,8 @@ export const tests = [
   ...acdDesktopSpawnRosterTests,
   // milestone 167 / story 05 — FF-16704, the guard path has no stop, restart or kill.
   ...acdDesktopGuardNeverKillsTests,
+  // milestone 175 / story 00 — FF-17501, the unix process-group reap.
+  ...acdDesktopReapsProcessGroupsTests,
   // milestone 45 — UI app shell & path routing (EXPECTED RED until 45's stories land)
   ...acdUiSingleRouteTableTests,
   ...acdNoSurfaceModeUrlLiteralTests,

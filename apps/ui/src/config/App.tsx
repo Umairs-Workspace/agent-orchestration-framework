@@ -30,7 +30,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type * as React from "react";
 import { createPortal } from "react-dom";
-import { Archive, Bot, CheckCircle2, Code2, FileText, Globe2, Library, Link2, ListChecks, Pencil, PlayCircle, Plus, RefreshCw, Save, Send, Settings2, ShieldAlert, Sparkles, Terminal, Trash2, X } from "lucide-react";
+import { Archive, Bot, CheckCircle2, Code2, FileText, Globe2, Library, Link2, ListChecks, Pencil, PlayCircle, Plus, RefreshCw, Save, Send, ShieldAlert, Sparkles, Terminal, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,10 +40,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { loadScope } from "./config-load.mjs";
 import { RuntimeSettings } from "./RuntimeSettings";
 import { ConfigLoadFailed, ConfigLoading } from "./ConfigLoadFailed";
+import { type SectionKind, sectionCount, sectionHint, sectionJson, sectionLabel, sections, sectionSchemaHint } from "./sections";
 
 type RuntimeId = "claude" | "codex";
 type ResourceKind = "skill" | "command" | "agent" | "rule";
-type SectionKind = "mcpServers" | "hooks" | "projectDocs" | "settings";
 
 type Diagnostic = {
   severity: "error" | "warning" | "info" | "ok";
@@ -111,6 +111,9 @@ type ConfigPayload = {
   hooks: unknown[];
   projectDocs: unknown[];
   settings: Record<string, unknown>;
+  // 180/DESIGN Surface 1 — the memory node in the new shape, and each old key it replaces (project scope).
+  memory?: Record<string, unknown>;
+  memoryLegacy?: Array<{ path: string; replacement: string }>;
   diagnostics: Diagnostic[];
   adapterWarnings: AdapterWarning[];
   capabilities: {
@@ -128,13 +131,6 @@ const kinds: Array<{ id: ResourceKind; label: string; icon: React.ReactNode }> =
 ];
 
 const runtimes: RuntimeId[] = ["claude", "codex"];
-const sections: Array<{ id: SectionKind; label: string; icon: React.ReactNode }> = [
-  { id: "mcpServers", label: "MCP Servers", icon: <Library className="h-4 w-4" aria-hidden="true" /> },
-  { id: "hooks", label: "Hooks", icon: <Code2 className="h-4 w-4" aria-hidden="true" /> },
-  { id: "projectDocs", label: "Project Docs", icon: <FileText className="h-4 w-4" aria-hidden="true" /> },
-  { id: "settings", label: "Settings", icon: <Settings2 className="h-4 w-4" aria-hidden="true" /> }
-];
-
 export function App() {
   const [scope, setScope] = useState<"project" | "global">("project");
   const [payload, setPayload] = useState<ConfigPayload | null>(null);
@@ -838,8 +834,13 @@ function SectionEditor({ activeSection, payload, refreshConfig }: { activeSectio
 
   useEffect(() => {
     setDraft(sectionJson(payload, activeSection));
-    setMessage("");
   }, [payload, activeSection]);
+
+  // The message belongs to the section: a save's refresh replaces `payload`, and clearing on that
+  // would erase "Saved …" the moment it appeared (180/DESIGN Surface 1, the Saved state).
+  useEffect(() => {
+    setMessage("");
+  }, [activeSection]);
 
   async function saveSection(event: React.FormEvent) {
     event.preventDefault();
@@ -884,6 +885,13 @@ function SectionEditor({ activeSection, payload, refreshConfig }: { activeSectio
         </div>
 
         {message ? <p className="rounded-md border border-border bg-card p-3 text-sm text-muted-foreground">{message}</p> : null}
+
+        {activeSection === "memory" && payload.memoryLegacy?.length ? (
+          <div className="rounded-md border border-border bg-card p-3 text-sm text-muted-foreground" aria-label="Legacy memory keys">
+            {payload.memoryLegacy.map((entry) => <p key={entry.path} className="mono">{entry.path} → {entry.replacement}</p>)}
+            <p>Saving writes the new shape.</p>
+          </div>
+        ) : null}
 
         <Card>
           <CardHeader>
@@ -1226,32 +1234,6 @@ function isReferenced(projectPayload: ConfigPayload | null, resource: EditableRe
 
 function scopeLabel(scope: "project" | "global") {
   return scope === "global" ? "Global source." : "Project-local source.";
-}
-
-function sectionLabel(section: SectionKind) {
-  return sections.find((item) => item.id === section)?.label ?? section;
-}
-
-function sectionJson(payload: ConfigPayload, section: SectionKind) {
-  return `${JSON.stringify(payload[section], null, 2)}\n`;
-}
-
-function sectionCount(payload: ConfigPayload, section: SectionKind) {
-  if (section === "settings") return Object.keys(payload.settings ?? {}).length;
-  const value = payload[section];
-  return Array.isArray(value) ? value.length : 0;
-}
-
-function sectionHint(section: SectionKind) {
-  if (section === "mcpServers") return "Project MCP declarations rendered to runtime config files.";
-  if (section === "hooks") return "Common command hooks with runtime-specific escape hatches.";
-  if (section === "projectDocs") return "Root assistant guidance rendered to AGENTS.md and CLAUDE.md.";
-  return "Runtime-specific settings merged into generated project config.";
-}
-
-function sectionSchemaHint(section: SectionKind) {
-  if (section === "settings") return "JSON object";
-  return "JSON array";
 }
 
 function runtimeName(runtime: RuntimeId) {

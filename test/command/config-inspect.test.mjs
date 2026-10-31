@@ -11,6 +11,10 @@ const resolveWorkDiagrams = _aofApplication.assets.configInspect.resolveWorkDiag
 const validateConfig = _aofApplication.assets.configInspect.validateConfig;
 const validateGlobalConfig = _aofApplication.assets.configInspect.validateGlobalConfig;
 import { generatorIds } from "@aof/diagrams/generators";
+import { realpathSync } from "node:fs";
+import { utimes } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { spawnCliSync } from "../support/cli-spawn.mjs";
 
 export const configInspectTests = [
   {
@@ -25,7 +29,8 @@ export const configInspectTests = [
         await writeFile(corpus, bytes);
         for (const [memory, extractionBackend, source, dependency] of [
           [{ backend: "graphify" }, "claude-cli", "legacy default", "Claude CLI (claude)"],
-          [{ backend: "graphify", graphify: { extractionBackend: "ollama" } }, "ollama", "project setting", "Ollama"],
+          // 180/ADR-004 — spelled at its new home; the legacy `memory.graphify` reads with a warning (180/01 task 00).
+          [{ backend: "graphify", backends: { graphify: { extractionBackend: "ollama" } } }, "ollama", "project setting", "Ollama"],
           [{ backend: "local" }, null, "project setting", null],
         ]) {
           const configBytes = JSON.stringify({ name: "demo", resources: [], memory, work: { loop: { runtime: "codex" } } }, null, 2) + "\n";
@@ -57,7 +62,10 @@ export const configInspectTests = [
         assert.equal((await inspectConfig(dir)).memory, null);
         const { GRAPHIFY_BACKENDS } = await import("../../packages/knowledge/src/graphify-backends.mjs");
         const schema = JSON.parse(await readFile(new URL("../../schemas/aof.schema.json", import.meta.url), "utf8"));
-        assert.deepEqual(schema.$defs.memory.properties.graphify.properties.extractionBackend.enum, GRAPHIFY_BACKENDS.map(entry => entry.backend));
+        // 180/ADR-004 — the extractor's home is `backends.graphify`; the deprecated `graphify` block keeps the same enum for one release.
+        for (const block of [schema.$defs.memory.properties.backends.properties.graphify, schema.$defs.memory.properties.graphify]) {
+          assert.deepEqual(block.properties.extractionBackend.enum, GRAPHIFY_BACKENDS.map(entry => entry.backend));
+        }
         const Ajv2020 = (await import("ajv/dist/2020.js")).default;
         const validate = new Ajv2020({ strict: false }).compile(schema);
         assert.equal(validate(config), false);
@@ -198,7 +206,11 @@ export const configInspectTests = [
   {
     name: "133/01 task 00: the schema describes the same work.diagrams object",
     run: schemaDescribesDiagrams
-  }
+  },
+  // 180/01 task 02 — the schema's memory node (see `memoryNodeSchemaTests`).
+  ...memoryNodeSchemaTests(),
+  // 180/01 task 03 — the faces print the memory node's new paths (see `memoryNodeFaceTests`).
+  ...memoryNodeFaceTests(),
 ];
 
 const DIAGRAMS_ID = generatorIds()[0];
@@ -1035,4 +1047,183 @@ function restoreEnv(name, value) {
   } else {
     process.env[name] = value;
   }
+}
+
+// ------------------------------------------------ 180/01 task 03: the faces ----
+//
+// Config inspection, project doctor and memory status name the memory node's new paths, and the
+// outputs scripts and hooks parse are the same whichever spelling the config uses (180/ADR-001,
+// ADR-005). THE FIXTURE is the feature's: a temp project under an isolated AOF_GLOBAL_HOME with a work
+// stream holding one ADR, the "legacy config" and its "new-shape twin". Declared as a function so
+// the array above can spread it before this module's later bindings are initialised.
+function memoryNodeFaceTests() {
+  const LEGACY = { name: "p", resources: [], memory: { backend: "local", sources: ["claude-auto-memory"] }, graph: { share: "off" } };
+  const TWIN = { name: "p", resources: [], memory: { backend: "local", corpora: ["work", "imports", "code", "operator"], graph: { share: "off" } } };
+  const seam = _aofApplication.knowledge.work.memory;
+  const cliPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "packages", "core", "bin", "aof.mjs");
+  const t = (name, run) => ({ name: `180/01 task 03: ${name}`, run });
+
+  async function withProject(config, fn) {
+    const root = await mkdtemp(path.join(os.tmpdir(), "aof-180-faces-"));
+    const previous = process.env.AOF_GLOBAL_HOME;
+    process.env.AOF_GLOBAL_HOME = path.join(root, "home");
+    try {
+      const project = path.join(root, "project");
+      const milestone = path.join(project, "wiki", "work", "01_milestone_line-endings");
+      await mkdir(milestone, { recursive: true });
+      await mkdir(path.join(project, ".aof"), { recursive: true });
+      await mkdir(process.env.AOF_GLOBAL_HOME, { recursive: true });
+      await writeFile(path.join(milestone, "SPEC.md"), "---\ntype: milestone\nnumber: 1\nslug: line-endings\ntitle: Line endings\nstatus: done\n---\n");
+      await writeFile(path.join(milestone, "ARCHITECTURE.md"), "## ADR-001: Pin line endings\n\n**Status:** Accepted\n\n**Decision.** Pin line endings in .gitattributes.\n");
+      await writeFile(path.join(project, ".aof", "aof.config.json"), `${JSON.stringify(config, null, 2)}\n`);
+      return await fn({ root, project, workDir: path.join(project, "wiki", "work") });
+    } finally {
+      restoreEnv("AOF_GLOBAL_HOME", previous);
+      await rm(root, { recursive: true, force: true });
+    }
+  }
+
+  // Each copy's own paths written as "{root}": its project first, then the temp root that holds it,
+  // each in its plain, realpath, Claude-slug and JSON-escaped spellings.
+  function rooted(text, { root, project }) {
+    for (const dir of [project, root]) {
+      for (const form of new Set([dir, realpathSync(dir)])) {
+        for (const spelling of [form, form.replace(/[^A-Za-z0-9]/g, "-"), JSON.stringify(form).slice(1, -1)]) text = text.split(spelling).join("{root}");
+      }
+    }
+    return text;
+  }
+
+  async function status(config, args = []) {
+    return withProject(config, async (copy) => {
+      const lines = [];
+      const ctx = { projectRoot: copy.project, workDir: copy.workDir, configMemory: config.memory };
+      const outcome = await seam.runMemory(["status", ...args], { config, ctx, log: (line) => lines.push(line) });
+      return { result: outcome.result, out: lines.join("\n"), rootedOut: rooted(lines.join("\n"), copy) };
+    });
+  }
+
+  const withoutConfig = ({ config, ...rest }) => rest;
+
+  return [
+    t("config inspection reports the node at its new paths", async () => {
+      await withProject(TWIN, async ({ project }) => {
+        const { memory } = await inspectConfig(project);
+        assert.deepEqual(memory.corpora, ["work", "imports", "code", "operator"]);
+        assert.equal(memory.corporaSource, "project setting");
+        assert.deepEqual(memory.paths, { backend: "memory.backend", corpora: "memory.corpora", graph: "memory.graph", extraction: "memory.backends.graphify.extractionBackend" });
+        assert.deepEqual(memory.legacy, []);
+      });
+    }),
+    t("E14 · project doctor warns of each old key and still calls the config valid", async () => {
+      await withProject(LEGACY, async ({ project }) => {
+        const report = await doctorConfig(project);
+        const legacy = report.diagnostics.filter((item) => item.code === "memory-config-legacy");
+        assert.deepEqual(legacy.map((item) => [item.severity, item.path]), [["warning", "memory.sources"], ["warning", "graph.share"]]);
+        assert.match(legacy[0].message, /memory\.corpora/);
+        assert.match(legacy[1].message, /memory\.graph\.share/);
+        for (const item of legacy) assert.match(item.message, /`aof work update` rewrites/);
+        assert.equal(report.checks.find((check) => check.id === "config-valid").severity, "ok");
+        // The text face prints checks, so the warning is a check too.
+        assert.equal(report.checks.find((check) => check.id === "memory-config-legacy")?.severity, "warning");
+      });
+    }),
+    t("a conflict is an error in config inspection", async () => {
+      await withProject({ name: "p", resources: [], graph: { share: "off" }, memory: { graph: { share: "off" } } }, async ({ project }) => {
+        const report = await doctorConfig(project);
+        assert.ok(report.diagnostics.some((item) => item.severity === "error" && item.code === "memory-config-conflict"), JSON.stringify(report.diagnostics));
+        assert.equal(report.checks.find((check) => check.id === "config-valid").severity, "error");
+      });
+    }),
+    ...[
+      ["E13", "new-shape twin", TWIN, ["corpora: work, imports, code, operator"]],
+      ["E13", "legacy config", LEGACY, ["corpora: work, imports, code, operator", "memory.sources → memory.corpora", "graph.share → memory.graph.share"]],
+    ].map(([example, label, config, added]) => t(`${example} · memory status adds the corpora line, and one line per old key — ${label}`, async () => {
+      const { result, out } = await status(config);
+      const today = seam.renderMemory("status", withoutConfig(result));
+      assert.ok(out.startsWith(`${today}\n`), "today's output comes first, unchanged");
+      const lines = out.slice(today.length + 1).split("\n");
+      assert.equal(lines.length, added.length, lines.join(" | "));
+      added.forEach((text, index) => assert.ok(lines[index].includes(text), `${lines[index]} names ${text}`));
+      assert.equal(lines[0], added[0], "the corpora line is exactly that");
+    })),
+    t("memory status --json carries the node as a config object", async () => {
+      const legacy = JSON.parse((await status(LEGACY, ["--json"])).rootedOut);
+      const twin = JSON.parse((await status(TWIN, ["--json"])).rootedOut);
+      assert.deepEqual(legacy.config.corpora, ["work", "imports", "code", "operator"]);
+      assert.equal(legacy.config.corporaSource, "project setting");
+      assert.equal(legacy.config.legacy.length, 2);
+      assert.deepEqual(withoutConfig(legacy), withoutConfig(twin), "every other field of the answer is unchanged");
+    }),
+    ...[
+      ["E15", ["memory", "recall", "pin line endings", "--block"]],
+      ["", ["memory", "recall", "pin line endings", "--json"]],
+      ["", ["memory", "ingest", "--json"]],
+      ["", ["graph", "impact", "packages/a.mjs", "--json"]],
+    ].map(([example, args]) => t(`E15 · a parsed output is the same whichever spelling the config uses — ${example ? `${example} ` : ""}aof ${args.join(" ")}`, async () => {
+      const outputs = [];
+      for (const config of [LEGACY, TWIN]) {
+        await withProject(config, async (copy) => {
+          const { root, project } = copy;
+          // Each copy's own auto-memory folder holds the feature's one feedback entry.
+          const claudeHome = path.join(root, "claude");
+          const real = realpathSync(project);
+          const memoryDir = path.join(claudeHome, "projects", real.replace(/[^A-Za-z0-9]/g, "-"), "memory");
+          await mkdir(memoryDir, { recursive: true });
+          await writeFile(path.join(memoryDir, "pin-line-endings.md"), "---\nname: Pin line endings\ndescription: Pin line endings in .gitattributes\nmetadata:\n  type: feedback\n---\nWhy: CRLF churn.\n");
+          // …and one code graph, b importing a, at a fixed build time so `builtAt` agrees across copies.
+          const graphJson = path.join(project, "graphify-out", "graph.json");
+          await mkdir(path.dirname(graphJson), { recursive: true });
+          await writeFile(graphJson, JSON.stringify({ directed: true, multigraph: false, graph: {}, hyperedges: [],
+            nodes: ["a", "b"].map((id) => ({ id, label: `${id}.mjs`, file_type: "code", source_file: `packages/${id}.mjs`, source_location: "L1" })),
+            links: [{ source: "b", target: "a", relation: "imports" }] }));
+          await utimes(graphJson, new Date("2026-10-30T00:00:00Z"), new Date("2026-10-30T00:00:00Z"));
+          const env = { ...process.env, NODE_NO_WARNINGS: "1", CLAUDE_CONFIG_DIR: claudeHome, AOF_GLOBAL_HOME: process.env.AOF_GLOBAL_HOME };
+          const cli = (argv) => spawnCliSync(process.execPath, [cliPath, ...argv], { cwd: project, encoding: "utf8", windowsHide: true, env });
+          if (args[1] === "recall") assert.equal(cli(["memory", "ingest", "--json"]).status, 0);
+          const result = cli(args);
+          assert.equal(result.status, 0, result.stderr);
+          const text = rooted(`${result.stdout}${result.stderr}`, copy);
+          assert.doesNotMatch(text, /memory-config-legacy|aof work update|→ memory\./, "no legacy warning");
+          outputs.push(text);
+        });
+      }
+      if (args[1] === "recall") assert.match(outputs[0], /operator:claude-auto-memory/, "the recall found the operator lesson (non-vacuity)");
+      if (args[0] === "graph") assert.match(outputs[0], /packages\/b\.mjs/, "the impact found the dependent (non-vacuity)");
+      assert.equal(outputs[1], outputs[0], "byte-identical once each root is {root}");
+    })),
+  ];
+}
+
+// ------------------------------------------ 180/01 task 02: the schema's node ----
+//
+// THE FIXTURE is the feature's: the shipped "schemas/aof.schema.json" compiled with the project's
+// JSON-schema validator (ajv, a declared root dependency). Here rather than in the knowledge package's
+// suite, which declares no ajv (05/R3).
+function memoryNodeSchemaTests() {
+  const t = (name, run) => ({ name: `180/01 task 02: ${name}`, run });
+  const validator = async () => {
+    const Ajv2020 = (await import("ajv/dist/2020.js")).default;
+    const schema = JSON.parse(await readFile(new URL("../../schemas/aof.schema.json", import.meta.url), "utf8"));
+    return new Ajv2020({ strict: false }).compile(schema);
+  };
+  return [
+    ...[
+      ["accepts", { backends: { graphify: { extractionBackend: "claude-cli" } } }],
+      ["accepts", { backends: { graphify: {} } }],
+      ["refuses", { backends: { cognee: {} } }],
+      ["refuses", { backends: { graphify: { model: "x" } } }],
+      ["refuses", { backends: { graphify: { extractionBackend: "codex" } } }],
+    ].map(([verdict, memory]) => t(`E11 · the schema admits only registered engines and their known settings — ${verdict} ${JSON.stringify(memory)}`, async () => {
+      assert.equal((await validator())({ name: "p", resources: [], memory }), verdict === "accepts");
+    })),
+    ...[
+      ["accepts", { name: "p", resources: [], memory: { backend: "graphify", corpora: ["work", "imports", "code"], graph: { share: "git-refs", remote: "origin" }, backends: { graphify: { extractionBackend: "claude-cli" } } } }],
+      ["accepts", { name: "p", resources: [], memory: { backend: "local", sources: ["claude-auto-memory"], graphify: { extractionBackend: "ollama" } }, graph: { share: "off" } }],
+      ["refuses", { name: "p", resources: [], memory: { graph: { share: "git-refs" }, egress: "local-only" } }],
+      ["refuses", { name: "p", resources: [], memory: { corpora: ["work", "code"] } }],
+    ].map(([verdict, config], index) => t(`E12 · the schema holds the new node, still admits the old spelling, and has no egress key — row ${index + 1} ${verdict}`, async () => {
+      assert.equal((await validator())(config), verdict === "accepts");
+    })),
+  ];
 }

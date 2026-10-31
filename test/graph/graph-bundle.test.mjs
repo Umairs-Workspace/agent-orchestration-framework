@@ -6,10 +6,16 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createGraphImportCommand } from "@aof/knowledge/commands/graph-import";
-import { createGraphBuildCommand } from "@aof/knowledge/commands/graph-build";
 import { INPUTS_STAMP, graphifyCacheKey, unpackBundle } from "@aof/knowledge/graph-bundle";
 import { defaultGitExec } from "@aof/execution/worktrees";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
+import { createGraphBuildCommand } from "@aof/knowledge/commands/graph-build";
+import { createGraphifyCodeBackend } from "@aof/knowledge/graphify-code-backend";
+import { createKnowledgeEngine } from "@aof/knowledge/engine";
+
+// graph:build is a face over the port since 179/ADR-002: the services build the graphify code
+// backend, the port routes the face's `ingest("code")` to it, and the face keeps the share wrapping.
+const composeGraphBuild = (services) => createGraphBuildCommand({ ...services, engine: createKnowledgeEngine({ backends: [createGraphifyCodeBackend(services).graphifyCodeBackend] }) });
 // 166 — a built graph travels to another machine: `aof graph export <path>` writes the codebase
 // graph and graphify's cache to one bundle file, and `aof graph import <path>` lays it out as a
 // second clone's graph, in the same project only, saying how stale it is and re-keying the carried
@@ -576,7 +582,7 @@ const machineTests = [
 async function buildWith(repo, { version = "0.8.44" } = {}) {
   const services = _aofApplication.knowledge.graphify;
   const calls = [];
-  const { graphBuildCommand } = createGraphBuildCommand({
+  const { graphBuildCommand } = composeGraphBuild({
     resolveGraphifyBinary: () => ({ found: true, binary: "graphify", path: "graphify", version }),
     runGraphifyBuild: (input, options) => {
       calls.push(input);
@@ -589,6 +595,7 @@ async function buildWith(repo, { version = "0.8.44" } = {}) {
     graphArtifactBuiltAt: services.graphArtifactBuiltAt,
     isCodeOnlyWholeRootBuild: services.isCodeOnlyWholeRootBuild,
     git: defaultGitExec,
+    ensureGraphifyOutGitignore: async () => true,
   });
   const result = await graphBuildCommand.run({ path: "." }, await ctxFor(repo));
   return { result, ran: calls.length };

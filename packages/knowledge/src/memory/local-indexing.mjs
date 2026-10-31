@@ -1,11 +1,13 @@
 import path from "node:path";
 import { stripHtmlComments } from "@aof/foundation/markdown";
-import { existsSync, realpathSync } from "node:fs";
+import { existsSync, realpathSync, statSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import { headingSplitRe, headingCaptureRe } from "@aof/work/declared-id";
 import { lessonSections, readLessonMeta, normaliseLessonMeta, forwardLessonMeta, normaliseGapStatus, collectTags } from "@aof/work/memory-vocabulary";
 import { refInScope } from "@aof/work/ref-scope";
-import { indexVersionReport } from "./local-retrieval.mjs";
+import { parseFrontmatter } from "@aof/work/records";
+import { RECORD_DOC_BY_TYPE, ARCHIVE_ROOT } from "@aof/work/identity";
+import { indexVersionReport, originStatus } from "./local-retrieval.mjs";
 import { readJson, writeText } from "@aof/foundation/fs";
 import { trimRun } from "@aof/foundation/text";
 import { createEpisodicIndexing, jsonPointerGet } from "./episodic-indexing.mjs";
@@ -59,7 +61,8 @@ const episodic = episodicReaders ? createEpisodicIndexing(episodicReaders) : nul
 // built before this version is reported stale by `status` until an ingest rebuilds it.
 // 157/ADR-002 — 3: a source may be a JSON locator (`<path>#<pointer>`, `<path>:<line>#<pointer>`),
 // which a version-2 source reader cannot interpret.
-const INDEX_VERSION = 3;
+// 178/ADR-002 — 4: every record gained `origin`, the planning documents its item came from.
+const INDEX_VERSION = 4;
 
 // The fixed, git-ignored store location (ADR-005), relative to the project root
 // (the directory holding `.aof/`). The index is the only persistent artifact the
@@ -188,6 +191,7 @@ function parseRetrospective(text, { item, itemSlug, workRelPath }) {
       owner,
       status, // 153/ADR-002: the lesson's `Promoted to` ("" when none is written — a legacy lesson)
       tags, // 148/ADR-003: the qualifiers the vocabulary split off, in field order, then `recurs:<ref>`
+      origin: [], // 178/ADR-002: the item's, stamped by the walk in `buildRecords`
       summary: lesson, // the one-line lesson gist — the short display line
       text: [title, what, why, lesson].filter(Boolean).join(" \n "), // searchable blob
       source: `${workRelPath}:${section.line}`,
@@ -229,6 +233,7 @@ function parseArchitecture(text, { item, itemSlug, workRelPath }) {
       owner: "",
       status,
       tags: [], // 148/ADR-003: present on every record, [] when there is none
+      origin: [], // 178/ADR-002: the item's, stamped by the walk in `buildRecords`
       summary: decision || invariant, // the decision/invariant gist — the short display line
       text: [title, context, decision, invariant].filter(Boolean).join(" \n "), // searchable blob
       source: `${workRelPath}:${section.line}`,
@@ -270,6 +275,7 @@ function parseAof(text, { item, itemSlug, workRelPath }) {
         owner: "",
         status: "",
         tags: [],
+        origin: [],
         summary,
         text: [title, body].filter(Boolean).join(" \n "), // searchable blob
         source: `${workRelPath}:${section.line}`,
@@ -431,6 +437,7 @@ function parseOutcome(text, { item, itemSlug, workRelPath }) {
         owner: "",
         status: "", // a capability is a standing fact — no lifecycle token
         tags: [],
+        origin: [],
         summary: statement, // the one-line delivered statement — the display gist
         text: [title, statement].filter(Boolean).join(" \n "), // searchable blob
         source: `${workRelPath}:${sub.line}`,
@@ -469,6 +476,7 @@ function parseOutcome(text, { item, itemSlug, workRelPath }) {
         owner: "",
         status, // the REUSED status field (ADR-001), held to the vocabulary's GAP_STATUSES (148/ADR-002)
         tags,
+        origin: [],
         summary: [statement, discharge].filter(Boolean).join(" — "), // gap statement + discharge gist
         text: [title, statement, discharge].filter(Boolean).join(" \n "), // searchable blob
         source: `${workRelPath}:${sub.line}`,
@@ -730,6 +738,87 @@ function hasImportedMarker(text) {
   return /(^|\n)\s*imported:\s*true\b/i.test(fm[1]);
 }
 
+// ---------------------------------------------------------------- origin ----
+
+// 178/ADR-002 — THE PLANNING DOCUMENTS AN ITEM CAME FROM. A record carries its item's `origin:`,
+// resolved to project-root-relative paths that name existing files, so an agent that recalls a
+// lesson or an ADR can open the PRD behind it. The value is read from the item's own record doc
+// (the native doc its type names, read once per item), and a story that declares none inherits
+// its top-level driver's.
+//
+// Each declared value is tried against three candidates, in order: the project root, the record
+// doc's own folder, and, for an item under `<workDir>/archive/`, the folder the doc stood in before
+// archiving moved it one level down (the doc-relative links were written there; ratified in 03's
+// contract). The first candidate that is a file inside the project root wins. A value no candidate
+// resolves is dropped and counted, never cited: the index never names a path that does not exist,
+// the invariant `source` keeps. Containment is checked before the disk is touched, through the same
+// real-path check `assertInsideBase` applies, so `..` or an absolute value is never opened.
+function originCandidates(value, docDir, { projectRoot, workDir }) {
+  if (path.isAbsolute(value) || /^[A-Za-z]:/.test(value) || /^[\\/]/.test(value)) return [];
+  const candidates = [path.resolve(projectRoot, value), path.resolve(docDir, value)];
+  const archive = path.resolve(workDir, ARCHIVE_ROOT);
+  if (isInside(archive, docDir) && path.resolve(docDir) !== archive) {
+    candidates.push(path.resolve(workDir, path.relative(archive, docDir), value));
+  }
+  return candidates;
+}
+
+function resolveOriginValue(value, docDir, ctx) {
+  const root = path.resolve(ctx.projectRoot);
+  for (const candidate of originCandidates(value, docDir, ctx)) {
+    if (!isInside(root, candidate) || !isInside(realPathOf(root), realPathOf(candidate))) continue;
+    let isFile = false;
+    try {
+      isFile = statSync(candidate).isFile();
+    } catch {
+      isFile = false;
+    }
+    if (isFile) return path.relative(root, candidate).split(path.sep).join("/");
+  }
+  return null;
+}
+
+// The item's declared values, as written: a scalar or a flow list, `[]` when it declares none.
+async function declaredOrigin(item) {
+  const doc = RECORD_DOC_BY_TYPE[item.type];
+  if (!doc) return [];
+  const docPath = path.join(item.dir, doc);
+  if (!existsSync(docPath)) return [];
+  const value = parseFrontmatter(await readFile(docPath, "utf8")).origin;
+  const values = Array.isArray(value) ? value : [value];
+  return values.filter((entry) => typeof entry === "string" && entry.trim() !== "").map((entry) => entry.trim());
+}
+
+// One resolver per walk: each item's own origin is resolved once, and its unresolved values are
+// counted once, however many stories inherit it.
+function createOriginResolver(items, ctx) {
+  const byRef = new Map(items.map((item) => [item.ref, item]));
+  const own = new Map();
+  let unresolved = 0;
+  const ownOrigin = async (item) => {
+    if (!own.has(item.ref)) {
+      const resolved = [];
+      for (const value of await declaredOrigin(item)) {
+        const hit = resolveOriginValue(value, item.dir, ctx);
+        if (hit === null) unresolved += 1;
+        else if (!resolved.includes(hit)) resolved.push(hit);
+      }
+      own.set(item.ref, resolved);
+    }
+    return own.get(item.ref);
+  };
+  return {
+    async originOf(item) {
+      const mine = await ownOrigin(item);
+      if (mine.length > 0 || item.type !== "story") return mine;
+      let driver = item;
+      while (driver.parent != null && byRef.has(driver.parent)) driver = byRef.get(driver.parent);
+      return driver === item ? mine : ownOrigin(driver);
+    },
+    unresolved: () => unresolved,
+  };
+}
+
 // Build the record set from the live `.md` files. `only` (e.g. "01") scopes the
 // rebuild to one milestone; null/undefined scans the whole stream. Reused by
 // both `reindex` and the derived-index fitness function.
@@ -782,6 +871,7 @@ async function buildRecords(only, ctx) {
   const isItemSource = (item) => !only || refInScope(item.ref, only) === true;
 
   const records = [];
+  const origins = createOriginResolver(items, { workDir, projectRoot });
   const episodicBuild = episodic?.episodicBuild({ workDir, projectRoot, items });
   // AOF.md paths the work-stream loop indexes (ITEM_RE milestones) — excluded from the
   // co-located-digest scan below so a recognised milestone's digest is never doubled.
@@ -792,6 +882,7 @@ async function buildRecords(only, ctx) {
     // `m02` — a different, real milestone that delivered something else. For a TOP-LEVEL
     // item `ref === number`, so every record that exists today is unmoved.
     const meta = { item: item.ref, itemSlug: item.slug };
+    const firstOfItem = records.length;
 
     // RETROSPECTIVE.md → lesson records, for ANY item (148/ADR-006). Read first, so a milestone's
     // records keep today's order (lessons, then ADRs and the digest, then deliveries) and a story's
@@ -846,7 +937,16 @@ async function buildRecords(only, ctx) {
     if (episodic && isItemSource(item)) {
       records.push(...(await episodic.episodicRecordsFor(item, meta, episodicBuild)));
     }
+
+    // 178/ADR-002 — every record this item contributed carries the item's origin, stamped here in
+    // the walk so each source's records get it, the episodic ones included. A copy per record: a
+    // shared array would let one record's consumer edit another's.
+    if (records.length > firstOfItem) {
+      const origin = await origins.originOf(item);
+      for (let index = firstOfItem; index < records.length; index += 1) records[index] = { ...records[index], origin: [...origin] };
+    }
   }
+  if (ctx.originReport) ctx.originReport.unresolved = origins.unresolved();
 
   // Compose the import-store scan AND the co-located-digest scan onto the work-stream
   // records on a whole-stream rebuild (13/ADR-003). A milestone-scoped rebuild stays
@@ -868,13 +968,17 @@ async function buildRecords(only, ctx) {
 // Build the frozen index DOCUMENT (ADR-005 index format) over the live stream.
 // Pure of disk side-effects so the fitness function can compare two builds.
 async function buildIndex(only, ctx) {
-  const records = await buildRecords(only, ctx);
+  // 178/ADR-002 — the walk reports the declared origin values it could not resolve through this
+  // named out-parameter, so `buildRecords` keeps answering the bare array its callers read.
+  const originReport = { unresolved: 0 };
+  const records = await buildRecords(only, { ...ctx, originReport });
   return {
     backend: "local",
     version: INDEX_VERSION,
     generatedAt: new Date().toISOString(),
     workDir: path.resolve(ctx.workDir),
     recordCount: records.length,
+    origin: { unresolved: originReport.unresolved },
     records,
   };
 }
@@ -942,6 +1046,9 @@ async function status(ctx) {
     runs: countOf("run"),
     // 148/ADR-003 — a store built before INDEX_VERSION is stale until an ingest rebuilds it.
     index: indexVersionReport(index?.version, INDEX_VERSION, Boolean(index)),
+    // 178/ADR-002 — the declared origin values the last ingest dropped, nested so status gains no
+    // top-level number and the type split still sums to `recordCount`.
+    origin: originStatus(index),
   };
 }
 

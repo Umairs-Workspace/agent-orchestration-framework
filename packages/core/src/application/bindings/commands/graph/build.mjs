@@ -3,20 +3,16 @@ import { createGraphBuildCommand } from "@aof/knowledge/commands/graph-build";
 import { defaultGitExec } from "@aof/execution/worktrees";
 import { ensureGraphifyOutGitignore } from "../../../../aof-gitignore.mjs";
 
-export function assembleCommandsGraphBuild({ graphifyServices }) {
-  // Core composition for knowledge-owned services: git lists the tree the inputs stamp covers (166)
-  // and reaches the remote a shared graph travels through, and a fetched graph is laid out with
-  // its ignore file, as an imported one is (174).
+export function assembleCommandsGraphBuild({ graphifyServices, knowledgeEngineServices }) {
+  // Core composition for knowledge-owned services: the build is `ingest("code")` through the port
+  // composed over the graphify code backend (179/ADR-002). git reaches the remote a shared graph
+  // travels through, and a fetched graph is laid out with its ignore file, as an imported one is (174).
 
   const { resolveGraphifyBinary } = graphifyServices;
-  const { runGraphifyBuild } = graphifyServices;
-  const { readGraph } = graphifyServices;
-  const { normalizeGraph } = graphifyServices;
-  const { graphJsonPath } = graphifyServices;
-  const { graphArtifactBuiltAt } = graphifyServices;
   const { isCodeOnlyWholeRootBuild } = graphifyServices;
+  const { codeEngine } = knowledgeEngineServices;
 
-  const { isNetworkBackend, isKnownNetworkBackend, classifyEgress, readBuiltGraph, graphBuildCommand } = createGraphBuildCommand({ resolveGraphifyBinary, runGraphifyBuild, readGraph, normalizeGraph, graphJsonPath, graphArtifactBuiltAt, isCodeOnlyWholeRootBuild, git: defaultGitExec, ensureGraphifyOutGitignore });
+  const { graphBuildCommand } = createGraphBuildCommand({ engine: codeEngine, isCodeOnlyWholeRootBuild, resolveGraphifyBinary, git: defaultGitExec, ensureGraphifyOutGitignore });
 
-  return { isNetworkBackend, isKnownNetworkBackend, classifyEgress, readBuiltGraph, graphBuildCommand };
+  return { graphBuildCommand };
 }

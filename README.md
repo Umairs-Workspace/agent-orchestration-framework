@@ -204,7 +204,7 @@ aof work validate [ref] [--json]     # folder↔frontmatter, tag vocabulary, dep
 aof work doc <ref> <DOC> [--json]    # read a record doc (SPEC / STATE / ARCHITECTURE / …)
 aof work tasks <ref> [--json]        # an item's task list
 aof work feedback <ref> --note "…" [--actor …]   # append an attributed feedback bullet (the only CLI write)
-aof work memory <verb> [args] [--json]           # recall / brief / ingest / reindex / status
+aof memory <verb> [args] [--json]                # recall / record-recall / recurrence / ingest / reindex / status
 aof work ui [--port 4180]            # serve the local board UI (built apps/ui/dist) — one origin
 aof work orchestrator [fable|opus] [--show]      # pick the main-session (orchestrator) model — Fable 5 or Opus 4.8
 aof work delegation [on|off] [--gpt-model <id>] [--show]   # toggle bulk-work delegation (default off), optionally set the model
@@ -242,12 +242,30 @@ Agents recall prior decisions, ADRs, and lessons across milestones through a con
 - **AOF.md digest** — a recallable per-milestone summary as a memory source (milestone 14).
 
 ```sh
-aof work memory status
-aof work memory reindex            # rebuild the derived index from the work stream
-aof work memory recall "pin line endings"
+aof memory status
+aof memory reindex                 # rebuild the derived index from the work stream
+aof memory recall "pin line endings"
 ```
 
 The derived index is git-ignored and re-derivable — never an authoritative second copy.
+
+Every memory setting lives in the one `memory` node (milestone 180):
+
+```jsonc
+"memory": {
+  "backend": "graphify",
+  "corpora": ["work", "imports", "code", "operator"],              // absent ≡ work, imports, code
+  "graph": { "share": "git-refs", "remote": "origin" },            // the code graph's sharing
+  "backends": { "graphify": { "extractionBackend": "claude-cli" } } // each engine's own settings
+}
+```
+
+`memory.corpora` names what memory serves: `work`, `imports` and `code` always, plus the optional
+`operator` corpus (your Claude auto-memory notes). `memory.graph.share` and `memory.graph.remote` share
+the codebase graph; `memory.backends.graphify.extractionBackend` picks graphify's extractor. No key
+configures egress — `aof memory status` and `aof graph build` report it. The old spellings
+`memory.sources`, `memory.graphify` and a root `graph` still read for one release with a warning in
+`aof project doctor` and `aof memory status`; `aof work update` rewrites them.
 
 ### Graphify codebase intelligence (milestones 09 · 11)
 
@@ -271,7 +289,7 @@ aof graph publish                  # publish this clone's graph there (clean def
 aof graph prune                    # keep only the newest 20 default-branch commits' graphs
 ```
 
-`graphify-out/` is a derived, git-ignored build artifact (rebuild on demand, never committed). To reuse a graph built on another machine instead, `aof graph export <path>` writes it to one file and `aof graph import <path>` lays it down in a second clone of the same project: it reports the graph's age and how many commits it is behind HEAD, re-keys graphify's cache to the clone's line endings, and replaces an existing graph only with `--force`. `aof graph build .` runs no graphify while no file the graph was built from has changed — on the receiving clone too, whatever its line endings. To skip the carry altogether, set `"graph": { "share": "git-refs" }` in `.aof/aof.config.json`: `aof graph build .` then takes the graph already published for HEAD on the project's own remote (`graph.remote`, default `origin`) when it has no current graph of its own, and after a build from a clean tree of a default-branch commit publishes it there for the next clone, worktree or node. A commit's graph is a blob behind `refs/aof/graph/v1/<commit>`, which a plain clone never downloads. The first publish of a commit wins, nothing is ever force-pushed, and each publish prunes to the newest 20 default-branch commits. A remote that can't be reached is a warning, never a failed build, and a node without push access only fetches. A published graph stays fetchable by its hash after its ref is deleted, so publishing is opt-in per project. Only the codebase graph is shared; the memory work graph and index never are. `aof graph impact` is the **deterministic, edge-based** coupling lookup the review/refine agents consume; `aof graph query` is the fuzzier NL hint.
+`graphify-out/` is a derived, git-ignored build artifact (rebuild on demand, never committed). To reuse a graph built on another machine instead, `aof graph export <path>` writes it to one file and `aof graph import <path>` lays it down in a second clone of the same project: it reports the graph's age and how many commits it is behind HEAD, re-keys graphify's cache to the clone's line endings, and replaces an existing graph only with `--force`. `aof graph build .` runs no graphify while no file the graph was built from has changed — on the receiving clone too, whatever its line endings. To skip the carry altogether, set `"memory": { "graph": { "share": "git-refs" } }` (`memory.graph.share`) in `.aof/aof.config.json`: `aof graph build .` then takes the graph already published for HEAD on the project's own remote (`memory.graph.remote`, default `origin`) when it has no current graph of its own, and after a build from a clean tree of a default-branch commit publishes it there for the next clone, worktree or node. A commit's graph is a blob behind `refs/aof/graph/v1/<commit>`, which a plain clone never downloads. The first publish of a commit wins, nothing is ever force-pushed, and each publish prunes to the newest 20 default-branch commits. A remote that can't be reached is a warning, never a failed build, and a node without push access only fetches. A published graph stays fetchable by its hash after its ref is deleted, so publishing is opt-in per project. Only the codebase graph is shared; the memory work graph and index never are. `aof graph impact` is the **deterministic, edge-based** coupling lookup the review/refine agents consume; `aof graph query` is the fuzzier NL hint.
 
 ### Notion work-board sync (milestones 17 · 18)
 

@@ -8,7 +8,6 @@ export function assembleMeshUiServe({ boardServeServices, globalMeshQueryService
 
   const { serveBoard } = boardServeServices;
   const { queryGlobalMeshStatus } = globalMeshQueryServices;
-  const { workspaceIdForProjectRoot } = globalMeshQueryServices;
 
   const { loadWorkspace } = workServices;
   const { assignWork } = meshAssignmentServices;
@@ -19,7 +18,7 @@ export function assembleMeshUiServe({ boardServeServices, globalMeshQueryService
   const { PROVIDER_IDS } = terminalProvidersServices;
   const { reportDegrade } = degradeServices;
 
-  const { DEFAULT_MESH_UI_PORT, meshUiDist, meshUiProbe, MAX_TERMINAL_INPUT_BYTES, serveMeshUi } = createMeshUiServer({ assetPath, serveBoard, queryGlobalMeshStatus, workspaceIdForProjectRoot, resolveCacheStalenessSeconds, loadWorkspace, assignWork, STOP_REFUSALS, stopLoop, createTerminalMirror, buildTerminalInputEnvelope, PROVIDER_IDS, reportDegrade });
+  const { DEFAULT_MESH_UI_PORT, meshUiDist, meshUiProbe, MAX_TERMINAL_INPUT_BYTES, serveMeshUi } = createMeshUiServer({ assetPath, serveBoard, queryGlobalMeshStatus, resolveCacheStalenessSeconds, loadWorkspace, assignWork, STOP_REFUSALS, stopLoop, createTerminalMirror, buildTerminalInputEnvelope, PROVIDER_IDS, reportDegrade });
 
   return { DEFAULT_MESH_UI_PORT, meshUiDist, meshUiProbe, MAX_TERMINAL_INPUT_BYTES, serveMeshUi };
 }

@@ -28,4 +28,4 @@ Feature: Work memory — the seam's door rides the route table
     When I run `work memory bogus`
     Then the command should fail
     And stderr should contain `Unknown memory verb "bogus".`
-    And stderr should contain `Usage: aof work memory <verb>`
+    And stderr should contain `Usage: aof memory <verb>`

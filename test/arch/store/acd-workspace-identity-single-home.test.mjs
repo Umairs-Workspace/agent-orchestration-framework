@@ -48,6 +48,13 @@ export const archTests = [
         if (!DERIVATION_HOMES.has(rel) && /\bworkspaceIdFor\s*\(/.test(code)) {
           offenders.push(`${rel}: calls the raw derivation workspaceIdFor() — use resolveWorkspaceId (identity handed as data outranks re-derivation)`);
         }
+        // The same derivation under its binding alias (`workspaceIdForProjectRoot`, exported by
+        // global-mesh-query.mjs) slipped past the call check above: three ui-serve sites
+        // hand-spelled the fallback through it, and the fleet's local scope ignored a pinned id
+        // (TECH_DEBT 4). The export itself is not a call, so it stays legal.
+        if (/\bworkspaceIdForProjectRoot\s*\(/.test(code)) {
+          offenders.push(`${rel}: calls the raw derivation through its alias workspaceIdForProjectRoot() — use resolveWorkspaceId`);
+        }
       }
       assert.deepEqual(offenders, [], `identity must have ONE home:\n  ${offenders.join("\n  ")}`);
     },

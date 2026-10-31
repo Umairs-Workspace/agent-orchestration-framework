@@ -72,7 +72,10 @@ import { assembleCommandsFeedback } from './bindings/commands/feedback.mjs';
 import { assembleCommandsFind } from './bindings/commands/find.mjs';
 import { assembleCommandsGrade } from './bindings/commands/grade.mjs';
 import { assembleGraphify } from './bindings/graphify.mjs';
+import { assembleKnowledgeEngine } from './bindings/knowledge-engine.mjs';
+import { assembleCodeRelations } from './bindings/code-relations.mjs';
 import { assembleCommandsGraphBuild } from './bindings/commands/graph/build.mjs';
+import { assembleCommandsGraphImpact } from './bindings/commands/graph/impact.mjs';
 import { assembleCommandsGraphQuery } from './bindings/commands/graph/query.mjs';
 import { assembleGraphMcpServer } from './bindings/graph-mcp-server.mjs';
 import { assembleCommandsGraphServe } from './bindings/commands/graph/serve.mjs';
@@ -267,7 +270,8 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const workAuditCensus = assembleWorkAuditCensus({  });
   const workAuditEvidence = assembleWorkAuditEvidence({  });
   const workAuditPromptLayer = assembleWorkAuditPromptLayer({  });
-  const workAuditSeamLiveness = assembleWorkAuditSeamLiveness({ workAuditCensusServices: workAuditCensus });
+  const codeRelations = assembleCodeRelations({  });
+  const workAuditSeamLiveness = assembleWorkAuditSeamLiveness({ workAuditCensusServices: workAuditCensus, codeRelationsServices: codeRelations });
   const workAuditDeclaredBounds = assembleWorkAuditDeclaredBounds({  });
   const workAuditReport = assembleWorkAuditReport({ workAuditCensusServices: workAuditCensus, workAuditEvidenceServices: workAuditEvidence, workAuditPromptLayerServices: workAuditPromptLayer, workAuditSeamLivenessServices: workAuditSeamLiveness, workAuditDeclaredBoundsServices: workAuditDeclaredBounds });
   const commandsAudit = assembleCommandsAudit({ workLoopsServices: workLoops, workAuditReportServices: workAuditReport, workAuditPromptLayerServices: workAuditPromptLayer, workAuditDeclaredBoundsServices: workAuditDeclaredBounds });
@@ -303,7 +307,9 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const commandsFind = assembleCommandsFind({ workReadServices: workRead });
   const commandsGrade = assembleCommandsGrade({ commandsResolveServices: commandsResolve, runStoreServices: runStore, meshWorktreeServices: meshWorktree });
   const graphify = assembleGraphify({  });
-  const commandsGraphBuild = assembleCommandsGraphBuild({ graphifyServices: graphify });
+  const knowledgeEngine = assembleKnowledgeEngine({ graphifyServices: graphify });
+  const commandsGraphBuild = assembleCommandsGraphBuild({ graphifyServices: graphify, knowledgeEngineServices: knowledgeEngine });
+  const commandsGraphImpact = assembleCommandsGraphImpact({ knowledgeEngineServices: knowledgeEngine });
   const commandsGraphQuery = assembleCommandsGraphQuery({ graphifyServices: graphify });
   const graphMcpServer = assembleGraphMcpServer({ commandCoreServices: commandPort });
   const commandsGraphServe = assembleCommandsGraphServe({ graphMcpServerServices: graphMcpServer, workServices: work });
@@ -397,7 +403,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const commandsPromoteFindingToChore = assembleCommandsPromoteFindingToChore({ commandsPromoteServices: commandsPromote, workReadServices: workRead });
   const commandsPromoteGapToChore = assembleCommandsPromoteGapToChore({ commandsInsertSharedServices: commandsInsertShared, commandsPromoteServices: commandsPromote });
   const commandsRatchet = assembleCommandsRatchet({ commandsResolveServices: commandsResolve });
-  const workTestSelect = assembleWorkTestSelect({ workAuditCensusServices: workAuditCensus });
+  const workTestSelect = assembleWorkTestSelect({ workAuditCensusServices: workAuditCensus, codeRelationsServices: codeRelations });
   const workTestChanged = assembleWorkTestChanged({ workTestSelectServices: workTestSelect });
   const workToolchain = assembleWorkToolchain({  });
   const commandsTest = assembleCommandsTest({ workAuditCensusServices: workAuditCensus, workTestChangedServices: workTestChanged, commandsResolveServices: commandsResolve, workTestSelectServices: workTestSelect, workToolchainServices: workToolchain });
@@ -426,7 +432,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const memoryGraphifyBackend = assembleMemoryGraphifyBackend({ commandCoreServices: commandPort, memoryLocalIndexingServices: memoryLocalIndexing });
   const memoryLocalBackend = assembleMemoryLocalBackend({ memoryLocalIndexingServices: memoryLocalIndexing });
   const meshDeclarations = assembleMeshDeclarations({ meshPresenceServices: meshPresence, runStoreServices: runStore, commandsRunRetryServices: commandsRunRetry, workServices: work, loopStopRequestServices: loopStopRequest, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
-  const storyContractDerive = assembleStoryContractDerive({  });
+  const storyContractDerive = assembleStoryContractDerive({ codeRelationsServices: codeRelations });
   const workExamplesAnswers = assembleWorkExamplesAnswers({ agentSessionDriverServices: agentSessionDriver, degradeServices: degrade, runStoreServices: runStore, runSpendIngestServices: runSpendIngest, workObserveServices: workObserve });
   const workInit = assembleWorkInit({ workspaceServices: workspace, workMemoryServices: workMemory });
   const commandsInitUpdate = assembleCommandsInitUpdate({ workInitServices: workInit, workMemoryServices: workMemory });
@@ -452,7 +458,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const commandsPackagesValidate = assembleCommandsPackagesValidate({ fsServices: fs, workspaceServices: workspace, commandsValidateSharedServices: commandsValidateShared });
   const commandsProjectInit = assembleCommandsProjectInit({ fsServices: fs, workspaceWriterServices: workspaceWriter, workspaceServices: workspace });
   const commandsProjectValidate = assembleCommandsProjectValidate({ commandsValidateSharedServices: commandsValidateShared });
-  const commandCore = assembleCommandCore({ commandsMeshContributionServices: commandsMeshContribution, workServices: work, commandsListServices: commandsList, commandsLoopsShowServices: commandsLoopsShow, commandsLoopsGraphServices: commandsLoopsGraph, commandsLoopsValidateServices: commandsLoopsValidate, commandsLoopsGroundednessServices: commandsLoopsGroundedness, commandsLoopDocumentServices: commandsLoopDocument, commandsLoopRecordServices: commandsLoopRecord, commandsContinueServices: commandsContinue, commandsDriveServices: commandsDrive, commandsLoopServices: commandsLoop, commandsResyncServices: commandsResync, commandsDocServices: commandsDoc, commandsTasksServices: commandsTasks, commandsValidateServices: commandsValidate, commandsNextServices: commandsNext, commandsDispatchServices: commandsDispatch, commandsFeedbackServices: commandsFeedback, commandsDoctorServices: commandsDoctor, commandsAuditServices: commandsAudit, commandsAcceptorServices: commandsAcceptor, commandsTuneServices: commandsTune, commandsTriggerServices: commandsTrigger, commandsGradeServices: commandsGrade, commandsRatchetServices: commandsRatchet, commandsCountersServices: commandsCounters, commandsGraphBuildServices: commandsGraphBuild, commandsGraphQueryServices: commandsGraphQuery, commandsGraphTriageServices: commandsGraphTriage, commandsGraphExportServices: commandsGraphExport, commandsGraphImportServices: commandsGraphImport, commandsGraphFetchServices: commandsGraphFetch, commandsGraphPublishServices: commandsGraphPublish, commandsGraphPruneServices: commandsGraphPrune, commandsTestServices: commandsTest, commandsImportMilestoneServices: commandsImportMilestone, commandsMigrateFolderServices: commandsMigrateFolder, commandsNotionSyncWorkServices: commandsNotionSyncWork, commandsNotionAssociateServices: commandsNotionAssociate, commandsRunStartServices: commandsRunStart, commandsRunCompleteServices: commandsRunComplete, commandsRunStatusServices: commandsRunStatus, commandsItemStatusServices: commandsItemStatus, commandsRegressionGateServices: commandsRegressionGate, commandsRunRetryServices: commandsRunRetry, commandsResumeServices: commandsResume, commandsGraphServeServices: commandsGraphServe, commandsDiagramPlanServices: commandsDiagramPlan, commandsDiagramExportServices: commandsDiagramExport, commandsDiagramFileServices: commandsDiagramFile, commandsMessagingMessagingServices: commandsMessagingMessaging, commandsWorkUiServices: commandsWorkUi, commandsAssetsUiServices: commandsAssetsUi, commandsFindServices: commandsFind, commandsObserveServices: commandsObserve, commandsWorkMemoryServices: commandsWorkMemory, commandsInitUpdateServices: commandsInitUpdate, commandsProjectInitServices: commandsProjectInit, commandsInsertMilestoneServices: commandsInsertMilestone, commandsInsertUatServices: commandsInsertUat, commandsInsertStoryServices: commandsInsertStory, commandsInsertChoreServices: commandsInsertChore, commandsPrototypeServices: commandsPrototype, commandsPromoteServices: commandsPromote, commandsArchiveServices: commandsArchive, commandsRenumberServices: commandsRenumber, commandsPromoteGapToChoreServices: commandsPromoteGapToChore, commandsPromoteFindingToChoreServices: commandsPromoteFindingToChore, commandsUpgradeServices: commandsUpgrade, commandsAssetsListServices: commandsAssetsList, commandsPackagesListServices: commandsPackagesList, commandsProjectShowServices: commandsProjectShow, commandsAssetsShowServices: commandsAssetsShow, commandsAssetsAddServices: commandsAssetsAdd, commandsAssetsRemoveServices: commandsAssetsRemove, commandsAssetsRefsServices: commandsAssetsRefs, commandsAssetsValidateServices: commandsAssetsValidate, commandsAssetsApplyServices: commandsAssetsApply, commandsPackagesShowServices: commandsPackagesShow, commandsPackagesValidateServices: commandsPackagesValidate, commandsPackagesInstallServices: commandsPackagesInstall, commandsProjectValidateServices: commandsProjectValidate, commandsProjectDoctorServices: commandsProjectDoctor, commandsProjectMigrateServices: commandsProjectMigrate });
+  const commandCore = assembleCommandCore({ commandsGraphImpactServices: commandsGraphImpact, commandsMeshContributionServices: commandsMeshContribution, workServices: work, commandsListServices: commandsList, commandsLoopsShowServices: commandsLoopsShow, commandsLoopsGraphServices: commandsLoopsGraph, commandsLoopsValidateServices: commandsLoopsValidate, commandsLoopsGroundednessServices: commandsLoopsGroundedness, commandsLoopDocumentServices: commandsLoopDocument, commandsLoopRecordServices: commandsLoopRecord, commandsContinueServices: commandsContinue, commandsDriveServices: commandsDrive, commandsLoopServices: commandsLoop, commandsResyncServices: commandsResync, commandsDocServices: commandsDoc, commandsTasksServices: commandsTasks, commandsValidateServices: commandsValidate, commandsNextServices: commandsNext, commandsDispatchServices: commandsDispatch, commandsFeedbackServices: commandsFeedback, commandsDoctorServices: commandsDoctor, commandsAuditServices: commandsAudit, commandsAcceptorServices: commandsAcceptor, commandsTuneServices: commandsTune, commandsTriggerServices: commandsTrigger, commandsGradeServices: commandsGrade, commandsRatchetServices: commandsRatchet, commandsCountersServices: commandsCounters, commandsGraphBuildServices: commandsGraphBuild, commandsGraphQueryServices: commandsGraphQuery, commandsGraphTriageServices: commandsGraphTriage, commandsGraphExportServices: commandsGraphExport, commandsGraphImportServices: commandsGraphImport, commandsGraphFetchServices: commandsGraphFetch, commandsGraphPublishServices: commandsGraphPublish, commandsGraphPruneServices: commandsGraphPrune, commandsTestServices: commandsTest, commandsImportMilestoneServices: commandsImportMilestone, commandsMigrateFolderServices: commandsMigrateFolder, commandsNotionSyncWorkServices: commandsNotionSyncWork, commandsNotionAssociateServices: commandsNotionAssociate, commandsRunStartServices: commandsRunStart, commandsRunCompleteServices: commandsRunComplete, commandsRunStatusServices: commandsRunStatus, commandsItemStatusServices: commandsItemStatus, commandsRegressionGateServices: commandsRegressionGate, commandsRunRetryServices: commandsRunRetry, commandsResumeServices: commandsResume, commandsGraphServeServices: commandsGraphServe, commandsDiagramPlanServices: commandsDiagramPlan, commandsDiagramExportServices: commandsDiagramExport, commandsDiagramFileServices: commandsDiagramFile, commandsMessagingMessagingServices: commandsMessagingMessaging, commandsWorkUiServices: commandsWorkUi, commandsAssetsUiServices: commandsAssetsUi, commandsFindServices: commandsFind, commandsObserveServices: commandsObserve, commandsWorkMemoryServices: commandsWorkMemory, commandsInitUpdateServices: commandsInitUpdate, commandsProjectInitServices: commandsProjectInit, commandsInsertMilestoneServices: commandsInsertMilestone, commandsInsertUatServices: commandsInsertUat, commandsInsertStoryServices: commandsInsertStory, commandsInsertChoreServices: commandsInsertChore, commandsPrototypeServices: commandsPrototype, commandsPromoteServices: commandsPromote, commandsArchiveServices: commandsArchive, commandsRenumberServices: commandsRenumber, commandsPromoteGapToChoreServices: commandsPromoteGapToChore, commandsPromoteFindingToChoreServices: commandsPromoteFindingToChore, commandsUpgradeServices: commandsUpgrade, commandsAssetsListServices: commandsAssetsList, commandsPackagesListServices: commandsPackagesList, commandsProjectShowServices: commandsProjectShow, commandsAssetsShowServices: commandsAssetsShow, commandsAssetsAddServices: commandsAssetsAdd, commandsAssetsRemoveServices: commandsAssetsRemove, commandsAssetsRefsServices: commandsAssetsRefs, commandsAssetsValidateServices: commandsAssetsValidate, commandsAssetsApplyServices: commandsAssetsApply, commandsPackagesShowServices: commandsPackagesShow, commandsPackagesValidateServices: commandsPackagesValidate, commandsPackagesInstallServices: commandsPackagesInstall, commandsProjectValidateServices: commandsProjectValidate, commandsProjectDoctorServices: commandsProjectDoctor, commandsProjectMigrateServices: commandsProjectMigrate });
   lifetime.ready();
   const application = Object.freeze({
     ...commandPort,
@@ -870,13 +876,14 @@ export function assembleApplication({ env = process.env, base = createBaseServic
     }),
     knowledge: Object.freeze({
       graphify: graphify,
+      engine: knowledgeEngine,
       commandTools: Object.freeze({
         graph: Object.freeze({
           build: Object.freeze({
-            isNetworkBackend: commandsGraphBuild.isNetworkBackend,
-            isKnownNetworkBackend: commandsGraphBuild.isKnownNetworkBackend,
-            classifyEgress: commandsGraphBuild.classifyEgress,
-            readBuiltGraph: commandsGraphBuild.readBuiltGraph,
+            isNetworkBackend: knowledgeEngine.isNetworkBackend,
+            isKnownNetworkBackend: knowledgeEngine.isKnownNetworkBackend,
+            classifyEgress: knowledgeEngine.classifyEgress,
+            readBuiltGraph: knowledgeEngine.readBuiltGraph,
           }),
         }),
       }),

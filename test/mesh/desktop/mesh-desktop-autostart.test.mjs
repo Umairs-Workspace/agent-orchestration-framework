@@ -24,6 +24,38 @@ const invoke = _aofApplication.invoke;
 const listCommands = _aofApplication.listCommands;
 const runCommandFace = _aofApplication.cli.runCommandFace;
 import { withMeshDesktopFixture } from "../../support/mesh-desktop-fixture.mjs";
+import { parseLaunchAgent, readLaunchAgentPath, renderLaunchAgent } from "@aof/mesh/commands/desktop-launch-agent";
+
+// 175/02 — a file seam over a map, standing in for `~/Library/LaunchAgents`.
+function makeFakeFiles() {
+  const disk = new Map();
+  let writes = 0;
+  return {
+    seed: (file, text) => disk.set(file, text),
+    read: (file) => (disk.has(file) ? disk.get(file) : null),
+    writes: () => writes,
+    seam: {
+      read: async (file) => (disk.has(file) ? disk.get(file) : null),
+      write: async (file, text) => {
+        writes += 1;
+        disk.set(file, text);
+      },
+      remove: async (file) => {
+        disk.delete(file);
+      },
+    },
+  };
+}
+
+// 175/02 — a fixture `.app` bundle with an executable inside.
+async function seedBundle(dir) {
+  const { chmod, mkdir, writeFile } = await import("node:fs/promises");
+  const inner = path.join(dir, "aof-mesh-desktop.app", "Contents", "MacOS", "AOF Desktop");
+  await mkdir(path.dirname(inner), { recursive: true });
+  await writeFile(inner, "fixture-bundle-exe", "utf8");
+  await chmod(inner, 0o755);
+  return path.join(dir, "aof-mesh-desktop.app");
+}
 
 // `reg`'s own sentence for "no such value" — the ONE stderr text that makes a non-zero
 // exit a success, and only for a delete.
@@ -86,6 +118,12 @@ function inertPreflightCtx() {
     nodeId: "fixture-node",
   };
 }
+
+// 175/03 — a darwin row's preflight adds four probes, every one asked of `ctx.runner`. A darwin
+// row that injects no runner of its own hands this one, so none of them reaches the real
+// `xcode-select`, `cargo`, `xattr` or `claude`. It is NOT in `inertPreflightCtx`: the win32 rows
+// spread that after their registry runner, which it would silently replace.
+const inertDarwinRunner = async () => ({ stdout: "", stderr: "", code: 0 });
 
 async function captureConsole(run) {
   const logs = [];
@@ -477,7 +515,9 @@ export const meshDesktopAutostartTests = [
   // ── task 02 ────────────────────────────────────────────────────────────────────
 
   {
-    name: "126/04 task02 the admitted platform set is exactly `win32` — every other value refuses `autostart-unsupported-platform` by name, never case-folded, never falling back to the host",
+    // 175/02 widened the admitted set to `win32` and `darwin` (175/ADR-004 §3); the row below
+    // is this suite following it. 126/04's delivered `.feature` stays as written.
+    name: "126/04 task02 (widened by 175/02) the admitted platform set is exactly `win32` and `darwin` — every other value refuses `autostart-unsupported-platform` by name, never case-folded, never falling back to the host",
     async run() {
       await withMeshDesktopFixture(async ({ installDir }) => {
         // The one admitted value.
@@ -487,8 +527,8 @@ export const meshDesktopAutostartTests = [
 
         const refused = [
           { platform: "linux", names: "`linux`" },
-          { platform: "darwin", names: "`darwin`" },
           { platform: "sunos", names: "`sunos`" },
+          { platform: "DARWIN", names: "`DARWIN`" },
           { platform: "WIN32", names: "`WIN32`" },
           { platform: "", names: "unset" },
         ];
@@ -509,7 +549,7 @@ export const meshDesktopAutostartTests = [
   },
 
   {
-    name: "126/04 task02 off Windows the refusal is decided on the INPUT — non-zero, never a silent success, and nothing is placed even when the artifacts DO resolve",
+    name: "126/04 task02 (linux since 175/02) off the admitted platforms the refusal is decided on the INPUT — non-zero, never a silent success, and nothing is placed even when the artifacts DO resolve",
     async run() {
       await withMeshDesktopFixture(async ({ installDir, appArtifactPath, bootstrapperArtifactPath }) => {
         const { readdir } = await import("node:fs/promises");
@@ -521,11 +561,11 @@ export const meshDesktopAutostartTests = [
             invoke(
               "mesh:desktop-install",
               { installDir, appArtifact: appArtifactPath, bootstrapperArtifact: bootstrapperArtifactPath, [flag]: true },
-              { runner: registry.runner, platform: "darwin", ...inertPreflightCtx() },
+              { runner: registry.runner, platform: "linux", ...inertPreflightCtx() },
             ),
             (error) => {
               assert.equal(error.code, "autostart-unsupported-platform", `${flag} off Windows is the same coded refusal`);
-              assert.ok(error.message.includes("`darwin`"), "naming the platform");
+              assert.ok(error.message.includes("`linux`"), "naming the platform");
               assert.ok(!/nothing to remove/i.test(error.message), "a removal is never reported as `there was nothing to remove`");
               return true;
             },
@@ -558,11 +598,11 @@ export const meshDesktopAutostartTests = [
           invoke(
             "mesh:desktop-install",
             { installDir, appArtifact: appArtifactPath, bootstrapperArtifact: bootstrapperArtifactPath, autostart: true },
-            { runner: registry.runner, platform: "darwin", ...inertPreflightCtx() },
+            { runner: registry.runner, platform: "linux", ...inertPreflightCtx() },
           ),
           (error) => {
             assert.equal(error.code, "autostart-unsupported-platform", "carries the code the envelope prints");
-            assert.ok(error.message.includes("`darwin`"), "and an error naming darwin");
+            assert.ok(error.message.includes("`linux`"), "and an error naming linux");
             assert.equal(error.message.split(/[.!?]\s/).length <= 3, true, "one sentence, never a stack trace");
             assert.ok(error instanceof Error, "an Error the face's envelope consumes");
             return true;
@@ -582,6 +622,144 @@ export const meshDesktopAutostartTests = [
       assert.equal(envelope.code, "autostart-flags-conflict", "carrying the code");
       assert.ok(typeof envelope.error === "string" && envelope.error.length > 0, "and a one-sentence error");
       assert.ok(!/\n\s+at /.test(envelope.error), "never a stack trace");
+    },
+  },
+
+  // ── milestone 175 / story 02, task 03_autostart-registers-a-launch-agent.feature ──
+  //
+  // The plist is written through an INJECTED file seam that models one file system as a map, so
+  // nothing reaches `~/Library`, and the runner records every command so "no launchctl" is an
+  // assertion on what was asked, not on what happened to work.
+
+  // Scenario: E11 · the plist carries the installing shell's PATH and starts at login only
+  {
+    name: "175/02 task03 E11 · the plist carries the installing shell's PATH and starts at login only, and no launchctl is asked",
+    async run() {
+      await withMeshDesktopFixture(async ({ installDir, home, artifactsDir }) => {
+        const bundle = await seedBundle(artifactsDir);
+        const files = makeFakeFiles();
+        const runner = makeAnsweringRunner({ stdout: "", stderr: "", code: 0 });
+        const PATH = "/Users/u/.nvm/versions/node/v24.14.1/bin:/usr/bin:/bin";
+        const result = await invoke(
+          "mesh:desktop-install",
+          { installDir, appArtifact: bundle, autostart: true },
+          { platform: "darwin", home, env: { PATH }, files: files.seam, runner: runner.runner, ...inertPreflightCtx() },
+        );
+        const plistPath = path.join(home, "Library", "LaunchAgents", "com.aof.mesh.desktop.plist");
+        const plist = parseLaunchAgent(files.read(plistPath));
+        assert.ok(plist, "the plist was written and parses");
+        assert.equal(plist.Label, "com.aof.mesh.desktop");
+        assert.deepEqual(plist.ProgramArguments, [path.join(installDir, "aof-mesh-desktop.app", "Contents", "MacOS", "AOF Desktop")]);
+        assert.equal(plist.RunAtLoad, true);
+        assert.equal(plist.LimitLoadToSessionType, "Aqua");
+        assert.equal(plist.ProcessType, "Interactive");
+        assert.equal(plist.KeepAlive, false);
+        assert.equal(plist.EnvironmentVariables.PATH, PATH);
+        assert.ok(!runner.calls.some((c) => c.file === "launchctl"), "the runner was asked for no launchctl command");
+        assert.equal(result.autostart.plistPath, plistPath, "the answer's autostart names the plist path");
+      }, { seedArtifacts: false });
+    },
+  },
+
+  // Scenario: E12 · removing an absent LaunchAgent is a success
+  {
+    name: "175/02 task03 E12 · removing an absent LaunchAgent is a success with alreadyAbsent",
+    async run() {
+      await withMeshDesktopFixture(async ({ installDir, home, artifactsDir }) => {
+        const result = await invoke(
+          "mesh:desktop-install",
+          { installDir, appArtifact: await seedBundle(artifactsDir), noAutostart: true },
+          { platform: "darwin", home, env: { PATH: "/usr/bin" }, files: makeFakeFiles().seam, runner: inertDarwinRunner, ...inertPreflightCtx() },
+        );
+        assert.equal(result.autostart.alreadyAbsent, true);
+        assert.equal(result.autostart.changed, false);
+      }, { seedArtifacts: false });
+    },
+  },
+
+  // Scenario: E13 · linux is refused by name before anything is placed
+  {
+    name: "175/02 task03 E13 · linux is refused autostart-unsupported-platform by name before anything is placed",
+    async run() {
+      await withMeshDesktopFixture(async ({ installDir, artifactsDir }) => {
+        const { readdir } = await import("node:fs/promises");
+        const before = (await readdir(installDir)).sort();
+        await assert.rejects(
+          invoke("mesh:desktop-install", { installDir, appArtifact: await seedBundle(artifactsDir), autostart: true }, { platform: "linux", ...inertPreflightCtx() }),
+          (error) => {
+            assert.equal(error.code, "autostart-unsupported-platform");
+            assert.ok(error.message.includes("`linux`"), error.message);
+            return true;
+          },
+        );
+        assert.deepEqual((await readdir(installDir)).sort(), before, "the install dir is unchanged");
+      }, { seedArtifacts: false });
+    },
+  },
+
+  // Scenario Outline: each prior state ends where the flag says
+  {
+    name: "175/02 task03 each prior state of the LaunchAgent ends where the flag says",
+    async run() {
+      const current = "/Users/u/.nvm/versions/node/v24.14.1/bin:/usr/bin:/bin";
+      const rows = [
+        { before: "absent", flag: "autostart", after: "current", changed: true },
+        { before: "old", flag: "autostart", after: "current", changed: true },
+        { before: "current", flag: "noAutostart", after: "absent", changed: true },
+        { before: "absent", flag: "noAutostart", after: "absent", changed: false },
+      ];
+      for (const row of rows) {
+        await withMeshDesktopFixture(async ({ installDir, home }) => {
+          const plistPath = path.join(home, "Library", "LaunchAgents", "com.aof.mesh.desktop.plist");
+          const executable = path.join(installDir, "aof-mesh-desktop.app", "Contents", "MacOS", "AOF Desktop");
+          const files = makeFakeFiles();
+          if (row.before !== "absent") {
+            const priorPath = row.before === "old" ? "/usr/bin:/bin" : current;
+            files.seed(plistPath, renderLaunchAgent({ label: "com.aof.mesh.desktop", executable, path: priorPath }));
+          }
+          const result = await applyAutostart({
+            action: row.flag === "autostart" ? "write" : "remove",
+            platform: "darwin", installDir, home, env: { PATH: current }, files: files.seam,
+          });
+          const label = `${row.before} + --${row.flag === "autostart" ? "autostart" : "no-autostart"}`;
+          if (row.after === "absent") assert.equal(files.read(plistPath), null, `${label}: the plist is absent`);
+          else assert.equal(readLaunchAgentPath(files.read(plistPath)), current, `${label}: present with the current PATH`);
+          assert.equal(result.changed, row.changed, `${label}: changed is ${row.changed}`);
+        });
+      }
+    },
+  },
+
+  // Scenario: --dry-run names the plist it would write and writes nothing
+  {
+    name: "175/02 task03 --dry-run on darwin names the plist it would write and writes nothing",
+    async run() {
+      await withMeshDesktopFixture(async ({ installDir, home, artifactsDir }) => {
+        const files = makeFakeFiles();
+        const result = await invoke(
+          "mesh:desktop-install",
+          { installDir, appArtifact: await seedBundle(artifactsDir), autostart: true, dryRun: true },
+          { platform: "darwin", home, env: { PATH: "/usr/bin" }, files: files.seam, runner: inertDarwinRunner, ...inertPreflightCtx() },
+        );
+        const plistPath = path.join(home, "Library", "LaunchAgents", "com.aof.mesh.desktop.plist");
+        assert.equal(result.autostart.dryRun, true);
+        assert.equal(result.autostart.plistPath, plistPath, "it names the plist path");
+        assert.equal(files.read(plistPath), null, "no plist exists");
+        assert.equal(files.writes(), 0, "and nothing was written");
+      }, { seedArtifacts: false });
+    },
+  },
+
+  // Scenario: the rendered plist reads back the PATH it was given
+  {
+    name: "175/02 task03 the rendered plist reads back the PATH it was given",
+    run: () => {
+      const PATH = "/Users/u/.nvm/versions/node/v24.14.1/bin:/usr/bin:/bin";
+      const xml = renderLaunchAgent({ label: "com.aof.mesh.desktop", executable: "/x/aof-mesh-desktop.app/Contents/MacOS/AOF Desktop", path: PATH });
+      assert.equal(readLaunchAgentPath(xml), PATH);
+      assert.deepEqual(parseLaunchAgent(xml).AssociatedBundleIdentifiers, ["com.aof.mesh.desktop"], "Login Items names the job by its app (175/F-05)");
+      assert.equal(readLaunchAgentPath(renderLaunchAgent({ label: "l", executable: "/x", path: "/a&b<c>" })), "/a&b<c>", "an escaped PATH reads back as given");
+      assert.equal(readLaunchAgentPath("not a plist"), null, "anything else reads as no PATH");
     },
   },
 ];

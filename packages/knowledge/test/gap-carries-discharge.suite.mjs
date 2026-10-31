@@ -19,6 +19,7 @@
 // "aof work memory recall --status open" behaves for real.
 import assert from "node:assert/strict";
 import { createMemory } from "@aof/knowledge/memory";
+import { RECORD_CORPORA } from "@aof/knowledge/engine";
 import { recall as localRecall } from "@aof/knowledge/memory/local-retrieval";
 
 // Every run hands `runMemory` its own fixture backend through `resolveBackend`, so neither
@@ -90,6 +91,7 @@ const FIXTURE = [
 function fixtureBackend(records) {
   return {
     name: "fixture",
+    corpora: RECORD_CORPORA,
     async recall(query, scope, opts, ctx) {
       return await localRecall(query, scope, opts, { records: ctx?.records ?? records });
     },

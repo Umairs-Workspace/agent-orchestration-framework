@@ -171,7 +171,7 @@ const importMilestoneCommand = {
         // but surface it — a swallowed failure leaves the import unindexed with no
         // signal. The materialize succeeded; memory will catch up on the next reindex.
         console.error(
-          `warning: import materialized but the memory reindex failed (${error.message}). Run \`aof work memory reindex\` to index it.`
+          `warning: import materialized but the memory reindex failed (${error.message}). Run \`aof memory reindex\` to index it.`
         );
       }
     }

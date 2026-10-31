@@ -2,11 +2,23 @@
 
 // Configured application services are supplied by core; construction performs no I/O.
 export function createMemoryCommand({ MEMORY_USAGE, RECORD_RECALL_VERB, SCOPE_FLAGS, memoryJson, parseMemoryArgv, recordRecall, renderMemory, renderWithPropagationWarnings, resolveConfiguredBackend, runMemoryVerb }) {
-// src/commands/work/memory.mjs — `work:memory`, the registered door onto the memory seam
-// (story 128). WAVE-D class A by 42's own definition — an unregistered ladder verb becomes a
-// new registry Command and its branch is deleted: a Command that declares its route, its flag
-// vocabulary and its `argv`/`render`/`json` adapters on itself and calls the seam's core
-// with the parsed input. The SEAM (`src/work/memory.mjs`) keeps what is the seam's —
+// src/commands/work/memory.mjs — `memory`, the registered door onto the memory seam (story 128),
+// and `work:memory`, its alias (178/ADR-001).
+
+// TWO DOORS, ONE COMMAND (178/ADR-001). Memory's config has been a top-level `memory` object
+// since 05/ADR-002, so its face is `aof memory`. `aof work memory` stays registered, because
+// prompts paste its `recall --block` output and hooks read its `recall --json`. The spine gives a
+// command one route, so the alias is a second command spread from this one descriptor: it
+// replaces only `id` and `cli.route`, and its `input`, `run`, `argv`, `render` and `json` are
+// this command's own function objects (FF-17801). It keeps the id `work:memory`, so everything
+// keyed on that id still resolves, and it prints nothing extra. Its usage text is the canonical
+// one, which spells `aof memory`. That is the one difference in what it prints, and it is
+// intended.
+//
+// STORY 128, as it registered the old door: WAVE-D class A by 42's own definition — an
+// unregistered ladder verb becomes a new registry Command and its branch is deleted: a Command
+// that declares its route, its flag vocabulary and its `argv`/`render`/`json` adapters on
+// itself and calls the seam's core with the parsed input. The SEAM (`src/work/memory.mjs`) keeps what is the seam's —
 // `parseMemoryArgv`'s rules, the backend registry and its one selection read, the verb gate
 // and `runMemoryVerb`'s one core path, and the two projections — and this module owns only
 // the door: the registry entry, the spec the face parses against, and the adapters.
@@ -71,7 +83,7 @@ const SCOPE_FLAG_SPECS = Object.fromEntries(
 );
 
 const memoryCommand = {
-  id: "work:memory",
+  id: "memory",
 
   // THE SEAM'S PARSED SHAPE, and nothing the face invents: what `parseMemoryArgv` returns
   // minus `json` (the face's own flag). `only` is the rebuild scope — a ref, or null for the
@@ -125,7 +137,7 @@ const memoryCommand = {
   },
 
   cli: {
-    route: ["work", "memory"],
+    route: ["memory"],
     spec: {
       // The seam's ONE usage line — the same string `memoryUsage()` opens with.
       usage: MEMORY_USAGE,
@@ -172,5 +184,8 @@ const memoryCommand = {
   },
 };
 
-return { memoryCommand };
+// The alias: the canonical descriptor at a second route, and nothing of its own.
+const memoryAliasCommand = { ...memoryCommand, id: "work:memory", cli: { ...memoryCommand.cli, route: ["work", "memory"] } };
+
+return { memoryCommand, memoryAliasCommand };
 }
