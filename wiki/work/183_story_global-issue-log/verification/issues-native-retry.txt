@@ -1,0 +1,10 @@
+# unit
+# file test/command/command-core-contract.test.mjs 96.821 1
+not ok - command-core/workspace packages pass their package-local suites
+Error: spawnSync C:\Program Files\nodejs\node.exe ETIMEDOUT
+    at runNativeWorkspaceTests (file:///C:/workspace/aof/scripts/test-workspace.mjs:20:36)
+    at Object.run (file:///C:/workspace/aof/test/command/command-core-contract.test.mjs:431:22)
+    at run (file:///C:/workspace/aof/scripts/test-shard.mjs:116:25)
+    at runCases (file:///C:/workspace/aof/scripts/test-harness.mjs:44:13)
+    at async file:///C:/workspace/aof/scripts/test-shard.mjs:126:18
+# executed 1 cases; failures 1

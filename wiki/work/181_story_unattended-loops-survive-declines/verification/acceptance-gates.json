@@ -1,0 +1,490 @@
+{
+  "date": "2026-10-30",
+  "validity": [],
+  "loopLane": [
+    {
+      "code": "loop-field-prose-only",
+      "severity": "warn",
+      "path": ".aof\\loops\\autonomous-cascade.md",
+      "message": "actuator is backed only by prose: prose:packages/core/assets/agents/aof-product-owner.md, prose:packages/core/assets/agents/aof-developer.md, prose:packages/core/assets/agents/aof-qa.md"
+    },
+    {
+      "code": "loop-owner-unknown",
+      "severity": "warn",
+      "path": ".aof\\loops\\autonomous-cascade.md",
+      "message": "owner is declared unknown"
+    },
+    {
+      "code": "loop-field-prose-only",
+      "severity": "warn",
+      "path": ".aof\\loops\\build-to-green.md",
+      "message": "reference is backed only by prose: prose:packages/core/assets/commands/continue.md"
+    },
+    {
+      "code": "loop-field-prose-only",
+      "severity": "warn",
+      "path": ".aof\\loops\\build-to-green.md",
+      "message": "measurement is backed only by prose: prose:packages/core/assets/commands/continue.md"
+    },
+    {
+      "code": "loop-field-prose-only",
+      "severity": "warn",
+      "path": ".aof\\loops\\build-to-green.md",
+      "message": "actuator is backed only by prose: prose:packages/core/assets/agents/aof-developer.md"
+    },
+    {
+      "code": "loop-owner-unknown",
+      "severity": "warn",
+      "path": ".aof\\loops\\build-to-green.md",
+      "message": "owner is declared unknown"
+    },
+    {
+      "code": "loop-owner-unknown",
+      "severity": "warn",
+      "path": ".aof\\loops\\mesh-assignment-reclaim.md",
+      "message": "owner is declared unknown"
+    },
+    {
+      "code": "loop-field-prose-only",
+      "severity": "warn",
+      "path": ".aof\\loops\\retrospective-memory-ingest.md",
+      "message": "reference is backed only by prose: prose:packages/core/assets/commands/retrospective.md"
+    },
+    {
+      "code": "loop-field-prose-only",
+      "severity": "warn",
+      "path": ".aof\\loops\\retrospective-memory-ingest.md",
+      "message": "measurement is backed only by prose: prose:packages/core/assets/commands/retrospective.md"
+    },
+    {
+      "code": "loop-owner-unknown",
+      "severity": "warn",
+      "path": ".aof\\loops\\retrospective-memory-ingest.md",
+      "message": "owner is declared unknown"
+    },
+    {
+      "code": "loop-field-prose-only",
+      "severity": "warn",
+      "path": ".aof\\loops\\review-fix-rereview.md",
+      "message": "reference is backed only by prose: prose:packages/core/assets/commands/continue.md"
+    },
+    {
+      "code": "loop-field-prose-only",
+      "severity": "warn",
+      "path": ".aof\\loops\\review-fix-rereview.md",
+      "message": "measurement is backed only by prose: prose:packages/core/assets/commands/continue.md"
+    },
+    {
+      "code": "loop-field-prose-only",
+      "severity": "warn",
+      "path": ".aof\\loops\\review-fix-rereview.md",
+      "message": "actuator is backed only by prose: prose:packages/core/assets/agents/aof-developer.md"
+    },
+    {
+      "code": "loop-owner-unknown",
+      "severity": "warn",
+      "path": ".aof\\loops\\review-fix-rereview.md",
+      "message": "owner is declared unknown"
+    },
+    {
+      "code": "loop-owner-unknown",
+      "severity": "warn",
+      "path": ".aof\\loops\\run-resilience.md",
+      "message": "owner is declared unknown"
+    },
+    {
+      "code": "loop-field-prose-only",
+      "severity": "warn",
+      "path": ".aof\\loops\\verify-triage-accept.md",
+      "message": "reference is backed only by prose: prose:packages/core/assets/commands/verify.md"
+    },
+    {
+      "code": "loop-field-prose-only",
+      "severity": "warn",
+      "path": ".aof\\loops\\verify-triage-accept.md",
+      "message": "measurement is backed only by prose: prose:packages/core/assets/commands/verify.md"
+    },
+    {
+      "code": "loop-field-prose-only",
+      "severity": "warn",
+      "path": ".aof\\loops\\verify-triage-accept.md",
+      "message": "actuator is backed only by prose: prose:packages/core/assets/agents/aof-developer.md, prose:packages/core/assets/agents/aof-qa.md, prose:packages/core/assets/agents/aof-product-owner.md"
+    },
+    {
+      "code": "loop-graph-grounded-exogenous-only",
+      "severity": "warn",
+      "path": ".aof\\loops",
+      "message": "Component [actor:operator] is grounded by exogenous ground only"
+    },
+    {
+      "code": "loop-graph-grounded-exogenous-only",
+      "severity": "warn",
+      "path": ".aof\\loops",
+      "message": "Component [arbiter:speed-thoroughness-autonomy] is grounded by exogenous ground only"
+    },
+    {
+      "code": "loop-graph-grounded-exogenous-only",
+      "severity": "warn",
+      "path": ".aof\\loops",
+      "message": "Component [loop:autonomous-cascade] is grounded by exogenous ground only"
+    },
+    {
+      "code": "loop-graph-grounded-exogenous-only",
+      "severity": "warn",
+      "path": ".aof\\loops",
+      "message": "Component [loop:retrospective-memory-ingest] is grounded by exogenous ground only"
+    },
+    {
+      "code": "loop-graph-grounded-exogenous-only",
+      "severity": "warn",
+      "path": ".aof\\loops",
+      "message": "Component [loop:review-fix-rereview] is grounded by exogenous ground only"
+    },
+    {
+      "code": "loop-graph-grounded-exogenous-only",
+      "severity": "warn",
+      "path": ".aof\\loops",
+      "message": "Component [loop:verify-triage-accept] is grounded by exogenous ground only"
+    },
+    {
+      "code": "loop-graph-ungrounded-component",
+      "severity": "warn",
+      "path": ".aof\\loops",
+      "message": "Component [actor:product-owner] has no path from exogenous ground"
+    },
+    {
+      "code": "loop-graph-ungrounded-component",
+      "severity": "warn",
+      "path": ".aof\\loops",
+      "message": "Component [auditor:instrument-audit] has no path from exogenous ground"
+    },
+    {
+      "code": "loop-graph-ungrounded-component",
+      "severity": "warn",
+      "path": ".aof\\loops",
+      "message": "Component [watcher:autonomous-cascade-watcher] has no path from exogenous ground"
+    },
+    {
+      "code": "loop-graph-ungrounded-component",
+      "severity": "warn",
+      "path": ".aof\\loops",
+      "message": "Component [watcher:build-to-green-watcher] has no path from exogenous ground"
+    },
+    {
+      "code": "loop-graph-ungrounded-component",
+      "severity": "warn",
+      "path": ".aof\\loops",
+      "message": "Component [watcher:review-fix-rereview-watcher] has no path from exogenous ground"
+    },
+    {
+      "code": "loop-anchor-absent",
+      "severity": "warn",
+      "path": ".aof\\loops\\autonomous-cascade.md",
+      "message": "loop:autonomous-cascade has no inbound data-feed edge from an anchor"
+    },
+    {
+      "code": "loop-anchor-absent",
+      "severity": "warn",
+      "path": ".aof\\loops\\retrospective-memory-ingest.md",
+      "message": "loop:retrospective-memory-ingest has no inbound data-feed edge from an anchor"
+    },
+    {
+      "code": "loop-anchor-absent",
+      "severity": "warn",
+      "path": ".aof\\loops\\review-fix-rereview.md",
+      "message": "loop:review-fix-rereview has no inbound data-feed edge from an anchor"
+    },
+    {
+      "code": "loop-anchor-absent",
+      "severity": "warn",
+      "path": ".aof\\loops\\verify-triage-accept.md",
+      "message": "loop:verify-triage-accept has no inbound data-feed edge from an anchor"
+    }
+  ],
+  "healthLane": {
+    "healthy": true,
+    "strict": false,
+    "errors": 0,
+    "warnings": 3,
+    "findings": [
+      {
+        "code": "numbering-gap",
+        "severity": "warn",
+        "path": "wiki\\work",
+        "message": "the top-level driver sequence has a gap: number 122 is missing between 00 and 175"
+      },
+      {
+        "code": "rubric-join-unchecked",
+        "severity": "warn",
+        "path": "wiki\\work\\175_story_unattended-loops-survive-declines",
+        "message": "175: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+      },
+      {
+        "code": "depends-edges-unchecked",
+        "severity": "warn",
+        "path": "wiki\\work",
+        "message": "this run considered 396 resolved `depends:` edge(s) — 175 witnessed by the two contracts, 27 unwitnessed, 137 unchecked because an endpoint is not a story, and 57 unchecked because a story has declared no contract. An endpoint that is not a story can NEVER be evaluated — `reads:`/`files:` exist only on `STORY.md`, so every milestone, uat, spike and chore endpoint is permanently outside this check's domain. An undeclared contract CAN be evaluated, once that story declares `reads:`/`files:`; that count falls as the convention spreads. The two are reported apart because they have different remedies."
+      }
+    ],
+    "loopReady": {
+      "score": 80,
+      "passed": 8,
+      "applicable": 10,
+      "clears": "L1",
+      "registry": {
+        "present": true,
+        "composed": true,
+        "error": 0,
+        "warn": 33
+      },
+      "checks": [
+        {
+          "id": "stream-coherent",
+          "state": "pass",
+          "evidence": "0 error-severity doctor findings in scope."
+        },
+        {
+          "id": "cap-declared",
+          "state": "pass",
+          "evidence": "work.autonomous.maxAttempts is declared as 3."
+        },
+        {
+          "id": "memory-on",
+          "state": "pass",
+          "evidence": "memory backend resolves to \"graphify\"."
+        },
+        {
+          "id": "tasks-authored",
+          "state": "pass",
+          "evidence": "1 of 1 in-scope stories carry task payloads."
+        },
+        {
+          "id": "grounding",
+          "state": "fail",
+          "evidence": "The loop registry check reported 11 findings."
+        },
+        {
+          "id": "anchor-grounding",
+          "state": "fail",
+          "evidence": "The loop registry check reported 4 findings."
+        },
+        {
+          "id": "pairing",
+          "state": "pass",
+          "evidence": "The loop registry check reported 0 findings."
+        },
+        {
+          "id": "reference-ownership",
+          "state": "pass",
+          "evidence": "The loop registry check reported 0 findings."
+        },
+        {
+          "id": "actuator-arbitration",
+          "state": "pass",
+          "evidence": "The loop registry check reported 0 findings."
+        },
+        {
+          "id": "timescale",
+          "state": "pass",
+          "evidence": "The loop registry check reported 0 findings."
+        }
+      ],
+      "blocking": [
+        "grounding",
+        "anchor-grounding"
+      ]
+    },
+    "sync": [
+      {
+        "workspaceId": "9db1fd84f5895e38",
+        "name": "aof",
+        "current": true,
+        "lastSyncedAt": "2026-10-30T16:42:44.492Z",
+        "owed": false,
+        "owedSince": null,
+        "owedForMs": null,
+        "attempts": 0,
+        "lastError": null,
+        "changed": 0
+      },
+      {
+        "workspaceId": "0cf60f771da5c421",
+        "name": "agentic-workflow-platform",
+        "current": false,
+        "lastSyncedAt": "2026-10-30T13:09:48.110Z",
+        "owed": false,
+        "owedSince": null,
+        "owedForMs": null,
+        "attempts": 0,
+        "lastError": null,
+        "changed": null
+      },
+      {
+        "workspaceId": "2495d28aeda9085e",
+        "name": "language-tutor",
+        "current": false,
+        "lastSyncedAt": "2026-10-28T23:47:16.283Z",
+        "owed": false,
+        "owedSince": null,
+        "owedForMs": null,
+        "attempts": 0,
+        "lastError": null,
+        "changed": null
+      },
+      {
+        "workspaceId": "446b91827dbd78df",
+        "name": "private-workspace-1",
+        "current": false,
+        "lastSyncedAt": "2026-10-20T07:26:22.886Z",
+        "owed": false,
+        "owedSince": null,
+        "owedForMs": null,
+        "attempts": 0,
+        "lastError": null,
+        "changed": null
+      },
+      {
+        "workspaceId": "52294b307214c27d",
+        "name": "aof-test-repo",
+        "current": false,
+        "lastSyncedAt": "2026-10-22T14:50:18.124Z",
+        "owed": false,
+        "owedSince": null,
+        "owedForMs": null,
+        "attempts": 0,
+        "lastError": null,
+        "changed": null
+      },
+      {
+        "workspaceId": "5b3e6eb9c9b8ace1",
+        "name": "capital-on-tap-test",
+        "current": false,
+        "lastSyncedAt": "2026-10-22T19:20:38.313Z",
+        "owed": false,
+        "owedSince": null,
+        "owedForMs": null,
+        "attempts": 0,
+        "lastError": null,
+        "changed": null
+      },
+      {
+        "workspaceId": "5bbaac9d4db2fc87",
+        "name": "project sijil",
+        "current": false,
+        "lastSyncedAt": "2026-10-30T16:31:27.394Z",
+        "owed": false,
+        "owedSince": null,
+        "owedForMs": null,
+        "attempts": 0,
+        "lastError": null,
+        "changed": null
+      },
+      {
+        "workspaceId": "60f3dc475af6cdf2",
+        "name": "project-earshot",
+        "current": false,
+        "lastSyncedAt": "2026-10-19T18:17:46.019Z",
+        "owed": false,
+        "owedSince": null,
+        "owedForMs": null,
+        "attempts": 0,
+        "lastError": null,
+        "changed": null
+      },
+      {
+        "workspaceId": "8ebf9f5793527787",
+        "name": "capital-on-tap-test",
+        "current": false,
+        "lastSyncedAt": "2026-10-19T14:34:57.297Z",
+        "owed": false,
+        "owedSince": null,
+        "owedForMs": null,
+        "attempts": 0,
+        "lastError": null,
+        "changed": null
+      },
+      {
+        "workspaceId": "b934318786c4b17c",
+        "name": "private-workspace-2",
+        "current": false,
+        "lastSyncedAt": "2026-10-30T17:52:26.615Z",
+        "owed": false,
+        "owedSince": null,
+        "owedForMs": null,
+        "attempts": 0,
+        "lastError": null,
+        "changed": null
+      },
+      {
+        "workspaceId": "d6a5bdb426dbfb9f",
+        "name": "aries.global",
+        "current": false,
+        "lastSyncedAt": "2026-10-21T16:54:34.407Z",
+        "owed": false,
+        "owedSince": null,
+        "owedForMs": null,
+        "attempts": 0,
+        "lastError": null,
+        "changed": null
+      },
+      {
+        "workspaceId": "dea6d19a03529da6",
+        "name": "private-workspace-3",
+        "current": false,
+        "lastSyncedAt": "2026-10-30T12:40:33.830Z",
+        "owed": false,
+        "owedSince": null,
+        "owedForMs": null,
+        "attempts": 0,
+        "lastError": null,
+        "changed": null
+      }
+    ]
+  },
+  "scopeSelection": [
+    {
+      "file": "README.md",
+      "reason": "not-in-graph"
+    },
+    {
+      "file": "packages/core/assets/commands/verify.md",
+      "reason": "not-in-graph"
+    },
+    {
+      "file": "packages/core/assets/manifest.json",
+      "reason": "no-registered-dependent"
+    },
+    {
+      "file": "packages/core/assets/variants/codex/workflow.md",
+      "reason": "not-in-graph"
+    },
+    {
+      "file": "packages/core/src/application/bindings/commands/loop.mjs",
+      "reason": "no-registered-dependent"
+    },
+    {
+      "file": "packages/execution/src/codex-app-server.mjs",
+      "reason": "no-registered-dependent"
+    },
+    {
+      "file": "packages/execution/src/runtime-session.mjs",
+      "reason": "no-registered-dependent"
+    },
+    {
+      "file": "packages/execution/src/session-driver.mjs",
+      "reason": "no-registered-dependent"
+    },
+    {
+      "file": "packages/work-loop/src/commands/loop.mjs",
+      "reason": "no-registered-dependent"
+    },
+    {
+      "file": "packages/work/src/commands/grade.mjs",
+      "reason": "no-registered-dependent"
+    },
+    {
+      "file": "packages/work/src/doctor/index.mjs",
+      "reason": "no-registered-dependent"
+    }
+  ]
+}

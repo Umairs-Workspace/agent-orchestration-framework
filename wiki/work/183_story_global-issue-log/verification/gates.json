@@ -1,0 +1,52 @@
+{
+  "validate": [],
+  "doctor": {
+    "healthy": true,
+    "errors": 0,
+    "warnings": 3,
+    "findings": [
+      {
+        "code": "numbering-gap",
+        "severity": "warn"
+      },
+      {
+        "code": "rubric-join-unchecked",
+        "severity": "warn"
+      },
+      {
+        "code": "depends-edges-unchecked",
+        "severity": "warn"
+      }
+    ]
+  },
+  "loops": {
+    "error": 0,
+    "warn": 33,
+    "checks": {
+      "grounding": {
+        "ran": true,
+        "findings": 11
+      },
+      "anchor-grounding": {
+        "ran": true,
+        "findings": 4
+      },
+      "pairing": {
+        "ran": true,
+        "findings": 0
+      },
+      "reference-ownership": {
+        "ran": true,
+        "findings": 0
+      },
+      "actuator-arbitration": {
+        "ran": true,
+        "findings": 0
+      },
+      "timescale": {
+        "ran": true,
+        "findings": 0
+      }
+    }
+  }
+}

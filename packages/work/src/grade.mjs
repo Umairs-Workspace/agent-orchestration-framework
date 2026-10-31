@@ -619,3 +619,18 @@ export function boundGradeFailures(failures, {
     statement,
   });
 }
+
+// Shared command-shape checks for grade, doctor and loop preflight (181/ADR-003).
+export function usableCommand(command) {
+  if (!Array.isArray(command) || command.length === 0) return false;
+  if (!command.every((element) => typeof element === "string")) return false;
+  return command[0].length > 0;
+}
+
+// The declared rubric, or null when the project declared none. An unconfigured project is
+// the ORDINARY case — almost every repo that installs aof has no rubric on the day it
+// installs it — and it is an honest no-op, never a failure and never a pass (ADR-004 §4).
+export function declaredRubric(config) {
+  const rubric = config?.work?.rubric;
+  return rubric != null && typeof rubric === "object" && !Array.isArray(rubric) ? rubric : null;
+}

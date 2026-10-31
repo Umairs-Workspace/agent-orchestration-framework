@@ -34,6 +34,7 @@ import { createCommandRegistry } from "@aof/contracts/commands";
 // work:debt — see ./commands/debt.mjs's header.
 import { debtCommand } from "@aof/work/commands/debt";
 // project:provision — 12/ADR-003 — see ./commands/project-provision.mjs's header.
+import { issuesCommands } from "../../commands/issues.mjs";
 import { projectProvisionCommand } from "../../commands/project-provision.mjs";
 import { createNotionContribution } from "@aof/integration-notion/commands";
 // diagram:* — @aof/diagrams' own contribution, registered as one unit core can leave out.
@@ -78,7 +79,7 @@ export function integrationContributions(services, integrations = INTEGRATIONS) 
     .map((integration) => Object.freeze({ name: integration.name, commands: Object.freeze(integration.commands(services)) }));
 }
 
-export function assembleCommandCore({ commandsGraphImpactServices, commandsMeshContributionServices, workServices, commandsListServices, commandsLoopsShowServices, commandsLoopsGraphServices, commandsLoopsValidateServices, commandsLoopsGroundednessServices, commandsLoopDocumentServices, commandsLoopRecordServices, commandsContinueServices, commandsDriveServices, commandsLoopServices, commandsResyncServices, commandsDocServices, commandsTasksServices, commandsValidateServices, commandsNextServices, commandsDispatchServices, commandsFeedbackServices, commandsDoctorServices, commandsAuditServices, commandsAcceptorServices, commandsTuneServices, commandsTriggerServices, commandsGradeServices, commandsRatchetServices, commandsCountersServices, commandsGraphBuildServices, commandsGraphQueryServices, commandsGraphTriageServices, commandsGraphExportServices, commandsGraphImportServices, commandsGraphFetchServices, commandsGraphPublishServices, commandsGraphPruneServices, commandsTestServices, commandsImportMilestoneServices, commandsMigrateFolderServices, commandsNotionSyncWorkServices, commandsNotionAssociateServices, commandsRunStartServices, commandsRunCompleteServices, commandsRunStatusServices, commandsItemStatusServices, commandsRegressionGateServices, commandsRunRetryServices, commandsResumeServices, commandsGraphServeServices, commandsDiagramPlanServices, commandsDiagramExportServices, commandsDiagramFileServices, commandsMessagingMessagingServices, commandsWorkUiServices, commandsAssetsUiServices, commandsFindServices, commandsObserveServices, commandsWorkMemoryServices, commandsInitUpdateServices, commandsProjectInitServices, commandsInsertMilestoneServices, commandsInsertUatServices, commandsInsertStoryServices, commandsInsertChoreServices, commandsPrototypeServices, commandsPromoteServices, commandsArchiveServices, commandsPromoteGapToChoreServices, commandsPromoteFindingToChoreServices, commandsUpgradeServices, commandsAssetsListServices, commandsPackagesListServices, commandsProjectShowServices, commandsAssetsShowServices, commandsAssetsAddServices, commandsAssetsRemoveServices, commandsAssetsRefsServices, commandsAssetsValidateServices, commandsAssetsApplyServices, commandsPackagesShowServices, commandsPackagesValidateServices, commandsPackagesInstallServices, commandsProjectValidateServices, commandsProjectDoctorServices, commandsProjectMigrateServices }) {
+export function assembleCommandCore({ commandsGraphImpactServices, commandsMeshContributionServices, workServices, commandsListServices, commandsLoopsShowServices, commandsLoopsGraphServices, commandsLoopsValidateServices, commandsLoopsGroundednessServices, commandsLoopDocumentServices, commandsLoopRecordServices, commandsContinueServices, commandsDriveServices, commandsLoopServices, commandsResyncServices, commandsDocServices, commandsTasksServices, commandsValidateServices, commandsNextServices, commandsDispatchServices, commandsFeedbackServices, commandsDoctorServices, commandsAuditServices, commandsAcceptorServices, commandsTuneServices, commandsTriggerServices, commandsGradeServices, commandsRatchetServices, commandsCountersServices, commandsGraphBuildServices, commandsGraphQueryServices, commandsGraphTriageServices, commandsGraphExportServices, commandsGraphImportServices, commandsGraphFetchServices, commandsGraphPublishServices, commandsGraphPruneServices, commandsTestServices, commandsImportMilestoneServices, commandsMigrateFolderServices, commandsNotionSyncWorkServices, commandsNotionAssociateServices, commandsRunStartServices, commandsRunCompleteServices, commandsRunStatusServices, commandsItemStatusServices, commandsRegressionGateServices, commandsRunRetryServices, commandsResumeServices, commandsGraphServeServices, commandsDiagramPlanServices, commandsDiagramExportServices, commandsDiagramFileServices, commandsMessagingMessagingServices, commandsWorkUiServices, commandsAssetsUiServices, commandsFindServices, commandsObserveServices, commandsWorkMemoryServices, commandsInitUpdateServices, commandsProjectInitServices, commandsInsertMilestoneServices, commandsInsertUatServices, commandsInsertStoryServices, commandsInsertChoreServices, commandsPrototypeServices, commandsPromoteServices, commandsArchiveServices, commandsRenumberServices, commandsPromoteGapToChoreServices, commandsPromoteFindingToChoreServices, commandsUpgradeServices, commandsAssetsListServices, commandsPackagesListServices, commandsProjectShowServices, commandsAssetsShowServices, commandsAssetsAddServices, commandsAssetsRemoveServices, commandsAssetsRefsServices, commandsAssetsValidateServices, commandsAssetsApplyServices, commandsPackagesShowServices, commandsPackagesValidateServices, commandsPackagesInstallServices, commandsProjectValidateServices, commandsProjectDoctorServices, commandsProjectMigrateServices }) {
 
   const { meshContribution } = commandsMeshContributionServices;
   const { loadWorkspace } = workServices;
@@ -206,6 +207,7 @@ export function assembleCommandCore({ commandsGraphImpactServices, commandsMeshC
   // work:promote — milestone 127 / ADR-003 — see ./commands/promote.mjs's header.
   const { promoteCommand } = commandsPromoteServices;
   // work:archive — milestone 127 / ADR-004 — see ./commands/archive.mjs's header.
+  const { renumberCommand } = commandsRenumberServices;
   const { archiveCommand } = commandsArchiveServices;
   const { promoteGapToChoreCommand } = commandsPromoteGapToChoreServices;
   // work:promote-finding — see ./commands/promote-finding-to-chore.mjs's header.
@@ -286,6 +288,7 @@ export function assembleCommandCore({ commandsGraphImpactServices, commandsMeshC
     ]),
     { name: "aof", commands: [
       projectProvisionCommand,
+      ...issuesCommands,
     ] },
     createKnowledgeContribution([
       importMilestoneCommand,
@@ -340,6 +343,7 @@ export function assembleCommandCore({ commandsGraphImpactServices, commandsMeshC
       prototypeCommand,
       promoteCommand,
       archiveCommand,
+      renumberCommand,
       promoteGapToChoreCommand,
       promoteFindingToChoreCommand,
       upgradeCommand,

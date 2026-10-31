@@ -1,0 +1,5 @@
+# unit
+ok - command-core/00 the registry exposes exactly the known work commands
+# file test/command/command-core-contract.test.mjs 4.035 2
+ok - command-core/00 every registered command carries the frozen { id, input, run, cli } shape
+# executed 2 cases; failures 0

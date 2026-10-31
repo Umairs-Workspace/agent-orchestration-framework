@@ -118,6 +118,18 @@ that have content** — no empty "None" placeholders (absence of a section is in
    task scenario + fix (back to `$aof-continue`); **non-blocker** → defer to backlog; **design-gap** →
    `aof-designer` sets the `DESIGN.md` rule first. Findings live in `VERIFICATION.md`, never in a task folder.
 
+   **Developer handback on a blocker decline.** After recording the finding and its new `@bug`
+   task, return a declined story that is `in-review` to development with
+   `aof work status <ref> in-progress --if-applicable` (the story ref); a story already
+   `in-progress` stays there, and the flag reads that as data, not a refusal.
+   Use the status verb, never edit frontmatter directly, and check that it succeeded before
+   reporting the handback complete.
+   Record the decline and routing in the accept decision. This status is the loop's durable
+   instruction to run `aof:continue` next, including after restart; a story genuinely awaiting
+   review stays `in-review`. Missing human sign-off alone is not developer rework.
+   A recorded decline with findings routed completes the verify procedure; it is not a phase
+   execution failure, even though the story has not been accepted.
+
    **Recall prior findings at triage.** Before a finding's triage is decided, refresh the index and
    recall the stream's earlier findings: first `aof memory ingest`, then
    `aof memory recall "<the finding's text>" --kind finding --block` — across the whole stream,

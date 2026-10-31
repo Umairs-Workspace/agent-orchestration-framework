@@ -1,0 +1,121 @@
+{
+  "date": "2026-10-30",
+  "cases": 151,
+  "failures": 0,
+  "scope": "story-scoped selected suites",
+  "groups": [
+    {
+      "group": "renumber-memory-budgets",
+      "cases": 38,
+      "failures": 0,
+      "suites": [
+        {
+          "file": "test/work/stream/work-renumber.test.mjs",
+          "seconds": 8.732,
+          "cases": 12
+        },
+        {
+          "file": "packages/work/test/memory-accounting.suite.mjs",
+          "seconds": 0.12,
+          "cases": 17
+        },
+        {
+          "file": "test/arch/testing/acd-source-directory-budget.test.mjs",
+          "seconds": 6.087,
+          "cases": 9
+        }
+      ],
+      "command": "node scripts/test-shard.mjs test/work/stream/work-renumber.test.mjs packages/work/test/memory-accounting.suite.mjs test/arch/testing/acd-source-directory-budget.test.mjs"
+    },
+    {
+      "group": "stream",
+      "cases": 91,
+      "failures": 0,
+      "suites": [
+        {
+          "file": "test/arch/store/acd-stream-reindex-cascade.test.mjs",
+          "seconds": 12.056,
+          "cases": 4
+        },
+        {
+          "file": "test/arch/work/acd-reindex-engine-blast-radius.test.mjs",
+          "seconds": 0.047,
+          "cases": 2
+        },
+        {
+          "file": "test/work/stream/work-reindex-slot-open.test.mjs",
+          "seconds": 1.21,
+          "cases": 7
+        },
+        {
+          "file": "test/work/stream/work-reindex-depends-parent-rewrite.test.mjs",
+          "seconds": 4.532,
+          "cases": 14
+        },
+        {
+          "file": "test/work/stream/work-reindex-number-spaces.test.mjs",
+          "seconds": 0.727,
+          "cases": 3
+        },
+        {
+          "file": "test/work/stream/work-archive-is-a-move.test.mjs",
+          "seconds": 350.454,
+          "cases": 61
+        }
+      ],
+      "command": "node scripts/test-shard.mjs test/arch/store/acd-stream-reindex-cascade.test.mjs test/arch/work/acd-reindex-engine-blast-radius.test.mjs test/work/stream/work-reindex-slot-open.test.mjs test/work/stream/work-reindex-depends-parent-rewrite.test.mjs test/work/stream/work-reindex-number-spaces.test.mjs test/work/stream/work-archive-is-a-move.test.mjs"
+    },
+    {
+      "group": "cli",
+      "cases": 4,
+      "failures": 0,
+      "suites": [
+        {
+          "file": "test/arch/work/acd-work-command-cli-bijection.test.mjs",
+          "seconds": 125.822,
+          "cases": 4
+        }
+      ],
+      "command": "node scripts/test-shard.mjs test/arch/work/acd-work-command-cli-bijection.test.mjs"
+    },
+    {
+      "group": "surfaces",
+      "cases": 18,
+      "failures": 0,
+      "suites": [
+        {
+          "file": "test/arch/work/acd-work-command-route-coverage.test.mjs",
+          "seconds": 2.107,
+          "cases": 4
+        },
+        {
+          "file": "test/arch/work/acd-work-command-no-subprocess.test.mjs",
+          "seconds": 0.006,
+          "cases": 3
+        },
+        {
+          "file": "test/arch/command/acd-command-route-derived.test.mjs",
+          "seconds": 0.029,
+          "cases": 4
+        },
+        {
+          "file": "test/arch/command/acd-readme-names-what-ships.test.mjs",
+          "seconds": 0.057,
+          "cases": 7
+        }
+      ],
+      "command": "node scripts/test-shard.mjs test/arch/work/acd-work-command-route-coverage.test.mjs test/arch/work/acd-work-command-no-subprocess.test.mjs test/arch/command/acd-command-route-derived.test.mjs test/arch/command/acd-readme-names-what-ships.test.mjs"
+    }
+  ],
+  "finalOutputRecheck": {
+    "log": ".tmp/182-accepted-tests.log",
+    "command": "node scripts/test-shard.mjs test/work/stream/work-renumber.test.mjs",
+    "cases": 12,
+    "failures": 0
+  },
+  "movedStoryRecheck": {
+    "log": ".tmp/182-moved-regressions.log",
+    "cases": 4,
+    "failures": 0
+  }
+}

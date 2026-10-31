@@ -2,7 +2,7 @@
 
 
 // Domain transitions receive the configured effect runtime from core. Construction performs no I/O.
-export function createStreamTransitions({ reindexForInsert, refsTouchedByInsert, archiveItems, refsMovedByArchive, resolveWorkspaceId, guardItemLock, lockContextFor, applicableReactors, openEffectsJournal, appendEvent, drainEffects, runEffectsEphemeral, reportDegrade }) {
+export function createStreamTransitions({ planRenumber, applyRenumber, describeRenumber, reindexForInsert, refsTouchedByInsert, archiveItems, refsMovedByArchive, resolveWorkspaceId, guardItemLock, lockContextFor, applicableReactors, openEffectsJournal, appendEvent, drainEffects, runEffectsEphemeral, reportDegrade }) {
 // src/effects/stream-transitions.mjs — the WORK STREAM's transition seam (m42 wave
 // (d) leg d4, port 3). The fourth seam, beside run-transitions.mjs (the run store),
 // assignment-transitions.mjs (the assignment store) and doc-transitions.mjs (the
@@ -176,5 +176,24 @@ async function transitionStreamArchived(workspace, { names = [] } = {}, opts = {
   return { ...result, ...(await raiseStreamEvent("stream.archived", payload, { workspace, publisherOptions, journalOptions, drain, now: opts.now })) };
 }
 
-return { transitionStreamReindexed, transitionStreamArchived };
+
+// Renumber one existing identity; reuse the established reindex cascade rather than
+// introducing a second run/Notion/mesh update policy.
+async function transitionStreamRenumbered(workspace, input, opts = {}) {
+  const plan = await planRenumber(workspace.workDir, input);
+  if (input.dryRun) return { ...describeRenumber(plan), moved: false, dryRun: true, effects: [] };
+  await guardItemLock(plan.touched, { lock: lockContextFor(workspace, opts.publisherOptions ?? {}) });
+  const result = await applyRenumber(plan);
+  const payload = { workspaceRoot: workspace.projectRoot, workspaceId: resolveWorkspaceId(workspace) ?? null,
+    shifted: result.remap.length, remap: result.remap, operation: 'renumber' };
+  try {
+    return { ...result, moved: true, dryRun: false, ...(await raiseStreamEvent('stream.reindexed', payload,
+      {workspace, publisherOptions: opts.publisherOptions ?? null, journalOptions:opts.journalOptions ?? {}, drain:opts.drain ?? true, now:opts.now})) };
+  } catch (error) {
+    error.detail = { ...result, moved: true, recovery: 'The folder moved; inspect and replay stream effects before retrying.' };
+    throw error;
+  }
+}
+
+return { transitionStreamReindexed, transitionStreamArchived, transitionStreamRenumbered };
 }

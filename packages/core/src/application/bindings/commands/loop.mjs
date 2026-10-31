@@ -50,7 +50,7 @@ export function assembleCommandsLoop({ runtimeSessionServices, workServices, loo
   const { repairLaneHalt } = loopCycleServices;
 
   const { resolveItemExact } = commandsResolveServices;
-  const { declaredRubric } = commandsGradeServices;
+  const { declaredRubric, usableCommand } = commandsGradeServices;
 
   const { readRuns } = runStoreServices;
   const { staleRunningRuns } = runStoreServices;
@@ -93,7 +93,7 @@ export function assembleCommandsLoop({ runtimeSessionServices, workServices, loo
     cycle: { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks, repairLaneHalt },
     sessions: { claudeModelFamily, configuredSessionModels, normalizeEffort, parseSessionChoices, resolveSessionTable, SESSION_PHASES, sessionTableLine, resolveExecution, resolveExecutionResume, runtimeSession: runtimeSessionServices },
     items: { resolveItemExact },
-    gradeCommand: { declaredRubric },
+    gradeCommand: { declaredRubric, usableCommand },
     placement: { meshNodeIdOf },
     runs: { readRuns, staleRunningRuns },
     transitions: { transitionRunStart, transitionStaleRunsReclaimed },

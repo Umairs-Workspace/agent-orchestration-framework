@@ -211,8 +211,9 @@ export const notifyMessagingTests = [
       assert.ok(exemption, "core's messaging composition has an exemption");
       assert.ok((await readdir(path.join(repoRoot, exemption.directory))).includes("messaging.mjs"), "the configured command binding exists");
       const row = SOURCE_DIRECTORY_BUDGETS.find((entry) => entry.directory === "packages/core/src/application/bindings/commands");
-      // 168/01 raised the row 62 -> 63 for prototype.mjs; the removal this case pins is still in it.
-      assert.equal(row.ceiling, 63, "the command composition ceiling shrank with the removal, then 168/01 added prototype.mjs");
+      // 168/01 raised the row 62 -> 63 for prototype.mjs, and 182 63 -> 64 for renumber.mjs; the
+      // removal this case pins is still in it.
+      assert.equal(row.ceiling, 64, "the command composition ceiling shrank with the removal, then 168/01 added prototype.mjs and 182 renumber.mjs");
       assert.equal(row.allowance, 0);
       const owner = SOURCE_DIRECTORY_BUDGETS.find((entry) => entry.directory === "packages/messaging/src");
       assert.ok(owner.why.includes("secret.mjs"), "messaging owns the secret store");

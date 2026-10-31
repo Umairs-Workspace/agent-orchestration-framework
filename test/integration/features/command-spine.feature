@@ -189,3 +189,25 @@ Feature: Command spine — one route table, one face, one envelope
     And the JSON result field "strict" should be true
     And the JSON result field "errors" should be 0
     And stdout should contain `milestone-no-stories`
+
+  Scenario: global issues log and list through the command registry
+    When I run `issues log "Example problem" --details "Reproduction steps" --json`
+    Then the command should succeed
+    And the JSON result field "summary" should be "Example problem"
+    And the JSON result field "details" should be "Reproduction steps"
+    When I run `issues list --json`
+    Then the command should succeed
+    And stdout should contain `Example problem`
+
+  Scenario: global issues remove refuses unknown IDs with the common envelope
+    When I run `issues remove iss-000000000000 --json`
+    Then the command should fail
+    And the JSON error envelope should carry code "issues-not-found"
+
+  Scenario: global issues log refuses a missing summary before writing
+    When I run `issues log --json`
+    Then the command should fail
+    And the JSON error envelope should carry code "issues-invalid-input"
+    When I run `issues list --json`
+    Then the command should succeed
+    And stdout should contain `[]`

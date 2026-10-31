@@ -13,6 +13,7 @@ import { syncGroup } from "./sync.mjs";
 import { daemonCostGroup } from "./daemon-cost.mjs";
 import { controlsLane, citedControlPathsIn, isControlFileName } from "../audit/controls.mjs";
 import { resolveCitedPath } from "../cited-path-resolve.mjs";
+import { usableCommand, declaredRubric } from "../grade.mjs";
 import { rubricTraceabilityGroup, declaredReportFrom } from "./rubric.mjs";
 import { loopRecordLane, EXECUTION_RECORD_BASENAME } from "./loop-record.mjs";
 import { dependsLane } from "./depends.mjs";
@@ -847,6 +848,14 @@ function duplicateDriverNumberGroup(snapshot) {
   return findings;
 }
 
+// Configuration validity is independent of the advisory report-join lane.
+function rubricConfigurationGroup(snapshot, ctx = {}) {
+  const rubric = declaredRubric(ctx.config);
+  if (rubric == null || usableCommand(rubric.command)) return [];
+  return [{ code: "rubric-command-unusable", severity: "error", path: snapshot.workDir,
+    message: "work.rubric.command is missing or invalid: use a non-empty argv array of strings with a non-empty executable as its first element. Rubrics run with shell: false; on Windows use node plus the script path instead of a pnpm/npx .cmd shim." }];
+}
+
 // The CHECK-GROUP REGISTRY (ADR-003 step 2): the array the engine iterates. Each
 // entry is a PURE `(snapshot, ctx) => Finding[]` fn. A new check family = a new fn
 // APPENDED here (the milestone-16 seam); it edits no existing group. Story 00 ships
@@ -928,6 +937,8 @@ const CHECK_GROUPS = [
   // wrong ADR, and a file nothing links. Unlike the three lanes above it, its link codes GATE —
   // they take the acceptance horizon — and so it carries no `*_FINDING_CODES` array.
   diagramsGroup,
+  // 181 — configuration errors stay separate from advisory report traceability.
+  rubricConfigurationGroup,
   // milestone 135 / ADR-001 §3 — the lanes a composed practice brings, appended after every
   // built-in lane in the order core hands them in.
   ...extensionGroups,

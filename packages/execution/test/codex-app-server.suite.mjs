@@ -4,6 +4,8 @@ import { PassThrough } from "node:stream";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { createCodexAppServerAdapter } from "../src/codex-app-server.mjs";
+import { defaultSessionDriver } from "aof/session-services";
+import { createFakePtySpawn, createFakeWhich } from "../../../test/support/mesh-worker-terminal-fixture.mjs";
 import { createRuntimeSession } from "../src/runtime-session.mjs";
 import { codexExecutables, selectCodexExecutable } from "../src/codex-executable.mjs";
 import { codexProcessEnvironment } from "../src/codex-process-environment.mjs";
@@ -336,3 +338,37 @@ export const codexAppServerTests = [
     assert.equal(r.failureReason, "abort"); assert.ok(Date.now() - began < 1000); released(p);
   } },
 ];
+
+// 181/00 — the injected contract separates procedure execution from its business verdict.
+codexAppServerTests.push({
+  name: "181/00 A recorded decline completes on both runtimes",
+  async run() {
+    const driver = defaultSessionDriver.agentSessionDriver;
+    for (const phase of ["refine", "continue", "verify"]) {
+      const p = codexFixture();
+      p.brief.phase = phase;
+      p.brief.command = "$aof-" + phase + " 154/02";
+      p.brief.procedure = "aof-" + phase;
+      const result = await p.adapter.drive(p.brief, p.options);
+      const prompt = p.calls.find(c => c.method === "turn/start").params.input[0].text;
+      for (const contract of [prompt, driver.DIRECTIVE_COMPLETE_INSTRUCTION]) {
+        assert.match(contract, /completion is independent of acceptance/i);
+        assert.match(contract, /declin[ei].*findings.*routed/is);
+        assert.match(contract, /procedure could not be carried out/i);
+      }
+      assert.match(prompt, /failed.*phase_failed.*procedure could not be carried out/is);
+      const pty = createFakePtySpawn({ onWrite({ emitData, emitExit }) {
+        emitData("Acceptance declined; blocker recorded and routed to continue.\nAOF_DIRECTIVE_COMPLETE\n");
+        emitExit(0);
+      } });
+      const claude = await driver.driveInteractiveClaudeSession({ ...p.brief, command: "/aof:" + phase + " 154/02" }, {
+        ptySpawn: pty.spawn, which: createFakeWhich(), commandDelayMs: 0,
+        watchTranscriptSessionId: async () => "declined-181", watchTranscriptCompletion: async () => null,
+      });
+      assert.equal(result.outcome, "done");
+      assert.equal(claude.outcome, result.outcome);
+    }
+    const p = codexFixture({ nativeIdentity: { complete: { status: "failed", question: null, failureReason: "phase_failed" } } });
+    assert.equal((await p.adapter.drive(p.brief, p.options)).outcome, "failed", "real procedure failures must not be reclassified");
+  },
+});

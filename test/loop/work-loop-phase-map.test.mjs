@@ -448,3 +448,21 @@ workLoopPhaseMapTests.push(
     },
   },
 );
+
+workLoopPhaseMapTests.push({
+  name: "181/01 A blocker handback resumes development without rebuilding genuine review work",
+  async run() {
+    const { loadBundle, renderBundleOutputs } = await import("../../packages/core/src/work/bundle.mjs");
+    const outputs = renderBundleOutputs(loadBundle(), { runtimes: ["claude", "codex"] });
+    for (const file of [".claude/commands/aof/verify.md", ".agents/skills/aof-verify/procedure.md"]) {
+      const procedure = outputs.find(o => o.path.replaceAll("\\", "/") === file);
+      assert.ok(procedure, file);
+      assert.match(procedure.content, /aof work status <ref> in-progress/, file);
+    }
+    assert.deepEqual(decideLoopPhase({ next: story("in-progress"), tasks: oneTask(1), cap: 3 }), CONTINUE(1));
+    for (const lastPhase of [undefined, "verify"]) {
+      assert.deepEqual(decideLoopPhase({ next: story("in-review"), tasks: oneTask(1), lastPhase, cap: 3 }), GATE);
+    }
+    assert.deepEqual(decideLoopPhase({ next: story("in-progress"), tasks: oneTask(), cycle: 3, cap: 3 }), capExhausted("continue"));
+  },
+});

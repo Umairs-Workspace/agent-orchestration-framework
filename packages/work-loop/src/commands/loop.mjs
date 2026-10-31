@@ -121,7 +121,7 @@ export function createLoopShell({
   const { resolveSessionTable, SESSION_PHASES, sessionTableLine } = sessions;
   const { requestedSessions, requestedRuntimeSessions, resolveRuntimeInvocation } = createRuntimeInvocation(sessions);
   const { resolveItemExact } = items;
-  const { declaredRubric } = gradeCommand;
+  const { declaredRubric, usableCommand } = gradeCommand;
   const { meshNodeIdOf } = placement;
   const { readRuns, staleRunningRuns } = runs;
   const { transitionRunStart, transitionStaleRunsReclaimed } = transitions;
@@ -507,6 +507,10 @@ export function createLoopShell({
     // Reject malformed settings before paying for any registered read. L3's
     // workspace facts are gathered only after these vocabulary guards pass.
     const requestedLevel = requireDecision(resolveLoopLevel(requested.level));
+    const rubric = declaredRubric(ctx.workspace?.config);
+    if (rubric != null && !usableCommand(rubric.command)) {
+      throw commandError("work.rubric.command is missing or invalid: expected a non-empty argv array of strings with a non-empty executable as its first element (shell: false).", "rubric-command-unusable", 409);
+    }
     // 143/00 (ADR-001 §1-§4) — a backlog slug is resolved BEFORE the scope grammar runs, and the
     // engine's grammar is not widened. A resume refuses it; a read-only caller (the probe, an L1
     // report) is told what would be promoted; only the launch promotes, through the one door, and

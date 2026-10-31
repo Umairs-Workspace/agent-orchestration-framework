@@ -6,6 +6,7 @@ import { DEFAULT_HEARTBEAT_MS } from "@aof/contracts/loop-bounds";
 import { BRACKETED_PASTE_END, BRACKETED_PASTE_START, PASTE_SUBMIT_SETTLE_MS } from "@aof/contracts/tui-ready";
 import { createTerminalSpawn, releasePtyAfterTreeTermination } from "./pty.mjs";
 import { createCodexAppServerAdapter, codexServerCommand } from "./codex-app-server.mjs";
+import { PHASE_COMPLETION_CONTRACT } from "./runtime-session.mjs";
 import { isSessionAttachmentKey } from "./session-model.mjs";
 
 // Execution owns the driver. Core supplies transcript readers, launch policy, screen
@@ -182,7 +183,9 @@ task you can complete confidently without it.`;
 // acd-worker-driver-no-headless-print comment-stripper).
 const DIRECTIVE_COMPLETE_SENTINEL = "AOF_DIRECTIVE_COMPLETE";
 
-const DIRECTIVE_COMPLETE_INSTRUCTION = `When the directive you were given is FULLY complete — every agent you spawned has
+const DIRECTIVE_COMPLETE_INSTRUCTION = `${PHASE_COMPLETION_CONTRACT}
+
+When the directive you were given is FULLY complete — every agent you spawned has
 finished and reported back, statuses are updated and the work is recorded — end your
 final message with the exact line ${DIRECTIVE_COMPLETE_SENTINEL} on its own line,
 with nothing else on that line. Print it only when nothing remains in flight: never

@@ -37,6 +37,7 @@ export const WORK_COMMAND_IDS = Object.freeze([
   "work:prototype",
   "work:promote",
   "work:archive",
+  "work:renumber",
   "work:promote-gap",
   "work:promote-finding",
   "work:upgrade"

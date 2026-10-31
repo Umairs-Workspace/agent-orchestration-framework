@@ -1,3 +1,4 @@
+import ts from "typescript";
 import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/support/grade-fixture.mjs — the fixture builder the four milestone-54 / story-01
 // behavioural suites share. ONE builder, four consumers: a rubric fixture that four files
@@ -119,4 +120,35 @@ export function countingSpawn(stub = null) {
   };
   spawn.calls = calls;
   return spawn;
+}
+
+// Source instrumentation shared by the two rubric single-spawner checks.
+// A diagnostic string is not a config read; RegExp.exec is not a process call.
+export function spawnsDeclaredRubric(code) {
+  const tree = ts.createSourceFile("probe.mjs", code, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const processCall = /^(?:spawn\w*|execFile\w*|exec)$/;
+  const namespaces = new Set(), importedCalls = new Set();
+  for (const statement of tree.statements) {
+    if (!ts.isImportDeclaration(statement) || !["node:child_process", "child_process"].includes(statement.moduleSpecifier.text)) continue;
+    if (statement.importClause?.name) namespaces.add(statement.importClause.name.text);
+    const bindings = statement.importClause?.namedBindings;
+    if (bindings && ts.isNamespaceImport(bindings)) namespaces.add(bindings.name.text);
+    if (bindings && ts.isNamedImports(bindings)) for (const binding of bindings.elements) {
+      if (processCall.test(binding.propertyName?.text ?? binding.name.text)) importedCalls.add(binding.name.text);
+    }
+  }
+  let readsTheRubric = false, spawns = false;
+  const visit = (node) => {
+    if ((ts.isPropertyAccessExpression(node) && node.name.text === "rubric")
+      || (ts.isIdentifier(node) && node.text === "RUBRIC_CONFIG_KEY")) readsTheRubric = true;
+    if (ts.isCallExpression(node)) {
+      const call = node.expression;
+      if (ts.isIdentifier(call) && (processCall.test(call.text) || importedCalls.has(call.text))) spawns = true;
+      if (ts.isPropertyAccessExpression(call) && ts.isIdentifier(call.expression)
+        && namespaces.has(call.expression.text) && processCall.test(call.name.text)) spawns = true;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(tree);
+  return readsTheRubric && spawns;
 }

@@ -2,7 +2,7 @@ import { readFileSync, existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
-import { boundGradeFailures, compileGrade, evidenceFloor } from "../grade.mjs";
+import { boundGradeFailures, compileGrade, evidenceFloor, usableCommand, declaredRubric } from "../grade.mjs";
 import { gradeDeadlineFromConfig } from "@aof/contracts/loop-bounds";
 import { compileProvenance } from "@aof/contracts/claim-provenance";
 
@@ -85,20 +85,6 @@ const MAX_CAPTURE_BYTES = 32 * 1024 * 1024;
 // `command` is an ARGV ARRAY, never a shell string (ADR-004 §1) — so there is no shell, no
 // interpolation and no cwd-dependent word splitting, and an argument carrying shell
 // metacharacters is one argument with its characters verbatim.
-function usableCommand(command) {
-  if (!Array.isArray(command) || command.length === 0) return false;
-  if (!command.every((element) => typeof element === "string")) return false;
-  return command[0].length > 0;
-}
-
-// The declared rubric, or null when the project declared none. An unconfigured project is
-// the ORDINARY case — almost every repo that installs aof has no rubric on the day it
-// installs it — and it is an honest no-op, never a failure and never a pass (ADR-004 §4).
-function declaredRubric(config) {
-  const rubric = config?.work?.rubric;
-  return rubric != null && typeof rubric === "object" && !Array.isArray(rubric) ? rubric : null;
-}
-
 // ------------------------------------------------------------------ the plan ----
 
 // planRubric(...) — PURE, and it touches the declared report path in no way at all: it

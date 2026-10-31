@@ -404,8 +404,8 @@
     "kind": "child-process",
     "expression": "spawn(program, args, options)",
     "digest": "e44dba3173b53fa912603543b89018fb62b8d8c231f59cf9f228b47a14e037c6",
-    "sourceDigest": "3db0bb79b576d284b97e60e06bdc1e0f80ada5f4f60086983eb68d7184812697",
-    "reason": "Injected grading process port executes the declared program, an intentional governed-project external boundary."
+    "sourceDigest": "295b2d0a18f3d2b9f03042eca99b34e75821f5e7fdb1fde48b70bbc54551907f",
+    "reason": "Injected grading process port executes the declared program, an intentional governed-project external boundary. 181 re-reviewed at the main merge: usableCommand and declaredRubric moved to grade.mjs so the loop can share them; the audited spawn is unchanged."
   },
   {
     "file": "packages/work/src/commands/ratchet.mjs",
@@ -820,16 +820,16 @@
     "kind": "child-process",
     "expression": "execFile(bin, [\"--version\"], { cwd: options.cwd, env: options.env, signal: options.signal, timeout: 5000, maxBuffer: 65536, windowsHide: true }, (error, stdout) => {\n      if (error) reject(failure(\"runtime_unavailable\"));\n      else { const match = /^codex-cli (\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?)\\s*$/u.exec(String(stdout).trim()); match ? resolve(match[1]) : reject(failure(\"unsupported_profile\")); }\n    })",
     "digest": "27b4673e2938278c4bc521b70f7679f6e2c74ae29dd1187be06a333afd5b5a4b",
-    "sourceDigest": "fe147a4e80e0411f6aa83e563294f9a3dc27e1060db09bdfc0a2aa5d5366a1e9",
-    "reason": "156: probes the resolved Codex binary for its version, admitting a prerelease suffix. A fixed argv, a 5 s timeout and a bounded buffer; the binary path comes from codex-executable discovery, never from a module import. 158 re-review: both audited expressions are unchanged; native reviewer selection, acknowledgement and observation cleanup change the enclosing module. Server spawn remains explicit argv, shell:false, inherited sandbox policy and bounded owned-process cleanup."
+    "sourceDigest": "629e13901d2d8619c88b765822b8cd5884b8c2d3ec19a7ba8fb3531ac3f1cb0e",
+    "reason": "156: probes the resolved Codex binary for its version, admitting a prerelease suffix. A fixed argv, a 5 s timeout and a bounded buffer; the binary path comes from codex-executable discovery, never from a module import. 158 re-review: both audited expressions are unchanged; native reviewer selection, acknowledgement and observation cleanup change the enclosing module. Server spawn remains explicit argv, shell:false, inherited sandbox policy and bounded owned-process cleanup. 181 re-reviewed at the main merge: the turn prompt gained the phase-completion contract (PHASE_COMPLETION_CONTRACT, imported from runtime-session.mjs); both audited calls are unchanged."
   },
   {
     "file": "packages/execution/src/codex-app-server.mjs",
     "kind": "child-process",
     "expression": "execFile(\"taskkill.exe\", [\"/PID\", String(child.pid), \"/T\", \"/F\"], { timeout: 2000, windowsHide: true }, error => { if (error) child.kill(\"SIGKILL\"); resolve(); })",
     "digest": "b84eecd1f7b48c01c36a21272fa680ca975e45e1208a5e5bab7322cb731d90c1",
-    "sourceDigest": "fe147a4e80e0411f6aa83e563294f9a3dc27e1060db09bdfc0a2aa5d5366a1e9",
-    "reason": "154/02: owned Codex version probe, stdio server or bounded process-tree termination; explicit argv, no shell, approval override or credential access. 158 re-review: both audited expressions are unchanged; native reviewer selection, acknowledgement and observation cleanup change the enclosing module. Server spawn remains explicit argv, shell:false, inherited sandbox policy and bounded owned-process cleanup."
+    "sourceDigest": "629e13901d2d8619c88b765822b8cd5884b8c2d3ec19a7ba8fb3531ac3f1cb0e",
+    "reason": "154/02: owned Codex version probe, stdio server or bounded process-tree termination; explicit argv, no shell, approval override or credential access. 158 re-review: both audited expressions are unchanged; native reviewer selection, acknowledgement and observation cleanup change the enclosing module. Server spawn remains explicit argv, shell:false, inherited sandbox policy and bounded owned-process cleanup. 181 re-reviewed at the main merge: the turn prompt gained the phase-completion contract (PHASE_COMPLETION_CONTRACT, imported from runtime-session.mjs); both audited calls are unchanged."
   },
   {
     "file": "packages/execution/src/codex-executable.mjs",
@@ -972,8 +972,8 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, { cwd, env, timeout: 10_000, windowsHide: true, encoding: \"utf8\" })",
     "digest": "a71c6610e4891eb53258a408a9c0a696c644478047edea1f55e8f5c65809de8d",
-    "sourceDigest": "d73dbfc8c5aa41e1b33bcb18105e7e86052e0c0c0a3d7e1366b55c418abdfc3f",
-    "reason": "Git-only process wrapper for loop repository operations, with bounded execution."
+    "sourceDigest": "adce4fa614faaab26f3049332ac63158f5b3caa25d5d8a33da80673ca6105359",
+    "reason": "Git-only process wrapper for loop repository operations, with bounded execution. 181 re-reviewed at the main merge: the loop now refuses an unusable work.rubric.command (rubric-command-unusable) before it starts anything; the audited git call is unchanged."
   },
   {
     "file": "packages/work-loop/src/progress.mjs",

@@ -371,6 +371,10 @@ export const yarnInstallationTests = [
         'store.mjs': ['node:path', 'node:fs/promises'],
         'observations.mjs': ['node:os', 'node:path'],
         'records.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs'],
+        // 182: `aof work renumber` moves one item and rewrites its references; ref-history.mjs keeps the
+        // old-ref map memory reads, so a renumbered item's recall still resolves.
+        'renumber.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
+        'ref-history.mjs': ['node:path', 'node:fs/promises'],
         // 167/01: the one stat digest of a work tree hashes (path, size, mtime) for the stream memo and the sync gate.
         // 167/07 (ADR-009): the one work-tree watch lives beside the one walk.
         'discovery.mjs': ['node:path', 'node:fs', 'node:fs/promises', 'node:crypto'],

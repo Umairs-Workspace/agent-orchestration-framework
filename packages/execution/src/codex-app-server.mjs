@@ -5,6 +5,7 @@ import { resolveExecution, validateExecutionEnvelope } from "./runtime-selection
 import { CODEX_PROFILE, isSupportedCodexVersion, CODEX_RESULT_SCHEMA, CODEX_AUTO_REVIEW, CODEX_REVIEW_METHODS, parseCodexPhaseResult, permissionReply, validPermissionRequest, nativeReview, nativeQuestion, nativeUsage } from "./codex-protocol-profile.mjs";
 import { normalizeCodexActivity, reducePermissionReviews } from "./runtime-events.mjs";
 import { selectCodexExecutable } from "./codex-executable.mjs";
+import { PHASE_COMPLETION_CONTRACT } from "./runtime-session.mjs";
 import { codexProcessEnvironment } from "./codex-process-environment.mjs";
 
 const named = value => typeof value === "string" && value.trim().length > 0;
@@ -246,7 +247,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
         const metadata = { itemRef: brief.itemRef, phase, procedure: brief.procedure ?? null, arguments: brief.arguments ?? [], task: brief.task ?? null, command: brief.command ?? null, ...(brief.role == null ? {} : { role: brief.role }) };
         if (brief.context != null && typeof composePhaseBriefInput !== "function") throw failure("phase_input_invalid");
         const composed = typeof composePhaseBriefInput === "function" ? composePhaseBriefInput(brief.command ?? brief.procedure ?? "", brief.context) : brief.command ?? brief.procedure ?? "";
-        const text = JSON.stringify(metadata) + "\n" + composed + "\nThe operator launched the item and phase named above, delegating task-related permission decisions to native automatic review. This does not authorize unrelated actions or override native policy. Use the native permission mechanism when needed; native review owns the decision. Return only the phase result JSON matching the output schema. Use complete only when the requested procedure has finished; needs_input for a blocking business question.";
+        const text = JSON.stringify(metadata) + "\n" + composed + "\nThe operator launched the item and phase named above, delegating task-related permission decisions to native automatic review. This does not authorize unrelated actions or override native policy. Use the native permission mechanism when needed; native review owns the decision. Return only the phase result JSON matching the output schema. Use complete with question=null and failureReason=null for a completed procedure, including a recorded decline. Use failed with failureReason=phase_failed only when the procedure could not be carried out; needs_input for a blocking business question.\n" + PHASE_COMPLETION_CONTRACT;
         if (Buffer.byteLength(text) > CODEX_PROFILE.resultBytes) throw failure("phase_input_too_large");
         const started = await request("turn/start", { threadId: sessionId, cwd: brief.worktreeCwd, model: choice.model, effort: choice.effort, input: [{ type: "text", text, text_elements: [] }], outputSchema: CODEX_RESULT_SCHEMA });
         if (!named(started?.turn?.id) || (turnId && started.turn.id !== turnId)) throw failure("protocol_identity_mismatch");

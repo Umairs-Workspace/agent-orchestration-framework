@@ -1,0 +1,50 @@
+{
+  "from": "175",
+  "to": "181",
+  "status": "done",
+  "filesChecked": 13,
+  "changed": [
+    "ARCHITECTURE.md",
+    "OUTCOME.md",
+    "RETROSPECTIVE.md",
+    "STORY.md",
+    "VERIFICATION.md"
+  ],
+  "unchangedEvidence": [
+    "FEEDBACK.ndjson",
+    "observability/snapshots/2026-10-30T16-40-18-689Z/agents.json",
+    "observability/snapshots/2026-10-30T16-40-18-689Z/report.md",
+    "tasks/00_procedure-completion.feature",
+    "tasks/01_decline-handback.feature",
+    "tasks/02_rubric-preflight.feature",
+    "verification/acceptance-gates.json",
+    "verification/acceptance-tests.json"
+  ],
+  "memory": {
+    "oldRecords": 0,
+    "newRecords": 5,
+    "lessonSource": "181_story_unattended-loops-survive-declines/RETROSPECTIVE.md:7"
+  },
+  "effects": [
+    {
+      "key": "remap-run-refs",
+      "status": "done"
+    },
+    {
+      "key": "remap-notion-map",
+      "status": "done"
+    },
+    {
+      "key": "remap-projection",
+      "status": "done"
+    },
+    {
+      "key": "remap-control-facts",
+      "status": "deferred"
+    },
+    {
+      "key": "publish-projection",
+      "status": "done"
+    }
+  ]
+}
