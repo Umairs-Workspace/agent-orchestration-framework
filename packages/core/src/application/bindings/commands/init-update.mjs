@@ -288,6 +288,7 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
         if (result.dryRun) lines.push("dry-run: the following changes would be applied (nothing written):");
         lines.push(...actionLines(result));
         lines.push(...notInstallableLines(result.notInstallable));
+        lines.push(...memoryConfigLines(result.memoryConfig));
         if (!result.dryRun) {
           const { created, updated, skipped, deleted } = result.summary;
           const drift = result.summary["drift-warning"];
@@ -311,6 +312,7 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
           manifest: result.manifestWritten ? relativeDisplayPath(result.manifestPath, result.targetDir) : null,
           actions: jsonActions(result),
           notInstallable: result.notInstallable,
+          ...(result.memoryConfig ? { memoryConfig: result.memoryConfig } : {}),
           claudeSettings: result.claudeSettings ?? null,
         };
       },
@@ -320,4 +322,14 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
   };
 
   return { workInitCommand, workInitConfigCommand, workUpdateCommand };
+}
+
+// 180/ADR-006 — one line per memory key moved and per pair left as written; none when both are
+// empty, so a current project's update output is unchanged.
+function memoryConfigLines(memoryConfig) {
+  if (!memoryConfig) return [];
+  return [
+    ...memoryConfig.moves.map(({ from, to }) => `memory: ${from} → ${to}`),
+    ...memoryConfig.conflicts.map(({ path: from, replacement }) => `memory: ${from} and ${replacement} both set — left as written; choose one`),
+  ];
 }

@@ -16,8 +16,8 @@
 //                   bundle/, ui/dist, package.json + write BUILD_ID.json
 //   --sea           ALSO rebuild the SEA launcher exe and place it (release
 //                   artefact / bootstrap change; implied when the exe is absent)
-//   --desktop       also cargo-build the Tauri desktop app and place
-//                   aof-mesh-desktop.exe (Windows only — the app targets WebView2)
+//   --desktop       also cargo-build the Tauri desktop app and place it: the exe on
+//                   Windows, an ad-hoc-signed .app bundle on macOS (175/ADR-002)
 //   --wsl [distro]  ALSO sync this working tree into the WSL worker node's own clone
 //                   (Windows only; default distro, override with a name). See the
 //                   WSL target block below for why the distro needs a separate tree.
@@ -31,17 +31,22 @@
 // overwrite it). Old .bak binaries are PRUNED, keeping the newest KEEP_BAKS —
 // measured 2026-07-26: 15 stale 88 MB backups (~1.3 GB) that nothing reclaimed.
 //
+// The install never edits a shell profile (175/ADR-002 §6): on a Mac the `aof` on PATH is an
+// `npm link` into the checkout, and putting ~/.aof/bin ahead of it would shadow the live code.
+//
 // NOTE: node_modules/node-pty's .node can be LOCKED while a daemon runs. A
 // locked entry is SKIPPED WITH A WARNING (the existing copy is kept) — stop the
 // daemon and re-run if you need node-pty itself updated.
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, renameSync, copyFileSync, cpSync, rmSync, readdirSync, unlinkSync, writeFileSync, readFileSync, appendFileSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync, copyFileSync, cpSync, rmSync, readdirSync, unlinkSync, writeFileSync, readFileSync, statSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { generateAssetManifest, generatePackageAssetManifest } from "./sea-asset-manifest.mjs";
 import { workspaceDirectory } from './workspace-paths.mjs';
 import { productionDependencyDirs } from './dependency-inventory.mjs';
+// The desktop app's names have one home (175/ADR-002 §5, FF-17502); this script spells none.
+import { DESKTOP_APP_BUNDLE, DESKTOP_APP_EXE, bundleExecutable } from "@aof/mesh/commands/desktop-layout";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const KEEP_BAKS = 3;
@@ -101,17 +106,34 @@ function backupThenPlace(builtPath, targetPath) {
   console.log(`  placed ${path.basename(targetPath)}`);
 }
 
-// Prune <exeName>.bak.<ts> files beyond the newest KEEP_BAKS (TECH_DEBT item 1's
+// The same rotation for a directory — an `.app` bundle (175/ADR-002 §3): the live bundle is
+// RENAMED aside, never deleted, so a running app keeps its mapped image, and the staged one is
+// renamed into its place.
+export function backupThenMove(stagedPath, targetPath) {
+  if (existsSync(targetPath)) {
+    const bak = `${targetPath}.bak.${stamp()}`;
+    renameSync(targetPath, bak);
+    console.log(`  backed up ${path.basename(targetPath)} -> ${path.basename(bak)}`);
+  }
+  renameSync(stagedPath, targetPath);
+  console.log(`  placed ${path.basename(targetPath)}`);
+}
+
+// Prune <exeName>.bak.<ts> entries beyond the newest KEEP_BAKS (TECH_DEBT item 1's
 // disk-cost leg). The timestamped suffix sorts lexicographically = chronologically.
 // A .bak still held by a RUNNING process cannot be unlinked on Windows — skipped
-// with a warning, reclaimed on a later install once that process exits.
-function pruneBaks(installDir, exeName) {
+// with a warning, reclaimed on a later install once that process exits. A backed-up
+// bundle is a directory, and goes with its whole tree.
+export function pruneBaks(installDir, exeName) {
+  if (!existsSync(installDir)) return;
   const prefix = `${exeName}.bak.`;
   const baks = readdirSync(installDir).filter((f) => f.startsWith(prefix)).sort();
   const stale = baks.slice(0, Math.max(0, baks.length - KEEP_BAKS));
   for (const f of stale) {
     try {
-      unlinkSync(path.join(installDir, f));
+      const full = path.join(installDir, f);
+      if (statSync(full).isDirectory()) rmSync(full, { recursive: true });
+      else unlinkSync(full);
       console.log(`  pruned ${f}`);
     } catch (error) {
       console.log(`  (kept ${f} — ${error.code ?? "locked"}; likely still executing, reclaimed next install)`);
@@ -405,41 +427,65 @@ function deployWsl(o) {
   execFileSync("wsl.exe", args, { stdio: "inherit" });
 }
 
-// Append `installDir` to PATH in every shell profile that exists but does not already
-// reference it. No-ops on Windows (PATH there is managed via system settings / the installer).
-function ensureOnPath(installDir) {
-  if (process.platform === "win32") return;
-  const home = os.homedir();
-  // Portable form when the install is the default location; absolute path otherwise.
-  const defaultBin = path.join(home, ".aof", "bin");
-  const exportLine = installDir === defaultBin
-    ? `export PATH="$HOME/.aof/bin:$PATH"`
-    : `export PATH="${installDir}:$PATH"`;
+// ─────────────────────────────────────────────────────── the desktop app ----
+// The platforms `--desktop` builds on, and the refusal everywhere else (175/ADR-002). A pure
+// function, so the refusal is asserted on any host.
+export function desktopRefusal(platform) {
+  if (platform === "win32" || platform === "darwin") return null;
+  return `--desktop builds the desktop app on darwin (an .app bundle) and win32 (an exe), and this platform is ${platform}. Omit it on this OS.`;
+}
 
-  // All profile candidates, resolved; only those that exist on disk are touched.
-  const candidates = [".zshrc", ".bashrc", ".bash_profile", ".profile"]
-    .map((f) => path.join(home, f));
-  const present = candidates.filter(existsSync);
-
-  console.log("\n=== PATH ===");
-  if (present.length === 0) {
-    console.log(`  no shell profile found — add this line manually:\n    ${exportLine}`);
-    return;
+// planDesktopApp({ platform, installDir, stagingDir }) -> the ordered steps that build and place
+// the desktop app. Pure, in the shape of build-sea.mjs's planMacCodesignSteps: the tests assert it
+// on any host, and `main()` carries it out.
+//   win32  — build, then place the release exe beside `aof`;
+//   darwin — build, assemble an `.app` in the staging dir from the release binary and the one
+//            committed Info.plist, ad-hoc sign it LAST (a signature taken before the plist lands
+//            does not verify), then place it beside `aof` (175/ADR-002 §1-§4).
+// The cargo build needs no --target-dir: `crates/app` is excluded from the desktop workspace, so
+// its target dir is already its own `crates/app/target`.
+export function planDesktopApp({ platform, installDir, stagingDir }) {
+  const crate = path.join("apps", "desktop", "crates", "app");
+  const release = path.join(repoRoot, crate, "target", "release");
+  const build = { kind: "run", cmd: "cargo", args: ["build", "--release", "--manifest-path", path.join(crate, "Cargo.toml")] };
+  if (platform !== "darwin") {
+    return [build, { kind: "place", from: path.join(release, "mesh-desktop-app.exe"), to: path.join(installDir, DESKTOP_APP_EXE) }];
   }
+  const staged = path.join(stagingDir, DESKTOP_APP_BUNDLE);
+  return [
+    build,
+    { kind: "copy", label: "the built binary", from: path.join(release, "mesh-desktop-app"), to: bundleExecutable(staged) },
+    { kind: "copy", label: path.join(crate, "Info.plist"), from: path.join(repoRoot, crate, "Info.plist"), to: path.join(staged, "Contents", "Info.plist") },
+    { kind: "run", cmd: "codesign", args: ["--force", "--deep", "--sign", "-", staged] },
+    { kind: "place", from: staged, to: path.join(installDir, DESKTOP_APP_BUNDLE), directory: true },
+  ];
+}
 
-  let updated = 0;
-  for (const profile of present) {
-    const content = readFileSync(profile, "utf8");
-    // Match absolute path, $HOME/…, or ~/… — any of the three forms counts as already set.
-    if (content.includes(installDir) || content.includes("$HOME/.aof/bin") || content.includes("~/.aof/bin")) {
-      console.log(`  ${path.basename(profile)}: already on PATH — skipped`);
-      continue;
+// One step as the plan reads in prose — what `--dry-run` prints and what the tests assert.
+export function describeDesktopStep(step) {
+  if (step.kind === "run") return `${step.cmd} ${step.args.join(" ")}`;
+  if (step.kind === "copy") return `copy ${step.label} to ${step.to}`;
+  return `place ${step.from} at ${step.to}`;
+}
+
+// Carry the plan out. A build that produced nothing fails before anything is placed.
+function installDesktopApp(platform, installDir) {
+  const stagingDir = path.join(installDir, ".desktop-staging");
+  rmSync(stagingDir, { recursive: true, force: true });
+  for (const step of planDesktopApp({ platform, installDir, stagingDir })) {
+    if (step.kind === "run") {
+      run(step.cmd === "cargo" ? "cargo build the desktop app (release)" : "ad-hoc sign the app bundle", step.cmd, step.args);
+    } else if (step.kind === "copy") {
+      if (!existsSync(step.from)) throw new Error(`desktop build did not produce ${step.from}`);
+      mkdirSync(path.dirname(step.to), { recursive: true });
+      copyFileSync(step.from, step.to);
+    } else {
+      if (!existsSync(step.from)) throw new Error(`desktop build did not produce ${step.from}`);
+      if (step.directory) backupThenMove(step.from, step.to);
+      else backupThenPlace(step.from, step.to);
     }
-    appendFileSync(profile, `\n${exportLine}\n`, "utf8");
-    console.log(`  ${path.basename(profile)}: added  ${exportLine}`);
-    updated += 1;
   }
-  if (updated > 0) console.log("  open a new terminal (or: source the updated profile) to pick this up");
+  rmSync(stagingDir, { recursive: true, force: true });
 }
 
 function main() {
@@ -463,8 +509,9 @@ function main() {
   console.log(`  WSL worker node    : ${o.wsl ? `yes (${o.wslDistro ?? "default distro"}:${o.wslDir ?? WSL_DEFAULT_DIR})` : "no"}`);
   console.log(`  dry-run            : ${o.dryRun}`);
 
-  if (o.desktop && !isWin) {
-    console.error("\n--desktop is Windows-only (the app targets WebView2 / aof-mesh-desktop.exe). Omit it on this OS.");
+  const desktopRefused = o.desktop ? desktopRefusal(process.platform) : null;
+  if (desktopRefused) {
+    console.error(`\n${desktopRefused}`);
     process.exit(1);
   }
   if (o.wsl && !isWin) {
@@ -477,11 +524,13 @@ function main() {
     let n = 1;
     if (!o.skipUi) console.log(`  ${n++}. node scripts/ui-build.mjs`);
     console.log(`  ${n++}. payload install: sync src/, bundle/, ui/dist, node_modules (prod closure), package.json + BUILD_ID.json into ${installDir}`);
-    //console.log(`  ${n++}. ensure ${installDir} is on PATH in each present shell profile (~/.zshrc, ~/.bashrc, ~/.bash_profile, ~/.profile)`);
     if (buildSea) console.log(`  ${n++}. node scripts/build-sea.mjs -> dist-sea/, then rename ${exeName} -> ${exeName}.bak.<ts> + place the fresh ${exeName} (+ node-pty-sidecar)`);
-    if (o.desktop) console.log(`  ${n++}. cargo build --release + place aof-mesh-desktop.exe`);
+    if (o.desktop) {
+      const plan = planDesktopApp({ platform: process.platform, installDir, stagingDir: path.join(installDir, ".desktop-staging") });
+      for (const step of plan) console.log(`  ${n++}. ${describeDesktopStep(step)}`);
+    }
     if (o.wsl) console.log(`  ${n++}. sync src/ + package.json into ${o.wslDistro ?? "the default distro"}:${o.wslDir ?? WSL_DEFAULT_DIR}, reinstalling natively only if yarn.lock changed`);
-    console.log(`  ${n}. prune ${exeName}.bak.* / aof-mesh-desktop.exe.bak.* beyond the newest ${KEEP_BAKS}`);
+    console.log(`  ${n}. prune ${exeName}.bak.* / ${isWin ? DESKTOP_APP_EXE : DESKTOP_APP_BUNDLE}.bak.* beyond the newest ${KEEP_BAKS}`);
     return;
   }
 
@@ -491,7 +540,6 @@ function main() {
 
   // --- 2. the payload (always — this IS the deploy) ---
   const buildId = installPayload(installDir);
-  //ensureOnPath(installDir);
 
   // --- 3. the SEA launcher exe (only when it must change) ---
   // The embedded bundle is stamped with the SAME build id as the payload it ships beside
@@ -510,16 +558,8 @@ function main() {
     }
   }
 
-  // --- 4. desktop app (optional, Windows) ---
-  if (o.desktop) {
-    const manifest = path.join("apps", "desktop", "crates", "app", "Cargo.toml");
-    const targetDir = path.join(repoRoot, "apps", "desktop", "crates", "app", "target");
-    run("cargo build the desktop app (release)", "cargo",
-      ["build", "--release", "--manifest-path", manifest, "--target-dir", targetDir]);
-    const desktopBuilt = path.join(targetDir, "release", "mesh-desktop-app.exe");
-    if (!existsSync(desktopBuilt)) throw new Error(`desktop build did not produce ${desktopBuilt}`);
-    backupThenPlace(desktopBuilt, path.join(installDir, "aof-mesh-desktop.exe"));
-  }
+  // --- 4. desktop app (optional: the exe on Windows, the .app bundle on macOS) ---
+  if (o.desktop) installDesktopApp(process.platform, installDir);
 
   // --- 4b. the WSL worker node (a SEPARATE machine that happens to share this box) ---
   if (o.wsl) deployWsl(o);
@@ -527,7 +567,8 @@ function main() {
   // --- 5. reclaim stale .bak binaries (keep the newest KEEP_BAKS) ---
   console.log(`\n=== prune .bak binaries (keep ${KEEP_BAKS}) ===`);
   pruneBaks(installDir, exeName);
-  pruneBaks(installDir, "aof-mesh-desktop.exe");
+  pruneBaks(installDir, DESKTOP_APP_EXE);
+  pruneBaks(installDir, DESKTOP_APP_BUNDLE);
 
   console.log(`\nInstalled to ${installDir}`);
   console.log("Restart any running daemons (mesh serve --serve / mesh ui) and the desktop app to pick up the new payload.");

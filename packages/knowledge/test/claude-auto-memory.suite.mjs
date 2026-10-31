@@ -13,7 +13,8 @@ import os from "node:os";
 import path from "node:path";
 import { defaultApplication as app } from "aof/default-application";
 import { createLocalIndexing } from "@aof/knowledge/memory/local-indexing";
-import { inspectMemoryConfiguration } from "@aof/knowledge/memory";
+import { createMemory, inspectMemoryConfiguration } from "@aof/knowledge/memory";
+import { readMemoryConfig } from "@aof/knowledge/memory-config";
 import {
   AUTO_MEMORY_ITEM, createClaudeAutoMemory, parseAutoMemoryEntry, parseAutoMemoryLocator, resolveMemorySources,
 } from "@aof/knowledge/memory/claude-auto-memory";
@@ -421,4 +422,108 @@ export const claudeAutoMemoryTests = [
       assert.deepEqual([now.kind.blank, now.kind.nonEnum, now.owner.blank], [was.kind.blank, was.kind.nonEnum, was.owner.blank]);
     });
   }),
+
+  // ------------------------------------------- 180/01 task 01: memory.corpora ----
+  // The feature's fixture: one "feedback" entry, "pin-line-endings.md", in the project's auto-memory
+  // folder; "read" is `readMemoryConfig` on the scenario's memory node (180/ADR-002).
+  ...corporaTests(),
 ];
+
+function corporaTests() {
+  const t = (name, run) => ({ name: `180/01 task 01: ${name}`, run });
+  const pin = entry({ name: "Pin line endings", description: "Pin line endings in .gitattributes", body: "Why: CRLF churn.\n\nHow to apply: pin line endings.\n" });
+  const read = (memory) => readMemoryConfig({ memory });
+  const refused = (memory, check) => assert.throws(() => read(memory), (error) => {
+    assert.equal(error.code, "invalid-memory-corpora");
+    check?.(error);
+    return true;
+  });
+  const graphCtx = (p, memory) => ({ ...p.ctx(memory), invoke: async () => { const error = new Error("graphify binary not found"); error.code = "graphify-missing"; throw error; }, loadWorkspace: async () => ({ config: { name: "f", memory }, configPath: path.join(p.projectRoot, ".aof", "aof.config.json"), projectRoot: p.projectRoot, workDir: p.workDir }) });
+  const ingest = (p, memory) => seam.runMemory(["ingest", "--all"], { config: { memory }, ctx: memory.backend === "graphify" ? graphCtx(p, memory) : p.ctx(memory) });
+  return [
+    t("E5 · no corpora key means today's set", async () => {
+      const node = read({ backend: "local" });
+      assert.deepEqual(node.corpora, ["work", "imports", "code"]);
+      assert.equal(node.corporaSource, "default");
+      await withProject(async (p) => {
+        await p.put("pin-line-endings.md", pin);
+        const result = await ingest(p, { backend: "local" });
+        assert.equal(operators(result.result.records).length, 0, "aof memory ingest indexes no auto-memory record");
+      });
+    }),
+    ...[
+      ["E6", { corpora: ["work", "imports", "code", "operator"] }, "local"],
+      ["E6", { corpora: ["work", "imports", "code", "operator"] }, "graphify"],
+      ["", { sources: ["claude-auto-memory"] }, "local"],
+    ].map(([example, node, backend]) => t(`E6 · listing operator indexes the auto-memory entries exactly as the old source did — ${example ? `${example} ` : ""}${JSON.stringify(node)} on ${backend}`, async () => {
+      await withProject(async (p) => {
+        await p.put("pin-line-endings.md", pin);
+        const result = await ingest(p, { backend, ...node });
+        assert.deepEqual(operators(result.result.records).map((r) => [r.id, r.item, r.recordType]), [["pin-line-endings.md", AUTO_MEMORY_ITEM, "lesson"]]);
+        assert.equal(AUTO_MEMORY_ITEM, "operator:claude-auto-memory");
+      });
+    })),
+    t("the same records come from either spelling", async () => {
+      // The second copy is the same tree rebuilt, so every path agrees and the records compare byte for byte.
+      await withProject(async (p) => {
+        await p.put("pin-line-endings.md", pin);
+        const index = path.join(p.projectRoot, ".aof", "aof.memory.index.json");
+        await ingest(p, { backend: "local", sources: ["claude-auto-memory"] });
+        const legacy = JSON.parse(await readFile(index, "utf8")).records;
+        await rm(index);
+        await ingest(p, { backend: "local", corpora: ["work", "imports", "code", "operator"] });
+        const now = JSON.parse(await readFile(index, "utf8")).records;
+        assert.equal(operators(legacy).length, 1);
+        assert.deepEqual(now, legacy, "field for field");
+      });
+    }),
+    t("E7 · leaving out an always-served corpus is refused and says why", () => {
+      refused({ corpora: ["work", "code"] }, (error) => {
+        assert.equal(error.path, "memory.corpora");
+        assert.match(error.message, /leaves out "imports"/);
+        assert.match(error.message, /always served/);
+        assert.match(error.message, /memory\.backend to "none"/);
+      });
+    }),
+    ...[
+      [["work", "imports", "code"], (node) => { assert.deepEqual(node.corpora, ["work", "imports", "code"]); assert.equal(node.corporaSource, "project setting"); }],
+      [["code", "imports", "work", "operator"], (node) => assert.deepEqual(node.corpora, ["work", "imports", "code", "operator"])],
+      [["imports", "code"], /leaves out "work"[^"]*but/],
+      [["work", "imports"], /leaves out "code"[^"]*but/],
+      [[], /leaves out "work", "imports" and "code"/],
+      [["work", "imports", "code", "work"], /must not repeat/],
+      ["work", /must be an array/],
+    ].map(([list, answer]) => t(`an explicit list must hold work, imports and code — ${JSON.stringify(list)}`, () => {
+      if (typeof answer === "function") return answer(read({ corpora: list }));
+      refused({ corpora: list }, (error) => assert.match(error.message, answer));
+    })),
+    t("E8 · a corpus aof does not know is refused and the four it knows are listed", () => {
+      refused({ corpora: ["work", "imports", "code", "planning"] }, (error) => {
+        assert.equal(error.path, "memory.corpora.3");
+        for (const corpus of ["work", "code", "operator", "imports"]) assert.ok(error.message.includes(`"${corpus}"`), corpus);
+      });
+    }),
+    t("an empty legacy source list reads as the default set", () => {
+      const node = read({ sources: [] });
+      assert.deepEqual(node.corpora, ["work", "imports", "code"]);
+      assert.deepEqual(node.legacy, [{ path: "memory.sources", replacement: "memory.corpora" }]);
+    }),
+    t("memory off still serves nothing, whatever corpora says", async () => {
+      // The auto-memory folder is read only by the record indexer behind the local and graphify
+      // backends; with "none" selected neither is loaded, so no auto-memory file can be read.
+      const loads = [];
+      const memory = createMemory({ loadLocalBackend: async () => { loads.push("local"); }, loadGraphifyBackend: async () => { loads.push("graphify"); } });
+      await withProject(async (p) => {
+        await p.put("pin-line-endings.md", pin);
+        const config = { memory: { backend: "none", corpora: ["work", "imports", "code", "operator"] } };
+        const lines = [];
+        const outcome = await memory.runMemory(["recall", "pin line endings", "--json"], { config, ctx: p.ctx(config.memory), log: (line) => lines.push(line) });
+        const off = await memory.runMemory(["recall", "pin line endings", "--json"], { config: { memory: { backend: "none" } }, ctx: p.ctx({ backend: "none" }), log: () => {} });
+        assert.equal(outcome.exitCode, 0);
+        assert.deepEqual(JSON.parse(lines.join("\n")), [], "the empty, served answer");
+        assert.deepEqual(outcome.result, off.result, "exactly what memory off gives today");
+        assert.deepEqual(loads, [], "no backend that reads auto-memory was loaded");
+      });
+    }),
+  ];
+}

@@ -3,7 +3,9 @@ import path from "node:path";
 import { limitRecord, readRecord } from "./reads.mjs";
 
 // The application supplies execution, installation, vocabulary and graph collaborators.
-export function createAuditSeamLiveness({ graphArtifactBuiltAt, graphJsonPath, normalizeGraph, readGraph, TEST_ROOTS }) {
+// The graph arrives as ONE capability, `relations(paths, { projectRoot })` — the knowledge-engine
+// port's code verb, bound in core (179/ADR-004).
+export function createAuditSeamLiveness({ relations, TEST_ROOTS }) {
 // THE SEAM LIVENESS — milestone 77 / story 02. ADR-006, ADR-010 §3.
 //
 // A bound that exists only in prose is what this rule exists to catch. `dispatchReadySet` with no
@@ -16,20 +18,16 @@ export function createAuditSeamLiveness({ graphArtifactBuiltAt, graphJsonPath, n
 // `72/ADR-002 §1` settled the analogous question for test selection and its reasons transfer
 // intact: a build is minutes even on the unchanged path, and a command that might cost minutes
 // before it costs seconds is not one an agent runs without thinking about it. So the artifact is
-// read through the SHIPPED reader and nowhere else — no second reader, no second parse of a graph
-// path, no build invocation in any form, and no child process.
+// reached through the code corpus's `relations` and nowhere else (179/ADR-004) — no second reader,
+// no second parse of a graph path, no build invocation in any form, and no child process.
 //
-// ── WHY THE INDEX IS INVERTED HERE RATHER THAN ASKED PER FILE (ADR-006 §1a) ──────────────────
+// ── WHY THE GRAPH IS ASKED ONCE, WITH EVERY CANDIDATE (ADR-006 §1a) ──────────────────────────
 //
-// The shipped `computeImpact` is O(paths × (nodes + edges)) BY DESIGN and its own header prices it:
-// ~80 ms for one path and ~400 ms for fifty against the live 17 MB artifact. Asked once per
-// candidate over ~150 of them that is ~12 s inside a command that has to stay cheap. Handing it the
-// whole candidate list does not help — it re-walks every edge once per path in its own map.
-//
-// So the edges are walked ONCE, and the dependents of every candidate fall out of that single pass.
-// ADR-006 §1a names this exactly: *a different composition of the same shipped readers, not a
-// second reader*. The artifact-reaching functions are still the shipped ones and this module adds
-// none; what it does not do is ask the per-path question 150 times.
+// Asked once per candidate over ~150 of them, the per-path question cost ~12 s inside a command
+// that has to stay cheap. Since 179/ADR-002 `relations` walks the edges ONCE per call however many
+// paths are asked, so the lane asks once, with every candidate, and the dependents of each fall out
+// of that single pass. The match is `computeImpact`'s suffix rule; the candidates are full
+// repo-relative paths, as the graph's own are, so it is the exact match it always was.
 //
 // ── AN UNKNOWN IS A STATED LIMIT, NEVER A CLEAN SEAM ─────────────────────────────────────────
 //
@@ -161,30 +159,21 @@ function dynamicallyImported(modules) {
   return referenced;
 }
 
-// ── THE GRAPH, READ ONCE ─────────────────────────────────────────────────────────────────────
+// ── THE GRAPH, ASKED ONCE ────────────────────────────────────────────────────────────────────
 
-// The dependents of every file, from ONE pass over the edges. `graph.edges` is touched exactly
-// once however many candidates are asked about, which is ADR-006 §1a's whole point.
-function dependentsIndex(graph) {
-  const byId = new Map(graph.nodes.map((node) => [node.id, node]));
+// The dependents and presence of every asked path, from ONE `relations` answer. `paths[i]` is
+// answered by `files[i]`, so the index is keyed by the path the lane asked about. Only dependents
+// count: an edge ARRIVING at a file makes its source a dependent, and a dependency wires nothing —
+// which matters because the graph's observed noise points exactly that way.
+function dependentsIndex(paths, files) {
   const dependents = new Map();
   const present = new Set();
-  for (const node of graph.nodes) {
-    if (node.sourceFile) present.add(toPosix(node.sourceFile));
-  }
-  for (const edge of graph.edges) {
-    const source = byId.get(edge.source);
-    const target = byId.get(edge.target);
-    if (!source?.sourceFile || !target?.sourceFile) continue;
-    const from = toPosix(source.sourceFile);
-    const into = toPosix(target.sourceFile);
-    if (from === into) continue;
-    // An edge ARRIVING at a file makes its source a DEPENDENT of that file. The other direction is
-    // a dependency, and a dependency wires nothing — which matters because the graph's observed
-    // noise points exactly that way.
-    if (!dependents.has(into)) dependents.set(into, new Set());
-    dependents.get(into).add(from);
-  }
+  paths.forEach((asked, index) => {
+    const entry = files[index];
+    if (!entry?.present) return;
+    present.add(asked);
+    dependents.set(asked, new Set(entry.dependents.map(toPosix)));
+  });
   return { dependents, present };
 }
 
@@ -212,28 +201,28 @@ async function runSeamLiveness({
   const subjectRoot = toPosix(String(root ?? ""));
   const modules = await readSourceModules(root);
 
-  const artifact = graphJsonPath(root ?? "");
-  let graph = null;
-  let unavailable = null;
-  try {
-    graph = normalizeGraph(readGraph(artifact));
-  } catch (error) {
-    unavailable = error?.code === "ENOENT"
-      ? "no code graph was available — the artifact is not on disk, and this project may never have built one"
-      : `the code graph could not be read (${error?.code ?? error?.message ?? "unreadable"})`;
-  }
-  const builtAt = graph == null ? null : graphArtifactBuiltAt(artifact);
-
   // The candidate set: a module that exports something. A module exporting nothing is a program.
   const candidates = modules
     .map((module) => ({ rel: module.rel, exports: exportedNames(module.text) }))
     .filter((module) => module.exports.length > 0);
   const referenced = dynamicallyImported(modules);
 
+  // ONE question, every candidate. The two unavailable answers keep today's limit sentences; the
+  // second quotes the port's `cause`, the read error's code, else its message.
+  const asked = candidates.map((candidate) => candidate.rel);
+  const answer = await relations(asked, { projectRoot: root ?? "" });
+  const available = answer.served !== false && answer.available === true;
+  const unavailable = available
+    ? null
+    : answer.unavailable === "no-graph"
+      ? "no code graph was available — the artifact is not on disk, and this project may never have built one"
+      : `the code graph could not be read (${answer.cause ?? answer.code ?? "unreadable"})`;
+  const builtAt = available ? answer.builtAt : null;
+
   const findings = [];
   const unresolved = [];
-  if (graph != null) {
-    const { dependents, present } = dependentsIndex(graph);
+  if (available) {
+    const { dependents, present } = dependentsIndex(asked, answer.files);
     for (const candidate of candidates) {
       if (referenced.has(candidate.rel)) continue;
       // A candidate the graph does not hold is an UNKNOWN. It is counted in the limit and never

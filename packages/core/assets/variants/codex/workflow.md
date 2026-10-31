@@ -1455,7 +1455,7 @@ story under milestone NN instead of standalone); optional **`--skip-qa`** (skip 
    looks there (story 85). Distil the architect + QA findings (standards gaps, coverage
    gaps, anything worth not repeating) into it (`doc:
    retrospective`; one `R<n>` per lesson — absence is information, write none if clean). Then run
-   `aof work memory ingest` so the lessons become recallable in later work (a no-op when memory is off),
+   `aof memory ingest` so the lessons become recallable in later work (a no-op when memory is off),
    and `aof work observe <ref> --write --if-enabled` so the opt-in observability snapshot captures this
    run too.
 
@@ -1948,7 +1948,7 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      </build_terminator>
 
      **Recall prior gotchas first.** Before building, the developer runs (unconditionally — memory may
-     be off) `aof work memory recall "<milestone domain / story keywords>" --kind near-miss --block` and
+     be off) `aof memory recall "<milestone domain / story keywords>" --kind near-miss --block` and
      considers the surfaced gotchas, recording at `$aof-verify` (in `VERIFICATION.md`) any that shaped the
      build. An **empty block means nothing to surface** (memory may be off) — proceed unchanged.
      **Keep the result; capture it once, when the build decision is made.** The developer retains
@@ -1961,12 +1961,12 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      `actor` `developer`, `query` (verbatim), `scope` `{"kind":"near-miss"}` and `records` — one
      `{item, id, recordType, verdict}` per returned line, each with an explicit verdict `honoured`,
      `departed` or `irrelevant`, never a default. Submit it ONCE on the story:
-     `aof work memory record-recall <ref> --input <observation file>`. An empty block is still
+     `aof memory record-recall <ref> --input <observation file>`. An empty block is still
      submitted, as `"records": []` — no verdict and no extra retrieval is invented.
      **Recall the prior attempt on a retry (attempt 2 or later).** When this build is the story's
      attempt 2 or later — its minted run's `attempt` is 2 or more — the developer refreshes the
      index and recalls the story's whole delivery history BEFORE any implementation: first
-     `aof work memory ingest`, then `aof work memory recall "" --item <ref> --area delivery --all --json`.
+     `aof memory ingest`, then `aof memory recall "" --item <ref> --area delivery --all --json`.
      No stage filter is added: it would hide the verify findings. Attempt 1 has no episodic edge, so
      a first attempt skips this block entirely. From the actual result, identify the prior attempt —
      the run this run's `retryOf` names, otherwise the latest terminal earlier attempt — and, before
@@ -1983,7 +1983,7 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      `scope` `{"item":"<ref>","area":"delivery"}` and `records` — one `{item, id, recordType,
      verdict}` per returned record, each with an explicit verdict `honoured`, `departed` or
      `irrelevant`, never a default. Submit it ONCE on the story:
-     `aof work memory record-recall <ref> --input <episodic observation file>`. An empty block is still
+     `aof memory record-recall <ref> --input <episodic observation file>`. An empty block is still
      submitted, as `"records": []` — no verdict and no extra retrieval is invented. This edge is in
      addition to the near-miss recall above, which is unchanged.
   4. **Gate** — the free deterministic ladder, walked BEFORE any review lane is spawned.
@@ -2558,9 +2558,10 @@ the bundle. That sequencing is expected, not a failure.
    ```
 
    (append the same target directory the CLI ran against, if one was given). This is the ONE config
-   writer: it read-merge-writes `.aof/aof.config.json`, setting `memory.backend: "graphify"` active
-   by default and filling the `work.tags` block, and it leaves every other key untouched —
-   `work.dir`, `work.agents`, `headroom`, `mesh` and any foreign section survive. **Never** edit the
+   writer: it read-merge-writes `.aof/aof.config.json`, setting `memory.backend: "local"` active
+   by default (local sends nothing to a hosted model) and filling the `work.tags` block, and it
+   leaves every other key untouched — `work.dir`, `work.agents`, `headroom`, `mesh` and any foreign
+   section survive. **Never** edit the
    config JSON yourself; a hand-edit is a second, divergent writer and is exactly what this verb
    exists to prevent.
    - It **fills holes, it never re-authors.** A project that already selected a memory backend keeps
@@ -3736,9 +3737,9 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
        missing baseline). A surface with neither a committed mock nor a checklist has no baseline.
 
      **Recall prior lessons first (before authoring ADRs/stories).** Role-scoped, run unconditionally
-     (memory may be off — see below): the **architect**, before writing an ADR, runs `aof work memory
+     (memory may be off — see below): the **architect**, before writing an ADR, runs `aof memory
      recall "<the decision in a few words>" --area architecture --block`; the **PO**, before the
-     break-down, runs a recall keyed to the milestone's domain — `aof work memory recall "<milestone
+     break-down, runs a recall keyed to the milestone's domain — `aof memory recall "<milestone
      objective keywords>" --item <ref> --block`. Read the returned block and acknowledge any surfaced
      **near-miss** relevant to a decision — honoured, or consciously departed from, in `ARCHITECTURE.md`
      (or `STATE.md`). An **empty block means nothing to surface** (memory may be off) — proceed
@@ -3754,9 +3755,9 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
      recordType, verdict}` per returned line, each with an explicit verdict `honoured`, `departed`
      or `irrelevant`, never a default. The architect uses edge `refine-architect`, actor
      `architect` and scope `{"area":"architecture"}`, then submits
-     `aof work memory record-recall <ref> --input <architect observation file>`. The PO uses edge
+     `aof memory record-recall <ref> --input <architect observation file>`. The PO uses edge
      `refine-po`, actor `product-owner` and scope `{"item":"<ref>"}`, then submits
-     `aof work memory record-recall <ref> --input <PO observation file>`. Each submits exactly once,
+     `aof memory record-recall <ref> --input <PO observation file>`. Each submits exactly once,
      on the item being refined. An empty block is still submitted, as `"records": []`, with no
      verdict invented. The prose that acknowledges a near-miss cites the recall id it explains.
   2. **Break down** (with `aof-architect`): partition into **independent** stories — minimise
@@ -4218,7 +4219,7 @@ For each target item (a milestone NN, or a story — the steps are the same, rea
 own folder; a story has no `STATE.md`/`VERIFICATION.md` of its own, so its evidence is its review
 findings, its `## Findings` section and any recorded blocker stop):
 
-Before triage, recall the target's domain with `aof work memory recall "<domain / keywords>" --block`.
+Before triage, recall the target's domain with `aof memory recall "<domain / keywords>" --block`.
 Use existing lessons to deduplicate, never as invented evidence; an empty block is harmless.
 
 1. **Refresh observability (on by default).** Run `aof work observe NN --write --if-enabled` — the
@@ -4228,8 +4229,8 @@ Use existing lessons to deduplicate, never as invented evidence; an empty block 
    `NN/observability/{report.md,agents.json}` — the per-agent time / token / **stall** record mined
    from the session transcripts. It re-reads every transcript and overwrites, so a partial run is
    never wrong, only less complete; the close's run (all stories done) is the authoritative snapshot.
-2. **Gather the evidence through recall** (read-only). First `aof work memory ingest`, then
-   `aof work memory recall "" --item <ref> --area delivery --all --json` — ONE recall of the item's
+2. **Gather the evidence through recall** (read-only). First `aof memory ingest`, then
+   `aof memory recall "" --item <ref> --area delivery --all --json` — ONE recall of the item's
    whole delivery history, after the observability refresh above. What it returns is the evidence,
    each record cited by its `source`:
    - **findings** → the defects/gaps caught at review, with their triage — the richest source for an
@@ -4264,7 +4265,7 @@ Use existing lessons to deduplicate, never as invented evidence; an empty block 
    - **Watermark first.** Before the first new `R<n>` is appended to a document, write
      `promotionFrom: <the next R number>` in its frontmatter (`1` for a new document). Lessons
      below it are legacy: never rewritten, never backfilled.
-   - **Match before you write.** For each NEW lesson, run `aof work memory recurrence "<the
+   - **Match before you write.** For each NEW lesson, run `aof memory recurrence "<the
      lesson's what-happened and lesson text>" --exclude <new lesson id> --json`, where `<new lesson id>` (`<item>/R<n>`) is
      the identity the new lesson is about to take. When `qualifying` names a reference, the meta
      line carries `**Recurs:** <item>/R<n>`; when it is null, the lesson has no Recurs field. The
@@ -4277,7 +4278,7 @@ Use existing lessons to deduplicate, never as invented evidence; an empty block 
    or promotion (absence is information). Never manufacture entries to fill the page. The
    `observability/` folder (when the opt-in is on) is written regardless — it is a diagnostic, not
    a lesson doc.
-6. **Index the authored records.** Run `aof work memory ingest` only AFTER the lesson pass has
+6. **Index the authored records.** Run `aof memory ingest` only AFTER the lesson pass has
    authored `promotionFrom`, `Recurs` and `Promoted to`; this is safe when memory is off. Keep the
    shared Kind / Area / Stage / Owner vocabulary above.
 </process>
@@ -4463,7 +4464,7 @@ the PRD:
    the planner's business — ignore them.
    **Recall prior lessons first — ONCE for this PRD, and before the cut is made.** The
    `aof-product-owner` spawned above — the only role this command spawns — runs, unconditionally
-   (memory may be off, see below): `aof work memory recall "<the PRD's objective and scope
+   (memory may be off, see below): `aof memory recall "<the PRD's objective and scope
    keywords>" --block`. It is keyed to the seam just read rather than to an item: **no `--item`**,
    because shatter *mints* the drivers and no ref exists until step 3; and **no `--area`**, because
    a milestone-level cut is cross-cutting and an area filter hides exactly the near-miss that would
@@ -4484,7 +4485,7 @@ the PRD:
    `edge` `shatter-po`, `actor` `product-owner`, `query` (verbatim), `scope` `{}` (the original
    unscoped query) and `records` — one `{item, id, recordType, verdict}` per returned line, each
    with an explicit verdict `honoured`, `departed` or `irrelevant`, never a default. Submit it ONCE:
-   `aof work memory record-recall <first driver ref> --input <observation file>`. Every other
+   `aof memory record-recall <first driver ref> --input <observation file>`. Every other
    driver's recall prose cites that owner's ref and recall id and records nothing of its own — the
    recall is never replayed per driver. An empty block is still submitted, as `"records": []`, with
    no verdict invented. If shatter stops before any driver exists, report that no ledger capture
@@ -4818,8 +4819,8 @@ that have content** — no empty "None" placeholders (absence of a section is in
    `aof-designer` sets the `DESIGN.md` rule first. Findings live in `VERIFICATION.md`, never in a task folder.
 
    **Recall prior findings at triage.** Before a finding's triage is decided, refresh the index and
-   recall the stream's earlier findings: first `aof work memory ingest`, then
-   `aof work memory recall "<the finding's text>" --kind finding --block` — across the whole stream,
+   recall the stream's earlier findings: first `aof memory ingest`, then
+   `aof memory recall "<the finding's text>" --kind finding --block` — across the whole stream,
    with no item and no stage filter. The candidates support the triage and never decide it: compare
    each by cause and evidence, excluding the finding's own identity (its `item` and `id`). A
    candidate with the same cause and evidence is cited as the prior occurrence (`<item>/<id>`) and
@@ -4834,7 +4835,7 @@ that have content** — no empty "None" placeholders (absence of a section is in
    `scope` `{"kind":"finding"}` and `records` — one `{item, id, recordType, verdict}` per returned
    line, the finding's own identity included, each with an explicit verdict `honoured`, `departed`
    or `irrelevant`, never a default. Submit it ONCE on the item being verified:
-   `aof work memory record-recall <ref> --input <triage observation file>`. An empty block is still
+   `aof memory record-recall <ref> --input <triage observation file>`. An empty block is still
    submitted, as `"records": []` — no verdict and no extra retrieval is invented.
 
    **Who fills the `id` column, and when.** Reviewers report findings UNNUMBERED — an ordered list,
@@ -4880,7 +4881,7 @@ that have content** — no empty "None" placeholders (absence of a section is in
    reader of one story finds nothing of that story in the milestone above it. Measured before story
    85: 57 `RETROSPECTIVE.md` at driver level and **zero** under `stories/`. The conditional is
    unchanged — a story that surfaced nothing worth a lesson writes no doc, and says so. Then
-   **fold the just-written lessons into memory**: run `aof work memory ingest` so this milestone's
+   **fold the just-written lessons into memory**: run `aof memory ingest` so this milestone's
    `R<n>` entries + `ADR-NNN` blocks become recallable in the next milestone's `$aof-refine`/`$aof-continue`
    (a no-op when memory is off — safe to run always). Then **archive** the STATE `## Feedback (for retro)`
    section as part of the compaction — its lessons have graduated, exactly as durable decisions graduate
@@ -4930,7 +4931,7 @@ that have content** — no empty "None" placeholders (absence of a section is in
      condition that stops the gap being true. Leave NO residual `<…>` placeholder in any section.
 
    **A milestone's outcome is AUTHORED, never a concatenation of its stories'.** The aggregation
-   happens in the INDEX — `aof work memory ingest` unions every item's records into one recall surface
+   happens in the INDEX — `aof memory ingest` unions every item's records into one recall surface
    — so a milestone that restates its stories' capabilities writes one fact twice, and every recall
    then has to dedupe it. State what is true AT THE MILESTONE LEVEL that no single story's outcome
    states alone; where a story states a capability whole, CITE it as `m<NN/SS>/<id>` rather than

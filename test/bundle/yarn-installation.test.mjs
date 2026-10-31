@@ -88,21 +88,34 @@ export const yarnInstallationTests = [
         'graphify.mjs': ['node:child_process', 'node:fs', 'node:path'],
         // 153/02-03: recurrence reads the canonical Recurs form and status reads the shared accounting.
         'memory.mjs': ['@aof/contracts/error', '@aof/work/memory-vocabulary', '@aof/work/memory-accounting'],
-        // 154/09: the pure extractor catalog raises the shared coded error; no I/O/provider port.
-        'graphify-backends.mjs': ['@aof/contracts/error'],
+        // 154/09: the pure extractor catalog; 180/ADR-004: its setting is read, and refused, by the memory node.
+        'graphify-backends.mjs': [],
+        // 180/ADR-001: the memory node's one reader is pure configuration — the coded error and the
+        // port's corpus vocabulary (relative), and no index, backend or transport (FF-18001).
+        'memory-config.mjs': ['@aof/contracts/error'],
+        // 179/ADR-001: the knowledge-engine port is a pure router; it imports no backend, config or fs.
+        'engine.mjs': [],
+        // 179/ADR-002: the graphify code backend checks the artifact and raises the build's coded errors.
+        'graphify-code-backend.mjs': ['node:path', '@aof/contracts/error'],
+        'graphify-code-relations.mjs': ['node:fs'],
         'memory/local-retrieval.mjs': ['@aof/work/ref-scope', '@aof/work/memory-vocabulary'],
         // 148/ADR-001: the lesson grammar and its vocabulary have one home, in @aof/work.
-        'memory/local-indexing.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/work/declared-id', '@aof/work/memory-vocabulary', '@aof/work/ref-scope', '@aof/foundation/fs', '@aof/foundation/markdown', '@aof/foundation/text'],
+        // 178/ADR-002 (178/F-01): `origin:` is read from the item's record doc through work's one frontmatter
+        // parser, and the record doc and the archive root are named by work's identity home.
+        'memory/local-indexing.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/work/declared-id', '@aof/work/memory-vocabulary', '@aof/work/ref-scope', '@aof/work/records', '@aof/work/identity', '@aof/foundation/fs', '@aof/foundation/markdown', '@aof/foundation/text'],
         // 157/ADR-001: the episodic leaf reads its register through the declared-id home; its
         // run, snapshot and feedback readers are injected, never imported.
         'memory/episodic-indexing.mjs': ['node:path', 'node:fs/promises', '@aof/work/declared-id'],
         // 159/ADR-001: the auto-memory leaf reads the selected project's memory folder; its resolver and reporter are injected.
-        'memory/claude-auto-memory.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
+        // 180/ADR-002: its source list is the `operator` corpus, read and refused by the memory node.
+        'memory/claude-auto-memory.mjs': ['node:path', 'node:fs/promises'],
         'memory/local-backend.mjs': ['node:fs/promises', 'node:fs'],
         'memory/graphify-backend.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs'],
         'commands/shared.mjs': ['node:path'],
-        'commands/graph-impact.mjs': ['node:fs', '@aof/contracts/error'],
-        'commands/graph-build.mjs': ['node:path', '@aof/contracts/error'],
+        // 179/ADR-002: graph:impact asks the port's `relations`; it reads no artifact.
+        'commands/graph-impact.mjs': ['@aof/contracts/error'],
+        // 179/ADR-002: graph:build is a face over the port's `ingest("code")`; the build body moved out.
+        'commands/graph-build.mjs': ['node:path'],
         'commands/graph-query.mjs': ['node:fs', '@aof/contracts/error'],
         'commands/graph-triage.mjs': ['node:fs', '@aof/contracts/error'],
         'commands/graph-serve.mjs': ['@aof/contracts/error'],
@@ -160,7 +173,7 @@ export const yarnInstallationTests = [
       } : name === 'mesh' ? {
         "artifact-sync.mjs": ["node:fs/promises","node:path","@aof/work/artifacts"],
         "node-identity.mjs": ["node:path","node:crypto","@aof/foundation/fs","@aof/foundation/text","node:fs/promises"],
-        "workspace-identity.mjs": ["node:crypto","node:path"],
+        "workspace-identity.mjs": ["node:crypto","node:fs","node:path"],
         "cache-read.mjs": ["@aof/contracts/cache-provenance","@aof/work/artifacts"],
         "commands/resync.mjs": ["@aof/contracts/error"],
         'assignment-transitions.mjs': [],
@@ -176,8 +189,10 @@ export const yarnInstallationTests = [
         'ui-serve.mjs': ["node:http","node:fs","node:fs/promises","node:path","@aof/server/static-serve","ws","node:crypto","@aof/foundation/cost-meter"],
         'commands/assign.mjs': ["@aof/contracts/error"],
         'commands/contribution.mjs': [],
-        'commands/desktop-preflight.mjs': ["node:fs/promises","node:child_process","node:path"],
+        'commands/desktop-preflight.mjs': ["node:fs/promises","node:child_process","node:os","node:path"],
         'commands/desktop.mjs': ["node:fs/promises","node:child_process","node:os","node:path"],
+        'commands/desktop-launch-agent.mjs': [],
+        'commands/desktop-layout.mjs': ["node:os","node:path"],
         'commands/face-shared.mjs': ["@aof/contracts/error"],
         'commands/gate.mjs': [],
         'commands/heartbeat.mjs': ["node:os"],

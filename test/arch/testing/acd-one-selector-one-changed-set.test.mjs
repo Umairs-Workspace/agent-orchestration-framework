@@ -171,7 +171,7 @@ export const archTests = [
       assert.equal(set.ok, true);
       assert.ok(set.changed.includes("test/not-written-yet.test.mjs"), "a declared path absent from the graph is never dropped from the changed set");
 
-      const selection = selectSuites({
+      const selection = await selectSuites({
         projectRoot: root,
         changed: [...set.changed],
         allSuites: ["test/a.test.mjs", "test/not-written-yet.test.mjs"],

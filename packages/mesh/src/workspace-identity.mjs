@@ -18,7 +18,18 @@
 // No caller spells a fallback of its own; a workspace with no anchor resolves null
 // (the caller's absent case), never a fabricated id.
 import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
 import path from "node:path";
+
+// hasOwnWorkspaceConfig(projectRoot) — whether a folder is a WORKSPACE at all: it holds its own
+// aof config (the committed .aof/aof.config.json, or the legacy root aof.config.json). A folder a
+// daemon was merely launched from is not one (launchd's cwd `/`, Task Scheduler's system32, the
+// install dir). The publisher's propagation decision and the launcher's tick set both ask this,
+// so the two cannot disagree about which folders exist (175/F-11, 175/F-14).
+export function hasOwnWorkspaceConfig(projectRoot) {
+  return existsSync(path.join(projectRoot, ".aof", "aof.config.json"))
+    || existsSync(path.join(projectRoot, "aof.config.json"));
+}
 
 // workspaceIdFromPath(projectRoot) — the ONE derivation (formerly global-work-store's
 // workspaceIdFor, re-exported there for compatibility; the bytes are identical).

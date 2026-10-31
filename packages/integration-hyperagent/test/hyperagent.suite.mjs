@@ -445,5 +445,34 @@ export const hyperagentPackageTests = [
       assert.equal(result.branch, "aof/plan/add-sso");
       await assert.rejects(briefCommand.run({ mode: "plan", request: "x", repo: "nope" }, ctx), (error) => error.code === "hyperagent-repo-invalid");
     }
-  }
+  },
+  // 178/02 E6 — the planner skills change the command's spelling only (178/ADR-003, the operator's
+  // ruling): Hyperagent cannot reach aof's memory, so recall stays substituted by a repository
+  // search, word for word as before.
+  {
+    name: "178/02 E6 · Hyperagent's skills rename the command to aof memory recall and keep the repository-search substitution byte for byte",
+    run: async () => {
+      const substitution = [
+        "  - `aof memory recall` → search the repository (code search scoped to `<work.dir>`) for the",
+        "    keywords in `RETROSPECTIVE.md`, `ARCHITECTURE.md` and `TECH_DEBT.md`; acknowledge a lesson that",
+        "    bears on the framing in prose, citing its path. There is no recall ledger to write.",
+      ].join("\n");
+      const skillsDir = fileURLToPath(new URL("../assets/skills/", import.meta.url));
+      const refine = await readFile(path.join(skillsDir, "aof-refine", "SKILL.md"), "utf8");
+      assert.ok(refine.replace(/\r\n/gu, "\n").includes(substitution), "aof-refine maps aof memory recall to the unchanged repository search");
+      let carriers = 0;
+      for (const id of PLANNER_SKILLS) {
+        const text = (await readFile(path.join(skillsDir, id, "SKILL.md"), "utf8")).replace(/\r\n/gu, "\n");
+        assert.equal(/aof\s+work\s+memory/u.test(text), false, `${id} spells no aof work memory`);
+        if (text.includes("`aof memory recall` →")) {
+          carriers += 1;
+          assert.ok(text.includes(substitution), `${id}'s substitution is the same text`);
+        }
+        for (const line of text.split("\n")) {
+          assert.equal(/\bmcp\b/iu.test(line) && /memory/iu.test(line), false, `${id} names no MCP memory tool: ${line}`);
+        }
+      }
+      assert.equal(carriers, 6, "six planner skills carry the substitution");
+    },
+  },
 ];

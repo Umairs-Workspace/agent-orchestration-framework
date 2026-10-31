@@ -35,6 +35,7 @@ import { spawnSync } from "node:child_process";
 import { statSync } from "node:fs";
 import { generatorIds } from "@aof/diagrams/generators";
 import { inspectMemoryConfiguration } from "@aof/knowledge/memory";
+import { legacyMessage } from "@aof/knowledge/memory-config";
 import { agentModeFromConfig } from "@aof/contracts/agent-mode";
 export function assembleConfigInspect({ dslServices, fsServices, workspaceServices, degradeServices }) {
   const { loadConfig } = dslServices;
@@ -275,8 +276,12 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     await validateProjectDocs(Array.isArray(raw.projectDocs) ? raw.projectDocs : [], baseDir, diagnostics);
     validateSettings(raw.settings, diagnostics);
     validateWork(raw.work, diagnostics);
-    try { inspectMemoryConfiguration(raw); }
-    catch (error) { diagnostics.push(diagnostic("error", error.path, error.message, error.code)); }
+    // 180/ADR-001 — an old memory key is a warning naming its new home; the config stays valid.
+    try {
+      for (const entry of inspectMemoryConfiguration(raw).legacy) {
+        diagnostics.push(diagnostic("warning", entry.path, legacyMessage(entry), "memory-config-legacy"));
+      }
+    } catch (error) { diagnostics.push(diagnostic("error", error.path, error.message, error.code)); }
 
     return diagnostics;
   }
@@ -292,6 +297,18 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
         ? "Config has validation errors."
         : "Config is valid."
     });
+
+    // 180/ADR-001 — the text face prints checks, not diagnostics, so an old memory key gets a check of
+    // its own. Only a config that still spells one sees it.
+    const legacyMemory = inspection.diagnostics.filter((item) => item.code === "memory-config-legacy");
+    if (legacyMemory.length > 0) {
+      checks.push({
+        id: "memory-config-legacy",
+        severity: "warning",
+        message: `${legacyMemory.length} memory setting(s) use an old spelling: ${legacyMemory.map((item) => item.message).join("; ")}.`,
+        details: legacyMemory.map(({ path: from, message }) => ({ path: from, message }))
+      });
+    }
 
     if (inspection.legacyConfigIsStale) {
       checks.push({

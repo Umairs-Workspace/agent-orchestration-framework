@@ -378,14 +378,14 @@ export const memoryMetaNormalisedTests = [
   {
     // 148 moved both versions to 2 together; 157/ADR-002 moved both to 3 the same way (a JSON
     // source locator). What this pins is that each store is written at its constant, in lockstep.
-    name: "148/02/02: both index versions move in lockstep (2 at 148, 3 since 157/ADR-002)",
+    name: "148/02/02: both index versions move in lockstep (2 at 148, 3 since 157/ADR-002, 4 since 178/ADR-002)",
     run: () => withStream(async (s) => {
       const local = await s.backends.local.reindex(null, s.ctx);
       const graphify = await s.backends.graphify.reindex(null, s.ctx);
-      assert.equal(local.version, 3);
-      assert.equal(graphify.version, 3);
-      assert.equal(s.indexing.INDEX_VERSION, 3);
-      assert.equal(s.graphify.GRAPHIFY_INDEX_VERSION, 3);
+      assert.equal(local.version, 4);
+      assert.equal(graphify.version, 4);
+      assert.equal(s.indexing.INDEX_VERSION, 4);
+      assert.equal(s.graphify.GRAPHIFY_INDEX_VERSION, 4);
     }),
   },
   {
@@ -404,7 +404,8 @@ export const memoryMetaNormalisedTests = [
       await writeVersionOneStore(s, backend);
       const { result, text } = await statusOf(s, backend);
       assert.deepEqual(result.index, { version: 1, current: s.indexing.INDEX_VERSION, stale: true });
-      assert.match(text, /aof work memory ingest/);
+      assert.match(text, /`aof memory ingest`/);
+      assert.doesNotMatch(text, /aof work memory/);
     }),
   })),
   ...["local", "graphify"].map((backend) => ({
@@ -413,7 +414,7 @@ export const memoryMetaNormalisedTests = [
       await s.backends[backend].reindex(null, s.ctx);
       const { result, text } = await statusOf(s, backend);
       assert.deepEqual(result.index, { version: s.indexing.INDEX_VERSION, current: s.indexing.INDEX_VERSION, stale: false });
-      assert.doesNotMatch(text, /aof work memory ingest/);
+      assert.doesNotMatch(text, /aof memory ingest/);
     }),
   })),
   {

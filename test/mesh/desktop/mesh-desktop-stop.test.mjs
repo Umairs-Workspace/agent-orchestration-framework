@@ -10,6 +10,34 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // success. Killing a real supervisor is exactly the thing a test must never do
 // on the control node — this file runs beside a live one.
 import assert from "node:assert/strict";
+
+// 175/02 — a process table and a clock in one fake. `exitsAfterTerm[pid]` is how long a pid
+// takes to exit once it has had SIGTERM; a pid absent from it ignores SIGTERM.
+function makeFakeProcesses({ running = [], exitsAfterTerm = {} } = {}) {
+  let clock = 0;
+  const termedAt = new Map();
+  const asked = [];
+  const alive = (pid) => {
+    if (!running.includes(pid)) return false;
+    if (!termedAt.has(pid) || !(pid in exitsAfterTerm)) return true;
+    return clock < termedAt.get(pid) + exitsAfterTerm[pid];
+  };
+  const runner = async (file, args) => {
+    asked.push([file, ...args].join(" "));
+    if (file === "pgrep") return { stdout: running.filter(alive).map((p) => `${p}\n`).join(""), stderr: "", code: 0 };
+    if (file === "kill") {
+      const [signal, raw] = args;
+      const pid = Number(raw);
+      if (!alive(pid)) return { stdout: "", stderr: "No such process", code: 1 };
+      if (signal === "-TERM" && !termedAt.has(pid)) termedAt.set(pid, clock);
+      return { stdout: "", stderr: "", code: 0 };
+    }
+    return { stdout: "", stderr: "", code: -1 };
+  };
+  return { runner, asked, alive, now: () => clock, sleep: async (ms) => { clock += ms; } };
+}
+
+const isSigkill = (line) => /^kill -(KILL|9)\b/.test(line) || /SIGKILL/.test(line);
 const desktopProcessName = _aofApplication.mesh.commandTools.mesh.desktop.desktopProcessName;
 const findDesktopProcesses = _aofApplication.mesh.commandTools.mesh.desktop.findDesktopProcesses;
 const parsePgrepPids = _aofApplication.mesh.commandTools.mesh.desktop.parsePgrepPids;
@@ -40,7 +68,7 @@ export const meshDesktopStopTests = [
     name: "mesh-desktop-stop: the process name is the placed exe on win32 and the bare binary elsewhere",
     run: () => {
       assert.equal(desktopProcessName("win32"), DESKTOP_APP_EXE);
-      assert.equal(desktopProcessName("darwin"), "aof-mesh-desktop");
+      assert.equal(desktopProcessName("darwin"), "AOF Desktop", "the bundle's executable (175/F-05)");
       assert.equal(desktopProcessName("linux"), "aof-mesh-desktop");
     },
   },
@@ -70,7 +98,11 @@ export const meshDesktopStopTests = [
 
       const posix = recorder([{ stdout: "777\n", code: 0 }]);
       assert.deepEqual(await findDesktopProcesses({ platform: "darwin", listFn: posix.run }), [777]);
-      assert.deepEqual(posix.calls[0], { file: "pgrep", args: ["-x", "aof-mesh-desktop"] });
+      assert.deepEqual(posix.calls[0], { file: "pgrep", args: ["-x", "AOF Desktop"] }, "the macOS executable (175/F-05)");
+
+      const linux = recorder([{ stdout: "778\n", code: 0 }]);
+      assert.deepEqual(await findDesktopProcesses({ platform: "linux", listFn: linux.run }), [778]);
+      assert.deepEqual(linux.calls[0], { file: "pgrep", args: ["-x", "aof-mesh-desktop"] }, "linux keeps its name");
     },
   },
 
@@ -159,6 +191,79 @@ export const meshDesktopStopTests = [
       assert.match(render({ ok: true, stopped: [23496], alreadyStopped: false }), /Stopped the desktop app \(pid 23496\)/);
       assert.match(render({ ok: true, stopped: [23496], alreadyStopped: false }), /daemons are reaped/);
       assert.equal(render({ ok: true, stopped: [], alreadyStopped: true }), "The desktop app is not running.");
+    },
+  },
+
+  // ── milestone 175 / story 02, task 02_stop-asks-the-app-to-quit-and-waits.feature ──
+  //
+  // The runner MODELS processes by pid: `pgrep` answers the running supervisors, `kill -TERM`
+  // starts a pid's exit clock, `kill -0` answers whether it is still alive at the test clock's
+  // time. The clock only moves when the verb sleeps, so a 20 s wait takes no real time.
+
+  // Scenario: E8 · a supervisor that exits after SIGTERM is reported stopped
+  {
+    name: "175/02 task02 E8 · a supervisor that exits 2 s after SIGTERM is reported stopped, and stop returns no earlier than its exit",
+    run: async () => {
+      const os = makeFakeProcesses({ running: [812], exitsAfterTerm: { 812: 2_000 } });
+      const result = await stopDesktopApp({ platform: "darwin", listFn: os.runner, killFn: os.runner, nowFn: os.now, sleepFn: os.sleep });
+      assert.ok(os.asked.includes("kill -TERM 812"), os.asked.join(" | "));
+      assert.equal(result.ok, true);
+      assert.deepEqual(result.stopped, [812]);
+      assert.ok(os.now() >= 2_000, `it returned no earlier than pid 812's exit (at ${os.now()} ms)`);
+      assert.ok(!os.asked.some(isSigkill), "the runner was never asked for a SIGKILL");
+    },
+  },
+
+  // Scenario: E9 · a supervisor still alive after the wait is refused and left running
+  {
+    name: "175/02 task02 E9 · a supervisor still alive after 20 s is refused desktop-stop-timeout naming it, and is never SIGKILLed",
+    run: async () => {
+      const os = makeFakeProcesses({ running: [812], exitsAfterTerm: {} });
+      await assert.rejects(
+        stopDesktopApp({ platform: "darwin", listFn: os.runner, killFn: os.runner, nowFn: os.now, sleepFn: os.sleep }),
+        (error) => {
+          assert.equal(error.code, "desktop-stop-timeout");
+          assert.match(error.message, /\b812\b/, "the message names pid 812");
+          return true;
+        },
+      );
+      assert.ok(os.now() >= 20_000, `the refusal came after 20 s (at ${os.now()} ms)`);
+      assert.ok(!os.asked.some(isSigkill), "the runner was never asked for a SIGKILL");
+      assert.ok(os.alive(812), "and pid 812 was left running");
+    },
+  },
+
+  // Scenario: E10 · nothing running is a success
+  {
+    name: "175/02 task02 E10 · nothing running on darwin is a success with alreadyStopped",
+    run: async () => {
+      const os = makeFakeProcesses({ running: [] });
+      const result = await stopDesktopApp({ platform: "darwin", listFn: os.runner, killFn: os.runner, nowFn: os.now, sleepFn: os.sleep });
+      assert.equal(result.ok, true);
+      assert.equal(result.alreadyStopped, true);
+    },
+  },
+
+  // Scenario: --dry-run names the pid and signals nothing
+  {
+    name: "175/02 task02 --dry-run on darwin names the pid and signals nothing",
+    run: async () => {
+      const os = makeFakeProcesses({ running: [812] });
+      const result = await stopDesktopApp({ platform: "darwin", dryRun: true, listFn: os.runner, killFn: os.runner, nowFn: os.now, sleepFn: os.sleep });
+      assert.deepEqual(result.wouldStop, [812]);
+      assert.ok(!os.asked.some((c) => c.startsWith("kill")), "no kill was asked for");
+    },
+  },
+
+  // Scenario: Windows stop is unchanged
+  {
+    name: "175/02 task02 Windows stop is unchanged — taskkill /T /F, and no wait",
+    run: async () => {
+      const list = recorder([{ stdout: '"aof-mesh-desktop.exe","23496","Console","1","148,232 K"', code: 0 }]);
+      const kill = recorder([{ stdout: "", code: 0 }]);
+      const result = await stopDesktopApp({ platform: "win32", listFn: list.run, killFn: kill.run });
+      assert.deepEqual(kill.calls, [{ file: "taskkill", args: ["/PID", "23496", "/T", "/F"] }], "exactly the one taskkill, and no liveness poll");
+      assert.deepEqual(result.stopped, [23496]);
     },
   },
 ];

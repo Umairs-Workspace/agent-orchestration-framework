@@ -5,6 +5,8 @@ import {createMemory} from '@aof/knowledge/memory';
 import {createLocalIndexing} from '@aof/knowledge/memory/local-indexing';
 import {createLocalBackend} from '@aof/knowledge/memory/local-backend';
 import {createGraphBuildCommand} from '@aof/knowledge/commands/graph-build';
+import {createGraphifyCodeBackend} from '@aof/knowledge/graphify-code-backend';
+import {createKnowledgeEngine,RECORD_CORPORA} from '@aof/knowledge/engine';
 import {createKnowledgeContribution,KNOWLEDGE_COMMAND_IDS} from '@aof/knowledge/commands';
 import {createImportStore} from '@aof/knowledge/import/store';
 import {createImportRecovery} from '@aof/knowledge/import/recovery';
@@ -68,7 +70,7 @@ test('import command writes a colocated digest only on execution and reindexes t
 }));
 
 test('memory loads only the selected backend and help never loads one',async()=>{
- const calls=[];const backend={name:'local',recall:async()=>({query:'fixture',scope:{},records:[],text:''})};
+ const calls=[];const backend={name:'local',corpora:RECORD_CORPORA,reindex:async()=>({}),recall:async()=>({query:'fixture',scope:{},records:[],text:''}),status:async()=>({})};
  const api=createMemory({loadLocalBackend:async()=>{calls.push('local');return backend;},loadGraphifyBackend:async()=>{calls.push('graphify');throw Error('unexpected backend');}});
  assert.deepEqual(calls,[]);
  assert.equal(await api.runMemoryVerb({verb:'reindex',help:true},{config:{memory:{backend:'graphify'}}}),api.memoryUsage());
@@ -94,7 +96,10 @@ test('local indexing and retrieval compose through supplied work services and pe
 }));
 
 test('graph build refuses prohibited egress before resolving or spawning a binary',async()=>{
- const calls=[];const {graphBuildCommand}=createGraphBuildCommand({resolveGraphifyBinary:()=>{calls.push('resolve');throw Error('unexpected resolution');}});
+ // 179/ADR-002: the face asks ingest("code") of the port, and the graphify code backend refuses first.
+ const calls=[];const resolveGraphifyBinary=()=>{calls.push('resolve');throw Error('unexpected resolution');};
+ const {graphifyCodeBackend}=createGraphifyCodeBackend({resolveGraphifyBinary,isCodeOnlyWholeRootBuild:()=>false});
+ const {graphBuildCommand}=createGraphBuildCommand({engine:createKnowledgeEngine({backends:[graphifyCodeBackend]}),isCodeOnlyWholeRootBuild:()=>false,resolveGraphifyBinary});
  assert.deepEqual(calls,[]);
  await assert.rejects(graphBuildCommand.run({path:'.',offline:true,backend:'openai'},{workspace:{projectRoot:'/fixture'}}),{code:'offline-backend-conflict'});
  assert.deepEqual(calls,[]);

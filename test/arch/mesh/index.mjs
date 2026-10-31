@@ -111,6 +111,8 @@ import { archTests as acdDeclarationsRideTheOneDataCommandTests } from "./acd-de
 // flag rather than a fifth command, and a preflight that reaches for none of the three
 // readers that would make it a false green or a write.
 import { archTests as acdAutostartIsOneInjectedRunnerTests } from "./acd-autostart-is-one-injected-runner.test.mjs";
+// milestone 175 / story 02 — FF-17502: the desktop app's names are spelled in the layout module only.
+import { archTests as acdDesktopLayoutOneHomeTests } from "./acd-desktop-layout-one-home.test.mjs";
 // 132 / task 03 — no tracked run record names a machine (the path + record rules, shrink-only).
 import { archTests as acdRunRecordsNameNoMachineTests } from "./acd-run-records-name-no-machine.test.mjs";
 // milestone 164 / story 01 — FF-16405: the daemon tick runs the sync pass over every registered workspace
@@ -179,6 +181,8 @@ export const tests = [
   ...acdDeclarationsRideTheOneDataCommandTests,
   // milestone 126 / story 04 — FF-12607
   ...acdAutostartIsOneInjectedRunnerTests,
+  // 175/02 — FF-17502, the desktop layout is the names' one home (FF-17503 widens FF-12607 above).
+  ...acdDesktopLayoutOneHomeTests,
   // 132 / task 03
   ...acdRunRecordsNameNoMachineTests,
   // milestone 164 / story 01 — FF-16405

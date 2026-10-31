@@ -1,6 +1,6 @@
 ---
 name: "aof-init"
-description: "Install ACD into this repo and give it a config — runs `aof work init` (the CLI render) first, then analyses the project to author `.aof/aof.config.json`: the graphify memory backend active by default, and a `work.tags` vocabulary inferred from what this repo actually contains."
+description: "Install ACD into this repo and give it a config — runs `aof work init` (the CLI render) first, then analyses the project to author `.aof/aof.config.json`: the local memory backend active by default, and a `work.tags` vocabulary inferred from what this repo actually contains."
 ---
 
 <!-- aof-generated: true; aof-runtime: codex -->
@@ -78,9 +78,10 @@ the bundle. That sequencing is expected, not a failure.
    ```
 
    (append the same target directory the CLI ran against, if one was given). This is the ONE config
-   writer: it read-merge-writes `.aof/aof.config.json`, setting `memory.backend: "graphify"` active
-   by default and filling the `work.tags` block, and it leaves every other key untouched —
-   `work.dir`, `work.agents`, `headroom`, `mesh` and any foreign section survive. **Never** edit the
+   writer: it read-merge-writes `.aof/aof.config.json`, setting `memory.backend: "local"` active
+   by default (local sends nothing to a hosted model) and filling the `work.tags` block, and it
+   leaves every other key untouched — `work.dir`, `work.agents`, `headroom`, `mesh` and any foreign
+   section survive. **Never** edit the
    config JSON yourself; a hand-edit is a second, divergent writer and is exactly what this verb
    exists to prevent.
    - It **fills holes, it never re-authors.** A project that already selected a memory backend keeps

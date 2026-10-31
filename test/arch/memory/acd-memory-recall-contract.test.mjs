@@ -6,6 +6,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // `records` array (the contract), never the rendered `text` blob.
 import assert from "node:assert/strict";
 import { recall, MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
+import { RECORD_CORPORA } from "@aof/knowledge/engine";
 const runMemory = _aofApplication.knowledge.work.memory.runMemory;
 
 // A minimal frozen-shape fixture index (ADR-005): absent-type fields present-as-"".
@@ -65,6 +66,7 @@ export const archTests = [
       };
       const stub = {
         name: "stub",
+        corpora: RECORD_CORPORA,
         async recall() { return fixed; },
         async reindex() { return { recordCount: 0 }; },
         async status() { return { backend: "stub", recordCount: 0 }; }

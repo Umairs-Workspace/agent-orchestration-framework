@@ -90,11 +90,12 @@ export const archTests = [
       assert.ok(typeof BACKEND_REGISTRY.graphify === "function", "BACKEND_REGISTRY carries a `graphify` loader");
       const backend = await BACKEND_REGISTRY.graphify();
       // The loader resolves to the backend module's default export — the FROZEN
-      // 05 interface (05/ADR-003), exactly { name, recall, reindex, status }.
+      // 05 interface (05/ADR-003), widened by 179/ADR-003's declaration to exactly
+      // { name, corpora, recall, reindex, status }.
       assert.deepEqual(
         Object.keys(backend).sort(),
-        ["name", "recall", "reindex", "status"],
-        "the graphify backend's default export is exactly { name, recall, reindex, status }"
+        ["corpora", "name", "recall", "reindex", "status"],
+        "the graphify backend's default export is exactly { name, corpora, recall, reindex, status }"
       );
       assert.equal(backend.name, "graphify", "the backend's own name is `graphify`");
       for (const method of ["recall", "reindex", "status"]) {

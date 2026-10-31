@@ -1,11 +1,21 @@
 import { access, constants as fsConstants, readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import os from "node:os";
 import path from "node:path";
+import { desktopLayout, resolveDesktopInstallDir } from "./desktop-layout.mjs";
 export const PREFLIGHT_CHECKS = Object.freeze([
   "claude-authenticated",
   "payload-build",
   "workspace-identity-pinned",
   "heartbeat-hook-installed",
+]);
+// What a Mac adds, appended after the four when the platform is `darwin` (175/ADR-004 §4). Its
+// own list, so `PREFLIGHT_CHECKS` and Windows' answer stay exactly what they were.
+export const PREFLIGHT_CHECKS_DARWIN = Object.freeze([
+  "macos-command-line-tools",
+  "rust-toolchain",
+  "app-not-quarantined",
+  "daemon-claude-authenticated",
 ]);
 export const HEARTBEAT_HOOK_ID = "claude-run-heartbeat";
 export const PREFLIGHT_SEAMS = Object.freeze([
@@ -18,6 +28,16 @@ export const PREFLIGHT_SEAMS = Object.freeze([
   "settingsFn",
   "hookFileFn",
   "bundleHookFn",
+  // 175/03 — the darwin checks' reach: the platform that selects them, the one runner every
+  // darwin probe is asked through, the file seam the LaunchAgent plist is read through, and
+  // the home and install dir the plist and the bundle are found under.
+  "platform",
+  "runner",
+  "files",
+  "home",
+  "installDir",
+  // 175/F-09 — the account the daemons run as: `claude` finds its keychain sign-in under USER.
+  "user",
 ]);
 
 // Core supplies configured services; constructing command definitions performs no I/O.
@@ -75,10 +95,14 @@ const OFFENDER_BUDGET = 400;
 // "broken" are one exit code apart — measured 2026-09-08, `reg query`/`reg delete` for an
 // absent value BOTH print `ERROR: The system was unable to find the specified registry key
 // or value.` on stderr, print nothing on stdout, and exit 1.
+//
+// An `env` is ADDITIVE too (175/03): the daemon probe runs `claude` with the LaunchAgent's
+// environment and nothing else, and Node looks the command up on THAT env's PATH — which is
+// the whole point of the probe.
 function defaultRunner() {
-  return async (file, args) =>
+  return async (file, args, spawnOptions) =>
     await new Promise((resolve) => {
-      const child = spawn(file, args, { windowsHide: true });
+      const child = spawn(file, args, { windowsHide: true, ...(spawnOptions?.env ? { env: spawnOptions.env } : {}) });
       let stdout = "";
       let stderr = "";
       child.stdout?.on("data", (chunk) => {
@@ -104,32 +128,43 @@ function check(code, status, message) {
 // 2026-09-08: `{"loggedIn": true, "authMethod": "claude.ai", …}`). THE EXIT CODE IS NOT
 // THE SIGNAL — it is 0 either way — which is the trap an obvious implementation falls
 // into. `loggedIn` is what is read.
-async function checkClaudeAuthenticated(claudeFn) {
+//
+// ONE parse for both `claude` checks (175/03): this terminal's, and the daemons' — the same
+// question asked in a different environment. A scope names the check and the PATH it was
+// asked on; the daemon scope also carries the env the probe is run with.
+const TERMINAL_CLAUDE = Object.freeze({
+  code: "claude-authenticated",
+  where: "this account's PATH",
+  loggedOut: "This account is logged out of `claude` — run `claude` once interactively to sign in.",
+});
+
+async function checkClaudeAuthenticated(claudeFn, scope = TERMINAL_CLAUDE) {
+  const { code: checkCode, where, loggedOut, env, remedy } = scope;
   let answer;
   try {
-    answer = await claudeFn("claude", ["auth", "status"]);
+    answer = env == null ? await claudeFn("claude", ["auth", "status"]) : await claudeFn("claude", ["auth", "status"], { env });
   } catch (error) {
-    return check("claude-authenticated", "fail", `\`claude\` could not be run: ${error?.message ?? "unknown fault"}.`);
+    return check(checkCode, "fail", `\`claude\` could not be run: ${error?.message ?? "unknown fault"}.`);
   }
   const code = answer?.code;
   const stderr = typeof answer?.stderr === "string" ? answer.stderr.trim() : "";
   if (code === -1 || code == null) {
-    return check("claude-authenticated", "fail", "`claude` is not on this account's PATH — a supervised loop would start and die on auth.");
+    return check(checkCode, "fail", `\`claude\` is not on ${where} — a supervised loop would start and die on auth${remedy ? `; ${remedy}` : ""}.`);
   }
   if (code !== 0) {
-    return check("claude-authenticated", "fail", `\`claude auth status\` exited ${code}.${stderr ? ` ${stderr}` : ""}`);
+    return check(checkCode, "fail", `\`claude auth status\` exited ${code}.${stderr ? ` ${stderr}` : ""}`);
   }
   let parsed;
   try {
     parsed = JSON.parse(String(answer?.stdout ?? ""));
   } catch {
-    return check("claude-authenticated", "fail", "The `claude auth status` output could not be read as JSON, so the auth state is unknown.");
+    return check(checkCode, "fail", "The `claude auth status` output could not be read as JSON, so the auth state is unknown.");
   }
   if (parsed?.loggedIn === true) {
     const method = typeof parsed.authMethod === "string" && parsed.authMethod.length > 0 ? parsed.authMethod : "an unnamed method";
-    return check("claude-authenticated", "pass", `\`claude\` is authenticated via ${method}.`);
+    return check(checkCode, "pass", `\`claude\` is authenticated via ${method}${env == null ? "" : ` on ${where}`}.`);
   }
-  return check("claude-authenticated", "fail", "This account is logged out of `claude` — run `claude` once interactively to sign in.");
+  return check(checkCode, "fail", loggedOut);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -512,6 +547,106 @@ async function defaultHookFileFn(hookPath) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// the darwin checks (175/ADR-004 §4)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Every darwin probe is asked of the ONE injected runner, so a suite run on a Mac host never
+// reaches the real `xcode-select`, `cargo`, `xattr` or `claude` unless it chose to.
+
+const BUILD_ONLY = "needed only to build the desktop app, not to run it";
+
+// The two build prerequisites. Each is reported, never installed, and each says it matters
+// only for building — a Mac that runs a shipped app needs neither.
+async function checkBuildTool(runner, { code, file, args, missing, are, remedy }) {
+  const answer = await runner(file, args);
+  const exit = answer?.code;
+  if (exit === 0) {
+    const found = String(answer?.stdout ?? "").trim();
+    return check(code, "pass", `${missing} ${are} installed${found ? ` (${found})` : ""}.`);
+  }
+  const why = exit === -1 || exit == null ? `\`${file}\` could not be run` : `\`${[file, ...args].join(" ")}\` exited ${exit}`;
+  return check(code, "fail", `${missing} ${are} not installed (${why}) — ${BUILD_ONLY}; ${remedy}.`);
+}
+
+// A bundle carrying `com.apple.quarantine` is refused by Gatekeeper at launch. `xattr -p`
+// prints the attribute and exits 0 when it is there, and exits 1 when it is not — but also
+// exits 1 when the BUNDLE is not there, which is no answer at all and so never a pass.
+async function checkAppNotQuarantined(runner, bundle) {
+  const code = "app-not-quarantined";
+  const answer = await runner("xattr", ["-p", "com.apple.quarantine", bundle]);
+  const exit = answer?.code;
+  const stderr = String(answer?.stderr ?? "").trim();
+  if (exit === 0) {
+    const value = String(answer?.stdout ?? "").trim();
+    return check(code, "fail", `The desktop app is quarantined (${value || "an empty attribute"}), so macOS will refuse to open it — \`xattr -dr com.apple.quarantine ${bundle}\` clears it.`);
+  }
+  if (exit === 1 && !/no such file/i.test(stderr)) {
+    return check(code, "pass", `The desktop app at ${bundle} carries no quarantine attribute.`);
+  }
+  if (exit === 1) {
+    return check(code, "fail", `No desktop app was found at ${bundle}, so its quarantine could not be checked.`);
+  }
+  const why = exit === -1 || exit == null ? "`xattr` could not be run" : `\`xattr\` exited ${exit}${stderr ? `: ${stderr}` : ""}`;
+  return check(code, "fail", `The desktop app's quarantine could not be checked (${why}).`);
+}
+
+// The daemons' `claude`, asked in the daemons' environment. launchd hands the app the plist's
+// PATH, not the terminal's (RESEARCH P1), and the supervisor spawns `claude` by name — so a
+// probe run with the terminal's PATH would pass while every supervised run died on "claude not
+// found". The env is EXACTLY what launchd hands a per-user job and `claude` reads, `{ PATH,
+// HOME, USER, LOGNAME }`: anything more would be the terminal leaking in. `USER` is not
+// optional: `claude` finds its macOS sign-in in the login keychain under that account, so a
+// probe without it read every signed-in daemon as logged out (175/F-09).
+//
+// No plist is not a failure and not a pass: nothing was probed, so the check does not apply.
+async function checkDaemonClaudeAuthenticated({ runner, files, plistPath, home, user }) {
+  const code = "daemon-claude-authenticated";
+  const xml = await files.read(plistPath);
+  if (xml == null) {
+    return check(code, "skip", "No login LaunchAgent is registered, so there is no daemon environment to probe — `aof mesh desktop install --autostart` registers one.");
+  }
+  // Loaded here, on the one path that reads a plist, as the autostart act loads its render: an
+  // eager import would put the module on every verb's load path (FF-16004's ceiling).
+  const { readLaunchAgentPath } = await import("./desktop-launch-agent.mjs");
+  const PATH = readLaunchAgentPath(xml);
+  if (PATH == null) {
+    return check(code, "fail", `The LaunchAgent ${plistPath} carries no PATH this check can read, so launchd hands the app its own minimal one — re-run \`aof mesh desktop install --autostart\`.`);
+  }
+  return await checkClaudeAuthenticated(runner, {
+    code,
+    where: `the LaunchAgent's PATH (${PATH})`,
+    remedy: "re-run `aof mesh desktop install --autostart` from a shell where `claude` resolves",
+    loggedOut: "The `claude` on the LaunchAgent's PATH is logged out — run `claude` once interactively to sign in.",
+    env: { PATH, HOME: home, USER: user, LOGNAME: user },
+  });
+}
+
+// The plist as text, or null when there is none — the read half of the seam the autostart act
+// writes through, so a suite's fake answers both.
+const defaultFiles = {
+  read: async (file) => {
+    try {
+      return await readFile(file, "utf8");
+    } catch (error) {
+      if (error?.code === "ENOENT") return null;
+      throw error;
+    }
+  },
+};
+
+// The four, in `PREFLIGHT_CHECKS_DARWIN`' order, each inside the guard.
+async function runDarwinChecks({ runner, files, layout, home, user }) {
+  return [
+    await guarded("macos-command-line-tools", () =>
+      checkBuildTool(runner, { code: "macos-command-line-tools", file: "xcode-select", args: ["-p"], missing: "The macOS command-line tools", are: "are", remedy: "`xcode-select --install` installs them" })),
+    await guarded("rust-toolchain", () =>
+      checkBuildTool(runner, { code: "rust-toolchain", file: "cargo", args: ["--version"], missing: "Rust", are: "is", remedy: "install it with `rustup` (https://rustup.rs)" })),
+    await guarded("app-not-quarantined", () => checkAppNotQuarantined(runner, layout.placed)),
+    await guarded("daemon-claude-authenticated", () => checkDaemonClaudeAuthenticated({ runner, files, plistPath: layout.launchAgent, home, user })),
+  ];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // the verb-facing surface
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -546,10 +681,10 @@ function preflightSeams(ctx = {}) {
   return seams;
 }
 
-// runPreflight(options) -> an ORDERED list of FOUR `{ code, status, message }`, in
-// `PREFLIGHT_CHECKS`' order. It rides the SUCCESS answer of a verb only, so a verb that
-// refuses carries its `{ ok, error, code }` envelope unchanged and no probe is spawned
-// behind a refusal.
+// runPreflight(options) -> an ORDERED list of `{ code, status, message }`: the FOUR in
+// `PREFLIGHT_CHECKS`' order, then — on darwin only — the four in `PREFLIGHT_CHECKS_DARWIN`'.
+// It rides the SUCCESS answer of a verb only, so a verb that refuses carries its
+// `{ ok, error, code }` envelope unchanged and no probe is spawned behind a refusal.
 async function runPreflight(options = {}) {
   const env = options.env ?? process.env;
   const claudeFn = typeof options.claudeFn === "function" ? options.claudeFn : defaultRunner();
@@ -560,6 +695,8 @@ async function runPreflight(options = {}) {
   const settingsFn = typeof options.settingsFn === "function" ? options.settingsFn : defaultSettingsFn;
   const hookFileFn = typeof options.hookFileFn === "function" ? options.hookFileFn : defaultHookFileFn;
   const bundleHookFn = typeof options.bundleHookFn === "function" ? options.bundleHookFn : defaultBundleHookFn;
+  // The platform is an input, as in the autostart act; the host's is only its default.
+  const platform = options.platform ?? process.platform;
 
   // This node's id is READ, never minted: the sidecar at the GLOBAL identity path.
   let nodeId = options.nodeId;
@@ -574,20 +711,42 @@ async function runPreflight(options = {}) {
 
   const roster = await resolveRoster({ nodeId, workspacesFn });
 
-  return [
+  const checks = [
     await guarded("claude-authenticated", () => checkClaudeAuthenticated(claudeFn)),
     await guarded("payload-build", () => checkPayloadBuild(buildInfoFn, env)),
     await guarded("workspace-identity-pinned", () => checkWorkspaceIdentityPinned({ roster, workspaceConfigFn })),
     await guarded("heartbeat-hook-installed", () => checkHeartbeatHookInstalled({ roster, settingsFn, hookFileFn, bundleHookFn })),
   ];
+  if (platform !== "darwin") return checks;
+
+  const home = options.home ?? os.homedir();
+  const user = options.user ?? os.userInfo().username;
+  const layout = desktopLayout({ platform, installDir: resolveDesktopInstallDir({ installDir: options.installDir, env }), home });
+  return [
+    ...checks,
+    ...(await runDarwinChecks({
+      runner: typeof options.runner === "function" ? options.runner : defaultRunner(),
+      files: { ...defaultFiles, ...(options.files ?? {}) },
+      layout,
+      home,
+      user,
+    })),
+  ];
 }
 
 // The preflight's render lines, shared by `install` and `run` so both say the same
 // thing in the same words — a check nobody runs is prose, and two renders that drift
-// are worse than one.
-function renderPreflight(preflight = []) {
-  return preflight.map((entry) => `  ${entry.status === "pass" ? "ok" : "FAIL"}  ${entry.code} — ${entry.message}`);
+// are worse than one. A `skip` (a check that does not apply, 175/03) renders `--`: it is
+// never `ok`, because nothing was probed.
+function statusWord(status) {
+  if (status === "pass") return "ok";
+  if (status === "skip") return "--";
+  return "FAIL";
 }
 
-return { PREFLIGHT_CHECKS, HEARTBEAT_HOOK_ID, defaultRunner, PREFLIGHT_SEAMS, preflightSeams, runPreflight, renderPreflight };
+function renderPreflight(preflight = []) {
+  return preflight.map((entry) => `  ${statusWord(entry.status)}  ${entry.code} — ${entry.message}`);
+}
+
+return { PREFLIGHT_CHECKS, PREFLIGHT_CHECKS_DARWIN, HEARTBEAT_HOOK_ID, defaultRunner, PREFLIGHT_SEAMS, preflightSeams, runPreflight, renderPreflight };
 }

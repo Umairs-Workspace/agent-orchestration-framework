@@ -98,6 +98,8 @@ import { archTests as acdReadmeNamesWhatShipsTests } from "./acd-readme-names-wh
 // control goes green). The structural half; the behavioural half is
 // test/command/work-memory-command.test.mjs.
 import { archTests as acdWorkMemoryRoutedTests } from "./acd-work-memory-routed.test.mjs";
+// milestone 178 / story 01 — FF-17801: the work memory alias is the memory command at a second route.
+import { archTests as acdMemoryAliasOneImplementationTests } from "./acd-memory-alias-one-implementation.test.mjs";
 
 export const tests = [
   // milestone 53 / story 07 — home, ownership, delivery and refresh
@@ -133,6 +135,8 @@ export const tests = [
   ...acdReadmeNamesWhatShipsTests,
   // story 128 — work memory joins the route table (task 01)
   ...acdWorkMemoryRoutedTests,
+  // milestone 178 / story 01 — FF-17801 (see the import note).
+  ...acdMemoryAliasOneImplementationTests,
   ...bundleRuntimeVariantArchTests,
   // milestone 169 / story 01 — FF-16901 (see the import note).
   ...acdIntegrationRegistryOneHomeTests,

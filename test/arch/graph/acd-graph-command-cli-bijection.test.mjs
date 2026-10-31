@@ -28,6 +28,7 @@ import { fileURLToPath } from "node:url";
 const listCommands = _aofApplication.listCommands;
 const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
+import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
@@ -111,6 +112,32 @@ function runCli(root, args) {
   return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
 }
 
+// ── FF-17903 (179/ADR-002, amending this control) ─────────────────────────────────────────────
+// `graph:build` and `graph:impact` are faces over the knowledge-engine port: neither imports the
+// graph's readers nor the graphify driver, and with the binary or the graph absent each answers the
+// port's code. The check is exported so the red probe runs it over a planted face.
+const PORT_FACES = ["packages/knowledge/src/commands/graph-build.mjs", "packages/knowledge/src/commands/graph-impact.mjs"];
+const GRAPH_READERS = ["readGraph", "normalizeGraph", "computeImpact"];
+// The modules that ARE the graph's readers or its driver; a face importing any of them by path reads
+// the artifact itself whatever names it takes.
+const READER_MODULES = /(^|\/)(graphify|graph-normalize|graph-impact)\.mjs$/u;
+
+export function faceReadFailures(rel, source) {
+  const failures = [];
+  for (const { specifier } of importSpecifiers(source)) {
+    if (READER_MODULES.test(specifier)) failures.push(`${rel} imports the graph reader module ${specifier}`);
+  }
+  for (const match of stripComments(source).matchAll(/\bimport\s*\{([^}]*)\}\s*from/gu)) {
+    for (const binding of match[1].split(",").map((entry) => entry.trim().split(/\s+as\s+/u)[0]).filter(Boolean)) {
+      if (GRAPH_READERS.includes(binding)) failures.push(`${rel} imports ${binding}`);
+    }
+  }
+  return failures;
+}
+
+// Every graph verb, `serve` included, as the registry lists it.
+const ALL_GRAPH_IDS = ["graph:build", "graph:query", "graph:triage", "graph:impact", "graph:serve", "graph:export", "graph:import", "graph:fetch", "graph:publish", "graph:prune"];
+
 export const archTests = [
   {
     name: "arch/ADR-006 inv.1: the three graph:* commands are in listCommands() with a non-null cli adapter (argv + render functions)",
@@ -172,6 +199,52 @@ export const archTests = [
       } finally {
         await rm(root, { recursive: true, force: true });
       }
+    },
+  },
+  {
+    name: "arch/179/02 FF-17903 outline: the graph faces import none of the graph's readers — graph-build.mjs and graph-impact.mjs",
+    run: async () => {
+      for (const rel of PORT_FACES) {
+        assert.deepEqual(faceReadFailures(rel, await readFile(path.join(repoRoot, rel), "utf8")), [], `${rel} reaches the graph only through the port`);
+      }
+    },
+  },
+  {
+    name: "arch/179/02 FF-17903 outline: the amended bijection pins each face's miss to the port's code — build . → graphify-missing, impact → no-graph",
+    run: async () => {
+      const root = await buildFixture();
+      try {
+        for (const [verb, code] of [["build", "graphify-missing"], ["impact", "no-graph"]]) {
+          const result = runCli(root, argsFor(verb));
+          assert.equal(JSON.parse(result.stdout).code, code, `aof graph ${verb} --json answers ${code} (stdout: ${result.stdout.slice(0, 200)})`);
+        }
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "arch/179/02: every graph verb is still registered with a CLI adapter and a route",
+    run: () => {
+      const byId = new Map(listCommands().map((command) => [command.id, command]));
+      const routes = deriveRouteTable(listCommands());
+      for (const id of ALL_GRAPH_IDS) {
+        const command = byId.get(id);
+        assert.ok(command, `${id} is registered`);
+        assert.ok(routes.has(id.replace(":", " ")), `${id} has a route`);
+        assert.equal(typeof command.cli?.argv, "function", `${id} has an argv function`);
+        assert.equal(typeof command.cli?.render, "function", `${id} has a render function`);
+      }
+    },
+  },
+  {
+    name: "arch/179/02 FF-17903 red probe: a graph-impact face that imports computeImpact fails, naming the module and the symbol",
+    run: async () => {
+      const rel = "packages/knowledge/src/commands/graph-impact.mjs";
+      const planted = `import { computeImpact } from "../graph-impact.mjs";\n${await readFile(path.join(repoRoot, rel), "utf8")}`;
+      const failures = faceReadFailures(rel, planted);
+      assert.ok(failures.includes(`${rel} imports computeImpact`), failures.join("; "));
+      assert.ok(failures.some((failure) => failure.includes("commands/graph-impact.mjs") && failure.includes("graph-impact.mjs")), "…and names the reader module it reached");
     },
   },
 ];

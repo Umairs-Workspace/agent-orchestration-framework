@@ -122,10 +122,10 @@ async function seedNode(workspace, nodeId, fields = {}) {
   });
 }
 
-async function buildGlobalFixture(home) {
+async function buildGlobalFixture(home, { alphaPin } = {}) {
   const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-mesh-ui-global-scope-store-"));
   const env = { AOF_GLOBAL_HOME: home };
-  const alpha = await makeWorkspace(path.join(tmp, "alpha"), { mesh: { nodeId: "node-a" }, env });
+  const alpha = await makeWorkspace(path.join(tmp, "alpha"), { mesh: { nodeId: "node-a", ...(alphaPin ? { workspaceId: alphaPin } : {}) }, env });
   const beta = await makeWorkspace(path.join(tmp, "beta"), { mesh: { nodeId: "node-b" }, env });
   await seedNode(alpha, "node-a");
   await seedNode(beta, "node-b");
@@ -385,6 +385,29 @@ export const meshUiGlobalScopeTests = [
         assert.equal(body.currentWorkspace, path.resolve(alphaRoot));
         assert.ok(body.items.length > 0 && body.items.every((i) => i.workspaceId === alphaId), "WORK ITEMS are filtered to the current (alpha) workspace");
         assert.ok(body.nodes.some((n) => n.nodeId === "node-a") && body.nodes.some((n) => n.nodeId === "node-b"), "the NODE roster stays machine-wide under --local (both nodes surface)");
+      } finally {
+        if (server) await closeServer(server);
+        await cleanup(root, home);
+      }
+    },
+  },
+
+  {
+    // TECH_DEBT 4 (C): the local scope resolved its id with the raw path derivation, so a checkout
+    // that pins `mesh.workspaceId` (every clone since m42) was filtered by a hash of its path, an id
+    // the store never held, and its own work vanished from its own local view.
+    name: "TECH_DEBT 4 · --local on a checkout that pins mesh.workspaceId filters by the pinned id, not by a hash of its path",
+    async run() {
+      const home = await mkdtemp(path.join(os.tmpdir(), "aof-mesh-ui-global-scope-pinned-home-"));
+      const root = await makeRepoRootWithDist();
+      let server;
+      try {
+        const { alphaId, alphaRoot } = await buildGlobalFixture(home, { alphaPin: "a1fa000000000001" });
+        assert.equal(alphaId, "a1fa000000000001", "the store holds alpha under its pinned id");
+        ({ server } = await serveMeshUi({ projectDir: alphaRoot, port: 0, repoRoot: root, scope: "local", globalStoreOptions: { env: { AOF_GLOBAL_HOME: home } } }));
+        const body = await (await fetch(`http://127.0.0.1:${server.address().port}/api/mesh/status`)).json();
+        assert.ok(body.items.length > 0, "the pinned workspace's own items reach its local view");
+        assert.ok(body.items.every((item) => item.workspaceId === "a1fa000000000001"), "and only its own");
       } finally {
         if (server) await closeServer(server);
         await cleanup(root, home);

@@ -23,12 +23,12 @@ measurement at `packages/core/assets/commands/retrospective.md:38-40`. Those two
 deterministic grader exists (RESEARCH §Q1.6).
 
 The ingest act is reached through `runMemory` at `packages/knowledge/src/memory.mjs:565`, composed by `createMemory` at
-`packages/knowledge/src/memory.mjs:10` — the
+`packages/knowledge/src/memory.mjs:12` — the
 seam's in-process entry, a thin composition over the one core path (`runMemoryVerb`,
 `packages/knowledge/src/memory.mjs:533`) that the registered command also runs. `ingest` is a member of `MEMORY_VERBS`
 at `packages/knowledge/src/memory.mjs:74` and aliases the reindex path at `packages/knowledge/src/memory.mjs:507`; no finer
 ingest-specific export exists. Since story 128 the memory surface IS a registered command id —
-`work:memory` (`packages/knowledge/src/commands/memory.mjs`, route `aof work memory`) — but that id names the whole
+`work:memory` (`packages/knowledge/src/commands/memory.mjs`, route `aof memory`) — but that id names the whole
 verb surface (recall, brief, ingest, reindex, status), and the act this record actuates is the ingest verb
 alone, which `runMemory` reaches with `["ingest"]` and nothing wider. `module:src/work/memory.mjs#runMemory`
 is therefore still the narrowest real export; `command:work:memory` would be broader than the act.

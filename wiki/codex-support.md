@@ -131,7 +131,11 @@ hook trust remain managed by the assistant and operator.
 
 Memory is independent of execution. Explicit `memory.backend: "local"` is keyless local
 retrieval. Graphify keeps its existing extractor vocabulary; absent
-`memory.graphify.extractionBackend` means `claude-cli`, including on a Codex project.
+`memory.backends.graphify.extractionBackend` means `claude-cli`, including on a Codex project.
+The memory node's other keys are `memory.corpora` (what memory serves) and `memory.graph.share` /
+`memory.graph.remote` (the code graph's sharing); none follows the execution runtime. The old
+`memory.graphify` and root `graph` spellings still read for one release, and `aof work update`
+rewrites them.
 Preflight names that dependency and the local alternative. It never silently switches.
 
 ## Protocol profile and proof limits

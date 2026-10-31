@@ -194,10 +194,12 @@ function nodeRowHTML(n) {
         ? `<span class="work-dot"></span><span class="work-ref">${esc(n.workRef)}</span><span class="work-title">${esc(n.workTitle)}</span>`
         : `<span class="work-idle">idle</span>`);
   const thisNode = n.thisNode ? '<span class="chip">this node</span>' : '';
+  // The role badge and the `this node` chip share one centred group, role first, so every
+  // badge sits on the row's centre line and the role column lines up across rows (175 DESIGN M3).
   return `<div class="node-row">
     <span class="dot ${n.presence}"></span>
-    <div class="node-id"><div class="node-title"><span class="node-name" title="${esc(n.nodeId || n.name)}">${esc(n.name)}</span>${thisNode}</div>${n.nodeId && n.nodeId !== n.name ? `<span class="node-sub">${esc(n.nodeId)}</span>` : ''}</div>
-    <span class="role-badge">${esc(n.role)}</span>
+    <div class="node-id"><span class="node-name" title="${esc(n.name || n.nodeId)}">${esc(n.name)}</span>${n.nodeId && n.nodeId !== n.name ? `<span class="node-sub">${esc(n.nodeId)}</span>` : ''}</div>
+    <div class="badges"><span class="role-badge">${esc(n.role)}</span>${thisNode}</div>
     <span class="node-ver">${esc(n.version)}</span>
     <div class="work">${work}</div>
   </div>`;
@@ -242,7 +244,7 @@ function renderBody(view, state) {
     <button class="retry">Retry</button>
   </div>` : '';
   const headerText = isError ? '&middot; last checked 2m ago'
-    : `&middot; ${view.count} nodes &middot; ${view.online} online &middot; ${view.stale} stale`;
+    : `&middot; ${view.count} ${view.count === 1 ? 'node' : 'nodes'} &middot; ${view.online} online &middot; ${view.stale} stale`;
   const rows = view.nodes.map(nodeRowHTML).join('');
   body.innerHTML = `${banner}
     <div class="nodes-header"><span class="kicker">Nodes</span><span class="summary">${headerText}</span></div>
@@ -377,6 +379,9 @@ async function render() {
     // Mark the real host so the CSS drops the standalone-mock chrome (the fixed 760×520
     // card + the fake desktop backdrop) and fills the frameless OS window instead.
     document.documentElement.dataset.host = 'tauri';
+    // On macOS the window keeps the native traffic lights (tauri.macos.conf.json), so the
+    // CSS hides the Windows-style caption buttons and clears room for the lights.
+    if (/Mac/.test(navigator.platform)) document.documentElement.dataset.os = 'mac';
     wireControlBarActions(invoke);
     wireWindowControls(invoke);
     startTauriPolling();

@@ -192,4 +192,30 @@ export const archTests = [
       assert.notEqual(typeof launchOnly.run, "function", "a launch-only command (no probe) is what proof B refuses");
     },
   },
+  {
+    // TECH_DEBT 4 (B): a launcher that takes a workspace resolves `--workspace` exactly as the
+    // invoke path does, and `mesh serve --serve` loads the root it is handed. Before, the flag was
+    // declared on serve and ignored: the daemon only ever loaded `process.cwd()`. Behavioural,
+    // through the real face, with a synthetic launcher that records what it was handed.
+    name: "arch/m42-launcher-seam (E): a launcher's --workspace reaches its body as faceCtx.workspaceRoot, and mesh serve --serve loads it",
+    run: async () => {
+      const runCommandFace = _aofApplication.cli.runCommandFace;
+      const handed = [];
+      const launcher = (spec) => ({
+        id: "mesh:synthetic-launcher",
+        run: async () => ({ probe: true }),
+        cli: { route: ["mesh", "synthetic-launcher"], spec, argv: () => ({}), json: (r) => r, launch: () => async (_input, faceCtx) => { handed.push(faceCtx.workspaceRoot); } },
+      });
+      const takesWorkspace = { usage: "x", flags: { workspace: { type: "string", description: "w" } } };
+      const elsewhere = path.join(repoRoot, "packages");
+      await runCommandFace(launcher(takesWorkspace), ["--workspace", elsewhere]);
+      await runCommandFace(launcher(takesWorkspace), []);
+      await runCommandFace(launcher({ usage: "x", workspace: false }), []);
+      assert.deepEqual(handed, [elsewhere, process.cwd(), undefined], "the asked-for path, else the cwd, and nothing for a launcher that takes no workspace");
+
+      const serve = await readFile(path.join(repoRoot, "packages", "mesh", "src", "commands", "serve.mjs"), "utf8");
+      assert.match(serve, /runMeshServeDaemon\(faceCtx\.options, faceCtx\.workspaceRoot\)/, "mesh serve --serve hands the daemon the resolved root");
+      assert.match(serve, /async function runMeshServeDaemon\(options, workspaceRoot = process\.cwd\(\)\) \{\s*const workspace = await loadWorkspace\(workspaceRoot,/, "and the daemon loads that root");
+    },
+  },
 ];

@@ -89,6 +89,11 @@ export const archTests = [
               assert.deepEqual(record.tags, [], `summary ${record.id} carries tags []`);
               continue;
             }
+            // 178/ADR-002: `origin` is the second array field, of project-root paths.
+            if (field === "origin") {
+              assert.ok(Array.isArray(record.origin) && record.origin.every((entry) => typeof entry === "string"), `summary ${record.id} carries an origin array`);
+              continue;
+            }
             assert.equal(typeof record[field], "string", `summary ${record.id} field "${field}" is a string`);
           }
 

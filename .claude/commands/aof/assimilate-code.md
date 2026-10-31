@@ -76,7 +76,7 @@ story under milestone NN instead of standalone); optional **`--skip-qa`** (skip 
    looks there (story 85). Distil the architect + QA findings (standards gaps, coverage
    gaps, anything worth not repeating) into it (`doc:
    retrospective`; one `R<n>` per lesson — absence is information, write none if clean). Then run
-   `aof work memory ingest` so the lessons become recallable in later work (a no-op when memory is off),
+   `aof memory ingest` so the lessons become recallable in later work (a no-op when memory is off),
    and `aof work observe <ref> --write --if-enabled` so the opt-in observability snapshot captures this
    run too.
 

@@ -45,6 +45,9 @@ import { archTests as acdCodebaseGraphDerivedTests } from "./acd-codebase-graph-
 // and it never forces a push and never reaches the remote with a prompt open (FF-17402)
 import { archTests as acdGraphShareCodeGraphOnlyTests } from "./acd-graph-share-code-graph-only.test.mjs";
 import { archTests as acdGraphShareNeverForcesTests } from "./acd-graph-share-never-forces.test.mjs";
+// milestone 179 / story 04 — the code graph has one reader: across packages/*/src only the allowed
+// modules import readGraph, normalizeGraph or computeImpact, and the retiring backend is named (FF-17904)
+import { archTests as acdCodeGraphOneReaderTests } from "./acd-code-graph-one-reader.test.mjs";
 
 export const tests = [
   ...acdGraphCommandCliBijectionTests,
@@ -65,4 +68,5 @@ export const tests = [
   ...acdCodebaseGraphDerivedTests,
   ...acdGraphShareCodeGraphOnlyTests,
   ...acdGraphShareNeverForcesTests,
+  ...acdCodeGraphOneReaderTests,
 ];

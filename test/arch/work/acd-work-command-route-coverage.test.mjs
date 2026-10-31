@@ -451,4 +451,17 @@ export const archTests = [
       }
     },
   },
+  // 178/01 (178/ADR-001) — `memory` is the canonical door and `work:memory` its alias. The
+  // canonical id is not work:*, so the derived op set above never sees it; this row carries it.
+  // Its board face is deferred on its alias's terms (`memory` in BOARD_DEFERRED): no served
+  // route names memory, and the alias stays deferred.
+  {
+    name: "arch/178/01: the canonical `memory` command is registered and served on no /api/work route — its board face is deferred with its alias's",
+    run: async () => {
+      assert.ok(getCommand("memory"), "the canonical memory command is registered");
+      assert.ok(BOARD_DEFERRED.has("memory"), "BOARD_DEFERRED carries memory");
+      const served = routeOps(stripComments(await readFile(BOARD_UI, "utf8")));
+      assert.equal(served.includes("memory"), false, "no /api/work/memory route is served");
+    },
+  },
 ];

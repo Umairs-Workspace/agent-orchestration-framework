@@ -493,4 +493,25 @@ export const archTests = [
       }
     },
   },
+  // 178/01 (178/ADR-001) — the canonical `memory` door. Its id is not work:*, so the derived sub
+  // set above never sees it; this row carries it, with the same probe as its alias: `status
+  // --json` over the bare fixture is the none backend's document at exit 0.
+  {
+    name: "arch/178/01: the canonical `memory` command carries a cli adapter, is CLI-reachable at route `memory`, and `aof memory status --json` runs cleanly and emits parseable JSON",
+    run: async () => {
+      const command = listCommands().find((entry) => entry.id === "memory");
+      assert.ok(command, "the memory command is registered");
+      assert.equal(typeof command.cli?.argv, "function", "memory cli.argv is a function");
+      assert.equal(typeof command.cli?.render, "function", "memory cli.render is a function");
+      assert.equal(deriveRouteTable(listCommands()).get("memory")?.id, "memory", "the route table carries `memory`");
+      const root = await buildFixture();
+      try {
+        const result = runCli(root, ["memory", "status", "--json"]);
+        assert.equal(result.status, 0, `aof memory status --json exits 0 (stderr: ${result.stderr})`);
+        assert.equal(JSON.parse(result.stdout).backend, "none", "…and emits the none backend's status document");
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  },
 ];

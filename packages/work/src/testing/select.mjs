@@ -8,10 +8,10 @@ export function isSuiteFile(file, roots) {
 }
 
 
-import { existsSync } from "node:fs";
-
-// Application composition supplies execution, graph and shared work services.
-export function createTestSelector({ computeImpact, graphArtifactBuiltAt, graphJsonPath, normalizeGraph, readGraph, registrationDecision }) {
+// Application composition supplies execution, graph and shared work services. The graph arrives as
+// ONE capability, `relations(paths, { projectRoot })` — the knowledge-engine port's code verb,
+// bound in core (179/ADR-004) — so `@aof/work` imports nothing from `@aof/knowledge`.
+export function createTestSelector({ relations, registrationDecision }) {
 // THE SELECTION — milestone 72 / story 01, ADR-002 §1, §1a, §1b, §1c, §2, §2a, §3, §4 and
 // ADR-004 §4. FF-7202 and FF-7203 are its controls.
 //
@@ -36,8 +36,8 @@ export function createTestSelector({ computeImpact, graphArtifactBuiltAt, graphJ
 //
 // 1. THE GRAPH IS READ, NEVER BUILT (ADR-002 §1). A build is minutes even on the unchanged path
 //    (1,577 files re-extracted at 22 workers, measured), and an inner-loop tool that might cost
-//    minutes before it costs seconds is not one. The artifact is reached ONLY through the shipped
-//    `normalizeGraph` + `computeImpact`; this module authors no second reader and no second parse.
+//    minutes before it costs seconds is not one. The artifact is reached ONLY through the code
+//    corpus's `relations` (179/ADR-004); this module authors no second reader and no second parse.
 //
 // 2. `suites` IS A PATH PREDICATE, NOT THE REGISTERED SET (ADR-002 §1a). Registered membership
 //    comes from `assembledSuite()`, a child importing 948 test modules — 3.5 s measured — and when
@@ -58,8 +58,8 @@ export function createTestSelector({ computeImpact, graphArtifactBuiltAt, graphJ
 //    FF-7203's reuse claim clearable by a module that cannot honestly produce provenance.
 //
 // PURITY IS A CONTRACT, not a style: the same changed set against two planted graphs must yield
-// two different answers IN ONE PROCESS. Nothing is cached across calls, and the measured cost of
-// that (~80 ms for one changed file, ~400 ms for fifty) is priced in ADR-002 rather than missed.
+// two different answers IN ONE PROCESS. Nothing is cached across calls — `relations` reads the
+// artifact on every call and walks its edges once however many files are asked (179/ADR-002).
 
 // THE REGISTRATION DECIDER, REACHED BY IMPORT AND NEVER RE-DERIVED (FF-7203). Which suite file
 // contributed which entries is already decided, once, by the census this project audits
@@ -123,20 +123,19 @@ function selection({ scope, selected, widened, builtAt, graphPath, changed, reso
 //
 // Returns the frozen result above. It never throws for a graph that is missing or broken: those
 // are answers, and answering them as widenings is the point.
-function selectSuites({ projectRoot, changed = [], allSuites = [], roots = [] } = {}) {
-  const graphPath = graphJsonPath(projectRoot);
+async function selectSuites({ projectRoot, changed = [], allSuites = [], roots = [] } = {}) {
   const whole = [...allSuites].sort();
-  const widenAll = (widened, builtAt) => selection({ scope: "all", selected: whole, widened, builtAt, graphPath, changed });
 
   // An empty changed set selects NOTHING, which is the maximal silent narrowing — so it is a
-  // refusal that names itself rather than a green run over zero tests (ADR-002 §5).
+  // refusal that names itself rather than a green run over zero tests (ADR-002 §5). It fires
+  // before the graph is asked anything, so it names no artifact either.
   if (changed.length === 0) {
     return selection({
       scope: "impacted",
       selected: [],
       widened: [],
       builtAt: null,
-      graphPath,
+      graphPath: null,
       changed,
       refusal: Object.freeze({
         code: CHANGED_SET_EMPTY,
@@ -145,29 +144,33 @@ function selectSuites({ projectRoot, changed = [], allSuites = [], roots = [] } 
     });
   }
 
+  // ONE QUESTION, every changed file at once. The port's `unavailable` IS this module's widening
+  // vocabulary for the two artifact cases, so the reasons below are today's, unchanged.
+  const answer = await relations(changed, { projectRoot });
+  const graphPath = answer.artifact ?? null;
+  const widenAll = (widened, builtAt) => selection({ scope: "all", selected: whole, widened, builtAt, graphPath, changed });
+
   // NO ARTIFACT. There is no file, so there is no instant either: a fresh clone runs the whole
   // suite and says why.
-  if (!existsSync(graphPath)) {
+  if (answer.unavailable === "no-graph") {
     return widenAll(changed.map((file) => widening(file, "no-graph")), null);
   }
 
-  let graph;
-  try {
-    graph = normalizeGraph(readGraph(graphPath));
-  } catch {
-    // AN UNREADABLE ARTIFACT. The file exists and has a perfectly good mtime, and that instant is
-    // DELIBERATELY DISCARDED: nothing the artifact claims is trustworthy once it does not parse,
-    // and reporting a build time for a graph nobody could read is the confident-wrong-answer
-    // species this module is about. `null`, and the widening says why.
+  // AN UNREADABLE ARTIFACT — or a port that serves no code at all, which knows even less. The file
+  // may exist and have a perfectly good mtime, and that instant is DELIBERATELY DISCARDED: nothing
+  // the artifact claims is trustworthy once it does not parse, and reporting a build time for a
+  // graph nobody could read is the confident-wrong-answer species this module is about. `null`,
+  // and the widening says why.
+  if (answer.served === false || answer.available !== true) {
     return widenAll(changed.map((file) => widening(file, "graph-unreadable")), null);
   }
 
   // THE ARTIFACT'S OWN INSTANT, never a clock read at call time (ADR-002 §2). A silently stale
   // graph is the failure this whole step exists to prevent, and the only defence that survives
   // contact is making the age visible in the answer.
-  const builtAt = graphArtifactBuiltAt(graphPath);
+  const builtAt = answer.builtAt;
 
-  const impact = computeImpact(graph, changed);
+  const impact = answer.files;
   const widened = [];
   const selected = new Set();
   const resolved = [];

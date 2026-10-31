@@ -47,16 +47,16 @@ const REFINE = `${COMMANDS_DIR}/refine.md`;
 
 // ────────────────────────────────────────────────── reading an invocation, not a line ──
 //
-// Markdown wraps a command mid-token: `refine.md`'s block ends one line at `aof work memory` and
+// Markdown wraps a command mid-token: `refine.md`'s block ends one line at `aof memory` and
 // begins the next at `recall "<…>" --area architecture --block`. A per-line regex reads that as
 // one invocation with no verb and no flags — which is the shape most likely to pass vacuously. So
 // every reading below is over the JOINED body, and an invocation runs to the end of its sentence.
 const joined = (text) => text.replace(/\r?\n\s*/gu, " ");
 
-// One invocation: `aof work memory <verb> …` up to the terminator that ends a command in prose.
+// One invocation: `aof memory <verb> …` up to the terminator that ends a command in prose.
 // The trailing set is deliberately narrow — a backtick closes an inline code span, and `.`/`;`/`—`
 // end the sentence that carries it.
-const INVOCATION = /aof work memory\s+([a-z-]+)((?:\s+(?:--[a-z-]+(?:=[^\s`]+)?|"[^"]*"|`[^`]*`|<[^>]*>|[A-Za-z0-9_./-]+))*)/gu;
+const INVOCATION = /aof memory\s+([a-z-]+)((?:\s+(?:--[a-z-]+(?:=[^\s`]+)?|"[^"]*"|`[^`]*`|<[^>]*>|[A-Za-z0-9_./-]+))*)/gu;
 
 function invocationsIn(text) {
   return [...joined(text).matchAll(INVOCATION)].map((match) => ({
@@ -323,9 +323,9 @@ function withoutCapture(text, edge) {
   const spec = EDGES[edge];
   // Whitespace inside a placeholder may wrap across lines, so every space is read as `\s+`.
   const literal = (value) => value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&").replace(/ /gu, "\\s+");
-  const capture = new RegExp(`aof work memory\\s+record-recall\\s+${literal(spec.refPlaceholder)}\\s+--input\\s+${literal(spec.capture)}`, "u");
+  const capture = new RegExp(`aof memory\\s+record-recall\\s+${literal(spec.refPlaceholder)}\\s+--input\\s+${literal(spec.capture)}`, "u");
   assert.ok(capture.test(text), `guard: ${edge}'s capture invocation was located in the body it is being removed from`);
-  return text.replace(capture, "aof work memory (capture removed)");
+  return text.replace(capture, "aof memory (capture removed)");
 }
 
 // 157/ADR-004 — the retrospective gathers its episodic evidence through recall: the observability
@@ -346,7 +346,7 @@ function retrospectiveEvidenceFailures(text) {
   if (ingest == null || (evidence.length === 1 && step.indexOf(ingest.whole) > step.indexOf(evidence[0].whole))) failures.push("retrospective: the index is refreshed (ingest) before the evidence recall");
   const observe = body.indexOf("aof work observe");
   if (observe < 0 || observe > body.indexOf(step)) failures.push("retrospective: the observability refresh precedes the evidence step");
-  if (evidence.length === 1 && body.indexOf(evidence[0].whole) > body.indexOf("aof work memory recurrence")) failures.push("retrospective: the evidence is gathered before the recurrence pass");
+  if (evidence.length === 1 && body.indexOf(evidence[0].whole) > body.indexOf("aof memory recurrence")) failures.push("retrospective: the evidence is gathered before the recurrence pass");
   for (const [pattern, what] of [
     [/never enumerate `VERIFICATION\.md`, `FEEDBACK\.ndjson` or run records as the evidence path/u, "makes recall the evidence path, not a raw-file enumeration"],
     [/report the episodic evidence as unavailable — do not fall back to reading the raw ledgers/u, "reports unavailable evidence rather than reading raw ledgers"],
@@ -367,7 +367,7 @@ export const archTests = [
 
       // THE ROLE. The block names the role that runs it, and it is the one the `<process>` spawns.
       const lines = text.split(/\r?\n/u);
-      const at = lines.findIndex((line) => line.includes("aof work memory"));
+      const at = lines.findIndex((line) => line.includes("aof memory"));
       assert.ok(at >= 0, "guard: the invocation was located by line");
       // CUT STRUCTURALLY AND READ OVER JOINED LINES. Structurally, because a `+ N` window measures
       // the length of the region rather than finding it; joined, because markdown wraps prose
@@ -550,10 +550,13 @@ export const archTests = [
       }
 
       // NON-VACUITY: an invented flag really is caught by this reading.
-      const planted = invocationsIn('run `aof work memory recall "seam" --scope architecture --block`');
+      const planted = invocationsIn('run `aof memory recall "seam" --scope architecture --block`');
       assert.equal(planted.length, 1);
       assert.equal(planted[0].flags.includes("--scope"), true, "the reading sees a planted `--scope`…");
       assert.equal(known.has("--scope"), false, "…and the surface does not know it, so the leg above would fail and name it");
+      // 178/02 — the reading follows the canonical spelling only: a prompt still on the alias is
+      // FF-17802's to refuse, so this control never has to read it.
+      assert.deepEqual(invocationsIn('run `aof work memory recall "seam" --block`'), [], "a body holding only the alias's spelling yields no invocation");
     },
   },
 
@@ -588,7 +591,7 @@ export const archTests = [
       for (const name of roster) {
         const calls = invocationsIn(read(commandRel(name)));
         const recalls = calls.filter((call) => call.verb === "recall");
-        assert.ok(recalls.length >= 1, `${name} is a roster entry and carries at least one \`aof work memory recall\``);
+        assert.ok(recalls.length >= 1, `${name} is a roster entry and carries at least one \`aof memory recall\``);
       }
       // …and a file carrying only `ingest` would NOT: shown on a real one rather than asserted.
       // 157/ADR-004 gave verify a triage recall, which is a declared decision edge and not a cut; every
@@ -843,7 +846,7 @@ export const archTests = [
         assert.deepEqual(retrospectiveEvidenceFailures(read(slash(output.path))), [], `${slash(output.path)} on disk gathers through recall`);
       }
       // THE RED PROBE: the --all recall removed is named as the retrospective's.
-      const probe = retrospectiveEvidenceFailures(read(`${COMMANDS_DIR}/retrospective.md`).replace(/aof work memory recall "" --item <ref> --area delivery --all --json/u, "(evidence recall removed)"));
+      const probe = retrospectiveEvidenceFailures(read(`${COMMANDS_DIR}/retrospective.md`).replace(/aof memory recall "" --item <ref> --area delivery --all --json/u, "(evidence recall removed)"));
       assert.ok(probe.length > 0 && probe.every((failure) => failure.startsWith("retrospective:")), `removing the evidence recall is detected, naming the retrospective: ${probe.join("; ")}`);
     },
   },
@@ -856,7 +859,7 @@ export const archTests = [
       const recurrence = calls[3];
       assert.deepEqual([...recurrence.flags].sort(), ["--exclude", "--json"], "the match excludes the lesson's own identity and reads JSON");
       const body = joined(text);
-      assert.ok(body.indexOf("promotionFrom: <the next R number>") < body.lastIndexOf("aof work memory ingest"), "the watermark is established before the post-authoring ingest");
+      assert.ok(body.indexOf("promotionFrom: <the next R number>") < body.lastIndexOf("aof memory ingest"), "the watermark is established before the post-authoring ingest");
       for (const needle of ["`**Recurs:** <item>/R<n>`", "`**Promoted to:**`", "`none`", "`control:<qualified-id>`", "`rule:<repo-path>`", "`prompt:<repo-path>`"]) {
         assert.ok(body.includes(needle), `retrospective names ${needle}`);
       }
@@ -865,7 +868,7 @@ export const archTests = [
       assert.match(body, /the prior lesson is not touched/u, "the prior lesson is never rewritten");
       assert.match(body, /report no new lesson, leave every existing lesson body byte-identical, and invent no recurrence\s+or promotion/u, "a clean pass reports no lesson and invents nothing");
       assert.match(body, /only AFTER the lesson pass has authored `promotionFrom`, `Recurs` and `Promoted to`/u, "ingest runs only after the fields are authored");
-      assert.equal(body.includes("aof work memory record-recall"), false, "retrospective's recurrence match is not a decision-recall edge, so it records no observation");
+      assert.equal(body.includes("aof memory record-recall"), false, "retrospective's recurrence match is not a decision-recall edge, so it records no observation");
     },
   },
 ];

@@ -5,12 +5,18 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSyn
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createGraphBuildCommand } from "@aof/knowledge/commands/graph-build";
 import { createGraphPublishCommand } from "@aof/knowledge/commands/graph-publish";
 import { graphifyCacheKey, unpackBundle } from "@aof/knowledge/graph-bundle";
 import { GRAPH_REF_PREFIX } from "@aof/knowledge/graph-share";
 import { defaultGitExec } from "@aof/execution/worktrees";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
+import { createGraphBuildCommand } from "@aof/knowledge/commands/graph-build";
+import { createGraphifyCodeBackend } from "@aof/knowledge/graphify-code-backend";
+import { createKnowledgeEngine } from "@aof/knowledge/engine";
+
+// graph:build is a face over the port since 179/ADR-002: the services build the graphify code
+// backend, the port routes the face's `ingest("code")` to it, and the face keeps the share wrapping.
+const composeGraphBuild = (services) => createGraphBuildCommand({ ...services, engine: createKnowledgeEngine({ backends: [createGraphifyCodeBackend(services).graphifyCodeBackend] }) });
 // 174 — a built graph is shared through the project's own remote. With `graph.share: "git-refs"`,
 // `aof graph build` takes the graph published for HEAD as the blob behind
 // `refs/aof/graph/v1/<commit>` instead of running graphify, and publishes a clean build of a
@@ -55,8 +61,8 @@ function scratch() {
 //
 // `origin.git`, a bare repo whose `main` holds `commits` first-parent commits m01..mNN, and whose
 // committed `.aof/aof.config.json` sets `graph.share` (no `graph` key when `share` is null), so the
-// clone's tree is clean as checked out.
-function makeProject({ share = "git-refs", commits = 1 } = {}) {
+// clone's tree is clean as checked out. `memoryGraph` writes the new spelling, `memory.graph` (180/ADR-003).
+function makeProject({ share = "git-refs", commits = 1, memoryGraph = null } = {}) {
   const root = scratch();
   const origin = path.join(root, "origin.git");
   git(root, "init", "-q", "--bare", "-b", "main", origin);
@@ -67,6 +73,7 @@ function makeProject({ share = "git-refs", commits = 1 } = {}) {
   git(seed, "init", "-q", "-b", "main");
   const config = { name: "fixture", work: { dir: "./wiki/work" }, mesh: { workspaceId: WORKSPACE_ID } };
   if (share != null) config.graph = { share };
+  if (memoryGraph != null) config.memory = { graph: memoryGraph };
   writeFileSync(path.join(seed, ".aof", "aof.config.json"), `${JSON.stringify(config, null, 2)}\n`);
   writeFileSync(path.join(seed, ".gitignore"), "graphify-out/\nnode_modules/\n");
   writeFileSync(path.join(seed, "wiki", "work", ".gitkeep"), "");
@@ -128,7 +135,7 @@ async function build(repo, { stamp, wrap, input = { path: "." } } = {}) {
     calls.push({ args, env: options?.env });
     return defaultGitExec(args, options);
   };
-  const { graphBuildCommand } = createGraphBuildCommand({
+  const { graphBuildCommand } = composeGraphBuild({
     resolveGraphifyBinary: () => ({ found: true, binary: "graphify", path: "graphify", version: VERSION }),
     runGraphifyBuild: (request, options) => {
       ran.push(request);
@@ -421,6 +428,21 @@ const publishTests = [
 // ------------------------------------------------------------------------------- 02 ----
 
 const optInTests = [
+  {
+    name: "180/01 task 02: the code graph shares through memory.graph exactly as it did through graph",
+    run: async () => {
+      const project = makeProject({ share: null, memoryGraph: { share: "git-refs", remote: "upstream" } });
+      publishRaw(project, project.head, await exportedBundle(project));
+      const clone = cloneOf(project);
+      // "upstream" holds the published graph; "origin" cannot be reached, so only the named remote can answer.
+      git(clone, "remote", "add", "upstream", project.origin);
+      git(clone, "remote", "set-url", "origin", path.join(project.root, "does-not-exist.git"));
+      const { ran, json } = await build(clone);
+      assert.equal(ran, 0, "the build takes the published graph instead of running graphify");
+      assert.equal(json.share.fetched.remote, "upstream");
+      assert.equal(json.share.fetched.used, true);
+    },
+  },
   ...[
     ["E12 · has no \"graph\" key", null],
     ["sets \"graph.share\" to \"off\"", "off"],
