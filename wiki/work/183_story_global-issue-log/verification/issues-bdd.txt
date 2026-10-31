@@ -1,0 +1,26 @@
+ok - Command spine — one route table, one face, one envelope: a registry-routed work verb dispatches through the generic face
+ok - Command spine — one route table, one face, one envelope: a migrated group verb keeps its human rendering byte-for-byte
+ok - Command spine — one route table, one face, one envelope: a migrated verb answers --json with the command result verbatim
+ok - Command spine — one route table, one face, one envelope: an undeclared flag is refused loudly, never silently absorbed
+ok - Command spine — one route table, one face, one envelope: a command failure under --json is one structured envelope on stdout
+ok - Command spine — one route table, one face, one envelope: input-contract failures are coded and precede any write
+ok - Command spine — one route table, one face, one envelope: a non-json failure propagates to stderr with a non-zero exit
+ok - Command spine — one route table, one face, one envelope: a routed nested mesh verb refuses bad input with the one envelope
+ok - Command spine — one route table, one face, one envelope: a three-word route dispatches through the same face
+ok - Command spine — one route table, one face, one envelope: a launcher verb's --json is the non-blocking probe, never the daemon
+ok - Command spine — one route table, one face, one envelope: a launcher verb registered on the seam answers --json with its probe
+ok - Command spine — one route table, one face, one envelope: every launcher family answers --json with its non-blocking probe
+ok - Command spine — one route table, one face, one envelope: the desktop verbs ride three-word routes with the one envelope
+ok - Command spine — one route table, one face, one envelope: the desktop no-verb shim still owns the refusal a route cannot express
+ok - Command spine — one route table, one face, one envelope: a routed read keeps its bare-array --json document and read-miss exit split
+ok - Command spine — one route table, one face, one envelope: a CLI-only config verb rides the route table with one json document
+ok - Command spine — one route table, one face, one envelope: a write verb's refusal ends the stdout document and keeps its retired json shape
+ok - Command spine — one route table, one face, one envelope: a class-B face copy retires onto its route (provision)
+ok - Command spine — one route table, one face, one envelope: the model-config trio rides the route table with --show as the read probe
+ok - Command spine — one route table, one face, one envelope: a bad orchestrator model is refused in the face, before any write
+ok - Command spine — one route table, one face, one envelope: planning init previews through the route table with one json document
+ok - Command spine — one route table, one face, one envelope: top-level init rides the one-word route — coded guard, dry-run plan
+ok - Command spine — one route table, one face, one envelope: work doctor's advisory gate — warns pass bare, fail under --strict, same findings
+ok - Command spine — one route table, one face, one envelope: global issues log and list through the command registry
+ok - Command spine — one route table, one face, one envelope: global issues remove refuses unknown IDs with the common envelope
+ok - Command spine — one route table, one face, one envelope: global issues log refuses a missing summary before writing

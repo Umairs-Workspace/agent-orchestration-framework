@@ -178,6 +178,18 @@ aof work delegation on --gpt-model gpt-5.6-sol   # flip the toggle AND set the m
 
 `--gpt-model` (the Codex/gpt side) is distinct from `--model fable|opus` (the orchestrator/Claude side) — the two never conflate. Any non-empty id is accepted, so new models work without a code change; re-render (which the command does automatically) and reload the Claude Code session to pick up the new model.
 
+### Local issues
+
+Capture issues from any directory, without initializing an AOF project:
+
+```sh
+aof issues log "Loop stopped unexpectedly" --details "Steps to reproduce and expected behaviour"
+aof issues list
+aof issues remove iss-0123456789ab
+```
+
+Each command accepts `--json`. Issues are local JSON files in `~/.aof/issues/` (or `$AOF_GLOBAL_HOME/issues/` when set). Each record includes an ID, summary, optional details, UTC creation time and originating directory. Listing shows newest first. Removal permanently deletes the named issue. Issues are not automatically shared with the mesh or indexed into work memory.
+
 ### `aof work` CLI commands
 
 The slash-commands, the board, and automation read/drive the stream through these:

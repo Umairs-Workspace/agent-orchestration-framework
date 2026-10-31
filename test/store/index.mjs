@@ -79,7 +79,10 @@ import { cacheReadOwnRecordsFromDiskTests } from "./cache-read-own-records-from-
 // milestone 164 / story 03 — doctor shows what is owed and how far behind each workspace is.
 import { syncDoctorShowsLagTests } from "./sync-doctor-shows-lag.test.mjs";
 
+import { issuesTests } from "./issues.test.mjs";
+
 export const tests = [
+  ...issuesTests,
   ...cacheStableLaunchTests,
   ...globalWorkStoreTests,
   ...globalWorkPropagationTests,

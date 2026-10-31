@@ -1,0 +1,12 @@
+# unit
+ok - arch/119 FF-11904: the real src/ and test/ trees are inside every declared ceiling, and the table and the tree agree in BOTH directions
+ok - arch/119 FF-11904: the ceiling EQUALS the delivered count in every row — every allowance is declared, every one is zero, and every row states what the next growth should do instead
+ok - arch/119 FF-11904: every flat layer under src/ and test/ is a row or a declared exemption, and an exemption is a checked claim about SIZE rather than a curated list
+ok - arch/119 FF-11904: the detector FIRES on a synthesized sibling in a budgeted layer, and is quiet on the clean listing in the same lane — with nothing written to disk
+ok - arch/119 FF-11904: a renamed budgeted directory REDS its row rather than emptying it, and a shrunk layer must lower its row
+ok - arch/119 FF-11904: an unentered layer and an exemption that has outgrown its claim both fire on the shipped detector
+ok - 138/00 task01 — terminal exemptions remain declared; 154/04 adds one owned Codex settings module without allowance
+ok - 138/00 task01 outline — the terminal exemptions hold only while the family stays small, and a family that is gone is a stale exemption
+# file test/arch/testing/acd-source-directory-budget.test.mjs 22.120 9
+ok - 138/00 task01 — the terminal suites are registered through two indexes and one registry import each, and each index spreads every suite it imports and reads no directory
+# executed 9 cases; failures 0

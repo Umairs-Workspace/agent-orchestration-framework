@@ -1,0 +1,9 @@
+# unit
+ok - 183/00 · real CLI logs and lists outside a workspace across directories
+ok - 183/00 · empty list and invalid input do not create a store
+ok - 183/00 · concurrent logs preserve all records and readers see complete JSON
+ok - 183/00 · corrupt saved issue is reported without overwriting evidence
+ok - 183/01 · CLI removes exactly one known issue
+# file test/store/issues.test.mjs 66.572 6
+ok - 183/01 · malformed and path-like IDs refuse without deleting unrelated files
+# executed 6 cases; failures 0

@@ -35,6 +35,7 @@ import { createCommandRegistry } from "@aof/contracts/commands";
 import { debtCommand } from "@aof/work/commands/debt";
 import { graphImpactCommand } from "@aof/knowledge/commands/graph-impact";
 // project:provision — 12/ADR-003 — see ./commands/project-provision.mjs's header.
+import { issuesCommands } from "../../commands/issues.mjs";
 import { projectProvisionCommand } from "../../commands/project-provision.mjs";
 import { createNotionContribution } from "@aof/integration-notion/commands";
 // diagram:* — @aof/diagrams' own contribution, registered as one unit core can leave out.
@@ -285,6 +286,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
     ]),
     { name: "aof", commands: [
       projectProvisionCommand,
+      ...issuesCommands,
     ] },
     createKnowledgeContribution([
       importMilestoneCommand,

@@ -61,6 +61,7 @@ const SIX_IDS = ["work:list", "work:doc", "work:tasks", "work:validate", "work:n
 const WORK_IDS = [
   ...SIX_IDS,
   "work:doctor",
+  "work:renumber", // 182: single-item relocation
   "work:run-start",
   "work:run-complete",
   "work:regression-gate",

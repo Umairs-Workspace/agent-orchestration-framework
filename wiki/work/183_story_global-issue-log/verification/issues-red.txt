@@ -1,0 +1,603 @@
+# unit
+not ok - 183/00 · real CLI logs and lists outside a workspace across directories
+AssertionError [ERR_ASSERTION]: Unknown command "issues".
+
+aof - Agent Orchestration Framework
+
+Usage:
+  aof init [dir] [--claude] [--codex] [--runtime claude,codex] [--force] [--dry-run] [--json]
+  aof migrate <folder> [--dry-run] [--json]
+  aof test --scope impacted|file|all [<suite-file> ...] [--story <ref>] [--since <rev>] [--verbose] [--json]
+
+Project:
+  aof project provision <tool> [--version V] [--force] [--uninstall] [--dry-run] [--json]
+  aof project show [--target <dir>] [--json]
+  aof project validate [--target <dir>] [--strict] [--runtime list|--claude|--codex] [--json]
+  aof project doctor [--target <dir>] [--strict] [--runtime list|--claude|--codex] [--json]
+  aof project migrate [dir] [--target <dir>] [--dry-run] [--force] [--json]
+
+Assets:
+  aof assets ui [--port 4177] [--api-port 4178] [--no-serve] [--json]
+  aof assets list [--global] [--target <dir>] [--json]
+  aof assets show [--global] <kind> <id> [--json]
+  aof assets add [--global] <kind> <id> [--name N] [--description D] [--body B] [--runtime list|--claude|--codex] [--force] [--dry-run]
+  aof assets remove [--global] <kind> <id> [--dry-run] [--force]
+  aof assets use --global <kind> <id>
+  aof assets unuse --global <kind> <id>
+  aof assets clean [--target <dir>] [--dry-run]
+  aof assets validate [--global] [--target <dir>] [--strict] [--json]
+  aof assets apply [--config aof.config.json] [--target dir] [--claude] [--codex] [--opencode] [--dry-run] [--force] [--strict]
+
+Packages:
+  aof packages list [--target <dir>] [--json]
+  aof packages show <id> [--target <dir>] [--json]
+  aof packages add gsd [--codex] [--claude] [--runtime list] [--source source] [--package npm-package] [--dry-run]
+  aof packages remove <id> [--target <dir>] [--dry-run]
+  aof packages validate [--target <dir>] [--strict] [--json]
+  aof packages install [gsd] [--from-lock] [--claude] [--codex] [--global] [--dry-run] [--force] [--json]
+
+Work (ACD work stream):
+  aof work list [scope] [--all] [--json]
+  aof work loops show [--id <node-id>] [--json]
+  aof work loops graph [--format mermaid] [--json]
+  aof work loops validate [--json]
+  aof work loops groundedness [--json]
+  aof work loops document [--write] [--json]
+  aof work loop-record <ref> [--write] [--json]
+  aof work debt [<path>...] [--prune] [--write] [--json]
+  aof work doc <ref> <DOC> [member] [--json]
+  aof work tasks <ref> [--json]
+  aof work validate [scope] [--json]
+  aof work next [range] [--through-review] [--json]
+  aof work dispatch [<ref>...] [--list] [--sweep] [--cleanup <ref>] [--remove] [--json]
+  aof work feedback <ref> --note "…" [--actor …] [--refs …] [--json]
+  aof work doctor [scope] [--strict] | --explain <event> | --converge [--json]
+  aof work audit [scope] [--json] [--strict]
+  aof work acceptor [--json] [--commit <key>]
+  aof work tune [scope] [--json]
+  aof work trigger [trigger] [--signal JSON] [--json]
+  aof work grade <ref> [--run] [--json]
+  aof work ratchet <ref> [--base <commit>] [--json]
+  aof work counters <ref> [--json]
+  aof work integrations notion sync-work <milestone> [--dry-run] [--json]
+  aof work integrations notion associate <ref> --board <key|none> --parent <id|key|none> [--json]
+  aof work integrations hyperagent brief <plan|prd|shatter|refine> [target] [--request <text>] [--repo <owner/name>] [--base <branch>] [--json]
+  aof work integrations hyperagent result <file> [--json]
+  aof work integrations hyperagent check <branch> [--base <branch>] [--remote <name>] [--json]
+  aof work integrations hyperagent doctor [--json]
+  aof work integrations hyperagent package [--dry-run] [--json]
+  aof work run-start <ref> [--session <id>] [--brief '<json>'] [--json]
+  aof work run-complete <ref> --outcome done|failed|cancelled [--run <runId>] [--reason <reason>] [--resume-after <when>] [--json]
+  aof work run-status <ref> [--json]
+  aof work status <ref> [<status> [--if-applicable] [--gate-override "<reason>"]] [--json]
+  aof work regression-gate <ref> [--serial] [--jobs N] [--json]
+  aof work run-retry <ref> [--run <runId>] [--max-attempts N] [--force] [--json]
+  aof work resume [<ref>] [--force] [--max-attempts N] [--json]
+  aof work answer <ref> "<text>" [--as <actor>] [--json]
+  aof work questions [--all] [--json]
+  aof work ui [--port 4180] [--target <dir>] [--fleet-origin <origin>] [--json]
+  aof work find <ref | path | query> [--json]
+  aof work observe <milestone-ref> [--write] [--json] [--stall <minutes>] [--human-wait <minutes>] [--if-enabled]
+  aof work memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--lessons] [--input <file>] [--exclude <item>/R<n>] [--json]
+  aof work use-headroom [dir] [--json]
+  aof work unuse-headroom [dir] [--json]
+  aof work init [dir] [--dry-run] [--runtime claude,codex] [--force] [--with-headroom] [--json]
+  aof work init-config [dir] [--layers @cli,@ui] [--refinements @work] [--domains @board] [--json]
+  aof work update [dir] [--dry-run] [--force] [--json]
+  aof work orchestrator [fable|opus] [dir] [--model fable|opus] [--show] [--json]
+  aof work delegation [on|off] [dir] [--model fable|opus] [--gpt-model <id>] [--no-model] [--show] [--json]
+  aof work delegation-model [<id>] [dir] [--show] [--json]
+  aof work insert-milestone <slug> --at <P> [--yes] [--json]
+  aof work insert-uat <slug> --at <P> [--depends 0,2] [--yes] [--json]
+  aof work insert-story <slug> --at <P> --under <M> [--yes] [--json]
+  aof work insert-chore <slug> --at <P> [--yes] [--json]
+  aof work prototype "<ask>" [--slug <slug>] | <ref> ["<addition>"] | <ref> --log "<line>" | <ref> --stop|--done|--abandon [--today YYYY-MM-DD] [--json]
+  aof work promote <slug> | --next-item [--at <P>] [--yes] [--json] | --show-candidates [--json]
+  aof work archive <NN> | --done [--yes] [--json]
+  aof work renumber <ref> --to <number> [--dry-run] [--json]
+  aof work promote-gap "<title>" --discharge "…" [--status open] [--at <P>] [--yes] [--json]
+  aof work promote-finding <ref> "<finding title>" --remedy "…" [--location file:line] [--round N] [--yes] [--json]
+  aof upgrade [--dry-run] [--changelog] [--json]
+  aof work continue <ref> [--node <id>] [--manual] [--json]
+  aof work refine <ref> [--node <id>] [--json]
+  aof work verify <ref> [--node <id>] [--json]
+  aof work loop <driver|NN-MM|backlog-slug|backlog-path> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]
+  aof work drive refine <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]
+  aof work drive continue <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]
+  aof work drive verify <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]
+  aof work drive repair <ref> --run <id> --halt <file> [--thinking LEVEL] [--model ID] [--dry-run] [--json]
+  aof work drive review <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]
+  aof work resync <ref> [--json]
+
+Planning:
+  aof planning init [dir] [--dry-run] [--with-optional] [--runtime claude|codex|cowork] [--scope user|project|local] [--force] [--json]
+
+Graph:
+  aof graph build <folder> [--backend claude] [--token-budget N] [--offline] [--json]
+  aof graph query "<question>" [--strategy dfs|bfs] [--budget N] [--json]
+  aof graph triage [--mode triage|conflicts] [--pr N] [--json]
+  aof graph impact <path> [<path> ...] [--json]
+  aof graph export <path> [--force] [--json]
+  aof graph import <path> [--force] [--json]
+  aof graph fetch [--force] [--json]
+  aof graph publish [--json]
+  aof graph prune [--json]
+  aof graph serve [--json]
+
+Diagram:
+  aof diagram plan <ref> <ADR-NNN> --slug <slug> [--json]
+       aof diagram plan <milestone ref> loop [--json]
+       aof diagram plan <prototype ref> <name> [--json]
+  aof diagram export <ref> <ADR-NNN> [--json]
+       aof diagram export <milestone ref> loop [--json]
+       aof diagram export <prototype ref> <name> [--json]
+  aof diagram file <ref> <ADR-NNN-slug.html|.svg|.png|.excalidraw> [--json]
+  aof diagram scene <ref> <ADR-NNN-slug.excalidraw> [--action read|save|context|request|withdraw|respond|reply|propose|proposals|accept|reject|publish|libraries|stamp|session] [--input path] [--json]
+  aof diagram capability [--json]
+
+Mesh:
+  aof mesh identity [<id>] [--name <id>] [--address <ip-or-host>] [--reidentify] [--workspace <path|id>] [--json]
+  aof mesh status [--workspace <path|id>] [--declarations] [--json]
+  aof mesh heartbeat [--workspace <path|id>] [--json]
+  aof mesh relay [--workspace <path|id>] [--json]
+  aof mesh invite [--workspace <path|id>] [--json]
+  aof mesh join <code> [--control <nodeId>] [--url <wss-url>] [--workspace <path|id>] [--json]
+  aof mesh revoke <node> [--workspace <path|id>] [--json]
+  aof mesh serve [--serve] [--workspace <path|id>] [--json]
+  aof mesh logs [proc] [--tail N] [--node <id>] [--workspace <path|id>] [--json]
+  aof mesh terminal-resume <sessionId> [--node <id>] [--workspace <path|id>] [--json]
+  aof mesh assign <ref> --to <nodeId> | --withdraw [--workspace <path|id>] [--json]
+  aof mesh recover-push <assignmentId> [--json]
+  aof mesh repo publish [--workspace <path|id>] [--json]
+  aof mesh ui [--port 4181] [--local] [--target <dir>] [--json]
+  aof mesh desktop install [--app-artifact <path>] [--bootstrapper-artifact <path>] [--install-dir <dir>] [--autostart|--no-autostart] [--dry-run] [--json]
+  aof mesh desktop run [--install-dir <dir>] [--json]
+  aof mesh desktop stop [--dry-run] [--json]
+
+Import:
+  aof import milestone <repo> [selector] [--dry-run] [--json]
+
+Messaging:
+  aof messaging init <type>   (the bot token is read from a hidden prompt or stdin, never argv) [--json]
+  aof messaging enable <type> --channel <id> [--allow <user-id>[,<user-id>…]] [--json]
+  aof messaging disable <type> [--json]
+  aof messaging status [--json]
+  aof messaging test <type>   (posts one test message to each of the project's channels of that type) [--json]
+
+Also:
+  aof session start|ping|end               assistant-session presence (fired from editor hooks)
+  aof --version                            version + runtime-mode/build provenance
+
+Defaults:
+  init creates an empty project .aof workspace for the selected coding assistants.
+  project commands inspect, validate, diagnose, and migrate the current repository's AOF workspace.
+  assets apply renders source assets into the runtimes selected in .aof/aof.config.json unless runtime flags narrow the run.
+  packages add records package intent only and never runs installer code.
+  packages install prints a network/package-code boundary before executing installers.
+  assets ui opens the project/global asset editor.
+  --strict promotes adapter warnings to command failures for CI.
+
+
+
+1 !== 0
+
+    at json (file:///C:/workspace/aof/test/store/issues.test.mjs:23:10)
+    at file:///C:/workspace/aof/test/store/issues.test.mjs:28:19
+    at fixture (file:///C:/workspace/aof/test/store/issues.test.mjs:19:15)
+    at async run (file:///C:/workspace/aof/scripts/test-shard.mjs:116:14)
+    at async runCases (file:///C:/workspace/aof/scripts/test-harness.mjs:44:7)
+    at async file:///C:/workspace/aof/scripts/test-shard.mjs:126:18
+not ok - 183/00 · empty list and invalid input do not create a store
+AssertionError [ERR_ASSERTION]: Unknown command "issues".
+
+aof - Agent Orchestration Framework
+
+Usage:
+  aof init [dir] [--claude] [--codex] [--runtime claude,codex] [--force] [--dry-run] [--json]
+  aof migrate <folder> [--dry-run] [--json]
+  aof test --scope impacted|file|all [<suite-file> ...] [--story <ref>] [--since <rev>] [--verbose] [--json]
+
+Project:
+  aof project provision <tool> [--version V] [--force] [--uninstall] [--dry-run] [--json]
+  aof project show [--target <dir>] [--json]
+  aof project validate [--target <dir>] [--strict] [--runtime list|--claude|--codex] [--json]
+  aof project doctor [--target <dir>] [--strict] [--runtime list|--claude|--codex] [--json]
+  aof project migrate [dir] [--target <dir>] [--dry-run] [--force] [--json]
+
+Assets:
+  aof assets ui [--port 4177] [--api-port 4178] [--no-serve] [--json]
+  aof assets list [--global] [--target <dir>] [--json]
+  aof assets show [--global] <kind> <id> [--json]
+  aof assets add [--global] <kind> <id> [--name N] [--description D] [--body B] [--runtime list|--claude|--codex] [--force] [--dry-run]
+  aof assets remove [--global] <kind> <id> [--dry-run] [--force]
+  aof assets use --global <kind> <id>
+  aof assets unuse --global <kind> <id>
+  aof assets clean [--target <dir>] [--dry-run]
+  aof assets validate [--global] [--target <dir>] [--strict] [--json]
+  aof assets apply [--config aof.config.json] [--target dir] [--claude] [--codex] [--opencode] [--dry-run] [--force] [--strict]
+
+Packages:
+  aof packages list [--target <dir>] [--json]
+  aof packages show <id> [--target <dir>] [--json]
+  aof packages add gsd [--codex] [--claude] [--runtime list] [--source source] [--package npm-package] [--dry-run]
+  aof packages remove <id> [--target <dir>] [--dry-run]
+  aof packages validate [--target <dir>] [--strict] [--json]
+  aof packages install [gsd] [--from-lock] [--claude] [--codex] [--global] [--dry-run] [--force] [--json]
+
+Work (ACD work stream):
+  aof work list [scope] [--all] [--json]
+  aof work loops show [--id <node-id>] [--json]
+  aof work loops graph [--format mermaid] [--json]
+  aof work loops validate [--json]
+  aof work loops groundedness [--json]
+  aof work loops document [--write] [--json]
+  aof work loop-record <ref> [--write] [--json]
+  aof work debt [<path>...] [--prune] [--write] [--json]
+  aof work doc <ref> <DOC> [member] [--json]
+  aof work tasks <ref> [--json]
+  aof work validate [scope] [--json]
+  aof work next [range] [--through-review] [--json]
+  aof work dispatch [<ref>...] [--list] [--sweep] [--cleanup <ref>] [--remove] [--json]
+  aof work feedback <ref> --note "…" [--actor …] [--refs …] [--json]
+  aof work doctor [scope] [--strict] | --explain <event> | --converge [--json]
+  aof work audit [scope] [--json] [--strict]
+  aof work acceptor [--json] [--commit <key>]
+  aof work tune [scope] [--json]
+  aof work trigger [trigger] [--signal JSON] [--json]
+  aof work grade <ref> [--run] [--json]
+  aof work ratchet <ref> [--base <commit>] [--json]
+  aof work counters <ref> [--json]
+  aof work integrations notion sync-work <milestone> [--dry-run] [--json]
+  aof work integrations notion associate <ref> --board <key|none> --parent <id|key|none> [--json]
+  aof work integrations hyperagent brief <plan|prd|shatter|refine> [target] [--request <text>] [--repo <owner/name>] [--base <branch>] [--json]
+  aof work integrations hyperagent result <file> [--json]
+  aof work integrations hyperagent check <branch> [--base <branch>] [--remote <name>] [--json]
+  aof work integrations hyperagent doctor [--json]
+  aof work integrations hyperagent package [--dry-run] [--json]
+  aof work run-start <ref> [--session <id>] [--brief '<json>'] [--json]
+  aof work run-complete <ref> --outcome done|failed|cancelled [--run <runId>] [--reason <reason>] [--resume-after <when>] [--json]
+  aof work run-status <ref> [--json]
+  aof work status <ref> [<status> [--if-applicable] [--gate-override "<reason>"]] [--json]
+  aof work regression-gate <ref> [--serial] [--jobs N] [--json]
+  aof work run-retry <ref> [--run <runId>] [--max-attempts N] [--force] [--json]
+  aof work resume [<ref>] [--force] [--max-attempts N] [--json]
+  aof work answer <ref> "<text>" [--as <actor>] [--json]
+  aof work questions [--all] [--json]
+  aof work ui [--port 4180] [--target <dir>] [--fleet-origin <origin>] [--json]
+  aof work find <ref | path | query> [--json]
+  aof work observe <milestone-ref> [--write] [--json] [--stall <minutes>] [--human-wait <minutes>] [--if-enabled]
+  aof work memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--lessons] [--input <file>] [--exclude <item>/R<n>] [--json]
+  aof work use-headroom [dir] [--json]
+  aof work unuse-headroom [dir] [--json]
+  aof work init [dir] [--dry-run] [--runtime claude,codex] [--force] [--with-headroom] [--json]
+  aof work init-config [dir] [--layers @cli,@ui] [--refinements @work] [--domains @board] [--json]
+  aof work update [dir] [--dry-run] [--force] [--json]
+  aof work orchestrator [fable|opus] [dir] [--model fable|opus] [--show] [--json]
+  aof work delegation [on|off] [dir] [--model fable|opus] [--gpt-model <id>] [--no-model] [--show] [--json]
+  aof work delegation-model [<id>] [dir] [--show] [--json]
+  aof work insert-milestone <slug> --at <P> [--yes] [--json]
+  aof work insert-uat <slug> --at <P> [--depends 0,2] [--yes] [--json]
+  aof work insert-story <slug> --at <P> --under <M> [--yes] [--json]
+  aof work insert-chore <slug> --at <P> [--yes] [--json]
+  aof work prototype "<ask>" [--slug <slug>] | <ref> ["<addition>"] | <ref> --log "<line>" | <ref> --stop|--done|--abandon [--today YYYY-MM-DD] [--json]
+  aof work promote <slug> | --next-item [--at <P>] [--yes] [--json] | --show-candidates [--json]
+  aof work archive <NN> | --done [--yes] [--json]
+  aof work renumber <ref> --to <number> [--dry-run] [--json]
+  aof work promote-gap "<title>" --discharge "…" [--status open] [--at <P>] [--yes] [--json]
+  aof work promote-finding <ref> "<finding title>" --remedy "…" [--location file:line] [--round N] [--yes] [--json]
+  aof upgrade [--dry-run] [--changelog] [--json]
+  aof work continue <ref> [--node <id>] [--manual] [--json]
+  aof work refine <ref> [--node <id>] [--json]
+  aof work verify <ref> [--node <id>] [--json]
+  aof work loop <driver|NN-MM|backlog-slug|backlog-path> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]
+  aof work drive refine <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]
+  aof work drive continue <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]
+  aof work drive verify <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]
+  aof work drive repair <ref> --run <id> --halt <file> [--thinking LEVEL] [--model ID] [--dry-run] [--json]
+  aof work drive review <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]
+  aof work resync <ref> [--json]
+
+Planning:
+  aof planning init [dir] [--dry-run] [--with-optional] [--runtime claude|codex|cowork] [--scope user|project|local] [--force] [--json]
+
+Graph:
+  aof graph build <folder> [--backend claude] [--token-budget N] [--offline] [--json]
+  aof graph query "<question>" [--strategy dfs|bfs] [--budget N] [--json]
+  aof graph triage [--mode triage|conflicts] [--pr N] [--json]
+  aof graph impact <path> [<path> ...] [--json]
+  aof graph export <path> [--force] [--json]
+  aof graph import <path> [--force] [--json]
+  aof graph fetch [--force] [--json]
+  aof graph publish [--json]
+  aof graph prune [--json]
+  aof graph serve [--json]
+
+Diagram:
+  aof diagram plan <ref> <ADR-NNN> --slug <slug> [--json]
+       aof diagram plan <milestone ref> loop [--json]
+       aof diagram plan <prototype ref> <name> [--json]
+  aof diagram export <ref> <ADR-NNN> [--json]
+       aof diagram export <milestone ref> loop [--json]
+       aof diagram export <prototype ref> <name> [--json]
+  aof diagram file <ref> <ADR-NNN-slug.html|.svg|.png|.excalidraw> [--json]
+  aof diagram scene <ref> <ADR-NNN-slug.excalidraw> [--action read|save|context|request|withdraw|respond|reply|propose|proposals|accept|reject|publish|libraries|stamp|session] [--input path] [--json]
+  aof diagram capability [--json]
+
+Mesh:
+  aof mesh identity [<id>] [--name <id>] [--address <ip-or-host>] [--reidentify] [--workspace <path|id>] [--json]
+  aof mesh status [--workspace <path|id>] [--declarations] [--json]
+  aof mesh heartbeat [--workspace <path|id>] [--json]
+  aof mesh relay [--workspace <path|id>] [--json]
+  aof mesh invite [--workspace <path|id>] [--json]
+  aof mesh join <code> [--control <nodeId>] [--url <wss-url>] [--workspace <path|id>] [--json]
+  aof mesh revoke <node> [--workspace <path|id>] [--json]
+  aof mesh serve [--serve] [--workspace <path|id>] [--json]
+  aof mesh logs [proc] [--tail N] [--node <id>] [--workspace <path|id>] [--json]
+  aof mesh terminal-resume <sessionId> [--node <id>] [--workspace <path|id>] [--json]
+  aof mesh assign <ref> --to <nodeId> | --withdraw [--workspace <path|id>] [--json]
+  aof mesh recover-push <assignmentId> [--json]
+  aof mesh repo publish [--workspace <path|id>] [--json]
+  aof mesh ui [--port 4181] [--local] [--target <dir>] [--json]
+  aof mesh desktop install [--app-artifact <path>] [--bootstrapper-artifact <path>] [--install-dir <dir>] [--autostart|--no-autostart] [--dry-run] [--json]
+  aof mesh desktop run [--install-dir <dir>] [--json]
+  aof mesh desktop stop [--dry-run] [--json]
+
+Import:
+  aof import milestone <repo> [selector] [--dry-run] [--json]
+
+Messaging:
+  aof messaging init <type>   (the bot token is read from a hidden prompt or stdin, never argv) [--json]
+  aof messaging enable <type> --channel <id> [--allow <user-id>[,<user-id>…]] [--json]
+  aof messaging disable <type> [--json]
+  aof messaging status [--json]
+  aof messaging test <type>   (posts one test message to each of the project's channels of that type) [--json]
+
+Also:
+  aof session start|ping|end               assistant-session presence (fired from editor hooks)
+  aof --version                            version + runtime-mode/build provenance
+
+Defaults:
+  init creates an empty project .aof workspace for the selected coding assistants.
+  project commands inspect, validate, diagnose, and migrate the current repository's AOF workspace.
+  assets apply renders source assets into the runtimes selected in .aof/aof.config.json unless runtime flags narrow the run.
+  packages add records package intent only and never runs installer code.
+  packages install prints a network/package-code boundary before executing installers.
+  assets ui opens the project/global asset editor.
+  --strict promotes adapter warnings to command failures for CI.
+
+
+
+1 !== 0
+
+    at json (file:///C:/workspace/aof/test/store/issues.test.mjs:23:10)
+    at file:///C:/workspace/aof/test/store/issues.test.mjs:37:22
+    at fixture (file:///C:/workspace/aof/test/store/issues.test.mjs:19:15)
+    at async run (file:///C:/workspace/aof/scripts/test-shard.mjs:116:14)
+    at async runCases (file:///C:/workspace/aof/scripts/test-harness.mjs:44:7)
+    at async file:///C:/workspace/aof/scripts/test-shard.mjs:126:18
+not ok - 183/00 · concurrent logs preserve all records and readers see complete JSON
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\workspace\aof\packages\core\src\issues.mjs' imported from C:\workspace\aof\test\store\issues.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+    at onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:664:36)
+    at TracingChannel.tracePromise (node:diagnostics_channel:350:14)
+    at ModuleLoader.import (node:internal/modules/esm/loader:663:21)
+    at defaultImportModuleDynamicallyForModule (node:internal/modules/esm/utils:222:31)
+not ok - 183/00 · corrupt saved issue is reported without overwriting evidence
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\workspace\aof\packages\core\src\issues.mjs' imported from C:\workspace\aof\test\store\issues.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+    at onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:664:36)
+    at TracingChannel.tracePromise (node:diagnostics_channel:350:14)
+    at ModuleLoader.import (node:internal/modules/esm/loader:663:21)
+    at defaultImportModuleDynamicallyForModule (node:internal/modules/esm/utils:222:31)
+not ok - 183/01 · CLI removes exactly one known issue
+AssertionError [ERR_ASSERTION]: Unknown command "issues".
+
+aof - Agent Orchestration Framework
+
+Usage:
+  aof init [dir] [--claude] [--codex] [--runtime claude,codex] [--force] [--dry-run] [--json]
+  aof migrate <folder> [--dry-run] [--json]
+  aof test --scope impacted|file|all [<suite-file> ...] [--story <ref>] [--since <rev>] [--verbose] [--json]
+
+Project:
+  aof project provision <tool> [--version V] [--force] [--uninstall] [--dry-run] [--json]
+  aof project show [--target <dir>] [--json]
+  aof project validate [--target <dir>] [--strict] [--runtime list|--claude|--codex] [--json]
+  aof project doctor [--target <dir>] [--strict] [--runtime list|--claude|--codex] [--json]
+  aof project migrate [dir] [--target <dir>] [--dry-run] [--force] [--json]
+
+Assets:
+  aof assets ui [--port 4177] [--api-port 4178] [--no-serve] [--json]
+  aof assets list [--global] [--target <dir>] [--json]
+  aof assets show [--global] <kind> <id> [--json]
+  aof assets add [--global] <kind> <id> [--name N] [--description D] [--body B] [--runtime list|--claude|--codex] [--force] [--dry-run]
+  aof assets remove [--global] <kind> <id> [--dry-run] [--force]
+  aof assets use --global <kind> <id>
+  aof assets unuse --global <kind> <id>
+  aof assets clean [--target <dir>] [--dry-run]
+  aof assets validate [--global] [--target <dir>] [--strict] [--json]
+  aof assets apply [--config aof.config.json] [--target dir] [--claude] [--codex] [--opencode] [--dry-run] [--force] [--strict]
+
+Packages:
+  aof packages list [--target <dir>] [--json]
+  aof packages show <id> [--target <dir>] [--json]
+  aof packages add gsd [--codex] [--claude] [--runtime list] [--source source] [--package npm-package] [--dry-run]
+  aof packages remove <id> [--target <dir>] [--dry-run]
+  aof packages validate [--target <dir>] [--strict] [--json]
+  aof packages install [gsd] [--from-lock] [--claude] [--codex] [--global] [--dry-run] [--force] [--json]
+
+Work (ACD work stream):
+  aof work list [scope] [--all] [--json]
+  aof work loops show [--id <node-id>] [--json]
+  aof work loops graph [--format mermaid] [--json]
+  aof work loops validate [--json]
+  aof work loops groundedness [--json]
+  aof work loops document [--write] [--json]
+  aof work loop-record <ref> [--write] [--json]
+  aof work debt [<path>...] [--prune] [--write] [--json]
+  aof work doc <ref> <DOC> [member] [--json]
+  aof work tasks <ref> [--json]
+  aof work validate [scope] [--json]
+  aof work next [range] [--through-review] [--json]
+  aof work dispatch [<ref>...] [--list] [--sweep] [--cleanup <ref>] [--remove] [--json]
+  aof work feedback <ref> --note "…" [--actor …] [--refs …] [--json]
+  aof work doctor [scope] [--strict] | --explain <event> | --converge [--json]
+  aof work audit [scope] [--json] [--strict]
+  aof work acceptor [--json] [--commit <key>]
+  aof work tune [scope] [--json]
+  aof work trigger [trigger] [--signal JSON] [--json]
+  aof work grade <ref> [--run] [--json]
+  aof work ratchet <ref> [--base <commit>] [--json]
+  aof work counters <ref> [--json]
+  aof work integrations notion sync-work <milestone> [--dry-run] [--json]
+  aof work integrations notion associate <ref> --board <key|none> --parent <id|key|none> [--json]
+  aof work integrations hyperagent brief <plan|prd|shatter|refine> [target] [--request <text>] [--repo <owner/name>] [--base <branch>] [--json]
+  aof work integrations hyperagent result <file> [--json]
+  aof work integrations hyperagent check <branch> [--base <branch>] [--remote <name>] [--json]
+  aof work integrations hyperagent doctor [--json]
+  aof work integrations hyperagent package [--dry-run] [--json]
+  aof work run-start <ref> [--session <id>] [--brief '<json>'] [--json]
+  aof work run-complete <ref> --outcome done|failed|cancelled [--run <runId>] [--reason <reason>] [--resume-after <when>] [--json]
+  aof work run-status <ref> [--json]
+  aof work status <ref> [<status> [--if-applicable] [--gate-override "<reason>"]] [--json]
+  aof work regression-gate <ref> [--serial] [--jobs N] [--json]
+  aof work run-retry <ref> [--run <runId>] [--max-attempts N] [--force] [--json]
+  aof work resume [<ref>] [--force] [--max-attempts N] [--json]
+  aof work answer <ref> "<text>" [--as <actor>] [--json]
+  aof work questions [--all] [--json]
+  aof work ui [--port 4180] [--target <dir>] [--fleet-origin <origin>] [--json]
+  aof work find <ref | path | query> [--json]
+  aof work observe <milestone-ref> [--write] [--json] [--stall <minutes>] [--human-wait <minutes>] [--if-enabled]
+  aof work memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--lessons] [--input <file>] [--exclude <item>/R<n>] [--json]
+  aof work use-headroom [dir] [--json]
+  aof work unuse-headroom [dir] [--json]
+  aof work init [dir] [--dry-run] [--runtime claude,codex] [--force] [--with-headroom] [--json]
+  aof work init-config [dir] [--layers @cli,@ui] [--refinements @work] [--domains @board] [--json]
+  aof work update [dir] [--dry-run] [--force] [--json]
+  aof work orchestrator [fable|opus] [dir] [--model fable|opus] [--show] [--json]
+  aof work delegation [on|off] [dir] [--model fable|opus] [--gpt-model <id>] [--no-model] [--show] [--json]
+  aof work delegation-model [<id>] [dir] [--show] [--json]
+  aof work insert-milestone <slug> --at <P> [--yes] [--json]
+  aof work insert-uat <slug> --at <P> [--depends 0,2] [--yes] [--json]
+  aof work insert-story <slug> --at <P> --under <M> [--yes] [--json]
+  aof work insert-chore <slug> --at <P> [--yes] [--json]
+  aof work prototype "<ask>" [--slug <slug>] | <ref> ["<addition>"] | <ref> --log "<line>" | <ref> --stop|--done|--abandon [--today YYYY-MM-DD] [--json]
+  aof work promote <slug> | --next-item [--at <P>] [--yes] [--json] | --show-candidates [--json]
+  aof work archive <NN> | --done [--yes] [--json]
+  aof work renumber <ref> --to <number> [--dry-run] [--json]
+  aof work promote-gap "<title>" --discharge "…" [--status open] [--at <P>] [--yes] [--json]
+  aof work promote-finding <ref> "<finding title>" --remedy "…" [--location file:line] [--round N] [--yes] [--json]
+  aof upgrade [--dry-run] [--changelog] [--json]
+  aof work continue <ref> [--node <id>] [--manual] [--json]
+  aof work refine <ref> [--node <id>] [--json]
+  aof work verify <ref> [--node <id>] [--json]
+  aof work loop <driver|NN-MM|backlog-slug|backlog-path> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]
+  aof work drive refine <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]
+  aof work drive continue <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]
+  aof work drive verify <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]
+  aof work drive repair <ref> --run <id> --halt <file> [--thinking LEVEL] [--model ID] [--dry-run] [--json]
+  aof work drive review <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]
+  aof work resync <ref> [--json]
+
+Planning:
+  aof planning init [dir] [--dry-run] [--with-optional] [--runtime claude|codex|cowork] [--scope user|project|local] [--force] [--json]
+
+Graph:
+  aof graph build <folder> [--backend claude] [--token-budget N] [--offline] [--json]
+  aof graph query "<question>" [--strategy dfs|bfs] [--budget N] [--json]
+  aof graph triage [--mode triage|conflicts] [--pr N] [--json]
+  aof graph impact <path> [<path> ...] [--json]
+  aof graph export <path> [--force] [--json]
+  aof graph import <path> [--force] [--json]
+  aof graph fetch [--force] [--json]
+  aof graph publish [--json]
+  aof graph prune [--json]
+  aof graph serve [--json]
+
+Diagram:
+  aof diagram plan <ref> <ADR-NNN> --slug <slug> [--json]
+       aof diagram plan <milestone ref> loop [--json]
+       aof diagram plan <prototype ref> <name> [--json]
+  aof diagram export <ref> <ADR-NNN> [--json]
+       aof diagram export <milestone ref> loop [--json]
+       aof diagram export <prototype ref> <name> [--json]
+  aof diagram file <ref> <ADR-NNN-slug.html|.svg|.png|.excalidraw> [--json]
+  aof diagram scene <ref> <ADR-NNN-slug.excalidraw> [--action read|save|context|request|withdraw|respond|reply|propose|proposals|accept|reject|publish|libraries|stamp|session] [--input path] [--json]
+  aof diagram capability [--json]
+
+Mesh:
+  aof mesh identity [<id>] [--name <id>] [--address <ip-or-host>] [--reidentify] [--workspace <path|id>] [--json]
+  aof mesh status [--workspace <path|id>] [--declarations] [--json]
+  aof mesh heartbeat [--workspace <path|id>] [--json]
+  aof mesh relay [--workspace <path|id>] [--json]
+  aof mesh invite [--workspace <path|id>] [--json]
+  aof mesh join <code> [--control <nodeId>] [--url <wss-url>] [--workspace <path|id>] [--json]
+  aof mesh revoke <node> [--workspace <path|id>] [--json]
+  aof mesh serve [--serve] [--workspace <path|id>] [--json]
+  aof mesh logs [proc] [--tail N] [--node <id>] [--workspace <path|id>] [--json]
+  aof mesh terminal-resume <sessionId> [--node <id>] [--workspace <path|id>] [--json]
+  aof mesh assign <ref> --to <nodeId> | --withdraw [--workspace <path|id>] [--json]
+  aof mesh recover-push <assignmentId> [--json]
+  aof mesh repo publish [--workspace <path|id>] [--json]
+  aof mesh ui [--port 4181] [--local] [--target <dir>] [--json]
+  aof mesh desktop install [--app-artifact <path>] [--bootstrapper-artifact <path>] [--install-dir <dir>] [--autostart|--no-autostart] [--dry-run] [--json]
+  aof mesh desktop run [--install-dir <dir>] [--json]
+  aof mesh desktop stop [--dry-run] [--json]
+
+Import:
+  aof import milestone <repo> [selector] [--dry-run] [--json]
+
+Messaging:
+  aof messaging init <type>   (the bot token is read from a hidden prompt or stdin, never argv) [--json]
+  aof messaging enable <type> --channel <id> [--allow <user-id>[,<user-id>…]] [--json]
+  aof messaging disable <type> [--json]
+  aof messaging status [--json]
+  aof messaging test <type>   (posts one test message to each of the project's channels of that type) [--json]
+
+Also:
+  aof session start|ping|end               assistant-session presence (fired from editor hooks)
+  aof --version                            version + runtime-mode/build provenance
+
+Defaults:
+  init creates an empty project .aof workspace for the selected coding assistants.
+  project commands inspect, validate, diagnose, and migrate the current repository's AOF workspace.
+  assets apply renders source assets into the runtimes selected in .aof/aof.config.json unless runtime flags narrow the run.
+  packages add records package intent only and never runs installer code.
+  packages install prints a network/package-code boundary before executing installers.
+  assets ui opens the project/global asset editor.
+  --strict promotes adapter warnings to command failures for CI.
+
+
+
+1 !== 0
+
+    at json (file:///C:/workspace/aof/test/store/issues.test.mjs:23:10)
+    at file:///C:/workspace/aof/test/store/issues.test.mjs:69:19
+    at fixture (file:///C:/workspace/aof/test/store/issues.test.mjs:19:15)
+    at async run (file:///C:/workspace/aof/scripts/test-shard.mjs:116:14)
+    at async runCases (file:///C:/workspace/aof/scripts/test-harness.mjs:44:7)
+    at async file:///C:/workspace/aof/scripts/test-shard.mjs:126:18
+# file test/store/issues.test.mjs 7.866 6
+not ok - 183/01 · malformed and path-like IDs refuse without deleting unrelated files
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\workspace\aof\packages\core\src\issues.mjs' imported from C:\workspace\aof\test\store\issues.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:731:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:708:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38)
+    at onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:664:36)
+    at TracingChannel.tracePromise (node:diagnostics_channel:350:14)
+    at ModuleLoader.import (node:internal/modules/esm/loader:663:21)
+    at defaultImportModuleDynamicallyForModule (node:internal/modules/esm/utils:222:31)
+# executed 6 cases; failures 6

@@ -1095,6 +1095,85 @@
     }
   },
   {
+    "id": "issues:log",
+    "input": {
+      "type": "object",
+      "properties": {
+        "summary": {
+          "type": "string"
+        },
+        "details": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "summary"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "issues",
+        "log"
+      ],
+      "spec": {
+        "workspace": false,
+        "usage": "aof issues log <summary> [--details <text>] [--json]",
+        "flags": {
+          "details": {
+            "type": "string",
+            "description": "reproduction steps or additional context"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "issues:list",
+    "input": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "issues",
+        "list"
+      ],
+      "spec": {
+        "workspace": false,
+        "usage": "aof issues list [--json]",
+        "flags": {}
+      }
+    }
+  },
+  {
+    "id": "issues:remove",
+    "input": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "issues",
+        "remove"
+      ],
+      "spec": {
+        "workspace": false,
+        "usage": "aof issues remove <id> [--json]",
+        "flags": {}
+      }
+    }
+  },
+  {
     "id": "import:milestone",
     "input": {
       "type": "object",
@@ -4081,6 +4160,47 @@
           "force": {
             "type": "boolean",
             "description": "alias of --yes"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "work:renumber",
+    "input": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "dryRun": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ref",
+        "to"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "work",
+        "renumber"
+      ],
+      "spec": {
+        "usage": "aof work renumber <ref> --to <number> [--dry-run] [--json]",
+        "flags": {
+          "to": {
+            "type": "string",
+            "description": "vacant number in the same number space; other items do not shift"
+          },
+          "dryRun": {
+            "type": "boolean",
+            "description": "preview the remap and document edits without writing or refreshing memory"
           }
         }
       }

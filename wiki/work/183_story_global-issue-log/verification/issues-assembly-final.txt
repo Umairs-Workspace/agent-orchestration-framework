@@ -1,0 +1,11 @@
+# unit
+ok - application/construction has no static service cycle or dependency on compatibility entries
+ok - application/registration and CLI help start no process, listener, network request or native PTY and read no credential environment variables
+ok - application/registration preserves every descriptor and does not create application state
+ok - application/two environments isolate workspace configuration, journal handles and worker state
+ok - application/CLI, board and MCP use their application registry without cross-instance dispatch
+ok - application/closing an application stops its owned HTTP server and preserves the other instance
+ok - application/lifetime closes upgraded HTTP sockets with their server
+# file test/command/application-assembly.test.mjs 54.176 8
+ok - application/lifetime refuses early callbacks and closes every resource even when one fails
+# executed 8 cases; failures 0
