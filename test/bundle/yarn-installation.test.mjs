@@ -96,7 +96,8 @@ export const yarnInstallationTests = [
         // 179/ADR-001: the knowledge-engine port is a pure router; it imports no backend, config or fs.
         'engine.mjs': [],
         // 179/ADR-002: the graphify code backend checks the artifact and raises the build's coded errors.
-        'graphify-code-backend.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
+        'graphify-code-backend.mjs': ['node:path', '@aof/contracts/error'],
+        'graphify-code-relations.mjs': ['node:fs'],
         'memory/local-retrieval.mjs': ['@aof/work/ref-scope', '@aof/work/memory-vocabulary'],
         // 148/ADR-001: the lesson grammar and its vocabulary have one home, in @aof/work.
         // 178/ADR-002 (178/F-01): `origin:` is read from the item's record doc through work's one frontmatter

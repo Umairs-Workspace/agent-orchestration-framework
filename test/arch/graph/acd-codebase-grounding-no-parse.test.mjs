@@ -65,6 +65,9 @@ const GRAPH_READER_ALLOWLIST = new Set([
   // corpus's one reader behind the port; its core binding supplies the normalizer's services. The
   // graph:build and graph:impact faces, and the build binding, read no artifact since, so they left.
   path.join("packages", "knowledge", "src", "graphify-code-backend.mjs"),
+  // PR #22 — the backend's read half (availability and `relations`) is its own module, so the code
+  // readers' port reaches no part of the build (77/FF-7703). It is the same reader, moved.
+  path.join("packages", "knowledge", "src", "graphify-code-relations.mjs"),
   path.join("packages/core/src/application/bindings/knowledge-engine.mjs"),
   // 179/ADR-004 — test selection, the story-contract derivation and the seam-liveness lane, with
   // their three core bindings, left this list: each asks the code corpus's `relations` through the

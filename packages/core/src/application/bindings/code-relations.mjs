@@ -1,5 +1,5 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
-import { createCodeRelations } from "@aof/knowledge/graphify-code-backend";
+import { createCodeRelations } from "@aof/knowledge/graphify-code-relations";
 
 export function assembleCodeRelations({  } = {}) {
   // The code readers' one capability (179/ADR-004): the code corpus's `relations`, through a port

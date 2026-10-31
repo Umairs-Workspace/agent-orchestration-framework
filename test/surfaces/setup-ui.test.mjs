@@ -656,6 +656,15 @@ function memorySectionTests() {
   const UI_PRIMITIVES = { badge: { Badge: "span" }, button: { Button: "button" }, card: { Card: "div", CardContent: "div", CardDescription: "p", CardHeader: "div", CardTitle: "h3" }, input: { Input: "input" }, label: { Label: "label" }, textarea: { Textarea: "textarea" } };
   const t = (task, name, run) => ({ name: `180/03 task ${task}: ${name}`, run });
 
+  // The stubs below are module SOURCE, so every value spliced into them is made safe for code first:
+  // a string literal is JSON-encoded with the characters that can end or break a script escaped, and
+  // a binding name must be a plain identifier (CodeQL js/bad-code-sanitization, PR #22).
+  const codeLiteral = (value) => JSON.stringify(value).replace(/[<>\/\u2028\u2029]/g, (ch) => `\\u${ch.charCodeAt(0).toString(16).padStart(4, "0")}`);
+  const codeIdentifier = (name) => {
+    if (!/^[A-Za-z_$][\w$]*$/.test(name)) throw new Error(`stub binding ${JSON.stringify(name)} is not a plain identifier`);
+    return name;
+  };
+
   async function appStubs() {
     const icons = new Set();
     const dir = path.dirname(configEntry);
@@ -665,10 +674,10 @@ function memorySectionTests() {
         for (const name of match[1].split(",").map((part) => part.trim()).filter(Boolean)) icons.add(name);
       }
     }
-    const stubs = { __icons__: [...icons].map((name) => `export const ${name} = () => null;`).join("\n") };
+    const stubs = { __icons__: [...icons].map((name) => `export const ${codeIdentifier(name)} = () => null;`).join("\n") };
     const resolve = [{ filter: /^lucide-react$/, to: "__icons__" }];
     for (const [module, exports] of Object.entries(UI_PRIMITIVES)) {
-      stubs[`__ui_${module}__`] = `import { jsx } from "react/jsx-runtime";\n${Object.entries(exports).map(([name, tag]) => `export const ${name} = (props) => jsx(${JSON.stringify(tag)}, props);`).join("\n")}`;
+      stubs[`__ui_${module}__`] = `import { jsx } from "react/jsx-runtime";\n${Object.entries(exports).map(([name, tag]) => `export const ${codeIdentifier(name)} = (props) => jsx(${codeLiteral(tag)}, props);`).join("\n")}`;
       resolve.push({ filter: new RegExp(`^@/components/ui/${module}$`), to: `__ui_${module}__` });
     }
     return { stubs, resolve };

@@ -63,7 +63,10 @@ const GRAPH_REACHING_ALLOWLIST = new Set([
   // only the normalizer, for the code readers' driver-free port (179/ADR-004). The graph:build and
   // graph:impact faces reach the graph only through the port, so they left this list.
   path.join("packages/core/src/application/bindings/knowledge-engine.mjs"),
-  path.join("packages", "knowledge", "src", "graphify-code-backend.mjs"),
+  // PR #22 — the backend's read half, split into its own module so the code readers' port reaches
+  // no part of the build (77/FF-7703). The same reader, moved: the backend imports it and no longer
+  // imports the normalizer itself, so it left this list.
+  path.join("packages", "knowledge", "src", "graphify-code-relations.mjs"),
   // 179/ADR-004 — test selection, the story-contract derivation and the seam-liveness lane, with
   // their three core bindings, left this list: each asks the code corpus's `relations` through the
   // port, so the binding above is the one reacher they share.

@@ -308,8 +308,8 @@
     "kind": "child-process",
     "expression": "spawn(file, args, { windowsHide: true, ...(spawnOptions?.env ? { env: spawnOptions.env } : {}) })",
     "digest": "5d30e9e3a26063a12637d6a2691dc9a2146bf2d0681763f22b946fab3cc9cddf",
-    "sourceDigest": "0f3f409b4d98274b5a23087e897fa90a0f2f2100571f069e917149eb296d92ba",
-    "reason": "Preflight process port probes the desktop executable selected by the desktop resolver. Native app paths remain Plan 04 current layout. 175/03 re-reviewed: still the one injected runner, spawning only the file and argv it is handed with no shell; an optional env is passed through so the darwin daemon probe runs `claude auth status` with exactly the LaunchAgent PATH and HOME."
+    "sourceDigest": "683a271dd61de5d9493431e4288c97fa61cdab0489eba02a427c364dba14ce82",
+    "reason": "Preflight process port probes the desktop executable selected by the desktop resolver. Native app paths remain Plan 04 current layout. 175/03 re-reviewed: still the one injected runner, spawning only the file and argv it is handed with no shell; an optional env is passed through so the darwin daemon probe runs `claude auth status` with exactly the LaunchAgent PATH and HOME. 175/F-09 re-reviewed at PR #22: the probe's env gained USER and LOGNAME (launchd's per-user set); the call is the same injected runner over the file and argv it is handed, with no shell."
   },
   {
     "file": "packages/mesh/src/fabric.mjs",
@@ -356,16 +356,16 @@
     "kind": "child-process",
     "expression": "execFile(\"git\", args, { cwd, env, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) => {\n      if (error && (error.code === \"ENOENT\" || error.killed || error.signal)) {\n        reject(error);\n        return;\n      }\n      resolve({ stdout: String(stdout ?? \"\"), stderr: String(stderr ?? \"\"), status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0 });\n    })",
     "digest": "9ad28354e3ccdef15c04c6e9e272c1aa2a84311b4eb4902c9671f8f6552abae6",
-    "sourceDigest": "7982c392575a035812e8ad78062e98946e0c65fd2755f10949a71852303c8499",
-    "reason": "The exec port wraps Git clone of the admitted repository using the explicit credential environment."
+    "sourceDigest": "25a5b1019da40f802f76345cda4757566abb2a78c7785d40e67ce1f05e450019",
+    "reason": "The exec port wraps Git clone of the admitted repository using the explicit credential environment. TECH_DEBT 4 (D) re-reviewed at PR #22: the module gained read-only checkout checks (access, readFile) and a reuse path that skips the clone; the git call and its credential environment are unchanged."
   },
   {
     "file": "packages/mesh/src/worker-repo-admission.mjs",
     "kind": "child-process",
     "expression": "exec([\"-c\", \"credential.helper=\", \"clone\", cloneUrl, checkoutPath], { env: cloneEnv })",
     "digest": "666d14055cc86113bc2184c0cac700b9889b101ac3f115f4cc6f442628b13e8b",
-    "sourceDigest": "7982c392575a035812e8ad78062e98946e0c65fd2755f10949a71852303c8499",
-    "reason": "The exec port wraps Git clone of the admitted repository using the explicit credential environment."
+    "sourceDigest": "25a5b1019da40f802f76345cda4757566abb2a78c7785d40e67ce1f05e450019",
+    "reason": "The exec port wraps Git clone of the admitted repository using the explicit credential environment. TECH_DEBT 4 (D) re-reviewed at PR #22: the module gained read-only checkout checks (access, readFile) and a reuse path that skips the clone; the git call and its credential environment are unchanged."
   },
   {
     "file": "packages/server/src/terminal-ws.mjs",
@@ -707,16 +707,16 @@
     "file": "scripts/test-workspace.mjs",
     "kind": "child-process",
     "expression": "spawnSync(process.execPath, ['--test', ...files], { cwd: root, encoding: 'utf8', timeout: 90_000,\n      windowsHide: true, env: { ...process.env, AOF_GLOBAL_HOME: home } })",
-    "digest": "6a4ea0d5eaedf13accaa8cc6ae5d3b8a455913ac4759e12c30cfc2148fc95c69",
-    "sourceDigest": "ddcde43b7a749307f1b8d5a0d5dc4bcb6207eda15ee2380c13c1c3f6726ba567",
-    "reason": "Loads only the discovered owned .suite.mjs arrays and runs actual native .test.mjs files in an isolated child. Every suite must export executable cases and every native run must report a nonzero case count."
+    "digest": "4b5f07482dd8b57989b100aa2f3b09e7320760cca7e4049154730daaf1148651",
+    "sourceDigest": "bdd630a36be792dbc4eb7b80eb2c2c63b39b5c4999e35bbf26c5b5f1c83a7d8c",
+    "reason": "Loads only the discovered owned .suite.mjs arrays and runs actual native .test.mjs files in an isolated child. Every suite must export executable cases and every native run must report a nonzero case count. PR #22 re-reviewed: the run names `--test-reporter=tap`, the format its count is parsed from (Node 23+ defaults to spec); nothing else changed."
   },
   {
     "file": "scripts/test-workspace.mjs",
     "kind": "computed-import",
     "expression": "import(pathToFileURL(file).href)",
     "digest": "157543e2e2f928070ac3d45cc6cdbdc13ed54a580d73cd3b48c2e137b1c3945c",
-    "sourceDigest": "ddcde43b7a749307f1b8d5a0d5dc4bcb6207eda15ee2380c13c1c3f6726ba567",
+    "sourceDigest": "bdd630a36be792dbc4eb7b80eb2c2c63b39b5c4999e35bbf26c5b5f1c83a7d8c",
     "reason": "Loads only the discovered owned .suite.mjs arrays and runs actual native .test.mjs files in an isolated child. Every suite must export executable cases and every native run must report a nonzero case count."
   },
   {

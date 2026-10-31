@@ -31,6 +31,22 @@ doc: verification
   `arch/46 ADR-004` and `audit-spawn/03` were red only under the three-lanes-at-once contention,
   and are green alone. After `c8a236e3`, `yarn ui:build` is green. So are the UI, surfaces and arch
   ui/testing/loop/bundle/audit indexes (2,335 cases), apart from the recorded reds above.
+
+  **Amended at PR #22 (2026-10-31).** "Not routed" was wrong for four of those reds. They predate
+  180, but not the branch, and CI on PR #22 (Linux) failed on exactly these four:
+  - `acd-hook-rule-detects-never-writes`;
+  - FF-5810;
+  - `command-core`'s two native cases;
+  - `workspace-boundaries`.
+
+  All four are fixed on the branch:
+  - The graphify code backend's read half moved to `graphify-code-relations.mjs`, so the audit
+    family no longer reaches `graph-bundle.mjs`'s file writes.
+  - The loop document's `createMemory` citation is `:12`.
+  - The services stub declares `RECORD_CORPORA`, and the catalog count is 134 for 178's `memory`.
+  - The two mesh modules are re-audited.
+
+  None of the realpath, gpg or timeout reds failed on CI. They are this Mac's alone.
 - **The documentation describes one memory node** (`@manual`, 180/01 task 03) — verifies →
   `stories/01_story_the-memory-node-is-read-in-one-place/tasks/03_the-faces-print-the-new-paths.feature`.
   Procedure: grep `README.md`, `wiki/memory.md`, `wiki/codex-support.md` and

@@ -6,7 +6,7 @@ import {createLocalIndexing} from '@aof/knowledge/memory/local-indexing';
 import {createLocalBackend} from '@aof/knowledge/memory/local-backend';
 import {createGraphBuildCommand} from '@aof/knowledge/commands/graph-build';
 import {createGraphifyCodeBackend} from '@aof/knowledge/graphify-code-backend';
-import {createKnowledgeEngine} from '@aof/knowledge/engine';
+import {createKnowledgeEngine,RECORD_CORPORA} from '@aof/knowledge/engine';
 import {createKnowledgeContribution,KNOWLEDGE_COMMAND_IDS} from '@aof/knowledge/commands';
 import {createImportStore} from '@aof/knowledge/import/store';
 import {createImportRecovery} from '@aof/knowledge/import/recovery';
@@ -70,7 +70,7 @@ test('import command writes a colocated digest only on execution and reindexes t
 }));
 
 test('memory loads only the selected backend and help never loads one',async()=>{
- const calls=[];const backend={name:'local',recall:async()=>({query:'fixture',scope:{},records:[],text:''})};
+ const calls=[];const backend={name:'local',corpora:RECORD_CORPORA,reindex:async()=>({}),recall:async()=>({query:'fixture',scope:{},records:[],text:''}),status:async()=>({})};
  const api=createMemory({loadLocalBackend:async()=>{calls.push('local');return backend;},loadGraphifyBackend:async()=>{calls.push('graphify');throw Error('unexpected backend');}});
  assert.deepEqual(calls,[]);
  assert.equal(await api.runMemoryVerb({verb:'reindex',help:true},{config:{memory:{backend:'graphify'}}}),api.memoryUsage());

@@ -1,11 +1,8 @@
-import { existsSync } from "node:fs";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 import { GRAPHIFY_BACKENDS } from "./graphify-backends.mjs";
-import { computeImpact } from "./graph-impact.mjs";
 import { hashTree, inputsCurrent, listCloneFiles, stampInputs } from "./graph-bundle.mjs";
-import { graphArtifactBuiltAt as artifactBuiltAt, graphJsonPath as artifactPath, normalizeGraph as normalizeArtifact, readGraph as readArtifact } from "./graph-normalize.mjs";
-import { createKnowledgeEngine } from "./engine.mjs";
+import { createCodeGraphReader } from "./graphify-code-relations.mjs";
 
 // The graphify CODE backend (milestone 179, ADR-002) — the one module that builds the code graph,
 // reads its edges and reports its absence, behind the knowledge-engine port. It declares
@@ -221,43 +218,6 @@ export function createGraphifyCodeBackend({ resolveGraphifyBinary, runGraphifyBu
   });
 
   return { graphifyCodeBackend, readBuiltGraph };
-}
-
-// THE READ HALF — availability and `relations` — needs the normalizer and the edge walk, and no
-// driver: reading the code graph never resolves, starts or spawns graphify.
-function createCodeGraphReader({ readGraph, normalizeGraph, graphJsonPath, graphArtifactBuiltAt }) {
-  // The one availability check `relations` and `status` share. The artifact is read on every
-  // call; `cause` is the read error's code, else its message.
-  function availability(projectRoot) {
-    const artifact = graphJsonPath(projectRoot);
-    if (!existsSync(artifact)) return { available: false, unavailable: "no-graph", cause: "ENOENT", artifact, builtAt: null, graph: null };
-    try {
-      const graph = normalizeGraph(readGraph(artifact));
-      return { available: true, unavailable: null, artifact, builtAt: graphArtifactBuiltAt(artifact), graph };
-    } catch (error) {
-      return { available: false, unavailable: "graph-unreadable", cause: error?.code ?? error?.message ?? "unreadable", artifact, builtAt: null, graph: null };
-    }
-  }
-
-  //   result { served: true, available, unavailable, artifact, builtAt, files[, cause] }
-  //   files[i] { file, present, dependencies, dependents }
-  async function relations(paths, ctx) {
-    const { graph, cause, ...answer } = availability(ctx.projectRoot);
-    if (!answer.available) return { served: true, ...answer, cause, files: [] };
-    return { served: true, ...answer, files: computeImpact(graph, paths) };
-  }
-
-  return { availability, relations };
-}
-
-// The code readers' port (179/ADR-004): test selection, contract derivation and seam liveness ask
-// `relations` and nothing else, so they are handed a port over the read half alone — composed
-// here from the normalizer's own functions, with no driver behind it. A process the audit family
-// reaches is one it can start (59/FF-5904); this port reaches none.
-export function createCodeRelations() {
-  const { relations } = createCodeGraphReader({ readGraph: readArtifact, normalizeGraph: normalizeArtifact, graphJsonPath: artifactPath, graphArtifactBuiltAt: artifactBuiltAt });
-  const reader = Object.freeze({ name: "graphify", corpora: Object.freeze({ code: Object.freeze(["relations"]) }), relations });
-  return createKnowledgeEngine({ backends: [reader] }).relations;
 }
 
 function buildResult({ graphPath, projectRoot, backend, egress, normalized, builtAt, unchanged, stdout }) {

@@ -25,7 +25,7 @@ const READERS = Object.freeze(["readGraph", "normalizeGraph", "computeImpact"]);
 const READER_HOMES = /(^|\/)(graph-normalize|graph-impact)(\.mjs)?$/u;
 
 export const ONE_READER_ALLOWLIST = Object.freeze({
-  "packages/knowledge/src/graphify-code-backend.mjs": "the code corpus's one reader, behind the knowledge-engine port (179/ADR-002)",
+  "packages/knowledge/src/graphify-code-relations.mjs": "the code corpus's one reader, behind the knowledge-engine port (179/ADR-002); the backend's read half, split from its build at PR #22 so the read-only audit family imports no file writer (77/FF-7703)",
   "packages/knowledge/src/graph-normalize.mjs": "defines readGraph and normalizeGraph, the artifact's location and shape home",
   "packages/knowledge/src/graph-impact.mjs": "defines computeImpact, the pure edge walk",
   "packages/knowledge/src/graphify.mjs": "the graphify driver re-exports the normalizer for its build verbs",
@@ -100,7 +100,7 @@ export const archTests = [
       const importers = new Set(readerImports(files).map((hit) => hit.rel));
       for (const rel of importers) assert.ok(Object.hasOwn(ONE_READER_ALLOWLIST, rel), `${rel} is allowed`);
       assert.deepEqual([...importers].filter((rel) => rel.startsWith("packages/core/src/application/bindings/")), [], "no core binding imports any of the three");
-      assert.ok(importers.has("packages/knowledge/src/graphify-code-backend.mjs"), "…and the code backend genuinely is a reader, so this is one reader and not none");
+      assert.ok(importers.has("packages/knowledge/src/graphify-code-relations.mjs"), "…and the code backend's read half genuinely is a reader, so this is one reader and not none");
     },
   },
   {
