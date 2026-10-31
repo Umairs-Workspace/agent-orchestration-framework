@@ -143,10 +143,13 @@ export const archTests = [
       // 171 F-171-01 moves the byte gate out of the session screen into `@aof/contracts/tui-ready`, a
       // zero-import contracts leaf the browser's dock reads too, so 39 -> 40 with no lifecycle, provider or mesh edge.
       assert.ok(graph.seen.has(path.join(root, "packages/contracts/src/tui-ready.mjs")), "171 F-171-01 adds the byte gate's leaf through the session screen");
-      assert.equal(graph.seen.size, 40, "the 31-module assembly plus seven explicitly owned Codex/policy and observation leaves, the cost meter, and the byte gate");
+      // 181: the driver and the Codex adapter read the phase-completion contract from runtime-session.mjs,
+      // an execution module whose own imports are node built-ins alone, so 40 -> 41 with no lifecycle,
+      // provider or mesh edge.
+      assert.equal(graph.seen.size, 41, "the 31-module assembly plus seven explicitly owned Codex/policy and observation leaves, the cost meter, the byte gate, and the phase-completion contract's module");
       assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/otel-attribution", "@aof/execution/pty", "@aof/execution/session-driver", "@aof/work/phase-brief"], "the adapter uses only the two execution APIs");
       const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
-      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/contracts/src/tui-ready.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-executable.mjs", "packages/execution/src/codex-process-environment.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-events.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs"], "native transport and observation stay in execution; no work, mesh or core import is introduced");
+      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/contracts/src/tui-ready.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-executable.mjs", "packages/execution/src/codex-process-environment.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-events.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/runtime-session.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs"], "native transport and observation stay in execution; no work, mesh or core import is introduced");
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
       const terminalWs = path.join(root, "packages/server/src/terminal-ws.mjs");

@@ -171,7 +171,10 @@ async function driveAndCountSpawns(options) {
 // asks for the four-line form of the ask. It is an expected succession of this pin, not a drift: the
 // instruction still produces the needs-input signal, and this row still proves the envelope adds
 // nothing to an attended launch (both arms are compared against the same capture).
-const BEFORE_INSTRUCTION = "sha256:e596821e200cd16ae2932b02f1f54d5194d7effc06dff6d670734be79118eaee";
+// Re-captured at 181 (merged with main): `DIRECTIVE_COMPLETE_INSTRUCTION`, which every driven session
+// carries beside `NEEDS_INPUT_INSTRUCTION`, now opens with the phase-completion contract — completion
+// is independent of the verdict. The same succession: the needs-input text is unchanged.
+const BEFORE_INSTRUCTION = "sha256:ab3f858c3834cbd092bf14a71f2b8c9ca50560c1d62e5205d0c6a55bc09e5ee7";
 const BEFORE_FLAGS = Object.freeze([
   "--permission-mode",
   "auto",
