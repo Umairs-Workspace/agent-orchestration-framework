@@ -69,6 +69,28 @@ restore the file, then run the control green again. After the three probes `git 
   - Without a graph, `aof test --scope impacted` widens to `scope all`.
   - `graphify-out/` appears after the review's graph build.
 
+### F-02 re-check: a teaching session no longer strands its run (live, 2026-11-01)
+
+- **Procedure.**
+  1. Re-use 188/04's test bed: reset it to `2ad507c`, then `aof work update` to re-render it with
+     `ff3a4410`'s `teach.md`. The rendered prompt carries "Close it before this command's own turn
+     ends".
+  2. Run one `claude -p "/aof:teach 00"` session (`claude-opus-5-5`, `--permission-mode auto`,
+     `--max-budget-usd 1.50`, isolated `AOF_GLOBAL_HOME`).
+  3. Read `aof work run-status 00`.
+  4. Mint the next run on the story, as `aof:review` step 1 does.
+- **Observed.**
+  - 10 Bash calls, with no Write or Edit. The session's last call was
+    `aof work run-complete 00 --outcome done`, and `run-status` then answers run
+    `20261101T110818333Z-0000` as `state: done`.
+  - The next `aof work run-start 00` minted `20261101T110913834Z-0001` and was **not refused
+    `duplicate-run`**. It was then closed `done`.
+  - Only `STORY.md`'s status line and `runs/` changed, and `src/` and `test/` were untouched.
+  - The session ended "taught. `00` is yours to build", naming `aof:review 00` and both exits.
+  - Cost: $0.41.
+- verifies → 188/02 tasks/02_a-teaching-session-never-strands-its-run.feature E1–E2 (the runtime
+  half QA recorded as pinned in prose only).
+
 ### Regression gate (whole tree)
 
 - `aof work regression-gate 188` at `55f24c9f`: **red**. 14,155 of 14,155 cases ran, with 24 units
@@ -101,7 +123,7 @@ Recall was run per finding (`aof memory ingest`, then `aof memory recall "<text>
 | id | observed | type | severity | triage | routed-to | status |
 |---|---|---|---|---|---|---|
 | F-01 | `acd-run-records-name-no-machine` is red at the whole-tree gate. Nine tracked run records sit under `runs/umairs-mac-mini/` and carry `node: "umairs-mac-mini"`, neither opaque nor baselined: eight of 188's (milestone and stories 00–04) and one of spike 187's. The live identity here is `nodeId: "umairs-mac-mini"`, `derivedFrom: "Umairs-Mac-mini.local"`. The prior occurrence is m131/F-131-01, same cause: records written under a machine-name node. | regression | blocker | Re-identify the node (`aof mesh identity --reidentify`) and move the nine records to the opaque id, as 2026-09-23 did, or baseline the segment with a written reason. | operator chose re-identify, 2026-11-01. `aof mesh identity --reidentify` gave `umairs-mac-mini → node-9549`, the opaque id the enrollment credential and node record already named (the hostname form had come back to `identity.json` on 2026-10-19). The nine records were moved to `runs/node-9549/` with their `node` key rewritten, and the control is green (8/8). | closed |
-| F-02 | A teaching session that ends without stop, green or hand-off leaves its run `running`. teach.md step 7 closes it only on those three events. The next `/aof:review 00`, the hand-back ADR-003 §5 names, was refused `duplicate-run`, and the run was not stale, so nothing reclaimed it. A distinct incident: m68/F-04 also leaked a running run, but from `drive.mjs`. | defect | blocker | New `@bug` task 188/02 tasks/02, and 02 returns to `in-progress`. | `aof:continue 188/02` | open |
+| F-02 | A teaching session that ends without stop, green or hand-off leaves its run `running`. teach.md step 7 closes it only on those three events. The next `/aof:review 00`, the hand-back ADR-003 §5 names, was refused `duplicate-run`, and the run was not stale, so nothing reclaimed it. A distinct incident: m68/F-04 also leaked a running run, but from `drive.mjs`. | defect | blocker | New `@bug` task 188/02 tasks/02, and 02 returns to `in-progress`. | `aof:continue 188/02`: fixed at `ff3a4410`, and proved live (see "F-02 re-check") | closed |
 | F-03 | `ARCHITECTURE.md` declares FF-17903 at `test/arch/bundle/acd-teach-vocabulary-one-home.test.mjs`, which is not a file on disk. Doctor: `control-unresolved` (warn, pending). The control landed at `test/arch/command/…` (STATE, 188/03). The register also still marks all three controls `pending`. Same cause as m57/F-57-03-3. | doc-gap | blocker (accept rule) | Correct the register's path and drop the `pending` markers, ratifying review 188/03's routing (a). | operator ratified 2026-11-01; register edited at this verify | closed |
 | F-04 | ADR-007 says the `teach` member "declares `runtimes: ["claude"]` and carries no Codex variant, so Codex and OpenCode render no `teach`". The render engine maps every command to Codex. The shipped mechanism is the member's `mapped: false` key, read in `bundle-runtime.mjs:94` (STATE, review 188/02 routing (a)). | doc-gap | non-blocker | Supersede ADR-007's sentence. No delivered `.feature` changes. | operator ratified 2026-11-01; ADR-007 amended at this verify | closed |
 | F-05 | 188/04 E3's Then ("`git diff` after the review is identical to `git diff` before it") cannot hold on a clean review: review.md step 7 must move STORY.md to `in-review`. The intent, that the human's build is untouched, held: `src/` and `test/` were byte-identical in both runs. | contract | non-blocker | Reword E3 to "every file under `files:` is unchanged". | backlog (with 188/04's contract) | open |
