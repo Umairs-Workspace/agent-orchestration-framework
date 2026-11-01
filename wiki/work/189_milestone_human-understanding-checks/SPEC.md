@@ -3,10 +3,10 @@ type: milestone
 number: 189
 slug: human-understanding-checks
 title: "The human can check understanding separately from shipping success"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-01
 schema: 1
 aofVersion: 0.1.0
 origin: wiki/planning/PRD-human-led-learning.md
@@ -65,7 +65,14 @@ learning answer or an agent's assessment to write a delivery sign-off. Its bound
 
 ## Stories
 
-To be broken down after promotion; no stories or task contracts are authored in this shatter.
+Cut at refine, 2026-11-01 (ARCHITECTURE ADR-006). 00 → 01 → 02 in sequence; 03 runs beside them;
+04 waits for 02 and 03.
+
+- [ ] [00 · `aof:grill-me` ships for Claude Code and writes nothing](stories/00_story_grill-me-ships-and-writes-nothing/STORY.md)
+- [ ] [01 · A check separates unaided from assisted, and reports both halves apart](stories/01_story_a-check-separates-unaided-from-assisted/STORY.md)
+- [ ] [02 · A real check session keeps the halves apart](stories/02_story_a-real-check-session-keeps-the-halves-apart/STORY.md)
+- [ ] [03 · The pilot kit is reproducible](stories/03_story_the-pilot-kit-is-reproducible/STORY.md)
+- [ ] [04 · The pilot runs and is reported](stories/04_story_the-pilot-runs-and-is-reported/STORY.md)
 
 ## Dependencies
 
