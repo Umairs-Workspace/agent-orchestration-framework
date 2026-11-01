@@ -84,6 +84,7 @@ const LEDGER_READERS = {
   "packages/work/src/memory-accounting.mjs": 'selects kind === "recall" and skips raw and classification rows; a bad row is a diagnostic, never a count',
   "packages/knowledge/src/memory/episodic-indexing.mjs": 'indexes kind === "raw" rows as feedback records; classification and recall rows become nothing (157/ADR-001)',
   "packages/core/src/application/bindings/memory/local-indexing.mjs": "injects the parser and path into the episodic indexer; reads no row itself",
+  "packages/work/src/renumber.mjs": 'rewrites the moved refs (scope.item, records[].item) in kind === "recall" rows only; raw and classification rows keep their bytes, and a ledger changed since the plan refuses the move',
 };
 
 async function sourceFiles(dir) {

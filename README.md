@@ -30,9 +30,9 @@ Use `aof work renumber <ref> --to <number>` to move one live numbered item to a 
 
 `aof work renumber 175 --to 181 --dry-run` previews the paths and references; omit `--dry-run` to apply. The verb preserves status, updates current work-document references, publishes the existing stream remap, and rebuilds the full configured memory index. Held items are refused before writing.
 
-Recall observations and captured test evidence remain original. The stream's `.renumber-history.json` lets recall accounting follow earlier observations to the moved lesson; include that file when transferring the work stream to another checkout. It is not a permanent alias: a later item may reuse the old number. Source-code labels and bare prose numbers are not rewritten automatically. Inspect the returned remap when integrating across branches.
+Recall ledgers are updated in place: every recall that names the moved item, or a lesson of it, is rewritten to the new ref, so memory accounting needs no side file and a later item that reuses the old number inherits nothing. Captured test evidence and run records are left as they were. Source-code labels and bare prose numbers are not rewritten automatically. Inspect the returned remap when integrating across branches.
 
-If memory refresh fails after the move, the result reports `moved: true` and exits nonzero; run `aof work memory ingest` to recover. An abrupt interruption during filesystem edits requires inspecting the source, destination and history before retrying. Do not renumber work held by a running phase.
+If memory refresh fails after the move, the result reports `moved: true` and exits nonzero; run `aof work memory ingest` to recover. An abrupt interruption during filesystem edits requires inspecting the source and destination before retrying. Do not renumber work held by a running phase.
 
 ## Local setup
 
