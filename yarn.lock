@@ -85,6 +85,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@aof/learning@workspace:*, @aof/learning@workspace:packages/learning":
+  version: 0.0.0-use.local
+  resolution: "@aof/learning@workspace:packages/learning"
+  dependencies:
+    "@aof/contracts": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@aof/mesh@workspace:*, @aof/mesh@workspace:packages/mesh":
   version: 0.0.0-use.local
   resolution: "@aof/mesh@workspace:packages/mesh"
@@ -123,6 +131,7 @@ __metadata:
     "@aof/integration-hyperagent": "workspace:*"
     "@aof/integration-notion": "workspace:*"
     "@aof/knowledge": "workspace:*"
+    "@aof/learning": "workspace:*"
     "@aof/mesh": "workspace:*"
     "@aof/messaging": "workspace:*"
     "@aof/server": "workspace:*"
@@ -2632,6 +2641,7 @@ __metadata:
     "@aof/integration-hyperagent": "workspace:*"
     "@aof/integration-notion": "workspace:*"
     "@aof/knowledge": "workspace:*"
+    "@aof/learning": "workspace:*"
     "@aof/mesh": "workspace:*"
     "@aof/messaging": "workspace:*"
     "@aof/server": "workspace:*"

@@ -192,7 +192,7 @@
         "id": "aof-continue",
         "kind": "skill"
       },
-      "hash": "sha256:df9eabab24c3989095db00d29881492b414cccabc25caf7c8ee1e327eec1430d"
+      "hash": "sha256:4f3c5bd9dfc4770255b55f115dae04c4f5c1129b7a55525f9773546f740fa524"
     },
     {
       "path": ".agents/skills/aof-continue/agents/openai.yaml",
@@ -210,7 +210,7 @@
         "id": "aof-continue",
         "kind": "skill"
       },
-      "hash": "sha256:9946b374b0c861f3f26ca7d8771cf2c2ba22304c4a46b98710c896502b83f56d"
+      "hash": "sha256:dc49cf5b7ec9ebb86b61a65acbe54959bad43d2caa6e94bcf6a87a03c1862507"
     },
     {
       "path": ".agents/skills/aof-delegate/SKILL.md",
@@ -418,6 +418,33 @@
         "kind": "skill"
       },
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
+    },
+    {
+      "path": ".agents/skills/aof-manual/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-manual",
+        "kind": "skill"
+      },
+      "hash": "sha256:9dea65be483e323476ea4d2dab4a704b51365e38b42b43c190c4cdc767cc6c4c"
+    },
+    {
+      "path": ".agents/skills/aof-manual/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-manual",
+        "kind": "skill"
+      },
+      "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
+    },
+    {
+      "path": ".agents/skills/aof-manual/procedure.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-manual",
+        "kind": "skill"
+      },
+      "hash": "sha256:cdcc659d57a4cfdd781a1298c9b5ad736177c0242bf9952450a68aa57d9b05bc"
     },
     {
       "path": ".agents/skills/aof-migrate/SKILL.md",
@@ -651,7 +678,7 @@
         "id": "aof-review",
         "kind": "skill"
       },
-      "hash": "sha256:bf0820773b4d8c13fc32b4b3c83ed959b586a44a1a73e8973e6030424dd0311a"
+      "hash": "sha256:125e691c96bf4f8e6a31671eddcf2e7ea7a715ba4311b49cfb31bc08cc8d2e0e"
     },
     {
       "path": ".agents/skills/aof-shatter/SKILL.md",
@@ -1245,7 +1272,7 @@
         "id": "continue",
         "kind": "command"
       },
-      "hash": "sha256:a4f18c93e9f59d116e22a569b82e3b1589728e41ea42ab3a07b9f1b173aeac05"
+      "hash": "sha256:f785de0f3f4b6907fd1090ec40aa680c165fe0e1deb2727bd93d18ed3bc2a9e7"
     },
     {
       "path": ".claude/commands/aof/delegate.md",
@@ -1347,6 +1374,15 @@
       "hash": "sha256:b911fc4c1cb5f1dd88f9feb9cf7c6839c5d22412a0577d71287d1174a41a33b3"
     },
     {
+      "path": ".claude/commands/aof/manual.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "manual",
+        "kind": "command"
+      },
+      "hash": "sha256:fda7cdc039b6a18ac6557afefbf8a87cd5c5dd8c404e8695dc3eba88295c5cd0"
+    },
+    {
       "path": ".claude/commands/aof/migrate.md",
       "runtime": "claude",
       "resource": {
@@ -1443,7 +1479,7 @@
         "id": "review",
         "kind": "command"
       },
-      "hash": "sha256:6547ac7e1c770565a51d26da018c413e7e340a0ac04bd804172a8b951e0fe6e7"
+      "hash": "sha256:8905332acc9d9edd648df0857a731291d4a4fc63afc9909471cdb40e8890c82c"
     },
     {
       "path": ".claude/commands/aof/shatter.md",
@@ -1453,6 +1489,15 @@
         "kind": "command"
       },
       "hash": "sha256:138c46d0b71cab223c3fd3869b9a500118285d011fc604bc815d2e96df169546"
+    },
+    {
+      "path": ".claude/commands/aof/teach.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "teach",
+        "kind": "command"
+      },
+      "hash": "sha256:b2af71b39b2cd2c778a433fbd536a9e5b868752e9eca34a159354908e0665de7"
     },
     {
       "path": ".claude/commands/aof/validate.md",

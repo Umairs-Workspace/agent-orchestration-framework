@@ -3,7 +3,7 @@ description: Review the operator's own build of a story — run its tests, walk 
 ---
 
 <objective>
-The operator built this story by hand — usually after `aof:continue <ref> --manual` handed them a
+The operator built this story by hand — usually after `aof:manual <ref>` handed them a
 guide. Review that build exactly as an agent's build is reviewed, and hand every finding back to the
 operator, who fixes it. Build nothing, fix nothing, and edit none of the operator's code: a clean
 review moves the story to `in-review`, ready for `aof:verify <ref>`.
@@ -60,6 +60,10 @@ as written. This file holds only what differs from them.
    the verdict. A file reported `present: false` is ranked UNKNOWN, never zero. A
    `graphify-missing`, `graphify-build-failed` or `graphify-no-persist` answer means the review runs
    unranked, with no block; a build reporting `unchanged: true` is a current graph, so rank with it.
+   A `graphify-spawn-failed`, `graphify-timeout`, or sandbox permission failure (including `EPERM`)
+   has the same advisory fallback. Record the unavailable graph and reason, then review the source
+   without graph ranking. Do not request elevated access, change permissions, install tools, or
+   retry outside the sandbox just to obtain this advisory graph.
 6. **Run the review lanes** — continue's review step and its `<review_rounds>` region, over the
    change named in step 3, with these differences and no others:
    - **`aof-developer` is never spawned, and no review lens applies a fix.** A lens reports; the

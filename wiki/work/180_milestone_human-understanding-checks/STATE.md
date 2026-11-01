@@ -10,6 +10,10 @@ doc: state
 ## Notes & decisions in flight
 
 - Operator review, promotion and refinement remain pending. See SPEC.md for dependencies and the PRD for open questions.
+- 2026-10-28 — Operator: the learning module is a new package, created by 179 (see 179 SPEC
+  Objective and STATE). 180's understanding checks are built in that package, not in core.
+  Inherited from spike 178: the line between assisted and unaided work is an instruction-level
+  boundary within one session, not an enforced one, so the pilot states it as a limitation.
 
 ## Verification
 

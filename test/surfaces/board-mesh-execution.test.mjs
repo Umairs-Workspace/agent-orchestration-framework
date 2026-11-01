@@ -444,7 +444,7 @@ export const boardMeshExecutionTests = [
 // ---- 149 task 01 — manual is one story, run here, at every door -------------------------------------
 //
 // W is an on-disk mesh workspace (`w1`, this node `node-7297`) holding story 149, milestone 148 with
-// story 148/01, and uat session 32, under an isolated aof home per case. Mesh rows are written through
+// story 148/01, milestone 179 with story 179/01, and uat session 32, under an isolated aof home per case. Mesh rows are written through
 // the assignment store's own writers; the door is the registered `work:continue`, and the refine and
 // verify rows go through the real CLI so the unknown-flag refusal is the parser's own.
 const CLI = path.join(REPO_ROOT, "packages", "core", "bin", "aof.mjs");
@@ -468,6 +468,11 @@ async function manualWorld(body) {
     await mkdir(path.join(milestone, "stories", "01_story_first", "tasks"), { recursive: true });
     await writeFile(path.join(milestone, "SPEC.md"), doc("milestone", "148", "vocabulary"), "utf8");
     await writeFile(path.join(milestone, "stories", "01_story_first", "STORY.md"), doc("story", "01", "first", 'parent: "148"\n'), "utf8");
+    // 179/01 — milestone 179 with story 179/01, the refs the teaching rows name.
+    const learning = path.join(work, "179_milestone_learning");
+    await mkdir(path.join(learning, "stories", "01_story_teach", "tasks"), { recursive: true });
+    await writeFile(path.join(learning, "SPEC.md"), doc("milestone", "179", "learning"), "utf8");
+    await writeFile(path.join(learning, "stories", "01_story_teach", "STORY.md"), doc("story", "01", "teach", 'parent: "179"\n'), "utf8");
     await mkdir(path.join(work, "32_uat_acceptance"), { recursive: true });
     await writeFile(path.join(work, "32_uat_acceptance", "SESSION.md"), doc("uat", "32", "acceptance"), "utf8");
 
@@ -504,6 +509,8 @@ async function manualWorld(body) {
       149: () => statusOf(path.join(story, "STORY.md")),
       148: () => statusOf(path.join(milestone, "SPEC.md")),
       32: () => statusOf(path.join(work, "32_uat_acceptance", "SESSION.md")),
+      179: () => statusOf(path.join(learning, "SPEC.md")),
+      "179/01": () => statusOf(path.join(learning, "stories", "01_story_teach", "STORY.md")),
     };
     const cli = (...argv) => spawnSync(process.execPath, [CLI, ...argv], { cwd: repo, encoding: "utf8", env: { ...process.env, ...env, NODE_NO_WARNINGS: "1" } });
     return await body({ door, refusal, execution, assignmentsFor, status, cli });
@@ -515,17 +522,19 @@ async function manualWorld(body) {
 function manualDoorTests() {
   return [
     {
-      name: "149/01 E7 — the CLI door answers the manual command here, and starts the story",
+      // 179/00 E3 supersedes 149/01 E7's command text (179/ARCHITECTURE ADR-001 §5, ADR-002 §3): a local
+      // manual continue names the manual command of its own, as a milestone continue names autonomous.
+      name: "179/00 E3 — a local manual continue names the manual command and starts the story",
       run: () => manualWorld(async ({ cli, status }) => {
         const json = cli("work", "continue", "149", "--manual", "--json");
         assert.equal(json.status, 0, json.stderr);
         const result = JSON.parse(json.stdout);
         assert.equal(result.where, "local");
-        assert.equal(result.command, "/aof:continue 149 --manual");
+        assert.equal(result.command, "/aof:manual 149");
         assert.equal(await status[149](), "in-progress", "a local manual continue starts the story as any local continue does");
         const plain = cli("work", "continue", "149", "--manual");
         assert.equal(plain.status, 0, plain.stderr);
-        assert.equal(plain.stdout.trim(), 'Continue "149" here — run: /aof:continue 149 --manual');
+        assert.equal(plain.stdout.trim(), 'Continue "149" here — run: /aof:manual 149');
       }),
     },
     {
@@ -543,7 +552,8 @@ function manualDoorTests() {
       ["milestone 148 has never run", "148", "continue-manual-not-a-story", async () => {}],
       ["uat session 32 has never run", "32", "continue-manual-not-a-story", async () => {}],
     ].map(([state, ref, code, given]) => ({
-      name: `149/01 the door refuses a manual continue it cannot run here [${state} → ${code}]`,
+      // 179/00 holds these rows unchanged: the door's manual refusals, codes included, are 149's.
+      name: `149/01 + 179/00 the door's manual refusals are unchanged [${state} → ${code}]`,
       run: () => manualWorld(async (world) => {
         await given(world);
         const before = await world.assignmentsFor(ref);
@@ -555,7 +565,7 @@ function manualDoorTests() {
       }),
     })),
     {
-      name: "149/01 a manual continue of a story already running on a worker answers where it runs",
+      name: "149/01 + 179/00 a manual continue of a story already running on a worker answers where it runs",
       run: () => manualWorld(async ({ door, execution }) => {
         await execution("148", "running");
         const manual = await door({ ref: "148/01", manual: true });
@@ -582,13 +592,107 @@ function manualDoorTests() {
         }
       }),
     },
+    // ---- 179/01 task 00 — --teach is answered by the build door, with manual's refusals ----------------
+    //
+    // The door is the real assembly: core hands `@aof/learning`'s descriptor to the build door, so these
+    // rows prove the composition, not a stand-in mode.
+    {
+      name: "179/01 E1 — a local teaching continue names the teach command and starts the story",
+      run: () => manualWorld(async ({ cli, status }) => {
+        assert.equal(await status["179/01"](), "not-started");
+        const plain = cli("work", "continue", "179/01", "--teach");
+        assert.equal(plain.status, 0, plain.stderr);
+        assert.equal(plain.stdout.trim(), 'Continue "179/01" here — run: /aof:teach 179/01');
+        assert.equal(await status["179/01"](), "in-progress", "a local teaching continue starts the story as any local continue does");
+      }),
+    },
+    {
+      name: "179/01 E2 — a teaching continue of a milestone is refused before anything moves",
+      run: () => manualWorld(async ({ cli, status }) => {
+        const result = cli("work", "continue", "179", "--teach", "--json");
+        assert.notEqual(result.status, 0, "refused");
+        assert.equal(JSON.parse(result.stdout).code, "continue-teach-not-a-story");
+        assert.equal(await status[179](), "not-started", "179's status is unchanged");
+      }),
+    },
+    {
+      name: "179/01 E3 — a teaching continue on another node is refused and mints nothing",
+      run: () => manualWorld(async ({ cli, assignmentsFor, status }) => {
+        const result = cli("work", "continue", "179/01", "--teach", "--node", "node-2976", "--json");
+        assert.notEqual(result.status, 0, "refused");
+        assert.equal(JSON.parse(result.stdout).code, "continue-teach-remote");
+        assert.equal(await assignmentsFor("179"), 0, "no assignment exists for 179");
+        assert.equal(await assignmentsFor("179/01"), 0, "…nor for 179/01");
+        assert.equal(await status["179/01"](), "not-started");
+      }),
+    },
+    ...[
+      ["story 149's last run was on node-2976, none active", "149", "continue-teach-remote", (w) => w.execution("149", "done")],
+      ["milestone 148 has never run", "148", "continue-teach-not-a-story", async () => {}],
+      ["uat session 32 has never run", "32", "continue-teach-not-a-story", async () => {}],
+    ].map(([state, ref, code, given]) => ({
+      name: `179/01 teach is refused wherever manual is [${state} → ${code}]`,
+      run: () => manualWorld(async (world) => {
+        await given(world);
+        const before = await world.assignmentsFor(ref);
+        const error = await world.refusal({ ref, teach: true });
+        assert.equal(error.code, code);
+        assert.equal(error.status ?? error.statusCode ?? 409, 409);
+        assert.equal(await world.assignmentsFor(ref), before, "nothing is minted or dispatched");
+        assert.equal(await world.status[ref](), "not-started", "the item's status is unchanged");
+      }),
+    })),
+    {
+      name: "179/01 a teaching continue of a story already running on a worker answers where it runs",
+      run: () => manualWorld(async ({ door, execution }) => {
+        await execution("148", "running");
+        const teach = await door({ ref: "148/01", teach: true });
+        const plain = await door({ ref: "148/01" });
+        assert.equal(teach.where, "running");
+        assert.equal(teach.node, "node-2976");
+        assert.deepEqual(teach, plain, "exactly as without teach");
+      }),
+    },
+    {
+      name: "179/01 E4 — manual and teach together are refused before anything moves",
+      run: () => manualWorld(async ({ cli, assignmentsFor, status }) => {
+        const result = cli("work", "continue", "179/01", "--manual", "--teach", "--json");
+        assert.notEqual(result.status, 0, "refused");
+        assert.equal(JSON.parse(result.stdout).code, "continue-modes-exclusive");
+        assert.equal(await status["179/01"](), "not-started");
+        assert.equal(await assignmentsFor("179/01"), 0, "nothing is minted");
+      }),
+    },
+    {
+      name: "179/01 E5 — refine and verify do not take --teach",
+      run: () => manualWorld(async ({ cli, status }) => {
+        for (const phase of ["refine", "verify"]) {
+          const before = await status[149]();
+          const refused = cli("work", phase, "149", "--teach", "--json");
+          assert.notEqual(refused.status, 0, `${phase} refuses --teach`);
+          assert.match(JSON.parse(refused.stdout).error, /Unknown flag "--teach"/u);
+          assert.equal(await status[149](), before, `${phase}: nothing moves`);
+        }
+      }),
+    },
+    {
+      name: "179/01 the CLI usage and command inventory carry --teach",
+      run: async () => {
+        assert.equal(continueDoor.cli.spec.usage, "aof work continue <ref> [--node <id>] [--manual] [--teach] [--json]");
+        const inventory = JSON.parse(await readFile(path.join(REPO_ROOT, "test", "fixtures", "application", "command-inventory.json"), "utf8"));
+        const withTeach = inventory.filter((entry) => entry.input?.properties?.teach !== undefined).map((entry) => entry.id);
+        assert.ok(withTeach.includes("work:continue"), "work:continue takes teach");
+        for (const id of withTeach) assert.equal(id, "work:continue", `${id} declares no teach — it is an input of work:continue only`);
+        assert.deepEqual(inventory.find((entry) => entry.id === "work:continue").input.properties.teach, { type: "boolean" });
+      },
+    },
     {
       name: "149/01 the command inventory carries the new input on continue only",
       run: async () => {
         const inventory = JSON.parse(await readFile(path.join(REPO_ROOT, "test", "fixtures", "application", "command-inventory.json"), "utf8"));
         const row = (id) => inventory.find((entry) => entry.id === id);
         assert.deepEqual(row("work:continue").input.properties.manual, { type: "boolean" });
-        assert.equal(row("work:continue").cli.spec.usage, "aof work continue <ref> [--node <id>] [--manual] [--json]");
+        assert.equal(row("work:continue").cli.spec.usage, "aof work continue <ref> [--node <id>] [--manual] [--teach] [--json]", "179/01 adds --teach after --manual");
         assert.deepEqual(continueDoor.input.properties.manual, { type: "boolean" }, "the registry agrees");
         for (const id of ["work:refine", "work:verify"]) {
           assert.equal(row(id).input.properties.manual, undefined, `${id} declares no manual`);

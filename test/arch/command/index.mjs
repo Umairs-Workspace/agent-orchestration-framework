@@ -50,6 +50,12 @@ import { archTests as acdNoOtlpReceiverTests } from "./acd-no-otlp-receiver.test
 // `invokeGateLadder` rather than from a literal pair).
 import { archTests as acdPromptBoundsNameTheirHomeTests } from "./acd-prompt-bounds-name-their-home.test.mjs";
 import { archTests as acdPromptGateLadderParityTests } from "./acd-prompt-gate-ladder-parity.test.mjs";
+// milestone 179 / story 00 — FF-17901: `continue` builds only; an operator-led mode is its own command.
+import { archTests as acdContinueBuildsOnlyTests } from "./acd-continue-builds-only.test.mjs";
+// milestone 179 / story 01 — FF-17902: @aof/learning's dependencies run one way; @aof/work never names the practice.
+import { archTests as acdLearningPackageOneWayTests } from "./acd-learning-package-one-way.test.mjs";
+// milestone 179 / story 03 — FF-17903: the pedagogy has one home; teach.md spells every vocabulary entry.
+import { archTests as acdTeachVocabularyOneHomeTests } from "./acd-teach-vocabulary-one-home.test.mjs";
 import { archTests as acdNoGitBusReturnTests } from "./acd-no-git-bus-return.test.mjs";
 import { archTests as acdControlDispatchReclaimDriverWiredTests } from "./acd-control-dispatch-reclaim-driver-wired.test.mjs";
 import { archTests as acdSingleEntryCommandCoreTests } from "./acd-single-entry-command-core.test.mjs";
@@ -114,6 +120,9 @@ export const tests = [
   // driven by these two suites; it lands no runtime module of its own.
   ...acdPromptBoundsNameTheirHomeTests,
   ...acdPromptGateLadderParityTests,
+  ...acdContinueBuildsOnlyTests,
+  ...acdLearningPackageOneWayTests,
+  ...acdTeachVocabularyOneHomeTests,
   ...acdNoGitBusReturnTests,
   ...acdControlDispatchReclaimDriverWiredTests,
   ...acdSingleEntryCommandCoreTests,

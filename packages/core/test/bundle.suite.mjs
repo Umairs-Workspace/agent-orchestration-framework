@@ -63,6 +63,7 @@ const COMMAND_IDS = [
   "insert-story",
   "insert-uat",
   "loop-diagram",
+  "manual",
   "migrate",
   "observe",
   "pay-debt",
@@ -76,6 +77,7 @@ const COMMAND_IDS = [
   "retrospective",
   "review",
   "shatter",
+  "teach",
   "validate",
   "verify"
 ];
@@ -225,13 +227,119 @@ const reviewCommandBundleTests = [
   },
 ];
 
+// ── 179/00 — aof:manual joins the bundle: 149's guide as a command of its own ─────────────────────
+//
+// `179_milestone_human-led-problem-solving/stories/00_story_manual-becomes-its-own-command/tasks/00_…`.
+// The renders are checked at the REPOSITORY ROOT, against its own lock: a fresh fixture would be
+// current by construction and could not say whether this tree's renders were regenerated.
+const MANUAL_RENDERS = [".claude/commands/aof/manual.md", ".agents/skills/aof-manual/SKILL.md", ".opencode/commands/aof/manual.md"];
+const manualCommandBundleTests = [
+  {
+    name: "179/00 the manual command is a bundle member on every runtime, and the renders are current",
+    run: async () => {
+      const member = readDescriptor().members.find((entry) => entry.id === "manual");
+      assert.ok(member, "bundle.json lists the command manual");
+      const { variants, ...common } = member;
+      assert.deepEqual(common, { id: "manual", kind: "command", file: "commands/manual.md", runtimes: ["claude", "opencode"], commandNamespace: "aof" });
+      assert.equal(variants.codex.section, "manual", "a Codex variant section `manual`");
+      assert.equal(loadBundle().resources.find((entry) => entry.id === "manual").argumentHint, '"<story or task ref>"');
+      for (const render of MANUAL_RENDERS) assert.ok(existsSync(path.join(repoRoot, render)), `${render} exists on disk`);
+      const home = await mkdtemp(path.join(os.tmpdir(), "aof-manual-dry-"));
+      try {
+        const actions = actionsOf(aofJson(repoRoot, home, "work", "update", "--dry-run"));
+        const owned = [...actions].filter(([render]) => /[/]aof[-/](manual|continue|review)([./]|$)/u.test(render));
+        assert.ok(owned.some(([render]) => render === ".claude/commands/aof/manual.md"), "the root renders the manual command");
+        for (const [render, action] of owned) assert.equal(action, "skip", `${render} is current`);
+      } finally {
+        await rm(home, { recursive: true, force: true });
+      }
+      assert.equal(serializeBundleManifest(generateBundleManifest()), readFileSync(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"), "the shipped manifest is byte-identical to the generator's");
+    },
+  },
+];
+
+// ── 179/02 — aof:teach ships from @aof/learning through the practices registry, Claude Code only ──────
+//
+// `179_milestone_human-led-problem-solving/stories/02_story_aof-teach-opens-and-holds-the-boundary/tasks/00_…`.
+const teachCommandBundleTests = [
+  {
+    name: "179/02 the practices registry names the learning package",
+    run: async () => {
+      const { PRACTICES } = await import("../src/practices.mjs");
+      assert.ok(Object.isFrozen(PRACTICES), "PRACTICES is frozen");
+      assert.equal(PRACTICES.length, 1, "its one entry");
+      const { contribution } = await import("@aof/learning/contribution");
+      assert.equal(PRACTICES[0], contribution, "…is @aof/learning's contribution");
+      assert.equal(PRACTICES[0].assets.package, "@aof/learning");
+    },
+  },
+  {
+    name: "179/02 the teach member is appended for Claude only, with no integration gate",
+    run: async () => {
+      const member = readDescriptor().members.find((entry) => entry.id === "teach");
+      assert.ok(member, "readDescriptor() includes teach");
+      assert.equal(member.kind, "command");
+      assert.deepEqual(member.runtimes, ["claude"]);
+      assert.equal(member.commandNamespace, "aof");
+      assert.equal(member.variants?.codex, undefined, "no Codex variant");
+      assert.equal(Object.hasOwn(member, "integration"), false, "the teach member carries no integration key");
+      const home = await mkdtemp(path.join(os.tmpdir(), "aof-teach-ungated-"));
+      try {
+        const project = path.join(home, "project");
+        await mkdir(project);
+        aofJson(project, home, "work", "init", "--runtime", "claude,codex,opencode");
+        const configPath = path.join(project, ".aof", "aof.config.json");
+        const config = existsSync(configPath) ? JSON.parse(readFileSync(configPath, "utf8")) : {};
+        assert.equal(config.work?.integrations, undefined, "the project has no work.integrations block");
+        assert.ok(existsSync(path.join(project, ".claude", "commands", "aof", "teach.md")), "teach is rendered for it");
+        assert.equal(existsSync(path.join(project, ".agents", "skills", "aof-teach")), false, "no Codex skill");
+        assert.equal(existsSync(path.join(project, ".opencode", "commands", "aof", "teach.md")), false, "no OpenCode command");
+      } finally {
+        await rm(home, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "179/02 no other runtime renders teach",
+    run: async () => {
+      const home = await mkdtemp(path.join(os.tmpdir(), "aof-teach-dry-"));
+      try {
+        const actions = actionsOf(aofJson(repoRoot, home, "work", "update", "--dry-run"));
+        assert.equal(actions.get(".claude/commands/aof/teach.md"), "skip", ".claude/commands/aof/teach.md is current");
+        const other = [...actions.keys()].filter((render) => render.startsWith(".agents/skills/aof-teach/") || render === ".opencode/commands/aof/teach.md");
+        assert.deepEqual(other, [], "no Codex or OpenCode teach path is planned");
+      } finally {
+        await rm(home, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "179/02 a practice member whose id is already declared is refused at load",
+    run: () => {
+      const practice = Object.freeze({ id: "planted", name: "@aof/planted-practice", assets: Object.freeze({ package: "@aof/planted-practice" }) });
+      const readFragment = () => ({ members: [{ id: "continue", kind: "command", file: "commands/continue.md", runtimes: ["claude"] }] });
+      assert.throws(() => readDescriptor({ integrations: [], practices: [practice], readFragment }), /"continue" contributed by @aof\/planted-practice is already declared by core/u);
+    },
+  },
+  {
+    name: "179/02 the README says where teaching runs",
+    run: () => {
+      const readme = readFileSync(path.join(repoRoot, "README.md"), "utf8");
+      const row = readme.split("\n").find((line) => line.startsWith("| `/aof:teach`"));
+      assert.ok(row, "the command table lists /aof:teach");
+      assert.match(row, /supported and tested on Claude Code only/iu);
+      assert.match(row, /Codex and OpenCode render no teach command/u);
+    },
+  },
+];
+
 export const bundleTests = [
   // ====================================================================
   // 00_bundle-source-tree.feature
   // ====================================================================
 
   {
-    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 36 commands, 8 templates, 3 skills, 12 hooks)",
+    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 38 commands, 8 templates, 3 skills, 12 hooks)",
     run: async () => {
       const ids = new Set(memberIds());
       for (const id of AGENT_IDS) assert.ok(ids.has(id), `missing agent ${id}`);
@@ -241,7 +349,7 @@ export const bundleTests = [
       const byKind = (kind) => descriptorMembers().filter((m) => m.kind === kind).length;
       for (const id of HOOK_IDS) assert.ok(ids.has(id), `missing hook ${id}`);
       assert.equal(byKind("agent"), 8, "8 agents");
-      assert.equal(byKind("command"), 36, "36 commands (hyperplan — the Hyperagent planning delegation, contributed by @aof/integration-hyperagent since 169/01 — incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt, loop-diagram, 145 — repair, 147 — explain, 150 — add-diagram, 151 — diagram-review, PR #13 — questions, 163 — and prototype, 168)");
+      assert.equal(byKind("command"), 38, "38 commands (teach — teaching, contributed by @aof/learning through the practices registry since 179/02 — hyperplan — the Hyperagent planning delegation, contributed by @aof/integration-hyperagent since 169/01 — incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt, loop-diagram, 145 — repair, 147 — explain, 150 — add-diagram, 151 — diagram-review, PR #13 — questions, 163 — prototype, 168 — and manual, 179/00)");
       assert.equal(byKind("skill"), 3, "3 codex delegation skills");
       assert.equal(byKind("template"), 8, "milestone/story/task/uat/spike/chore/prototype templates + the type-agnostic `shared` (OUTCOME.md)");
       assert.equal(byKind("hook"), 12, "12 hooks: 3 Codex session-presence + 3 Claude session-presence + 3 OpenCode session-presence + artifact-sync + run-heartbeat + ask-pending (136/03)");
@@ -356,7 +464,7 @@ export const bundleTests = [
     name: "bundle/descriptor: every resource member (agent + command) names one or more target runtimes",
     run: async () => {
       const resourceMembers = descriptorMembers().filter((m) => m.kind === "agent" || m.kind === "command");
-      assert.equal(resourceMembers.length, 44, "44 resource members (8 agents + 36 commands)");
+      assert.equal(resourceMembers.length, 46, "46 resource members (8 agents + 38 commands)");
       for (const member of resourceMembers) {
         assert.ok(Array.isArray(member.runtimes) && member.runtimes.length >= 1, `${member.id} declares >=1 runtime`);
       }
@@ -592,7 +700,9 @@ export const bundleTests = [
       const commands = outputs.filter((o) => o.resource.kind === "command" && String(o.path).replaceAll("\\", "/").startsWith(".opencode/commands/"));
       const agents = outputs.filter((o) => o.resource.kind === "agent" && String(o.path).replaceAll("\\", "/").startsWith(".opencode/agents/"));
       const plugins = outputs.filter((o) => o.resource.kind === "hooks" && String(o.path).replaceAll("\\", "/").startsWith(".opencode/plugins/"));
-      assert.equal(commands.length, COMMAND_IDS.length, "one .opencode/commands output per command member");
+      // 179/ADR-007 — teach is supported on Claude Code only, so OpenCode renders every command but it.
+      assert.equal(commands.length, COMMAND_IDS.length - 1, "one .opencode/commands output per command member, teach excepted");
+      assert.ok(!commands.some((o) => String(o.path).replaceAll("\\", "/") === ".opencode/commands/aof/teach.md"), "no .opencode teach command");
       assert.equal(agents.length, AGENT_IDS.length, "one .opencode/agents output per agent member");
       assert.equal(plugins.length, 3, "one .opencode/plugins output per opencode bundle hook");
       for (const id of ["opencode-session-start", "opencode-session-prompt-ping", "opencode-session-end"]) {
@@ -620,6 +730,8 @@ export const bundleTests = [
     }
   },
   ...reviewCommandBundleTests,
+  ...manualCommandBundleTests,
+  ...teachCommandBundleTests,
 ];
 
 function pathToFileUrl(filePath) {
