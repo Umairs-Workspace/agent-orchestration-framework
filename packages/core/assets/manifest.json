@@ -1479,7 +1479,7 @@
         "id": "review",
         "kind": "command"
       },
-      "hash": "sha256:8905332acc9d9edd648df0857a731291d4a4fc63afc9909471cdb40e8890c82c"
+      "hash": "sha256:19d9c0a06f5019e8034e37337e114c03eeb46b09531bef94da18653d86845ac8"
     },
     {
       "path": ".claude/commands/aof/shatter.md",
@@ -1497,7 +1497,7 @@
         "id": "teach",
         "kind": "command"
       },
-      "hash": "sha256:b2af71b39b2cd2c778a433fbd536a9e5b868752e9eca34a159354908e0665de7"
+      "hash": "sha256:3f07c0f622b51704c324cf660cd279f16d56f1e605acd7fe9f2d9746d0d98fd1"
     },
     {
       "path": ".claude/commands/aof/validate.md",

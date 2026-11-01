@@ -74,7 +74,30 @@ export const teachFrameTests = [
       const handOff = region("hand_off");
       assert.match(handOff, /When the human asks to hand the story to an agent, the session appends `- <date> — Hand-off <ref> from teach:` under `## Notes & decisions in flight` in the item's `STATE\.md`/u);
       assert.match(handOff, /listing the `files:` the human changed, their commits since the run was minted, and the scenarios green and red/u);
-      assert.match(handOff, /The session then closes its run `done` and names `aof:continue <ref>`, saying the build will start from the human's files and report each human-written line it changes/u);
+      assert.match(handOff, /The session then closes its run `done`(?: \([^)]*\))? and names `aof:continue <ref>`, saying the build will start from the human's files and report each human-written line it changes/u);
+    },
+  },
+  {
+    name: "188/02 task 02 (@finding-F-02) E1 · a session that ends without stop, green or hand-off strands no open run",
+    run: () => {
+      const process = region("process");
+      assert.match(process, /Close it before this command's own turn ends\*\*, after the banner and the first question, whatever the human says next/u);
+      assert.match(process, /No teaching run is ever left open for a later turn:\*\* a session may simply end, without a stop, a green build or a hand-off/u);
+      assert.match(process, /Close the run with `aof work run-complete <ref> --outcome done`, never `failed`/u, "the close is still done, never failed");
+      assert.doesNotMatch(process, /Close it when the human stops, when the scenarios are green, or at a hand-off/u, "the close no longer waits for an event a session may never reach");
+    },
+  },
+  {
+    name: "188/02 task 02 (@finding-F-02) E2 · review after a teaching session is not refused by that session's run",
+    run: () => {
+      const process = region("process");
+      assert.match(process, /An open run then refuses the next command on the story, `aof:review <ref>`, as `duplicate-run`/u);
+      const close = process.indexOf("Close it before this command's own turn ends");
+      const banner = process.indexOf("Open with the banner");
+      assert.ok(banner >= 0 && close > banner, "the close follows the banner, inside the command's own turn");
+      const review = flattened(readFileSync(new URL("../../core/assets/commands/review.md", import.meta.url), "utf8"));
+      assert.match(review, /usually after `aof:manual <ref>` handed them a guide, or after `aof:teach <ref>` taught them through it/u);
+      assert.match(review, /Either command may have made the story's run and status move\. Do not assume it was `aof:manual`/u);
     },
   },
   ...[

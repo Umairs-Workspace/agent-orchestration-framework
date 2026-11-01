@@ -52,7 +52,11 @@ OpenCode render no `aof:teach`; say so if asked, and claim no parity.
 6. **Open with the banner** (below), then teach (`<guidance>`), holding `<boundary>` on every turn.
 7. **Close the run with `aof work run-complete <ref> --outcome done`, never `failed`**:
    `run.completed` rolls a failed story back to `not-started`, which would undo the story the human
-   started. Close it when the human stops, when the scenarios are green, or at a hand-off.
+   started. **Close it before this command's own turn ends**, after the banner and the first
+   question, whatever the human says next. **No teaching run is ever left open for a later turn:** a
+   session may simply end, without a stop, a green build or a hand-off. An open run then refuses the
+   next command on the story, `aof:review <ref>`, as `duplicate-run` (188/F-02). Later turns teach
+   with no run open. Nothing is lost, because no mode is read from a run record (step 2).
 </process>
 
 <banner>
@@ -169,8 +173,9 @@ story, the story's own for a standalone one — listing the `files:` the human c
 since the run was minted, and the scenarios green and red at that moment. A standalone task has no
 `STATE.md`, so its hand-off is reported in the terminal and nothing is written.
 
-The session then closes its run `done` and names `aof:continue <ref>`, saying the build will start
-from the human's files and report each human-written line it changes. It does not run it.
+The session then closes its run `done` (in a later turn, step 7 has already closed it) and names
+`aof:continue <ref>`, saying the build will start from the human's files and report each
+human-written line it changes. It does not run it.
 </hand_off>
 
 <output>

@@ -199,7 +199,11 @@ control is mode-scoped (P3, P4).
 ## ADR-007 — Teaching ships for Claude Code only
 
 Spike 178 proved the boundary on Claude Code only (Finding item 6). The `teach` member declares
-`runtimes: ["claude"]` and carries no Codex variant, so Codex and OpenCode render no `teach` command.
+`runtimes: ["claude"]` and carries `mapped: false`, so Codex and OpenCode render no `teach` command.
+Declaring the runtime alone is not enough: the Codex mapping renders every command as a skill
+(154/05). `bundle-runtime.mjs` reads `mapped: false` and never maps such a member to a runtime it
+does not declare. (Amended at `aof:verify 188`, F-04, ratified by the operator. The first text said
+the declaration and the absent Codex variant were enough.)
 Parity is never claimed. The README's command table says so. On Codex or OpenCode, the door still
 answers `aof work continue <ref> --teach` with `/aof:teach <ref>`, a command that does not exist
 there. The README line covers it, and no runtime-aware door is added (the door does not know the
@@ -232,6 +236,6 @@ code-only, 20,912 nodes):
 
 | id | invariant | enforced by (arch-test) | from |
 |---|---|---|---|
-| FF-17901 | **`continue` builds only.** `packages/core/assets/commands/continue.md` and the `continue` section of `variants/codex/workflow.md` contain no `<manual_mode>` region and no `guided:` outcome. | `test/arch/command/acd-continue-builds-only.test.mjs` — pending (188/00) | ADR-001 §1 |
-| FF-17902 | **Dependencies run one way.** No module under `packages/work/src/**` imports `@aof/learning`, `packages/work/package.json` does not list it, and no comment-stripped `@aof/work` source spells `teach`. Under `packages/core/src`, only `practices.mjs` and `application/bindings/commands/continue.mjs` import it. | `test/arch/command/acd-learning-package-one-way.test.mjs` — pending (188/01) | ADR-004 §2–§4 |
-| FF-17903 | **The pedagogy has one home.** Every `STAGES`, `HELP_LADDER` and `TRAPS` entry appears in `teach.md`. No other bundle asset names `Forming` or `Dislodging`, the two trap names that are not ordinary words. | `test/arch/bundle/acd-teach-vocabulary-one-home.test.mjs` — pending (188/03) | ADR-006 §1–§2 |
+| FF-17901 | **`continue` builds only.** `packages/core/assets/commands/continue.md` and the `continue` section of `variants/codex/workflow.md` contain no `<manual_mode>` region and no `guided:` outcome. | `test/arch/command/acd-continue-builds-only.test.mjs` (landed 188/00) | ADR-001 §1 |
+| FF-17902 | **Dependencies run one way.** No module under `packages/work/src/**` imports `@aof/learning`, `packages/work/package.json` does not list it, and no comment-stripped `@aof/work` source spells `teach`. Under `packages/core/src`, only `practices.mjs` and `application/bindings/commands/continue.mjs` import it. | `test/arch/command/acd-learning-package-one-way.test.mjs` (landed 188/01) | ADR-004 §2–§4 |
+| FF-17903 | **The pedagogy has one home.** Every `STAGES`, `HELP_LADDER` and `TRAPS` entry appears in `teach.md`. No other bundle asset names `Forming` or `Dislodging`, the two trap names that are not ordinary words. | `test/arch/command/acd-teach-vocabulary-one-home.test.mjs` (landed 188/03; ratified at `aof:verify 188`, F-03: FF-12405 leg 10 holds `test/arch/bundle` at a ceiling that may only fall) | ADR-006 §1–§2 |

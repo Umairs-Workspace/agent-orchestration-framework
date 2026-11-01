@@ -8,7 +8,7 @@ depends: [01]
 status: in-review
 owner: product-owner
 created: 2026-10-28
-updated: 2026-10-31
+updated: 2026-11-01
 adrs: [ADR-003, ADR-004, ADR-005, ADR-007]
 reads:
   - wiki/work/188_milestone_human-led-problem-solving/SPEC.md
@@ -66,6 +66,12 @@ files:
   - test/arch/planning/acd-cowork-skills-from-command-source.test.mjs
   - test/arch/command/acd-cli-entry-executes.test.mjs
   - test/bundle/yarn-installation.test.mjs
+  - packages/core/assets/commands/review.md
+  - .claude/commands/aof/review.md
+  - .opencode/commands/aof/review.md
+  - .agents/skills/aof-review/SKILL.md
+  - .agents/skills/aof-review/procedure.md
+  - .agents/skills/aof-review/agents/openai.yaml
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -88,6 +94,7 @@ boundary, run and hand-back), and the docs. The help ladder and the problem-solv
 
 - [x] 00 [aof:teach ships for Claude through the practices registry](tasks/00_teach-ships-for-claude-through-the-practices-registry.feature)
 - [x] 01 [the teaching session opens and holds the boundary](tasks/01_the-teach-session-opens-and-holds-the-boundary.feature)
+- [x] 02 [a teaching session never strands its run](tasks/02_a-teaching-session-never-strands-its-run.feature) — @bug, F-02 at aof:verify 188
 
 ## Notes
 

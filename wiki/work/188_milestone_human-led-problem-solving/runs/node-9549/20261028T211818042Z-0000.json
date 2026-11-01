@@ -12,7 +12,7 @@
   "heartbeatAt": null,
   "retryOf": null,
   "reclaimedAt": null,
-  "node": "umairs-mac-mini",
+  "node": "node-9549",
   "resumeAfter": null,
   "spend": {
     "model": "claude-opus-5-5",

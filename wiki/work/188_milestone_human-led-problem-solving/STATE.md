@@ -178,6 +178,42 @@ doc: state
   no diff. Gates: validate PASS, doctor 0 errors. The live walk (spike 178's test bed, `claude -p`
   with `--max-budget-usd`, the P2 follow-up turn) and the operator's session are `aof:verify 179`'s,
   as the story and its PLAN place them. Both task boxes stay unticked until that evidence lands.
+- 2026-11-01 — `aof:verify 188`: **declined**, recorded in VERIFICATION.md.
+  - The stories' own lane is green on every scenario of 00–03 (664 ok; 8 environment reds), and
+    the three FF-179xx red probes were recorded.
+  - 188/04 task 00's live walk passed E1, E2 and E4, and E3 on the human's code.
+  - The whole-tree gate is red. Three files are red only on this branch: one is 188's (F-01), two
+    are chores 184–186's (F-11).
+  - Blockers open: F-01 (machine-named run records), F-02 (a teaching session strands its run;
+    `@bug` task 188/02 tasks/02, and 02 is back to `in-progress`) and F-03 (FF-17903's register
+    path).
+  - `@uat` (188/04 task 01) waits for F-02's fix.
+- 2026-11-01 — F-01 fixed, operator's choice.
+  - `aof mesh identity --reidentify` gave `umairs-mac-mini → node-9549`, invalidating nothing.
+    `node-9549` is this install's opaque id, re-derived from the same salt, and the enrollment
+    credential and node record already named it.
+  - The sidecar had gone back to the hostname form on 2026-10-19, which recurs m131/F-131-02.
+  - The nine records moved to `runs/node-9549/` with their `node` key rewritten.
+  - F-03 and F-04 were ratified and applied to ARCHITECTURE.md.
+- 2026-11-01 — continue 188/02 task 02 (`@bug`, F-02), run 20261101T104704074Z-0001, attempt 1.
+  - `sessionSource` was absent, so the run is unattributable.
+  - The near-miss recall honoured 149/R3 (close `done`, never `failed`) and 172/00 R2 (no prose
+    conditioned on the session knowing it continues).
+  - The fix: `teach.md` step 7 closes the run before the command's own turn ends, so a session
+    that simply ends strands nothing. Later turns teach with no run open.
+  - `review.md`'s objective names `aof:teach` beside `aof:manual` as a hand-built story's origin.
+    The Codex variant is left as it was, because Codex renders no teach (ADR-007).
+  - The declared write set was incomplete: `packages/core/assets/commands/review.md`, with its
+    Claude and OpenCode renders, was added to `files:`, and so were its three Codex renders (FF-7106
+    requires them even though they are unchanged).
+  - The impacted lane widened to all 1,267 suites. Its reds are the gate's pre-existing set, plus
+    160/07 (temp realpath) and two that are 189's: FF-7106's 189/01 entry and FF-9603 on 189/00's
+    PLAN.md.
+- 2026-11-01 — review 188/02 task 02 (solo, inline self-review): no Blocker. Routed at the close:
+  - (a) Nit, fixed: two overlong prose lines were rewrapped.
+  - (b) Important, recorded: E2's runtime claim (review's mint is not refused) is pinned in prose
+    only. Its proof is re-running 188/04's walk, `/aof:teach` then `/aof:review`, at the next
+    `aof:verify 188`.
 
 ## Verification
 
