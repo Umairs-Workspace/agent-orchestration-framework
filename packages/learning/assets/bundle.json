@@ -1,0 +1,14 @@
+{
+  "members": [
+    {
+      "id": "teach",
+      "kind": "command",
+      "file": "commands/teach.md",
+      "runtimes": [
+        "claude"
+      ],
+      "commandNamespace": "aof",
+      "mapped": false
+    }
+  ]
+}

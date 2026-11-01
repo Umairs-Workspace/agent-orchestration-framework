@@ -4,10 +4,12 @@ argument-hint: "<story or task ref> [--solo | --orchestrated]"
 allowed-tools: [Read, Grep, Glob, Bash, Task]
 ---
 <objective>
-The operator built this story by hand — usually after `aof:continue <ref> --manual` handed them a
-guide. Review that build exactly as an agent's build is reviewed, and hand every finding back to the
-operator, who fixes it. Build nothing, fix nothing, and edit none of the operator's code: a clean
-review moves the story to `in-review`, ready for `aof:verify <ref>`.
+The operator built this story by hand — usually after `aof:manual <ref>` handed them a
+guide, or after `aof:teach <ref>` taught them through it. Either command may have made the story's
+run and status move. Do not assume it was `aof:manual`. Review that build exactly as an agent's
+build is reviewed, and hand every finding back to the operator, who fixes it. Build nothing, fix
+nothing, and edit none of the operator's code: a clean review moves the story to `in-review`, ready
+for `aof:verify <ref>`.
 </objective>
 
 <config>

@@ -1,14 +1,14 @@
 ---
 doc: prompt-audit
 created: 2026-10-07
-updated: 2026-10-22
+updated: 2026-10-31
 ---
 # Runtime prompt audit
 
 The living audit of every shipped descriptor role, procedure and skill. Milestone 154 authored it;
 its delivery-time copy and evaluation evidence stay in that milestone folder, and a member added
 since is audited HERE, in the change that ships it (163 added `command:questions`, PR #13 added `command:diagram-review`, 168 added
-`command:prototype`; the Hyperagent integration added `command:hyperplan`, which delegates planning
+`command:prototype`, 179/00 added `command:manual`, 179/02 added `command:teach` (Claude Code only); the Hyperagent integration added `command:hyperplan`, which delegates planning
 to the AOF Planner over Hyperagent's MCP endpoint, and the planner's seven skills — `aof-prd` plus
 six full rewrites of the planning procedures for a GitHub-integration agent — see
 wiki/hyperagent-support.md. Since 169/02 those skills are the integration package's planner files,
@@ -65,6 +65,7 @@ section when shared obligations change. Installation is ownership guarded, not a
 | command:insert-story | adapt | Retain mechanical CLI procedure; adapt native invocation and supported question/role handling. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | selected entry only (388 common-body words baseline) | none |
 | command:insert-uat | adapt | Retain mechanical CLI procedure; adapt native invocation and supported question/role handling. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | selected entry only (406 common-body words baseline) | none |
 | command:loop-diagram | adapt | Retain mechanical CLI procedure; adapt native invocation and supported question/role handling. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | selected entry only (435 common-body words baseline) | none |
+| command:manual | extract | Keep critical phase gates in entry; attach only this native procedure and the shared contract. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | entry + own procedure + shared contract (1093 common-body words baseline) | procedure.md; {{references.workflow-contract}} |
 | command:migrate | adapt | Retain mechanical CLI procedure; adapt native invocation and supported question/role handling. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | selected entry only (759 common-body words baseline) | none |
 | command:observe | adapt | Retain mechanical CLI procedure; adapt native invocation and supported question/role handling. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | selected entry only (864 common-body words baseline) | none |
 | command:pay-debt | adapt | Retain mechanical CLI procedure; adapt native invocation and supported question/role handling. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | selected entry only (916 common-body words baseline) | none |
@@ -79,6 +80,7 @@ section when shared obligations change. Installation is ownership guarded, not a
 | command:retrospective | extract | Keep critical phase gates in entry; attach only this native procedure and the shared contract. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | entry + own procedure + shared contract (752 common-body words baseline) | procedure.md; {{references.workflow-contract}} |
 | command:review | extract | Keep critical phase gates in entry; attach only this native procedure and the shared contract. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | entry + own procedure + shared contract (976 common-body words baseline) | procedure.md; {{references.workflow-contract}} |
 | command:shatter | adapt | Retain mechanical CLI procedure; adapt native invocation and supported question/role handling. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | selected entry only (1836 common-body words baseline) | none |
+| command:teach | keep | Claude Code only (179/ADR-007): the member declares `mapped: false`, so Codex and OpenCode render nothing and no parity is claimed. | Claude tools only; no Codex render | The teaching boundary is the session's instruction, not enforced tool isolation (179/ADR-005); host approval/sandbox governs | selected entry only (1330 common-body words baseline) | none |
 | command:validate | adapt | Retain mechanical CLI procedure; adapt native invocation and supported question/role handling. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | selected entry only (750 common-body words baseline) | none |
 | command:verify | extract | Keep critical phase gates in entry; attach only this native procedure and the shared contract. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | entry + own procedure + shared contract (4012 common-body words baseline) | procedure.md; {{references.workflow-contract}} |
 | skill:codex-implementation | keep | Claude-only optional delegation skill; retain its supported host and opt-in policy. | Claude CLI delegation only | Existing opt-in permissions retained | selected entry only (679 common-body words baseline) | none |

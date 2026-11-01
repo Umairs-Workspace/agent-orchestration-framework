@@ -1,0 +1,73 @@
+{
+  "runId": "20261028T220244232Z-0001",
+  "itemRef": "179",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "7d4f7236-18f0-4ea1-8efc-4bc6d38accd1",
+  "brief": {
+    "answers": [
+      {
+        "token": "188/00 Q1",
+        "question": "188/00 Q1 · What should the manual command be called? It prints 149's guide (red scenarios, user story, tasks, reads/files, tests, the plan's traps, an order to take the tasks in) and builds nothing. `aof work continue <ref> --manual` on the CLI and board will answer with this command.",
+        "answer": "aof:manual (Recommended)",
+        "toolUseId": "toolu_01BB7itvXjAuy3rXQowRLVYU",
+        "sessionId": "7d4f7236-18f0-4ea1-8efc-4bc6d38accd1",
+        "at": "2026-10-31T19:25:26.666Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "188/00 Q2",
+        "question": "188/00 Q2 · After manual moves out, what should `/aof:continue <ref> --manual` do when someone types it (old habit, old docs)?",
+        "answer": "Delete it completely",
+        "toolUseId": "toolu_01BB7itvXjAuy3rXQowRLVYU",
+        "sessionId": "7d4f7236-18f0-4ea1-8efc-4bc6d38accd1",
+        "at": "2026-10-31T19:25:26.666Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "188/02 Q1",
+        "question": "188/02 Q1 · When someone being taught wants an agent to finish a half-built story, what does the hand-off cover? Today the only seat swap is `aof:continue <ref>` on the whole story, and nested tasks can't be addressed at the door.",
+        "answer": "Can it be stored in the STATE file? So an agent knows it was continuing from a teach (or manual)",
+        "toolUseId": "toolu_01BB7itvXjAuy3rXQowRLVYU",
+        "sessionId": "7d4f7236-18f0-4ea1-8efc-4bc6d38accd1",
+        "at": "2026-10-31T19:25:26.666Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "188/03 Q1",
+        "question": "188/03 Q1 · Help is pulled one rung at a time (diagnostic question → conceptual hint → analogous example → partial scaffold → worked explanation). When the human climbed the ladder on one task, does the next task start back at the first rung?",
+        "answer": "Back to rung 1 (Recommended)",
+        "toolUseId": "toolu_01BB7itvXjAuy3rXQowRLVYU",
+        "sessionId": "7d4f7236-18f0-4ea1-8efc-4bc6d38accd1",
+        "at": "2026-10-31T19:25:26.666Z",
+        "entrypoint": "claude-vscode"
+      }
+    ]
+  },
+  "createdAt": "2026-10-28T22:02:44.232Z",
+  "updatedAt": "2026-10-31T19:30:07.850Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-9549",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 286,
+      "output": 256917,
+      "cacheRead": 21619730,
+      "cacheCreate": 787687
+    },
+    "costUsd": 13.29435825,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 143,
+    "toolCalls": 77,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}
