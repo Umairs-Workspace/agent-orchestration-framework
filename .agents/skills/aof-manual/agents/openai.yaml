@@ -1,0 +1,3 @@
+# aof-generated: true; aof-runtime: codex
+policy:
+  allow_implicit_invocation: false

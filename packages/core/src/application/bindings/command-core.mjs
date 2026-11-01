@@ -36,7 +36,6 @@ import { debtCommand } from "@aof/work/commands/debt";
 // project:provision — 12/ADR-003 — see ./commands/project-provision.mjs's header.
 import { issuesCommands } from "../../commands/issues.mjs";
 import { projectProvisionCommand } from "../../commands/project-provision.mjs";
-import { createNotionContribution } from "@aof/integration-notion/commands";
 // diagram:* — @aof/diagrams' own contribution, registered as one unit core can leave out.
 import { createDiagramsContribution } from "@aof/diagrams/contribution";
 // The integrations' verbs — 169/ADR-003: each arrives through its contribution in the one registry,
@@ -72,14 +71,15 @@ async function integrationZipFiles(fileMap) {
   return zipStored(fileMap);
 }
 
-// One command contribution per registered integration that ships verbs, named by its package.
-export function integrationContributions(services, integrations = INTEGRATIONS) {
+// One command contribution per registered integration that ships verbs, named by its package. Each is
+// handed the shared services and, when it composes its own (chore 175), what its `services` built.
+export function integrationContributions(services, integrations = INTEGRATIONS, built = {}) {
   return integrations
     .filter((integration) => typeof integration.commands === "function")
-    .map((integration) => Object.freeze({ name: integration.name, commands: Object.freeze(integration.commands(services)) }));
+    .map((integration) => Object.freeze({ name: integration.name, commands: Object.freeze(integration.commands(services, built[integration.id])) }));
 }
 
-export function assembleCommandCore({ commandsGraphImpactServices, commandsMeshContributionServices, workServices, commandsListServices, commandsLoopsShowServices, commandsLoopsGraphServices, commandsLoopsValidateServices, commandsLoopsGroundednessServices, commandsLoopDocumentServices, commandsLoopRecordServices, commandsContinueServices, commandsDriveServices, commandsLoopServices, commandsResyncServices, commandsDocServices, commandsTasksServices, commandsValidateServices, commandsNextServices, commandsDispatchServices, commandsFeedbackServices, commandsDoctorServices, commandsAuditServices, commandsAcceptorServices, commandsTuneServices, commandsTriggerServices, commandsGradeServices, commandsRatchetServices, commandsCountersServices, commandsGraphBuildServices, commandsGraphQueryServices, commandsGraphTriageServices, commandsGraphExportServices, commandsGraphImportServices, commandsGraphFetchServices, commandsGraphPublishServices, commandsGraphPruneServices, commandsTestServices, commandsImportMilestoneServices, commandsMigrateFolderServices, commandsNotionSyncWorkServices, commandsNotionAssociateServices, commandsRunStartServices, commandsRunCompleteServices, commandsRunStatusServices, commandsItemStatusServices, commandsRegressionGateServices, commandsRunRetryServices, commandsResumeServices, commandsGraphServeServices, commandsDiagramPlanServices, commandsDiagramExportServices, commandsDiagramFileServices, commandsMessagingMessagingServices, commandsWorkUiServices, commandsAssetsUiServices, commandsFindServices, commandsObserveServices, commandsWorkMemoryServices, commandsInitUpdateServices, commandsProjectInitServices, commandsInsertMilestoneServices, commandsInsertUatServices, commandsInsertStoryServices, commandsInsertChoreServices, commandsPrototypeServices, commandsPromoteServices, commandsArchiveServices, commandsRenumberServices, commandsPromoteGapToChoreServices, commandsPromoteFindingToChoreServices, commandsUpgradeServices, commandsAssetsListServices, commandsPackagesListServices, commandsProjectShowServices, commandsAssetsShowServices, commandsAssetsAddServices, commandsAssetsRemoveServices, commandsAssetsRefsServices, commandsAssetsValidateServices, commandsAssetsApplyServices, commandsPackagesShowServices, commandsPackagesValidateServices, commandsPackagesInstallServices, commandsProjectValidateServices, commandsProjectDoctorServices, commandsProjectMigrateServices }) {
+export function assembleCommandCore({ commandsGraphImpactServices, commandsMeshContributionServices, workServices, commandsListServices, commandsLoopsShowServices, commandsLoopsGraphServices, commandsLoopsValidateServices, commandsLoopsGroundednessServices, commandsLoopDocumentServices, commandsLoopRecordServices, commandsContinueServices, commandsDriveServices, commandsLoopServices, commandsResyncServices, commandsDocServices, commandsTasksServices, commandsValidateServices, commandsNextServices, commandsDispatchServices, commandsFeedbackServices, commandsDoctorServices, commandsAuditServices, commandsAcceptorServices, commandsTuneServices, commandsTriggerServices, commandsGradeServices, commandsRatchetServices, commandsCountersServices, commandsGraphBuildServices, commandsGraphQueryServices, commandsGraphTriageServices, commandsGraphExportServices, commandsGraphImportServices, commandsGraphFetchServices, commandsGraphPublishServices, commandsGraphPruneServices, commandsTestServices, commandsImportMilestoneServices, commandsMigrateFolderServices, integrationsServicesServices, commandsRunStartServices, commandsRunCompleteServices, commandsRunStatusServices, commandsItemStatusServices, commandsRegressionGateServices, commandsRunRetryServices, commandsResumeServices, commandsGraphServeServices, commandsDiagramPlanServices, commandsDiagramExportServices, commandsDiagramFileServices, commandsMessagingMessagingServices, commandsWorkUiServices, commandsAssetsUiServices, commandsFindServices, commandsObserveServices, commandsWorkMemoryServices, commandsInitUpdateServices, commandsProjectInitServices, commandsInsertMilestoneServices, commandsInsertUatServices, commandsInsertStoryServices, commandsInsertChoreServices, commandsPrototypeServices, commandsPromoteServices, commandsArchiveServices, commandsRenumberServices, commandsPromoteGapToChoreServices, commandsPromoteFindingToChoreServices, commandsUpgradeServices, commandsAssetsListServices, commandsPackagesListServices, commandsProjectShowServices, commandsAssetsShowServices, commandsAssetsAddServices, commandsAssetsRemoveServices, commandsAssetsRefsServices, commandsAssetsValidateServices, commandsAssetsApplyServices, commandsPackagesShowServices, commandsPackagesValidateServices, commandsPackagesInstallServices, commandsProjectValidateServices, commandsProjectDoctorServices, commandsProjectMigrateServices }) {
 
   const { meshContribution } = commandsMeshContributionServices;
   const { loadWorkspace } = workServices;
@@ -150,11 +150,8 @@ export function assembleCommandCore({ commandsGraphImpactServices, commandsMeshC
   const { importMilestoneCommand } = commandsImportMilestoneServices;
   // migrate:folder — see ./commands/migrate-folder.mjs's header.
   const { migrateFolderCommand } = commandsMigrateFolderServices;
-  // notion:sync-work — 17/ADR-002, 08/ADR-004 — see ./commands/notion-sync-work.mjs's header.
-
-  const { notionSyncWorkCommand } = commandsNotionSyncWorkServices;
-  // notion:associate — 18/ADR-003, 08/ADR-004 — see ./commands/notion-associate.mjs's header.
-  const { notionAssociateCommand } = commandsNotionAssociateServices;
+  // The integrations' collaborators and what each composed from them — see ./integrations/services.mjs.
+  const { collaborators: integrationCollaborators, built: integrationsBuilt } = integrationsServicesServices;
   // work:run-start — see ./commands/run-start.mjs's header.
   const { runStartCommand } = commandsRunStartServices;
   const { runCompleteCommand } = commandsRunCompleteServices;
@@ -294,8 +291,7 @@ export function assembleCommandCore({ commandsGraphImpactServices, commandsMeshC
       importMilestoneCommand,
     ]),
     createWorkContribution([migrateFolderCommand]),
-    createNotionContribution({ syncWork: notionSyncWorkCommand, associate: notionAssociateCommand }),
-    ...integrationContributions({ commandError: integrationCommandError, gitExec: defaultGitExec, validateWork: commandsValidateServices.validateWork, readJson: integrationReadJson, aofHome: integrationAofHome, readPackageAsset: integrationReadPackageAsset, zipFiles: integrationZipFiles }),
+    ...integrationContributions({ ...integrationCollaborators, commandError: integrationCommandError, gitExec: defaultGitExec, validateWork: commandsValidateServices.validateWork, readJson: integrationReadJson, aofHome: integrationAofHome, readPackageAsset: integrationReadPackageAsset, zipFiles: integrationZipFiles }, INTEGRATIONS, integrationsBuilt),
     createWorkContribution([
       runStartCommand,
       runCompleteCommand,

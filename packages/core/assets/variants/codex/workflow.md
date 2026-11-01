@@ -1660,8 +1660,8 @@ where the operator is and is never dispatched to a worker.)
 </config>
 
 <config>
-Parse `$ARGUMENTS` into the item **ref**, an optional **`--solo`**, **`--orchestrated`** or
-**`--manual`** flag and an optional **`--thinking <level>`**.
+Parse `$ARGUMENTS` into the item **ref**, an optional **`--solo`** or **`--orchestrated`** flag and
+an optional **`--thinking <level>`**.
 
 **Execution mode.** Resolve from `work.agents.mode`, which governs the continue an operator types:
 `work.agents.mode: "orchestrated"` resolves to orchestrated (spawn the role agents), and
@@ -1671,10 +1671,7 @@ shares. Reach for `--orchestrated` when an independent perspective is worth its 
 spawned reviewer did not write the code and cannot be talked into liking it. **`--solo` OVERRIDES an
 orchestrated config to solo for this run**, and **`--orchestrated` OVERRIDES a solo config to
 orchestrated for this run** — its twin in the other direction. The two together are contradictory:
-STOP before any role runs and report it. **`--manual` together with `--solo` or `--orchestrated` is
-contradictory too** — `--manual` says the operator builds, which leaves no agent to choose: STOP
-before any role runs and before any run is minted, and report it. `--manual` is a per-run flag and
-never a `work.agents.mode` value, and the loop never composes it (`<manual_mode>` below).
+STOP before any role runs and report it.
 The loop composes a flag on every continue it drives: `work.loop.agents.continue.mode` when set,
 else `work.agents.mode`, else `solo` — the one built-in default, whose home is
 `packages/contracts/src/agent-mode.mjs`. A loop-driven continue therefore follows `work.agents.mode`
@@ -1705,44 +1702,6 @@ listed **READY**, resume its lineage with `aof work resume <ref>` and carry on f
 starting fresh: the prior session and its working tree are intact, and a fresh start pays for that work
 twice. If it is listed **parked**, say when it becomes ready and stop — retrying early burns one of three
 attempts on a kill that is certain to repeat. If the sweep is empty, proceed normally.
-
-<manual_mode>
-**`--manual` — the operator builds, and this session hands them a guide.** `--solo` and
-`--orchestrated` decide which agents do the work; `--manual` says the operator does. When
-`$ARGUMENTS` carries it, walk this region after the re-entry sweep above, in place of the dispatch
-on type below, and nothing else in `<process>`.
-
-- **One story or one task, never more.** A milestone or a `NN/MM-PP` span is refused before any run
-  is minted: run `aof work next <ref> --json` and name the ready stories it answers, to take one at a
-  time as `$aof-continue <story> --manual`. Mint nothing, move nothing, and stop.
-- **Read the story exactly as the story lane's step 1 reads it, and no wider** — its `reads:` set
-  under `<read_depth>`, and its task features. A story whose `reads:` is absent, or whose tasks are
-  thin or untagged, halts and sends the operator to `$aof-refine <ref>`, exactly as step 1 does.
-- **Mint the run with `aof work run-start <ref> --json` before the guide is printed** — the story
-  lane's step 2, whose `run.started` reactor starts the story. The session writes no status move of
-  its own.
-- **Every manual run runs `aof test --scope impacted --story <ref>` once, before the guide** — the
-  first run and every re-run alike, so the guide is always headed by what is still red.
-- **Print the guide, with its parts in this order:**
-  - the scenarios still red, by name;
-  - the user story;
-  - each task file with its scenario names, read from `aof work tasks <ref> --json`;
-  - every `reads:` entry and every `files:` entry, each with one line on why it matters;
-  - the test files among `files:`, and the command `aof test --scope impacted --story <ref>` that
-    gates them;
-  - the build plan's mechanism and known traps, when the story has a `PLAN.md`;
-  - an order to take the tasks in, with the reason for it.
-
-  When every scenario is green the guide says so, and names `$aof-review <ref>` as the next step.
-- **The guide is printed in the terminal only**, and no guide file is written to the story folder:
-  a re-run prints it again, current, from the same sources.
-- **Build nothing.** No `aof-developer` is spawned, in solo and in orchestrated mode alike, and no
-  file outside the item's own folder is written. No gate ladder is walked and no reviewer is
-  spawned: reviewing the operator's build is `$aof-review`'s.
-- **Close the run with `aof work run-complete <ref> --outcome done` after the guide is printed**,
-  then stop. The hand-back is `guided: <ref> is yours to build`, and it names `$aof-review <ref>`
-  next — never `$aof-verify`.
-</manual_mode>
 
 Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the span:
 
@@ -1889,6 +1848,12 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      - A file outside `reads:` that is genuinely required: read it, then report that the declared
        read set is incomplete. The escape prevents blind work; the report makes refine repair it.
      - Never inline a large file into a spawned agent prompt. Hand the agent the path and anchor.
+     - **A hand-off from a human is read too.** Any `Hand-off <ref>` entry in the item's `STATE.md`
+       is read, and only that entry — the parent milestone's `STATE.md` for a nested story, the
+       story's own for a standalone one. It means a human built part of this story before handing
+       it over, so the build treats the files the entry names as the human's starting point rather
+       than a blank, and the build's report names every human-written line it changed, and why.
+       The entry informs the build; it confers no mode and protects nothing.
      </read_depth>
   2. **Mint its run — before any code.** `aof work run-start <ref> --json`, where `<ref>` is
      **this member's own story — never the milestone**, whose run the orchestrator already minted
@@ -2265,8 +2230,6 @@ Report what landed, each task's green-status, and the review verdicts — then n
 was, and the command that follows it. Never print the accept hand-off after a stop:
 
 - **walked to the Review gate** — every member built and reviewed. Next: `$aof-verify <ref>`.
-- **guided: `<ref>` is yours to build** — a manual continue printed the guide and built nothing.
-  Next: `$aof-review <ref>`, once the operator's build is green.
 - **stopped: `<ref>` unrefined** — its contract is not authored/tagged. Next: `$aof-refine <ref>`.
 - **stopped: blocked on `<waitingOn>`** — `aof work next` answered `blocked`. Next: finish what it
   names, then re-run `$aof-continue <ref>`.
@@ -2898,6 +2861,132 @@ Parse "$ARGUMENTS": one milestone ref (`NN`). One milestone per run: a range is 
    every lane in a wave finishes together (the live loop asks again as each lane finishes). aof never
    commits `execution/`: leave it for the operator.
 </process>
+
+<!-- variant:manual -->
+# manual
+
+Use the native skill $aof-manual; $ARGUMENTS is the operator text after its name.
+
+Guide the operator's own build of one story or task; do not implement. Enter through the build door with `aof work continue <ref> --manual --json` and stop on any refusal, minting nothing. Never walk the re-entry sweep or resume a lineage. Read the story as continue's story lane step 1 does, mint the owned run, run the declared impacted test gate once, print the guide in the terminal only, and close the run done. Spawn no developer and no reviewer, walk no gate ladder, and write nothing outside the item's own folder. A hand-off to an agent is written to the item's STATE and names `$aof-continue <ref>`, never runs it. Hand back to `$aof-review <ref>`.
+
+## Codex execution contract
+Use only tools actually exposed by this session. File reading/editing, shell execution, search,
+browser/image tools and native role tools are capability-dependent; Claude tool aliases are not
+permissions. Instruction-level read-only boundaries do not claim enforced sandbox isolation.
+In solo mode perform required roles inline and spawn nothing. Orchestrated independent work
+requires a native launcher such as spawn_agent when exposed, independent context and support
+for each selected model/effort; otherwise report native-role-capability-unavailable or
+native-role-setting-unsupported before claiming independence. Stay within the resolved dispatch
+bound and review/no-progress bounds. Read role settings from work.agents.runtimes.codex.
+Never infer the primary assistant from the delegation toggle.
+For questions, use an available native question tool, or ask explicitly in the conversation when
+that tool is unavailable. Required answers remain pending until received. A driven business question
+retains its map token and one-question-per-ask form. Permission approval uses the host approval flow,
+not a question tool or elapsed time. AOF_NEEDS_INPUT is for an actually unanswered blocked turn,
+never a fabricated native capability.
+
+Read {{files.procedure.md}} for this procedure and {{references.workflow-contract}} for shared ownership, evidence and bounds. Load no unrelated procedure to interpret these gates.
+
+<!-- variant:procedure-manual -->
+<objective>
+**The operator builds, and this session hands them a guide.** `$aof-continue` decides which agents
+build a story; `$aof-manual` says the operator does. Start the story through the build door, run its
+tests once, print a guide to building it, close the run and hand the operator to `$aof-review <ref>`.
+Build nothing.
+</objective>
+
+<config>
+Read `.aof/aof.config.json` → `work.dir`. Parse `$ARGUMENTS` into one item **ref**.
+
+**This command takes no mode flag.** `--solo` and `--orchestrated` decide which agents build, and
+here the operator builds, which leaves no agent to choose: either one is contradictory. STOP before
+the door is called and before any run is minted, and report it. `--thinking <level>` is a stop for
+the same reason — nothing here spawns a role whose effort it could set.
+</config>
+
+<process>
+1. **Enter through the build door — this command's first act.** Run
+   `aof work continue <ref> --manual --json`. The door's refusals are code, not this prose, and the
+   door makes the starting status move. **Nothing is minted after a door refusal**, and nothing else
+   in this process runs:
+   - **One story or one task, never more.** A `continue-manual-not-a-story` refusal for a milestone
+     or a `NN/MM-PP` span runs `aof work next <ref> --json` and names the ready stories it answers,
+     to take one at a time as `$aof-manual <story>`. Mint nothing, move nothing, and stop.
+   - A `continue-manual-remote` refusal means the decision would send the story to another node; a
+     manual session runs here, where the operator builds. Report it and stop.
+   - Any other refusal (`phase-backlog-ref`, `ref-not-found`, a before-build check) is reported as the
+     door gave it, and the session stops.
+   - An answer `where: "running"` says where the story already runs. Say where, and stop — watching
+     is not building.
+   - An answer `where: "local"` names this command in its `command`, and the story is started.
+     Carry on.
+2. **Never carry on an agent build.** This session does not walk the re-entry sweep and never runs
+   `aof work resume`: a lineage an agent left is not the operator's to inherit. Nothing here reads a
+   mode from a run record or a transcript, so **a resumed session is not a manual session until
+   `$aof-manual <ref>` is invoked again**.
+3. **Read the story exactly as continue's story lane step 1 reads it, and no wider** — its `reads:`
+   set under `continue`'s `<read_depth>`, and its task features. A story whose `reads:` is absent,
+   or whose tasks are thin or untagged, halts and sends the operator to `$aof-refine <ref>`, exactly
+   as step 1 does.
+4. **Mint the run with `aof work run-start <ref> --json` before the guide is printed** — continue's
+   story lane step 2, whose `run.started` reactor would start a story the door had not. **The
+   session writes no status move of its own.** A `duplicate-run` refusal from
+   `aof work run-start <ref> --json` means another run on this story is still open — an agent's, or
+   a phase that died. Report it and the session stops: it never resumes or settles that run.
+5. **Every manual run runs `aof test --scope impacted --story <ref>` once, before the guide** — the
+   first run and every re-run alike, so the guide is always headed by what is still red.
+6. **Print the guide, with its parts in this order:**
+   - the scenarios still red, by name;
+   - the user story;
+   - each task file with its scenario names, read from `aof work tasks <ref> --json`;
+   - every `reads:` entry and every `files:` entry, each with one line on why it matters;
+   - the test files among `files:`, and the command `aof test --scope impacted --story <ref>` that
+     gates them;
+   - the build plan's mechanism and known traps, when the story has a `PLAN.md`;
+   - an order to take the tasks in, with the reason for it.
+
+   When every scenario is green the guide says so, and names `$aof-review <ref>` as the next step.
+7. **The guide is printed in the terminal only**, and no guide file is written to the story folder:
+   a re-run prints it again, current, from the same sources.
+8. **Build nothing.** No `aof-developer` is spawned, and no file outside the item's own folder is
+   written. No gate ladder is walked and no reviewer is spawned: reviewing the operator's build is
+   `$aof-review`'s.
+9. **Close the run with `aof work run-complete <ref> --outcome done` after the guide is printed**,
+   then stop. Never `--outcome failed`: `run.completed` rolls a failed story back to `not-started`,
+   which would undo the story the operator just started.
+</process>
+
+<hand_off>
+**A hand-off to an agent is whole-story, and it is written down.** When the human asks, in any turn,
+to hand the story to an agent, the session appends a hand-off entry under
+`## Notes & decisions in flight` in the item's `STATE.md` — **the STATE is the parent milestone's for
+a nested story, and the story's own for a standalone one.** The entry opens
+`- <date> — Hand-off <ref> from manual:`, then lists the `files:` the human changed, their commits
+since the run was minted, and the scenarios green and red at that moment (run
+`aof test --scope impacted --story <ref>` for them). The entry is a record in the item's own folder,
+never a write under `files:`.
+
+**A standalone task has no `STATE.md`, so its hand-off is reported in the terminal and nothing is
+written.**
+
+If this session's run is still open, close it `done`. The session then names `$aof-continue <ref>`
+and does not run it: the agent's build is a new session, which reads the entry at its story lane's
+step 1. The entry informs that build; it never confers a mode.
+</hand_off>
+
+<output>
+Report which outcome this was, and the command that follows it:
+
+- **guided: `<ref>` is yours to build** — the guide was printed and nothing was built. Next:
+  `$aof-review <ref>`, once the operator's build is green — never `$aof-verify`.
+- **handed off: `<ref>` to an agent** — the hand-off entry was written (or, for a standalone task,
+  reported). Next: `$aof-continue <ref>`.
+- **stopped: refused at the door** — name the refusal code, and for a milestone or span the ready
+  stories to take one at a time. Nothing was minted.
+- **stopped: `<ref>` unrefined** — its contract is not authored/tagged. Next: `$aof-refine <ref>`.
+- **stopped: a run is open** — `run-start` answered `duplicate-run`. Name the open run, and say this
+  session did not carry it on.
+</output>
 
 <!-- variant:migrate -->
 Use the native skill $aof-migrate; $ARGUMENTS is the operator text after its name.
@@ -4316,7 +4405,7 @@ Read {{files.procedure.md}} for this procedure and {{references.workflow-contrac
 
 <!-- variant:procedure-review -->
 <objective>
-The operator built this story by hand — usually after `$aof-continue <ref> --manual` handed them a
+The operator built this story by hand — usually after `$aof-manual <ref>` handed them a
 guide. Review that build exactly as an agent's build is reviewed, and hand every finding back to the
 operator, who fixes it. Build nothing, fix nothing, and edit none of the operator's code: a clean
 review moves the story to `in-review`, ready for `$aof-verify <ref>`.

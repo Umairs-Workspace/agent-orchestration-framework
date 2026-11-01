@@ -4532,6 +4532,9 @@
         },
         "manual": {
           "type": "boolean"
+        },
+        "teach": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -4545,7 +4548,7 @@
         "continue"
       ],
       "spec": {
-        "usage": "aof work continue <ref> [--node <id>] [--manual] [--json]",
+        "usage": "aof work continue <ref> [--node <id>] [--manual] [--teach] [--json]",
         "flags": {
           "node": {
             "type": "string",
@@ -4554,6 +4557,10 @@
           "manual": {
             "type": "boolean",
             "description": "the operator builds: continue one story or task here and hand back a guide, never a build"
+          },
+          "teach": {
+            "type": "boolean",
+            "description": "the operator is taught: start one story or task here and answer `/aof:teach <ref>`, never a build"
           }
         }
       }

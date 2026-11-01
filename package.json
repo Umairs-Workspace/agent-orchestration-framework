@@ -35,6 +35,7 @@
     "@aof/integration-hyperagent": "workspace:*",
     "@aof/integration-notion": "workspace:*",
     "@aof/knowledge": "workspace:*",
+    "@aof/learning": "workspace:*",
     "@aof/mesh": "workspace:*",
     "@aof/messaging": "workspace:*",
     "@aof/server": "workspace:*",

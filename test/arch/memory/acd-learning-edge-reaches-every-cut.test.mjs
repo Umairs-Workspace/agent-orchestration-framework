@@ -146,6 +146,8 @@ const EXCLUDED = Object.freeze({
   // 145 — draws the waves the loop's own rules already computed (`aof diagram plan <ref> loop`);
   // it reads a partition, never makes one, and carries no memory call.
   "loop-diagram.md": "draws an existing milestone's wave plan; cuts nothing",
+  // 179/00 — 149's guide moved out of continue into its own command; it builds nothing and cuts nothing.
+  "manual.md": "guides the operator's own build of one story; cuts nothing",
   "migrate.md": "migrates one source folder into one milestone",
   "observe.md": "reads transcript telemetry",
   "pay-debt.md": "pays down ledger entries in the files at hand",
@@ -163,6 +165,8 @@ const EXCLUDED = Object.freeze({
   "retrospective.md": "distils one milestone's lessons",
   // 149 — reviews the operator's own build through continue's ladder and lanes; fixes nothing.
   "review.md": "reviews one story's build; cuts nothing",
+  // 179/02 — teaching: the human writes one story's code while AOF teaches; no partition, no memory call.
+  "teach.md": "teaches the operator one story's build; cuts nothing",
   "validate.md": "a structural check that spawns no agent and cuts nothing",
   "verify.md": "accepts an item; its memory calls are `ingest`",
 });

@@ -6,7 +6,13 @@ import { commandError } from "@aof/contracts/error";
 // practice brings to the build door. The continue door awaits each in order, after its backlog
 // refusal and before it reads the overlay, and a check refuses by throwing: the first throw ends the
 // walk, so nothing moves, nothing is minted and nothing is dispatched. An empty list refuses nothing.
-export function createPhaseDoorCommands({ assignWork, resolveItem, resolveItemExact, transitionItemStatus, readExecutionOverlay, resolveScopedExecution, executionScopeRef, readStreamedItemRow, beforeBuild = [] }) {
+//
+// milestone 179 / ADR-002 — `operatorModes` is a list of `{ flag, command, description }` descriptors
+// a composed practice brings to the build door: an operator-led mode, in which the human, not an
+// agent, writes the code. Each is appended after manual's built-in descriptor and becomes a boolean
+// input, a CLI flag and a usage token on the continue door only, refused exactly as manual is. An
+// empty list adds nothing.
+export function createPhaseDoorCommands({ assignWork, resolveItem, resolveItemExact, transitionItemStatus, readExecutionOverlay, resolveScopedExecution, executionScopeRef, readStreamedItemRow, beforeBuild = [], operatorModes = [] }) {
 // work:continue — "continue this task", with ONE option: WHERE to continue it.
 //
 // THE DEFECT (operator, 2026-07-26): there were three different doors to the same act.
@@ -197,10 +203,22 @@ async function startedHere(ctx, phase, ref) {
 // guides ONE story here: the operator is on this machine, so it is never dispatched, and the guide
 // it hands back reads one story's contract. Refine and verify never declare the input, so the flag
 // is refused there as unknown.
-const MANUAL_TYPES = new Set(["story", "task"]);
+const OPERATOR_MODE_TYPES = new Set(["story", "task"]);
+// 179/ADR-002 — an operator-led mode is a descriptor: the door's flag, and the command a LOCAL
+// answer names. Manual is core behaviour, so its descriptor is built in; a local manual continue
+// answers `/aof:manual <ref>`, as a local milestone continue answers `/aof:autonomous`. Every other
+// mode is injected (`operatorModes` above) and refused by the same code, with its own flag in the code.
+const MANUAL_MODE = Object.freeze({ flag: "manual", command: "manual", description: "the operator builds: continue one story or task here and hand back a guide, never a build" });
+const MODES = Object.freeze([MANUAL_MODE, ...operatorModes.map((mode) => Object.freeze({ ...mode }))]);
+for (const [at, mode] of MODES.entries()) {
+  if (typeof mode.flag !== "string" || !/^[a-z][a-z-]*$/u.test(mode.flag) || typeof mode.command !== "string" || mode.command === "") {
+    throw new TypeError(`operator-led mode ${at}: a descriptor is { flag, command, description } with a lower-case flag and a command`);
+  }
+  if (MODES.findIndex((other) => other.flag === mode.flag) !== at) throw new TypeError(`operator-led mode --${mode.flag} is declared twice`);
+}
 
 function createPhaseDoorCommand(phase) {
-  const manualDoor = phase === "continue";
+  const modes = phase === "continue" ? MODES : [];
   return {
     id: `work:${phase}`,
     input: {
@@ -208,7 +226,7 @@ function createPhaseDoorCommand(phase) {
       properties: {
         ref: { type: "string" },
         node: { type: "string" },
-        ...(manualDoor ? { manual: { type: "boolean" } } : {}),
+        ...Object.fromEntries(modes.map((mode) => [mode.flag, { type: "boolean" }])),
       },
       required: ["ref"],
       additionalProperties: false,
@@ -247,6 +265,18 @@ function createPhaseDoorCommand(phase) {
         );
       }
 
+      // 179/ADR-002 §4 — the operator-led modes are exclusive: two together are refused here, right
+      // after the backlog refusal and before the type check or the overlay read, so nothing moves.
+      const active = modes.filter((mode) => input[mode.flag] === true);
+      if (active.length > 1) {
+        throw commandError(
+          `${active.map((mode) => `--${mode.flag}`).join(" and ")} cannot run together — each operator-led mode is a session of its own.`,
+          "continue-modes-exclusive",
+          409,
+        );
+      }
+      const mode = active[0] ?? null;
+
       // milestone 135 / ADR-001 §3 — the build door's injected checks, here and only here: before the
       // overlay is read, so a refusal moves nothing, mints nothing and dispatches nothing. Only the
       // build door runs them — refine and verify are not builds.
@@ -254,12 +284,12 @@ function createPhaseDoorCommand(phase) {
 
       // 149 — a manual continue is one story or one task. Refused here, before the overlay is read,
       // so a milestone (whose continue is the autonomous cascade) mints, dispatches and moves nothing.
-      const manual = manualDoor && input.manual === true;
-      if (manual && !MANUAL_TYPES.has(exact?.type)) {
+      // Every operator-led mode is refused by this code, under its own flag (179/ADR-002 §2).
+      if (mode && !OPERATOR_MODE_TYPES.has(exact?.type)) {
         const what = exact?.type == null ? "not a resolvable item" : `a ${exact.type}`;
         throw commandError(
-          `\`${ref}\` is ${what} — a manual continue guides one story or one task at a time.`,
-          "continue-manual-not-a-story",
+          `\`${ref}\` is ${what} — a ${mode.flag} continue guides one story or one task at a time.`,
+          `continue-${mode.flag}-not-a-story`,
           409,
         );
       }
@@ -273,10 +303,10 @@ function createPhaseDoorCommand(phase) {
       // 149 — the operator builds where they are, so a manual continue the decision would dispatch
       // is refused before anything is minted: whether `--node` named another node or the last node
       // was one. A `running` answer is still returned below — watching is not dispatching.
-      if (manual && decision.where === "remote") {
+      if (mode && decision.where === "remote") {
         throw commandError(
-          `"${ref}" would continue on ${decision.node} — a manual continue runs here, where the operator builds.`,
-          "continue-manual-remote",
+          `"${ref}" would continue on ${decision.node} — a ${mode.flag} continue runs here, where the operator builds.`,
+          `continue-${mode.flag}-remote`,
           409,
         );
       }
@@ -306,14 +336,14 @@ function createPhaseDoorCommand(phase) {
       // same cascade its remote form dispatches (resolveDirectivePhase) — the act
       // means the same thing on every machine.
       if (decision.where === "local") {
-        const localPhase = await resolveDirectivePhase(ctx.workspace, phase, ref, storeOptions);
+        const localPhase = mode ? mode.command : await resolveDirectivePhase(ctx.workspace, phase, ref, storeOptions);
         return {
           ok: true,
           ref,
           where: "local",
           node: decision.node,
           resolvedBy: decision.resolvedBy,
-          command: `/aof:${localPhase} ${ref}${manual ? " --manual" : ""}`,
+          command: `/aof:${localPhase} ${ref}`,
           ...(await startedHere(ctx, phase, ref)),
         };
       }
@@ -347,10 +377,10 @@ function createPhaseDoorCommand(phase) {
       // + the ONE generic face; the cli.mjs runVerbCli branches are deleted.
       route: ["work", phase],
       spec: {
-        usage: `aof work ${phase} <ref> [--node <id>]${manualDoor ? " [--manual]" : ""} [--json]`,
+        usage: `aof work ${phase} <ref> [--node <id>]${modes.map((mode) => ` [--${mode.flag}]`).join("")} [--json]`,
         flags: {
           node: { type: "string", description: "the node to run on (defaults to the last node that worked on it)" },
-          ...(manualDoor ? { manual: { type: "boolean", description: "the operator builds: continue one story or task here and hand back a guide, never a build" } } : {}),
+          ...Object.fromEntries(modes.map((mode) => [mode.flag, { type: "boolean", description: mode.description }])),
         },
       },
 
@@ -358,7 +388,7 @@ function createPhaseDoorCommand(phase) {
       argv: (positionals, options = {}) => ({
         ref: positionals[0],
         ...(typeof options.node === "string" ? { node: options.node } : {}),
-        ...(manualDoor && options.manual === true ? { manual: true } : {}),
+        ...Object.fromEntries(modes.filter((mode) => options[mode.flag] === true).map((mode) => [mode.flag, true])),
       }),
       render: (result) => {
         if (result.where === "running") {

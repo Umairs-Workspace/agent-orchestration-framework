@@ -1,0 +1,21 @@
+{
+  "name": "@aof/learning",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./mode": "./src/mode.mjs",
+    "./contribution": "./src/contribution.mjs",
+    "./vocabulary": "./src/vocabulary.mjs"
+  },
+  "files": [
+    "src",
+    "assets"
+  ],
+  "scripts": {
+    "test": "node ../../scripts/test-workspace.mjs @aof/learning"
+  },
+  "dependencies": {
+    "@aof/contracts": "workspace:*"
+  }
+}

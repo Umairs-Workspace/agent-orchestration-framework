@@ -86,7 +86,12 @@ export const hyperagentRuntimeTests = [
   {
     name: "169/01 E2 · a packaged binary reads them from the sidecar",
     run: async () => withSidecar(
-      (bundle) => cp(PACKAGE_ASSETS, path.join(bundle, "packages", "integration-hyperagent"), { recursive: true }),
+      // 179/02 — the packaged binary carries every contributor's assets, the practices' after the
+      // integrations' (scripts/sea-asset-manifest.mjs), so the sidecar holds @aof/learning's too.
+      async (bundle) => {
+        await cp(PACKAGE_ASSETS, path.join(bundle, "packages", "integration-hyperagent"), { recursive: true });
+        await cp(path.resolve(import.meta.dirname, "..", "..", "learning", "assets"), path.join(bundle, "packages", "learning"), { recursive: true });
+      },
       async () => {
         const contributed = readDescriptor().members.filter((member) => member.integration === "hyperagent");
         assert.deepEqual(contributed.map((member) => member.id).sort(), [...MEMBERS].sort());

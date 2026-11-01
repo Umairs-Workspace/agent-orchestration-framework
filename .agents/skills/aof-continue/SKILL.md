@@ -5,7 +5,7 @@ description: "Execute/resume a work item — build its tasks to green, then stru
 
 <!-- aof-generated: true; aof-runtime: codex -->
 
-Arguments: <item ref, or a NN/MM-PP story span> [--solo | --orchestrated | --manual] [--thinking <level>]
+Arguments: <item ref, or a NN/MM-PP story span> [--solo | --orchestrated] [--thinking <level>]
 
 # continue
 

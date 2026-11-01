@@ -13,7 +13,7 @@ import { readdirSync, statSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { generateAssetManifest } from "../../scripts/sea-asset-manifest.mjs";
+import { generateAssetManifest, generatePackageAssetManifest } from "../../scripts/sea-asset-manifest.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -36,6 +36,29 @@ function listFilesDirect(dir) {
 }
 
 export const bundleAssetManifestCompleteTests = [
+  {
+    // 179/02 task 00 — the practices registry reaches the packaged binary's asset walk too (179/ADR-004 §4).
+    name: "179/02 the packaged binary carries the learning assets",
+    run() {
+      const learning = generatePackageAssetManifest(repoRoot).find((entry) => entry.name === "@aof/learning");
+      assert.ok(learning, "generatePackageAssetManifest lists @aof/learning");
+      assert.equal(learning.sidecar, "packages/learning");
+      const from = path.join(repoRoot, "packages", "learning", "assets");
+      assert.equal(path.resolve(learning.from), from);
+      const onDisk = [];
+      const walk = (dir) => {
+        for (const name of readdirSync(dir)) {
+          const full = path.join(dir, name);
+          if (statSync(full).isDirectory()) walk(full);
+          else onDisk.push(path.relative(from, full).replaceAll("\\", "/"));
+        }
+      };
+      walk(from);
+      const listed = learning.files.map((file) => String(file.rel ?? file).replaceAll("\\", "/")).sort();
+      assert.deepEqual(listed, onDisk.sort(), "every file under packages/learning/assets/ is listed");
+      assert.ok(onDisk.includes("bundle.json") && onDisk.includes("commands/teach.md"));
+    },
+  },
   {
     name: "bundle-asset-manifest-complete/00 the generated manifest covers every file under src/bundle/** (the git-tracked set), empty diff both directions",
     run: async () => {

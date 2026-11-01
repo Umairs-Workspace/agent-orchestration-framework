@@ -161,8 +161,8 @@ const CONTROL_SIDE = [
   // its two structural neighbours in `promotion.mjs`. The category is a property of the READ, not of
   // the module or the family: one function here makes all three, and they are classified apart.
   { file: path.join("packages", "work", "src/commands/promote-finding-to-chore.mjs"), subject: "runPromoteFindingToChore", adapter: "packages/core/src/application/bindings/commands/promote-finding-to-chore.mjs" },
-  { file: path.join("packages", "integration-notion", "src", "notion-associate.mjs"), subject: "notionAssociateCommand", adapter: "packages/core/src/application/bindings/commands/notion-associate.mjs" },
-  { file: path.join("packages", "integration-notion", "src", "sync-work.mjs"), subject: "syncMilestoneWork", adapter: "packages/core/src/application/bindings/notion/sync-work.mjs" },
+  { file: path.join("packages", "integration-notion", "src", "notion-associate.mjs"), subject: "notionAssociateCommand", adapter: "packages/core/src/application/bindings/integrations/services.mjs", via: "packages/integration-notion/src/contribution.mjs" },
+  { file: path.join("packages", "integration-notion", "src", "sync-work.mjs"), subject: "syncMilestoneWork", adapter: "packages/core/src/application/bindings/integrations/services.mjs", via: "packages/integration-notion/src/services.mjs" },
   { file: path.join("packages", "knowledge", "src/memory/local-indexing.mjs"), subject: "buildRecords", adapter: "packages/core/src/application/bindings/memory/local-indexing.mjs", cacheSymbols: ["listItemsCacheFirst"], factory: "createLocalIndexing" },
   { file: path.join("packages", "mesh", "src", "assignment.mjs"), subject: "assignWork", adapter: "packages/core/src/application/bindings/mesh/assignment.mjs", factory: "createMeshAssignments", cacheSymbols: ["findWorkCacheFirst"] },
   { file: path.join("packages", "mesh", "src", "assignment.mjs"), subject: "withdrawWork", adapter: "packages/core/src/application/bindings/mesh/assignment.mjs", factory: "createMeshAssignments", cacheSymbols: ["findWorkCacheFirst"] },
@@ -271,7 +271,7 @@ export const archTests = [
       }
 
       const stragglers = [];
-      for (const { file, subject, adapter, cacheSymbols = ["listItemsCacheFirst"], factory = "create(?:Notion\\w+|PromoteFindingCommand)" } of CONTROL_SIDE) {
+      for (const { file, subject, adapter, via, cacheSymbols = ["listItemsCacheFirst"], factory = "create(?:Notion\\w+|PromoteFindingCommand)" } of CONTROL_SIDE) {
         const full = path.join(repoRoot, file);
         // A MISSING module is a re-point signal, not a skip. The positive pins have always treated
         // it as one (`assertPinned` just reads the file), and a `continue` here would let a deleted
@@ -291,10 +291,13 @@ export const archTests = [
         const bindings = workImportBindings(source);
         if (adapter) {
           const composition = stripComments(await readFile(path.join(repoRoot, adapter), "utf8"));
+          // `via` — chore 175: an integration's package composes its own factories, so core's adapter
+          // binds the shared reader and the package's composition hands it to the factory.
+          const injector = via ? stripComments(await readFile(path.join(repoRoot, via), "utf8")) : composition;
           for (const symbol of cacheSymbols) {
             assert.match(source, new RegExp('\\b' + symbol + '\\s*\\(', 'u'), file + ': uses the cache-first service');
             assert.match(composition, new RegExp('const\\s*\\{[^}]*\\b' + symbol + '\\b[^}]*\\}\\s*= workReadServices', 'u'));
-            assert.match(composition, new RegExp(factory + '\\(\\{[^}]*\\b' + symbol + '\\b', 'u'), adapter + ': injects the shared cache-first reader');
+            assert.match(injector, new RegExp(factory + '\\(\\{[^}]*\\b' + symbol + '\\b', 'u'), (via ?? adapter) + ': injects the shared cache-first reader');
             assert.match(source, new RegExp(factory + '\\(\\{[^}]*\\b' + symbol + '\\b', 'u'), file + ': accepts the cache-first port');
           }
           for (const symbol of workImportBindings(composition)) bindings.add(symbol);
