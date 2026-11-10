@@ -236,7 +236,7 @@ The run found F-05, F-06 and F-07.
 | F-05 | `test-layout-suites` cannot reach `ok` on this repo. It counts 8 native `node:test` files under `packages/{effects,server,contracts,messaging}/test` that `scripts/test.mjs` never registers, and its repair ("Declare them with /aof:map-tests") is one the skill must refuse. Declaring them turns the check `ok` but makes 8 files selectable that the per-file runner rejects ("exports no array"). It fails 190/04 E14 and PLAN.md's "all ok". Distinct: recall returned no finding on this check. | defect | blocker | New `@bug` task 190/04 tasks/05. 04 returned to `in-progress`. The architect amends ADR-008 §1 first: how the check knows what the runner can run without a second predicate (FF-19006). | `aof:continue 190/04`: ADR-008 §7 adds `work.test.exclude`, decided through `select.mjs` alone. This repo excludes its 64 native `node:test` files, and the suites check is `ok` (190/04 re-check below) | closed |
 | F-06 | Declared `suiteSuffixes` do not define the whole suite. `walkSuiteFiles` (`packages/work/src/audit/census.mjs:444`) collects only `.test.mjs`/`.suite.mjs`, so a project declaring `.test.ts` gets `aof test --scope all --plan` = `0/0 suites`, while `test-layout-suites` says `ok`. The doctor and the selector answer "what is a suite" differently, and 190's adoption path tells a non-`.mjs` project it is done when it can never narrow. Distinct: recall returned m161/F-02 and m72/F-72-X (registration and census controls, different defects; irrelevant). | defect | blocker | Same `@bug` task as F-05: one answer to "what is the whole suite". | `aof:continue 190/04`: ADR-008 §6 makes the whole suite honour declared suffixes, and §8 makes an empty whole suite a warning. The `.test.ts` project now plans `2/2` (190/04 re-check below) | closed |
 | F-07 | `/aof:map-tests` never authors `work.test.gate.noLanesArgs`, so a mapped project's resume re-runs integration and cargo lanes that had finished. This repo's hand declaration has `["--no-lanes"]`. | defect | low | non-blocker. Folded into 190/04's `@bug` task while 04 is open. | `aof:continue 190/04`: `map-tests.md` and its Codex variant declare `noLanesArgs` when the gate program takes the flag (task 05 E3) | closed |
-| F-08 | The SPEC's outcome "a story that only adds a new test file and edits one source file runs an impacted set, not the whole tree" holds only for leaf changes. Any source module's transitive dependents reach the composition root (`packages/core/src/application/default.mjs`), so a narrowed run selects 1,119 of 1,273 (190/01 task 03; f96cb41e at 1,155 in 04's replay). ADR-004 §3's revisit trigger ("if 190's verification shows narrowed story runs still slow") is met, and ADR-004 itself is still marked pending the operator's confirmation. Related to m72/F-72-AN (a widened run that is a whole run; departed: there the run widened, here it narrows in name only). | spec-gap | high | The operator's decision, before the milestone is accepted: (a) accept 190 with this recorded as an open Gap, plus a backlog item (stop the walk at the composition root with an import smoke test, or a cost-based split per ADR-004 §3); or (b) add a story to 190. ADR-004 needs ruling either way. | operator | open |
+| F-08 | The SPEC's outcome "a story that only adds a new test file and edits one source file runs an impacted set, not the whole tree" holds only for leaf changes. Any source module's transitive dependents reach the composition root (`packages/core/src/application/default.mjs`), so a narrowed run selects 1,119 of 1,273 (190/01 task 03; f96cb41e at 1,155 in 04's replay). ADR-004 §3's revisit trigger ("if 190's verification shows narrowed story runs still slow") is met, and ADR-004 itself is still marked pending the operator's confirmation. Related to m72/F-72-AN (a widened run that is a whole run; departed: there the run widened, here it narrows in name only). | spec-gap | high | non-blocker, taken by the operator (2026-11-10): "get 190 completed" accepts the milestone with this open as a Gap. ADR-004 stands as written, and §3's revisit is the follow-up | backlog (story shape: stop the transitive walk at the composition root with an import smoke test, or ADR-004 §3's cost-based split) | open |
 
 ## Accept decision (aof:verify 190, 2026-11-10)
 
@@ -261,3 +261,33 @@ at either severity: all six controls resolve, and each has a red probe.
      `teach.md` voice rewrite, and an unowned `codex-ownership` case. A whole-tree run here meets the
      live control daemon on `127.0.0.1:4182`, plus F-02 and F-03, which are red on this Mac only.
   3. **F-08 and ADR-004 await the operator.**
+
+## Regression gate (the milestone, 2026-11-10)
+
+`aof work regression-gate 190` ran unchanged on a clean `ubuntu-latest` checkout through
+`.github/workflows/gate.yml` (160/ADR-014 §6), started by pushing `gate/190` at `4a006d7b`, run
+`42837319031`. This Mac cannot host the whole tree: the live control daemon holds `:4182`, and
+F-02 and F-03 are red here only. The row was brought home unchanged from the run's artifact into
+`REGRESSION.md`:
+
+```
+| 4a006d7bfa17a011e276f65346ddae84264e1d95 | 2026-11-10T15:07:18.127Z | all | green | sharded · 15.7 min |
+```
+
+PR #25's `test` workflow (8 shards and the budget judge) is green on the same commit, run
+`42837305847`, and so is CodeQL. On the way, PR #25's earlier red run named six controls:
+- one is 190's: FF-11901, fixed at `1facd256`;
+- five were red on this branch before 190, at `4ff7fba6`: FF-5301, 131/08 task00, FF-9603 ×2 and
+  FF-7106. Each was cleared at `434e01bb` with its reason;
+- code-scanning alert 147 (polynomial ReDoS in `recordStatus`) was fixed at `4a006d7b`.
+
+## Milestone accept decision (2026-11-10)
+
+**Accepted.** All five stories are `done`. `aof work validate 190` passes, `aof work doctor 190`
+reports no error and no `control-unresolved` at either severity, and the regression gate's newest
+row is green at `4a006d7b`. No blocker finding is open:
+- F-01, F-05, F-06 and F-07 are closed;
+- F-02 and F-03 stay with their m172 owners;
+- F-04 and F-08 are non-blockers in the backlog, and F-08 is the milestone's open Gap in
+  `OUTCOME.md`.
+

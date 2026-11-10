@@ -3,7 +3,7 @@ type: milestone
 number: 190
 slug: sign-off-reads-recorded-test-runs
 title: "A tree is tested once per change, and every sign-off door reads that run's record instead of running it again"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-11-09
 updated: 2026-11-10
@@ -56,7 +56,7 @@ In scope:
   need. They run the suite only when the tree has changed since that record. Reviewers judge the diff.
   They don't re-run the tests.
 - ~~**The suite is split into tiers, and each door gates on the tiers it needs.**~~ Decided against
-  at refine (ARCHITECTURE ADR-004, pending the operator's confirmation). The end-to-end lanes are
+  at refine (ARCHITECTURE ADR-004). It stood when the operator had 190 completed, and its §3 revisit is open as F-08. The end-to-end lanes are
   already reached only by whole-tree runs, and the rest of the cost sits in no directory a tier
   could name (RESEARCH Q3). Once `impacted` narrows, the end-to-end tier is the milestone gate.
 - **New files stop widening the run to the whole tree.** A new test file is a suite in its own right,

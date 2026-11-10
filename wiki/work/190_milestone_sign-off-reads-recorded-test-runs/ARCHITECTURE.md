@@ -182,7 +182,8 @@ package-owned suites). Had they narrowed, the median story would have selected 8
    follow-up is a cost-based split derived from `.tmp/test-timings.json`, not a hand-kept
    directory list.
 
-Pending the operator's confirmation at the end of this refine, because it narrows the SPEC.
+Pending the operator's confirmation at the end of this refine, because it narrows the SPEC. It stood when the
+operator had 190 completed (2026-11-10). §3's revisit is open as VERIFICATION F-08.
 
 ## ADR-005 — A gate that did not finish resumes, and every gate run is also a test record
 
