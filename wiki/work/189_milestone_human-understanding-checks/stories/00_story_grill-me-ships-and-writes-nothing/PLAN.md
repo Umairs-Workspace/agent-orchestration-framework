@@ -22,8 +22,8 @@ matched on the `aof <verb>` token, so a prose phrase like "a passing review" nev
 - 188/02 found its write set short by about ten census files. This story's `files:` lists all of
   them, but run the impacted gate early. `graphify-out/graph.json` is fresh as of refine, so the gate
   may narrow this time.
-- `test/arch/command` is at its ceiling (32). The budget row moves to 33 with a reason, as 188 did
-  three times.
+- The arch command directory is at its ceiling (32). Its budget row moves to 33 with a reason, as
+  188 did three times.
 - `.opencode/` is tracked but outside this repo's lock (188 review 00 (b)). A Claude-only member
   needs no OpenCode render, so leave it alone.
 

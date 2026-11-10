@@ -19,7 +19,7 @@ Two seams, one on each side of the process boundary the gate already has.
     finished units' results with the new ones;
   - write one row, and on any finished run, one ADR-001 record of scope `all`.
 
-The merge is `scripts/test-sharded-report.mjs`'s verdict over the union. Do not write a second
+The merge is the sharded report module's verdict over the union. Do not write a second
 verdict function, because the report module is already the pure one (144).
 
 ## Verification step

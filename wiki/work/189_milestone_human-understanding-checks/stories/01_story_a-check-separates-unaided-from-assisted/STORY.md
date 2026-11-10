@@ -8,7 +8,7 @@ depends: [00]
 status: not-started
 owner: product-owner
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-10
 adrs: [ADR-003, ADR-004]
 reads:
   - wiki/work/189_milestone_human-understanding-checks/SPEC.md
@@ -30,6 +30,7 @@ files:
   - packages/learning/README.md
   - .claude/commands/aof/grill-me.md
   - .claude/commands/aof/teach.md
+  - .codex/aof/workflows/workflow-contract.md
   - .aof/aof.lock.json
   - .aof/aof.apply-journal.json
   - packages/core/assets/manifest.json

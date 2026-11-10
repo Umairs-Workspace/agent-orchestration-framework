@@ -24,7 +24,7 @@ Mirror each edit into the matching `<!-- variant:… -->` section of
 After `aof work update`:
 - `grep -n -- "--fresh" .claude/commands/aof/*.md` finds only the flake sentence;
 - `grep -n "across the accepted milestones" .aof/templates/work/uat/SESSION.md` finds nothing;
-- `test/work/lifecycle/work-test-declared.test.mjs` and `acd-prompt-gate-ladder-parity` are green.
+- the declared-test suite and `acd-prompt-gate-ladder-parity` are green.
 
 A wrong result looks like the Codex variant still carrying the old review-lane paragraph. That
 means the mirror was missed, and `bundle-runtime-variants.suite.mjs` will say so.

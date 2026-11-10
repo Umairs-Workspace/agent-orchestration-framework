@@ -26,7 +26,7 @@ and its start instant.
 ## Verification step
 
 In a scratch clone with an isolated `AOF_GLOBAL_HOME`:
-1. run `aof test --scope file test/testing/test-command-contract.test.mjs` twice. The first launches
+1. run `aof test --scope file` on the test-command contract suite twice. The first launches
    and the second prints `answered from the run of …`, in well under a second;
 2. `touch` an untracked file and run it a third time. It launches again;
 3. start two of the same `--fresh`-less calls together. One launches and the other waits and then
