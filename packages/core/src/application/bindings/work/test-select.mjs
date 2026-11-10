@@ -9,7 +9,7 @@ export function assembleWorkTestSelect({ workAuditCensusServices, codeRelationsS
   const { registrationDecision } = workAuditCensusServices;
   const { relations } = codeRelationsServices;
 
-  const { CHANGED_SET_EMPTY, CHANGED_SET_UNREADABLE, SELECTION_SCOPES, SINCE_REV_UNRESOLVABLE, WIDENING_REASONS, isSuiteFile, registrationReport, selectSuites, wideningRuleProblems } = createTestSelector({ relations, registrationDecision });
+  const { CHANGED_SET_EMPTY, CHANGED_SET_UNREADABLE, SELECTION_SCOPES, NARROWING_REASONS, SINCE_REV_UNRESOLVABLE, WIDENING_REASONS, isSuiteFile, registrationReport, selectSuites, wideningRuleProblems } = createTestSelector({ relations, registrationDecision });
 
-  return { CHANGED_SET_EMPTY, CHANGED_SET_UNREADABLE, SELECTION_SCOPES, SINCE_REV_UNRESOLVABLE, WIDENING_REASONS, isSuiteFile, registrationReport, selectSuites, wideningRuleProblems };
+  return { CHANGED_SET_EMPTY, CHANGED_SET_UNREADABLE, SELECTION_SCOPES, NARROWING_REASONS, SINCE_REV_UNRESOLVABLE, WIDENING_REASONS, isSuiteFile, registrationReport, selectSuites, wideningRuleProblems };
 }

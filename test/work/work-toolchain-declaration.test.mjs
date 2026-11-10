@@ -522,7 +522,7 @@ export const workToolchainDeclarationTests = [
 
       const declared = resolveTestGate({ work: { test: { gate: { args: ["scripts/test-sharded.mjs"], jobsArgs: ["--jobs", "{jobs}"], budgetMinutes: 15 } } } });
       assert.equal(declared.ok, true);
-      assert.deepEqual(declared.gate, { args: ["scripts/test-sharded.mjs"], jobsArgs: ["--jobs", "{jobs}"], budgetArgs: null, budgetMinutes: 15 });
+      assert.deepEqual(declared.gate, { args: ["scripts/test-sharded.mjs"], jobsArgs: ["--jobs", "{jobs}"], budgetArgs: null, budgetMinutes: 15, reportArgs: null, filesArgs: null, noLanesArgs: null });
 
       const base = Object.freeze({ command: "node", program: "/usr/bin/node", args: Object.freeze(["scripts/test.mjs"]), selectArgs: Object.freeze([]), roots: Object.freeze(["test"]), deadlineMs: 1000, report: Object.freeze({ format: "tap" }) });
       assert.deepEqual([...gateToolchain(base, declared.gate, {}).args], ["scripts/test-sharded.mjs"], "the gate's args replace work.test.args");

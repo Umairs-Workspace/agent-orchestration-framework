@@ -54,7 +54,26 @@
         "scripts/test-shard.mjs"
       ],
       "roots": [
-        "test"
+        "test",
+        "apps/ui/test",
+        "packages/core/test",
+        "packages/diagrams-ui/test",
+        "packages/diagrams/test",
+        "packages/execution/test",
+        "packages/foundation/test",
+        "packages/integration-hyperagent/test",
+        "packages/integration-notion/test",
+        "packages/knowledge/test",
+        "packages/learning/test",
+        "packages/mesh/test",
+        "packages/specification-by-example/test",
+        "packages/work-graph/test",
+        "packages/work-loop/test",
+        "packages/work/test"
+      ],
+      "suiteSuffixes": [
+        ".test.mjs",
+        ".suite.mjs"
       ],
       "deadlineMs": 7200000,
       "report": {
@@ -73,6 +92,17 @@
         "budgetArgs": [
           "--budget-min",
           "{minutes}"
+        ],
+        "reportArgs": [
+          "--report-json",
+          "{report}"
+        ],
+        "filesArgs": [
+          "--files",
+          "{files}"
+        ],
+        "noLanesArgs": [
+          "--no-lanes"
         ]
       }
     },

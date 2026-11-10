@@ -380,7 +380,7 @@
     "kind": "child-process",
     "expression": "spawn({ command: execPath, args: [probe, target], cwd: repoRoot, deadlineMs })",
     "digest": "159a1145ba46cb74dd73fded47998bda790932b1cd2e00f6b89ca02b16652de0",
-    "sourceDigest": "2caeabdb6074ae34825f94c485b1ed99b6a764acc52461d28dd77aa4d2cc9f49",
+    "sourceDigest": "b9962372adfbe75d32394868d6f10a7e9421207a44412c2d59ee4bc15a7d5201",
     "reason": "Bounded child invokes the installed audit-probe entry resolved by toolkitProgram; selected target is the governed project runner, intentionally external to AOF."
   },
   {
@@ -420,7 +420,7 @@
     "kind": "child-process",
     "expression": "execFile(\"git\", args, { cwd, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) =>\n      resolve({\n        stdout: String(stdout ?? \"\"),\n        stderr: String(stderr ?? \"\"),\n        status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0,\n      }))",
     "digest": "e45b0aba4f94bfe7a064715e6b6a3ce6e2779a4e682737861598b04cead9420b",
-    "sourceDigest": "3f9575a809cbb4aae8f7cc9e828fab7d4991080be317e07ab273a76cc05271dc",
+    "sourceDigest": "57d8a5366bf62e6a8f18b53bdb541469e91893f16de915841f3db8967c6a1630",
     "reason": "Git-only bounded comparison reader; no application module entry."
   },
   {
@@ -764,7 +764,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"rev-parse\", \"--path-format=absolute\", \"--git-common-dir\"], { cwd: repo, encoding: \"utf8\", windowsHide: true })",
     "digest": "03bcf3b387dd17cab6cc2432a220dbe3f5ad3a683af658b629645a5ce5975c96",
-    "sourceDigest": "76146e0a7a1efec4bd87903a516b2509006012b72c49a1ba9a542b57006f039d",
+    "sourceDigest": "cb98b82b048b116464c0e781eb01d7a422d54504341176330c716172134ecb74",
     "reason": "Repository test tooling: asks git for the main checkout (the common git dir) so a run from a detached worktree reads and writes the shared test timings."
   },
   {
@@ -772,7 +772,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.join(repo, \"scripts\", \"test.mjs\")).href)",
     "digest": "cea6ed1d26bddda67f6d953504e66dbcf26c4371124d1cdbe5a78e8ed7c744b9",
-    "sourceDigest": "76146e0a7a1efec4bd87903a516b2509006012b72c49a1ba9a542b57006f039d",
+    "sourceDigest": "cb98b82b048b116464c0e781eb01d7a422d54504341176330c716172134ecb74",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
@@ -780,7 +780,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(file).href)",
     "digest": "157543e2e2f928070ac3d45cc6cdbdc13ed54a580d73cd3b48c2e137b1c3945c",
-    "sourceDigest": "76146e0a7a1efec4bd87903a516b2509006012b72c49a1ba9a542b57006f039d",
+    "sourceDigest": "cb98b82b048b116464c0e781eb01d7a422d54504341176330c716172134ecb74",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
@@ -788,7 +788,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.join(integrationDir, \"support\", \"feature-runner.mjs\")).href)",
     "digest": "b0f8535ade1e8e3014c2b92870732e37c8991961d96f1a54906506975ca179fc",
-    "sourceDigest": "76146e0a7a1efec4bd87903a516b2509006012b72c49a1ba9a542b57006f039d",
+    "sourceDigest": "cb98b82b048b116464c0e781eb01d7a422d54504341176330c716172134ecb74",
     "reason": "Repository test tooling: imports the integration lane's own feature discovery (`test/integration/support/feature-runner.mjs`) so each feature is planned as its own unit."
   },
   {
@@ -796,7 +796,7 @@
     "kind": "child-process",
     "expression": "spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...env, AOF_GLOBAL_HOME: home, AOF_TEST_CLAUDE_HOME: home } })",
     "digest": "e606bd0f184b738afba10f7b112b4bc437b88b308fca36596bd8eb12e3922fc3",
-    "sourceDigest": "76146e0a7a1efec4bd87903a516b2509006012b72c49a1ba9a542b57006f039d",
+    "sourceDigest": "cb98b82b048b116464c0e781eb01d7a422d54504341176330c716172134ecb74",
     "reason": "Repository test tooling: runs each shard unit (`scripts/test-shard.mjs`), each integration feature (`test/integration/cli.mjs <feature>`, in-process) and the cargo lane (`scripts/test.mjs --lanes-only` with no feature selected) as a node child with its own isolated AOF_GLOBAL_HOME. Each unit also gets its home as AOF_TEST_CLAUDE_HOME (160/ADR-013 §2), so the claude folder trust a unit writes lands in its own temporary home, never the operator's ~/.claude.json."
   },
   {
@@ -948,8 +948,16 @@
     "kind": "child-process",
     "expression": "spawnSync(locator, [binary], { encoding: \"utf8\" })",
     "digest": "dc5db708145856b8186e5cca621b17108ba30b7c9b88167999c0d2962c14ec42",
-    "sourceDigest": "446019038c123e490d5adbe78d526f4303c2a713d37ee0087c258b33d930f588",
-    "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed. 154/01 adds runtime execution inspection; the platform binary locator call and its argv are unchanged. 180/01 adds the memory node's legacy warnings and doctor check; the locator call and its argv are unchanged."
+    "sourceDigest": "39b3ca69ac73856ff6612f9b0f2fd79cd990d35f877c26a670c118757e1e88c6",
+    "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed. 154/01 adds runtime execution inspection; the platform binary locator call and its argv are unchanged. 180/01 adds the memory node's legacy warnings and doctor check; the locator call and its argv are unchanged. 190/04 adds the test-layout family's tracked-file read beside it; the locator call and its argv are unchanged."
+  },
+  {
+    "file": "packages/core/src/application/bindings/config-inspect.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(\"git\", [\"ls-files\", \"-z\"], { cwd: projectDir, encoding: \"utf8\", timeout: 30_000, maxBuffer: 256 * 1024 * 1024 })",
+    "digest": "cd18cc5d7c87dfe071a2d076953b4486b6c2dbe3027cba91c4ec321e7fc5fae0",
+    "sourceDigest": "39b3ca69ac73856ff6612f9b0f2fd79cd990d35f877c26a670c118757e1e88c6",
+    "reason": "190/ADR-008 §1: the project doctor's test-layout family lists the tracked files with `git ls-files` at its own edge, bounded by a timeout, to judge the declared test roots against the tree. It reads names only and constructs no application module."
   },
   {
     "file": "packages/mesh/src/worker-execution.mjs",

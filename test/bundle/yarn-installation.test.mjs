@@ -330,7 +330,12 @@ export const yarnInstallationTests = [
         'commands/doctor.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs', '@aof/contracts/error'],
         'commands/validate.mjs': ['node:path', 'node:fs/promises'],
         'declared.mjs': ['node:path', 'node:fs/promises'],
-        'select.mjs': ['node:fs'],
+        // 190/01: the selector resolves a changed file's literal specifiers by path and matches declared couplings; it reads no file itself.
+        'select.mjs': ['node:path', 'picomatch'],
+        // 190/04: the test-layout check matches a coupling's paths the way the selector does; it reads no file itself.
+        'layout.mjs': ['picomatch'],
+        // 190/00: the test record keys the working tree in a throwaway index under the temp dir, names its lock by a digest, and writes its store.
+        'record.mjs': ['node:crypto', 'node:fs/promises', 'node:os', 'node:path'],
         'observe.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error'],
         'debt.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
         'artifacts.mjs': ['node:crypto'],

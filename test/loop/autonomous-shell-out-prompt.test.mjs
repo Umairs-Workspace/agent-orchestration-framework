@@ -63,7 +63,9 @@ const commandIdsBeforeStory = [
   // `promote` and `archive`, repaired at `aof:verify 145`.
   // `manual` ADDED AT 179/00 (after `loop-diagram`, the descriptor's own order): 149's guide moved
   // out of `continue` into the `/aof:manual` command of its own (179/ADR-001).
-  "init", "insert-chore", "insert-milestone", "insert-story", "insert-uat", "loop-diagram", "manual", "migrate",
+  // `map-tests` ADDED AT 190/04 (after `manual`, the descriptor's own order): `/aof:map-tests`
+  // declares a project's `work.test` layout and proves it by replay (190/ADR-008 §3).
+  "init", "insert-chore", "insert-milestone", "insert-story", "insert-uat", "loop-diagram", "manual", "map-tests", "migrate",
   // `pay-debt` ADDED AT 119/03, and late: the command shipped with the tech-debt ledger work and
   // this list — the control that says the pre-existing member set is COMPLETE and undisturbed —
   // was not updated with it, so the leg has been red on this branch since. It surfaced here

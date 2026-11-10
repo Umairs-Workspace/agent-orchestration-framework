@@ -624,7 +624,8 @@ export const testShardedReportTests = [
       assert.equal(shardedExit({ failures: [], flakes: [], executed: 30, registered: 30 }), 0, "30 of 30 is green");
       assert.equal(shardedExit({ failures: [], flakes: [], executed: 30, registered: 100 }), 1, "non-vacuity: 30 of the whole tree's 100 is a lost case");
       const runner = await readFile(path.join(repoRoot, "scripts", "test-sharded.mjs"), "utf8");
-      assert.match(runner, /const registeredHere = SHARD == null \? tests\.length : plan\.filter\(\(unit\) => !unit\.lanes\)\.reduce/u, "a shard registers only its own units' cases");
+      // 190/02: a run planned over `--files` registers only its named files' cases too, by the same sum.
+      assert.match(runner, /const registeredHere = SHARD == null && FILES == null \? tests\.length : plan\.filter\(\(unit\) => !unit\.lanes\)\.reduce/u, "a shard registers only its own units' cases");
       assert.match(runner, /registered: registeredHere,/u, "and its verdict reads that count");
     },
   },

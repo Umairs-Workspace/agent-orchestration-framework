@@ -232,7 +232,8 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   globalWorkStore.openGlobalWorkProjectionStore = lifetime.open(globalWorkStore.openGlobalWorkProjectionStore);
   const boardMeshExecution = assembleBoardMeshExecution({ globalWorkStoreServices: globalWorkStore, workspaceServices: workspace, degradeServices: degrade });
   const dsl = assembleDsl({ fsServices: fs, workspaceServices: workspace });
-  const configInspect = assembleConfigInspect({ dslServices: dsl, fsServices: fs, workspaceServices: workspace, degradeServices: degrade });
+  const workToolchain = assembleWorkToolchain({  });
+  const configInspect = assembleConfigInspect({ dslServices: dsl, fsServices: fs, workspaceServices: workspace, degradeServices: degrade, workToolchainServices: workToolchain });
   const configEditor = assembleConfigEditor({ configInspectServices: configInspect, dslServices: dsl, fsServices: fs, workspaceServices: workspace });
   const boardUi = assembleBoardUi({ commandCoreServices: commandPort, degradeServices: degrade, terminalProvidersServices: terminalProviders });
   const terminalSessions = assembleTerminalSessions({ degradeServices: degrade });
@@ -395,8 +396,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const commandsRatchet = assembleCommandsRatchet({ commandsResolveServices: commandsResolve });
   const workTestSelect = assembleWorkTestSelect({ workAuditCensusServices: workAuditCensus, codeRelationsServices: codeRelations });
   const workTestChanged = assembleWorkTestChanged({ workTestSelectServices: workTestSelect });
-  const workToolchain = assembleWorkToolchain({  });
-  const commandsTest = assembleCommandsTest({ workAuditCensusServices: workAuditCensus, workTestChangedServices: workTestChanged, commandsResolveServices: commandsResolve, workTestSelectServices: workTestSelect, workToolchainServices: workToolchain });
+  const commandsTest = assembleCommandsTest({ workAuditCensusServices: workAuditCensus, workTestChangedServices: workTestChanged, commandsResolveServices: commandsResolve, workTestSelectServices: workTestSelect, workToolchainServices: workToolchain, degradeServices: degrade });
   const commandsRegressionGate = assembleCommandsRegressionGate({ meshWorktreeServices: meshWorktree, commandsResolveServices: commandsResolve, commandsTestServices: commandsTest, workToolchainServices: workToolchain, degradeServices: degrade, runStoreServices: runStore });
   const commandsResume = assembleCommandsResume({ commandsResolveServices: commandsResolve, runStoreServices: runStore, effectsRunTransitionsServices: effectsRunTransitions, workReadServices: workRead, itemLockServices: itemLock, loopAskRequestServices: loopAskRequest, loopAskServices: loopAsk, boardMeshExecutionServices: boardMeshExecution, notifyNotifyServices: notifyNotify, workServices: work, workspaceServices: workspace, degradeServices: degrade, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
   const commandsResync = assembleCommandsResync({ globalWorkStoreServices: globalWorkStore, workspaceServices: workspace, meshResyncServices: meshResync });
@@ -425,7 +425,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const storyContractDerive = assembleStoryContractDerive({ codeRelationsServices: codeRelations });
   const workExamplesAnswers = assembleWorkExamplesAnswers({ agentSessionDriverServices: agentSessionDriver, degradeServices: degrade, runStoreServices: runStore, runSpendIngestServices: runSpendIngest, workObserveServices: workObserve });
   const workInit = assembleWorkInit({ workspaceServices: workspace, workMemoryServices: workMemory });
-  const commandsInitUpdate = assembleCommandsInitUpdate({ workInitServices: workInit, workMemoryServices: workMemory });
+  const commandsInitUpdate = assembleCommandsInitUpdate({ workInitServices: workInit, workMemoryServices: workMemory, configInspectServices: configInspect });
   const commandsAssetsUi = assembleCommandsAssetsUi({ provideSetupUi: async () => { lifetime.assertReady(); return setupUi; } });
   const spineFace = assembleSpineFace({ commandCoreServices: commandPort, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, degradeServices: degrade, provideGlobalWorkStore: async () => { lifetime.assertReady(); return globalWorkStore; }, provideGlobalWorkPublisher: async () => { lifetime.assertReady(); return globalWorkPublisher; }, applicationEnv: env });
   const scaffold = assembleScaffold({ fsServices: fs, workspaceServices: workspace });
@@ -563,6 +563,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
           resolveRatchetBase: commandsRatchet.resolveRatchetBase,
         }),
         test: Object.freeze({
+          COMMIT_NEEDS_PLAN: commandsTest.COMMIT_NEEDS_PLAN,
           NO_FILES_NAMED: commandsTest.NO_FILES_NAMED,
           NO_SCOPE: commandsTest.NO_SCOPE,
           SCOPE_UNRECOGNISED: commandsTest.SCOPE_UNRECOGNISED,

@@ -125,6 +125,21 @@ export function doorInvocationProblems(sources, id = TEST_COMMAND_ID) {
   return problems;
 }
 
+// PURE — FF-19002 (190/ADR-006 §3): a door that imports the test-record store. A record reports,
+// and only the regression gate's `REGRESSION.md` row feeds a door; a door that read a record
+// directly would make a selection's answer a verdict through the side entrance. Static imports,
+// dynamic imports and re-exports all name the module by its path or its package export.
+export function recordImportProblems(sources) {
+  const pattern = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(["'`])([^"'`]*(?:testing\/record(?:\.mjs)?))\1/gu;
+  const problems = [];
+  for (const { rel, code } of sources) {
+    for (const match of stripComments(code).matchAll(pattern)) {
+      problems.push(`${rel} imports ${JSON.stringify(match[2])} — no transition reads a test record (FF-19002)`);
+    }
+  }
+  return problems;
+}
+
 // PURE — the census this control does NOT use, kept so the row can PROVE the shape census is
 // necessary rather than merely claim it. A raw token census reds on correct shipped code.
 export function rawTokenProblems(sources, id = TEST_COMMAND_ID) {
@@ -391,6 +406,25 @@ export const archTests = [
       const raw = rawTokenProblems(sources);
       assert.ok(raw.length > 0, "a raw-token census WOULD red on correct code, which is why this one matches shapes");
       assert.ok(raw.some((rel) => rel.startsWith("packages/work/src/audit/")), `…and it reds in the audit family first: ${raw.join(", ")}`);
+    },
+  },
+
+  {
+    name: "arch/190 FF-19002 (acd-test-command-reports-not-decides): no transition reads a test record",
+    async run() {
+      const sources = await doorSources();
+      assert.ok(sources.length >= 8, `the doors were actually walked (non-vacuous): ${sources.length} modules read`);
+      const problems = recordImportProblems(sources);
+      assert.deepEqual(problems, [], `no status, doctor, loop, audit or bundle door imports the record store:\n  ${problems.join("\n  ")}`);
+      for (const shape of [
+        'import { createTestRecord } from "@aof/work/testing/record";',
+        'const { findAnswer } = await import("../../work/src/testing/record.mjs");',
+        'export { acquire } from "@aof/work/testing/record";',
+      ]) {
+        const planted = recordImportProblems([{ rel: "packages/work/src/doctor/index.mjs", code: shape }]);
+        assert.equal(planted.length, 1, `a planted \`${shape}\` is caught`);
+      }
+      assert.deepEqual(recordImportProblems([{ rel: "packages/work/src/doctor/index.mjs", code: 'import { a } from "./testing/recorder.mjs";' }]), [], "a neighbouring name is not the store");
     },
   },
 

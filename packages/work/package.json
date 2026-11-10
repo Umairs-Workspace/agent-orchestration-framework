@@ -86,6 +86,8 @@
     "./testing/changed": "./src/testing/changed.mjs",
     "./testing/declared": "./src/testing/declared.mjs",
     "./testing/toolchain": "./src/testing/toolchain.mjs",
+    "./testing/record": "./src/testing/record.mjs",
+    "./testing/layout": "./src/testing/layout.mjs",
     "./commands/test": "./src/commands/test.mjs",
     "./commands/doctor": "./src/commands/doctor.mjs",
     "./commands/validate": "./src/commands/validate.mjs",

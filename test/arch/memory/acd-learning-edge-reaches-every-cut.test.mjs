@@ -148,6 +148,8 @@ const EXCLUDED = Object.freeze({
   "loop-diagram.md": "draws an existing milestone's wave plan; cuts nothing",
   // 179/00 — 149's guide moved out of continue into its own command; it builds nothing and cuts nothing.
   "manual.md": "guides the operator's own build of one story; cuts nothing",
+  // 190/04 — declares the project's `work.test` layout and proves it by replay; no partition, no memory call.
+  "map-tests.md": "declares one project's test layout in its config; cuts nothing",
   "migrate.md": "migrates one source folder into one milestone",
   "observe.md": "reads transcript telemetry",
   "pay-debt.md": "pays down ledger entries in the files at hand",

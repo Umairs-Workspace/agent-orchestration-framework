@@ -41,7 +41,9 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdtemp, mkdir, readFile, rm, writeFile, realpath } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile, realpath } from "node:fs/promises";
+import { runBounded } from "@aof/execution/bounded-process";
+import { createTestRecord } from "@aof/work/testing/record";
 import { existsSync } from "node:fs";
 import { normaliseTap } from "@aof/work/grade";
 import { generateBundleManifest, manifestPath, serializeBundleManifest } from "aof/bundle-manifest";
@@ -846,7 +848,7 @@ export const regressionGateTests = [
   {
     name: "144-00 the usage and the operator guide name the settings",
     run: async () => {
-      assert.equal(regressionGateCommand.cli.spec.usage, "aof work regression-gate <ref> [--serial] [--jobs N] [--json]");
+      assert.equal(regressionGateCommand.cli.spec.usage, "aof work regression-gate <ref> [--serial] [--jobs N] [--resume] [--json]");
       const guide = await readFile(path.join(repoRoot, "docs", "acd.md"), "utf8");
       assert.match(guide, /regression-gate[\s\S]{0,400}`work\.test\.gate` when the project declares one/, "the guide says the gate runs work.test.gate when declared");
       assert.match(guide, /`--serial`/);
@@ -1134,6 +1136,149 @@ export const regressionGateTests = [
       assert.equal(shipped, serializeBundleManifest(generateBundleManifest()), "the shipped bundle manifest matches the rendered bundle");
     },
   },
+
+  // ═══════════ 190/02 — a gate that did not finish resumes; every finished gate run is a test record ══
+  //
+  // The REAL gate body over a REAL temp git repository, so the content key and the dirty-tree check are
+  // git's own answers. Only the sharded program is a fake: it reads the argv the shipped code composed,
+  // writes a planted machine report where `--report-json` says, and prints the lines the gate reads.
+
+  // tasks/00 · a gate that did not finish resumes on the same content
+  {
+    name: "190/02 E1 · only the unfinished units run again, and one row records the whole",
+    run: () => withResumeFixture(async ({ gate, program, rows }) => {
+      const stopped = await gate({ program: program.stop({ killed: 3, notStarted: 15 }) });
+      assert.equal(stopped.result, "not-finished");
+      const out = await gate({ resume: true, now: LATER_INSTANT, program: program.green() });
+      assert.deepEqual(program.lastFiles(), program.unfinishedFiles(), "--files names exactly the files of the 18 unfinished units");
+      assert.equal(out.result, "green");
+      const [, resumed] = await rows();
+      assert.equal(resumed.result, "green", "one row is appended for the whole");
+      assert.match(resumed.detail, new RegExp(`resumed from ${INSTANT}: 18 of 230 units re-run`, "u"));
+    }),
+  },
+  {
+    name: "190/02 E2 · a resumed unit that fails makes the combined row red",
+    run: () => withResumeFixture(async ({ gate, program, rows }) => {
+      await gate({ program: program.stop({ killed: 3, notStarted: 15 }) });
+      const out = await gate({ resume: true, now: LATER_INSTANT, program: program.red("test/work/a.test.mjs") });
+      assert.equal(out.result, "red");
+      const [, resumed] = await rows();
+      assert.equal(resumed.result, "red");
+      assert.match(resumed.detail, /test\/work\/a\.test\.mjs/u, "the detail names the failing case");
+    }),
+  },
+  {
+    name: "190/02 [outline] a resume refuses when there is nothing honest to resume (4 rows)",
+    run: async () => {
+      const rows = [
+        { example: "E3", row: "not-finished on K", content: "L, after a commit", code: "regression-gate-resume-tree-changed",
+          arrange: async ({ gate, program, root }) => { await gate({ program: program.stop({ killed: 1, notStarted: 0 }) }); await commitChange(root, "src/a.mjs", "export const a = 2;\n"); } },
+        { example: "E4", row: "green", content: "K", code: "regression-gate-nothing-to-resume",
+          arrange: async ({ gate, program }) => { await gate({ program: program.green() }); } },
+        { row: "red", content: "K", code: "regression-gate-nothing-to-resume",
+          arrange: async ({ gate, program }) => { await gate({ program: program.red("test/work/a.test.mjs") }); } },
+        { row: "not-finished, its report gone", content: "K", code: "regression-gate-resume-report-missing",
+          arrange: async ({ gate, program, store }) => { await gate({ program: program.stop({ killed: 1, notStarted: 0 }) }); for (const name of await readdir(store)) if (name.endsWith(".attachment")) await rm(path.join(store, name)); } },
+      ];
+      for (const row of rows) {
+        await withResumeFixture(async (fixture) => {
+          await row.arrange(fixture);
+          const before = (await fixture.rows()).length;
+          const launches = fixture.program.launches();
+          await assert.rejects(fixture.gate({ resume: true, now: LATER_INSTANT, program: fixture.program.green() }), (error) => error.code === row.code, `${row.example ?? ""} ${row.row} / ${row.content}: refused with ${row.code}`);
+          assert.equal(fixture.program.launches(), launches, "no runner is launched");
+          assert.equal((await fixture.rows()).length, before, "no row is appended");
+        });
+      }
+    },
+  },
+  {
+    name: "190/02 a dirty checkout is refused before anything else",
+    run: () => withResumeFixture(async ({ gate, program, root }) => {
+      await gate({ program: program.stop({ killed: 1, notStarted: 0 }) });
+      await writeFile(path.join(root, "src", "a.mjs"), "export const a = 3;\n", "utf8");
+      await assert.rejects(gate({ resume: true, now: LATER_INSTANT, program: program.green() }), (error) => error.code === DIRTY_TREE && JSON.stringify(error.detail).includes("src/a.mjs"));
+    }),
+  },
+  {
+    name: "190/02 lanes that finished are not run again",
+    run: () => withResumeFixture(async ({ gate, program }) => {
+      await gate({ program: program.stop({ killed: 2, notStarted: 0 }) });
+      await gate({ resume: true, now: LATER_INSTANT, program: program.green() });
+      assert.ok(program.lastArgs().includes("--no-lanes"), "the sharded runner is launched with --no-lanes");
+    }),
+  },
+  {
+    name: "190/02 a killed packed unit resumes all of its files",
+    run: () => withResumeFixture(async ({ gate, program }) => {
+      // The pool names a killed packed unit by every file it held (`unitKeys`), so the stored report does.
+      await gate({ program: program.stop({ killed: 0, notStarted: 0, packedKilled: ["test/x.test.mjs", "test/y.test.mjs"] }) });
+      await gate({ resume: true, now: LATER_INSTANT, program: program.green() });
+      assert.deepEqual(program.lastFiles(), ["test/x.test.mjs", "test/y.test.mjs"]);
+    }),
+  },
+  {
+    name: "190/02 the sharded runner plans only the files it is named",
+    run: async () => {
+      const dir = await mkdtemp(path.join(os.tmpdir(), "aof-190-02-files-"));
+      try {
+        const list = path.join(dir, "files.txt");
+        await writeFile(list, "test/testing/test-run-record.test.mjs\ntest/testing/test-sharded-report.test.mjs\n", "utf8");
+        const env = { ...process.env, AOF_GLOBAL_HOME: path.join(dir, "home") };
+        const planned = await execFileAsync(process.execPath, [path.join(repoRoot, "scripts", "test-sharded.mjs"), "--plan", "--no-lanes", "--files", list], { cwd: repoRoot, env, maxBuffer: 1 << 24 });
+        assert.match(planned.stdout, /# plan: 2 units/u, "units over those two files only");
+        assert.doesNotMatch(planned.stdout, /test\/work\//u);
+        await writeFile(list, "test/testing/index.mjs\n", "utf8");
+        const refused = await execFileAsync(process.execPath, [path.join(repoRoot, "scripts", "test-sharded.mjs"), "--plan", "--no-lanes", "--files", list], { cwd: repoRoot, env, maxBuffer: 1 << 24 }).catch((error) => error);
+        assert.notEqual(refused.code ?? 0, 0);
+        assert.match(refused.stderr, /register no case: test\/testing\/index\.mjs/u, "a named file that registers no case is refused by path");
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  },
+
+  // tasks/01 · a finished gate run answers a later whole-tree question
+  {
+    name: "190/02 [outline] a finished gate run is recorded, a not-finished one is not answerable (3 rows)",
+    run: async () => {
+      for (const [how, answer, result, launches] of [["green", (p) => p.green(), "green", 0], ["red", (p) => p.red("test/work/a.test.mjs"), "red", 0], ["not finished", (p) => p.stop({ killed: 1, notStarted: 0 }), "not-finished", 1]]) {
+        await withResumeFixture(async ({ gate, program, root }) => {
+          await gate({ program: answer(program) });
+          const [record] = (await storedRecords(root)).filter((entry) => entry.source === "gate");
+          assert.equal(record?.result, result, `${how}: a record of scope all on K`);
+          assert.equal(record.scope, "all");
+          const counter = { launched: 0 };
+          await runTest({ scope: "all" }, { projectRoot: root, config: resumeConfig(), walk: async () => [], record: gateRecords, run: async () => { counter.launched += 1; return GREEN_OBSERVED; } });
+          assert.equal(counter.launched, launches, `${how}: aof test --scope all afterwards launches the runner ${launches} time(s)`);
+        });
+      }
+    },
+  },
+  {
+    name: "190/02 E6 · the gate always runs",
+    run: () => withResumeFixture(async ({ gate, program, root }) => {
+      await gate({ program: program.green() });
+      assert.equal((await storedRecords(root)).some((entry) => entry.result === "green"), true, "a green record of scope all is on the content");
+      await commitAll(root, "the row");
+      const launches = program.launches();
+      const out = await gate({ now: LATER_INSTANT, program: program.green() });
+      assert.equal(program.launches(), launches + 1, "the sharded runner is launched");
+      assert.equal(out.appended, true, "a row is appended for this run");
+    }),
+  },
+  {
+    name: "190/02 a record from the gate carries what a UAT reader needs",
+    run: () => withResumeFixture(async ({ gate, program, root }) => {
+      const out = await gate({ program: program.green() });
+      const record = (await storedRecords(root)).find((entry) => entry.source === "gate");
+      assert.equal(record.scope, "all");
+      assert.deepEqual(record.widened, []);
+      assert.equal(record.gate, true);
+      assert.equal(record.instant, out.instant, "the record names the row's instant");
+    }),
+  },
 ];
 
 // ── 144's fixture ──────────────────────────────────────────────────────────────
@@ -1193,5 +1338,96 @@ async function withGate144({ config, git = {}, program: answer = {}, minutes = 0
     await body({ run, program, recordPath: path.join(itemDir, REGRESSION_RECORD_BASENAME) });
   } finally {
     await rm(tmp, { recursive: true, force: true });
+  }
+}
+
+// ── 190/02's fixture: a temp git repo, a gate that records, and a sharded program that plants a report ──
+const execFileAsync = promisify(execFile);
+const gateRecords = createTestRecord({ runBounded });
+const GREEN_OBSERVED = Object.freeze({ outcome: "exited", exitCode: 0, stdout: "ok - x\n", stderr: "", status: 0, verdict: "passed", attempted: "node", message: "exited 0" });
+const RESUME_GATE = Object.freeze({ ...GATE_144, reportArgs: ["--report-json", "{report}"], filesArgs: ["--files", "{files}"], noLanesArgs: ["--no-lanes"] });
+const resumeConfig = () => config144(RESUME_GATE);
+const UNITS = Array.from({ length: 230 }, (_, index) => `test/u${String(index).padStart(3, "0")}.test.mjs`);
+
+async function gitIn(root, args) {
+  return (await execFileAsync("git", args, { cwd: root })).stdout.trim();
+}
+async function commitAll(root, message) {
+  await gitIn(root, ["add", "-A"]);
+  await gitIn(root, ["-c", "user.email=aof@example.invalid", "-c", "user.name=aof", "-c", "commit.gpgsign=false", "commit", "-q", "--allow-empty", "-m", message]);
+}
+async function commitChange(root, file, text) {
+  await writeFile(path.join(root, file), text, "utf8");
+  await commitAll(root, `change ${file}`);
+}
+async function storedRecords(root) {
+  const store = path.join(root, ".git", "aof", "test-records");
+  if (!existsSync(store)) return [];
+  const names = (await readdir(store)).filter((name) => name.endsWith(".json")).sort();
+  return Promise.all(names.map(async (name) => JSON.parse(await readFile(path.join(store, name), "utf8"))));
+}
+
+// The fake sharded program. Each answer is a plan: what it prints, what it exits, and the machine report
+// it writes where `--report-json` points. It records every argv it was handed.
+function shardedProgram() {
+  const calls = [];
+  let planted = null;
+  const argOf = (args, flag) => { const at = args.indexOf(flag); return at < 0 ? null : args[at + 1]; };
+  const answer = ({ stdout, stderr = "", exitCode, report }) => (toolchain, files, options) => launchRunner(toolchain, files, {
+    ...options,
+    launch: async (call) => {
+      const filesList = argOf(call.args, "--files");
+      calls.push({ args: [...call.args], files: filesList == null ? null : (await readFile(filesList, "utf8")).split("\n").filter(Boolean) });
+      const reportPath = argOf(call.args, "--report-json");
+      if (reportPath != null) await writeFile(reportPath, JSON.stringify(report), "utf8");
+      return Object.freeze({ outcome: "exited", command: call.command, args: call.args, attempted: [call.command, ...call.args].join(" "), deadlineMs: call.deadlineMs, exitCode, signal: null, stdout, stderr, error: null });
+    },
+  });
+  const baseReport = { units: Object.fromEntries(UNITS.map((unit) => [unit, [unit]])), lanes: [] };
+  return {
+    launches: () => calls.length,
+    lastArgs: () => calls.at(-1)?.args ?? [],
+    lastFiles: () => calls.at(-1)?.files ?? null,
+    unfinishedFiles: () => [...(planted?.notFinished ?? []), ...(planted?.notStarted ?? [])].sort(),
+    green: () => answer({ stdout: "TAP version 13\nok - all\n", exitCode: 0, report: { ...baseReport, notFinished: [], notStarted: [] } }),
+    red: (file) => answer({ stdout: "TAP version 13\n", stderr: `not ok - ${file}\nAssertionError: it failed\n`, exitCode: 1, report: { ...baseReport, notFinished: [], notStarted: [] } }),
+    stop: ({ killed, notStarted, packedKilled = [] }) => {
+      const units = packedKilled.length > 0
+        ? { ...baseReport.units, "packed 2 files from test/x.test.mjs": packedKilled }
+        : baseReport.units;
+      planted = { notFinished: [...UNITS.slice(0, killed), ...packedKilled], notStarted: UNITS.slice(killed, killed + notStarted) };
+      const lines = ["TAP version 13", ...planted.notFinished.map((key) => `# not finished - ${key}`), ...(notStarted > 0 ? [`# not started: ${notStarted} units`] : [])];
+      return answer({ stdout: `${lines.join("\n")}\n`, exitCode: 1, report: { units, lanes: ["lanes (cargo)"], notFinished: planted.notFinished, notStarted: planted.notStarted } });
+    },
+  };
+}
+
+async function withResumeFixture(body) {
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-190-02-")));
+  const itemDir = path.join(root, "wiki", "work", "190_milestone_gate");
+  await mkdir(itemDir, { recursive: true });
+  await mkdir(path.join(root, "src"), { recursive: true });
+  await writeFile(path.join(itemDir, "SPEC.md"), "---\ntype: milestone\n---\n# 190\n", "utf8");
+  await writeFile(path.join(root, "src", "a.mjs"), "export const a = 1;\n", "utf8");
+  await gitIn(root, ["init", "-q"]);
+  await commitAll(root, "seed");
+  const item = { ref: "190", dir: itemDir, type: "milestone" };
+  const program = shardedProgram();
+  const scratch = { make: () => mkdtemp(path.join(os.tmpdir(), "aof-190-02-scratch-")), remove: (dir) => rm(dir, { recursive: true, force: true }) };
+  const gate = ({ resume = false, now = INSTANT, program: launch }) => runRegressionGate({ ref: "190", now, ...(resume ? { resume: true } : {}) }, {
+    projectRoot: root,
+    config: resumeConfig(),
+    resolve: async (ref) => (ref === "190" ? item : null),
+    runSuite: (input, deps) => runTest(input, { ...deps, walk: async () => [] }),
+    launch,
+    clock: clockOf(1),
+    record: gateRecords,
+    scratch,
+  });
+  const rows = async () => parseRegressionRows(await readFile(path.join(itemDir, REGRESSION_RECORD_BASENAME), "utf8"), "REGRESSION.md");
+  try {
+    await body({ root, gate, program, rows, store: path.join(root, ".git", "aof", "test-records") });
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
 }

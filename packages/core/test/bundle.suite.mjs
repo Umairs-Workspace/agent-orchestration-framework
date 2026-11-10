@@ -64,6 +64,7 @@ const COMMAND_IDS = [
   "insert-uat",
   "loop-diagram",
   "manual",
+  "map-tests",
   "migrate",
   "observe",
   "pay-debt",
@@ -339,7 +340,7 @@ export const bundleTests = [
   // ====================================================================
 
   {
-    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 38 commands, 8 templates, 3 skills, 12 hooks)",
+    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 39 commands, 8 templates, 3 skills, 12 hooks)",
     run: async () => {
       const ids = new Set(memberIds());
       for (const id of AGENT_IDS) assert.ok(ids.has(id), `missing agent ${id}`);
@@ -349,7 +350,7 @@ export const bundleTests = [
       const byKind = (kind) => descriptorMembers().filter((m) => m.kind === kind).length;
       for (const id of HOOK_IDS) assert.ok(ids.has(id), `missing hook ${id}`);
       assert.equal(byKind("agent"), 8, "8 agents");
-      assert.equal(byKind("command"), 38, "38 commands (teach — teaching, contributed by @aof/learning through the practices registry since 179/02 — hyperplan — the Hyperagent planning delegation, contributed by @aof/integration-hyperagent since 169/01 — incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt, loop-diagram, 145 — repair, 147 — explain, 150 — add-diagram, 151 — diagram-review, PR #13 — questions, 163 — prototype, 168 — and manual, 179/00)");
+      assert.equal(byKind("command"), 39, "39 commands (teach — teaching, contributed by @aof/learning through the practices registry since 179/02 — hyperplan — the Hyperagent planning delegation, contributed by @aof/integration-hyperagent since 169/01 — incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt, loop-diagram, 145 — repair, 147 — explain, 150 — add-diagram, 151 — diagram-review, PR #13 — questions, 163 — prototype, 168 — manual, 179/00 — and map-tests, 190/04)");
       assert.equal(byKind("skill"), 3, "3 codex delegation skills");
       assert.equal(byKind("template"), 8, "milestone/story/task/uat/spike/chore/prototype templates + the type-agnostic `shared` (OUTCOME.md)");
       assert.equal(byKind("hook"), 12, "12 hooks: 3 Codex session-presence + 3 Claude session-presence + 3 OpenCode session-presence + artifact-sync + run-heartbeat + ask-pending (136/03)");
@@ -464,7 +465,7 @@ export const bundleTests = [
     name: "bundle/descriptor: every resource member (agent + command) names one or more target runtimes",
     run: async () => {
       const resourceMembers = descriptorMembers().filter((m) => m.kind === "agent" || m.kind === "command");
-      assert.equal(resourceMembers.length, 46, "46 resource members (8 agents + 38 commands)");
+      assert.equal(resourceMembers.length, 47, "47 resource members (8 agents + 39 commands)");
       for (const member of resourceMembers) {
         assert.ok(Array.isArray(member.runtimes) && member.runtimes.length >= 1, `${member.id} declares >=1 runtime`);
       }

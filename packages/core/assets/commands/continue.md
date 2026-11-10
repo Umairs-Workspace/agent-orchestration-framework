@@ -267,9 +267,17 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      `files:` is the changed set, so the run is the suites this story's write set can actually have
      touched — the declaration paying for a third time, after the wave planner and `validate`. Do
      **not** name individual suite files: that is `--scope file` wearing prose, and it is a
-     selection made by judgement rather than by the declaration. A declared path the graph has not
-     seen — the test the developer is about to write — WIDENS the run rather than dropping it, so
+     selection made by judgement rather than by the declaration. A changed file narrows the run only
+     on what is positively known — a new suite selects itself, a new module its changed importer
+     inherits, a declared path not yet written contributes nothing — and anything else WIDENS it, so
      the narrowing can never be silent, and every widening is named in the summary line.
+
+     **Each run leaves a record, and a repeat on unchanged content is answered from it.** Asking again
+     with nothing changed launches nothing: the summary line says `answered from the run of
+     <instant>`, and that answer is the evidence — written by the command from the run it made, never
+     by the party being checked. It is not a cache to distrust; change the code and the next ask runs
+     again. Only a suspected flake earns `--fresh`, which runs anyway: say in the report that the run
+     was a deliberate repeat to chase that flake, as its record does.
 
      **The build stops at one of two terminators, and it says which one it stopped at.**
 
@@ -397,9 +405,9 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      `aof work dispatch --list --json` reports, and spawn the remainder as earlier lanes return.
 
      **A review lane runs `aof test --scope impacted --story <ref>` too, and never names suite files
-     by hand.** Measured, this is the largest single item in a review lane's wall clock — one
-     behavioural review at 58.6% test runner, another at 54.3%, a fix round at 45.6% — and it is
-     time the operator waits through for no information. **A story-scoped green does not accept a
+     by hand.** The lanes start together on one diff, so they make one run: the first lane's ask
+     launches it, the others wait for it and are answered from its record, and every lane reads the
+     same answer. That answer is the evidence, not a reason to run again. **A story-scoped green does not accept a
      milestone.** It says this story's suites pass; the milestone's own regression gate is what says
      the tree does, and 63/R7 is explicit that story-scoped suites are what make that gate
      load-bearing rather than ceremonial. Never report a narrowed run as a whole one — the summary

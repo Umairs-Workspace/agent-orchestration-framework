@@ -215,7 +215,7 @@
         "id": "aof-add-uat",
         "kind": "skill"
       },
-      "hash": "sha256:526073f6c0726355f0fb79344294007c24302584cfad498fc6f02fbf7cabd6e6"
+      "hash": "sha256:725a2542e622993f3324f0843e1447b3738bce1e3876de34db9d6fb58b6daed1"
     },
     {
       "path": ".agents/skills/aof-add-uat/agents/openai.yaml",
@@ -290,7 +290,7 @@
         "file": "procedure.md",
         "sourceFile": "procedure.md"
       },
-      "hash": "sha256:cffb833a6be2269a0f31d6585a1ea58f7bf8c3f95349833464913122dcdc57fe"
+      "hash": "sha256:74af9f3b9a7f7e1a91086ce674a8312f8baf8437905369d4a2bdd467dee3fcb4"
     },
     {
       "path": ".agents/skills/aof-continue/agents/openai.yaml",
@@ -552,6 +552,27 @@
       "runtime": "codex",
       "resource": {
         "id": "aof-manual",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
+    },
+    {
+      "path": ".agents/skills/aof-map-tests/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-map-tests",
+        "kind": "skill"
+      },
+      "hash": "sha256:1242abf3d20da5e16ab73c27339d2ac38cf941969d623320f012f3bf0ae651cf"
+    },
+    {
+      "path": ".agents/skills/aof-map-tests/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-map-tests",
         "kind": "skill",
         "artifact": "associated-file",
         "file": "agents/openai.yaml",
@@ -845,7 +866,7 @@
         "file": "procedure.md",
         "sourceFile": "procedure.md"
       },
-      "hash": "sha256:125e691c96bf4f8e6a31671eddcf2e7ea7a715ba4311b49cfb31bc08cc8d2e0e"
+      "hash": "sha256:3412cb362691316fd76b02ca3fa1f50f954acce83f9c8b0a97cdb0c1962e9bf9"
     },
     {
       "path": ".agents/skills/aof-review/agents/openai.yaml",
@@ -920,7 +941,7 @@
         "file": "procedure.md",
         "sourceFile": "procedure.md"
       },
-      "hash": "sha256:ffc5f627e7cff8abdf25b6469869ed80dd0f52594da3f63415a920d3c7071c45"
+      "hash": "sha256:bd9d42d552a9bfd14831c7eb429ff25e8d748fd565d3790a4082b07a275bf85c"
     },
     {
       "path": ".agents/skills/aof-verify/agents/openai.yaml",

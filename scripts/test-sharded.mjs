@@ -59,6 +59,9 @@ const text = (name) => { const at = argv.indexOf(name); return at < 0 ? null : a
 const SHARD = text("--shard") == null ? null : parseShard(text("--shard"));
 if (SHARD?.error) { console.error(SHARD.error); process.exit(1); }
 const REPORT_JSON = text("--report-json");
+// 190/ADR-005 §2 — a resumed gate run plans only the files it is named: a list file, one repo-relative
+// path per line. Every named file must register a case, or the plan is refused by path.
+const FILES = text("--files") == null ? null : readFileSync(path.resolve(text("--files")), "utf8").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 const slash = (value) => value.replaceAll("\\", "/");
 const rel = (file) => slash(path.relative(repo, file));
 const started = Date.now();
@@ -98,6 +101,15 @@ for (const file of suiteFiles) {
     assignment.set(entry, { file, position });
     (units.get(file) ?? units.set(file, []).get(file)).push(position);
   });
+}
+if (FILES != null) {
+  const named = new Set(FILES.map((file) => path.resolve(repo, file)));
+  const empty = [...named].filter((file) => !units.has(file)).map(rel);
+  if (empty.length > 0) {
+    console.error(`not ok - --files names ${empty.length} file(s) that register no case: ${empty.join(", ")}`);
+    process.exit(1);
+  }
+  for (const file of [...units.keys()]) if (!named.has(file)) units.delete(file);
 }
 const unassigned = tests.filter((entry) => !assignment.has(entry));
 const duplicates = tests.length - registered.size;
@@ -150,7 +162,7 @@ if (SHARD != null) {
   plan.splice(0, plan.length, ...own.sort((a, b) => b.estimate - a.estimate));
   console.log(`# shard ${SHARD.index}/${SHARD.count}: ${plan.length} units`);
 }
-const registeredHere = SHARD == null ? tests.length : plan.filter((unit) => !unit.lanes).reduce((sum, unit) => sum + unit.positions.length, 0);
+const registeredHere = SHARD == null && FILES == null ? tests.length : plan.filter((unit) => !unit.lanes).reduce((sum, unit) => sum + unit.positions.length, 0);
 if (argv.includes("--plan")) {
   console.log(planSummary(plan));
   console.log(`# the heaviest ${Math.min(10, plan.length)} (estimate from recorded timings):`);
@@ -229,6 +241,11 @@ if (REPORT_JSON) {
     summedSeconds: results.reduce((sum, result) => sum + result.seconds, 0),
     perFile,
     planned,
+    // 190/ADR-005 §2 — every planned unit and the files it ran, and which units are lanes: what a
+    // resume needs to turn the unit keys above (a packed unit's key names only its first file) back
+    // into the files to run again.
+    units: Object.fromEntries(plan.map((unit) => [unit.key, unit.lanes ? [] : (unit.files ?? [unit]).map((entry) => entry.key)])),
+    lanes: plan.filter((unit) => unit.lanes).map((unit) => unit.key),
   }, null, 1));
 }
 console.log(report.join("\n"));
