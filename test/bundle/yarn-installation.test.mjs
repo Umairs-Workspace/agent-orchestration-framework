@@ -156,7 +156,8 @@ export const yarnInstallationTests = [
         'heartbeats.mjs': ['node:fs/promises', 'node:path'],
         'providers.mjs': ['node:path', 'node:fs'],
         'terminal-sessions.mjs': ['node:fs/promises', 'node:path'],
-        'pty.mjs': ['node:module', 'node-pty'],
+        // node:fs + node:path restore spawn-helper's execute bit, which Yarn's cache strips (2026-11-10).
+        'pty.mjs': ['node:fs', 'node:module', 'node:path', 'node-pty'],
         'session-driver.mjs': ['node:path', 'node:child_process', 'node:fs/promises', 'node:crypto', '@aof/contracts/loop-bounds', '@aof/contracts/tui-ready'],
         'codex-app-server.mjs': ['node:child_process', 'node:path', '@aof/contracts/loop-bounds'],
         // 172/ADR-001: the architect's headless conversation spawns one stream-json claude per diagram and ends its tree.

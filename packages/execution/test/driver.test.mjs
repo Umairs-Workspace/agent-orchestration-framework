@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 import { createSessionDriver } from "@aof/execution/session-driver";
-import { createNodePtyLoader, createTerminalSpawn, releasePtyAfterTreeTermination } from "@aof/execution/pty";
+import { createNodePtyLoader, createTerminalSpawn, ensureSpawnHelperExecutable, releasePtyAfterTreeTermination } from "@aof/execution/pty";
 
 test("confirmed tree termination releases ConPTY without enumerating dead/reused PIDs", async () => {
   const original = () => { throw Error("must not enumerate dead console"); };
@@ -53,4 +56,30 @@ test("PTY composition defers distribution policy and preserves native load failu
   await assert.rejects(spawn("unused", [], {}), actual => actual === error);
   assert.equal(checked, 1);
   assert.throws(() => createNodePtyLoader({}), /isPackaged/);
+});
+
+test("a spawn-helper installed without its execute bit is made executable, once and only where needed", () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "aof-spawn-helper-"));
+  try {
+    const entry = path.join(root, "lib", "index.js");
+    const prebuilt = path.join(root, "prebuilds", "darwin-arm64", "spawn-helper");
+    const built = path.join(root, "build", "Release", "spawn-helper");
+    for (const file of [entry, prebuilt, built]) {
+      mkdirSync(path.dirname(file), { recursive: true });
+      writeFileSync(file, "");
+    }
+    chmodSync(prebuilt, 0o644);
+    chmodSync(built, 0o755);
+    const options = { platform: "darwin", arch: "arm64" };
+    assert.deepEqual(ensureSpawnHelperExecutable(entry, options), [prebuilt]);
+    assert.equal(statSync(prebuilt).mode & 0o777, 0o755);
+    assert.deepEqual(ensureSpawnHelperExecutable(entry, options), []);
+    // Another arch's prebuild is not this process's helper; Windows has no helper at all.
+    chmodSync(prebuilt, 0o644);
+    assert.deepEqual(ensureSpawnHelperExecutable(entry, { platform: "darwin", arch: "x64" }), []);
+    assert.deepEqual(ensureSpawnHelperExecutable(entry, { platform: "win32", arch: "arm64" }), []);
+    assert.equal(statSync(prebuilt).mode & 0o777, 0o644);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
