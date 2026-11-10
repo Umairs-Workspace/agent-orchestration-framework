@@ -18,8 +18,12 @@ import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const doctor = _aofApplication.getCommand("project:doctor");
+const runTest = _aofApplication.work.commandTools.test.runTest;
+const resolveTestToolchain = _aofApplication.work.toolchain.resolveTestToolchain;
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 // The smallest `work.test` the toolchain compiles. `node` resolves wherever this suite runs.
 const declaration = (extra = {}) => ({
@@ -201,6 +205,74 @@ export const testLayoutCheckTests = [
       assert.equal(suites?.severity, "ok");
       assert.match(suites.message, /tracked files could not be listed/u);
       assert.ok(!report.checks.some((entry) => entry.id.startsWith("test-layout-") && entry.severity === "error"));
+    },
+  },
+  // ═══════════ 190/04 task 05 (`@bug` F-05, F-06) — the doctor and the selector agree on what a suite is ══
+
+  {
+    name: "190/04-05 E1 · files the runner does not run are not reported as undeclared suites",
+    async run() {
+      // This repository, with its 190 declaration: the native `node:test` files under four
+      // packages are excluded with a reason, so the doctor neither names them nor tells anyone to
+      // declare them as suites.
+      const real = await doctor.run({ target: repoRoot });
+      const suites = check(real, "test-layout-suites");
+      assert.equal(suites?.severity, "ok", suites?.message);
+      for (const dir of ["packages/effects/test", "packages/server/test", "packages/contracts/test", "packages/messaging/test"]) {
+        assert.ok(!suites.message.includes(dir), `${dir} is not named`);
+      }
+      // A fixture: the excluded files are not counted, and a file nothing accounts for is named
+      // with both repairs, so the warning never tells anyone only to declare it a suite.
+      const report = await doctorOver({
+        test: declaration({ roots: ["test"], exclude: [{ paths: ["packages/native/test/**"], why: "native node:test files the per-file runner rejects" }] }),
+        tracked: ["test/a.test.mjs", "packages/native/test/one.test.mjs", "packages/native/test/two.test.mjs", "packages/other/test/three.test.mjs"],
+      });
+      const warned = check(report, "test-layout-suites");
+      assert.equal(warned?.severity, "warning", warned?.message);
+      assert.match(warned.message, /^1 tracked test file is /u, "only the unaccounted file is counted");
+      assert.ok(!warned.message.includes("packages/native/test"), "the excluded directory is not named");
+      assert.match(warned.message, /Declare them as suites, or exclude them with a reason where the runner does not run them/u);
+    },
+  },
+  {
+    name: "190/04-05 E2 · a declared suffix defines the whole suite",
+    async run() {
+      const tree = ["src/cart.test.ts", "test/price.test.ts", "src/cart.ts"];
+      const test = declaration({ roots: ["src", "test"], suiteSuffixes: [".test.ts"] });
+      const root = await project({ test, tracked: tree });
+      try {
+        const out = await runTest({ scope: "all", plan: true }, { projectRoot: root, config: { work: { test } } });
+        assert.equal(out.refusal, null, out.refusal?.message);
+        assert.deepEqual([...out.selected], ["src/cart.test.ts", "test/price.test.ts"], "the plan's whole suite holds both .test.ts files");
+        assert.equal(out.total, 2);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+      assert.equal(check(await doctorOver({ test, tracked: tree }), "test-layout-suites")?.severity, "ok", "a non-empty whole suite is ok");
+      // The same tree under the default suffix selects nothing, and that is never `ok`.
+      const empty = check(await doctorOver({ test: declaration({ roots: ["src", "test"] }), tracked: ["src/cart.ts", "README.md"] }), "test-layout-suites");
+      assert.equal(empty?.severity, "warning", empty?.message);
+      assert.match(empty.message, /the whole suite is empty/u);
+    },
+  },
+  {
+    name: "190/04-05 an excluded file leaves the whole suite, and a malformed exclusion is refused naming the key",
+    async run() {
+      const tree = ["test/a.test.mjs", "test/native/b.test.mjs"];
+      const test = declaration({ roots: ["test"], exclude: [{ paths: ["test/native/**"], why: "native" }] });
+      const root = await project({ test, tracked: tree });
+      try {
+        const out = await runTest({ scope: "all", plan: true }, { projectRoot: root, config: { work: { test } } });
+        assert.equal(out.refusal, null, out.refusal?.message);
+        assert.deepEqual([...out.selected], ["test/a.test.mjs"]);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+      for (const exclude of [{}, [{ paths: [], why: "x" }], [{ paths: ["a/**"] }], [{ paths: ["a/**"], why: " " }]]) {
+        const compiled = resolveTestToolchain({ work: { test: declaration({ exclude }) } });
+        assert.equal(compiled.ok, false, JSON.stringify(exclude));
+        assert.equal(compiled.field ?? compiled.key, "work.test.exclude", JSON.stringify(compiled));
+      }
     },
   },
 ];

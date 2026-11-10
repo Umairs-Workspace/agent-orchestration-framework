@@ -9,7 +9,7 @@ doc: state
 - [x] `01_story_impacted-narrows-on-what-it-knows` — accepted at verify 2026-11-10, done
 - [x] `02_story_a-gate-that-did-not-finish-resumes` — accepted at verify 2026-11-10, done
 - [x] `03_story_the-doors-stop-prescribing-repeat-runs` — declined at verify (F-01), fixed there, accepted 2026-11-10, done
-- [ ] `04_story_an-existing-project-declares-its-test-layout` — declined at verify 2026-11-10 (F-05, F-06 blockers; F-07), back to in-progress with `@bug` task 05; next `aof:continue 190/04` after the architect amends ADR-008 §1
+- [x] `04_story_an-existing-project-declares-its-test-layout` — declined at verify 2026-11-10 (F-05, F-06, F-07), reworked (ADR-008 §6–§9, `@bug` task 05), reviewed and accepted 2026-11-10, done
 
 ## Notes & decisions in flight
 
@@ -115,6 +115,22 @@ doc: state
     1,273 suites (14 declared documents are not in the graph), and the live control daemon holds
     `:4182` on this machine. The suites that read the changed modules and censuses were run with
     `--scope file` instead.
+
+- **190/04 rework 2026-11-10, solo, run attempt 1** (declined at verify: F-05, F-06, F-07). The
+  near-miss recall was taken before any code. m131/09 R1 and m129/07 R1 were honoured: the readers
+  of `work.test.*` and the controls that scan the key were listed first. Decisions, in ADR-008's
+  amendment (§6–§9):
+  - **One answer to "what is a suite".** `isExcludedTest` joins `isSuiteFile` in `select.mjs`. The
+    doctor, the selector and the test command's whole suite all ask it, and FF-19006 still holds.
+  - **The whole suite honours declared suffixes.** It does so only when `suiteSuffixes` is
+    declared, via a new `suiteSuffixesDeclared` on the compiled toolchain, so an undeclared
+    project's whole suite does not move.
+  - **This repo declares `work.test.exclude`** for the 64 native `node:test` files under
+    `packages/*/test` and `apps/*/test`. The doctor's suites check is now `ok` here. The whole suite
+    is unchanged at 1,273, because no member matches the globs.
+  - **No whole-suite run.** The `impacted` scope widens to all of it, and the live daemon holds
+    `:4182`. A 206-suite `--scope file` lane plus the native `packages/work` tests (19/19) were run
+    instead. Every red is a known non-190 class.
 
 ## Feedback (for retro)
 
@@ -234,6 +250,21 @@ doc: state
   replayed commit that also touches `work.dir` widens as `not-in-graph`, and `map-tests.md` does
   not tell the agent to expect that.
 
+- **[190/04 rework review close] Fixed at the close (Important):** the declared predicate admitted
+  56 native `.test.mjs` files under package roots that the runner never runs, so the doctor read
+  them as suites. This is F-05's false statement in the other direction. This repo's exclusion was
+  widened from four directories to `packages/*/test/**/*.test.mjs` and `apps/*/test/**/*.test.mjs`.
+- **[190/04 rework review close] Recorded (Important):** `walkSuiteFiles` still carries this repo's
+  convention that a workspace `test/` with an `index.mjs` contributes `.suite.mjs` alone. With the
+  exclusion declared, the walk and the declaration agree here. But that convention is a membership
+  rule that lives outside the declaration. Story shape for the operator: move it into this repo's
+  `exclude`, and drop the special case from the census.
+- **[190/04 rework review close] Read/write set incomplete.** These were written outside `files:`
+  and added to it: `packages/work/src/testing/select.mjs`, `packages/work/src/audit/census.mjs`,
+  `packages/work/src/commands/test.mjs`, `.aof/aof.config.json` and the milestone's
+  `ARCHITECTURE.md`. `scripts/workspace-runtime-audit.json` had census.mjs's `sourceDigest`
+  re-stamped, with its audited spawn expression unchanged.
+
 ## Verification
 
 - [x] `@executable` story lanes green for 00–03. The remaining reds are F-02, F-03 and two records
@@ -241,7 +272,7 @@ doc: state
 - [x] Fitness functions FF-19001–FF-19006 green, each with a red probe
 - [x] `@manual` 190/01 task 03 recorded; scenario 3 completed at verify with `--plan`
 - [x] 190/02 live resume check recorded (in a clone)
-- [ ] `@manual` 190/04 task 04: run; E14 partial (F-05), F-06 open
+- [x] `@manual` 190/04 task 04: E14 and E15 hold after the rework; F-05, F-06 and F-07 closed
 - [ ] Milestone regression gate: not run. 190 is uncommitted, the live daemon holds `:4182`, and
   F-02/F-03 are red on this Mac.
 - [ ] F-08 and ADR-004: the operator's decision

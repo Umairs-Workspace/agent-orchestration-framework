@@ -340,8 +340,40 @@ predicate. `impacted` could never select one of them, and nothing reported it.
    `ok`. This follows the memory-config lines it already prints. It runs the same function as §1,
    so the two cannot disagree, and it prints under `--dry-run` too, because the check only reads.
 
+### Amendment — one answer to "what is a suite" (aof:verify 190, F-05, F-06, F-07; 2026-11-10)
+
+Verify found the doctor and the selector giving different answers to "what is a suite". The
+selector's whole suite came from `walkSuiteFiles`, which collected `.test.mjs` and `.suite.mjs`
+whatever the declaration said. A `.test.ts` project was told `ok` and then selected `0/0` (F-06).
+The doctor had no way to accept a test-shaped file the runner does not run. Its only repair,
+declaring the file a suite, makes it selectable, and the runner then rejects it (F-05). So:
+
+6. **The whole suite honours the declared suffixes.** `walkSuiteFiles(repoRoot, root, suffixes)`
+   collects files ending in a declared suffix. It still takes only `.suite.mjs` from a workspace
+   `test/` directory that registers array suites (its `index.mjs`), because that is how this
+   repo's runner runs them. With `suiteSuffixes` absent, the walk keeps its pre-190 pair, so an
+   undeclared project's whole suite does not change.
+7. **`work.test.exclude` declares the test-shaped files the runner does not run.** It is an array
+   of `{ paths, why }`, where `paths` is non-empty globs and `why` is the stated reason, the same
+   shape and reasoning as a coupling. A file it matches is never a suite. `isExcludedTest` in
+   `select.mjs` decides that, and `isSuiteFile` calls it, so membership stays one decision
+   (FF-19006). The selector's whole suite drops excluded files. The suites check does not count
+   them, because the declaration has accounted for them. Its warning now names both repairs:
+   declare the files as suites, or exclude them with a reason.
+8. **A declaration that selects no tracked file is a warning.** When the tracked list holds no
+   suite under the declared roots, suffixes and exclusions, `test-layout-suites` warns that the
+   whole suite is empty and `impacted` selects nothing, even when no test-shaped file is left
+   over. An empty whole suite is never `ok`.
+9. **`/aof:map-tests` authors the whole resume contract.** It declares `noLanesArgs` beside
+   `reportArgs` and `filesArgs` when the gate program takes a flag that skips its lanes (F-07).
+   It authors `exclude`, with a reason, for test-shaped files the runner does not run.
+
 ### Alternatives considered
 
+- **Have the doctor ask the runner's own registry what it runs (F-05).** Rejected: that is a
+  second membership predicate in the layout module, which FF-19006 forbids, and a registry is
+  runner-specific. The declaration is the project's own answer, and an exclusion that states its
+  reason can be read and challenged.
 - **Put the check in `aof work doctor`, as first proposed to the operator.** Rejected: the work
   doctor reports the stream's health (15/ADR-001), and FF-19002 keeps it away from test records.
   The project doctor is where m12 and m17 put config-fit checks, and its findings already carry a

@@ -57,7 +57,10 @@ declare first, and stop. `aof test` refuses there too.
    suites (the doctor's `test-layout-suites` directories are the candidates), and
    `work.test.suiteSuffixes` as the suffixes those suites end in, each starting with `.`. Declare a
    directory or a suffix only when the runner actually runs those files: a test-shaped file the
-   runner never runs is not a suite, and declaring it makes nothing selectable.
+   runner never runs is not a suite, and declaring it makes nothing selectable. **Exclude it
+   instead**: author `work.test.exclude` as `[{ paths, why }]`, where `paths` holds globs for the
+   test-shaped files the runner does not run and `why` says what runs them, if anything. An excluded
+   file is never selected, and the doctor stops counting it.
 4. **Couplings, judged, each with its reason.** A coupling `{ paths, suites, why }` is how a
    changed document (not code) selects the suites that read it. Author each one from a **search of
    the suites for the coupled paths**: grep the suite files for each candidate document path, both
@@ -73,10 +76,13 @@ declare first, and stop. `aof test` refuses there too.
    `{ "units": { "<unit>": ["<file>", …] }, "lanes": …, "notFinished": […], "notStarted": […] }`.
    Write `work.test.gate.reportArgs` (carrying `{report}`) and `filesArgs` (carrying `{files}`)
    **only when the gate program is shown to honour that contract**: its source reads the flag and
-   writes that report. Otherwise **say that resume is unavailable for this runner**, name the
-   resume contract as what would change the answer, and **leave the gate unchanged**. A template the
-   program ignores would make `aof work regression-gate --resume` run the whole tree under a resume's
-   name. With no gate declared there is nothing to resume, so declare none.
+   writes that report. When the gate program also takes a flag that skips its lanes (the
+   integration or cargo lanes a resume must not repeat once they finished), declare that flag as
+   `work.test.gate.noLanesArgs` too. Otherwise **say that resume is unavailable for this
+   runner**, name the resume contract as what would change the answer, and **leave the gate
+   unchanged**. A template the program ignores would make `aof work regression-gate --resume` run
+   the whole tree under a resume's name. With no gate declared there is nothing to resume, so
+   declare none.
 6. **The proposed change.** Assemble the new `work.test` block from steps 3–5 and print it as a diff
    against the current block. **Under `--dry-run`, stop here**: print the before replay and the
    proposed change, and write nothing. The config is left byte-identical.
@@ -101,7 +107,7 @@ Report, in this order:
 - **near-total narrowing, said in one line**: when the narrowed median is within 10% of the total,
   say the narrowed runs are near-total, and name the composition root a near-total selection keeps
   reaching (the module that nearly every suite imports) when the replay shows one;
-- **resume**: the templates written, or that resume is unavailable for this runner, with the resume
+- **resume**: the templates written (`reportArgs`, `filesArgs` and, when the gate takes one, `noLanesArgs`), or that resume is unavailable for this runner, with the resume
   contract named;
 - **the doctor's `test-layout-*` checks**, as it printed them.
 

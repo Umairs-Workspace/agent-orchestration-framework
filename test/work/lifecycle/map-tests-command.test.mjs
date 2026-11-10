@@ -151,4 +151,19 @@ export const mapTestsCommandTests = [
       assert.ok(rendered.includes(REPLAY), "the Codex render carries the replay");
     },
   },
+  {
+    // 190/04 task 05 (`@bug` F-07, F-05): a mapped resume skips the lanes that finished, and a
+    // test-shaped file the runner does not run is excluded with a reason, never declared a suite.
+    name: "190/04-05 E3 · the skill declares noLanesArgs beside the resume templates, and excludes what the runner does not run",
+    async run() {
+      const source = flat(region(await read(SOURCE), "<process>", "</process>"));
+      const codex = flat(codexSection(await read("packages/core/assets/variants/codex/workflow.md"), "map-tests"));
+      for (const doc of [source, codex]) {
+        assert.ok(doc.includes("When the gate program also takes a flag that skips its lanes"), "noLanesArgs is conditional on the program");
+        assert.ok(doc.includes("declare that flag as `work.test.gate.noLanesArgs` too"));
+        assert.ok(doc.includes("author `work.test.exclude` as `[{ paths, why }]`"), "the exclusion carries its reason");
+      }
+      assert.ok(flat(await read(".claude/commands/aof/map-tests.md")).includes("`work.test.gate.noLanesArgs`"), "the Claude render carries it");
+    },
+  },
 ];

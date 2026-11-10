@@ -441,8 +441,14 @@ async function isWorkspaceTestDir(repoRoot, rel) {
   return index != null && manifest != null;
 }
 
-async function walkSuiteFiles(repoRoot, root = "test") {
+// `suffixes` is the project's declared suite suffixes (190/ADR-008 §6). Absent keeps the pre-190
+// pair, `.test.mjs` and `.suite.mjs`. A workspace `test/` directory that registers array suites
+// still contributes `.suite.mjs` alone, because that is how this repository's runner runs it.
+async function walkSuiteFiles(repoRoot, root = "test", suffixes = null) {
   const out = [];
+  const isSuiteName = (name) => (suffixes == null
+    ? name.endsWith(".test.mjs") || name.endsWith(".suite.mjs")
+    : suffixes.some((suffix) => name.endsWith(suffix)));
   async function walk(rel, arraysOnly = false) {
     let entries;
     try {
@@ -454,7 +460,7 @@ async function walkSuiteFiles(repoRoot, root = "test") {
       const child = `${rel}/${entry.name}`;
       // An installed dependency's tests are never this project's suites.
       if (entry.isDirectory()) { if (entry.name !== "node_modules") await walk(child, arraysOnly); }
-      else if ((!arraysOnly && entry.name.endsWith(".test.mjs")) || entry.name.endsWith(".suite.mjs")) out.push(child);
+      else if (arraysOnly ? entry.name.endsWith(".suite.mjs") : isSuiteName(entry.name)) out.push(child);
     }
   }
   const start = root.replaceAll("\\", "/").replace(/\/+$/u, "");

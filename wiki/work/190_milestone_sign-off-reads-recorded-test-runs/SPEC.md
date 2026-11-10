@@ -94,7 +94,7 @@ Out of scope:
 - [x] `01_story_impacted-narrows-on-what-it-knows` — `--scope impacted` narrows on package suites, transitive dependents, placed new files and declared couplings (ADR-003)
 - [x] `02_story_a-gate-that-did-not-finish-resumes` — a `not-finished` gate resumes on the same content, and a finished gate run is a test record (ADR-005)
 - [x] `03_story_the-doors-stop-prescribing-repeat-runs` — the commands' prose asks once per door, sweeps a UAT once, and resumes a stopped gate (ADR-006)
-- [ ] `04_story_an-existing-project-declares-its-test-layout` — `aof project doctor` names what a project's test declaration leaves out, `aof test --plan` replays a commit's selection, and `/aof:map-tests` declares the layout and proves it (ADR-008)
+- [x] `04_story_an-existing-project-declares-its-test-layout` — `aof project doctor` names what a project's test declaration leaves out, `aof test --plan` replays a commit's selection, and `/aof:map-tests` declares the layout and proves it (ADR-008)
 
 ## Dependencies
 

@@ -195,6 +195,36 @@ commits, and both widen in both replays.
 
 The run found F-05, F-06 and F-07.
 
+### 190/04 · after the rework (verifies → 190/04 tasks 04 and 05, 2026-11-10)
+
+- **Task 05 (`@bug` F-05, F-06, F-07).** E1, E2 and E3, plus a case for the exclusion and its
+  refusal, are green in `test/testing/test-layout-check.test.mjs` and
+  `test/work/lifecycle/map-tests-command.test.mjs`.
+  - The 206-suite `--scope file` lane ran over every suite that reads the changed modules, plus
+    the earlier 110. Its reds are F-02, F-03 (now also `distribution-workspaces` ×2, the
+    `workspace-boundaries` plant probe and `this-tree-holds-what-is-live` 00, all `/var` against
+    `/private/var`), FF-7106 and FF-9603 (189's records), and FF-5301 (red before 190, 190/00
+    STATE). None is a 190 case.
+  - The native `packages/work/test` files pass 19/19 under `node --test`.
+- **E15, re-checked** in the same `vitest-shop` project:
+  - `aof test --scope all --plan` gives `2/2 suites` (it was `0/0`), and `test-layout-suites` is
+    `ok`.
+  - `test-layout-resume` stays a `warning`, with no `reportArgs` or `filesArgs` written.
+  - Each of the 6 commits widens on `no-graph`, honestly: the project has no code graph.
+- **E14, re-checked** in the same clone. The agent's mapped declaration was applied, plus what the
+  skill now authors: `exclude` for `packages/*/test/**/*.test.mjs` and `apps/*/test/**/*.test.mjs`,
+  with its reason, and `noLanesArgs`. `aof project validate` passed.
+  - The doctor answers: `ok: test-layout-suites`, `ok: test-layout-couplings - … declares 3
+    couplings` and `ok: test-layout-resume`.
+  - The whole suite is unchanged at `1273/1273`, because no member matches the exclusion. So the
+    before and after replays recorded above stand: 30/30 widened before, 26/30 after, median 677
+    and p75 798 of 1,273.
+  - The clone's config was restored afterwards.
+- **This repo**, with its own declaration, which now carries the same exclusion: `test-layout-suites`
+  is `ok` and `test-layout-resume` is `ok`. `test-layout-couplings` stays a `warning`, because
+  190/01 deliberately declared no coupling. That is the "keep widening has no `ok` spelling" item
+  the operator holds (STATE, 190/04 review close).
+
 ## Findings
 
 | id | observed | type | severity | triage | routed-to | status |
@@ -203,9 +233,9 @@ The run found F-05, F-06 and F-07.
 | F-02 | `autonomous-shell-out/black-box` b01: "the real provider path received a phase directive" fails. Reproduced outside the suite, the fixture's `scheduleToCloseMs: 1` halts the drive (`deadline-exhausted`, `elapsedMs=681`) before the PTY launch types to the shim. 190 changed no loop, session or PTY file. Recurrence of m172/F-172-14, same cause and evidence. | environment | medium | non-blocker for 190. Reds the whole-tree gate on this Mac. | m172/F-172-14 (its owner) | open |
 | F-03 | Ten cases compare a `/var/folders/…` tmpdir with its `/private/var/…` realpath and go red: `yarn-installation` production ×3, `loops-commands` 00 and 03, `archive-is-a-move` 00, `promote-mints-the-number` 00 and 139/00, and `codex-ownership` 156 ×2 ("… is a main working tree"). No file involved is a 190 change. Recurrence of m172/F-172-11, same cause. | environment | medium | non-blocker for 190. Reds the whole-tree gate on this Mac. | m172/F-172-11 (its owner) | open |
 | F-04 | A resumed gate run overwrites `.tmp/test-timings.json` with only the files it ran (about 1,270 entries became 17), and does the same to the main checkout's copy (`scripts/test-sharded.mjs`, the `perFile` write over `[timingsPath, mainTimingsPath]`). The next whole-tree gate loses its longest-first packing. `--shard` already wrote this way, and 190/02's `--files` resume hits it on every resume. Distinct: recall returned m160/F-06 (packing from a quieter run's timings, a different cause; departed). | defect | medium | non-blocker: costs speed, never correctness. A `--files`/`--shard` run should merge its timings into the stored set. | backlog | open |
-| F-05 | `test-layout-suites` cannot reach `ok` on this repo. It counts 8 native `node:test` files under `packages/{effects,server,contracts,messaging}/test` that `scripts/test.mjs` never registers, and its repair ("Declare them with /aof:map-tests") is one the skill must refuse. Declaring them turns the check `ok` but makes 8 files selectable that the per-file runner rejects ("exports no array"). It fails 190/04 E14 and PLAN.md's "all ok". Distinct: recall returned no finding on this check. | defect | blocker | New `@bug` task 190/04 tasks/05. 04 returned to `in-progress`. The architect amends ADR-008 §1 first: how the check knows what the runner can run without a second predicate (FF-19006). | aof-architect → `aof:continue 190/04` | open |
-| F-06 | Declared `suiteSuffixes` do not define the whole suite. `walkSuiteFiles` (`packages/work/src/audit/census.mjs:444`) collects only `.test.mjs`/`.suite.mjs`, so a project declaring `.test.ts` gets `aof test --scope all --plan` = `0/0 suites`, while `test-layout-suites` says `ok`. The doctor and the selector answer "what is a suite" differently, and 190's adoption path tells a non-`.mjs` project it is done when it can never narrow. Distinct: recall returned m161/F-02 and m72/F-72-X (registration and census controls, different defects; irrelevant). | defect | blocker | Same `@bug` task as F-05: one answer to "what is the whole suite". | aof-architect → `aof:continue 190/04` | open |
-| F-07 | `/aof:map-tests` never authors `work.test.gate.noLanesArgs`, so a mapped project's resume re-runs integration and cargo lanes that had finished. This repo's hand declaration has `["--no-lanes"]`. | defect | low | non-blocker. Folded into 190/04's `@bug` task while 04 is open. | `aof:continue 190/04` | open |
+| F-05 | `test-layout-suites` cannot reach `ok` on this repo. It counts 8 native `node:test` files under `packages/{effects,server,contracts,messaging}/test` that `scripts/test.mjs` never registers, and its repair ("Declare them with /aof:map-tests") is one the skill must refuse. Declaring them turns the check `ok` but makes 8 files selectable that the per-file runner rejects ("exports no array"). It fails 190/04 E14 and PLAN.md's "all ok". Distinct: recall returned no finding on this check. | defect | blocker | New `@bug` task 190/04 tasks/05. 04 returned to `in-progress`. The architect amends ADR-008 §1 first: how the check knows what the runner can run without a second predicate (FF-19006). | `aof:continue 190/04`: ADR-008 §7 adds `work.test.exclude`, decided through `select.mjs` alone. This repo excludes its 64 native `node:test` files, and the suites check is `ok` (190/04 re-check below) | closed |
+| F-06 | Declared `suiteSuffixes` do not define the whole suite. `walkSuiteFiles` (`packages/work/src/audit/census.mjs:444`) collects only `.test.mjs`/`.suite.mjs`, so a project declaring `.test.ts` gets `aof test --scope all --plan` = `0/0 suites`, while `test-layout-suites` says `ok`. The doctor and the selector answer "what is a suite" differently, and 190's adoption path tells a non-`.mjs` project it is done when it can never narrow. Distinct: recall returned m161/F-02 and m72/F-72-X (registration and census controls, different defects; irrelevant). | defect | blocker | Same `@bug` task as F-05: one answer to "what is the whole suite". | `aof:continue 190/04`: ADR-008 §6 makes the whole suite honour declared suffixes, and §8 makes an empty whole suite a warning. The `.test.ts` project now plans `2/2` (190/04 re-check below) | closed |
+| F-07 | `/aof:map-tests` never authors `work.test.gate.noLanesArgs`, so a mapped project's resume re-runs integration and cargo lanes that had finished. This repo's hand declaration has `["--no-lanes"]`. | defect | low | non-blocker. Folded into 190/04's `@bug` task while 04 is open. | `aof:continue 190/04`: `map-tests.md` and its Codex variant declare `noLanesArgs` when the gate program takes the flag (task 05 E3) | closed |
 | F-08 | The SPEC's outcome "a story that only adds a new test file and edits one source file runs an impacted set, not the whole tree" holds only for leaf changes. Any source module's transitive dependents reach the composition root (`packages/core/src/application/default.mjs`), so a narrowed run selects 1,119 of 1,273 (190/01 task 03; f96cb41e at 1,155 in 04's replay). ADR-004 §3's revisit trigger ("if 190's verification shows narrowed story runs still slow") is met, and ADR-004 itself is still marked pending the operator's confirmation. Related to m72/F-72-AN (a widened run that is a whole run; departed: there the run widened, here it narrows in name only). | spec-gap | high | The operator's decision, before the milestone is accepted: (a) accept 190 with this recorded as an open Gap, plus a backlog item (stop the walk at the composition root with an import smoke test, or a cost-based split per ADR-004 §3); or (b) add a story to 190. ADR-004 needs ruling either way. | operator | open |
 
 ## Accept decision (aof:verify 190, 2026-11-10)

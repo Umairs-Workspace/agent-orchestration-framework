@@ -1,5 +1,6 @@
 import { normaliseReport } from "../grade.mjs";
 import { declaredChangedFiles } from "../testing/declared.mjs";
+import { isExcludedTest } from "../testing/select.mjs";
 
 // Application composition supplies execution, graph and shared work services.
 export function createTestCommand({ walkSuiteFiles, changedFiles, resolveItemExact, selectSuites, launchRunner, resolveTestToolchain, testRecord = null, selectionSources = null }) {
@@ -132,13 +133,16 @@ const posix = (file) => String(file).replaceAll("\\", "/");
 
 // Every suite file the declared roots hold, deduped and ordered — the thing a widening widens TO,
 // and the denominator of the summary line's `selected/total`. The roots come from the DECLARATION
-// (the project's own answer), never from a literal here.
-async function wholeSuite(projectRoot, roots, walk) {
+// (the project's own answer), never from a literal here. So do the suffixes, when declared, and
+// the exclusions: a file the declaration says the runner does not run is not a suite
+// (190/ADR-008 §6, §7).
+async function wholeSuite(projectRoot, toolchain, walk) {
+  const suffixes = toolchain.suiteSuffixesDeclared === true ? toolchain.suiteSuffixes : null;
   const out = new Set();
-  for (const root of roots) {
-    for (const file of await walk(projectRoot, posix(root))) out.add(posix(file));
+  for (const root of toolchain.roots) {
+    for (const file of await walk(projectRoot, posix(root), suffixes)) out.add(posix(file));
   }
-  return [...out].sort();
+  return [...out].filter((file) => !isExcludedTest(file, toolchain.exclude)).sort();
 }
 
 // ── THE RESULT (ADR-003) ─────────────────────────────────────────────────────────────────────
@@ -340,7 +344,7 @@ async function runTest(input, deps = {}) {
     return refused(askedScope, compiled.code, compiled.message, { verbose });
   }
   const toolchain = compiled.toolchain;
-  const whole = await wholeSuite(projectRoot, toolchain.roots, walk);
+  const whole = await wholeSuite(projectRoot, toolchain, walk);
 
   let scope = askedScope;
   let selected = [];
@@ -377,6 +381,7 @@ async function runTest(input, deps = {}) {
       allSuites: whole,
       roots: toolchain.roots,
       suffixes: toolchain.suiteSuffixes,
+      exclude: toolchain.exclude,
       couplings: toolchain.couplings,
       declared: story != null,
       ...(sources == null ? {} : { sources }),

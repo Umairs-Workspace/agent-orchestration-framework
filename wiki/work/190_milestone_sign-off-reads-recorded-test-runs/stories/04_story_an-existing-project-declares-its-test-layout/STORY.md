@@ -5,7 +5,7 @@ slug: an-existing-project-declares-its-test-layout
 title: "An existing project is told what its test declaration leaves out, and one skill declares it"
 parent: 190
 depends: ["190/01", "190/02"]
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-11-10
 updated: 2026-11-10
@@ -28,6 +28,11 @@ reads:
   - test/arch/testing/acd-test-record-one-writer.test.mjs
 files:
   - packages/work/src/testing/layout.mjs
+  - packages/work/src/testing/select.mjs
+  - packages/work/src/audit/census.mjs
+  - packages/work/src/commands/test.mjs
+  - .aof/aof.config.json
+  - wiki/work/190_milestone_sign-off-reads-recorded-test-runs/ARCHITECTURE.md
   - packages/work/src/testing/toolchain.mjs
   - packages/work/src/testing/changed.mjs
   - packages/work/src/commands/test.mjs
@@ -92,8 +97,8 @@ What lands (ADR-008):
 - [x] 01 [work update prints the test-layout warnings](tasks/01_work-update-prints-the-test-layout-warnings.feature)
 - [x] 02 [a commit is replayed without running anything](tasks/02_a-commit-is-replayed-without-running-anything.feature)
 - [x] 03 [map-tests says what it does](tasks/03_map-tests-says-what-it-does.feature)
-- [ ] 04 [map-tests proves a real declaration](tasks/04_map-tests-proves-a-real-declaration.feature) — run at verify: E14 partial (F-05), E15 passes its letter but F-06, E16 not triggered, E19 passes
-- [ ] 05 [the doctor and the selector agree on what a suite is](tasks/05_the-doctor-and-the-selector-agree-on-what-a-suite-is.feature) — `@bug` F-05, F-06, F-07
+- [x] 04 [map-tests proves a real declaration](tasks/04_map-tests-proves-a-real-declaration.feature) — E14 and E15 pass after the rework, E19 passes, E16 not triggered (VERIFICATION)
+- [x] 05 [the doctor and the selector agree on what a suite is](tasks/05_the-doctor-and-the-selector-agree-on-what-a-suite-is.feature) — `@bug` F-05, F-06, F-07
 
 ## Notes
 

@@ -1,5 +1,5 @@
 import picomatch from "picomatch";
-import { isSuiteFile } from "./select.mjs";
+import { isExcludedTest, isSuiteFile } from "./select.mjs";
 
 // THE TEST-LAYOUT CHECK FAMILY (190/ADR-008 §1, §5). Every key 190 added keeps the old behaviour
 // when it is absent, which is right for the code and silent for a project already on aof: it takes
@@ -56,18 +56,25 @@ function under(file, dir) {
   return prefix !== "/" && file.startsWith(prefix);
 }
 
-// The test-shaped files the declaration cannot select. The work dir is exempt (66/ADR-004 already
-// forbids test-shaped files there), so is anything under `node_modules` (never a suite, so never a
-// gap the declaration could close), and so is any file a coupling's `paths` matches: the
-// declaration has accounted for it.
-function unselectable({ tracked, roots, suffixes, couplings, workDir }) {
+// The tracked files the declaration can see at all: nothing under `node_modules` (never a suite, so
+// never a gap the declaration could close), and nothing under the work dir (66/ADR-004 already
+// forbids test-shaped files there).
+function considered({ tracked, workDir }) {
   return tracked
     .map(posix)
-    .filter((file) => isTestShaped(file))
-    .filter((file) => !isSuiteFile(file, roots, suffixes))
     .filter((file) => !file.split("/").includes("node_modules"))
-    .filter((file) => workDir == null || !under(file, workDir))
-    .filter((file) => !couplings.some((entry) => picomatch.isMatch(file, entry.paths, { dot: true })));
+    .filter((file) => workDir == null || !under(file, workDir));
+}
+
+// The test-shaped files the declaration cannot select. A file a coupling's `paths` matches is
+// accounted for, and so is a file `work.test.exclude` names: the declaration says the runner does
+// not run it (190/ADR-008 §7).
+function unselectable({ files, toolchain }) {
+  return files
+    .filter((file) => isTestShaped(file))
+    .filter((file) => !isSuiteFile(file, toolchain.roots, toolchain.suiteSuffixes, toolchain.exclude))
+    .filter((file) => !isExcludedTest(file, toolchain.exclude))
+    .filter((file) => !toolchain.couplings.some((entry) => picomatch.isMatch(file, entry.paths, { dot: true })));
 }
 
 function suitesCheck({ toolchain, tracked, workDir }) {
@@ -78,9 +85,18 @@ function suitesCheck({ toolchain, tracked, workDir }) {
       message: "The tracked files could not be listed (this is not a git checkout, or git did not answer), so no test file was checked against the declared roots and suffixes.",
     });
   }
-  const files = unselectable({ tracked, roots: toolchain.roots, suffixes: toolchain.suiteSuffixes, couplings: toolchain.couplings, workDir });
+  const seen = considered({ tracked, workDir });
+  const files = unselectable({ files: seen, toolchain });
   if (files.length === 0) {
-    return Object.freeze({ id: "test-layout-suites", severity: "ok", message: "Every tracked test file is a suite under the declared roots and suffixes." });
+    // 190/ADR-008 §8 — an empty whole suite is never `ok`: `impacted` would select nothing.
+    if (!seen.some((file) => isSuiteFile(file, toolchain.roots, toolchain.suiteSuffixes, toolchain.exclude))) {
+      return Object.freeze({
+        id: "test-layout-suites",
+        severity: "warning",
+        message: `No tracked file is a suite under work.test's roots and suffixes, so the whole suite is empty and \`aof test --scope impacted\` selects nothing. Declare the roots and suffixes the runner's suites use with ${TEST_LAYOUT_REPAIR}.`,
+      });
+    }
+    return Object.freeze({ id: "test-layout-suites", severity: "ok", message: "Every tracked test file is a suite under the declared roots and suffixes, or is excluded with a reason." });
   }
   const byRoot = new Map();
   for (const file of files) byRoot.set(rootOf(file), (byRoot.get(rootOf(file)) ?? 0) + 1);
@@ -90,7 +106,7 @@ function suitesCheck({ toolchain, tracked, workDir }) {
   return Object.freeze({
     id: "test-layout-suites",
     severity: "warning",
-    message: `${files.length} tracked test file${files.length === 1 ? " is" : "s are"} not a suite under work.test's roots and suffixes, so \`aof test --scope impacted\` can never select ${files.length === 1 ? "it" : "them"}: ${listed.join(", ")}${more}. Declare them with ${TEST_LAYOUT_REPAIR}.`,
+    message: `${files.length} tracked test file${files.length === 1 ? " is" : "s are"} not a suite under work.test's roots and suffixes, so \`aof test --scope impacted\` can never select ${files.length === 1 ? "it" : "them"}: ${listed.join(", ")}${more}. Declare them as suites, or exclude them with a reason where the runner does not run them, with ${TEST_LAYOUT_REPAIR}.`,
     details: Object.freeze(ranked.map(([dir, count]) => Object.freeze({ dir, count }))),
   });
 }

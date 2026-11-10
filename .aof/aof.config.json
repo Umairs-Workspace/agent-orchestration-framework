@@ -75,6 +75,15 @@
         ".test.mjs",
         ".suite.mjs"
       ],
+      "exclude": [
+        {
+          "paths": [
+            "packages/*/test/**/*.test.mjs",
+            "apps/*/test/**/*.test.mjs"
+          ],
+          "why": "a workspace's native node:test files: its `test` script runs them through scripts/test-workspace.mjs (`node --test`), scripts/test.mjs registers only its *.suite.mjs array suites, and the per-file runner scripts/test-shard.mjs rejects a native file (\"exports no array\")"
+        }
+      ],
       "deadlineMs": 7200000,
       "report": {
         "format": "tap"

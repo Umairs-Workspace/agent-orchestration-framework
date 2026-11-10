@@ -73,6 +73,7 @@ const TOOLCHAIN_CONFIG_KEYS = Object.freeze([
   "work.test.roots",
   "work.test.suiteSuffixes",
   "work.test.couplings",
+  "work.test.exclude",
   "work.test.deadlineMs",
   "work.test.report",
   "work.test.gate",
@@ -319,6 +320,19 @@ function couplingDeclarationProblem(couplings) {
   return null;
 }
 
+// An exclusion list is `[{ paths, why }]`: `paths` a non-empty array of globs naming test-shaped
+// files the runner does not run, `why` the stated reason (190/ADR-008 §7).
+function exclusionDeclarationProblem(exclude) {
+  if (exclude === undefined) return null;
+  if (!Array.isArray(exclude)) return "must be an array of { paths, why } entries";
+  for (const [index, entry] of exclude.entries()) {
+    if (!isPlainObject(entry)) return `entry ${index} must be an object with paths and why`;
+    if (!Array.isArray(entry.paths) || stringArrayProblem(entry.paths) != null || entry.paths.length === 0) return `entry ${index}'s paths must be a non-empty array of globs`;
+    if (typeof entry.why !== "string" || entry.why.trim() === "") return `entry ${index} must say why, as a non-empty string`;
+  }
+  return null;
+}
+
 // THE TEST RUNNER (ADR-001 §2). Absent is a refusal naming the key; present-and-faulty is a
 // refusal naming the field; well-formed-and-unresolvable is a refusal naming the command. Three
 // codes, three repairs. No program is ever substituted for the one that was not declared.
@@ -361,6 +375,11 @@ function resolveTestToolchain(config, options = {}) {
   if (couplingsProblem != null) {
     return refusal(TEST_RUNNER_DECLARATION_INVALID, "work.test.couplings", `work.test.couplings ${couplingsProblem} — a coupling is how a document narrows a run, so one that does not compile would narrow on a guess`);
   }
+  // 190/ADR-008 §7 — test-shaped files the runner does not run. Absent excludes nothing.
+  const exclusionProblem = exclusionDeclarationProblem(declared.exclude);
+  if (exclusionProblem != null) {
+    return refusal(TEST_RUNNER_DECLARATION_INVALID, "work.test.exclude", `work.test.exclude ${exclusionProblem} — an exclusion removes files from the whole suite, so one that does not compile would drop suites on a guess`);
+  }
 
   const { problem, resolved } = compileProgram(declared.command, TEST_RUNNER_UNRESOLVABLE, "work.test.command", options);
   if (problem != null) return problem;
@@ -369,6 +388,13 @@ function resolveTestToolchain(config, options = {}) {
     ok: true,
     toolchain: Object.freeze({
       suiteSuffixes: Object.freeze([...(declared.suiteSuffixes ?? [".test.mjs"])]),
+      // 190/ADR-008 §6 — only a DECLARED suffix list reshapes the whole suite's walk; absent keeps
+      // the walk's pre-190 pair, so an undeclared project's whole suite does not move.
+      suiteSuffixesDeclared: declared.suiteSuffixes !== undefined,
+      exclude: Object.freeze((declared.exclude ?? []).map((entry) => Object.freeze({
+        paths: Object.freeze([...entry.paths]),
+        why: entry.why,
+      }))),
       couplings: Object.freeze((declared.couplings ?? []).map((entry) => Object.freeze({
         paths: Object.freeze([...entry.paths]),
         suites: Object.freeze([...entry.suites]),

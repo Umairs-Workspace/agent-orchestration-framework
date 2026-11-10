@@ -6,10 +6,20 @@ import picomatch from "picomatch";
 // that declares none sees no change. Nothing under a `node_modules` directory is ever a suite.
 export const DEFAULT_SUITE_SUFFIXES = Object.freeze([".test.mjs"]);
 
-export function isSuiteFile(file, roots, suffixes = DEFAULT_SUITE_SUFFIXES) {
+// 190/ADR-008 §7 — a test-shaped file the declaration says the runner does not run
+// (`work.test.exclude`, `[{ paths, why }]`). It is never a suite, and the predicate below asks this,
+// so membership stays one decision (FF-19006).
+export function isExcludedTest(file, exclude = []) {
+  if (typeof file !== "string") return false;
+  const normalized = file.replaceAll("\\", "/");
+  return (exclude ?? []).some((entry) => picomatch.isMatch(normalized, entry.paths, { dot: true }));
+}
+
+export function isSuiteFile(file, roots, suffixes = DEFAULT_SUITE_SUFFIXES, exclude = []) {
   if (typeof file !== "string") return false;
   const normalized = file.replaceAll("\\", "/");
   if (!(suffixes ?? DEFAULT_SUITE_SUFFIXES).some((suffix) => normalized.endsWith(suffix))) return false;
+  if (isExcludedTest(normalized, exclude)) return false;
   if (normalized.split("/").includes("node_modules")) return false;
   return (roots ?? []).some((root) => {
     const prefix = `${String(root).replaceAll("\\", "/").replace(/\/+$/u, "")}/`;
@@ -191,14 +201,14 @@ const UNKNOWN_SOURCES = Object.freeze({
 //
 // Returns the frozen result above. It never throws for a graph that is missing or broken: those
 // are answers, and answering them as widenings is the point.
-async function selectSuites({ projectRoot, changed = [], allSuites = [], roots = [], suffixes = DEFAULT_SUITE_SUFFIXES, couplings = [], declared = false, sources = UNKNOWN_SOURCES } = {}) {
+async function selectSuites({ projectRoot, changed = [], allSuites = [], roots = [], suffixes = DEFAULT_SUITE_SUFFIXES, exclude = [], couplings = [], declared = false, sources = UNKNOWN_SOURCES } = {}) {
   const whole = [...allSuites].sort();
   // A suite the selection may choose is a suite by the declared predicate AND one the project's
   // runner runs — a member of the whole suite. A file the predicate admits that the runner cannot
   // run (this repository's native `node:test` files under a package's `test/`) is never selected,
   // so a narrowed run never names something the runner refuses; a change it alone covers widens.
   const runnable = new Set(whole);
-  const isSuite = (file) => isSuiteFile(file, roots, suffixes) && runnable.has(file);
+  const isSuite = (file) => isSuiteFile(file, roots, suffixes, exclude) && runnable.has(file);
 
   // An empty changed set selects NOTHING, which is the maximal silent narrowing — so it is a
   // refusal that names itself rather than a green run over zero tests (ADR-002 §5). It fires
