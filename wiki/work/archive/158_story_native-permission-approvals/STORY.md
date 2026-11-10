@@ -40,7 +40,7 @@ the initial draft's CLI/dashboard/Discord approval surfaces. See EXAMPLES.md.
 
 ### Observed problem
 
-This follows [156](../156_story_one-loop-selects-an-assistant-per-phase/STORY.md)
+This follows [156](../../archive/156_story_one-loop-selects-an-assistant-per-phase/STORY.md)
 and Codex execution from milestone 154. Language-tutor 16/01 and AOF 153/01
 verification reached Astra/high but Windows blocked Node subprocesses with spawn
 EPERM. The adapter declined native permission requests immediately, settling

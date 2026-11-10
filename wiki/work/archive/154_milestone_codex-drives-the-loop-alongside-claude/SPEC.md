@@ -78,7 +78,7 @@ Out of scope:
 - Replacing Claude or changing existing projects' default assistant.
 - Reimplementing the loop engine, ACD work-item format, gates or memory contracts for Codex.
 - Original scope excluded mixing assistants between phases. **Correction, 2026-10-09:**
-  this excluded the user's intended outcome. [Story 156](../156_story_one-loop-selects-an-assistant-per-phase/STORY.md)
+  this excluded the user's intended outcome. [Story 156](../../archive/156_story_one-loop-selects-an-assistant-per-phase/STORY.md)
   supplies the missing one-loop, per-phase runtime behavior. Milestone 154's prior
   acceptance establishes the single-runtime paths only.
 - Adding execution support for further assistants, a general plugin marketplace, or arbitrary
