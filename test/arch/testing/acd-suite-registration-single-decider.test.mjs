@@ -31,6 +31,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
+import { importSpecifiers } from "../../support/module-family.mjs";
 const registrationDecision = _aofApplication.work.audit.census.registrationDecision;
 const runnerImportedSuites = _aofApplication.work.audit.census.runnerImportedSuites;
 const registrationSources = _aofApplication.work.audit.census.registrationSources;
@@ -290,7 +291,8 @@ export function layoutPredicateProblems(code) {
   const problems = [];
   if (/\b(?:roots|suffixes|suiteSuffixes)\s*\??\.\s*(?:some|every|find|filter|includes)\s*\(/u.test(code)) problems.push("iterates the declared roots or suffixes itself");
   if (/[\w$)\]]\s*\??\.\s*work\s*\??\.\s*test\b|\[\s*["']work["']\s*\]/u.test(code)) problems.push("reads work.test from the config rather than through toolchain.mjs");
-  const specifiers = [...code.matchAll(/\bfrom\s*["']([^"']+)["']|\bimport\s*\(\s*["']([^"']+)["']/gu)].map((match) => match[1] ?? match[2]);
+  // The specifiers come from the one extractor (FF-11901), never a pattern of this control's own.
+  const specifiers = importSpecifiers(code).map((entry) => entry.specifier);
   if (specifiers.some((spec) => /(?:^|\/)record(?:\.mjs)?$/u.test(spec))) problems.push("imports the test record store");
   if (specifiers.some((spec) => spec.startsWith("@aof/knowledge") || /graph/u.test(spec))) problems.push("imports the code corpus");
   return problems;
