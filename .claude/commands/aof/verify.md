@@ -21,8 +21,10 @@ else `work.ui.baseUrl` (may be absent — ACD never boots the app; the project s
 The ref may be a **milestone**, a **story**, a **uat session**, a **spike**, or a **chore**. A uat
 session (`type: uat`) is a cross-milestone acceptance gate: its record doc is its own `SESSION.md` (not
 a milestone `VERIFICATION.md`), and the scenarios in scope are the `@manual`/`@uat` ones across the
-milestones it accepts (its `depends:` list). Run those milestones' `@executable` suite + fitness
-functions first as an integrated **regression sweep** (green) before the manual/human lanes. The same
+milestones it accepts (its `depends:` list). Run one integrated **regression sweep** (green) before
+the manual/human lanes: a single `aof test --scope all` for the whole session, never one run per
+accepted milestone. When the content has not changed since the newest gate run, that sweep is answered
+from the gate run's record, and the answer is the evidence. The same
 steps below apply — just write to `SESSION.md` and read scenarios across the accepted span.
 
 **Spike/chore dispatch (ADR-003) — skip straight to `<spike-chore>` below.** A `spike` or `chore` is
@@ -290,9 +292,13 @@ a story you are accepting should already read `in-review`.
     `REGRESSION.md` carrying the commit, the instant, the scope and the result. Run it, then accept.
   - **A `not-finished` row is no verdict on the code (160/ADR-006).** The run was held to its budget
     and stopped, or a unit ran out of time, or the gate's own deadline expired; the door refuses it as
-    `regression-gate-not-finished`. Its repair is to re-run the gate, or to speed the run up so it
-    finishes inside its budget. **Never route a not-finished row to a code repair**, and never count
-    its unfinished units as failures: only a `red` row names failing cases.
+    `regression-gate-not-finished`. Its repair is `aof work regression-gate <NN> --resume`, which
+    re-runs only the units the stopped run left, on the same content, and appends one row for the
+    whole. A resume refuses when the content has changed since that run — half a run of one tree and
+    half of another is no run of either — and then the repair is
+    to re-run the gate, or to speed the run up so it finishes inside its budget.
+    **Never route a not-finished row to a code repair**, and never count its unfinished units as
+    failures: only a `red` row names failing cases.
   - **The escape is `--gate-override "<reason>"`, for an ENVIRONMENT that cannot host the run** — the
     case m66 and 63/R12 both name (a node with no browser lane, a runner that cannot start here). It
     permits the move and writes the reason into `REGRESSION.md` as its own row. It is not the way

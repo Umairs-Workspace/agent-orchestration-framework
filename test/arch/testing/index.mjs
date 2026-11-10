@@ -42,6 +42,9 @@ import { archTests as acdOneSelectorOneChangedSetTests } from "./acd-one-selecto
 import { archTests as acdSourceDirectoryBudgetTests } from "./acd-source-directory-budget.test.mjs";
 // milestone 160 / story 01 — FF-16002: the loop suites' git model is held to real git, verb by verb.
 import { archTests as acdGitFakeParityTests } from "./acd-git-fake-parity.test.mjs";
+// milestone 190 / story 00 — FF-19001 (a test record has one writer) and FF-19004 (the content key
+// has one producer). FF-19002 is a second leg in acd-test-command-reports-not-decides above.
+import { archTests as acdTestRecordOneWriterTests } from "./acd-test-record-one-writer.test.mjs";
 
 export const tests = [
   ...acdTestSelectionWidensNeverNarrowsTests,
@@ -56,4 +59,6 @@ export const tests = [
   ...acdSourceDirectoryBudgetTests,
   // milestone 160 / story 01 — FF-16002.
   ...acdGitFakeParityTests,
+  // milestone 190 / story 00 — FF-19001, FF-19004.
+  ...acdTestRecordOneWriterTests,
 ];

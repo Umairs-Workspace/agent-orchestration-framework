@@ -88,6 +88,10 @@ export function partitionByCapability(resources, runtimes) {
 
       const mapping = mappingFor(resource.kind, runtime);
       if (mapping) {
+        // 179/ADR-007 — a member that declares `mapped: false` is never mapped to a runtime it does not
+        // declare: teaching's `teach` is supported on Claude Code only, so Codex renders no skill for it.
+        // Every other command is still mapped from its common body or its authored variant (154/05).
+        if (resource.mapped === false && !declaredRuntimes.includes(runtime)) continue;
         installable.push(mappedResource(resolveBundleVariant(resource, runtime), runtime, mapping));
         continue;
       }

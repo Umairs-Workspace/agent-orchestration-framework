@@ -71,6 +71,9 @@ const TOOLCHAIN_CONFIG_KEYS = Object.freeze([
   "work.test.selectArgs",
   "work.test.selectProgramArgs",
   "work.test.roots",
+  "work.test.suiteSuffixes",
+  "work.test.couplings",
+  "work.test.exclude",
   "work.test.deadlineMs",
   "work.test.report",
   "work.test.gate",
@@ -303,6 +306,33 @@ function compileProgram(command, unresolvableCode, key, options) {
   return { resolved };
 }
 
+// A coupling list is `[{ paths, suites, why }]`: `paths` a non-empty array of globs, `suites` an
+// array of suite paths (empty declares that nothing reads those paths), `why` the stated reason.
+function couplingDeclarationProblem(couplings) {
+  if (couplings === undefined) return null;
+  if (!Array.isArray(couplings)) return "must be an array of { paths, suites, why } entries";
+  for (const [index, entry] of couplings.entries()) {
+    if (!isPlainObject(entry)) return `entry ${index} must be an object with paths, suites and why`;
+    if (!Array.isArray(entry.paths) || stringArrayProblem(entry.paths) != null || entry.paths.length === 0) return `entry ${index}'s paths must be a non-empty array of globs`;
+    if (!Array.isArray(entry.suites) || stringArrayProblem(entry.suites) != null) return `entry ${index}'s suites must be an array of suite paths, empty when nothing reads them`;
+    if (typeof entry.why !== "string" || entry.why.trim() === "") return `entry ${index} must say why, as a non-empty string`;
+  }
+  return null;
+}
+
+// An exclusion list is `[{ paths, why }]`: `paths` a non-empty array of globs naming test-shaped
+// files the runner does not run, `why` the stated reason (190/ADR-008 §7).
+function exclusionDeclarationProblem(exclude) {
+  if (exclude === undefined) return null;
+  if (!Array.isArray(exclude)) return "must be an array of { paths, why } entries";
+  for (const [index, entry] of exclude.entries()) {
+    if (!isPlainObject(entry)) return `entry ${index} must be an object with paths and why`;
+    if (!Array.isArray(entry.paths) || stringArrayProblem(entry.paths) != null || entry.paths.length === 0) return `entry ${index}'s paths must be a non-empty array of globs`;
+    if (typeof entry.why !== "string" || entry.why.trim() === "") return `entry ${index} must say why, as a non-empty string`;
+  }
+  return null;
+}
+
 // THE TEST RUNNER (ADR-001 §2). Absent is a refusal naming the key; present-and-faulty is a
 // refusal naming the field; well-formed-and-unresolvable is a refusal naming the command. Three
 // codes, three repairs. No program is ever substituted for the one that was not declared.
@@ -334,12 +364,45 @@ function resolveTestToolchain(config, options = {}) {
     return refusal(TEST_RUNNER_DECLARATION_INVALID, "work.test.selectProgramArgs", `work.test.selectProgramArgs: index ${selectProgramProblem} holds a non-string — every element reaches the child verbatim, so it must already be a string`);
   }
 
+  // 190/ADR-003 §1, §4 — WHAT A SUITE IS, AND WHAT READS A DOCUMENT. Both optional: absent keeps
+  // today's predicate (`.test.mjs`) and no coupling, so every undeclared document still widens.
+  // Present and malformed is a refusal naming the key, never a silent narrowing.
+  const suffixesProblem = stringArrayProblem(declared.suiteSuffixes);
+  if (declared.suiteSuffixes !== undefined && (suffixesProblem != null || declared.suiteSuffixes.length === 0 || declared.suiteSuffixes.some((suffix) => !suffix.startsWith(".")))) {
+    return refusal(TEST_RUNNER_DECLARATION_INVALID, "work.test.suiteSuffixes", "work.test.suiteSuffixes must be a non-empty array of file suffixes, each starting with \".\" — it is what makes a file under a declared root a suite");
+  }
+  const couplingsProblem = couplingDeclarationProblem(declared.couplings);
+  if (couplingsProblem != null) {
+    return refusal(TEST_RUNNER_DECLARATION_INVALID, "work.test.couplings", `work.test.couplings ${couplingsProblem} — a coupling is how a document narrows a run, so one that does not compile would narrow on a guess`);
+  }
+  // 190/ADR-008 §7 — test-shaped files the runner does not run. Absent excludes nothing.
+  const exclusionProblem = exclusionDeclarationProblem(declared.exclude);
+  if (exclusionProblem != null) {
+    return refusal(TEST_RUNNER_DECLARATION_INVALID, "work.test.exclude", `work.test.exclude ${exclusionProblem} — an exclusion removes files from the whole suite, so one that does not compile would drop suites on a guess`);
+  }
+
   const { problem, resolved } = compileProgram(declared.command, TEST_RUNNER_UNRESOLVABLE, "work.test.command", options);
   if (problem != null) return problem;
 
   return Object.freeze({
     ok: true,
     toolchain: Object.freeze({
+      suiteSuffixes: Object.freeze([...(declared.suiteSuffixes ?? [".test.mjs"])]),
+      // 190/ADR-008 §6 — only a DECLARED suffix list reshapes the whole suite's walk; absent keeps
+      // the walk's pre-190 pair, so an undeclared project's whole suite does not move.
+      suiteSuffixesDeclared: declared.suiteSuffixes !== undefined,
+      exclude: Object.freeze((declared.exclude ?? []).map((entry) => Object.freeze({
+        paths: Object.freeze([...entry.paths]),
+        why: entry.why,
+      }))),
+      couplings: Object.freeze((declared.couplings ?? []).map((entry) => Object.freeze({
+        paths: Object.freeze([...entry.paths]),
+        suites: Object.freeze([...entry.suites]),
+        why: entry.why,
+      }))),
+      // 190/ADR-008 §1 — absent and `[]` select the same, but only `[]` is an answer: the
+      // test-layout check reads this to tell a question nobody asked from one answered "none".
+      couplingsDeclared: declared.couplings !== undefined,
       command: declared.command,
       program: resolved,
       args: Object.freeze([...(declared.args ?? [])]),
@@ -413,6 +476,11 @@ function resolveWorktreePrepare(config, options = {}) {
 const TEST_GATE_KEY = "work.test.gate";
 const JOBS_TOKEN = "{jobs}";
 const MINUTES_TOKEN = "{minutes}";
+// 190/ADR-005 §1, §2 — where the gate program writes its machine report, and the list of files a
+// resumed run plans. Spelled by the declaration's templates, like the two above, so the gate never
+// spells another program's flags.
+const REPORT_TOKEN = "{report}";
+const FILES_TOKEN = "{files}";
 // The runner's report outlives its budget by this much before the gate's own deadline stops it.
 const BUDGET_GRACE_MS = 2 * 60 * 1000;
 
@@ -449,6 +517,18 @@ function resolveTestGate(config) {
     return fault("budgetArgs", `must carry the \`${MINUTES_TOKEN}\` token in exactly one element — it is where the gate's budget goes`);
   }
 
+  for (const [field, token] of [["reportArgs", REPORT_TOKEN], ["filesArgs", FILES_TOKEN]]) {
+    const problem = stringArrayProblem(declared[field]);
+    if (problem === -1) return fault(field, `must be an array — it is an argv TEMPLATE in which \`${token}\` expands once, not a string`);
+    if (problem != null) return fault(field, `holds a non-string at index ${problem} — an argv template is a vector of strings`);
+    if (declared[field] !== undefined && declared[field].filter((element) => element.includes(token)).length !== 1) {
+      return fault(field, `must carry the \`${token}\` token in exactly one element`);
+    }
+  }
+  const noLanesProblem = stringArrayProblem(declared.noLanesArgs);
+  if (noLanesProblem === -1) return fault("noLanesArgs", "must be an array — the arguments that tell the gate program to skip its lanes");
+  if (noLanesProblem != null) return fault("noLanesArgs", `holds a non-string at index ${noLanesProblem}`);
+
   if (declared.budgetMinutes !== undefined
     && (typeof declared.budgetMinutes !== "number" || !Number.isFinite(declared.budgetMinutes) || declared.budgetMinutes <= 0)) {
     return fault("budgetMinutes", "must be a positive number of minutes — the wall time a whole-tree sign-off may take before the gate row calls it over budget");
@@ -461,6 +541,9 @@ function resolveTestGate(config) {
       jobsArgs: declared.jobsArgs === undefined ? null : Object.freeze([...declared.jobsArgs]),
       budgetArgs: declared.budgetArgs === undefined ? null : Object.freeze([...declared.budgetArgs]),
       budgetMinutes: declared.budgetMinutes ?? null,
+      reportArgs: declared.reportArgs === undefined ? null : Object.freeze([...declared.reportArgs]),
+      filesArgs: declared.filesArgs === undefined ? null : Object.freeze([...declared.filesArgs]),
+      noLanesArgs: declared.noLanesArgs === undefined ? null : Object.freeze([...declared.noLanesArgs]),
     }),
   });
 }
@@ -472,7 +555,9 @@ function resolveTestGate(config) {
 // `budgetArgs` after the worker count, and bounds the launch at the budget plus the report's grace —
 // with or without `budgetArgs`, so a program that cannot be told is still stopped. A serial launch
 // carries neither (160/05 Q2): its deadline stays `work.test.deadlineMs`.
-function gateToolchain(toolchain, gate, { serial = false, jobs = null } = {}) {
+// `report`, `files` and `noLanes` (190/ADR-005) reach the program only through their declared
+// templates. Asked for without one, they are dropped here, and the gate refuses a resume first.
+function gateToolchain(toolchain, gate, { serial = false, jobs = null, report = null, files = null, noLanes = false } = {}) {
   if (serial || gate == null) return toolchain;
   const jobsVector = jobs == null || gate.jobsArgs == null
     ? []
@@ -484,13 +569,22 @@ function gateToolchain(toolchain, gate, { serial = false, jobs = null } = {}) {
   // The gate is a whole-tree launch, so the selection's program goes with the args it replaces.
   return Object.freeze({
     ...toolchain,
-    args: Object.freeze([...gate.args, ...jobsVector, ...budgetVector]),
+    args: Object.freeze([
+      ...gate.args,
+      ...jobsVector,
+      ...budgetVector,
+      ...expand(gate.reportArgs, REPORT_TOKEN, report),
+      ...expand(gate.filesArgs, FILES_TOKEN, files),
+      ...(noLanes && gate.noLanesArgs != null ? gate.noLanesArgs : []),
+    ]),
     selectProgramArgs: null,
     ...(budget == null ? {} : { deadlineMs: Math.round(budget * 60_000) + BUDGET_GRACE_MS }),
   });
 }
 
 // ── THE ONE EXPANSION RULE (ADR-001 §3) ──────────────────────────────────────────────────────
+
+const expand = (template, token, value) => (value == null || template == null ? [] : template.map((element) => element.split(token).join(String(value))));
 
 const FILE_TOKEN = "{file}";
 
@@ -613,5 +707,5 @@ async function launchRunner(toolchain, files, options = {}) {
   );
 }
 
-return { DEFAULT_REPORT_FORMAT, FILE_TOKEN, JOBS_TOKEN, REPORT_FORMATS, SHIM_EXTENSIONS, TEST_RUNNER_DECLARATION_INVALID, TEST_RUNNER_UNDECLARED, TEST_RUNNER_UNRESOLVABLE, TOOLCHAIN_CONFIG_KEYS, TOOLCHAIN_REFUSAL_CODES, TOOLCHAIN_VERDICTS, WORKTREE_PREPARE_DECLARATION_INVALID, WORKTREE_PREPARE_UNRESOLVABLE, argumentVector, gateToolchain, launchRunner, launchStep, resolveProgram, resolveTestGate, resolveTestToolchain, resolveWorktreePrepare, selectionArgs, shimProblem, toolchainReport };
+return { DEFAULT_REPORT_FORMAT, FILES_TOKEN, FILE_TOKEN, JOBS_TOKEN, REPORT_TOKEN, REPORT_FORMATS, SHIM_EXTENSIONS, TEST_RUNNER_DECLARATION_INVALID, TEST_RUNNER_UNDECLARED, TEST_RUNNER_UNRESOLVABLE, TOOLCHAIN_CONFIG_KEYS, TOOLCHAIN_REFUSAL_CODES, TOOLCHAIN_VERDICTS, WORKTREE_PREPARE_DECLARATION_INVALID, WORKTREE_PREPARE_UNRESOLVABLE, argumentVector, gateToolchain, launchRunner, launchStep, resolveProgram, resolveTestGate, resolveTestToolchain, resolveWorktreePrepare, selectionArgs, shimProblem, toolchainReport };
 }

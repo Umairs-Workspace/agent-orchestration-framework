@@ -1,6 +1,9 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import { createRegressionGateCommand } from "@aof/work/commands/regression-gate";
 import { execFile } from "node:child_process";
+import { mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { runBounded } from "@aof/execution/bounded-process";
 
 export function assembleCommandsRegressionGate({ meshWorktreeServices, commandsResolveServices, commandsTestServices, workToolchainServices, degradeServices, runStoreServices }) {
@@ -9,13 +12,19 @@ export function assembleCommandsRegressionGate({ meshWorktreeServices, commandsR
   const { headCommit } = meshWorktreeServices;
   const { requireLocalCheckout } = commandsResolveServices;
   const { resolveItemExact } = commandsResolveServices;
-  const { runTest } = commandsTestServices;
+  const { runTest, testRecord } = commandsTestServices;
+  // 190/ADR-005 — where the gate program writes its report and a resume names its files: a private
+  // directory outside the tree, so neither changes the content key the gate's record is filed under.
+  const gateScratch = {
+    make: () => mkdtemp(path.join(os.tmpdir(), "aof-regression-gate-")),
+    remove: (dir) => rm(dir, { recursive: true, force: true }),
+  };
   const { reportDegrade } = degradeServices;
   // 160/ADR-005 §3 — the gate watches its driven run through the run store, and aborts through the bounded seam.
   const { isRunning, readRuns } = runStoreServices;
   const { gateToolchain, launchRunner, resolveTestGate, resolveTestToolchain } = workToolchainServices;
 
-  const { DIRTY_TREE, JOBS_INVALID, JOBS_UNDECLARED, SETTINGS_CONFLICT, STOPPED, cleanLaunchEnv, regressionGateCommand, runRegressionGate } = createRegressionGateCommand({ execFile, gateToolchain, headCommit, isRunning, launchRunner, readRuns, reportDegrade, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runBounded, runTest });
+  const { DIRTY_TREE, JOBS_INVALID, JOBS_UNDECLARED, NOTHING_TO_RESUME, RESUME_REPORT_MISSING, RESUME_TREE_CHANGED, RESUME_UNDECLARED, SETTINGS_CONFLICT, STOPPED, cleanLaunchEnv, regressionGateCommand, runRegressionGate } = createRegressionGateCommand({ execFile, gateToolchain, headCommit, isRunning, launchRunner, readRuns, reportDegrade, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runBounded, runTest, testRecord, gateScratch });
 
-  return { DIRTY_TREE, JOBS_INVALID, JOBS_UNDECLARED, SETTINGS_CONFLICT, STOPPED, cleanLaunchEnv, regressionGateCommand, runRegressionGate };
+  return { DIRTY_TREE, JOBS_INVALID, JOBS_UNDECLARED, NOTHING_TO_RESUME, RESUME_REPORT_MISSING, RESUME_TREE_CHANGED, RESUME_UNDECLARED, SETTINGS_CONFLICT, STOPPED, cleanLaunchEnv, regressionGateCommand, runRegressionGate };
 }

@@ -35,6 +35,7 @@ import { fileURLToPath } from "node:url";
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 import { graphArtifactBuiltAt, graphJsonPath } from "@aof/knowledge/graph-normalize";
 const WIDENING_REASONS = _aofApplication.work.testSelect.WIDENING_REASONS;
+const NARROWING_REASONS = _aofApplication.work.testSelect.NARROWING_REASONS;
 const selectSuites = _aofApplication.work.testSelect.selectSuites;
 const wideningRuleProblems = _aofApplication.work.testSelect.wideningRuleProblems;
 
@@ -355,6 +356,37 @@ export const archTests = [
       // direction and fail the other.
       const third = await answer(["packages/core/src/a.mjs", "test/a.test.mjs"], [link(1, 0)]);
       assert.deepEqual(third, first, "and graph A still answers A after graph B");
+    },
+  },
+  {
+    // 190/01 FF-19003 (ADR-003 §3–§5) — the second leg: narrowing is closed and positive.
+    name: "arch/190 FF-19003 (acd-test-selection-widens-never-narrows): narrowing is closed and positive",
+    run: async () => {
+      assert.deepEqual([...NARROWING_REASONS], ["graph-dependent", "suite-itself", "imported-by-changed", "declared-coupling", "not-yet-written"], "the narrowing reasons are exactly the five");
+      assert.ok(Object.isFrozen(NARROWING_REASONS), "…frozen, so a sixth is an edit with an ADR behind it");
+
+      // A real narrowed result is admitted: every selected suite carries a reason from the five.
+      await withRoot((root) => plantGraph(root, { nodes: ["packages/core/src/a.mjs", "test/a.test.mjs"], links: [link(1, 0)] }), async (root) => {
+        const result = await selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        assert.equal(result.scope, "impacted");
+        assert.ok(result.resolutions.length > 0 && result.resolutions.every((entry) => NARROWING_REASONS.includes(entry.reason)));
+        assert.deepEqual(wideningRuleProblems(result, ALL_SUITES), []);
+
+        // It fails when a selected suite in a narrowed result carries no reason…
+        const unexplained = { ...result, selected: [...result.selected, "test/b.test.mjs"] };
+        assert.ok(wideningRuleProblems(unexplained, ALL_SUITES).some((problem) => problem.includes("test/b.test.mjs")), "a selected suite no resolution names fails");
+        // …when a resolution carries a reason outside the five…
+        const foreign = { ...result, resolutions: [{ ...result.resolutions[0], reason: "trust-me" }] };
+        assert.ok(wideningRuleProblems(foreign, ALL_SUITES).length > 0, "a sixth narrowing reason fails");
+      });
+
+      // …and when a widened result carries a narrowing reason.
+      await withRoot(() => {}, async (root) => {
+        const widened = await selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        assert.deepEqual([...widened.resolutions], [], "a widened run carries no narrowing reason");
+        const leaked = { ...widened, resolutions: [{ file: "packages/core/src/a.mjs", reason: "graph-dependent", suites: [] }] };
+        assert.ok(wideningRuleProblems(leaked, ALL_SUITES).length > 0, "a widened result carrying a narrowing reason fails");
+      });
     },
   },
 ];

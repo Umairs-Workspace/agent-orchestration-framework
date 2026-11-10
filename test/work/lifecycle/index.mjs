@@ -56,6 +56,11 @@ import { workDispatchLaneTests } from "./work-dispatch-lanes.test.mjs";
 // planted graph, no narrowing path, and the two invocation refusals).
 import { workTestDeclaredTests } from "./work-test-declared.test.mjs";
 
+// milestone 190 / story 04 — `aof work update` prints the test-layout warnings (task 01), and
+// `/aof:map-tests` says what it does, what it writes and what it will not claim (task 03).
+import { workUpdateTestLayoutTests } from "./work-update-test-layout.test.mjs";
+import { mapTestsCommandTests } from "./map-tests-command.test.mjs";
+
 export const tests = [
   // milestone 72 / story 01 — the selection (tasks 00–01) plus FF-7202 and FF-7203.
   ...workTestSelectTests,
@@ -75,4 +80,7 @@ export const tests = [
   ...workDispatchLaneTests,
   // milestone 96 / story 03 — the story-scoped test run and its one control (see the import note).
   ...workTestDeclaredTests,
+  // milestone 190 / story 04 — the update's test-layout lines and the map-tests prose.
+  ...workUpdateTestLayoutTests,
+  ...mapTestsCommandTests,
 ];

@@ -37,7 +37,8 @@ import { generatorIds } from "@aof/diagrams/generators";
 import { inspectMemoryConfiguration } from "@aof/knowledge/memory";
 import { legacyMessage } from "@aof/knowledge/memory-config";
 import { agentModeFromConfig } from "@aof/contracts/agent-mode";
-export function assembleConfigInspect({ dslServices, fsServices, workspaceServices, degradeServices }) {
+import { workDirFor } from "../../aof-gitignore.mjs";
+export function assembleConfigInspect({ dslServices, fsServices, workspaceServices, degradeServices, workToolchainServices = null }) {
   const { loadConfig } = dslServices;
   const { loadProjectConfig } = dslServices;
 
@@ -394,11 +395,50 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     const notionAuth = notionAuthCheck(notionConfigRoot, options);
     if (notionAuth) checks.push(notionAuth);
 
+    // 190/ADR-008 §1 — the test-layout family, a sibling of the two above: a config's fit to its
+    // tree. Advisory, ok / warning only, and nothing at all when `work.test` is undeclared.
+    for (const check of await testLayoutChecks(projectDir, options)) checks.push(check);
+
     return {
       ...inspection,
       checks,
       suggestions: suggestionsFor(inspection, checks)
     };
+  }
+
+  // ----------------------------------------------------------- test-layout ------
+  // testLayoutChecks(projectDir, options) → the `test-layout-*` checks (190/ADR-008 §1, §5). The one
+  // composition `aof project doctor` and `aof work update` both call, so the two cannot disagree.
+  // The impure half lives here: the RAW config (normalisation drops the `work` subtree), compiled
+  // by `toolchain.mjs`, the one reader of `work.test.*` (FF-7201), and the tracked files from git.
+  // An unreadable config or an unassembled toolchain is no family, never a finding.
+  async function testLayoutChecks(projectDir, options = {}) {
+    if (workToolchainServices == null) return [];
+    let config;
+    try {
+      config = await readJsonWithDiagnostic(await findProjectConfig(projectDir, options.config));
+    } catch {
+      return [];
+    }
+    const { resolveTestToolchain, resolveTestGate } = workToolchainServices;
+    // Loaded here, not at module load: only the doctor and the update ask, and every other verb's
+    // start pays nothing for it (FF-16004).
+    const { testLayoutChecks: layoutChecks } = await import("@aof/work/testing/layout");
+    const workDir = path.relative(projectDir, workDirFor(projectDir, config)).replaceAll("\\", "/");
+    return [...layoutChecks({
+      compiled: resolveTestToolchain(config, { projectRoot: projectDir }),
+      compiledGate: resolveTestGate(config),
+      tracked: config?.work?.test == null ? null : trackedFiles(projectDir),
+      workDir,
+    })];
+  }
+
+  // `git ls-files`, or null when this is not a checkout or git did not answer. Bounded: a doctor
+  // never waits on git for longer than it takes to list any tree it could be run in.
+  function trackedFiles(projectDir) {
+    const listed = spawnSync("git", ["ls-files", "-z"], { cwd: projectDir, encoding: "utf8", timeout: 30_000, maxBuffer: 256 * 1024 * 1024 });
+    if (listed.error != null || listed.status !== 0) return null;
+    return listed.stdout.split("\0").filter((file) => file.length > 0);
   }
 
   // ----------------------------------------------------------- notion-auth ------
@@ -2093,5 +2133,5 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     };
   }
 
-  return { inspectConfig, inspectExecutionSettings, inspectGlobalConfig, adapterWarningsForConfig, validateConfig, validateGlobalConfig, doctorConfig, notionAuthCheck, managedToolChecks, providerPrereqCheck, toolPlatformCheckFor, toolPlatformChecks, resolveWorkDiagrams, planEnabledFromConfig, examplesEnabledFromConfig };
+  return { inspectConfig, inspectExecutionSettings, inspectGlobalConfig, adapterWarningsForConfig, validateConfig, validateGlobalConfig, doctorConfig, notionAuthCheck, testLayoutChecks, managedToolChecks, providerPrereqCheck, toolPlatformCheckFor, toolPlatformChecks, resolveWorkDiagrams, planEnabledFromConfig, examplesEnabledFromConfig };
 }

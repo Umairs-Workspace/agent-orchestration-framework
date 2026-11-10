@@ -23,9 +23,8 @@ export const workRenumberTests = [
       await assert.rejects(readFile(path.join(old, 'SPEC.md')), { code: 'ENOENT' });
     });
   } },
-  { name: '182/01 renumber rewrites dependencies, paths and citations and preserves historical evidence', async run() {
+  { name: '182/01 renumber rewrites dependencies, paths, citations and recall ledgers, and leaves captured evidence as it was', async run() {
     const { planRenumber, applyRenumber } = await import('../../../packages/work/src/renumber.mjs');
-    const { readRefHistory, remapHistoricalRef } = await import('../../../packages/work/src/ref-history.mjs');
     await withWork(async work => {
       const old = await writeMilestoneItem(work, '175', { status: 'done' });
       const child = await writeStoryItem(old, '00', '175');
@@ -34,7 +33,11 @@ export const workRenumberTests = [
       await mkdir(path.join(old, 'verification'));
       const raw = '{"item":"175","query":"175/R1","at":"2026-01-01T00:00:00Z"}\n';
       await writeFile(path.join(old, 'verification', 'original.json'), raw);
-      const plan = await planRenumber(work, { ref: '175', to: '181', now: '2026-10-30T18:00:00Z' });
+      const recall = { kind: 'recall', id: 'r1', at: '2026-01-01T00:00:00Z', edge: 'refine.architect', actor: 'architect', query: 'q', scope: { item: '175/00' },
+        records: [{ item: '175', id: 'R1', recordType: 'lesson', verdict: 'honoured' }, { item: '1750', id: 'R2', recordType: 'lesson', verdict: 'irrelevant' }] };
+      const feedback = '{"kind":"feedback","item":"175","text":"left alone"}\n';
+      await writeFile(path.join(other, 'FEEDBACK.ndjson'), feedback + JSON.stringify(recall) + '\n');
+      const plan = await planRenumber(work, { ref: '175', to: '181' });
       await applyRenumber(plan);
       assert.match(await readFile(path.join(other, 'SPEC.md'), 'utf8'), /depends: \[181\]/);
       const retro = await readFile(path.join(other, 'RETROSPECTIVE.md'), 'utf8');
@@ -43,9 +46,10 @@ export const workRenumberTests = [
       assert.match(await readFile(path.join(movedChild, 'STORY.md'), 'utf8'), /parent: 181/);
       assert.deepEqual(plan.remap, [{from:'175',to:'181'}, {from:'175/00',to:'181/00'}]);
       assert.equal(await readFile(path.join(plan.destination, 'verification', 'original.json'), 'utf8'), raw);
-      const history = await readRefHistory(work);
-      assert.equal(remapHistoricalRef('175', '2026-01-01T00:00:00Z', history), '181');
-      assert.equal(remapHistoricalRef('175', '2027-01-01T00:00:00Z', history), '175', 'a reused number is not a permanent alias');
+      const [kept, rewritten] = (await readFile(path.join(other, 'FEEDBACK.ndjson'), 'utf8')).split('\n');
+      assert.equal(kept + '\n', feedback, 'a non-recall row keeps its bytes');
+      assert.deepEqual(JSON.parse(rewritten), { ...recall, scope: { item: '181/00' }, records: [{ ...recall.records[0], item: '181' }, recall.records[1]] }, 'the recall names the moved refs, and 1750 is not 175');
+      await assert.rejects(readFile(path.join(work, '.renumber-history.json')), { code: 'ENOENT' }, 'no side map is written');
     });
   } },
   { name: '182/00 registered renumber verb is available with dry-run and to flags', async run() {
@@ -96,7 +100,7 @@ workRenumberTests.push(
       assert.equal(applied.moved,true);assert.equal(events,1);
     });
   }},
-  {name:'182/01 full memory refresh recalls the moved lesson; original recall still accounts to it',async run(){
+  {name:'182/01 full memory refresh recalls the moved lesson; its recall is rewritten to the new ref and accounts to it',async run(){
     const {defaultApplication}=await import('aof/default-application');
     const {withInsertFixture}=await import('../../support/work-insert-fixture.mjs');
     const {accountMemory}=await import('../../../packages/work/src/memory-accounting.mjs');
@@ -114,7 +118,7 @@ workRenumberTests.push(
       const index=JSON.parse(await readFile(path.join(fx.repo,'.aof','aof.memory.index.json'),'utf8'));
       assert.ok(index.records.some(record=>record.item==='181'&&record.id==='R1'));
       assert.ok(!index.records.some(record=>record.item==='175'));
-      assert.equal(await readFile(path.join(result.destination,'FEEDBACK.ndjson'),'utf8'),raw);
+      assert.equal(await readFile(path.join(result.destination,'FEEDBACK.ndjson'),'utf8'),raw.replace('"item":"175"','"item":"181"'));
       const accounting=await accountMemory(fx.workDir,{indexed:index.records,lessons:true});
       assert.equal(accounting.lessons['181/R1'].honoured,1);
       assert.equal(accounting.lessons['181/R1'].provenance,'indexed');
@@ -156,12 +160,22 @@ workRenumberTests.push({name:'182/00 real CLI previews and renumbers a standalon
     assert.match(await readFile(path.join(out.destination,'STORY.md'),'utf8'),/status: done/);
   },{memory:{backend:'none'}});
 }});
-workRenumberTests.push({name:'182/01 historical recall follows chained moves but not later reuse of a number',async run(){
-  const {remapHistoricalRef}=await import('../../../packages/work/src/ref-history.mjs');
-  const history=[{at:'2026-02-01T00:00:00Z',remap:[{from:'175',to:'181'}]},{at:'2026-03-01T00:00:00Z',remap:[{from:'181',to:'190'},{from:'175',to:'182'}]}];
-  assert.equal(remapHistoricalRef('175','2026-01-01T00:00:00Z',history),'190');
-  assert.equal(remapHistoricalRef('175','2026-02-15T00:00:00Z',history),'182');
-  assert.equal(remapHistoricalRef('175','2026-04-01T00:00:00Z',history),'175');
+workRenumberTests.push({name:'182/01 a recall follows chained moves, and a later item reusing the number inherits nothing',async run(){
+  const {planRenumber,applyRenumber}=await import('../../../packages/work/src/renumber.mjs');
+  const {accountMemory}=await import('../../../packages/work/src/memory-accounting.mjs');
+  await withWork(async work=>{
+    await writeMilestoneItem(work,'175');
+    const reader=await writeMilestoneItem(work,'176');
+    const recall=at=>JSON.stringify({kind:'recall',id:at,at,edge:'refine.architect',actor:'architect',query:'q',scope:{},records:[{item:'175',id:'R1',recordType:'lesson',verdict:'honoured'}]});
+    await writeFile(path.join(reader,'FEEDBACK.ndjson'),recall('2026-01-01T00:00:00Z')+'\n');
+    await applyRenumber(await planRenumber(work,{ref:'175',to:'181'}));
+    await applyRenumber(await planRenumber(work,{ref:'181',to:'190'}));
+    const reused=await writeMilestoneItem(work,'175');
+    await writeFile(path.join(reused,'FEEDBACK.ndjson'),recall('2026-04-01T00:00:00Z')+'\n');
+    const accounting=await accountMemory(work,{lessons:true});
+    assert.equal(accounting.lessons['190/R1'].honoured,1,'the early recall followed both moves');
+    assert.equal(accounting.lessons['175/R1'].honoured,1,'the later recall counts for the item now at 175 only');
+  });
 }});
 
 workRenumberTests.push({name:'182/00 an ordinary write failure rolls back documents and folder',async run(){
@@ -169,10 +183,10 @@ workRenumberTests.push({name:'182/00 an ordinary write failure rolls back docume
   await withWork(async work=>{
     const item=await writeMilestoneItem(work,'175'); const before=await readFile(path.join(item,'SPEC.md'),'utf8');
     const plan=await planRenumber(work,{ref:'175',to:'181'}); let fail=true;
-    await assert.rejects(applyRenumber(plan,{write:async(file,...args)=>{if(file===plan.historyFile&&fail){fail=false;throw new Error('simulated write failure');}return writeFile(file,...args);}}),/simulated write failure/);
+    const last=plan.changes.at(-1).target;
+    await assert.rejects(applyRenumber(plan,{write:async(file,...args)=>{if(file===last&&fail){fail=false;throw new Error('simulated write failure');}return writeFile(file,...args);}}),/simulated write failure/);
     assert.equal(await readFile(path.join(item,'SPEC.md'),'utf8'),before);
     await assert.rejects(readFile(path.join(plan.destination,'SPEC.md')),{code:'ENOENT'});
-    await assert.rejects(readFile(plan.historyFile),{code:'ENOENT'});
   });
 }});
 

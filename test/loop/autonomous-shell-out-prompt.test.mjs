@@ -19,6 +19,7 @@ import {
 import { hashContent } from "../../packages/core/src/lock.mjs";
 import { executeApplyActions, planApplyActions } from "../../packages/core/src/render-plan.mjs";
 import { markedRegion } from "../support/source-slice.mjs";
+import { codexSection } from "../arch/command/acd-continue-builds-only.test.mjs";
 import { assignmentDirectiveCommand } from "@aof/mesh/assignment-directive";
 import { LOOP_BOUND_VALUE_RESOLVERS } from "@aof/contracts/loop-bounds";
 const readRuns = _aofApplication.execution.runs.readRuns;
@@ -60,7 +61,11 @@ const commandIdsBeforeStory = [
   // `loop-diagram` ADDED AT 145, in the descriptor's own order (after `insert-uat`): the
   // `/aof:loop-diagram` wrapper over `aof diagram plan|export <ref> loop` — the same species as
   // `promote` and `archive`, repaired at `aof:verify 145`.
-  "init", "insert-chore", "insert-milestone", "insert-story", "insert-uat", "loop-diagram", "migrate",
+  // `manual` ADDED AT 179/00 (after `loop-diagram`, the descriptor's own order): 149's guide moved
+  // out of `continue` into the `/aof:manual` command of its own (179/ADR-001).
+  // `map-tests` ADDED AT 190/04 (after `manual`, the descriptor's own order): `/aof:map-tests`
+  // declares a project's `work.test` layout and proves it by replay (190/ADR-008 §3).
+  "init", "insert-chore", "insert-milestone", "insert-story", "insert-uat", "loop-diagram", "manual", "map-tests", "migrate",
   // `pay-debt` ADDED AT 119/03, and late: the command shipped with the tech-debt ledger work and
   // this list — the control that says the pre-existing member set is COMPLETE and undisturbed —
   // was not updated with it, so the leg has been red on this branch since. It surfaced here
@@ -84,6 +89,9 @@ const commandIdsBeforeStory = [
   // `hyperplan` ADDED AT 169/01, after core's members: it is the Hyperagent integration's command,
   // and the descriptor appends each integration's fragment after core's own (169/ADR-004).
   "hyperplan",
+  // `teach` ADDED AT 179/02, after the integrations': it is @aof/learning's command, and the
+  // descriptor appends each practice's fragment after the integrations' (179/ADR-004 §4).
+  "teach",
 ];
 const delegatedCommandRows = [
   ["c01", "/aof:autonomous 03", "aof work loop 03 --level L2"],
@@ -774,24 +782,20 @@ export const autonomousShellOutPromptTests = [
       assert.match(step, /The QA pass is never split into one agent per task/u);
     },
   },
-  // ── 149/00 — a manual continue hands the operator a guide instead of a build ────
+  // ── 179/00 — manual is its own command, and continue builds only ──────────────
   //
-  // `149_story_continue-manual-mode-guides-the-operator/tasks/00_a-manual-continue-hands-the-operator-a-guide.feature`,
-  // and the two prompt rows of task 01 (E5, E6). Read off the marked `<manual_mode>` region, so a
-  // renumbered step cannot move these controls.
+  // `188_milestone_human-led-problem-solving/stories/00_story_manual-becomes-its-own-command/tasks/`
+  // 00 (E1, E2, E6 and the rule outline), 01 (the prompt rows E4, E5) and 02 (E7–E9). These rows
+  // SUPERSEDE 149/00's E1–E4, its rule outline, its `<output>` row and its argument hint, and
+  // 149/01's E5–E6 (179/ARCHITECTURE ADR-001 §5): the guide those rows read off continue's
+  // `<manual_mode>` region now lives in `commands/manual.md`, and the 149 `.feature` files stay as
+  // delivered. Read off `<process>`, `<hand_off>` and `<output>` of the manual command, flattened.
   {
-    name: "149/00 E1 · a manual continue spawns no builder, writes nothing outside the item's folder, prints the guide and stops",
+    name: "179/00 E1 · the manual command prints 149's guide and builds nothing",
     run: () => {
-      const region = manualRegionOf();
-      assert.match(region, /No `aof-developer` is spawned, in solo and in orchestrated mode alike/u);
-      assert.match(region, /no file outside the item's own folder is written/u);
-      assert.match(region, /Close the run with `aof work run-complete <ref> --outcome done` after the guide is printed\*\*, then stop\./u);
-    },
-  },
-  {
-    name: "149/00 E2 · the guide names everything the operator needs before touching code, in order",
-    run: () => {
-      const region = manualRegionOf();
+      const manual = manualBody();
+      assert.match(manual, /No `aof-developer` is spawned, and no file outside the item's own folder is written/u);
+      assert.match(manual, /Every manual run runs `aof test --scope impacted --story <ref>` once, before the guide/u);
       const parts = [
         "the scenarios still red, by name",
         "the user story",
@@ -801,88 +805,128 @@ export const autonomousShellOutPromptTests = [
         "the build plan's mechanism and known traps, when the story has a `PLAN.md`",
         "an order to take the tasks in, with the reason for it",
       ];
-      const guide = region.slice(region.indexOf("Print the guide"));
+      const guide = manual.slice(manual.indexOf("Print the guide"));
       const at = parts.map((part) => guide.indexOf(part));
       parts.forEach((part, i) => assert.ok(at[i] >= 0, `the guide names: ${part}`));
-      assert.deepEqual([...at].sort((a, b) => a - b), at, "the parts are named in the guide's order");
+      assert.deepEqual([...at].sort((a, b) => a - b), at, "the parts are named in 149/00 E2's order");
+      const mint = manual.indexOf("Mint the run with `aof work run-start <ref> --json` before the guide is printed");
+      const close = manual.indexOf("Close the run with `aof work run-complete <ref> --outcome done` after the guide is printed");
+      assert.ok(mint >= 0 && manual.indexOf("Print the guide") > mint && close > manual.indexOf("Print the guide"), "mint, then the guide, then the close");
+      const output = flattened(markedRegion(manualSource(), "<output>", "</output>") ?? "");
+      assert.match(output, /\*\*guided: `<ref>` is yours to build\*\* — [^-]*Next: `aof:review <ref>`, once the operator's build is green — never `aof:verify`/u);
     },
   },
   {
-    name: "149/00 E3 · a manual continue starts the story through its run, and writes no status move of its own",
+    name: "179/00 E2 · continue carries no operator-led mode, and its argument hint names no --manual",
     run: () => {
-      const region = manualRegionOf();
-      const mint = region.indexOf("Mint the run with `aof work run-start <ref> --json` before the guide is printed");
-      const guide = region.indexOf("Print the guide");
-      const close = region.indexOf("Close the run with `aof work run-complete <ref> --outcome done` after the guide is printed");
-      assert.ok(mint >= 0 && guide > mint && close > guide, "mint, then the guide, then the close");
-      assert.match(region, /The session writes no status move of its own/u);
+      for (const [where, text] of continuePrompts()) {
+        assert.ok(!text.includes("<manual_mode>"), `${where} holds no <manual_mode> region`);
+        assert.ok(!text.includes("guided: `<ref>` is yours to build"), `${where} lists no guided: outcome`);
+      }
+      const member = loadBundle().resources.find((entry) => entry.id === "continue");
+      assert.equal(member.argumentHint, '"<item ref, or a NN/MM-PP story span> [--solo | --orchestrated] [--thinking <level>]"');
     },
   },
   {
-    name: "149/00 E4 · a re-run prints the guide again, headed by what is still red",
+    name: "179/00 E6 · continue names --manual nowhere, and names no aof:manual",
     run: () => {
-      const region = manualRegionOf();
-      assert.match(region, /Every manual run runs `aof test --scope impacted --story <ref>` once, before the guide/u);
-      assert.match(region, /The guide is printed in the terminal only\*\*, and no guide file is written to the story folder/u);
-      assert.match(region, /When every scenario is green the guide says so, and names `aof:review <ref>` as the next step/u);
+      for (const [where, text] of continuePrompts()) {
+        assert.ok(!text.includes("--manual"), `${where} contains no --manual`);
+        assert.ok(!text.includes("aof:manual") && !text.includes("$aof-manual"), `${where} names no aof:manual`);
+      }
     },
   },
   ...[
     [/A story whose `reads:` is absent, or whose tasks are thin or untagged, halts and sends the operator to `aof:refine <ref>`/u, "an unrefined story halts to aof:refine"],
-    [/Read the story exactly as the story lane's step 1 reads it, and no wider/u, "the read is step 1's, no wider"],
+    [/Read the story exactly as continue's story lane step 1 reads it, and no wider/u, "the read is continue's step 1, no wider"],
     [/No gate ladder is walked and no reviewer is spawned/u, "no gate ladder and no reviewer"],
-    [/The hand-back is `guided: <ref> is yours to build`, and it names `aof:review <ref>` next — never `aof:verify`/u, "the hand-back names aof:review, never aof:verify"],
+    [/The guide is printed in the terminal only\*\*, and no guide file is written to the story folder/u, "the guide is terminal-only"],
+    [/When every scenario is green the guide says so, and names `aof:review <ref>` as the next step/u, "a green story names aof:review"],
+    [/The session writes no status move of its own/u, "no status move of its own"],
   ].map(([rule, label]) => ({
-    name: `149/00 the manual region holds each rule a manual continue needs [${label}]`,
-    run: () => assert.match(manualRegionOf(), rule),
+    name: `179/00 the manual command holds each rule 149's region held [${label}]`,
+    run: () => assert.match(manualBody(), rule),
   })),
   {
-    name: "149/00 the output section names the manual outcome",
+    name: "179/00 E4 · a manual session on a milestone is refused at the door and names the ready stories",
     run: () => {
-      const body = String(loadBundle().resources.find((entry) => entry.id === "continue").body);
-      const output = flattened(markedRegion(body, "<output>", "</output>") ?? "");
-      assert.match(output, /\*\*guided: `<ref>` is yours to build\*\* — [^-]*Next: `aof:review <ref>`/u);
+      const manual = manualBody();
+      assert.match(manual, /Enter through the build door — this command's first act\.\*\* Run `aof work continue <ref> --manual --json`/u);
+      const door = manual.indexOf("aof work continue <ref> --manual --json");
+      for (const later of ["aof work run-start <ref> --json", "aof test --scope impacted --story <ref>", "Print the guide"]) {
+        assert.ok(manual.indexOf(later) > door, `the door comes before ${later}`);
+      }
+      assert.match(manual, /A `continue-manual-not-a-story` refusal for a milestone or a `NN\/MM-PP` span runs `aof work next <ref> --json` and names the ready stories it answers, to take one at a time/u);
+      assert.match(manual, /Nothing is minted after a door refusal\*\*/u);
     },
   },
   {
-    name: "149/00 the argument hint and every render carry --manual, and the renders are current",
+    name: "179/00 E5 · a READY agent lineage is reported, never resumed",
     run: () => {
-      const bundle = loadBundle();
-      const member = bundle.resources.find((entry) => entry.id === "continue");
-      assert.equal(member.argumentHint, '"<item ref, or a NN/MM-PP story span> [--solo | --orchestrated | --manual] [--thinking <level>]"');
-      const renders = [".claude/commands/aof/continue.md", ".agents/skills/aof-continue/SKILL.md", ".opencode/commands/aof/continue.md"];
-      for (const render of renders) assert.ok(readBundleProse(render, repoRoot).includes("<manual_mode>"), `${render} and its own declared procedure carry <manual_mode>`);
-      const dry = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: bundleFixtureRoot(repoRoot), encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
-      assert.equal(dry.status, 0, dry.stderr);
-      const actions = new Map(JSON.parse(dry.stdout).actions.map((entry) => [entry.path.replaceAll("\\", "/"), entry.action]));
-      for (const render of renders) assert.equal(actions.get(render), "skip", `${render} is current`);
+      const manual = manualBody();
+      assert.match(manual, /This session does not walk the re-entry sweep and never runs `aof work resume`/u);
+      assert.match(manual, /A `duplicate-run` refusal from `aof work run-start <ref> --json` means another run on this story is still open[^.]*\. Report it and the session stops/u);
+      assert.match(manual, /a resumed session is not a manual session until `aof:manual <ref>` is invoked again/u);
     },
   },
   {
-    name: "149/01 E5 · --manual with --solo or --orchestrated is stopped as contradictory, before any role runs or any run is minted",
+    name: "179/00 E7 · a manual hand-off appends an entry to the milestone's STATE and names continue",
     run: () => {
-      const config = configBlocksOf("continue");
-      assert.match(config, /\*\*`--manual` together with `--solo` or `--orchestrated` is contradictory too\*\*/u);
-      assert.match(config, /STOP before any role runs and before any run is minted, and report it/u);
+      const handOff = flattened(markedRegion(manualSource(), "<hand_off>", "</hand_off>") ?? "");
+      assert.ok(handOff !== "", "manual.md: NOT FOUND — the <hand_off> region could not be cut");
+      assert.match(handOff, /When the human asks, in any turn, to hand the story to an agent, the session appends a hand-off entry under `## Notes & decisions in flight` in the item's `STATE\.md`/u);
+      assert.match(handOff, /The entry opens `- <date> — Hand-off <ref> from manual:`, then lists the `files:` the human changed, their commits since the run was minted, and the scenarios green and red/u);
+      assert.match(handOff, /the STATE is the parent milestone's for a nested story, and the story's own for a standalone one/u);
+      assert.match(handOff, /The session then names `aof:continue <ref>` and does not run it/u);
     },
   },
   {
-    name: "149/01 E6 · a manual continue on a milestone or span is refused before any run is minted, naming its ready stories",
+    name: "179/00 E8 · continue's story lane reads the hand-off entry and builds from the human's code",
     run: () => {
-      const region = manualRegionOf();
-      assert.match(region, /A milestone or a `NN\/MM-PP` span is refused before any run is minted/u);
-      assert.match(region, /run `aof work next <ref> --json` and name the ready stories it answers, to take one at a time/u);
+      for (const [where, text] of continuePrompts().filter(([where]) => !where.endsWith("#continue"))) {
+        const at = text.indexOf("1. Read exactly the story's `reads:` set");
+        assert.ok(at >= 0, `${where}: NOT FOUND — the story lane's step 1 could not be cut`);
+        const step = flattened(text.slice(at, text.indexOf("2. **Mint its run", at)));
+        assert.match(step, /Any `Hand-off <ref>` entry in the item's `STATE\.md` is read, and only that entry/u, `${where}: the entry, and only it, is read`);
+        assert.match(step, /the build treats the files the entry names as the human's starting point/u, `${where}: the human's files are the starting point`);
+        assert.match(step, /the build's report names every human-written line it changed, and why/u, `${where}: every changed human line is reported`);
+      }
+    },
+  },
+  {
+    name: "179/00 E9 · a standalone task's hand-off is reported in the terminal only",
+    run: () => {
+      const handOff = flattened(markedRegion(manualSource(), "<hand_off>", "</hand_off>") ?? "");
+      assert.match(handOff, /A standalone task has no `STATE\.md`, so its hand-off is reported in the terminal and nothing is written/u);
     },
   },
 ];
 
-// The `<manual_mode>` region of the bundled continue prompt, flattened (149/00).
-function manualRegionOf() {
+// The manual command's source, and its `<process>` + `<hand_off>` regions flattened (179/00).
+function manualSource() {
+  const member = loadBundle().resources.find((entry) => entry.id === "manual");
+  assert.ok(member, "manual is a bundle member");
+  return String(member.body);
+}
+
+function manualBody() {
+  const source = manualSource();
+  const process = markedRegion(source, "<process>", "</process>");
+  assert.ok(process != null, "manual.md: NOT FOUND — the <process> region could not be cut");
+  return flattened(process);
+}
+
+// The build prompt and its two Codex sections, raw — each must carry no operator-led mode (179/00).
+function continuePrompts() {
   const member = loadBundle().resources.find((entry) => entry.id === "continue");
   assert.ok(member, "continue is a bundle member");
-  const region = markedRegion(String(member.body), "<manual_mode>", "</manual_mode>");
-  assert.ok(region != null, "continue.md: NOT FOUND — the <manual_mode> region could not be cut");
-  return flattened(region);
+  const codex = readFileSync(path.join(repoRoot, "packages", "core", "assets", "variants", "codex", "workflow.md"), "utf8");
+  const sections = ["continue", "procedure-continue"].map((section) => {
+    const body = codexSection(codex, section);
+    assert.ok(body != null, `workflow.md: NOT FOUND — the Codex \`${section}\` section could not be cut`);
+    return [`variants/codex/workflow.md#${section}`, body];
+  });
+  return [["commands/continue.md", String(member.body)], ...sections];
 }
 
 // The `<config>` blocks of a bundled prompt, flattened — continue.md carries two.

@@ -55,6 +55,15 @@ import { buildSeaRecipeGuardsTests } from "./build-sea-recipe-guards.test.mjs";
 // `not ok`, a case red in the pool and green alone is a `# not isolated` comment, and the
 // slowest-files block sums each file across its chunks. The pure module, driven without a pool.
 import { testShardedReportTests } from "./test-sharded-report.test.mjs";
+// 190/00 — a repeat `aof test` on unchanged content is answered from the record of the run that
+// already happened: the content key, the match rule, `--fresh` and single-flight, driven against
+// temp git repositories with a runner that counts its launches.
+import { testRunRecordTests } from "./test-run-record.test.mjs";
+
+// 190/04 — the project doctor names what the test declaration leaves out (task 00), and a commit's
+// selection is replayed with `--plan` without running anything (task 02).
+import { testLayoutCheckTests } from "./test-layout-check.test.mjs";
+import { testPlanCommitTests } from "./test-plan-commit.test.mjs";
 
 export const tests = [
   // milestone 72 / story 02 - the test command's face (tasks 00-02) plus FF-7204.
@@ -67,4 +76,9 @@ export const tests = [
   ...buildSeaRecipeGuardsTests,
   // 144 — the sharded run's report and verdict.
   ...testShardedReportTests,
+  // 190/00 — the test record.
+  ...testRunRecordTests,
+  // 190/04 — the test-layout check family and the planned replay.
+  ...testLayoutCheckTests,
+  ...testPlanCommitTests,
 ];

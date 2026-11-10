@@ -38,7 +38,7 @@ export const yarnInstallationTests = [
     assert.deepEqual(importSpecifiers(dependencyRules).map(entry => entry.specifier), ['./identity.mjs'],
       'dependency rules use only the zero-import identity grammar');
     assert.deepEqual(computedDynamicImports(dependencyRules), [], 'dependency rules cannot hide an impure import');
-    for (const name of ['contracts', 'effects', 'foundation', 'work', 'work-graph', 'work-loop', 'execution', 'mesh', 'integration-notion', 'messaging', 'knowledge', 'server', 'specification-by-example', 'diagrams']) {
+    for (const name of ['contracts', 'effects', 'foundation', 'work', 'work-graph', 'work-loop', 'execution', 'mesh', 'integration-notion', 'messaging', 'knowledge', 'server', 'specification-by-example', 'learning', 'diagrams']) {
       const report = await familyPurity(root, `packages/${name}/src`);
       assert.ok(report.scanned > 0 && report.bytesRead > 0, `${name}: runtime source was scanned`);
       // Plan 01 keeps domain I/O in its owner; these are exact file-level ports, never package-wide permissions.
@@ -63,6 +63,9 @@ export const yarnInstallationTests = [
         'commands/scene.mjs': ['node:fs/promises', 'node:fs', 'node:crypto', 'node:path', '@aof/contracts/error'],
         // the opt-out seam's read: pure over the injected one reader of work.diagrams.
         'commands/capability.mjs': [],
+      } : name === 'learning' ? {
+        // 179/ADR-004: the practice's mode descriptor is import-free; @aof/work imports nothing back (FF-17902).
+        'mode.mjs': [],
       } : name === 'specification-by-example' ? {
         // 135/ADR-001: the practice imports @aof/work's lifecycle and @aof/contracts' error, and reads only the story's own map;
         // 135/04 (ADR-004): the lane parses task features through @aof/work's one feature parser, and the door reads the story's own tasks/.
@@ -327,7 +330,12 @@ export const yarnInstallationTests = [
         'commands/doctor.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs', '@aof/contracts/error'],
         'commands/validate.mjs': ['node:path', 'node:fs/promises'],
         'declared.mjs': ['node:path', 'node:fs/promises'],
-        'select.mjs': ['node:fs'],
+        // 190/01: the selector resolves a changed file's literal specifiers by path and matches declared couplings; it reads no file itself.
+        'select.mjs': ['node:path', 'picomatch'],
+        // 190/04: the test-layout check matches a coupling's paths the way the selector does; it reads no file itself.
+        'layout.mjs': ['picomatch'],
+        // 190/00: the test record keys the working tree in a throwaway index under the temp dir, names its lock by a digest, and writes its store.
+        'record.mjs': ['node:crypto', 'node:fs/promises', 'node:os', 'node:path'],
         'observe.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error'],
         'debt.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
         'artifacts.mjs': ['node:crypto'],
@@ -371,10 +379,9 @@ export const yarnInstallationTests = [
         'store.mjs': ['node:path', 'node:fs/promises'],
         'observations.mjs': ['node:os', 'node:path'],
         'records.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs'],
-        // 182: `aof work renumber` moves one item and rewrites its references; ref-history.mjs keeps the
-        // old-ref map memory reads, so a renumbered item's recall still resolves.
+        // 182: `aof work renumber` moves one item and rewrites its references, recall ledgers included,
+        // so a renumbered item's recall resolves with no side map.
         'renumber.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
-        'ref-history.mjs': ['node:path', 'node:fs/promises'],
         // 167/01: the one stat digest of a work tree hashes (path, size, mtime) for the stream memo and the sync gate.
         // 167/07 (ADR-009): the one work-tree watch lives beside the one walk.
         'discovery.mjs': ['node:path', 'node:fs', 'node:fs/promises', 'node:crypto'],
@@ -404,7 +411,7 @@ export const yarnInstallationTests = [
       }
       assert.ok(computedDynamicImports('await import(variableName)').length > 0);
       const manifest = JSON.parse(readFileSync(path.join(root, 'packages', name, 'package.json'), 'utf8'));
-      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'server' ? ['@aof/execution', 'ws'] : name === 'knowledge' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'messaging' ? ['@aof/contracts', '@aof/foundation', '@inquirer/prompts', 'ws'] : name === 'execution' ? ['@aof/contracts', '@aof/foundation', '@xterm/headless', 'node-pty'] : name === 'mesh' ? ['@aof/contracts', '@aof/execution', '@aof/foundation', '@aof/server', '@aof/work', '@aof/work-loop', 'ws'] : name === 'work' ? ['@aof/contracts', '@aof/foundation', 'picomatch'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'specification-by-example' ? ['@aof/contracts', '@aof/work'] : name === 'diagrams' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
+      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'server' ? ['@aof/execution', 'ws'] : name === 'knowledge' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'messaging' ? ['@aof/contracts', '@aof/foundation', '@inquirer/prompts', 'ws'] : name === 'execution' ? ['@aof/contracts', '@aof/foundation', '@xterm/headless', 'node-pty'] : name === 'mesh' ? ['@aof/contracts', '@aof/execution', '@aof/foundation', '@aof/server', '@aof/work', '@aof/work-loop', 'ws'] : name === 'work' ? ['@aof/contracts', '@aof/foundation', 'picomatch'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'specification-by-example' ? ['@aof/contracts', '@aof/work'] : name === 'learning' ? ['@aof/contracts'] : name === 'diagrams' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
       for (const target of Object.values(manifest.exports)) {
         assert.ok(target.startsWith('./src/') && !target.includes('..', 2));
         assert.ok(report.family.files.includes(`packages/${name}/${target.slice(2)}`), 'export points to scanned runtime source');
@@ -518,5 +525,25 @@ export const yarnInstallationTests = [
     const { existsSync } = await import('node:fs');
     assert.equal(existsSync(path.join(root, 'package-lock.json')), false);
     assert.equal(existsSync(path.join(root, 'apps/ui/package-lock.json')), false);
+  } },
+  // 179/01 task 01 — `@aof/learning` is a workspace member with only lower-level dependencies, and the
+  // repository runner owns its suites (179/ARCHITECTURE ADR-004).
+  { name: '179/01 the learning package is a workspace member with only lower-level dependencies', run: async () => {
+    const manifest = JSON.parse(readFileSync(path.join(root, 'packages/learning/package.json'), 'utf8'));
+    assert.equal(manifest.name, '@aof/learning');
+    assert.equal(manifest.private, true);
+    assert.equal(manifest.type, 'module');
+    assert.ok(Object.keys(manifest.exports).includes('./mode'), 'it exports ./mode'); // 179/02 adds ./contribution
+    assert.deepEqual(Object.keys(manifest.dependencies), ['@aof/contracts']);
+    const lock = readFileSync(path.join(root, 'yarn.lock'), 'utf8');
+    assert.match(lock, /^"@aof\/learning@workspace:\*, @aof\/learning@workspace:packages\/learning":$/mu, 'the root yarn.lock resolves the workspace');
+    assert.deepEqual(await auditSupplyChain(root), [], 'the supply-chain audit passes');
+  } },
+  { name: '179/01 the learning package\'s own suites run under the repository runner', run: async () => {
+    const runner = readFileSync(path.join(root, 'scripts/test.mjs'), 'utf8');
+    assert.match(runner, /import \{ tests as \w+ \} from "\.\.\/packages\/learning\/test\/index\.mjs";/u, 'scripts/test.mjs imports the package index');
+    const { tests } = await import('../../packages/learning/test/index.mjs');
+    const { modeTests } = await import('../../packages/learning/test/mode.suite.mjs');
+    assert.ok(modeTests.length > 0 && modeTests.every((test) => tests.includes(test)), 'the index runs mode.suite.mjs');
   } },
 ];

@@ -8,6 +8,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { computeImpact } from "@aof/knowledge/graph-impact";
+import { createCodeGraphReader } from "@aof/knowledge/graphify-code-relations";
 import { createGraphImpactCommand } from "@aof/knowledge/commands/graph-impact";
 import { createGraphifyCodeBackend } from "@aof/knowledge/graphify-code-backend";
 import { createKnowledgeEngine } from "@aof/knowledge/engine";
@@ -281,6 +282,33 @@ export const tests = [
         const [second] = (await port.relations(["src/a.mjs"], { projectRoot: root })).files;
         assert.deepEqual(second.dependencies, ["src/b.mjs", "src/lonely.mjs"]);
         assert.equal(reads, 2, "the artifact is read on every call");
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    // 190/01 task 00 (ADR-003 §2): the transitive form is one read of the artifact.
+    name: "190/01 the transitive form is one read of the artifact",
+    async run() {
+      // c → b → a (each imports the next), d → a, and a cycle x ↔ y with y → c.
+      const graph = {
+        directed: true, multigraph: false, graph: {},
+        nodes: ["a", "b", "c", "d", "x", "y"].map((id) => ({ id, label: `${id}.mjs`, file_type: "code", source_file: `src/${id}.mjs` })),
+        links: [["b", "a"], ["c", "b"], ["d", "a"], ["x", "y"], ["y", "x"], ["y", "c"]].map(([source, target]) => ({ source, target, relation: "imports" })),
+      };
+      const root = fixtureProject(JSON.stringify(graph));
+      try {
+        let reads = 0;
+        const { relations } = createCodeGraphReader({ readGraph: (file) => { reads += 1; return readGraph(file); }, normalizeGraph, graphJsonPath, graphArtifactBuiltAt });
+        const answer = await relations(["src/a.mjs", "src/c.mjs", "src/x.mjs"], { projectRoot: root, transitive: true });
+        assert.equal(reads, 1, "the artifact is read once");
+        const dependents = Object.fromEntries(answer.files.map((entry) => [entry.file, entry.dependents]));
+        assert.deepEqual(dependents["src/a.mjs"], ["src/b.mjs", "src/c.mjs", "src/d.mjs", "src/x.mjs", "src/y.mjs"], "every file that reaches a through import edges");
+        assert.deepEqual(dependents["src/c.mjs"], ["src/x.mjs", "src/y.mjs"], "the cycle ends the walk");
+        assert.deepEqual(dependents["src/x.mjs"], ["src/y.mjs"]);
+        const direct = await relations(["src/a.mjs"], { projectRoot: root });
+        assert.deepEqual(direct.files[0].dependents, ["src/b.mjs", "src/d.mjs"], "without the option, direct importers only, as before");
       } finally {
         rmSync(root, { recursive: true, force: true });
       }

@@ -164,9 +164,13 @@ export const planningCoworkPluginTests = [
       // stripped so the preamble — not a native variant — is what renders).
       const commands = loadBundle().resources
         .filter((resource) => resource.kind === "command")
+        // 179/ADR-007 — a member that declares `mapped: false` (teaching's `teach`) is never mapped to
+        // codex; every other command still is.
+        .filter((resource) => resource.mapped !== false)
         .map(({ runtimeVariants, ...resource }) => resource);
       assert.ok(commands.length > 0);
       const { installable } = partitionByCapability(commands, ["codex"]);
+      assert.ok(!partitionByCapability(loadBundle().resources.filter((resource) => resource.id === "teach"), ["codex"]).installable.length, "teach is not mapped to codex");
       for (const resource of commands) {
         const mapped = installable.find((entry) => entry._aofMappedFrom?.id === resource.id);
         assert.ok(mapped, `codex renders ${resource.id}`);

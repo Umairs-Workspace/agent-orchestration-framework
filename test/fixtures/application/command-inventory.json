@@ -1006,7 +1006,19 @@
             "null"
           ]
         },
+        "commit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "plan": {
+          "type": "boolean"
+        },
         "verbose": {
+          "type": "boolean"
+        },
+        "fresh": {
           "type": "boolean"
         }
       },
@@ -1017,7 +1029,7 @@
         "test"
       ],
       "spec": {
-        "usage": "aof test --scope impacted|file|all [<suite-file> ...] [--story <ref>] [--since <rev>] [--verbose] [--json]",
+        "usage": "aof test --scope impacted|file|all [<suite-file> ...] [--story <ref>] [--since <rev>] [--commit <rev> --plan] [--plan] [--fresh] [--verbose] [--json]",
         "flags": {
           "scope": {
             "type": "string",
@@ -1031,9 +1043,21 @@
             "type": "string",
             "description": "widen the changed set's base to this revision (scope impacted)"
           },
+          "commit": {
+            "type": "string",
+            "description": "take the changed set from what this commit changed against its first parent (scope impacted; --plan only; not with --story or --since)"
+          },
+          "plan": {
+            "type": "boolean",
+            "description": "select and report without running — launches nothing, writes no record, is answered from none"
+          },
           "verbose": {
             "type": "boolean",
             "description": "restore the full stream — adds the passing rows, removes nothing"
+          },
+          "fresh": {
+            "type": "boolean",
+            "description": "run even when a record on this content already answers — to chase a suspected flake; the record says it was a deliberate repeat"
           }
         }
       }
@@ -1691,6 +1715,9 @@
             "string",
             "number"
           ]
+        },
+        "resume": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -1704,7 +1731,7 @@
         "regression-gate"
       ],
       "spec": {
-        "usage": "aof work regression-gate <ref> [--serial] [--jobs N] [--json]",
+        "usage": "aof work regression-gate <ref> [--serial] [--jobs N] [--resume] [--json]",
         "flags": {
           "serial": {
             "type": "boolean",
@@ -1713,6 +1740,10 @@
           "jobs": {
             "type": "string",
             "description": "the gate program's worker count, through its declared jobsArgs template"
+          },
+          "resume": {
+            "type": "boolean",
+            "description": "re-run only the units the newest not-finished run left, on the same content, and record one row for the whole"
           }
         }
       }
@@ -4532,6 +4563,9 @@
         },
         "manual": {
           "type": "boolean"
+        },
+        "teach": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -4545,7 +4579,7 @@
         "continue"
       ],
       "spec": {
-        "usage": "aof work continue <ref> [--node <id>] [--manual] [--json]",
+        "usage": "aof work continue <ref> [--node <id>] [--manual] [--teach] [--json]",
         "flags": {
           "node": {
             "type": "string",
@@ -4554,6 +4588,10 @@
           "manual": {
             "type": "boolean",
             "description": "the operator builds: continue one story or task here and hand back a guide, never a build"
+          },
+          "teach": {
+            "type": "boolean",
+            "description": "the operator is taught: start one story or task here and answer `/aof:teach <ref>`, never a build"
           }
         }
       }

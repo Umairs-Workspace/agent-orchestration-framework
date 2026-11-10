@@ -311,8 +311,11 @@ async function writeItemStatusLine(item, toStatus, { from, code, notApplicable, 
     error.detail = { status: status ?? null };
     throw error;
   }
-  let rewritten = block[2].replace(/^(status:[ \t]*).*$/m, `$1${toStatus}`);
-  if (bumpUpdated) rewritten = rewritten.replace(/^(updated:[ \t]*).*$/m, `$1${today(now)}`);
+  // The key's whitespace run is matched atomically (a lookahead captures it, a backreference consumes
+  // it), so `.*` can never re-split it: the plain `[ \t]*.*` form backtracks polynomially on a line
+  // of many tabs (CodeQL js/polynomial-redos).
+  let rewritten = block[2].replace(/^(status:(?=([ \t]*))\2).*$/m, `$1${toStatus}`);
+  if (bumpUpdated) rewritten = rewritten.replace(/^(updated:(?=([ \t]*))\2).*$/m, `$1${today(now)}`);
   const updated = block[1] + rewritten + block[3] + text.slice(block[0].length);
   await writeText(docPath, updated);
   return { ref: item.ref, status: toStatus, from: status ?? null };

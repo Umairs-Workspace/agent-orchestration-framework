@@ -3,10 +3,12 @@ description: Review the operator's own build of a story — run its tests, walk 
 ---
 
 <objective>
-The operator built this story by hand — usually after `aof:continue <ref> --manual` handed them a
-guide. Review that build exactly as an agent's build is reviewed, and hand every finding back to the
-operator, who fixes it. Build nothing, fix nothing, and edit none of the operator's code: a clean
-review moves the story to `in-review`, ready for `aof:verify <ref>`.
+The operator built this story by hand — usually after `aof:manual <ref>` handed them a
+guide, or after `aof:teach <ref>` taught them through it. Either command may have made the story's
+run and status move. Do not assume it was `aof:manual`. Review that build exactly as an agent's
+build is reviewed, and hand every finding back to the operator, who fixes it. Build nothing, fix
+nothing, and edit none of the operator's code: a clean review moves the story to `in-review`, ready
+for `aof:verify <ref>`.
 </objective>
 
 <config>
@@ -36,7 +38,9 @@ as written. This file holds only what differs from them.
 1. **Mint the run before anything else** — `aof work run-start <ref> --json`, exactly as continue's
    story lane does at its step 2. A `duplicate-run` refusal means a run on this story is still open
    from a phase that died; the mint reclaims a stale one.
-2. **Run the story's tests first** — `aof test --scope impacted --story <ref>`. **A red scenario
+2. **Run the story's tests first** — `aof test --scope impacted --story <ref>`. When nothing has
+   changed since the build's own run, it is answered from that run's record, and the answer is the
+   evidence. **A red scenario
    stops the review before the gate ladder**: name every red scenario, spawn no reviewer, and do not
    move the status. Close the run with `aof work run-complete <ref> --outcome done` and hand back:
    the build is not finished, and judging an unfinished build pays a reviewer to rediscover what the

@@ -403,8 +403,52 @@ async function workspaceSuiteRoots(repoRoot, root) {
   return [...new Set(roots)];
 }
 
-async function walkSuiteFiles(repoRoot, root = "test") {
+// 190/ADR-003 §3 — the workspaces' LITERAL export maps, `specifier → repo-relative file`, for the
+// test selection's specifier scan. Read beside the workspace test roots above, from the same
+// manifests. A conditional (object) export target is not literal, so it places nothing.
+async function workspaceExportMap(repoRoot) {
+  const out = new Map();
+  const manifest = await readFile(path.join(repoRoot, "package.json"), "utf8").then(JSON.parse).catch(() => null);
+  const patterns = Array.isArray(manifest?.workspaces) ? manifest.workspaces : manifest?.workspaces?.packages ?? [];
+  for (const pattern of patterns) {
+    if (typeof pattern !== "string" || pattern.includes("..") || path.isAbsolute(pattern)) continue;
+    const directories = pattern.endsWith("/*")
+      ? await readdir(path.join(repoRoot, pattern.slice(0, -2)), { withFileTypes: true })
+        .then((entries) => entries.filter((entry) => entry.isDirectory()).map((entry) => `${pattern.slice(0, -2)}/${entry.name}`))
+        .catch(() => [])
+      : [pattern];
+    for (const directory of directories) {
+      const pkg = await readFile(path.join(repoRoot, directory, "package.json"), "utf8").then(JSON.parse).catch(() => null);
+      if (typeof pkg?.name !== "string") continue;
+      const exports = typeof pkg.exports === "string" ? { ".": pkg.exports } : pkg.exports ?? {};
+      for (const [key, target] of Object.entries(exports)) {
+        if (typeof target !== "string") continue;
+        const specifier = key === "." ? pkg.name : `${pkg.name}/${key.replace(/^\.\//u, "")}`;
+        out.set(specifier, path.posix.join(directory, target).replace(/^\.\//u, ""));
+      }
+    }
+  }
+  return out;
+}
+
+// A workspace's own `test/` directory: its index registers ARRAY suites with the runner, and its
+// native `node:test` files are a separately executed surface. So it contributes `*.suite.mjs` only,
+// whether it is reached through the `test` root or declared as a root of its own (190/ADR-003 §1).
+async function isWorkspaceTestDir(repoRoot, rel) {
+  if (path.posix.basename(rel) !== "test") return false;
+  const index = await readFile(path.join(repoRoot, rel, "index.mjs"), "utf8").catch(() => null);
+  const manifest = await readFile(path.join(repoRoot, path.posix.dirname(rel), "package.json"), "utf8").catch(() => null);
+  return index != null && manifest != null;
+}
+
+// `suffixes` is the project's declared suite suffixes (190/ADR-008 §6). Absent keeps the pre-190
+// pair, `.test.mjs` and `.suite.mjs`. A workspace `test/` directory that registers array suites
+// still contributes `.suite.mjs` alone, because that is how this repository's runner runs it.
+async function walkSuiteFiles(repoRoot, root = "test", suffixes = null) {
   const out = [];
+  const isSuiteName = (name) => (suffixes == null
+    ? name.endsWith(".test.mjs") || name.endsWith(".suite.mjs")
+    : suffixes.some((suffix) => name.endsWith(suffix)));
   async function walk(rel, arraysOnly = false) {
     let entries;
     try {
@@ -414,11 +458,13 @@ async function walkSuiteFiles(repoRoot, root = "test") {
     }
     for (const entry of entries) {
       const child = `${rel}/${entry.name}`;
-      if (entry.isDirectory()) await walk(child, arraysOnly);
-      else if ((!arraysOnly && entry.name.endsWith(".test.mjs")) || entry.name.endsWith(".suite.mjs")) out.push(child);
+      // An installed dependency's tests are never this project's suites.
+      if (entry.isDirectory()) { if (entry.name !== "node_modules") await walk(child, arraysOnly); }
+      else if (arraysOnly ? entry.name.endsWith(".suite.mjs") : isSuiteName(entry.name)) out.push(child);
     }
   }
-  await walk(root.replaceAll("\\", "/"));
+  const start = root.replaceAll("\\", "/").replace(/\/+$/u, "");
+  await walk(start, start !== "test" && await isWorkspaceTestDir(repoRoot, start));
   for (const owned of await workspaceSuiteRoots(repoRoot, root)) await walk(owned, true);
   return out.sort();
 }
@@ -696,5 +742,5 @@ async function runCensus({
     assembledNames: Object.freeze([...assembledNames]),
   });
 }
-return { AUDIT_FINDING_CODES, CENSUS_SWEEPS, LEDGER_PROJECT, LIMIT_KEYS, PROBE_PROGRAM, SWEEP_BASES, TEST_ROOTS, UNREGISTERED_BASELINE, assembledSuite, assertSweepsDeclared, baselineProblems, ledgerApplies, limitDeclarationProblems, limitRecord, readFinding, readRecord, readRegistrationIndexes, registrationDecision, registrationSources, runCensus, runnerBindings, runnerImportedSuites, runnerSpreadNames, spreadClaimLimit, sweepDeclarationProblems, sweepLimits, walkSuiteFiles };
+return { AUDIT_FINDING_CODES, CENSUS_SWEEPS, LEDGER_PROJECT, LIMIT_KEYS, PROBE_PROGRAM, SWEEP_BASES, TEST_ROOTS, UNREGISTERED_BASELINE, assembledSuite, assertSweepsDeclared, baselineProblems, ledgerApplies, limitDeclarationProblems, limitRecord, readFinding, readRecord, readRegistrationIndexes, registrationDecision, registrationSources, runCensus, runnerBindings, runnerImportedSuites, runnerSpreadNames, spreadClaimLimit, sweepDeclarationProblems, sweepLimits, walkSuiteFiles, workspaceExportMap };
 }

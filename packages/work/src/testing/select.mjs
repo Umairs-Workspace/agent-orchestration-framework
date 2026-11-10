@@ -1,6 +1,26 @@
-export function isSuiteFile(file, roots) {
-  if (typeof file !== "string" || !file.endsWith(".test.mjs")) return false;
+import path from "node:path";
+import picomatch from "picomatch";
+
+// THE SUITE PREDICATE (72/ADR-002 §1a, widened by 190/ADR-003 §1): a file under a declared root that
+// ends in a declared suffix. The suffixes default to `.test.mjs`, today's predicate, so a project
+// that declares none sees no change. Nothing under a `node_modules` directory is ever a suite.
+export const DEFAULT_SUITE_SUFFIXES = Object.freeze([".test.mjs"]);
+
+// 190/ADR-008 §7 — a test-shaped file the declaration says the runner does not run
+// (`work.test.exclude`, `[{ paths, why }]`). It is never a suite, and the predicate below asks this,
+// so membership stays one decision (FF-19006).
+export function isExcludedTest(file, exclude = []) {
+  if (typeof file !== "string") return false;
   const normalized = file.replaceAll("\\", "/");
+  return (exclude ?? []).some((entry) => picomatch.isMatch(normalized, entry.paths, { dot: true }));
+}
+
+export function isSuiteFile(file, roots, suffixes = DEFAULT_SUITE_SUFFIXES, exclude = []) {
+  if (typeof file !== "string") return false;
+  const normalized = file.replaceAll("\\", "/");
+  if (!(suffixes ?? DEFAULT_SUITE_SUFFIXES).some((suffix) => normalized.endsWith(suffix))) return false;
+  if (isExcludedTest(normalized, exclude)) return false;
+  if (normalized.split("/").includes("node_modules")) return false;
   return (roots ?? []).some((root) => {
     const prefix = `${String(root).replaceAll("\\", "/").replace(/\/+$/u, "")}/`;
     return normalized.startsWith(prefix);
@@ -90,11 +110,38 @@ const CHANGED_SET_UNREADABLE = "changed-set-unreadable";
 
 const SELECTION_SCOPES = Object.freeze(["impacted", "all"]);
 
+// THE FIVE NARROWING REASONS, EXHAUSTIVELY (190/ADR-003 §5, FF-19003). Each names POSITIVE knowledge
+// about a changed file; frozen beside the four widenings so a sixth is an edit with an ADR behind it.
+//
+//   graph-dependent     — the graph holds it, and its transitive dependents include a suite
+//   suite-itself        — the graph does not hold it, and it is a suite on disk: a suite is a leaf
+//   imported-by-changed — the graph does not hold it, and a placed changed file imports it by a
+//                         literal specifier, so it inherits that importer's suites
+//   declared-coupling   — it is not code, and the project declared which suites read it
+//   not-yet-written     — under `--story` only, a declared path that exists nowhere has no behaviour
+const NARROWING_REASONS = Object.freeze([
+  "graph-dependent",
+  "suite-itself",
+  "imported-by-changed",
+  "declared-coupling",
+  "not-yet-written",
+]);
+
+// What counts as CODE: a file the import graph is about. A code file is placed by the graph or by a
+// changed importer, never by a coupling — a coupling is how a project says what reads a document.
+const CODE_FILE = /\.(?:[cm]?[jt]sx?)$/u;
+
+// A literal module specifier: `import … from "x"`, `import "x"`, `export … from "x"` and
+// `import("x")`. A computed `import(expr)` or a string in a table is NOT one, and that is the point:
+// what this scan cannot see stays unplaced and widens (190/ADR-003 §3).
+const SPECIFIER = /(?:\bimport\s*(?:[\w$*{}\s,]+?\s*from\s*)?|\bexport\s*[\w$*{}\s,]*?\s*from\s*|\bimport\s*\(\s*)(["'])([^"'\n]+)\1/gu;
+const RESOLVE_EXTENSIONS = Object.freeze(["", ".mjs", ".js", ".cjs", ".json", "/index.mjs", "/index.js"]);
+
 // A SUITE FILE IS A PATH, and that is the whole predicate (ADR-002 §1a): a `*.test.mjs` under one
 // of the roots the project declared. The roots are handed in — never read from config.
 const widening = (file, reason) => Object.freeze({ file, reason });
 
-function selection({ scope, selected, widened, builtAt, graphPath, changed, resolved = [], refusal = null }) {
+function selection({ scope, selected, widened, builtAt, graphPath, changed, resolved = [], resolutions = [], refusal = null }) {
   return Object.freeze({
     scope,
     // `gate` is FALSE unless the whole suite was selected AND nothing widened (ADR-002 §4). A
@@ -110,9 +157,40 @@ function selection({ scope, selected, widened, builtAt, graphPath, changed, reso
     // that does not widen: without it, "did not widen and left a changed file unresolved" is not
     // expressible from a result, and a one-sided check passes the side it cannot see.
     resolved: Object.freeze([...resolved]),
+    // HOW each changed file was placed (190/ADR-003 §5): `{ file, reason, suites, why? }`, one per
+    // resolved file. Empty on a widened result — a widened run carries no narrowing reason.
+    resolutions: Object.freeze(resolutions.map((entry) => Object.freeze({ ...entry, suites: Object.freeze([...entry.suites]) }))),
     refusal,
   });
 }
+
+
+// Strip comments before the specifier scan: a commented-out import is no import, and placing a file
+// on one would be a narrowing resting on text the program never runs.
+const uncommented = (source) => source.replace(/\/\*[\s\S]*?\*\//gu, "").replace(/^\s*\/\/.*$/gmu, "");
+
+// The repo-relative file a literal specifier in `importer` names, or null when it names none this
+// scan can place.
+async function resolveSpecifier(specifier, importer, exportsOf) {
+  if (specifier.startsWith(".")) {
+    const base = path.posix.normalize(path.posix.join(path.posix.dirname(importer), specifier));
+    return RESOLVE_EXTENSIONS.map((extension) => `${base}${extension}`);
+  }
+  const target = (await exportsOf()).get(specifier);
+  return target == null ? [] : [target];
+}
+
+// WHAT THE SELECTOR KNOWS ABOUT FILES IS HANDED IN, never read here (179/04: the selector opens no
+// file of its own). `exists(file)` answers true, false or null for unknown; `read(file)` a file's
+// text or null; `exports()` the workspaces' literal export maps. The default knows nothing, so a
+// caller that supplies no sources gets 72's selection exactly: everything absent widens, except a
+// document a declared coupling places.
+const UNKNOWN_SOURCES = Object.freeze({
+  exists: async () => null,
+  read: async () => null,
+  exports: async () => new Map(),
+});
+
 
 // THE SELECTION. Inputs, all of them given rather than discovered:
 //
@@ -123,8 +201,14 @@ function selection({ scope, selected, widened, builtAt, graphPath, changed, reso
 //
 // Returns the frozen result above. It never throws for a graph that is missing or broken: those
 // are answers, and answering them as widenings is the point.
-async function selectSuites({ projectRoot, changed = [], allSuites = [], roots = [] } = {}) {
+async function selectSuites({ projectRoot, changed = [], allSuites = [], roots = [], suffixes = DEFAULT_SUITE_SUFFIXES, exclude = [], couplings = [], declared = false, sources = UNKNOWN_SOURCES } = {}) {
   const whole = [...allSuites].sort();
+  // A suite the selection may choose is a suite by the declared predicate AND one the project's
+  // runner runs — a member of the whole suite. A file the predicate admits that the runner cannot
+  // run (this repository's native `node:test` files under a package's `test/`) is never selected,
+  // so a narrowed run never names something the runner refuses; a change it alone covers widens.
+  const runnable = new Set(whole);
+  const isSuite = (file) => isSuiteFile(file, roots, suffixes, exclude) && runnable.has(file);
 
   // An empty changed set selects NOTHING, which is the maximal silent narrowing — so it is a
   // refusal that names itself rather than a green run over zero tests (ADR-002 §5). It fires
@@ -146,7 +230,9 @@ async function selectSuites({ projectRoot, changed = [], allSuites = [], roots =
 
   // ONE QUESTION, every changed file at once. The port's `unavailable` IS this module's widening
   // vocabulary for the two artifact cases, so the reasons below are today's, unchanged.
-  const answer = await relations(changed, { projectRoot });
+  // The TRANSITIVE form (190/ADR-003 §2): every file that reaches each changed file through import
+  // edges, from the same one read of the artifact. Direct importers alone miss a suite two hops away.
+  const answer = await relations(changed, { projectRoot, transitive: true });
   const graphPath = answer.artifact ?? null;
   const widenAll = (widened, builtAt) => selection({ scope: "all", selected: whole, widened, builtAt, graphPath, changed });
 
@@ -174,18 +260,22 @@ async function selectSuites({ projectRoot, changed = [], allSuites = [], roots =
   const widened = [];
   const selected = new Set();
   const resolved = [];
+  const resolutions = [];
+  const absent = [];
+  const place = (file, reason, suites, extra = {}) => {
+    for (const suite of suites) selected.add(suite);
+    resolved.push(file);
+    resolutions.push({ file, reason, suites: [...suites].sort(), ...extra });
+  };
 
   for (let index = 0; index < changed.length; index += 1) {
     const file = changed[index];
     const entry = impact[index];
 
-    // PRESENCE OUTRANKS THE UNION, and the order is the invariant rather than an implementation
-    // note (ADR-002 §2a). A file that IS a suite by the path predicate but is absent from the
-    // graph — a test file created this turn, the second-most-common inner-loop action there is —
-    // must WIDEN, not be quietly selected by the union. An implementation that tests the suite
-    // predicate first satisfies every other row and is wrong.
+    // PRESENCE IS ASKED FIRST (72/ADR-002 §2a). A file the graph does not hold is placed below only
+    // on positive knowledge (190/ADR-003 §3), and widens otherwise — never selected by the union.
     if (entry == null || !entry.present) {
-      widened.push(widening(file, "not-in-graph"));
+      absent.push(file);
       continue;
     }
 
@@ -195,17 +285,73 @@ async function selectSuites({ projectRoot, changed = [], allSuites = [], roots =
     // under `dependents ∩ suites` alone, editing one test file (the commonest inner-loop action
     // there is) would widen to all 950 suites. The invariant would have survived and the tool
     // would not.
-    const candidates = [file, ...entry.dependents].filter((candidate) => isSuiteFile(candidate, roots));
+    const candidates = [file, ...entry.dependents].filter(isSuite);
     if (candidates.length === 0) {
       widened.push(widening(file, "no-registered-dependent"));
       continue;
     }
-    for (const candidate of candidates) selected.add(candidate);
-    resolved.push(file);
+    place(file, "graph-dependent", candidates);
+  }
+
+  // ── WHAT THE GRAPH DOES NOT HOLD (190/ADR-003 §3, §4) ──────────────────────────────────────
+  const known = { ...UNKNOWN_SOURCES, ...sources };
+  let pending = [];
+  for (const file of absent) {
+    if (isSuite(file) && (await known.exists(file)) === true) place(file, "suite-itself", [file]);
+    else pending.push(file);
+  }
+
+  // A new module a placed changed file imports by a literal specifier inherits that importer's
+  // suites. Only the changed files are read, and the walk repeats until nothing more is placed,
+  // so a chain of new modules resolves through its changed importers.
+  let exportsMap = null;
+  const exportsOf = () => (exportsMap ??= known.exports());
+  const scanned = new Set();
+  for (let progress = true; progress && pending.length > 0;) {
+    progress = false;
+    for (const importer of resolutions.filter((entry) => !scanned.has(entry.file))) {
+      scanned.add(importer.file);
+      const source = await known.read(importer.file);
+      if (typeof source !== "string") continue;
+      const named = new Set();
+      for (const match of uncommented(source).matchAll(SPECIFIER)) {
+        for (const candidate of await resolveSpecifier(match[2], importer.file, exportsOf)) named.add(candidate);
+      }
+      const reached = pending.filter((file) => named.has(file));
+      for (const file of reached) place(file, "imported-by-changed", importer.suites, { via: importer.file });
+      if (reached.length > 0) {
+        pending = pending.filter((file) => !reached.includes(file));
+        progress = true;
+      }
+    }
+  }
+
+  for (const file of pending) {
+    // A document the project declared a coupling for. An empty `suites` is the declaration that no
+    // suite reads it.
+    const coupling = CODE_FILE.test(file) ? null : couplings.find((entry) => picomatch.isMatch(file, entry.paths, { dot: true }));
+    if (coupling != null) {
+      // The coupling's suites pass the same test as a graph dependent's: a suite the runner cannot
+      // run is never selected. A coupling that named suites and has none left places nothing.
+      const runnableSuites = coupling.suites.filter(isSuite);
+      if (coupling.suites.length === 0 || runnableSuites.length > 0) {
+        place(file, "declared-coupling", runnableSuites, { why: coupling.why });
+        continue;
+      }
+    }
+    // Under `--story` a declared path that is neither on disk nor in the graph has no behaviour
+    // yet. A git-changed file absent from both is a deletion, and that still widens.
+    if (declared && (await known.exists(file)) === false) {
+      place(file, "not-yet-written", []);
+      continue;
+    }
+    widened.push(widening(file, "not-in-graph"));
   }
 
   if (widened.length > 0) return widenAll(widened, builtAt);
-  return selection({ scope: "impacted", selected: [...selected].sort(), widened: [], builtAt, graphPath, changed, resolved });
+  const order = new Map(changed.map((file, index) => [file, index]));
+  resolutions.sort((a, b) => order.get(a.file) - order.get(b.file));
+  return selection({ scope: "impacted", selected: [...selected].sort(), widened: [], builtAt, graphPath, changed, resolved, resolutions });
 }
 
 // THE RULE, CHECKED FROM BOTH SIDES — because a one-sided check passes the side it does not look
@@ -225,6 +371,7 @@ function wideningRuleProblems(result, allSuites) {
         break;
       }
     }
+    if ((result.resolutions ?? []).length > 0) problems.push("a result that widened carries a narrowing reason — a widened run is the whole suite, and nothing in it was narrowed.");
     for (const entry of result.widened) {
       if (!WIDENING_REASONS.includes(entry.reason)) problems.push(`${entry.file} widened with the reason "${entry.reason}", which is not one of the four: ${WIDENING_REASONS.join(", ")}.`);
       if (typeof entry.file !== "string" || entry.file.length === 0) problems.push(`a widening carries no file, so nothing says what caused it (reason "${entry.reason}").`);
@@ -233,6 +380,17 @@ function wideningRuleProblems(result, allSuites) {
   }
 
   if (result.scope !== "impacted") problems.push("a result that did not widen must carry scope \"impacted\" — nothing else selected the whole suite.");
+  for (const entry of result.resolutions ?? []) {
+    if (!NARROWING_REASONS.includes(entry.reason)) problems.push(`${entry.file} narrowed with the reason "${entry.reason}", which is not one of the five: ${NARROWING_REASONS.join(", ")}.`);
+  }
+  // Every suite a narrowed result selected was chosen BY something — a selected suite no resolution
+  // names is a narrowing nobody can account for (190/ADR-003 §5).
+  if (Array.isArray(result.resolutions) && result.refusal == null) {
+    const named = new Set(result.resolutions.flatMap((entry) => entry.suites ?? []));
+    for (const suite of result.selected) {
+      if (!named.has(suite)) problems.push(`${suite} was selected by a narrowed result and no resolution names it — every narrowing names its cause.`);
+    }
+  }
   if (result.refusal == null) {
     const accounted = new Set(result.resolved ?? []);
     for (const file of result.changed) {
@@ -290,5 +448,5 @@ function registrationReport({ selected = [], assembled = new Set(), suiteNames =
   });
 }
 
-return { CHANGED_SET_EMPTY, CHANGED_SET_UNREADABLE, SELECTION_SCOPES, SINCE_REV_UNRESOLVABLE, WIDENING_REASONS, isSuiteFile, registrationReport, selectSuites, wideningRuleProblems };
+return { CHANGED_SET_EMPTY, CHANGED_SET_UNREADABLE, NARROWING_REASONS, SELECTION_SCOPES, SINCE_REV_UNRESOLVABLE, WIDENING_REASONS, isSuiteFile, registrationReport, selectSuites, wideningRuleProblems };
 }

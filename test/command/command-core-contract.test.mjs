@@ -401,7 +401,7 @@ export const commandCoreContractTests = [
       for (const name of ["work", "mesh", "integration-notion"]) {
         assert.ok(files.includes(`packages/${name}/src/effects.mjs`), `${name}: its contribution is in the startup closure`);
       }
-      for (const forbidden of ["packages/core/src/application/bindings/work.mjs", "packages/core/src/application/bindings/global-work-store.mjs", "packages/core/src/application/bindings/notion/sync-work.mjs", "packages/mesh/src/assignment-transitions.mjs", "packages/core/src/application/bindings/effects/dispatch.mjs", "packages/core/src/application/bindings/diagnostics/log.mjs"]) {
+      for (const forbidden of ["packages/core/src/application/bindings/work.mjs", "packages/core/src/application/bindings/global-work-store.mjs", "packages/core/src/application/bindings/integrations/services.mjs", "packages/mesh/src/assignment-transitions.mjs", "packages/core/src/application/bindings/effects/dispatch.mjs", "packages/core/src/application/bindings/diagnostics/log.mjs"]) {
         assert.ok(!files.includes(forbidden), `registration must not load ${forbidden}`);
       }
       await assert.rejects(closure(true), /Static effect registration cycle/);

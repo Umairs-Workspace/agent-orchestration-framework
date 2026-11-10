@@ -651,6 +651,237 @@ export const workTestSelectTests = [
       assert.ok(second.selected.includes("test/lonely.test.mjs"), "the suites of src/lonely.mjs are now selected too");
     }),
   },
+
+  // ── 190/01 — `impacted` narrows on what it knows (ADR-003) ─────────────────────────────────
+  // tasks/00 package suites are suites and dependents are followed to the end
+  {
+    name: "190/01 [outline] the declared roots and suffixes decide what a suite is (6 rows)",
+    run: () => {
+      const roots = ["test", "packages/work/test"];
+      const suffixes = [".test.mjs", ".suite.mjs"];
+      for (const [file, is] of [
+        ["test/work/lifecycle/work-test-select.test.mjs", true],
+        ["packages/work/test/testing.test.mjs", true],
+        ["packages/work/test/domain.suite.mjs", true],
+        ["packages/work/src/testing/select.mjs", false],
+        ["packages/mesh/test/mesh.suite.mjs", false],
+        ["packages/work/node_modules/x/y.test.mjs", false],
+      ]) assert.equal(isSuiteFile(file, roots, suffixes), is, `${file} ${is ? "is" : "is not"} a suite`);
+    },
+  },
+  {
+    name: "190/01 an absent suiteSuffixes keeps today's predicate",
+    run: () => {
+      assert.equal(isSuiteFile("test/a.test.mjs", ["test"]), true);
+      assert.equal(isSuiteFile("test/a.suite.mjs", ["test"]), false, "only .test.mjs is a suite when nothing is declared");
+      const compiled = _aofApplication.work.toolchain.resolveTestToolchain({ work: { test: { command: "node", args: [], deadlineMs: 1000 } } }, { projectRoot: process.cwd() });
+      assert.equal(compiled.ok, true, compiled.message);
+      assert.deepEqual([...compiled.toolchain.suiteSuffixes], [".test.mjs"]);
+      assert.deepEqual([...compiled.toolchain.couplings], []);
+    },
+  },
+  {
+    name: "190/01 E1 · a package-owned suite is selected beside the root suite",
+    run: async () => {
+      const suites = ["packages/work/test/testing.test.mjs", "test/work/lifecycle/work-test-select.test.mjs"];
+      const selector = plantedSelector({ "packages/work/src/testing/select.mjs": suites });
+      const out = await selector.selectSuites({ projectRoot: "fixture", changed: ["packages/work/src/testing/select.mjs"], allSuites: suites, roots: ["test", "packages/work/test"], suffixes: [".test.mjs", ".suite.mjs"] });
+      assert.equal(out.scope, "impacted");
+      assert.deepEqual([...out.selected], suites);
+      assert.deepEqual(out.resolutions.map((entry) => entry.reason), ["graph-dependent"]);
+    },
+  },
+  {
+    name: "190/01 E2 · a suite two imports away is selected",
+    run: () => withGraph({ nodes: ["src/regression-record.mjs", "src/item-status.mjs", "test/status-gate.test.mjs"], links: [edge(1, 0), edge(2, 1)] }, async (root) => {
+      const out = await selectSuites({ projectRoot: root, changed: ["src/regression-record.mjs"], allSuites: ["test/status-gate.test.mjs"], roots: ["test"] });
+      assert.deepEqual([...out.selected], ["test/status-gate.test.mjs"]);
+    }),
+  },
+  {
+    name: "190/01 a cycle in the import graph ends the walk",
+    run: () => withGraph({ nodes: ["src/a.mjs", "src/b.mjs", "test/a.test.mjs"], links: [edge(0, 1), edge(1, 0), edge(2, 0)] }, async (root) => {
+      const out = await selectSuites({ projectRoot: root, changed: ["src/b.mjs"], allSuites: ["test/a.test.mjs"], roots: ["test"] });
+      assert.deepEqual([...out.selected], ["test/a.test.mjs"]);
+    }),
+  },
+  {
+    name: "190/01 a suite the runner cannot run is never selected, and a change it alone covers widens",
+    run: async () => {
+      // This repository's native `node:test` files are suites by the predicate and not runnable by
+      // its per-file runner, so the whole suite the selector is handed does not hold them.
+      const selector = plantedSelector({ "packages/work/src/x.mjs": ["packages/work/test/native.test.mjs"] });
+      const out = await selector.selectSuites({ projectRoot: "fixture", changed: ["packages/work/src/x.mjs"], allSuites: ["test/a.test.mjs"], roots: ["test", "packages/work/test"], suffixes: [".test.mjs", ".suite.mjs"] });
+      assert.equal(out.scope, "all");
+      assert.deepEqual(out.widened.map((entry) => entry.reason), ["no-registered-dependent"]);
+    },
+  },
+
+  // tasks/01 a new file narrows only when its place is known
+  {
+    name: "190/01 E3 · a new suite selects itself",
+    run: async () => {
+      const file = "test/testing/test-run-record.test.mjs";
+      const out = await plantedSelector({}).selectSuites({ projectRoot: "fixture", changed: [file], allSuites: [file], roots: ["test"], sources: disk({ [file]: "export const t = [];" }) });
+      assert.equal(out.scope, "impacted");
+      assert.deepEqual([...out.selected], [file]);
+      assert.deepEqual(out.resolutions.map((entry) => entry.reason), ["suite-itself"]);
+      assert.deepEqual(out.widened, []);
+    },
+  },
+  {
+    name: "190/01 E4 · a new module imported by a changed file inherits its importer",
+    run: async () => {
+      const importer = "packages/work/src/commands/test.mjs";
+      const created = "packages/work/src/testing/record.mjs";
+      const suite = "packages/work/test/testing.test.mjs";
+      const out = await plantedSelector({ [importer]: [suite] }).selectSuites({
+        projectRoot: "fixture",
+        changed: [importer, created],
+        allSuites: [suite],
+        roots: ["packages/work/test"],
+        sources: disk({ [importer]: 'import { createTestRecord } from "../testing/record.mjs";\n', [created]: "export {};" }),
+      });
+      assert.equal(out.scope, "impacted");
+      assert.deepEqual(out.resolutions.find((entry) => entry.file === created)?.reason, "imported-by-changed");
+      assert.deepEqual([...out.selected], [suite]);
+    },
+  },
+  {
+    name: "190/01 a chain of new modules resolves through its changed importers",
+    run: async () => {
+      const out = await plantedSelector({ "src/c.mjs": ["test/c.test.mjs"] }).selectSuites({
+        projectRoot: "fixture",
+        changed: ["src/a.mjs", "src/b.mjs", "src/c.mjs"],
+        allSuites: ["test/c.test.mjs"],
+        roots: ["test"],
+        sources: disk({ "src/a.mjs": "export const a = 1;", "src/b.mjs": 'export * from "./a.mjs";', "src/c.mjs": 'import { a } from "./b.mjs";' }),
+      });
+      assert.deepEqual(out.widened, [], "nothing widens");
+      assert.deepEqual(out.resolutions.map((entry) => [entry.file, entry.reason]), [["src/a.mjs", "imported-by-changed"], ["src/b.mjs", "imported-by-changed"], ["src/c.mjs", "graph-dependent"]]);
+    },
+  },
+  {
+    name: "190/01 [outline] E5 · what a literal-specifier scan cannot see still widens (3 rows)",
+    run: async () => {
+      for (const [reference, text] of [
+        ["import(path.join(dir, name))", 'const m = await import(path.join(dir, name));'],
+        ["a string \"lazy.mjs\" in a registry table", 'export const TABLE = ["lazy.mjs"];'],
+        ["nothing at all", "export const nothing = 1;"],
+      ]) {
+        const out = await plantedSelector({ "packages/work/src/user.mjs": ["test/u.test.mjs"] }).selectSuites({
+          projectRoot: "fixture",
+          changed: ["packages/work/src/user.mjs", "packages/work/src/lazy.mjs"],
+          allSuites: ["test/u.test.mjs"],
+          roots: ["test"],
+          sources: disk({ "packages/work/src/user.mjs": text, "packages/work/src/lazy.mjs": "export {};" }),
+        });
+        assert.equal(out.scope, "all", reference);
+        assert.deepEqual(out.widened, [{ file: "packages/work/src/lazy.mjs", reason: "not-in-graph" }], reference);
+      }
+    },
+  },
+  {
+    name: "190/01 E6 · a declared path that exists nowhere is not yet written",
+    run: async () => {
+      const out = await plantedSelector({}).selectSuites({ projectRoot: "fixture", changed: ["test/testing/later.test.mjs"], allSuites: [], roots: ["test"], declared: true, sources: disk({}) });
+      assert.equal(out.scope, "impacted");
+      assert.deepEqual(out.resolutions.map((entry) => [entry.file, entry.reason]), [["test/testing/later.test.mjs", "not-yet-written"]]);
+      assert.deepEqual([...out.selected], [], "it selects nothing");
+      assert.deepEqual(out.widened, [], "and widens nothing");
+      const launched = [];
+      const run = await runTest({ scope: "impacted", story: "190/01" }, {
+        projectRoot: "fixture", config: {}, resolveToolchain: () => ({ ok: true, toolchain: { program: "node", args: [], selectArgs: ["{file}"], roots: ["test"], suiteSuffixes: [".test.mjs"], couplings: [], deadlineMs: 1000, report: { format: "tap" } } }),
+        walk: async () => [], readDeclared: async () => ({ ok: true, changed: ["test/testing/later.test.mjs"] }),
+        select: (input) => plantedSelector({}).selectSuites({ ...input, sources: disk({}) }), run: async (...args) => { launched.push(args); },
+      });
+      assert.equal(launched.length, 0, "a selection of nothing launches nothing — never a whole run labelled impacted");
+      assert.match(testCommand.cli.render(run), /resolved 1 not-yet-written/u);
+    },
+  },
+  {
+    name: "190/01 a git-changed file absent from disk and graph still widens",
+    run: async () => {
+      const out = await plantedSelector({}).selectSuites({ projectRoot: "fixture", changed: ["old.mjs"], allSuites: ["test/a.test.mjs"], roots: ["test"], declared: false, sources: disk({}) });
+      assert.deepEqual(out.widened, [{ file: "old.mjs", reason: "not-in-graph" }]);
+    },
+  },
+
+  // tasks/02 a document narrows only through a declared coupling
+  {
+    name: "190/01 E7 · a coupling with no suites drops the document",
+    run: async () => {
+      const out = await plantedSelector({}).selectSuites({ projectRoot: "fixture", changed: ["wiki/codex-support.md"], allSuites: ["test/a.test.mjs"], roots: ["test"], couplings: [{ paths: ["wiki/*.md"], suites: [], why: "no suite reads a wiki page" }] });
+      assert.equal(out.scope, "impacted");
+      assert.deepEqual([...out.selected], []);
+      assert.deepEqual(out.resolutions, [{ file: "wiki/codex-support.md", reason: "declared-coupling", suites: [], why: "no suite reads a wiki page" }]);
+    },
+  },
+  {
+    name: "190/01 E8 · a coupling with suites selects them",
+    run: async () => {
+      const suite = "test/work/lifecycle/work-test-declared.test.mjs";
+      const out = await plantedSelector({}).selectSuites({ projectRoot: "fixture", changed: ["packages/core/assets/commands/continue.md"], allSuites: [suite], roots: ["test"], couplings: [{ paths: ["packages/core/assets/commands/*.md"], suites: [suite], why: "the prompt regions are asserted here" }] });
+      assert.deepEqual([...out.selected], [suite]);
+      assert.equal(out.resolutions[0].reason, "declared-coupling");
+    },
+  },
+  {
+    name: "190/01 E9 · an undeclared document still widens",
+    run: async () => {
+      const out = await plantedSelector({}).selectSuites({ projectRoot: "fixture", changed: ["schemas/aof.schema.json"], allSuites: ["test/a.test.mjs"], roots: ["test"], couplings: [{ paths: ["wiki/*.md"], suites: [], why: "x" }] });
+      assert.equal(out.scope, "all");
+      assert.deepEqual(out.widened, [{ file: "schemas/aof.schema.json", reason: "not-in-graph" }]);
+    },
+  },
+  {
+    name: "190/01 a code file is never placed by a coupling",
+    run: async () => {
+      const coupling = [{ paths: ["packages/work/src/**"], suites: [], why: "would drop code" }];
+      const placed = await plantedSelector({ "packages/work/src/testing/select.mjs": ["test/s.test.mjs"] }).selectSuites({ projectRoot: "fixture", changed: ["packages/work/src/testing/select.mjs"], allSuites: ["test/s.test.mjs"], roots: ["test"], couplings: coupling });
+      assert.deepEqual(placed.resolutions.map((entry) => entry.reason), ["graph-dependent"], "resolved through the graph");
+      const absent = await plantedSelector({}).selectSuites({ projectRoot: "fixture", changed: ["packages/work/src/new.mjs"], allSuites: ["test/s.test.mjs"], roots: ["test"], couplings: coupling });
+      assert.deepEqual(absent.widened.map((entry) => entry.reason), ["not-in-graph"], "an absent code file is not dropped by the coupling either");
+    },
+  },
+  {
+    name: "190/01 [outline] a malformed coupling is a declaration error, never a silent narrowing (3 rows)",
+    run: async () => {
+      for (const couplings of [{ paths: ["wiki/*.md"], suites: [], why: "x" }, [{ paths: "wiki/*.md", suites: [], why: "x" }], [{ paths: ["wiki/*.md"], suites: [] }]]) {
+        const launched = [];
+        const out = await runTest({ scope: "impacted", story: "190/01" }, {
+          projectRoot: process.cwd(),
+          config: { work: { test: { command: "node", args: [], selectArgs: ["{file}"], roots: ["test"], deadlineMs: 1000, couplings } } },
+          walk: async () => [], readDeclared: async () => ({ ok: true, changed: ["wiki/a.md"] }),
+          run: async (...args) => { launched.push(args); },
+        });
+        assert.equal(out.refusal?.code, "test-runner-declaration-invalid", JSON.stringify(couplings));
+        assert.match(out.refusal.message, /couplings/u);
+        assert.equal(launched.length, 0, "no runner is launched");
+      }
+    },
+  },
+  {
+    name: "190/01 E10 · every narrowing names its cause",
+    run: async () => {
+      const toolchain = { program: "node", args: [], selectArgs: ["{file}"], roots: ["test"], suiteSuffixes: [".test.mjs"], couplings: [{ paths: ["wiki/*.md"], suites: ["test/doc.test.mjs"], why: "the doc suite reads wiki pages" }], deadlineMs: 1000, report: { format: "tap" } };
+      const all = ["test/a.test.mjs", "test/new.test.mjs", "test/doc.test.mjs"];
+      const out = await runTest({ scope: "impacted", story: "190/01" }, {
+        projectRoot: "fixture", config: {}, resolveToolchain: () => ({ ok: true, toolchain }), walk: async () => all,
+        readDeclared: async () => ({ ok: true, changed: ["src/a.mjs", "test/new.test.mjs", "wiki/page.md"] }),
+        select: (input) => plantedSelector({ "src/a.mjs": ["test/a.test.mjs"] }).selectSuites({ ...input, sources: disk({ "test/new.test.mjs": "" }) }),
+        run: async () => ({ outcome: "exited", exitCode: 0, stdout: "ok - x", stderr: "", status: 0, verdict: "passed", attempted: "node", message: "ok" }),
+      });
+      const json = testCommand.cli.json(out);
+      assert.deepEqual(json.selectedBy.map((entry) => [entry.suite, entry.because.map((cause) => `${cause.file}:${cause.reason}`)]), [
+        ["test/a.test.mjs", ["src/a.mjs:graph-dependent"]],
+        ["test/doc.test.mjs", ["wiki/page.md:declared-coupling"]],
+        ["test/new.test.mjs", ["test/new.test.mjs:suite-itself"]],
+      ]);
+      const line = testCommand.cli.render(out).split("\n").at(-1);
+      assert.match(line, /resolved 1 graph-dependent, 1 suite-itself, 1 declared-coupling \(couplings: the doc suite reads wiki pages\)/u);
+    },
+  },
 ];
 
 // ── 179/04 fixture ──────────────────────────────────────────────────────────────────────────────
@@ -697,3 +928,39 @@ async function withReaderFixture(graphText, body) {
 function stripCommentsOf(rel) {
   return stripComments(readFileSync(path.join(fileURLToPath(new URL("../../../", import.meta.url)), rel), "utf8"));
 }
+
+// ── 190/01 fixtures ─────────────────────────────────────────────────────────────────────────────
+
+// A selector over a PLANTED relations port: `dependents` maps each present file to its (already
+// transitive) dependents; any file not in it is absent from the graph.
+function plantedSelector(dependents) {
+  return createTestSelector({
+    relations: async (files) => ({
+      served: true, available: true, unavailable: null, artifact: "graph.json", builtAt: "planted",
+      files: files.map((file) => ({ file, present: file in dependents, dependencies: [], dependents: dependents[file] ?? [] })),
+    }),
+    registrationDecision: () => ({ registered: [], unregistered: [], findings: [] }),
+  });
+}
+
+// The selector's file seam over a planted map: a file is on disk exactly when the map holds it.
+function disk(files) {
+  return {
+    exists: async (file) => file in files,
+    read: async (file) => files[file] ?? null,
+    exports: async () => new Map(),
+  };
+}
+
+async function withGraph(graph, body) {
+  const root = tempRoot();
+  try {
+    writeGraph(root, graph);
+    return await body(root);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+const runTest = _aofApplication.work.commandTools.test.runTest;
+const testCommand = _aofApplication.getCommand("test");

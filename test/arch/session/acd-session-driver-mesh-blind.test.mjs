@@ -342,7 +342,14 @@ export const archTests = [
       // 171 F-171-01 — the session screen reads readiness through the byte gate's zero-import contracts
       // leaf, `@aof/contracts/tui-ready` (168 -> 169); it does no I/O and reaches no lifecycle module.
       assert.ok(sinkGraph.seen.has(path.join(root, "packages/contracts/src/tui-ready.mjs")), "the byte gate's leaf");
-      assert.equal(sinkGraph.seen.size, 169, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
+      // 184–186 (chores 175–177, "Notion onto the seam") — core names no integration package outside
+      // the registry, so the facade's composition reaches `core/integrations.mjs` and through it each
+      // integration's contribution: Hyperagent's commands and contribution, and Notion's CLI,
+      // contribution and the sync, mapping, projection and routing modules it composes (169 -> 182).
+      // None is a driver or a lifecycle module; the driver fences above are unchanged.
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/core/src/integrations.mjs")), "the integration registry");
+      for (const owner of ["packages/integration-hyperagent/src/contribution.mjs", "packages/integration-notion/src/contribution.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
+      assert.equal(sinkGraph.seen.size, 182, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, and the integration registry's contributions");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

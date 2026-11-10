@@ -28,14 +28,48 @@ export function createCodeGraphReader({ readGraph, normalizeGraph, graphJsonPath
 
   //   result { served: true, available, unavailable, artifact, builtAt, files[, cause] }
   //   files[i] { file, present, dependencies, dependents }
+  //
+  // `ctx.transitive` (190/ADR-003 §2): `dependents` is every file that reaches the asked file
+  // through edges, walked to a fixpoint over the SAME read — one artifact read however deep the
+  // closure goes, with a visited set so a cycle ends the walk.
   async function relations(paths, ctx) {
     const { graph, cause, ...answer } = availability(ctx.projectRoot);
     if (!answer.available) return { served: true, ...answer, cause, files: [] };
-    return { served: true, ...answer, files: computeImpact(graph, paths) };
+    const files = computeImpact(graph, paths);
+    return { served: true, ...answer, files: ctx.transitive === true ? withTransitiveDependents(graph, files) : files };
   }
 
   return { availability, relations };
 }
+
+// One reverse edge map at file grain, then a breadth-first walk from each answer's direct
+// dependents. Pure over the normalized graph.
+function withTransitiveDependents(graph, files) {
+  const fileOf = new Map(graph.nodes.map((node) => [node.id, node.sourceFile?.replace(/\\/g, "/") ?? null]));
+  const importers = new Map();
+  for (const edge of graph.edges) {
+    const source = fileOf.get(edge.source);
+    const target = fileOf.get(edge.target);
+    if (!source || !target || source === target) continue;
+    if (!importers.has(target)) importers.set(target, new Set());
+    importers.get(target).add(source);
+  }
+  return files.map((entry) => {
+    if (!entry.present) return entry;
+    const reached = new Set(entry.dependents);
+    const queue = [...entry.dependents];
+    while (queue.length > 0) {
+      for (const next of importers.get(queue.shift()) ?? []) {
+        if (next === entry.file || reached.has(next)) continue;
+        reached.add(next);
+        queue.push(next);
+      }
+    }
+    return { ...entry, dependents: [...reached].sort() };
+  });
+}
+
+
 
 // The code readers' port (179/ADR-004): test selection, contract derivation and seam liveness ask
 // `relations` and nothing else, so they are handed a port over the read half alone — composed

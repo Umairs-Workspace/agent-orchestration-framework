@@ -1,5 +1,4 @@
 import { readFile } from "node:fs/promises";
-import { readRefHistory, remapHistoricalRef } from './ref-history.mjs';
 import path from "node:path";
 import { listItems } from "./discovery.mjs";
 import { FEEDBACK_RECORD_FILE, FEEDBACK_RECORD_KINDS, RECALL_VERDICTS, compileRecallObservation } from "./feedback-records.mjs";
@@ -106,7 +105,7 @@ export function readLedgerText(text) {
 //   evidence         boolean                              with `lessons`, each lesson also names the ledger rows
 //                                                         and the distinct new lessons its counts came from
 // An `error` is an unreadable file: it is a diagnostic, and the report is then `complete: false`.
-export function buildAccounting({ refHistory = [], ledgers = [], retrospectives = [], indexed = null, lessons = false, evidence = false } = {}) {
+export function buildAccounting({ ledgers = [], retrospectives = [], indexed = null, lessons = false, evidence = false } = {}) {
   const diagnostics = [];
   const diagnose = (source, defect, line = null) => diagnostics.push(line == null ? { source, defect } : { source, defect, line });
 
@@ -147,7 +146,7 @@ export function buildAccounting({ refHistory = [], ledgers = [], retrospectives 
         };
         apply(types[record.recordType] ??= emptyCounts());
         if (record.recordType === "lesson") {
-          const identity = lessonIdentity(remapHistoricalRef(record.item, observation.at, refHistory), record.id);
+          const identity = lessonIdentity(record.item, record.id);
           apply(countsFor(byLesson, identity));
           const rows = citedFor(identity).observations;
           if (!rows.some((row) => row.source === ledger.source && row.line === lines[at])) rows.push({ source: ledger.source, line: lines[at] });
@@ -225,7 +224,7 @@ export async function readAccountingSources(workDir, { items = null } = {}) {
     const retrospective = await readSource(path.join(item.dir, RETROSPECTIVE_FILE), item.ref, workDir);
     if (retrospective != null) retrospectives.push(retrospective);
   }
-  return { ledgers, retrospectives, refHistory: await readRefHistory(workDir) };
+  return { ledgers, retrospectives };
 }
 
 // accountMemory — read the stream and build the report. `indexed` is the current index's records
