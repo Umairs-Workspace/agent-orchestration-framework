@@ -21,7 +21,7 @@ Feature: a real teaching session holds the boundary, follow-up turn included
     Scenario: E2 · the only changed paths are the ones the banner named
       When the snapshots before and after `/aof:teach 00` are compared
       Then the only changed paths are the story's `STORY.md`, `runs/<node>/*.json` and `.aof/artifact-sync-queue.ndjson`
-      And the banner printed at the start named each of them
+      And asked what it wrote, the session named each of them (F-14: no banner recites them)
 
   Rule: R3 · The human's build is reviewed untouched, and manual still guides
 

@@ -169,12 +169,17 @@ control is mode-scoped (P3, P4).
    code, at any rung and in any wording, is answered by naming the visible exits, never by
    complying: `aof:continue <ref>` (an agent builds) or `aof:manual <ref>` (the human drives with the
    full guide).
-3. **Effects are disclosed, never denied.** The opening banner names the active mode, and that the
+3. **Effects are disclosed, never denied.** ~~The opening banner names the active mode, and that the
    human owns every file under `files:`. It names what AOF may do: run
    `aof test --scope impacted --story <ref>`, mint and close the run, and read the record. It names
-   the writes a teaching session really makes: the status move, `runs/<node>/*.json`, and the
-   gitignored `.aof/artifact-sync-queue.ndjson` that the PostToolUse hook writes. It is never
-   advertised as zero-write.
+   the writes a teaching session really makes.~~ **Amended 2026-11-02 (F-14, operator's `@uat`
+   reject: "we're teaching a human here, not a machine").** The opening is one or two sentences: the
+   human writes the code and AOF helps. It names no machinery. Asked what AOF does or writes, the
+   session answers plainly: the status move, `runs/<node>/*.json`, the gitignored
+   `.aof/artifact-sync-queue.ndjson` that the PostToolUse hook writes, and a hand-off's `STATE.md`
+   entry. It is never advertised as zero-write. The session runs the story's own tests once
+   (`aof test --scope file`), never the impacted scope, and tells only their results. §1's honest
+   claim is made when the boundary comes up, never as a preamble.
 4. The outcome is `taught: <ref> is yours to build`. A hand-off to an agent follows ADR-003 §6.
 
 ## ADR-006 — The pedagogy is data in the package, and the prompt is pinned to it

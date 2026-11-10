@@ -7,14 +7,18 @@ Feature: the teaching session opens by saying what the human owns, and holds tha
   lock. Rows land in `packages/learning/test/teach-frame.suite.mjs`, read against
   `packages/learning/assets/commands/teach.md`.
 
-  Rule: R1 · The session opens by saying what the human owns and what AOF will write
+  Rule: R1 · The session opens by talking to the person, and tells its bookkeeping when asked
+    Amended at the `@uat` (F-14): the recited banner was written for an auditor, not a learner.
 
-    Scenario: E1 · the opening banner names the mode, the owner and every write
+    Scenario: E1 · the opening is a short structured header, then the first question
       When `teach.md` is read
-      Then it says the session opens with a banner naming the mode as teaching
-      And the banner says the human owns every file under the story's `files:`
-      And the banner says AOF may run `aof test --scope impacted --story <ref>`, mint and close the run, and read the record
-      And the banner names the writes: the status move, `runs/<node>/*.json` and `.aof/artifact-sync-queue.ndjson`
+      Then it says the session opens with five labelled parts in order (Teaching mode, Objective, The work, Where it stands, First question), each a line or two
+      And the Teaching mode part names the exits `aof:continue <ref>` and `aof:manual <ref>`
+      And it says the opening names no run record, sync queue, test scope, permission setting, command internals or ADR, fitness-function or finding id, and prints no outcome line
+
+    Scenario: E10 · what AOF writes is told when asked, and never denied
+      When `teach.md` is read
+      Then it says that asked what AOF does or writes, the session names the status move, `runs/<node>/*.json`, `.aof/artifact-sync-queue.ndjson` and a hand-off's `STATE.md` entry
       And it says the session is never described as making no writes
 
   Rule: R2 · No turn of a teaching session writes the human's code
@@ -35,8 +39,25 @@ Feature: the teaching session opens by saying what the human owns, and holds tha
 
     Scenario: the boundary is claimed honestly
       When `teach.md` is read
-      Then it says the boundary is the session's instruction and not an enforced restriction
+      Then it says that when the human asks whether the boundary is enforced, or relies on it as a lock, the session tells them it is its instruction and not an enforced restriction, and never claims enforcement
       And it names a project-level `permissions.deny` on `Edit` and `Write` as the operator's own option, which does not cover shell writes
+
+  Rule: R4 · The session talks to a person (F-14)
+
+    Scenario: E7 · the human sees none of AOF's machinery
+      When `teach.md` is read
+      Then it says the reader is a person who wants to learn, never a reviewer checking compliance
+      And it says the human is shown no run ids or paths, no test-scope flags and no ADR, fitness-function or finding ids
+      And it says the session never asks a comprehension check for its own sake
+
+    Scenario: E8 · the story's own tests run once, and only its results are told
+      When `teach.md` is read
+      Then it says the session runs `aof test --scope file` over the story's existing test files once, never widened to the repository and never re-run to shorten its output
+      And it says a failure outside the story's files is not reported to the human
+
+    Scenario: E9 · the first turn ends on its question
+      When `teach.md` is read
+      Then it says the command's own turn ends on its first question with no outcome line, and an outcome is said when the session reaches it
 
   Rule: R3 · The teaching session hands the build back to review
 

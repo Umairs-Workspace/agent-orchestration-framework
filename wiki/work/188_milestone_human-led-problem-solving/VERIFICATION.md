@@ -1,6 +1,6 @@
 ---
 doc: verification
-updated: 2026-11-01
+updated: 2026-11-02
 ---
 # 188 · AOF guides the human through problem solving without taking over — Verification
 
@@ -115,6 +115,36 @@ restore the file, then run the control green again. After the three probes `git 
     62 files at HEAD against main's 64, because chores 184–186 removed `notion-associate.mjs` and
     `notion-sync-work.mjs`. Both come from the Notion chores merged on this branch (F-11).
 
+### Second pass (2026-11-02, this MacBook, `4ff7fba6`)
+
+- **Focused lane.** `aof test --scope file` over FF-17901–17903, `acd-run-records-name-no-machine`,
+  FF-7106's `acd-declared-writes-include-generated-siblings` and `packages/learning/test/index.mjs`,
+  with `AOF_GLOBAL_HOME` isolated. **65 ok, 1 not ok.** The three FF-179xx controls, F-01's
+  disclosure control (8/8) and 188/02 task 02's E2 are green. The one red is FF-7106 on 189/01's
+  contract (F-12).
+- **Regression gate: not re-run.** The live desktop daemons hold `:4182`, which
+  `global-work-propagation` binds, so the deploy rules forbid a whole-tree run on this machine. The
+  newest row in `REGRESSION.md` is still the red row at `55f24c9f`.
+- verifies → 188/00–03 FF-17901–17903; F-01's fix; 188/02 tasks/02 E2.
+
+## User sign-off
+
+### 188/04 task 01 — the operator is taught, not taken over (`@uat`)
+
+- **Procedure.** In their own repository, `voice-vox-company-portal`, the operator ran
+  `/aof:teach 08/01` on Claude Code, on a refined story they had not built. They first ran
+  `aof work update`, which needed F-13's workaround.
+- **Observed.** The opening turn wrote none of their code and closed its run `done`, as F-02's fix
+  intends. But it opened with about 30 lines of the session describing itself before any teaching:
+  what the operator owns, every write it made (the status move, the run record path,
+  `.aof/artifact-sync-queue.ndjson`), a `permissions.deny` note, an unrelated Go failure from a
+  whole-repo test run that it then ran again, and internal ids (`FF-01`, `ADR-002 §5`). It ended
+  "Outcome: taught… the exits are" straight after its first question.
+- **Verdict: reject** (operator, 2026-11-02): "I seriously don't get how you think this is a good
+  approach. … You understand we're teaching a human here right? Not a machine." The story was not
+  worked to green. The opening was enough to reject the interaction (F-14).
+- verifies → 188/04 tasks/01_the-operator-is-taught-not-taken-over.feature (failed).
+
 ## Findings
 
 Recall was run per finding (`aof memory ingest`, then `aof memory recall "<text>" --kind finding
@@ -133,8 +163,22 @@ Recall was run per finding (`aof memory ingest`, then `aof memory recall "<text>
 | F-09 | `/aof:manual 01` closed its run before printing the guide, against manual.md step 9's "after". The session said so itself. Prior occurrence: m149/F-02, same cause and evidence, still open. The move out of `continue` carried the slip across unchanged. | defect | non-blocker | Recurrence of m149/F-02, which stays its owner's. | backlog (m149/F-02) | open |
 | F-10 | The manual guide's "order" part gives the decisive lines (`throw new RangeError(...)`, `return s.toUpperCase() + "!"`). No 149 rule forbids it, and manual is not teaching (SPEC Objective), but it is near-solution help in a guide. | observation | non-blocker | Defer, for the operator to judge. | backlog | open |
 | F-11 | Two controls outside 188 are red on this branch: FF-5301 (reach `182 !== 169`, red at `cbaecd87` too) and 131/08's commands-bindings ceiling (`62 !== 64`, after chores 184–186 removed two Notion bindings). Neither is 188's change, but both keep the branch's gate red. Precedents: m70/F-02 (FF-5301 red on an integration branch, closed by a ratified reach amendment) and m167/F-09. | regression | non-blocker for 188; blocks the branch merge | Amend FF-5301's reach ceiling and 131/08's pinned ceiling with their reasons. | chores 184–186's owner, before merge | open |
+| F-12 | FF-7106 is red on 189/01: its `STORY.md` declares `packages/learning/assets/commands/teach.md` but not its tracked render `.codex/aof/workflows/workflow-contract.md`. Prior occurrence: m161/F-06, same cause (another milestone's open story on the branch is missing a tracked render from `files:`). Not 188's change. | regression | non-blocker for 188; blocks the branch merge | A one-line `files:` repair to 189/01. | 189's refine or continue | open |
+| F-13 | `aof work update` in a repository whose `.codex/` is gitignored and absent refuses `codex-output-conflict: .codex/hooks.json: AOF UserPromptSubmit hook was edited or removed`. `mergeHooks` (`packages/core/src/codex-settings.mjs:197`) treats a missing file whose groups the lock records as an edited one, so a fresh clone can never update. `init --force` conflicts the same way. Workaround: drop the lock's `.codex/hooks.json` entry, then update (proved on a copy). A distinct incident: no prior finding has this cause. | defect | non-blocker | Defer: a missing owned hooks file should re-create, not refuse. | backlog | open |
+| F-14 | The teaching session talks to an auditor, not to a person learning. Its opening is the session describing itself: ownership, every write and its path, the sync queue, the guard advice, a whole-repo test run with an unrelated failure, internal ids (`FF-01`, `ADR-002 §5`) and an "Outcome: taught" close straight after the first question. The cause is the contract as much as the prompt: SPEC Scope's first bullet ("show the active mode, what the human owns, and which tests/bookkeeping AOF may perform") and 188/02's banner scenarios require exactly that opening. A distinct incident: no prior finding has this cause. | contract | blocker | Re-refine the opening with the operator. Teaching starts from the person and the problem. The mode is one line, and the bookkeeping is out of sight unless asked. 188/02's banner contract and the SPEC bullet are revised before any build. | `aof:refine 188/02` (and 03's guidance), with the operator. Worked inline at the operator's request, 2026-11-02: SPEC Scope bullet 1 and ADR-005 §3 amended. 188/02 task 01's R1 was rewritten (E1, E1b), and R4 was added (E7–E9). `teach.md` gained `<opening>` and `<voice>`, which replace `<banner>`, and runs the story's own tests once (`--scope file`). `teach-frame.suite.mjs` rows were added and amended, and are red against the old prompt and green against the new one. The render, lock and manifest were regenerated. | fixed, awaiting the operator's retest | open |
+| F-15 | At the retest, the operator explicitly asked the session to write code, and it refused, giving a worked explanation in the terminal and the exits. That is the designed boundary (SPEC Objective, ADR-005 §2). But the only way to have code written is `aof:continue <ref>`, which hands over the whole story: there is no per-file seat swap. A distinct incident: no prior finding has this cause. | observation | non-blocker | Operator, 2026-11-03: keep it strict for now. Perhaps a config later: an opt-in per-file write, visibly a seat swap and recorded for `aof:review`. | backlog | open |
 
 ## Accept decision
+
+**Declined again, 2026-11-02. 188 stays `in-progress`.**
+
+- The operator **rejected** the teaching interaction at its `@uat` (188/04 task 01).
+- F-14 is an open blocker, routed to `aof:refine 188/02` with the operator. The fix is a contract
+  change, so the next step is refine, not `aof:continue`. Every story stays `in-review`: none is
+  accepted ahead of the rework.
+- The gate was not re-run, because this machine's daemons hold `:4182`. No override was recorded,
+  because there is nothing to accept yet.
+- F-01, F-02 and F-03 stay closed. Their fixes hold at `4ff7fba6`.
 
 **Declined, 2026-11-01. 188 stays `in-progress`.** The accept door needs a passing validate and no
 open blocker, and three blockers were open:

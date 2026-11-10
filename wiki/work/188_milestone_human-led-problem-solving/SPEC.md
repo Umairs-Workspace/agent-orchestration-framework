@@ -6,7 +6,7 @@ title: "AOF guides the human through problem solving without taking over"
 status: in-progress
 owner: product-owner
 created: 2026-10-23
-updated: 2026-10-31
+updated: 2026-11-02
 schema: 1
 aofVersion: 0.1.0
 origin: wiki/planning/PRD-human-led-learning.md
@@ -41,9 +41,12 @@ milestone 180's checks land in the same package. Refine settles the name and the
 
 In scope:
 
-- An explicit opt-in teaching interaction in the existing terminal workflow. Show the active mode,
-  what the human owns, and which tests/bookkeeping AOF may perform. Preserve normal manual and
-  explanation-only behavior when teaching is not selected; the invocation is `aof:teach <ref>` (refine, 2026-10-31).
+- An explicit opt-in teaching interaction in the existing terminal workflow, written for the person
+  learning, not for an auditor. It opens in a line or two (the human writes the code, AOF helps
+  them think it through), then turns to the problem. The bookkeeping AOF performs is real, and it
+  is stated plainly when the human asks, never recited at them and never denied (operator at the
+  `@uat`, 2026-11-02, F-14). Preserve normal manual and explanation-only behavior when teaching is
+  not selected; the invocation is `aof:teach <ref>` (refine, 2026-10-31).
 - Ground the guide in the real story contract, confirmed examples, inherited ADRs, `reads:`/`files:`
   and test locations. Ask the human to restate the problem, predict an example and suggest an
   approach before revealing a solution, while allowing them to skip or ask directly for help.

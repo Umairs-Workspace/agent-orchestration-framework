@@ -8,7 +8,7 @@ depends: [01]
 status: in-review
 owner: product-owner
 created: 2026-10-28
-updated: 2026-11-01
+updated: 2026-11-02
 adrs: [ADR-003, ADR-004, ADR-005, ADR-007]
 reads:
   - wiki/work/188_milestone_human-led-problem-solving/SPEC.md
@@ -80,9 +80,10 @@ aofVersion: 0.1.0
 ## User story
 
 As **an operator who types `/aof:teach <ref>`**,
-I want **the session to open by telling me the mode I am in, what I own, what AOF may do and what it
-will write, and then to hold that line on every later turn, never editing my files and answering
-"just write it" by naming the visible way out rather than doing it**,
+I want **the session to open by telling me in a line that I write the code and it helps, to talk to
+me like a person about my problem, to tell me what it writes if I ask, and to hold that line on every
+later turn, never editing my files and answering "just write it" by naming the visible way out
+rather than doing it**,
 so that **I keep the keyboard for the whole session, and I know the boundary is the session's word,
 not a lock I can lean on**.
 
@@ -93,7 +94,7 @@ boundary, run and hand-back), and the docs. The help ladder and the problem-solv
 ## Tasks
 
 - [x] 00 [aof:teach ships for Claude through the practices registry](tasks/00_teach-ships-for-claude-through-the-practices-registry.feature)
-- [x] 01 [the teaching session opens and holds the boundary](tasks/01_the-teach-session-opens-and-holds-the-boundary.feature)
+- [x] 01 [the teaching session opens and holds the boundary](tasks/01_the-teach-session-opens-and-holds-the-boundary.feature) — R1 amended and R4 added for F-14 at aof:verify 188
 - [x] 02 [a teaching session never strands its run](tasks/02_a-teaching-session-never-strands-its-run.feature) — @bug, F-02 at aof:verify 188
 
 ## Notes

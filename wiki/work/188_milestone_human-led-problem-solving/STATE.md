@@ -215,6 +215,15 @@ doc: state
     only. Its proof is re-running 188/04's walk, `/aof:teach` then `/aof:review`, at the next
     `aof:verify 188`.
 
+- 2026-11-02 — `aof:verify 188`, second pass: **declined**. The operator rejected the `@uat` on
+  `/aof:teach 08/01` in their own repository: "we're teaching a human here, not a machine" (F-14,
+  blocker, routed to `aof:refine 188/02`). Lesson candidate: every scenario of 188/02 and 04 passed,
+  and the session still failed its one human. The contract required the opening to account for
+  the session's own behaviour (mode, ownership, every write), so the prompt was written for an
+  auditor. A teaching contract needs a scenario judged from the learner's side, written at refine.
+  The verifier also first checked the output against the spec and called it right. Read
+  human-facing output as the human first.
+
 ## Verification
 
 - Planning checklist pre-flight only. No implementation, tests, live experiments or AOF CLI commands have been run for this item.
