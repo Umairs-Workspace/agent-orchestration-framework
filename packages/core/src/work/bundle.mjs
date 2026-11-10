@@ -19,6 +19,7 @@
 import path from "node:path";
 import { hashContent } from "../lock.mjs";
 import { renderConfigOutputs } from "../adapters.mjs";
+import { RUNTIMES } from "../model.mjs";
 import { installableBundleResources } from "./bundle-runtime.mjs";
 import { normalizeEffort } from "@aof/execution/session-model";
 import { assetBase, readAssetText, listAssetMembers, packageAssetClass } from "../asset-base.mjs";
@@ -270,8 +271,13 @@ function templateOutputPath(member, file) {
 export function renderBundleTemplateOutputs(bundle, options = {}) {
   const runtimes = options.runtimes ?? null;
   // Templates are runtime-independent; emit once, tagged with the first selected
-  // runtime (or "bundle") purely for manifest shape compatibility.
-  const runtime = runtimes && runtimes.length > 0 ? runtimes[0] : "bundle";
+  // runtime in REGISTRY order (or "bundle") purely for manifest shape compatibility.
+  // Registry order, not the caller's: the tag decides which ownership rule a re-init
+  // applies, so `--runtime codex,claude` over a `claude,codex` install must not turn
+  // the lock's own templates into unowned Codex collisions.
+  const runtime = runtimes && runtimes.length > 0
+    ? Object.keys(RUNTIMES).find((candidate) => runtimes.includes(candidate)) ?? runtimes[0]
+    : "bundle";
   const outputs = [];
   for (const member of bundle.templates) {
     for (const file of member.files) {

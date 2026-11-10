@@ -337,6 +337,16 @@ export const codexOwnershipTests = [
       assert.ok(!existsSync(path.join(root, ".claude/agents/aof-architect.md")));
       assert.ok(!existsSync(path.join(root, ".aof/aof.lock.json")));
     }) },
+  { name: "work init --force: the runtime order does not decide who owns the rendered templates",
+    run: () => fixture(async root => {
+      await assets.work.init.initWork({ targetDir: root, runtimes: ["claude", "codex"] });
+      const reinit = await assets.work.init.initWork({ targetDir: root, runtimes: ["codex", "claude"], force: true });
+      assert.equal(reinit.actions.filter(item => item.action === "conflict").length, 0);
+      const templates = (await readLock(path.join(root, ".aof/aof.lock.json"))).work.files
+        .filter(entry => entry.path.startsWith(".aof/templates/work/"));
+      assert.ok(templates.length > 0);
+      assert.deepEqual([...new Set(templates.map(entry => entry.runtime))], ["claude"]);
+    }) },
   { name: "154/04 ownership: a target changed after planning is preserved",
     run: () => fixture(async root => {
       const desired = await createRenderPlan(config(), { targetDir: root, runtimes: ["codex"] });
