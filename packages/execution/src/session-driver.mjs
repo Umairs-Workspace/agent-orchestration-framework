@@ -969,7 +969,10 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
       cwd: brief.worktreeCwd,
       env: launch.env,
     });
-  } catch {
+  } catch (error) {
+    // Named, not swallowed: a spawn that never starts (`posix_spawnp failed`) otherwise reaches
+    // the operator only as `agent_error` with no session id (2026-11-10).
+    reportDegrade("mesh-worker-execution", error);
     door.dispose();
     return { outcome: "failed", failureReason: "agent_error", sessionId: null, processStarted: false };
   }
