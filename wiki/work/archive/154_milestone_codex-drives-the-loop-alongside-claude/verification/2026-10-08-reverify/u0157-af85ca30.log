@@ -1,0 +1,20 @@
+# unit
+ok - 81/00 the loop stays responsive for as long as the runner works — an operator interrupt is observed mid-grade
+ok - 81/00 a timer scheduled before the grade fires while the grade is still waiting, and before the runner exits
+ok - 81/00 [outline] the deadline is derived from the two bounds and never exceeds the liveness window (4 rows)
+ok - 81/00 the deadline resolves through 69's one home, and the grade path declares none of its own
+not ok - 81/00 a runner that outlasts the derived deadline is killed and graded, not reaped
+AssertionError [ERR_ASSERTION]: guard: the runner really was alive
+
+false !== true
+
+    at run (file:///<workspace>/.tmp/154-fix-checkout/test/grade/grade-waits-without-blocking.test.mjs:324:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async runCases (file:///<workspace>/.tmp/154-fix-checkout/scripts/test-harness.mjs:22:7)
+    at async file:///<workspace>/.tmp/154-fix-checkout/scripts/test-shard.mjs:38:18
+ok - 81/00 that timeout reaches the loop as a named halt, and leaves no run to be reclaimed as stranded
+ok - 81/00 [outline] the guards the blocking spawn used to give for free still hold on the async one (6 rows)
+ok - 81/00 a child killed at the capture ceiling is not reported as a child killed at its deadline
+ok - 81/00 exactly one module still spawns the declared rubric, and the pure leaf still spawns nothing
+ok - 81/00 a repository that declares no rubric is unchanged, byte for byte
+# executed 10 cases; failures 1
