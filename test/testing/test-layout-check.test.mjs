@@ -15,7 +15,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // node:assert/strict, `{ name, run }` shape.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, utimes, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -79,7 +79,65 @@ const E1_TREE = Object.freeze([
   "packages/core/test/two.test.mjs",
 ]);
 
+// Commits the fixture at a fixed commit time, and plants `graphify-out/graph.json` with a given mtime
+// (null plants none), so `test-layout-graph-fresh` compares two known instants.
+async function withCommitAndGraph(root, { committedAt, builtAt }) {
+  const env = { ...process.env, GIT_COMMITTER_DATE: committedAt, GIT_AUTHOR_DATE: committedAt };
+  const commit = spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "--allow-empty", "-m", "fixture"], { cwd: root, encoding: "utf8", env });
+  assert.equal(commit.status, 0, commit.stderr);
+  if (builtAt != null) {
+    await mkdir(path.join(root, "graphify-out"), { recursive: true });
+    const graph = path.join(root, "graphify-out", "graph.json");
+    await writeFile(graph, "{}\n");
+    await utimes(graph, new Date(builtAt), new Date(builtAt));
+  }
+}
+
+async function doctorWithGraph(options, instants) {
+  const root = await project(options);
+  try {
+    await withCommitAndGraph(root, instants);
+    return await doctor.run({ target: root });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
 export const testLayoutCheckTests = [
+  {
+    name: "test-layout-workdir · a work dir no coupling covers is named, and a coupling answers it",
+    async run() {
+      const bare = await doctorOver({ test: declaration({ couplings: [] }), tracked: ["test/a.test.mjs"] });
+      const warned = check(bare, "test-layout-workdir");
+      assert.equal(warned?.severity, "warning", JSON.stringify(bare.checks));
+      assert.match(warned.message, /No coupling covers the work dir \(wiki\/work\)/u);
+      assert.match(warned.message, /\/aof:map-tests/u);
+      const coupled = await doctorOver({ test: declaration({ couplings: [{ paths: ["wiki/**"], suites: [], why: "no suite reads the work stream" }] }), tracked: ["test/a.test.mjs"] });
+      assert.equal(check(coupled, "test-layout-workdir")?.severity, "ok");
+      const custom = await doctorOver({ test: declaration({ couplings: [] }), workDir: "docs/work", tracked: ["test/a.test.mjs"] });
+      assert.match(check(custom, "test-layout-workdir").message, /\(docs\/work\)/u, "the declared work dir is the one named");
+    },
+  },
+  {
+    name: "test-layout-graph-fresh · no graph, a graph older than HEAD, and a current graph (Examples)",
+    async run() {
+      const committedAt = "2026-01-02T00:00:00Z";
+      const rows = [
+        ["no graph", null, "warning", /No code graph is built/u],
+        ["built before HEAD's commit", "2026-01-01T00:00:00Z", "warning", /before HEAD's commit .*aof graph build \. --offline/u],
+        ["built after HEAD's commit", "2026-01-03T00:00:00Z", "ok", /after HEAD's commit/u],
+      ];
+      for (const [state, builtAt, severity, message] of rows) {
+        const report = await doctorWithGraph({ test: declaration(), tracked: ["test/a.test.mjs"] }, { committedAt, builtAt });
+        const fresh = check(report, "test-layout-graph-fresh");
+        assert.equal(fresh?.severity, severity, `${state}: ${JSON.stringify(report.checks)}`);
+        assert.match(fresh.message, message, state);
+      }
+      // A checkout with no commit has no HEAD to compare against, so the check is omitted.
+      const uncommitted = await doctorOver({ test: declaration(), tracked: ["test/a.test.mjs"] });
+      assert.equal(check(uncommitted, "test-layout-graph-fresh"), undefined);
+    },
+  },
   {
     name: "190/04-00 E1 · test files outside the declared roots and suffixes are named",
     async run() {

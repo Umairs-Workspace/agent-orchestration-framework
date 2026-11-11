@@ -369,6 +369,21 @@ declaring the file a suite, makes it selectable, and the runner then rejects it 
    `reportArgs` and `filesArgs` when the gate program takes a flag that skips its lanes (F-07).
    It authors `exclude`, with a reason, for test-shaped files the runner does not run.
 
+### Amendment — the work dir and the graph's freshness join the family (operator, 2026-11-11)
+
+The consumer-monorepo map-tests run (ADR-009) found two more ways a project keeps widening with
+nothing saying why. Two checks join the family, through the same one function, so the update and
+the project doctor still cannot disagree:
+
+- **`test-layout-workdir`**: asked once couplings are declared (until then `test-layout-couplings`
+  already says every document widens). It warns when no coupling's paths cover a record under
+  `work.dir`, since every `aof:continue` edits STATE, SPEC and feature files there.
+- **`test-layout-graph-fresh`**: warns when there is no code graph, or when HEAD's commit time is
+  later than the graph's `builtAt`, so every file added since widens as `not-in-graph`. Its repair
+  is `aof graph build . --offline`. The binding hands in `builtAt` (the artifact's mtime, the one
+  derivation) and HEAD's commit time; `layout.mjs` still reads no graph and no file (FF-19006), and
+  the check is omitted when there is no HEAD to compare.
+
 ### Alternatives considered
 
 - **Have the doctor ask the runner's own registry what it runs (F-05).** Rejected: that is a

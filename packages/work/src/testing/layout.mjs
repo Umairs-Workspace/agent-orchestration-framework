@@ -15,7 +15,11 @@ import { isExcludedTest, isSuiteFile } from "./select.mjs";
 // The one repair every warning names.
 export const TEST_LAYOUT_REPAIR = "/aof:map-tests";
 
-export const TEST_LAYOUT_CHECK_IDS = Object.freeze(["test-layout-suites", "test-layout-couplings", "test-layout-resume"]);
+export const TEST_LAYOUT_CHECK_IDS = Object.freeze(["test-layout-suites", "test-layout-couplings", "test-layout-workdir", "test-layout-resume", "test-layout-graph-fresh"]);
+
+// The one repair the graph-freshness warning names: offline, so it sends nothing to a hosted model
+// and neither fetches nor publishes a shared graph.
+export const GRAPH_REBUILD = "aof graph build . --offline";
 
 // THE LANGUAGE-NEUTRAL NAME SET, frozen: what a file that is a test looks like in the runners a
 // project is likely to use. It decides only what is COUNTED; whether a file is a suite is the
@@ -128,6 +132,43 @@ function couplingsCheck({ toolchain }) {
   });
 }
 
+// THE WORK DIR CHANGES ON EVERY BUILD. `aof:continue` edits STATE, SPEC and feature files all the
+// time, and with nothing declared each edit widens `impacted` to the whole suite. A coupling whose
+// paths cover a record under the work dir answers the question, `suites: []` included.
+function workdirCheck({ toolchain, workDir }) {
+  const dir = posix(workDir).replace(/^\.\//u, "").replace(/\/+$/u, "");
+  const probe = `${dir}/item/STATE.md`;
+  if (toolchain.couplings.some((entry) => picomatch.isMatch(probe, entry.paths, { dot: true }))) {
+    return Object.freeze({ id: "test-layout-workdir", severity: "ok", message: `Changes under ${dir} are placed by a declared coupling.` });
+  }
+  return Object.freeze({
+    id: "test-layout-workdir",
+    severity: "warning",
+    message: `No coupling covers the work dir (${dir}), so every STATE, SPEC or feature edit widens \`aof test --scope impacted\` to the whole suite. Couple it to the suites that read it, or to [] when none do, with ${TEST_LAYOUT_REPAIR}.`,
+  });
+}
+
+// A STALE GRAPH READS AS ORDINARY WIDENING. Every file added since the last build widens as
+// `not-in-graph`, and nothing else says why. The caller hands in the artifact's `builtAt` and HEAD's
+// commit time; this compares them and reads nothing itself (FF-19006).
+function graphFreshCheck({ graph }) {
+  if (graph.builtAt == null) {
+    return Object.freeze({
+      id: "test-layout-graph-fresh",
+      severity: "warning",
+      message: `No code graph is built, so every \`aof test --scope impacted\` run widens to the whole suite as \`no-graph\`. Build it with \`${GRAPH_REBUILD}\`.`,
+    });
+  }
+  if (Date.parse(graph.headAt) > Date.parse(graph.builtAt)) {
+    return Object.freeze({
+      id: "test-layout-graph-fresh",
+      severity: "warning",
+      message: `The code graph was built at ${graph.builtAt}, before HEAD's commit at ${graph.headAt}, so every file added since widens \`aof test --scope impacted\` as \`not-in-graph\`. Rebuild it with \`${GRAPH_REBUILD}\`.`,
+    });
+  }
+  return Object.freeze({ id: "test-layout-graph-fresh", severity: "ok", message: `The code graph was built at ${graph.builtAt}, after HEAD's commit.` });
+}
+
 // Only a declared gate is asked: a project with no gate runs it serially, and a serial gate has
 // nothing to resume.
 function resumeCheck({ gate }) {
@@ -143,12 +184,18 @@ function resumeCheck({ gate }) {
 }
 
 // `compiled` and `compiledGate` are the results of `resolveTestToolchain` and `resolveTestGate`.
-// `tracked` is the tracked file list, or null when it could not be read. With `work.test`
+// `tracked` is the tracked file list, or null when it could not be read. `graph` is
+// `{ builtAt, headAt }` (the artifact's build instant or null when there is none, and HEAD's commit
+// time), or null when the caller could not tell, which omits the freshness check. With `work.test`
 // undeclared or malformed the family emits nothing: `aof test` already refuses there, naming the key.
-export function testLayoutChecks({ compiled, compiledGate, tracked = null, workDir = null } = {}) {
+export function testLayoutChecks({ compiled, compiledGate, tracked = null, workDir = null, graph = null } = {}) {
   if (compiled?.ok !== true || compiledGate?.ok !== true) return Object.freeze([]);
   const toolchain = compiled.toolchain;
   const checks = [suitesCheck({ toolchain, tracked, workDir }), couplingsCheck({ toolchain })];
+  // Asked only once couplings are declared: until then `test-layout-couplings` already says every
+  // changed document widens, the work dir's records among them.
+  if (toolchain.couplingsDeclared === true && workDir != null && posix(workDir).replace(/^\.\/?/u, "") !== "") checks.push(workdirCheck({ toolchain, workDir }));
   if (compiledGate.gate != null) checks.push(resumeCheck({ gate: compiledGate.gate }));
+  if (graph != null && graph.headAt != null) checks.push(graphFreshCheck({ graph }));
   return Object.freeze(checks);
 }

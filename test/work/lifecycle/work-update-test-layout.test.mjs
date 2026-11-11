@@ -31,12 +31,12 @@ const PRE_190 = Object.freeze({
   gate: { args: ["scripts/test-sharded.mjs"], jobsArgs: ["--jobs", "{jobs}"] },
 });
 
-// E21's: the same, with every key the family reads declared.
+// E21's: the same, with every key the family reads declared, the work dir's coupling among them.
 const COVERED = Object.freeze({
   ...PRE_190,
   roots: ["test", "packages/work/test"],
   suiteSuffixes: [".test.mjs", ".suite.mjs"],
-  couplings: [],
+  couplings: [{ paths: ["wiki/**"], suites: [], why: "no suite reads the work stream" }],
   gate: { ...PRE_190.gate, reportArgs: ["--report-json", "{report}"], filesArgs: ["--files", "{files}"] },
 });
 

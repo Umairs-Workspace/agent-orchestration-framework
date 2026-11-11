@@ -425,12 +425,23 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     // start pays nothing for it (FF-16004).
     const { testLayoutChecks: layoutChecks } = await import("@aof/work/testing/layout");
     const workDir = path.relative(projectDir, workDirFor(projectDir, config)).replaceAll("\\", "/");
+    const declared = config?.work?.test != null;
     return [...layoutChecks({
       compiled: resolveTestToolchain(config, { projectRoot: projectDir }),
       compiledGate: resolveTestGate(config),
-      tracked: config?.work?.test == null ? null : trackedFiles(projectDir),
+      tracked: declared ? trackedFiles(projectDir) : null,
       workDir,
+      graph: declared ? await graphFreshness(projectDir) : null,
     })];
+  }
+
+  // The code graph's build instant beside HEAD's commit time, for `test-layout-graph-fresh`. Only
+  // the artifact's mtime is read (the one `builtAt` derivation), never the graph itself (FF-17904).
+  async function graphFreshness(projectDir) {
+    const { graphArtifactBuiltAt, graphJsonPath } = await import("@aof/knowledge/graph-normalize");
+    const head = spawnSync("git", ["log", "-1", "--format=%cI"], { cwd: projectDir, encoding: "utf8", timeout: 30_000 });
+    const headAt = head.error == null && head.status === 0 && head.stdout.trim() !== "" ? head.stdout.trim() : null;
+    return { builtAt: graphArtifactBuiltAt(graphJsonPath(projectDir)), headAt };
   }
 
   // `git ls-files`, or null when this is not a checkout or git did not answer. Bounded: a doctor
