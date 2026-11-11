@@ -117,7 +117,8 @@ const SELECTION_SCOPES = Object.freeze(["impacted", "all"]);
 //   suite-itself        — the graph does not hold it, and it is a suite on disk: a suite is a leaf
 //   imported-by-changed — the graph does not hold it, and a placed changed file imports it by a
 //                         literal specifier, so it inherits that importer's suites
-//   declared-coupling   — it is not code, and the project declared which suites read it
+//   declared-coupling   — the project declared which suites read it: a document, or a code file no
+//                         import reaches whose coupling names its readers (ADR-009)
 //   not-yet-written     — under `--story` only, a declared path that exists nowhere has no behaviour
 const NARROWING_REASONS = Object.freeze([
   "graph-dependent",
@@ -128,8 +129,17 @@ const NARROWING_REASONS = Object.freeze([
 ]);
 
 // What counts as CODE: a file the import graph is about. A code file is placed by the graph or by a
-// changed importer, never by a coupling — a coupling is how a project says what reads a document.
+// changed importer first. A coupling that NAMES READERS adds to that (a suite that reads a source
+// file from disk, which no import edge shows), and places the file when no import reaches it; an
+// empty coupling never places code, since "nothing reads this code" is a guess (190/ADR-009).
 const CODE_FILE = /\.(?:[cm]?[jt]sx?)$/u;
+
+// CODE IS CODE FOR THE SUITES. The graph relates a JavaScript file to a suite only through imports,
+// so a JavaScript file is code only when the suites are JavaScript too. When every declared suite
+// is in another language (a Go project's `_test.go`), no import edge can ever reach a suite from a
+// `.ts` file, and refusing it a coupling would only widen every run that touches one: for those
+// suites it is a file their tests read or never read, which is what a coupling declares.
+const suitesAreCode = (suffixes) => (suffixes ?? DEFAULT_SUITE_SUFFIXES).some((suffix) => CODE_FILE.test(`x${suffix}`));
 
 // A literal module specifier: `import … from "x"`, `import "x"`, `export … from "x"` and
 // `import("x")`. A computed `import(expr)` or a string in a table is NOT one, and that is the point:
@@ -267,10 +277,67 @@ async function selectSuites({ projectRoot, changed = [], allSuites = [], roots =
     resolved.push(file);
     resolutions.push({ file, reason, suites: [...suites].sort(), ...extra });
   };
+  const codeForSuites = suitesAreCode(suffixes);
+  const isCode = (file) => codeForSuites && CODE_FILE.test(file);
+
+  // A COUPLING'S `via` NAMES HELPERS, NOT SUITES (190/ADR-009 §2): a non-suite module the suites
+  // import that reads the coupled paths itself. Each one expands to its transitive suite dependents
+  // from the same graph, at selection time, so the list cannot go stale as suites start or stop
+  // importing the helper. A helper the graph does not hold expands to nothing.
+  const viaPaths = [...new Set(couplings.flatMap((entry) => entry.via ?? []))];
+  const viaSuites = new Map();
+  if (viaPaths.length > 0) {
+    const through = await relations(viaPaths, { projectRoot, transitive: true });
+    if (through.served !== false && through.available === true) {
+      viaPaths.forEach((helper, index) => {
+        const entry = through.files[index];
+        viaSuites.set(helper, entry?.present ? [helper, ...entry.dependents].filter(isSuite) : []);
+      });
+    }
+  }
+
+  // The coupling that places `file`, as `{ suites, why }`, or null. Its suites pass the same test
+  // as a graph dependent's: a suite the runner cannot run is never selected, and a coupling that
+  // named readers and has none left places nothing. A DOCUMENT takes the first coupling its path
+  // matches, and an empty one declares that nothing reads it. CODE takes only a coupling that names
+  // readers: an empty coupling never places code (190/ADR-009 §1).
+  const couplingFor = (file) => {
+    const code = isCode(file);
+    for (const entry of couplings) {
+      if (!picomatch.isMatch(file, entry.paths, { dot: true })) continue;
+      const via = entry.via ?? [];
+      const namesReaders = entry.suites.length > 0 || via.length > 0;
+      if (code && !namesReaders) continue;
+      const suites = [...new Set([...entry.suites.filter(isSuite), ...via.flatMap((helper) => viaSuites.get(helper) ?? [])])].sort();
+      if (namesReaders && suites.length === 0) return null;
+      return { suites, why: entry.why };
+    }
+    return null;
+  };
+  const placeByCoupling = (file) => {
+    const coupling = couplingFor(file);
+    if (coupling == null) return false;
+    place(file, "declared-coupling", coupling.suites, { why: coupling.why });
+    return true;
+  };
+  // A CODE FILE'S COUPLING IS ADDITIVE (190/ADR-009 §1): what the graph or a changed importer
+  // placed it on stays selected, and the coupling's readers join it. Adding suites can only widen,
+  // so the invariant holds whatever the declaration says.
+  const withCoupled = (file, suites) => {
+    const coupling = isCode(file) ? couplingFor(file) : null;
+    if (coupling == null) return { suites, extra: {} };
+    return { suites: [...new Set([...suites, ...coupling.suites])], extra: { coupled: coupling.suites, why: coupling.why } };
+  };
 
   for (let index = 0; index < changed.length; index += 1) {
     const file = changed[index];
     const entry = impact[index];
+
+    // A DECLARATION BEATS AN INFERENCE for a file that is not code for the suites. The graph relates
+    // a document, or a file in another language than the suites, by name rather than by import, and
+    // a name it shares with half the tree selects half the tree. What the project declared reads it
+    // is the better answer. A changed suite still selects itself through the graph below.
+    if (!isSuite(file) && !isCode(file) && placeByCoupling(file)) continue;
 
     // PRESENCE IS ASKED FIRST (72/ADR-002 §2a). A file the graph does not hold is placed below only
     // on positive knowledge (190/ADR-003 §3), and widens otherwise — never selected by the union.
@@ -287,10 +354,16 @@ async function selectSuites({ projectRoot, changed = [], allSuites = [], roots =
     // would not.
     const candidates = [file, ...entry.dependents].filter(isSuite);
     if (candidates.length === 0) {
+      // The graph holds it and no suite depends on it. A file the project declared a coupling for
+      // is placed by that coupling: the graph knowing a file is not the graph knowing what reads
+      // it. For code that is a coupling naming readers — a route page the framework loads, a
+      // script a suite spawns (190/ADR-009 §1).
+      if (placeByCoupling(file)) continue;
       widened.push(widening(file, "no-registered-dependent"));
       continue;
     }
-    place(file, "graph-dependent", candidates);
+    const graphPlaced = withCoupled(file, candidates);
+    place(file, "graph-dependent", graphPlaced.suites, graphPlaced.extra);
   }
 
   // ── WHAT THE GRAPH DOES NOT HOLD (190/ADR-003 §3, §4) ──────────────────────────────────────
@@ -318,7 +391,10 @@ async function selectSuites({ projectRoot, changed = [], allSuites = [], roots =
         for (const candidate of await resolveSpecifier(match[2], importer.file, exportsOf)) named.add(candidate);
       }
       const reached = pending.filter((file) => named.has(file));
-      for (const file of reached) place(file, "imported-by-changed", importer.suites, { via: importer.file });
+      for (const file of reached) {
+        const inherited = withCoupled(file, importer.suites);
+        place(file, "imported-by-changed", inherited.suites, { via: importer.file, ...inherited.extra });
+      }
       if (reached.length > 0) {
         pending = pending.filter((file) => !reached.includes(file));
         progress = true;
@@ -327,18 +403,7 @@ async function selectSuites({ projectRoot, changed = [], allSuites = [], roots =
   }
 
   for (const file of pending) {
-    // A document the project declared a coupling for. An empty `suites` is the declaration that no
-    // suite reads it.
-    const coupling = CODE_FILE.test(file) ? null : couplings.find((entry) => picomatch.isMatch(file, entry.paths, { dot: true }));
-    if (coupling != null) {
-      // The coupling's suites pass the same test as a graph dependent's: a suite the runner cannot
-      // run is never selected. A coupling that named suites and has none left places nothing.
-      const runnableSuites = coupling.suites.filter(isSuite);
-      if (coupling.suites.length === 0 || runnableSuites.length > 0) {
-        place(file, "declared-coupling", runnableSuites, { why: coupling.why });
-        continue;
-      }
-    }
+    if (placeByCoupling(file)) continue;
     // Under `--story` a declared path that is neither on disk nor in the graph has no behaviour
     // yet. A git-changed file absent from both is a deletion, and that still widens.
     if (declared && (await known.exists(file)) === false) {

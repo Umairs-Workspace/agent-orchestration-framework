@@ -55,7 +55,7 @@ declare first, and stop. `aof test` refuses there too.
    the test files the declaration cannot select, by directory, and the keys that are absent.
 3. **Roots and suffixes.** Author `work.test.roots` as every directory that holds the runner's
    suites (the doctor's `test-layout-suites` directories are the candidates), and
-   `work.test.suiteSuffixes` as the suffixes those suites end in, each starting with `.`. Declare a
+   `work.test.suiteSuffixes` as the suffixes those suites end in, each starting with `.` or `_` (as `.test.mjs` or Go's `_test.go`). Declare a
    directory or a suffix only when the runner actually runs those files: a test-shaped file the
    runner never runs is not a suite, and declaring it makes nothing selectable. **Exclude it
    instead**: author `work.test.exclude` as `[{ paths, why }]`, where `paths` holds globs for the

@@ -845,6 +845,146 @@ export const workTestSelectTests = [
     },
   },
   {
+    name: "a file in another language than the suites is placed by its coupling (Go suites, TypeScript frontend)",
+    run: async () => {
+      const go = ["modules/users/backend/internal/admin/admin_test.go"];
+      const coupling = [{ paths: ["modules/*/frontend/**"], suites: [], why: "no Go suite reads the frontend" }];
+      // Present in the graph with no suite dependent, and absent from it: both are placed.
+      const present = await plantedSelector({ "modules/users/frontend/src/People.tsx": [] }).selectSuites({ projectRoot: "fixture", changed: ["modules/users/frontend/src/People.tsx"], allSuites: go, roots: ["modules/users/backend"], suffixes: ["_test.go"], couplings: coupling });
+      assert.equal(present.scope, "impacted");
+      assert.deepEqual(present.resolutions.map((entry) => entry.reason), ["declared-coupling"]);
+      assert.deepEqual([...present.selected], []);
+      const absent = await plantedSelector({}).selectSuites({ projectRoot: "fixture", changed: ["modules/users/frontend/src/New.tsx"], allSuites: go, roots: ["modules/users/backend"], suffixes: ["_test.go"], couplings: coupling });
+      assert.equal(absent.scope, "impacted");
+      // With JavaScript suites the same file is code, and the coupling does not touch it.
+      const js = await plantedSelector({ "modules/users/frontend/src/People.tsx": [] }).selectSuites({ projectRoot: "fixture", changed: ["modules/users/frontend/src/People.tsx"], allSuites: ["test/a.test.mjs"], roots: ["test"], couplings: coupling });
+      assert.deepEqual(js.widened, [{ file: "modules/users/frontend/src/People.tsx", reason: "no-registered-dependent" }]);
+    },
+  },
+  {
+    name: "a declared coupling beats the graph's name-based relations for a file that is not code for the suites",
+    run: async () => {
+      const own = "modules/users/backend/internal/store/store_test.go";
+      const far = "modules/sales/backend/internal/crm/crm_test.go";
+      const graph = { "modules/users/backend/internal/store/store.go": [own, far], [own]: [] };
+      const coupling = [{ paths: ["modules/users/backend/internal/store/*.go"], suites: [own], why: "go list: only this package imports it" }];
+      const out = await plantedSelector(graph).selectSuites({ projectRoot: "fixture", changed: ["modules/users/backend/internal/store/store.go"], allSuites: [own, far], roots: ["modules"], suffixes: ["_test.go"], couplings: coupling });
+      assert.deepEqual([...out.selected], [own], "the declaration, not the graph's reach into sales");
+      assert.equal(out.resolutions[0].reason, "declared-coupling");
+      // A changed suite still selects itself through the graph, though a coupling matches its path.
+      const suite = await plantedSelector(graph).selectSuites({ projectRoot: "fixture", changed: [own], allSuites: [own, far], roots: ["modules"], suffixes: ["_test.go"], couplings: coupling });
+      assert.deepEqual([...suite.selected], [own]);
+      assert.equal(suite.resolutions[0].reason, "graph-dependent");
+    },
+  },
+  {
+    name: "a document the graph holds with no suite dependent is placed by its coupling",
+    run: async () => {
+      const suite = "test/docs.test.mjs";
+      const out = await plantedSelector({ "wiki/a.md": [] }).selectSuites({ projectRoot: "fixture", changed: ["wiki/a.md"], allSuites: [suite], roots: ["test"], couplings: [{ paths: ["wiki/*.md"], suites: [suite], why: "the docs suite reads wiki" }] });
+      assert.equal(out.scope, "impacted");
+      assert.deepEqual([...out.selected], [suite]);
+      assert.equal(out.resolutions[0].reason, "declared-coupling");
+      const undeclared = await plantedSelector({ "wiki/a.md": [] }).selectSuites({ projectRoot: "fixture", changed: ["wiki/a.md"], allSuites: [suite], roots: ["test"], couplings: [] });
+      assert.deepEqual(undeclared.widened, [{ file: "wiki/a.md", reason: "no-registered-dependent" }]);
+    },
+  },
+  // 190/ADR-009 §1 — a coupling that names readers reaches code: additive over the graph, placing
+  // where nothing imports the file, and an empty coupling still never places code.
+  {
+    name: "190/ADR-009 · a code file's coupling ADDS its readers to the graph's dependents",
+    run: async () => {
+      const importer = "test/importer.test.mjs";
+      const scanner = "test/arch/framework-agnostic.test.mjs";
+      const couplings = [{ paths: ["src/application/**"], suites: [scanner], why: "the fitness test scans src/application from disk" }];
+      const out = await plantedSelector({ "src/application/a.mjs": [importer] }).selectSuites({ projectRoot: "fixture", changed: ["src/application/a.mjs"], allSuites: [importer, scanner], roots: ["test"], couplings });
+      assert.equal(out.scope, "impacted");
+      assert.deepEqual([...out.selected], [scanner, importer].sort(), "{A} from the graph and {B} from the coupling");
+      assert.deepEqual(out.resolutions, [{ file: "src/application/a.mjs", reason: "graph-dependent", suites: [scanner, importer].sort(), coupled: [scanner], why: "the fitness test scans src/application from disk" }]);
+    },
+  },
+  {
+    name: "190/ADR-009 · a code file no import reaches is placed by a coupling that names its readers",
+    run: async () => {
+      const guard = "test/routes-authorization.test.mjs";
+      const couplings = [{ paths: ["src/app/**/page.tsx"], suites: [guard], why: "the guard reads every route page from disk" }];
+      // In the graph with no suite dependent, and absent from it (a page added since the build).
+      for (const [graph, changed] of [[{ "src/app/viewings/page.tsx": [] }, "src/app/viewings/page.tsx"], [{}, "src/app/new/page.tsx"]]) {
+        const out = await plantedSelector(graph).selectSuites({ projectRoot: "fixture", changed: [changed], allSuites: [guard, "test/other.test.mjs"], roots: ["test"], couplings });
+        assert.equal(out.scope, "impacted", changed);
+        assert.deepEqual([...out.selected], [guard]);
+        assert.deepEqual(out.resolutions, [{ file: changed, reason: "declared-coupling", suites: [guard], why: "the guard reads every route page from disk" }]);
+      }
+    },
+  },
+  {
+    name: "190/ADR-009 · an empty coupling never places code, and a later coupling that names readers still can",
+    run: async () => {
+      const all = ["test/a.test.mjs", "test/seed.test.mjs"];
+      const empty = { paths: ["src/**"], suites: [], why: "nothing reads it" };
+      const present = await plantedSelector({ "src/seed.ts": [] }).selectSuites({ projectRoot: "fixture", changed: ["src/seed.ts"], allSuites: all, roots: ["test"], couplings: [empty] });
+      assert.deepEqual(present.widened, [{ file: "src/seed.ts", reason: "no-registered-dependent" }], "the graph knows it, the empty coupling does not drop it");
+      const absent = await plantedSelector({}).selectSuites({ projectRoot: "fixture", changed: ["src/seed.ts"], allSuites: all, roots: ["test"], couplings: [empty] });
+      assert.deepEqual(absent.widened, [{ file: "src/seed.ts", reason: "not-in-graph" }]);
+      const named = { paths: ["src/seed.ts"], suites: ["test/seed.test.mjs"], why: "the suite spawns the seed script" };
+      const later = await plantedSelector({ "src/seed.ts": [] }).selectSuites({ projectRoot: "fixture", changed: ["src/seed.ts"], allSuites: all, roots: ["test"], couplings: [empty, named] });
+      assert.deepEqual([...later.selected], ["test/seed.test.mjs"], "an empty coupling matched first is skipped for code, not final");
+      // A coupling whose readers the runner cannot run places nothing, for code as for documents.
+      const gone = await plantedSelector({ "src/seed.ts": [] }).selectSuites({ projectRoot: "fixture", changed: ["src/seed.ts"], allSuites: all, roots: ["test"], couplings: [{ ...named, suites: ["test/missing.test.mjs"] }] });
+      assert.equal(gone.scope, "all");
+    },
+  },
+  {
+    name: "190/ADR-009 · a new code file inherits its importer's suites AND its coupling's readers",
+    run: async () => {
+      const all = ["test/a.test.mjs", "test/arch/scan.test.mjs"];
+      const couplings = [{ paths: ["src/application/**"], suites: ["test/arch/scan.test.mjs"], why: "the scan reads src/application" }];
+      const out = await plantedSelector({ "src/a.mjs": ["test/a.test.mjs"] }).selectSuites({
+        projectRoot: "fixture", changed: ["src/a.mjs", "src/application/new.mjs"], allSuites: all, roots: ["test"], couplings,
+        sources: disk({ "src/a.mjs": 'import "./application/new.mjs";', "src/application/new.mjs": "" }),
+      });
+      assert.equal(out.scope, "impacted");
+      assert.deepEqual([...out.selected], all.slice().sort());
+      assert.deepEqual(out.resolutions[1], { file: "src/application/new.mjs", reason: "imported-by-changed", suites: all.slice().sort(), via: "src/a.mjs", coupled: ["test/arch/scan.test.mjs"], why: "the scan reads src/application" });
+    },
+  },
+  // 190/ADR-009 §2 — `via` names a helper; its suite dependents are the readers, read from the graph.
+  {
+    name: "190/ADR-009 · a coupling `via` a helper selects every suite that reaches the helper",
+    run: async () => {
+      const helper = "packages/app/src/viewings/test-support.ts";
+      const direct = "packages/app/src/auth/permissions.test.ts";
+      const throughHelper = ["packages/app/src/viewings/calendar.test.ts", "packages/app/src/viewings/service.test.ts"];
+      const all = [direct, ...throughHelper, "packages/app/src/other.test.ts"];
+      const couplings = [{ paths: ["packages/db/prisma/migrations/**"], suites: [direct], via: [helper], why: "the suites and the helper apply the migrations" }];
+      const graph = { [helper]: throughHelper };
+      const out = await plantedSelector(graph).selectSuites({ projectRoot: "fixture", changed: ["packages/db/prisma/migrations/0002/migration.sql"], allSuites: all, roots: ["packages"], suffixes: [".test.ts"], couplings });
+      assert.equal(out.scope, "impacted");
+      assert.deepEqual([...out.selected], [direct, ...throughHelper].sort(), "the named suite plus the helper's suite dependents");
+      // A helper the graph does not hold expands to nothing, so a `via`-only coupling places nothing.
+      const unknown = await plantedSelector({}).selectSuites({ projectRoot: "fixture", changed: ["packages/db/prisma/migrations/0002/migration.sql"], allSuites: all, roots: ["packages"], suffixes: [".test.ts"], couplings: [{ ...couplings[0], suites: [] }] });
+      assert.equal(unknown.scope, "all");
+      assert.deepEqual(unknown.widened.map((entry) => entry.reason), ["not-in-graph"]);
+    },
+  },
+  {
+    name: "190/ADR-009 · a malformed `via` is a declaration error",
+    run: async () => {
+      for (const via of [[], "packages/app/src/test-support.ts", [7]]) {
+        const launched = [];
+        const out = await runTest({ scope: "impacted", story: "190/01" }, {
+          projectRoot: process.cwd(),
+          config: { work: { test: { command: "node", args: [], selectArgs: ["{file}"], roots: ["test"], deadlineMs: 1000, couplings: [{ paths: ["wiki/*.md"], suites: [], via, why: "x" }] } } },
+          walk: async () => [], readDeclared: async () => ({ ok: true, changed: ["wiki/a.md"] }),
+          run: async (...args) => { launched.push(args); },
+        });
+        assert.equal(out.refusal?.code, "test-runner-declaration-invalid", JSON.stringify(via));
+        assert.match(out.refusal.message, /via/u);
+        assert.equal(launched.length, 0);
+      }
+    },
+  },
+  {
     name: "190/01 [outline] a malformed coupling is a declaration error, never a silent narrowing (3 rows)",
     run: async () => {
       for (const couplings of [{ paths: ["wiki/*.md"], suites: [], why: "x" }, [{ paths: "wiki/*.md", suites: [], why: "x" }], [{ paths: ["wiki/*.md"], suites: [] }]]) {

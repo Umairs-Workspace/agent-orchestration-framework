@@ -228,6 +228,23 @@ export const workToolchainDeclarationTests = [
   },
 
   {
+    name: "a suite suffix starts at a separator: `.` or `_` (Go's `_test.go`) is declarable, a bare word is refused",
+    run: async () => {
+      for (const suiteSuffixes of [[".test.mjs"], ["_test.go"], [".spec.ts", "_test.py"]]) {
+        const result = resolveTestToolchain({ work: { test: declaration({ suiteSuffixes }) } }, resolvable);
+        assert.equal(result.ok, true, `${JSON.stringify(suiteSuffixes)} compiles: ${result.message ?? ""}`);
+        assert.deepEqual([...result.toolchain.suiteSuffixes], suiteSuffixes);
+      }
+      for (const suiteSuffixes of [["test.mjs"], ["-test.go"], ["_"], ["."], []]) {
+        const result = resolveTestToolchain({ work: { test: declaration({ suiteSuffixes }) } }, resolvable);
+        assert.equal(result.ok, false, `${JSON.stringify(suiteSuffixes)} is refused`);
+        assert.equal(result.code, TEST_RUNNER_DECLARATION_INVALID);
+        assert.ok(result.message.includes("work.test.suiteSuffixes"), result.message);
+      }
+    },
+  },
+
+  {
     name: "72/00 task00: the two declarations this module compiles differ in ABSENCE and agree in FAULT",
     run: async () => {
       const { calls, launch } = launchSpy();
