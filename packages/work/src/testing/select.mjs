@@ -296,23 +296,19 @@ async function selectSuites({ projectRoot, changed = [], allSuites = [], roots =
     }
   }
 
-  // The coupling that places `file`, as `{ suites, why }`, or null. Its suites pass the same test
-  // as a graph dependent's: a suite the runner cannot run is never selected, and a coupling that
-  // named readers and has none left places nothing. A DOCUMENT takes the first coupling its path
-  // matches, and an empty one declares that nothing reads it. CODE takes only a coupling that names
-  // readers: an empty coupling never places code (190/ADR-009 §1).
+  // The couplings that place `file`, combined, as `{ suites, why }`, or null. EVERY matching
+  // coupling that names readers contributes them, so overlapping couplings combine and their order
+  // never matters (190/ADR-009, amendment). An empty coupling declares that nothing reads the file
+  // only when no matching coupling names a reader, and never for code (§1). Readers pass the same
+  // test as a graph dependent's: a suite the runner cannot run is never selected, and couplings
+  // that named readers and have none left place nothing, so the file widens.
   const couplingFor = (file) => {
-    const code = isCode(file);
-    for (const entry of couplings) {
-      if (!picomatch.isMatch(file, entry.paths, { dot: true })) continue;
-      const via = entry.via ?? [];
-      const namesReaders = entry.suites.length > 0 || via.length > 0;
-      if (code && !namesReaders) continue;
-      const suites = [...new Set([...entry.suites.filter(isSuite), ...via.flatMap((helper) => viaSuites.get(helper) ?? [])])].sort();
-      if (namesReaders && suites.length === 0) return null;
-      return { suites, why: entry.why };
-    }
-    return null;
+    const matching = couplings.filter((entry) => picomatch.isMatch(file, entry.paths, { dot: true }));
+    const naming = matching.filter((entry) => entry.suites.length > 0 || (entry.via ?? []).length > 0);
+    const reasons = (entries) => [...new Set(entries.map((entry) => entry.why))].join("; ");
+    if (naming.length === 0) return matching.length === 0 || isCode(file) ? null : { suites: [], why: reasons(matching) };
+    const suites = [...new Set(naming.flatMap((entry) => [...entry.suites.filter(isSuite), ...(entry.via ?? []).flatMap((helper) => viaSuites.get(helper) ?? [])]))].sort();
+    return suites.length === 0 ? null : { suites, why: reasons(naming) };
   };
   const placeByCoupling = (file) => {
     const coupling = couplingFor(file);

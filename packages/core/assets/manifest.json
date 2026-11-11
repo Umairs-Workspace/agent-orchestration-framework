@@ -453,7 +453,7 @@
         "id": "aof-map-tests",
         "kind": "skill"
       },
-      "hash": "sha256:921cf94e5c8c521574305f1bcd11461a8aceb4ffe002ca325888d82e8b48423f"
+      "hash": "sha256:adba9ec8ef0927371840c7b7e21d2cf613fa50441f93a878ddc9b7a11fe9f99a"
     },
     {
       "path": ".agents/skills/aof-map-tests/agents/openai.yaml",
@@ -1407,7 +1407,7 @@
         "id": "map-tests",
         "kind": "command"
       },
-      "hash": "sha256:e1420e59a1e0b705160557cd24926a716dcd44cbd8550a5146a78efb921b6e15"
+      "hash": "sha256:44cae58b84e849bc2d26c5b04f237282fc1b40270f0ac96c92a711519a3e8304"
     },
     {
       "path": ".claude/commands/aof/migrate.md",

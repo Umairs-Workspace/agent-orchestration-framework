@@ -93,6 +93,13 @@ declare first, and stop. `aof test` refuses there too.
      importers. The selector expands it to every suite that reaches it, at selection time, so the
      list cannot go stale.
 
+   Overlapping couplings combine: a file takes the readers of every coupling that matches it, and
+   an empty one counts only where no matching coupling names a reader. **Escape glob syntax in
+   folder names**: a route group such as `(crm)` beside `*` or `**` is read as a pattern group and
+   matches `crm`, never the folder. Write `\(crm\)` (`\\(crm\\)` inside the JSON string) or
+   `[(]crm[)]`, and the same for `[ ]` and `{ }`. The doctor's `test-layout-couplings-match` names
+   any glob that matches no tracked file, so read it after the write.
+
    When a suite walks a directory or reads a manifest it does not name, couple the directory to
    it, or declare nothing for those paths, so they keep widening: a coupling built on a guess
    narrows on a guess. **Write `couplings: []` when no suite reads a document**, because that is the

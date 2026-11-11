@@ -105,6 +105,26 @@ async function doctorWithGraph(options, instants) {
 
 export const testLayoutCheckTests = [
   {
+    name: "test-layout-couplings-match · a glob matching no tracked file and a via helper that is not one are named",
+    async run() {
+      const tracked = ["test/a.test.mjs", "apps/crm/src/app/(crm)/projects/a/page.tsx", "packages/app/src/test-support.ts"];
+      const couplings = [
+        { paths: ["apps/crm/src/app/(crm)/projects/**/page.tsx"], suites: ["test/a.test.mjs"], why: "unescaped route group" },
+        { paths: ["apps/crm/src/app/\\(crm\\)/projects/**/page.tsx"], suites: ["test/a.test.mjs"], why: "escaped" },
+        { paths: ["docs/**"], suites: [], via: ["packages/app/src/test-support.ts", "packages/app/src/gone.ts"], why: "x" },
+      ];
+      const report = await doctorOver({ test: declaration({ couplings }), tracked });
+      const match = check(report, "test-layout-couplings-match");
+      assert.equal(match?.severity, "warning", JSON.stringify(report.checks));
+      assert.deepEqual([...match.details], ['paths "apps/crm/src/app/(crm)/projects/**/page.tsx"', 'paths "docs/**"', 'via "packages/app/src/gone.ts"']);
+      assert.match(match.message, /\\\(crm\\\)/u, "the repair names the escape");
+      const clean = await doctorOver({ test: declaration({ couplings: [couplings[1]] }), tracked });
+      assert.equal(check(clean, "test-layout-couplings-match")?.severity, "ok");
+      const none = await doctorOver({ test: declaration({ couplings: [] }), tracked });
+      assert.equal(check(none, "test-layout-couplings-match"), undefined, "no coupling, nothing to match");
+    },
+  },
+  {
     name: "test-layout-workdir · a work dir no coupling covers is named, and a coupling answers it",
     async run() {
       const bare = await doctorOver({ test: declaration({ couplings: [] }), tracked: ["test/a.test.mjs"] });

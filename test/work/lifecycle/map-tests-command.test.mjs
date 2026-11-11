@@ -170,6 +170,10 @@ export const mapTestsCommandTests = [
         "**Never write `suites: []` for code**",
         "name it in `via` instead of listing its importers",
         "**Check the selection's fidelity too**",
+        "Overlapping couplings combine",
+        "**Escape glob syntax in folder names**",
+        "`[(]crm[)]`",
+        "`test-layout-couplings-match`",
       ]) {
         assert.ok(source.includes(clause), `source: ${clause}`);
         assert.ok(codex.includes(clause), `codex: ${clause}`);

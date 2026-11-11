@@ -448,6 +448,30 @@ path missed them: 4 of the 9 suites that apply the SQL.
 - **A sixth narrowing reason for the union.** Rejected: the placement's reason is already true, and
   `coupled` names the extra readers.
 
+### Amendment — overlapping couplings combine, and a dead glob is named (operator, 2026-11-11)
+
+Adopting §1 on the consumer project found two silent failures:
+
+- **First match won.** A code file under `features/**` (reader A) and `features/viewings/**`
+  (reader B) got one coupling's readers, by order. For a document it was a wrong narrowing: an
+  earlier `wiki/**` → `[]` dropped a wiki page that a later coupling names a reader for.
+- **Route-group folders are glob syntax.** `app/(crm)/projects/**/page.tsx` reads `(crm)` as a
+  pattern group: it matches `app/crm/projects/…` and never the real folder, so the coupling did
+  nothing. A glob with no wildcard still matches literally; parentheses beside `*` or `**` do not.
+
+Decision:
+
+1. **Every matching coupling that names readers contributes them**, `via` expanded, so order never
+   matters. An empty coupling declares "nothing reads this" only when no matching coupling names a
+   reader, and still never for code. Readers that are all unrunnable place nothing, so the file
+   widens; one coupling's stale suite does not cancel another's live readers. The resolution's
+   `why` names every coupling that contributed.
+2. **`test-layout-couplings-match`** joins ADR-008's family: it warns, naming each one, about a
+   coupling glob that matches no tracked file and a `via` helper that is not a tracked file. It
+   catches the route-group trap and every typo or moved folder like it. A coupling written ahead of
+   its files warns until they exist, and says so. `/aof:map-tests` tells the author to escape
+   `()` (and `[]`, `{}`) in folder names inside a glob: `\(crm\)` or `[(]crm[)]`.
+
 ## Fitness functions
 
 | id | invariant | enforced by (arch-test) | from |

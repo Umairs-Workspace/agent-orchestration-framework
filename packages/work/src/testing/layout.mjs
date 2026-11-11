@@ -15,7 +15,7 @@ import { isExcludedTest, isSuiteFile } from "./select.mjs";
 // The one repair every warning names.
 export const TEST_LAYOUT_REPAIR = "/aof:map-tests";
 
-export const TEST_LAYOUT_CHECK_IDS = Object.freeze(["test-layout-suites", "test-layout-couplings", "test-layout-workdir", "test-layout-resume", "test-layout-graph-fresh"]);
+export const TEST_LAYOUT_CHECK_IDS = Object.freeze(["test-layout-suites", "test-layout-couplings", "test-layout-couplings-match", "test-layout-workdir", "test-layout-resume", "test-layout-graph-fresh"]);
 
 // The one repair the graph-freshness warning names: offline, so it sends nothing to a hosted model
 // and neither fetches nor publishes a shared graph.
@@ -132,6 +132,32 @@ function couplingsCheck({ toolchain }) {
   });
 }
 
+// A COUPLING THAT MATCHES NOTHING DOES NOTHING, SILENTLY. A typo, a moved folder, or a folder name
+// that is glob syntax (a Next.js route group `(crm)` beside `**` reads as a pattern group) all leave
+// a coupling that never places a file. Every glob is asked against the tracked files, and every
+// `via` helper must be one (190/ADR-009, amendment).
+function couplingsMatchCheck({ toolchain, tracked }) {
+  const files = tracked.map(posix).filter((file) => !file.split("/").includes("node_modules"));
+  const present = new Set(files);
+  const dead = [];
+  for (const entry of toolchain.couplings) {
+    for (const glob of entry.paths) {
+      const matches = picomatch(glob, { dot: true });
+      if (!files.some((file) => matches(file))) dead.push(`paths ${JSON.stringify(glob)}`);
+    }
+    for (const helper of entry.via ?? []) if (!present.has(posix(helper))) dead.push(`via ${JSON.stringify(helper)}`);
+  }
+  if (dead.length === 0) {
+    return Object.freeze({ id: "test-layout-couplings-match", severity: "ok", message: "Every coupling glob matches a tracked file, and every via helper is one." });
+  }
+  return Object.freeze({
+    id: "test-layout-couplings-match",
+    severity: "warning",
+    message: `${dead.length} coupling entr${dead.length === 1 ? "y matches" : "ies match"} no tracked file, so ${dead.length === 1 ? "it places" : "they place"} nothing: ${dead.join(", ")}. Fix the path, or escape glob syntax in folder names (a route group \`(crm)\` beside \`*\` is a pattern group: write \`\\(crm\\)\` or \`[(]crm[)]\`). A coupling written ahead of its files warns until they exist. With ${TEST_LAYOUT_REPAIR}.`,
+    details: Object.freeze(dead),
+  });
+}
+
 // THE WORK DIR CHANGES ON EVERY BUILD. `aof:continue` edits STATE, SPEC and feature files all the
 // time, and with nothing declared each edit widens `impacted` to the whole suite. A coupling whose
 // paths cover a record under the work dir answers the question, `suites: []` included.
@@ -192,6 +218,7 @@ export function testLayoutChecks({ compiled, compiledGate, tracked = null, workD
   if (compiled?.ok !== true || compiledGate?.ok !== true) return Object.freeze([]);
   const toolchain = compiled.toolchain;
   const checks = [suitesCheck({ toolchain, tracked, workDir }), couplingsCheck({ toolchain })];
+  if (toolchain.couplings.length > 0 && tracked != null) checks.push(couplingsMatchCheck({ toolchain, tracked }));
   // Asked only once couplings are declared: until then `test-layout-couplings` already says every
   // changed document widens, the work dir's records among them.
   if (toolchain.couplingsDeclared === true && workDir != null && posix(workDir).replace(/^\.\/?/u, "") !== "") checks.push(workdirCheck({ toolchain, workDir }));

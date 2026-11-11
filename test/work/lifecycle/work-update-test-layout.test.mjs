@@ -50,10 +50,14 @@ async function withRepo(test, run) {
     if (test === undefined) delete work.test;
     else work.test = test;
     await writeFile(configPath, `${JSON.stringify({ name: "p", resources: [], ...config, work }, null, 2)}\n`);
+    // A suite and a work-stream record, so E21's work-dir coupling matches a tracked file.
     const file = "packages/work/test/a.suite.mjs";
-    await mkdir(path.join(repo, path.dirname(file)), { recursive: true });
-    await writeFile(path.join(repo, file), "// fixture\n");
-    for (const args of [["init", "-q"], ["add", "--", file]]) {
+    const record = "wiki/work/README.md";
+    for (const tracked of [file, record]) {
+      await mkdir(path.join(repo, path.dirname(tracked)), { recursive: true });
+      await writeFile(path.join(repo, tracked), "// fixture\n");
+    }
+    for (const args of [["init", "-q"], ["add", "--", file, record]]) {
       const result = spawnSync("git", args, { cwd: repo, encoding: "utf8" });
       assert.equal(result.status, 0, result.stderr);
     }

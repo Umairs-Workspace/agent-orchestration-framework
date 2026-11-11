@@ -967,6 +967,49 @@ export const workTestSelectTests = [
       assert.deepEqual(unknown.widened.map((entry) => entry.reason), ["not-in-graph"]);
     },
   },
+  // 190/ADR-009 amendment — overlapping couplings combine, whatever their order.
+  {
+    name: "190/ADR-009 · overlapping couplings on a code file combine their readers, in either order",
+    run: async () => {
+      const all = ["test/features.test.mjs", "test/viewings.test.mjs", "test/other.test.mjs"];
+      const broad = { paths: ["src/features/**"], suites: ["test/features.test.mjs"], why: "scans features" };
+      const narrow = { paths: ["src/features/viewings/**"], suites: ["test/viewings.test.mjs"], why: "reads viewings" };
+      for (const couplings of [[broad, narrow], [narrow, broad]]) {
+        const out = await plantedSelector({ "src/features/viewings/page.tsx": [] }).selectSuites({ projectRoot: "fixture", changed: ["src/features/viewings/page.tsx"], allSuites: all, roots: ["test"], couplings });
+        assert.equal(out.scope, "impacted");
+        assert.deepEqual([...out.selected], ["test/features.test.mjs", "test/viewings.test.mjs"]);
+        assert.equal(out.resolutions[0].reason, "declared-coupling");
+        assert.deepEqual(out.resolutions[0].why.split("; ").sort(), ["reads viewings", "scans features"], "every applied coupling's reason is named");
+      }
+    },
+  },
+  {
+    name: "190/ADR-009 · an empty coupling never shadows a coupling that names a document's readers",
+    run: async () => {
+      const all = ["test/a.test.mjs", "test/docs.test.mjs"];
+      const quiet = { paths: ["wiki/**"], suites: [], why: "nothing reads the wiki" };
+      const reader = { paths: ["wiki/reference/glossary.md"], suites: ["test/docs.test.mjs"], why: "the docs suite reads the glossary" };
+      for (const couplings of [[quiet, reader], [reader, quiet]]) {
+        const read = await plantedSelector({}).selectSuites({ projectRoot: "fixture", changed: ["wiki/reference/glossary.md"], allSuites: all, roots: ["test"], couplings });
+        assert.deepEqual([...read.selected], ["test/docs.test.mjs"], "the named reader is selected, not dropped by the earlier []");
+        const other = await plantedSelector({}).selectSuites({ projectRoot: "fixture", changed: ["wiki/work/STATE.md"], allSuites: all, roots: ["test"], couplings });
+        assert.equal(other.scope, "impacted");
+        assert.deepEqual(other.resolutions, [{ file: "wiki/work/STATE.md", reason: "declared-coupling", suites: [], why: "nothing reads the wiki" }]);
+      }
+    },
+  },
+  {
+    name: "190/ADR-009 · a stale reader in one coupling does not cancel another coupling's readers",
+    run: async () => {
+      const all = ["test/a.test.mjs", "test/viewings.test.mjs"];
+      const stale = { paths: ["src/features/**"], suites: ["test/removed.test.mjs"], why: "a suite since deleted" };
+      const live = { paths: ["src/features/viewings/**"], suites: ["test/viewings.test.mjs"], why: "reads viewings" };
+      const out = await plantedSelector({ "src/features/viewings/page.tsx": [] }).selectSuites({ projectRoot: "fixture", changed: ["src/features/viewings/page.tsx"], allSuites: all, roots: ["test"], couplings: [stale, live] });
+      assert.deepEqual([...out.selected], ["test/viewings.test.mjs"]);
+      const onlyStale = await plantedSelector({ "src/features/viewings/page.tsx": [] }).selectSuites({ projectRoot: "fixture", changed: ["src/features/viewings/page.tsx"], allSuites: all, roots: ["test"], couplings: [stale] });
+      assert.equal(onlyStale.scope, "all", "readers that are all gone place nothing, so the file widens");
+    },
+  },
   {
     name: "190/ADR-009 · a malformed `via` is a declaration error",
     run: async () => {
