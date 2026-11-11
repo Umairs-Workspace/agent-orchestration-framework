@@ -49,8 +49,14 @@ declare first, and stop. `aof test` refuses there too.
 </config>
 
 <process>
-1. **The before replay — first, before the layout is read.** List the last 30 non-merge commits
-   that touch a file outside the work dir:
+1. **The before replay — first, before the layout is read.** **Make the graph current first**, or
+   the replay measures a stale graph rather than the declaration: every file added since the last
+   build widens as `not-in-graph`. When HEAD's commit time (`git log -1 --format=%cI`) is later
+   than the graph's `builtAt` (any `--plan --json` answer carries it), **say the graph is stale and
+   stop**, naming `aof graph build . --offline` as the step to run first: it sends nothing to a
+   hosted model and neither fetches nor publishes a shared graph. This command does not rebuild it,
+   because its only write is the declaration. Then list the last 30 non-merge commits that touch a
+   file outside the work dir:
 
    ```
    git log --no-merges -n 30 --format=%H -- . ":(exclude)<work.dir>"
@@ -64,34 +70,56 @@ declare first, and stop. `aof test` refuses there too.
 
    `--plan` selects and stops: it launches nothing, writes no record and is answered from none, so
    the replay costs seconds. Keep each result. From the 30, count:
-   - **widened**: `scope` is `all`; keep every `widened[].reason` with its file;
+   - **widened**: `scope` is `all`; keep every `widened[].reason` with its file, and count apart
+     the widened files under `<work.dir>`;
    - **narrowed**: `scope` is `impacted`; keep `selected.length`;
    - **refused**: a `refusal` (for instance `changed-set-empty`); count it apart, never as either;
    - **the total**: `total`, the whole suite the declaration holds.
 
    The replay uses today's graph, so a file deleted since its commit widens as `not-in-graph`. That
-   is honest, and it is reported as it is.
+   is honest, and it is reported in two parts: files that no longer exist at HEAD (deleted since),
+   and files that do, which the graph never holds (a document, an asset), so only a coupling places
+   them.
 2. **Read the runner and the layout.** Read the declared `work.test.command` and `args` and the
    program they run, the gate (`work.test.gate`) and the program it runs, and the tracked test files
    (`git ls-files`). Run `aof project doctor --json` and read its `test-layout-*` checks: they name
    the test files the declaration cannot select, by directory, and the keys that are absent.
+   **Check the selection's fidelity too**: read how the program treats a selected path. A runner
+   that rewrites it (reduces it to a file name, or hands it to a filter that matches substrings)
+   runs more suites than were selected. That is a finding for the project, reported in the output;
+   this command does not fix it.
 3. **Roots and suffixes.** Author `work.test.roots` as every directory that holds the runner's
    suites (the doctor's `test-layout-suites` directories are the candidates), and
-   `work.test.suiteSuffixes` as the suffixes those suites end in, each starting with `.`. Declare a
+   `work.test.suiteSuffixes` as the suffixes those suites end in, each starting with `.` or `_` (as `.test.mjs` or Go's `_test.go`). Declare a
    directory or a suffix only when the runner actually runs those files: a test-shaped file the
    runner never runs is not a suite, and declaring it makes nothing selectable. **Exclude it
    instead**: author `work.test.exclude` as `[{ paths, why }]`, where `paths` holds globs for the
    test-shaped files the runner does not run and `why` says what runs them, if anything. An excluded
    file is never selected, and the doctor stops counting it.
-4. **Couplings, judged, each with its reason.** A coupling `{ paths, suites, why }` is how a
-   changed document (not code) selects the suites that read it. Author each one from a **search of
-   the suites for the coupled paths**: grep the suite files for each candidate document path, both
-   as a literal string and as `path.join` segments, and read the suites that a hit names. Couple a
-   path to exactly the suites shown to read it, and write the `why` from what the search found. When
-   a suite walks a directory or reads a manifest it does not name, couple the directory to it, or
-   declare nothing for those paths, so they keep widening: a coupling built on a guess narrows on a
-   guess. **Write `couplings: []` when no suite reads a document**, because that is the considered
-   answer. Leaving the key absent means nobody asked the question.
+4. **Couplings, judged, each with its reason.** A coupling `{ paths, suites, via?, why }` is how
+   a changed file that no import edge reaches selects the suites that read it (190/ADR-009). Author
+   each one from a **search of the suites for the coupled paths**: grep the suite files for each
+   candidate path, both as a literal string and as `path.join` segments, and read the suites that a
+   hit names. Couple a path to exactly the suites shown to read it, and write the `why` from what
+   the search found. The candidates are:
+   - **documents and data the suites read**: fixtures, manifests, schemas, migrations;
+   - **the work dir and the doc trees, always**: `<work.dir>`, root `*.md` and any other doc or
+     asset tree. Every `aof:continue` edits them, so when no suite reads them, couple them to
+     `suites: []`; left undeclared, each STATE or SPEC edit widens the run to the whole suite;
+   - **code a suite reads from disk instead of importing**: a fitness test that walks a source
+     tree, a guard that reads route pages, a suite that spawns a script. Couple those paths to the
+     reading suites; for code the coupling adds to what the graph selects, and places a file no
+     import reaches. **Never write `suites: []` for code**: an empty coupling never places code, so
+     it changes nothing;
+   - **a helper between the suites and the path**: when a hit is a module that is not a suite (a
+     shared test-support file the suites import), name it in `via` instead of listing its
+     importers. The selector expands it to every suite that reaches it, at selection time, so the
+     list cannot go stale.
+
+   When a suite walks a directory or reads a manifest it does not name, couple the directory to
+   it, or declare nothing for those paths, so they keep widening: a coupling built on a guess
+   narrows on a guess. **Write `couplings: []` when no suite reads a document**, because that is the
+   considered answer. Leaving the key absent means nobody asked the question.
 5. **Gate resume, only for a program that honours the resume contract.** The resume contract is:
    the gate program takes **a newline-separated file list at `{files}`** and plans only those files,
    and writes **a JSON report at `{report}`** of the shape
@@ -125,7 +153,12 @@ Report, in this order:
 - **the before and after replays**, side by side: of the 30 commits, how many widened, the
   **median and 75th-percentile selected count** among those that narrowed, and the total. Under
   `--dry-run`, the before replay only;
-- **every reason that still widens** after, each with the files that caused it;
+- **every reason that still widens** after, each with the files that caused it, with the widened
+  files under `<work.dir>` counted apart and `not-in-graph` split into deleted-since and
+  never-in-the-graph;
+- **the graph**: its `builtAt`, which step 1 found current;
+- **runner fidelity**: the finding from step 2, or that the program passes each selected path
+  through unchanged;
 - **near-total narrowing, said in one line**: when the narrowed median is within 10% of the total,
   say the narrowed runs are near-total, and name the composition root a near-total selection keeps
   reaching (the module that nearly every suite imports) when the replay shows one;

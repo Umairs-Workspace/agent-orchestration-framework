@@ -152,6 +152,33 @@ export const mapTestsCommandTests = [
     },
   },
   {
+    // 190/ADR-009 and the consumer-monorepo findings (operator, 2026-11-11): a stale graph stops the
+    // replay, the work dir and doc trees are always coupling candidates, code read from disk and a
+    // helper's suites are coupled, and a runner that rewrites a selected path is reported.
+    name: "190/ADR-009 · map-tests checks the graph, couples work dir, code reads and helpers, and reports runner fidelity",
+    async run() {
+      const source = flat(region(await read(SOURCE), "<process>", "</process>"));
+      const codex = flat(codexSection(await read("packages/core/assets/variants/codex/workflow.md"), "map-tests"));
+      const output = flat(region(await read(SOURCE), "<output>", "</output>"));
+      for (const clause of [
+        "say the graph is stale and stop",
+        "`aof graph build . --offline`",
+        "count apart the widened files under `<work.dir>`",
+        "deleted since",
+        "**the work dir and the doc trees, always**",
+        "**code a suite reads from disk instead of importing**",
+        "**Never write `suites: []` for code**",
+        "name it in `via` instead of listing its importers",
+        "**Check the selection's fidelity too**",
+      ]) {
+        assert.ok(source.includes(clause), `source: ${clause}`);
+        assert.ok(codex.includes(clause), `codex: ${clause}`);
+      }
+      assert.ok(output.includes("**runner fidelity**"), "the output reports runner fidelity");
+      assert.ok(output.includes("never-in-the-graph"), "the output splits not-in-graph");
+    },
+  },
+  {
     // 190/04 task 05 (`@bug` F-07, F-05): a mapped resume skips the lanes that finished, and a
     // test-shaped file the runner does not run is excluded with a reason, never declared a suite.
     name: "190/04-05 E3 · the skill declares noLanesArgs beside the resume templates, and excludes what the runner does not run",
