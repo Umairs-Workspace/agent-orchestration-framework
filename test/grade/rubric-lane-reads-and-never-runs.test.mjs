@@ -265,7 +265,11 @@ export const rubricLaneReadsAndNeverRunsTests = [
         const scoped = await invoke("work:doctor", { scope: "03/00" }, ctx);
         const ours = scoped.findings.filter((finding) => /unjoin|rubric-join/.test(finding.code));
         assert.ok(ours.length > 0, "guard: the lane really did report for the scoped item");
-        for (const finding of ours) {
+        // The run's unjoined cases are a stream-level fact, stated once at the work-stream root
+        // (which every scope passes); everything else the lane says belongs to the scoped item.
+        const runLevel = ours.filter((finding) => finding.path === ctx.workspace.workDir);
+        assert.deepEqual(codes(runLevel), ["case-unjoined"], "the run's unjoined case is one stream-level finding");
+        for (const finding of ours.filter((finding) => finding.path !== ctx.workspace.workDir)) {
           assert.match(finding.message, /^03\/00:/, "the traceability lane reports only that item's findings");
         }
         // AN ITEM OUTSIDE THE SCOPE CONTRIBUTES NO FINDING — the milestone 03 row is outside

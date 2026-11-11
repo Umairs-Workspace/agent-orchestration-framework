@@ -161,6 +161,19 @@ export function joinCases(scenarios, cases) {
 
 const finding = (code, path, message) => ({ code, severity: ADVISORY_SEVERITY, path, message });
 
+// HOW MANY UNJOINED CASE NAMES THE RUN-LEVEL FINDING QUOTES. A DISPLAY bound, not a join rule:
+// the join itself still has no threshold of any kind, and the finding states the whole count.
+// Without a bound one finding grows with the suite — measured on a consumer stream, 2,723
+// unjoined cases became 1.2 MB of doctor JSON, more than an agent transport carries in one frame.
+const UNJOINED_CASE_SAMPLE = 10;
+
+function unjoinedCasesMessage(unjoined, total) {
+  const names = [...new Set(unjoined.map((emitted) => emitted.name))];
+  const quoted = names.slice(0, UNJOINED_CASE_SAMPLE).map((name) => `"${name}"`).join(", ");
+  const more = names.length > UNJOINED_CASE_SAMPLE ? `, and ${names.length - UNJOINED_CASE_SAMPLE} more` : "";
+  return `${unjoined.length} of ${total} emitted case(s) name no @executable scenario of any item in the stream — nothing was guessed about which one each might have meant. Name each case after the scenario it tests: ${quoted}${more}`;
+}
+
 // The report the engine read for us, or a reason it could not be read. `null` means the key
 // is ABSENT; `{ present: false }` means declared and not on disk; `{ ok: false }` means it
 // was there and did not parse. Each is a DIFFERENT sentence, because "we never looked",
@@ -196,9 +209,9 @@ export function readReport(snapshot) {
 // rubricTraceabilityGroup(snapshot) → Finding[]
 //
 // PURE over the snapshot it is handed: no clock, no filesystem, no `path.resolve`, no
-// process state. The engine filters to scope, so this walks every item and each row's
-// findings anchor at that item — horizon-scoping is the spine's, exactly as it is for every
-// other lane.
+// process state. The engine filters to scope, so this walks every item: a scenario's
+// findings anchor at its item, and the run's unjoined cases at the work-stream root, which
+// every scope passes — horizon-scoping is the spine's, exactly as it is for every other lane.
 export function rubricTraceabilityGroup(snapshot) {
   const findings = [];
   const items = snapshot?.items ?? [];
@@ -210,8 +223,9 @@ export function rubricTraceabilityGroup(snapshot) {
   const read = readReport(snapshot);
   const reason = read.reason ?? null;
 
-  for (const item of items) {
-    const scenarios = executableScenariosOf(item);
+  const declared = items.map((item) => ({ item, scenarios: executableScenariosOf(item) }));
+
+  for (const { item, scenarios } of declared) {
     if (reason != null) {
       // An item declaring no `@executable` scenario has nothing this lane could check, so it
       // gets no no-op notice either — a notice on every item in the stream would be noise
@@ -220,8 +234,9 @@ export function rubricTraceabilityGroup(snapshot) {
       continue;
     }
 
-    const { unjoinedCases, unjoinedScenarios } = joinCases(scenarios, read.cases);
-
+    // A SCENARIO is an item's, so its miss is judged against that item's own scenarios and
+    // anchored on the file that declares it.
+    const { unjoinedScenarios } = joinCases(scenarios, read.cases);
     for (const scenario of unjoinedScenarios) {
       findings.push(finding(
         "scenario-unjoined",
@@ -229,17 +244,22 @@ export function rubricTraceabilityGroup(snapshot) {
         `${item.ref}: the @executable scenario "${scenario.name}" is named by no case the runner emitted — name a case after it, or it is a contract nothing is known to test`,
       ));
     }
-    // A case is the RUN's, not an item's, so it is reported once — against the item whose
-    // scenarios it failed to name. An item declaring no scenarios at all cannot be the one
-    // that should have named it, so the report is anchored on the items that do.
-    if (scenarios.length > 0) {
-      for (const emitted of unjoinedCases) {
-        findings.push(finding(
-          "case-unjoined",
-          item.dir,
-          `${item.ref}: the emitted case "${emitted.name}" names no @executable scenario of this item — nothing was guessed about which one it might have meant`,
-        ));
-      }
+  }
+  if (reason != null) return findings;
+
+  // A CASE is the RUN's, not an item's. The report is the whole tree's run, so a case that
+  // names some other item's scenario is joined, and reporting it against every item that is
+  // not that one would repeat every other item's tests under each of them — once per item with
+  // scenarios, and in full under any scoped run. So a case is unjoined only when it names no
+  // `@executable` scenario of ANY item, and the misses are stated ONCE for the run at the
+  // work-stream root, with their whole count: `depends-edges-unchecked`'s idiom (124/ADR-001),
+  // for the same reason. An item declaring no scenarios cannot be the one that should have
+  // named a case, and a stream where none does has nothing to join a case to, so it says nothing.
+  const everyScenario = declared.flatMap(({ scenarios }) => scenarios);
+  if (everyScenario.length > 0 && typeof snapshot?.workDir === "string") {
+    const { unjoinedCases } = joinCases(everyScenario, read.cases);
+    if (unjoinedCases.length > 0) {
+      findings.push(finding("case-unjoined", snapshot.workDir, unjoinedCasesMessage(unjoinedCases, read.cases.length)));
     }
   }
 

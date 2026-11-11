@@ -11,6 +11,28 @@ import { codexProcessEnvironment } from "./codex-process-environment.mjs";
 const named = value => typeof value === "string" && value.trim().length > 0;
 const positive = (value, fallback) => Number.isSafeInteger(value) && value > 0 ? value : fallback;
 const failure = code => Object.assign(new Error(code), { code });
+
+// The notifications this adapter reads (anything else is discarded by name in `frame`), and the
+// subset it needs IN FULL to settle a run: turn identity, completion, usage and native review.
+const CONSUMED_NOTIFICATIONS = Object.freeze(["turn/started", "turn/completed", "thread/tokenUsage/updated",
+  "item/started", "item/completed", "item/agentMessage/delta", ...CODEX_REVIEW_METHODS]);
+const NEEDED_IN_FULL = Object.freeze(["turn/started", "turn/completed", "thread/tokenUsage/updated", ...CODEX_REVIEW_METHODS]);
+
+// May a line over `frameBytes` be dropped instead of failing the run? Only when its LEADING key
+// proves it a notification this adapter never needs in full. The App Server writes a
+// notification as `{"method":…}` and a request or response with `id` first, so a line that does
+// not open with `"method"` is never dropped: a request left unanswered would stall the turn, and
+// a response left unread would time its request out. What remains droppable is item lifecycle and
+// unconsumed notifications. The case that motivated this: an `item/completed` for a command whose
+// whole output (1.3 MB of `aof work doctor --json`) the App Server sends in one line, though the
+// model itself only ever sees a truncated copy. The adapter reads such an item for a liveness
+// tick at most, and a final answer that large is already refused as `result_invalid`
+// (`resultBytes`), so nothing a run settles on is lost. Nothing of the line is retained.
+function droppableOversizedLine(head) {
+  const method = /^\s*\{\s*"method"\s*:\s*"([^"\\]{1,256})"/u.exec(head)?.[1];
+  if (!named(method)) return false;
+  return !NEEDED_IN_FULL.includes(method) && !permissionReply(method) && method !== "item/tool/requestUserInput";
+}
 export const codexServerCommand = (bin = process.platform === "win32" ? "codex.exe" : "codex") => ({ bin, args: ["app-server", "--listen", "stdio://"] });
 function probeVersion(bin, options) {
   return new Promise((resolve, reject) => {
@@ -33,7 +55,7 @@ async function terminateOwned(child) {
 export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = probeVersion, selectExecutable = selectCodexExecutable, terminate = terminateOwned, composePhaseBriefInput = null } = {}) {
   async function operate(brief, options, readOnly = false, selectedExecutable = null) {
     let child, sessionId = null, turnId = null, cliVersion = null, execution = null, terminal = null;
-    let closed = false, finishing = false, finalText = null, queued = 0, sequence = 0, partial = "";
+    let closed = false, finishing = false, finalText = null, queued = 0, sequence = 0, partial = "", discarding = false;
     let events = Promise.resolve();
     let reviews = [];
     const reviewPending = () => reviews.some(review => review.observationState === "pending");
@@ -156,8 +178,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       // Output deltas and legacy/extension notifications are not consumed here.
       // Discard them before the persistence queue: a verbose native command must
       // not crowd out phase results, usage, questions or approval refusals.
-      if (!Object.hasOwn(message, "id") && !["turn/started", "turn/completed", "thread/tokenUsage/updated",
-        "item/started", "item/completed", "item/agentMessage/delta", ...CODEX_REVIEW_METHODS].includes(message.method) && !permissionReply(message.method)) return;
+      if (!Object.hasOwn(message, "id") && !CONSUMED_NOTIFICATIONS.includes(message.method) && !permissionReply(message.method)) return;
       if (++queued > CODEX_PROFILE.queuedMessages) { fail("protocol_queue_limit"); return; }
       events = events.then(() => event(message)).catch(() => fail("persistence_failed")).finally(() => { queued--; });
     }
@@ -167,9 +188,15 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
         const text = decoder.decode(chunk, { stream: true });
         const lines = text.split("\n");
         for (let i = 0; i < lines.length; i++) {
+          const ended = i < lines.length - 1;
+          // The rest of an oversized droppable line: skipped up to its newline, never buffered.
+          if (discarding) { if (ended) discarding = false; continue; }
           partial += lines[i];
-          if (Buffer.byteLength(partial) > CODEX_PROFILE.frameBytes) { fail("protocol_frame_too_large"); return; }
-          if (i < lines.length - 1) { frame(partial); partial = ""; }
+          if (Buffer.byteLength(partial) > CODEX_PROFILE.frameBytes) {
+            if (!droppableOversizedLine(partial)) { fail("protocol_frame_too_large"); return; }
+            partial = ""; discarding = !ended; continue;
+          }
+          if (ended) { frame(partial); partial = ""; }
           if (terminal) return;
         }
       } catch { fail("protocol_invalid_json"); }

@@ -38,6 +38,8 @@ function feature(featureTags, scenarios) {
 // differently, so the fake root is itself part of the assertion.
 function snapshotOf({ ref = "03/00", features = {}, report = "", format = "tap", items } = {}) {
   return {
+    // The work-stream root the engine always supplies: the run's unjoined cases anchor here.
+    workDir: "no-such-root-ff5408",
     items: items ?? [{ ref, dir: path.join("no-such-root-ff5408", ref.replace("/", "-")), featureTexts: features }],
     rubricReport: { path: path.join("no-such-root-ff5408", "report.tap"), format, present: true, text: report },
   };
@@ -224,12 +226,47 @@ export const rubricJoinIsDeclaredTests = [
         ],
         report: "ok - unit: only mine\n",
       }));
-      // The second item's scenario is unjoined and the case is unjoined FOR THAT ITEM — the
-      // first item's scenarios were not consulted on its behalf.
-      assert.deepEqual(codes(onlyFirst), ["case-unjoined", "scenario-unjoined"], "the second item is judged against its own scenarios alone");
-      for (const finding of onlyFirst) {
-        assert.match(finding.message, /^03\/01:/, "…and both of its findings are its own");
-      }
+      // The second item's SCENARIO is unjoined — the first item's case was not credited to it.
+      // The CASE is not unjoined, though: it names the first item's scenario, and a case is the
+      // run's, not an item's. (Before 2026-11-11 it was also reported unjoined against the second
+      // item, which on a whole-tree report repeated every other item's tests under each one.)
+      assert.deepEqual(codes(onlyFirst), ["scenario-unjoined"], "the second item is judged against its own scenarios alone");
+      assert.match(onlyFirst[0].message, /^03\/01: .*"only theirs"/, "…and its scenario miss is its own");
+    },
+  },
+
+  {
+    name: "rubric/00 a case that names another item's scenario is not reported unjoined against this one",
+    run: () => {
+      // A whole-tree report: three cases, two naming scenarios of two different items, one
+      // naming nothing. Only the third is a miss, and it is stated once for the run.
+      const findings = rubricTraceabilityGroup(snapshotOf({
+        items: [
+          { ref: "14/00", dir: path.join("no-such-root-ff5408", "mine"), featureTexts: { "tasks/00.feature": feature("@executable", [{ name: "a register type is approved" }]) } },
+          { ref: "08/00", dir: path.join("no-such-root-ff5408", "older"), featureTexts: { "tasks/00.feature": feature("@executable", [{ name: "services start in pilot mode" }]) } },
+        ],
+        report: "ok - api: a register type is approved\nok - api: services start in pilot mode\nok - an orphan helper test\n",
+      }));
+      assert.deepEqual(codes(findings), ["case-unjoined"], "neither item's scenario is a miss, and one case is");
+      assert.equal(findings[0].path, "no-such-root-ff5408", "the miss is anchored at the work-stream root, once for the run");
+      assert.match(findings[0].message, /^1 of 3 emitted case\(s\)/, "…with its count and the run's denominator");
+      assert.match(findings[0].message, /"an orphan helper test"/, "…naming the case as the runner emitted it");
+      assert.ok(!/services start in pilot mode|a register type is approved/.test(findings[0].message), "no joined case is named as a miss");
+    },
+  },
+
+  {
+    name: "rubric/00 the run's unjoined cases are one finding that states the whole count",
+    run: () => {
+      const orphans = Array.from({ length: 25 }, (_, index) => `ok - orphan case ${String(index).padStart(2, "0")}\n`).join("");
+      const findings = rubricTraceabilityGroup(snapshotOf({
+        features: { "tasks/00.feature": feature("@executable", [{ name: "the joined one" }]) },
+        report: `ok - unit: the joined one\n${orphans}`,
+      }));
+      assert.deepEqual(codes(findings), ["case-unjoined"], "one finding, however many cases missed");
+      assert.match(findings[0].message, /^25 of 26 emitted case\(s\)/, "the whole count is stated");
+      assert.match(findings[0].message, /"orphan case 09", and 15 more$/, "the quoted names are bounded and the remainder is counted");
+      assert.ok(!findings[0].message.includes("orphan case 10"), "…so the finding does not grow with the suite");
     },
   },
 ];

@@ -282,6 +282,42 @@ export const codexAppServerTests = [
     const p = codexFixture({ scenario }); const result = await p.adapter.drive(p.brief, p.options);
     assert.equal(result.outcome, "failed"); assert.equal(result.failureReason, code); assert.ok(!JSON.stringify(result).includes(secret)); released(p);
   } })),
+  { name: "An oversized command completion is dropped unbuffered and the phase still settles, whole or split across chunks", async run() {
+    // 1.3 MB of `aof work doctor --json` sent as one `item/completed` killed a refine run with
+    // protocol_frame_too_large, although the model only saw a truncated copy of it.
+    const big = { method: "item/completed", params: { threadId: fixture.nativeThreadId, turnId: fixture.nativeTurnId,
+      item: { type: "commandExecution", id: "cmd-1", aggregatedOutput: "x".repeat(CODEX_PROFILE.frameBytes + 4096) + secret } } };
+    const line = JSON.stringify(big);
+    for (const cuts of [[], [600_000, CODEX_PROFILE.frameBytes + 1000]]) {
+      let probe;
+      probe = codexFixture({ onStart: ({ emit }) => {
+        let at = 0;
+        for (const cut of cuts) { probe.child.stdout.write(line.slice(at, cut)); at = cut; }
+        probe.child.stdout.write(line.slice(at) + "\n");
+        emit({ method: "thread/tokenUsage/updated", params: probe.fixture.usage }, ...finishFrames());
+      } });
+      const activity = [];
+      const result = await probe.adapter.drive(probe.brief, { ...probe.options, onActivity: event => { activity.push(event); } });
+      assert.equal(result.outcome, "done", `the run settles on its own result (${cuts.length ? "split" : "whole"})`);
+      assert.ok(!JSON.stringify([result, activity]).includes(secret), "nothing of the dropped line is retained or published");
+      released(probe);
+    }
+  } },
+  ...[["turn/completed", { threadId: fixture.nativeThreadId, turn: { id: fixture.nativeTurnId, status: "completed" } }],
+    ["thread/tokenUsage/updated", { threadId: fixture.nativeThreadId, turnId: fixture.nativeTurnId }],
+    ["item/autoApprovalReview/completed", { threadId: fixture.nativeThreadId, turnId: fixture.nativeTurnId }]].map(([method, params]) => ({
+    name: `An oversized notification the run needs in full still fails bounded: ${method}`, async run() {
+      const p = codexFixture({ onStart: ({ emit }) => { emit({ method, params: { ...params, padding: "x".repeat(CODEX_PROFILE.frameBytes) + secret } }); } });
+      const result = await p.adapter.drive(p.brief, p.options);
+      assert.equal(result.outcome, "failed"); assert.equal(result.failureReason, "protocol_frame_too_large");
+      assert.ok(!JSON.stringify(result).includes(secret)); released(p);
+    } })),
+  { name: "An oversized server request is never dropped, because an unanswered request would stall the turn", async run() {
+    const p = codexFixture({ onStart: ({ emit }) => { emit({ id: "approval-1", method: "item/completed", params: { padding: "x".repeat(CODEX_PROFILE.frameBytes) + secret } }); } });
+    const result = await p.adapter.drive(p.brief, p.options);
+    assert.equal(result.failureReason, "protocol_frame_too_large", "a line that opens with `id` is a request or response, whatever method it names");
+    assert.ok(!JSON.stringify(result).includes(secret)); released(p);
+  } },
   ...["item/commandExecution/requestApproval", "item/fileChange/requestApproval", "item/permissions/requestApproval"].map(method => ({ name: `154/02 task01 — operator permissions are declined: ${method}`, async run() {
     const p = codexFixture({ scenario: `permission:${method}` }); let questions = 0;
     const result = await p.adapter.drive(p.brief, { ...p.options, onQuestion: () => { questions++; } });
