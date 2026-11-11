@@ -345,6 +345,11 @@ const publishTests = [
       assert.equal(json.share.remote, "origin");
       assert.deepEqual(json.share.published, { outcome: "published", commit: project.head, ref: `${GRAPH_REF_PREFIX}${project.head}`, blob: graphs.get(project.head).blob, reason: null });
       assert.match(text, /Published the graph for [0-9a-f]{7} to origin/u);
+      // The build talked to the remote with no flag asked, so the render says so first (operator, 2026-11-11).
+      assert.match(text.split("\n").find((line) => line.startsWith("Graph sharing")) ?? "", /^Graph sharing is on \(memory\.graph\.share: git-refs\): this build asks origin .*Pass --offline to keep it local\.$/u);
+      const local = await build(clone, { input: { path: ".", offline: true } });
+      assert.equal(local.json.share, undefined, "--offline neither fetches nor publishes");
+      assert.doesNotMatch(local.text, /Graph sharing/u);
     },
   },
   ...[

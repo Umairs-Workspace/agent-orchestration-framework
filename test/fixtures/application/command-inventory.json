@@ -749,7 +749,7 @@
           },
           "offline": {
             "type": "boolean",
-            "description": "build without network egress"
+            "description": "build without network egress: no hosted model, and no fetch or publish of a shared graph"
           }
         }
       }
