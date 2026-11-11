@@ -62,11 +62,34 @@ test('declared bounds use the supplied configuration resolver', () => {
 
 test('seam audit uses supplied graph reads and reports unavailable evidence without building it', () => scratch(async root => {
   const calls = [];
-  const api = createAuditSeamLiveness({ TEST_ROOTS: ['spec'], graphJsonPath: value => { calls.push(value); return 'supplied.graph'; }, readGraph: file => { calls.push(file); throw Object.assign(new Error('absent'), { code: 'ENOENT' }); }, normalizeGraph: () => { throw new Error('no graph to normalize'); }, graphArtifactBuiltAt: () => { throw new Error('no artifact to inspect'); } });
+  // 179/ADR-004: the supplied graph read is the code corpus's `relations`, asked once with every candidate.
+  const api = createAuditSeamLiveness({ TEST_ROOTS: ['spec'], relations: async (paths, ctx) => { calls.push([paths, ctx.projectRoot]); return { served: true, available: false, unavailable: 'no-graph', cause: 'ENOENT', artifact: 'supplied.graph', builtAt: null, files: [] }; } });
   assert.deepEqual(calls, []);
   await mkdir(path.join(root, 'src'));
   await writeFile(path.join(root, 'src', 'seam.mjs'), 'export function seam() {}\n');
   const report = await api.runSeamLiveness({ root });
-  assert.deepEqual(calls, [root, 'supplied.graph']);
+  assert.deepEqual(calls, [[['src/seam.mjs'], root]]);
   assert.ok(report.limits.some(limit => /no code graph was available/.test(limit.consequence)));
 }));
+
+test('190/01 the suite walk skips node_modules, a workspace test root counts array suites only, and the export maps are literal', async () => {
+  const root = await mkdtemp(path.join(await realpath(os.tmpdir()), 'aof-190-01-census-'));
+  try {
+    const write = async (rel, text = 'export const tests = [];\n') => { await mkdir(path.dirname(path.join(root, rel)), { recursive: true }); await writeFile(path.join(root, rel), text); };
+    await write('package.json', JSON.stringify({ workspaces: ['packages/*'] }));
+    await write('packages/work/package.json', JSON.stringify({ name: '@aof/work', exports: { './testing/record': './src/testing/record.mjs', './conditional': { import: './src/c.mjs' } } }));
+    await write('packages/work/test/index.mjs');
+    await write('packages/work/test/domain.suite.mjs');
+    await write('packages/work/test/native.test.mjs');
+    await write('test/a.test.mjs');
+    await write('test/node_modules/dep/x.test.mjs');
+    const census = createAuditCensus({ runBounded: async () => { throw Error('no child'); }, DEFAULT_DEADLINE_MS: 1, isToolkitRoot: () => false, toolkitProgram: () => null, nodeExecutable: () => process.execPath });
+    assert.deepEqual(await census.walkSuiteFiles(root, 'test'), ['packages/work/test/domain.suite.mjs', 'test/a.test.mjs'], 'node_modules is skipped, and the workspace root reached through test counts array suites');
+    assert.deepEqual(await census.walkSuiteFiles(root, 'packages/work/test'), ['packages/work/test/domain.suite.mjs'], 'declared as a root of its own, a workspace test dir still counts array suites only');
+    const exports = await census.workspaceExportMap(root);
+    assert.equal(exports.get('@aof/work/testing/record'), 'packages/work/src/testing/record.mjs');
+    assert.equal(exports.has('@aof/work/conditional'), false, 'a conditional export target is not literal');
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

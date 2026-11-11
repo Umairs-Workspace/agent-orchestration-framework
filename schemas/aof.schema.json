@@ -76,7 +76,7 @@
     "settings": { "$ref": "#/$defs/settings" },
     "work": { "$ref": "#/$defs/work" },
     "memory": { "$ref": "#/$defs/memory" },
-    "graph": { "$ref": "#/$defs/graph" },
+    "graph": { "$ref": "#/$defs/graph", "description": "Deprecated — use `memory.graph` (180). Read for one release with a warning; `aof work update` moves it. Spelling both is refused." },
     "items": {
       "type": "array",
       "items": { "type": "string" }
@@ -781,20 +781,54 @@
     },
     "memory": {
       "type": "object",
-      "description": "Work-memory backend selection (milestone 05). OPTIONAL — an absent `memory` key is equivalent to { \"backend\": \"none\" } (the graceful no-op). `backend` is an enum of the registered backend names.",
+      "description": "Every memory setting, in one node (180). OPTIONAL — an absent `memory` key is equivalent to { \"backend\": \"none\" } (the graceful no-op). `backend` is an enum of the registered backend names; `corpora` names the corpora memory serves; `graph` is the code corpus's sharing; `backends` holds each engine's own settings. No key configures egress: aof reports it (180/ADR-005).",
       "properties": {
         "backend": {
           "enum": ["local", "none", "graphify"],
-          "description": "The memory backend that answers the `aof work memory` verbs. `local` = the cheap derived-index backend; `none` = a no-op so ACD runs unchanged when memory is absent; `graphify` = the graph-grounded backend (records from the 05 parsers, re-ranked by a work-stream graph built via invoke('graph:build'))."
+          "description": "The memory backend that answers the `aof memory` verbs. `local` = the cheap derived-index backend; `none` = a no-op so ACD runs unchanged when memory is absent; `graphify` = the graph-grounded backend (records from the 05 parsers, re-ranked by a work-stream graph built via invoke('graph:build'))."
+        },
+        "corpora": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["work", "code", "operator", "imports"] },
+          "allOf": [
+            { "contains": { "const": "work" } },
+            { "contains": { "const": "imports" } },
+            { "contains": { "const": "code" } }
+          ],
+          "description": "The corpora memory serves, from the four the knowledge-engine port knows (180/ADR-002). Absent means `work`, `imports` and `code`, which are always served; `operator` is the one optional corpus — this project's Claude auto-memory feedback and project entries as read-only operator lessons. To turn memory off, set `backend` to `none`."
+        },
+        "graph": {
+          "$ref": "#/$defs/graph",
+          "description": "The code corpus's sharing (180/ADR-003): `share` and `remote`, unchanged in meaning from the root `graph` they replace. It governs the code corpus's artifact only — the work graph and the memory index are never shared."
+        },
+        "backends": {
+          "type": "object",
+          "description": "Each engine's own settings, one block per registered backend name (180/ADR-004). A block is validated whether or not its engine is the selected `backend`.",
+          "propertyNames": { "enum": ["local", "none", "graphify"] },
+          "properties": {
+            "graphify": {
+              "type": "object",
+              "properties": {
+                "extractionBackend": {
+                  "enum": ["claude", "claude-cli", "gemini", "openai", "kimi", "deepseek", "ollama"],
+                  "description": "Existing Graphify extractor selected explicitly. Absent keeps claude-cli as the reported legacy default; the choice does not follow the primary coding assistant or silently fall back."
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
         },
         "sources": {
           "type": "array",
           "uniqueItems": true,
           "items": { "enum": ["claude-auto-memory"] },
-          "description": "Optional opt-in record sources composed onto the whole-stream memory index (159). Absent or empty keeps today's index. `claude-auto-memory` adds this project's local Claude auto-memory feedback and project entries as read-only operator lessons; it never enables a backend and applies to both `local` and `graphify`."
+          "description": "Deprecated — use `corpora` (180): `[\"claude-auto-memory\"]` is `operator` in `corpora`. Read for one release with a warning; `aof work update` moves it. Spelling both is refused. Optional opt-in record sources composed onto the whole-stream memory index (159). Absent or empty keeps today's index. `claude-auto-memory` adds this project's local Claude auto-memory feedback and project entries as read-only operator lessons; it never enables a backend and applies to both `local` and `graphify`."
         },
         "graphify": {
           "type": "object",
+          "description": "Deprecated — use `backends.graphify` (180). Read for one release with a warning; `aof work update` moves it. Spelling both is refused.",
           "properties": {
             "extractionBackend": {
               "enum": ["claude", "claude-cli", "gemini", "openai", "kimi", "deepseek", "ollama"],

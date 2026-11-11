@@ -354,7 +354,7 @@ export const memoryIndexingTests = [
         // top-level keys are exactly backend, version, generatedAt, workDir, recordCount, records.
         assert.deepEqual(
           Object.keys(index).sort(),
-          ["backend", "generatedAt", "recordCount", "records", "version", "workDir"],
+          ["backend", "generatedAt", "origin", "recordCount", "records", "version", "workDir"],
           "top-level keys are exactly the frozen set",
         );
         assert.equal(index.backend, "local");
@@ -733,7 +733,7 @@ export const memoryIndexingTests = [
         assert.deepEqual(enabled.slice(0, baseline.length), baseline, "the existing records keep their place");
         assert.deepEqual(enabled.slice(baseline.length).map((r) => [r.recordType, r.owner, r.kind, r.id]), [["lesson", "operator", "near-miss", "note.md"]]);
         assert.equal(JSON.parse(await readFile(memoryIndexPath(projectRoot), "utf8")).version, INDEX_VERSION);
-        assert.equal(INDEX_VERSION, 3, "no new index version");
+        assert.equal(INDEX_VERSION, 4, "no new index version (4 since 178/ADR-002 added origin)");
         assert.equal((await reindex("07", { workDir, projectRoot, configMemory: { backend: "local", sources: ["claude-auto-memory"] }, env })).records.length, 1, "a scoped rebuild carries no operator record");
       } finally {
         await rm(projectRoot, { recursive: true, force: true });

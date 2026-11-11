@@ -383,13 +383,27 @@ const reviewCommandTests = [
     },
   },
   {
+    // 179/00 supersedes the guide's command name in this row (179/ARCHITECTURE ADR-001 §5): the walk
+    // is unchanged, and it now starts at `/aof:manual <ref>`.
     name: "149/02 the docs name the manual walk",
     async run() {
       const docs = (await readFile(path.join(root, "docs", "acd.md"), "utf8")).replace(/\s+/gu, " ");
-      assert.match(docs, /`\/aof:continue <ref> --manual` hands the operator a guide/u);
+      assert.match(docs, /`\/aof:manual <ref>` hands the operator a guide/u);
       assert.match(docs, /`\/aof:review <ref>` reviews the operator's build before `\/aof:verify`/u);
     },
   },
+  ...[
+    ["README.md", /`\/aof:manual <ref>` hands you a guide/u],
+    ["docs/acd.md", /`\/aof:manual <ref>` hands the operator a guide/u],
+    ["packages/core/assets/commands/review.md", /usually after `aof:manual <ref>` handed them a guide/u],
+  ].map(([file, names]) => ({
+    name: `179/00 the docs and the review prompt name the manual command [${file}]`,
+    async run() {
+      const text = (await readFile(path.join(root, file), "utf8")).replace(/\s+/gu, " ");
+      assert.match(text, names, `${file} names aof:manual <ref> where it named aof:continue <ref> --manual`);
+      assert.ok(!text.includes("aof:continue <ref> --manual"), `${file} contains no aof:continue <ref> --manual`);
+    },
+  })),
 ];
 
 export const storyContextContractTests = [

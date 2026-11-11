@@ -850,6 +850,49 @@
       }
     },
     {
+      "id": "manual",
+      "kind": "command",
+      "file": "commands/manual.md",
+      "runtimes": [
+        "claude",
+        "opencode"
+      ],
+      "commandNamespace": "aof",
+      "variants": {
+        "claude": null,
+        "opencode": null,
+        "codex": {
+          "file": "variants/codex/workflow.md",
+          "section": "manual",
+          "associatedFiles": [
+            {
+              "path": "procedure.md",
+              "file": "variants/codex/workflow.md",
+              "section": "procedure-manual"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "map-tests",
+      "kind": "command",
+      "file": "commands/map-tests.md",
+      "runtimes": [
+        "claude",
+        "opencode"
+      ],
+      "commandNamespace": "aof",
+      "variants": {
+        "claude": null,
+        "opencode": null,
+        "codex": {
+          "file": "variants/codex/workflow.md",
+          "section": "map-tests"
+        }
+      }
+    },
+    {
       "id": "migrate",
       "kind": "command",
       "file": "commands/migrate.md",

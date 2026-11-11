@@ -459,7 +459,7 @@ registry.define("the ordered records equal the baseline with no auto-memory sour
 
 registry.define("the existing index version is unchanged", (context) => {
   assert.equal(context.store.version, expectedVersion);
-  assert.equal(context.store.version, 3);
+  assert.equal(context.store.version, 4); // 178/ADR-002 moved the index to 4
 });
 
 registry.define("the result includes one operator lesson from each file beside the existing work records", (context) => {

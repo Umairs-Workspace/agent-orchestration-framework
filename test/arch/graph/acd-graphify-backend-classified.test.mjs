@@ -11,7 +11,8 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //  chosen extraction backend + its honest egress label in `status` — the selection is
 //  visible, never silent."
 //
-// Pure-function test over the REAL exported classifiers in packages/core/src/commands/graph-build.mjs
+// Pure-function test over the REAL exported classifiers in packages/knowledge/src/graphify-code-backend.mjs
+// (moved there from the graph:build face by 179/ADR-002; the application surface still answers)
 // (no live binary — the classifiers are pure functions of the backend name) PLUS a
 // behavioural read of the graphify backend's `status` surface (it reaches NO binary
 // over an isolated, empty projectRoot). The live `--backend claude-cli` build itself

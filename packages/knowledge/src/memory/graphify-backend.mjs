@@ -8,16 +8,18 @@ import {
   renderRecallText,
   withTags,
   indexVersionReport,
+  originStatus,
 } from "./local-retrieval.mjs";
 import { readJson, writeText } from "@aof/foundation/fs";
 import { graphJsonPath, readGraph, normalizeGraph } from "../graph-normalize.mjs";
 import { LEGACY_GRAPHIFY_BACKEND, resolveGraphifyExtraction } from "../graphify-backends.mjs";
+import { RECORD_CORPORA } from "../engine.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
 export function createGraphifyBackend({ coreInvoke, loadWorkspace, buildRecords, ensureAofGitignore, ensureGraphifyOutGitignore }) {
 // The `graphify` memory backend (milestone 10, story 00 — the SPINE).
 //
 // It satisfies the FROZEN 05 backend interface (05/ADR-003): the default export is
-// EXACTLY { name, recall, reindex, status } with name === "graphify". It is a thin
+// EXACTLY { name, corpora, recall, reindex, status } (179/ADR-003) with name === "graphify". It is a thin
 // composition of two independently-frozen halves (ADR-001):
 //   - RECORDS come from milestone-05's markdown parsers, REUSED untouched: the pure
 //     `buildRecords` (05 indexing) + `rankRecords`/`applyScope`/`normalizeScope`/
@@ -59,7 +61,8 @@ const INDEX_REL = path.join(".aof", "aof.memory.graphify.index.json");
 // The index-format version (mirrors 05/INDEX_VERSION; bump on a record-shape change).
 // 148/ADR-003 — 2: every record gained `tags`, exactly as the local index did.
 // 157/ADR-002 — 3: a source may be a JSON locator, in lockstep with the local index.
-const GRAPHIFY_INDEX_VERSION = 3;
+// 178/ADR-002 — 4: every record gained `origin`, in lockstep with the local index.
+const GRAPHIFY_INDEX_VERSION = 4;
 
 // The WORK-STREAM graph's own artifact root — beside this backend's own record store
 // under `.aof/` (git-ignored, and never on the mesh: acd-memory-index-never-on-mesh),
@@ -116,13 +119,16 @@ async function loadStore(projectRoot) {
 // Build the frozen store DOCUMENT over the live stream by REUSING the 05 parser
 // (`buildRecords`), labelled `backend:"graphify"`. Pure of disk side-effects.
 async function buildStore(only, ctx) {
-  const records = await buildRecords(only, ctx);
+  // 178/ADR-002 — the walk reports the origin values it dropped through this out-parameter.
+  const originReport = { unresolved: 0 };
+  const records = await buildRecords(only, { ...ctx, originReport });
   return {
     backend: "graphify",
     version: GRAPHIFY_INDEX_VERSION,
     generatedAt: new Date().toISOString(),
     workDir: path.resolve(ctx.workDir),
     recordCount: records.length,
+    origin: { unresolved: originReport.unresolved },
     records,
   };
 }
@@ -443,6 +449,8 @@ async function status(ctx = {}) {
     // story-03 acd-graphify-backend-classified arch-test over graph-build.mjs.
     extractionBackend: extraction.backend,
     extractionSource: extraction.source,
+    // 180/ADR-004 — the key the setting was read from, as the author spelled it.
+    extractionPath: extraction.path,
     extractionDependencies: extraction.dependencies,
     memoryAlternative: extraction.alternative,
     extractionEgress: GRAPHIFY_EXTRACTION_EGRESS,
@@ -452,6 +460,8 @@ async function status(ctx = {}) {
     ...(graphHint != null ? { graphHint } : {}),
     // 148/ADR-003 — a store built before GRAPHIFY_INDEX_VERSION is stale until an ingest rebuilds it.
     index: indexVersionReport(store?.version, GRAPHIFY_INDEX_VERSION, existsSync(graphifyIndexPath(projectRoot))),
+    // 178/ADR-002 — the declared origin values the last ingest dropped.
+    origin: originStatus(store),
   };
 }
 
@@ -634,8 +644,11 @@ function rerank(records, normalizedGraph, query, scope = {}, opts = {}) {
 // Apply the 05 scope pre-filter (re-exported so callers / fitness tests can assert the
 // pre-filter-before-rank ordering without reaching into local-retrieval).
 
+// 179/ADR-003: the port sees a record backend. The work-stream graph is a private ranking signal
+// (10/ADR-001), not a corpus, so the declaration is the shared record one and nothing else.
 const defaultBackend = {
   name: "graphify",
+  corpora: RECORD_CORPORA,
   recall,
   reindex,
   status,

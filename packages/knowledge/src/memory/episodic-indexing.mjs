@@ -238,6 +238,7 @@ async function findingRecords(item, meta, workDir) {
       owner: first("owner"),
       status,
       tags: [],
+      origin: [], // 178/ADR-002: the item's, stamped by the walk in `buildRecords`
       summary: clip(qualifier ? `${qualifier} — ${title}` : title, SUMMARY_MAX),
       text: [id, ...texts, ...also.map((location) => `also declared at ${location}`)].join(" \n "),
       source: at,
@@ -283,6 +284,7 @@ export function createEpisodicIndexing({ readRuns, runRecordPath, runNodeRecordP
         owner: row.actor,
         status: "", // nor an outcome
         tags: [],
+        origin: [], // 178/ADR-002: the item's, stamped by the walk in `buildRecords`
         summary: clip(gist, SUMMARY_MAX),
         text: [row.text, row.refs ? `refs: ${row.refs}` : ""].filter(Boolean).join(" \n "),
         source: `${rel}:${physical[index]}#`,
@@ -364,6 +366,7 @@ export function createEpisodicIndexing({ readRuns, runRecordPath, runNodeRecordP
         owner: "",
         status: run.outcome ?? "",
         tags: [],
+        origin: [], // 178/ADR-002: the item's, stamped by the walk in `buildRecords`
         summary,
         text: [
           `run ${run.runId} on ${run.itemRef ?? item.ref}`,

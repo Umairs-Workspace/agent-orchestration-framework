@@ -18,6 +18,7 @@ import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { workspaceDirectory } from './workspace-paths.mjs';
 import { INTEGRATIONS } from 'aof/integrations';
+import { PRACTICES } from 'aof/practices';
 
 // Recursively list every FILE under `dir`, returned as POSIX-style paths
 // relative to `dir`, sorted. Symlinks are treated as regular files/dirs via
@@ -54,12 +55,13 @@ export function generateAssetManifest(repoRoot) {
   };
 }
 
-// generatePackageAssetManifest(repoRoot, integrations?) -> [{ name, sidecar, from, files }]
-//   one entry per registered integration that contributes bundle assets (169/ADR-004): `from` is
+// generatePackageAssetManifest(repoRoot, contributors?) -> [{ name, sidecar, from, files }]
+//   one entry per registered integration, then per registered practice (179/ADR-004 §4), that
+//   contributes bundle assets (169/ADR-004): `from` is
 //   the package's own assets/ directory, `files` every file under it, and `sidecar` the directory
 //   under the packaged `bundle/` sidecar the asset-base seam reads it from
 //   (`packages/<package basename>`).
-export function generatePackageAssetManifest(repoRoot, integrations = INTEGRATIONS) {
+export function generatePackageAssetManifest(repoRoot, integrations = [...INTEGRATIONS, ...PRACTICES]) {
   return integrations.filter((integration) => integration.assets?.package).map((integration) => {
     const name = integration.assets.package;
     const from = path.join(workspaceDirectory(repoRoot, name), 'assets');

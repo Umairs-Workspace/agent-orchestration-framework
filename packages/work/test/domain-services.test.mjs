@@ -36,17 +36,18 @@ test('brief reads use supplied item paths and the compiler remains bounded', asy
   assert.ok(bounded.text.length <= PHASE_BRIEF_MAX_CHARS);
 });
 
-test('contract proposals use the supplied knowledge services without guessing unknown coupling', () => {
+test('contract proposals use the supplied knowledge services without guessing unknown coupling', async () => {
+  // 179/ADR-004: the supplied knowledge service is the code corpus's `relations`.
   let impacts = 0;
   const services = {
-    graphJsonPath: root => path.join(root, 'graph.json'),
-    graphArtifactBuiltAt: () => '2026-09-29',
-    readGraph: () => ({ fixture: true }), normalizeGraph: value => value,
-    computeImpact: () => { impacts++; return [{ file: 'src/a.mjs', present: false }]; },
+    relations: async (paths, { projectRoot }) => {
+      impacts++;
+      return { served: true, available: true, unavailable: null, artifact: path.join(projectRoot, 'graph.json'), builtAt: '2026-09-29', files: [{ file: 'src/a.mjs', present: false, dependencies: [], dependents: [] }] };
+    },
   };
   const { deriveStoryContract } = createStoryContractDeriver(services);
   assert.equal(impacts, 0);
-  const proposal = deriveStoryContract({ subjects: ['src/a.mjs'], allSuites: ['test/a.test.mjs'] });
+  const proposal = await deriveStoryContract({ subjects: ['src/a.mjs'], allSuites: ['test/a.test.mjs'] });
   assert.equal(impacts, 1);
   assert.equal(proposal.complete, false);
   assert.deepEqual(proposal.unknownCoupling, ['src/a.mjs']);

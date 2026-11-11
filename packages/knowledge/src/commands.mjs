@@ -1,5 +1,5 @@
 export const KNOWLEDGE_COMMAND_IDS = Object.freeze([
-  'graph:build', 'graph:query', 'graph:triage', 'graph:impact', 'graph:export', 'graph:import', 'graph:fetch', 'graph:publish', 'graph:prune', 'graph:serve', 'work:memory', 'import:milestone',
+  'graph:build', 'graph:query', 'graph:triage', 'graph:impact', 'graph:export', 'graph:import', 'graph:fetch', 'graph:publish', 'graph:prune', 'graph:serve', 'work:memory', 'memory', 'import:milestone',
 ]);
 
 // Ordered groups allow the shared work namespace and preserve the existing command enumeration.

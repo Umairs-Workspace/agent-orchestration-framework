@@ -38,7 +38,7 @@ export const yarnInstallationTests = [
     assert.deepEqual(importSpecifiers(dependencyRules).map(entry => entry.specifier), ['./identity.mjs'],
       'dependency rules use only the zero-import identity grammar');
     assert.deepEqual(computedDynamicImports(dependencyRules), [], 'dependency rules cannot hide an impure import');
-    for (const name of ['contracts', 'effects', 'foundation', 'work', 'work-graph', 'work-loop', 'execution', 'mesh', 'integration-notion', 'messaging', 'knowledge', 'server', 'specification-by-example', 'diagrams']) {
+    for (const name of ['contracts', 'effects', 'foundation', 'work', 'work-graph', 'work-loop', 'execution', 'mesh', 'integration-notion', 'messaging', 'knowledge', 'server', 'specification-by-example', 'learning', 'diagrams']) {
       const report = await familyPurity(root, `packages/${name}/src`);
       assert.ok(report.scanned > 0 && report.bytesRead > 0, `${name}: runtime source was scanned`);
       // Plan 01 keeps domain I/O in its owner; these are exact file-level ports, never package-wide permissions.
@@ -63,6 +63,9 @@ export const yarnInstallationTests = [
         'commands/scene.mjs': ['node:fs/promises', 'node:fs', 'node:crypto', 'node:path', '@aof/contracts/error'],
         // the opt-out seam's read: pure over the injected one reader of work.diagrams.
         'commands/capability.mjs': [],
+      } : name === 'learning' ? {
+        // 179/ADR-004: the practice's mode descriptor is import-free; @aof/work imports nothing back (FF-17902).
+        'mode.mjs': [],
       } : name === 'specification-by-example' ? {
         // 135/ADR-001: the practice imports @aof/work's lifecycle and @aof/contracts' error, and reads only the story's own map;
         // 135/04 (ADR-004): the lane parses task features through @aof/work's one feature parser, and the door reads the story's own tasks/.
@@ -88,21 +91,34 @@ export const yarnInstallationTests = [
         'graphify.mjs': ['node:child_process', 'node:fs', 'node:path'],
         // 153/02-03: recurrence reads the canonical Recurs form and status reads the shared accounting.
         'memory.mjs': ['@aof/contracts/error', '@aof/work/memory-vocabulary', '@aof/work/memory-accounting'],
-        // 154/09: the pure extractor catalog raises the shared coded error; no I/O/provider port.
-        'graphify-backends.mjs': ['@aof/contracts/error'],
+        // 154/09: the pure extractor catalog; 180/ADR-004: its setting is read, and refused, by the memory node.
+        'graphify-backends.mjs': [],
+        // 180/ADR-001: the memory node's one reader is pure configuration — the coded error and the
+        // port's corpus vocabulary (relative), and no index, backend or transport (FF-18001).
+        'memory-config.mjs': ['@aof/contracts/error'],
+        // 179/ADR-001: the knowledge-engine port is a pure router; it imports no backend, config or fs.
+        'engine.mjs': [],
+        // 179/ADR-002: the graphify code backend checks the artifact and raises the build's coded errors.
+        'graphify-code-backend.mjs': ['node:path', '@aof/contracts/error'],
+        'graphify-code-relations.mjs': ['node:fs'],
         'memory/local-retrieval.mjs': ['@aof/work/ref-scope', '@aof/work/memory-vocabulary'],
         // 148/ADR-001: the lesson grammar and its vocabulary have one home, in @aof/work.
-        'memory/local-indexing.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/work/declared-id', '@aof/work/memory-vocabulary', '@aof/work/ref-scope', '@aof/foundation/fs', '@aof/foundation/markdown', '@aof/foundation/text'],
+        // 178/ADR-002 (178/F-01): `origin:` is read from the item's record doc through work's one frontmatter
+        // parser, and the record doc and the archive root are named by work's identity home.
+        'memory/local-indexing.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/work/declared-id', '@aof/work/memory-vocabulary', '@aof/work/ref-scope', '@aof/work/records', '@aof/work/identity', '@aof/foundation/fs', '@aof/foundation/markdown', '@aof/foundation/text'],
         // 157/ADR-001: the episodic leaf reads its register through the declared-id home; its
         // run, snapshot and feedback readers are injected, never imported.
         'memory/episodic-indexing.mjs': ['node:path', 'node:fs/promises', '@aof/work/declared-id'],
         // 159/ADR-001: the auto-memory leaf reads the selected project's memory folder; its resolver and reporter are injected.
-        'memory/claude-auto-memory.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
+        // 180/ADR-002: its source list is the `operator` corpus, read and refused by the memory node.
+        'memory/claude-auto-memory.mjs': ['node:path', 'node:fs/promises'],
         'memory/local-backend.mjs': ['node:fs/promises', 'node:fs'],
         'memory/graphify-backend.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs'],
         'commands/shared.mjs': ['node:path'],
-        'commands/graph-impact.mjs': ['node:fs', '@aof/contracts/error'],
-        'commands/graph-build.mjs': ['node:path', '@aof/contracts/error'],
+        // 179/ADR-002: graph:impact asks the port's `relations`; it reads no artifact.
+        'commands/graph-impact.mjs': ['@aof/contracts/error'],
+        // 179/ADR-002: graph:build is a face over the port's `ingest("code")`; the build body moved out.
+        'commands/graph-build.mjs': ['node:path'],
         'commands/graph-query.mjs': ['node:fs', '@aof/contracts/error'],
         'commands/graph-triage.mjs': ['node:fs', '@aof/contracts/error'],
         'commands/graph-serve.mjs': ['@aof/contracts/error'],
@@ -140,7 +156,8 @@ export const yarnInstallationTests = [
         'heartbeats.mjs': ['node:fs/promises', 'node:path'],
         'providers.mjs': ['node:path', 'node:fs'],
         'terminal-sessions.mjs': ['node:fs/promises', 'node:path'],
-        'pty.mjs': ['node:module', 'node-pty'],
+        // node:fs + node:path restore spawn-helper's execute bit, which Yarn's cache strips (2026-11-10).
+        'pty.mjs': ['node:fs', 'node:module', 'node:path', 'node-pty'],
         'session-driver.mjs': ['node:path', 'node:child_process', 'node:fs/promises', 'node:crypto', '@aof/contracts/loop-bounds', '@aof/contracts/tui-ready'],
         'codex-app-server.mjs': ['node:child_process', 'node:path', '@aof/contracts/loop-bounds'],
         // 172/ADR-001: the architect's headless conversation spawns one stream-json claude per diagram and ends its tree.
@@ -160,7 +177,7 @@ export const yarnInstallationTests = [
       } : name === 'mesh' ? {
         "artifact-sync.mjs": ["node:fs/promises","node:path","@aof/work/artifacts"],
         "node-identity.mjs": ["node:path","node:crypto","@aof/foundation/fs","@aof/foundation/text","node:fs/promises"],
-        "workspace-identity.mjs": ["node:crypto","node:path"],
+        "workspace-identity.mjs": ["node:crypto","node:fs","node:path"],
         "cache-read.mjs": ["@aof/contracts/cache-provenance","@aof/work/artifacts"],
         "commands/resync.mjs": ["@aof/contracts/error"],
         'assignment-transitions.mjs': [],
@@ -176,8 +193,10 @@ export const yarnInstallationTests = [
         'ui-serve.mjs': ["node:http","node:fs","node:fs/promises","node:path","@aof/server/static-serve","ws","node:crypto","@aof/foundation/cost-meter"],
         'commands/assign.mjs': ["@aof/contracts/error"],
         'commands/contribution.mjs': [],
-        'commands/desktop-preflight.mjs': ["node:fs/promises","node:child_process","node:path"],
+        'commands/desktop-preflight.mjs': ["node:fs/promises","node:child_process","node:os","node:path"],
         'commands/desktop.mjs': ["node:fs/promises","node:child_process","node:os","node:path"],
+        'commands/desktop-launch-agent.mjs': [],
+        'commands/desktop-layout.mjs': ["node:os","node:path"],
         'commands/face-shared.mjs': ["@aof/contracts/error"],
         'commands/gate.mjs': [],
         'commands/heartbeat.mjs': ["node:os"],
@@ -312,7 +331,12 @@ export const yarnInstallationTests = [
         'commands/doctor.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs', '@aof/contracts/error'],
         'commands/validate.mjs': ['node:path', 'node:fs/promises'],
         'declared.mjs': ['node:path', 'node:fs/promises'],
-        'select.mjs': ['node:fs'],
+        // 190/01: the selector resolves a changed file's literal specifiers by path and matches declared couplings; it reads no file itself.
+        'select.mjs': ['node:path', 'picomatch'],
+        // 190/04: the test-layout check matches a coupling's paths the way the selector does; it reads no file itself.
+        'layout.mjs': ['picomatch'],
+        // 190/00: the test record keys the working tree in a throwaway index under the temp dir, names its lock by a digest, and writes its store.
+        'record.mjs': ['node:crypto', 'node:fs/promises', 'node:os', 'node:path'],
         'observe.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error'],
         'debt.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
         'artifacts.mjs': ['node:crypto'],
@@ -356,6 +380,9 @@ export const yarnInstallationTests = [
         'store.mjs': ['node:path', 'node:fs/promises'],
         'observations.mjs': ['node:os', 'node:path'],
         'records.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs'],
+        // 182: `aof work renumber` moves one item and rewrites its references, recall ledgers included,
+        // so a renumbered item's recall resolves with no side map.
+        'renumber.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
         // 167/01: the one stat digest of a work tree hashes (path, size, mtime) for the stream memo and the sync gate.
         // 167/07 (ADR-009): the one work-tree watch lives beside the one walk.
         'discovery.mjs': ['node:path', 'node:fs', 'node:fs/promises', 'node:crypto'],
@@ -385,7 +412,7 @@ export const yarnInstallationTests = [
       }
       assert.ok(computedDynamicImports('await import(variableName)').length > 0);
       const manifest = JSON.parse(readFileSync(path.join(root, 'packages', name, 'package.json'), 'utf8'));
-      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'server' ? ['@aof/execution', 'ws'] : name === 'knowledge' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'messaging' ? ['@aof/contracts', '@aof/foundation', '@inquirer/prompts', 'ws'] : name === 'execution' ? ['@aof/contracts', '@aof/foundation', '@xterm/headless', 'node-pty'] : name === 'mesh' ? ['@aof/contracts', '@aof/execution', '@aof/foundation', '@aof/server', '@aof/work', '@aof/work-loop', 'ws'] : name === 'work' ? ['@aof/contracts', '@aof/foundation', 'picomatch'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'specification-by-example' ? ['@aof/contracts', '@aof/work'] : name === 'diagrams' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
+      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'server' ? ['@aof/execution', 'ws'] : name === 'knowledge' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'messaging' ? ['@aof/contracts', '@aof/foundation', '@inquirer/prompts', 'ws'] : name === 'execution' ? ['@aof/contracts', '@aof/foundation', '@xterm/headless', 'node-pty'] : name === 'mesh' ? ['@aof/contracts', '@aof/execution', '@aof/foundation', '@aof/server', '@aof/work', '@aof/work-loop', 'ws'] : name === 'work' ? ['@aof/contracts', '@aof/foundation', 'picomatch'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'specification-by-example' ? ['@aof/contracts', '@aof/work'] : name === 'learning' ? ['@aof/contracts'] : name === 'diagrams' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
       for (const target of Object.values(manifest.exports)) {
         assert.ok(target.startsWith('./src/') && !target.includes('..', 2));
         assert.ok(report.family.files.includes(`packages/${name}/${target.slice(2)}`), 'export points to scanned runtime source');
@@ -499,5 +526,25 @@ export const yarnInstallationTests = [
     const { existsSync } = await import('node:fs');
     assert.equal(existsSync(path.join(root, 'package-lock.json')), false);
     assert.equal(existsSync(path.join(root, 'apps/ui/package-lock.json')), false);
+  } },
+  // 179/01 task 01 — `@aof/learning` is a workspace member with only lower-level dependencies, and the
+  // repository runner owns its suites (179/ARCHITECTURE ADR-004).
+  { name: '179/01 the learning package is a workspace member with only lower-level dependencies', run: async () => {
+    const manifest = JSON.parse(readFileSync(path.join(root, 'packages/learning/package.json'), 'utf8'));
+    assert.equal(manifest.name, '@aof/learning');
+    assert.equal(manifest.private, true);
+    assert.equal(manifest.type, 'module');
+    assert.ok(Object.keys(manifest.exports).includes('./mode'), 'it exports ./mode'); // 179/02 adds ./contribution
+    assert.deepEqual(Object.keys(manifest.dependencies), ['@aof/contracts']);
+    const lock = readFileSync(path.join(root, 'yarn.lock'), 'utf8');
+    assert.match(lock, /^"@aof\/learning@workspace:\*, @aof\/learning@workspace:packages\/learning":$/mu, 'the root yarn.lock resolves the workspace');
+    assert.deepEqual(await auditSupplyChain(root), [], 'the supply-chain audit passes');
+  } },
+  { name: '179/01 the learning package\'s own suites run under the repository runner', run: async () => {
+    const runner = readFileSync(path.join(root, 'scripts/test.mjs'), 'utf8');
+    assert.match(runner, /import \{ tests as \w+ \} from "\.\.\/packages\/learning\/test\/index\.mjs";/u, 'scripts/test.mjs imports the package index');
+    const { tests } = await import('../../packages/learning/test/index.mjs');
+    const { modeTests } = await import('../../packages/learning/test/mode.suite.mjs');
+    assert.ok(modeTests.length > 0 && modeTests.every((test) => tests.includes(test)), 'the index runs mode.suite.mjs');
   } },
 ];

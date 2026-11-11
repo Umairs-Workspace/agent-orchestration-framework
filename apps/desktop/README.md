@@ -14,6 +14,9 @@ native GUI toolchain.
 
 - Rust stable (`cargo`) for everything here.
 - Windows native build of `crates/app`: MSVC build tools and the WebView2 runtime.
+- macOS native build of `crates/app`: the Xcode command-line tools (`xcode-select --install`)
+  and Rust through `rustup`. Both are needed only to build the app; running it needs neither.
+  Each Mac builds for its own architecture (x86_64 is the verified one).
 
 ## Scripts (run from the repository root)
 
@@ -22,6 +25,8 @@ native GUI toolchain.
 | `yarn workspace @aof/desktop test` | `cargo test --locked` over the pure core workspace (no GUI toolchain). |
 | `yarn workspace @aof/desktop check` | `cargo check --locked` of the Tauri shell (needs the native toolchain). |
 | `yarn workspace @aof/desktop build` | Release build of the shell. |
-| `node scripts/install-local.mjs --desktop` | Release build **and** place `aof-mesh-desktop.exe` in the install dir. |
+| `node scripts/install-local.mjs --desktop` | Release build **and** place it in the install dir: `aof-mesh-desktop.exe` on Windows, an ad-hoc-signed `aof-mesh-desktop.app` (menu bar only, from the committed `crates/app/Info.plist`) on macOS. |
 
 Start or restart it through the CLI (`aof mesh desktop run`), never by launching daemons by hand.
+The per-node setup, deploy, restart and verification steps, including the macOS single-node
+setup, live in `.claude/rules/build-deploy-restart.md`.

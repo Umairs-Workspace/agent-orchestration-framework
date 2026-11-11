@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { recall as retrievalRecall } from "./local-retrieval.mjs";
+import { RECORD_CORPORA } from "../engine.mjs";
 
 // Configured application services are supplied by core; construction performs no I/O.
 export function createLocalBackend({ reindex, status, memoryIndexPath }) {
@@ -9,8 +10,9 @@ export function createLocalBackend({ reindex, status, memoryIndexPath }) {
 //   - story 01 (`local-indexing.mjs`) owns reindex/status + the derived index.
 //   - story 02 (`local-retrieval.mjs`) owns recall/ranking over that index.
 //
-// The default export is EXACTLY { name, recall, reindex, status } (ADR-003,
-// enforced by acd-memory-backend-interface). `recall` injects the on-disk index
+// The default export is EXACTLY { name, corpora, recall, reindex, status } (ADR-003 as amended
+// by 179/ADR-003, enforced by acd-memory-backend-interface). `corpora` is the shared record
+// declaration the knowledge-engine port routes by. `recall` injects the on-disk index
 // loader as `ctx.loadIndex` so the retrieval half — a pure function of records —
 // reads the frozen index document (ADR-005) the indexing half wrote. The seam
 // (story 00) reaches this module only through the four interface methods and
@@ -42,6 +44,7 @@ async function recall(query, scope, opts, ctx = {}) {
 
 const defaultBackend = {
   name: "local",
+  corpora: RECORD_CORPORA,
   recall,
   reindex,
   status

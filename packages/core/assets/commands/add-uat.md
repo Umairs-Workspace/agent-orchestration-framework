@@ -39,7 +39,8 @@ For: "$ARGUMENTS"
      `status: not-started`, `owner: qa`, `depends: [<the accepted milestones>]`, `created`/`updated`:
      today); the heading is `# <Title>` with no number prefix; `## Scope`
      (the accepted milestones — referenced, never restated; entry/exit criteria); `## Plan` (the
-     automated regression sweep + agent-runnable `@manual` vs the human `@uat` lane); `## Live /
+     automated regression sweep — one `aof test --scope all` for the session — + agent-runnable
+     `@manual` vs the human `@uat` lane); `## Live /
      environmental checks`; `## Acceptance judgment`; `## Findings`; `## Sign-off / verdict`.
    - `STATE.md` — frontmatter `doc: state`; `## Progress`; `## Notes & decisions in flight`;
      `## Feedback (for retro)`.

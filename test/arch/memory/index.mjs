@@ -46,7 +46,15 @@ import { archTests as acdMemoryIndexNeverOnMeshTests } from "./acd-memory-index-
 // a third cutter cannot arrive without one; and all three tracked renders of the edited member
 // match a fresh re-render.
 import { archTests as acdLearningEdgeReachesEveryCutTests } from "./acd-learning-edge-reaches-every-cut.test.mjs";
-// milestone 148 / story 01 — FF-14801: the base ranking keeps every cited eval pair within the
+// milestone 178 / story 02 — FF-17802: no shipped asset spells the alias `aof work memory`.
+import { archTests as acdAssetsSpellAofMemoryTests } from "./acd-assets-spell-aof-memory.test.mjs";
+// milestone 178 / story 03 — FF-17803: every origin path in the live index names an existing file.
+import { archTests as acdRecordOriginResolvesTests } from "./acd-record-origin-resolves.test.mjs";
+// milestone 179 / story 01 — FF-17901: the knowledge-engine port answers exactly four verbs, and a
+// misdeclared backend is refused at construction (ADR-001).
+import { archTests as acdKnowledgeEnginePortTests } from "./acd-knowledge-engine-port.test.mjs";
+
+// milestone 148 / story 01 — FF-14801: the base ranking keeps every cited eval pair within the
 // first five over the live corpus, and a pair whose record is gone reds as gone (ADR-005).
 import { archTests as acdMemoryRetrievalEvalTests } from "./acd-memory-retrieval-eval.test.mjs";
 // milestone 148 / story 05 — FF-14803: every emitted record type has a layer, and the composed
@@ -65,6 +73,12 @@ import { archTests as acdEpisodicSourceProvenanceTests } from "./acd-episodic-so
 // disabled, resolves only inside its selected root and never reaches extraction or the mesh; each
 // control runs its required red probe (ADR-001, ADR-003).
 import { archTests as acdAutoMemorySourceTests } from "./acd-auto-memory-source.test.mjs";
+// milestone 180 / story 01 — FF-18001: only memory-config.mjs reads the memory node's keys, and it
+// imports no index, backend or transport; the selection keeps its single read (ADR-001).
+import { archTests as acdMemoryConfigOneReaderTests } from "./acd-memory-config-one-reader.test.mjs";
+// milestone 180 / story 01 — FF-18002: the schema's memory vocabularies are the code's, the
+// never-shared rule is stated, and no key configures egress (ADR-002..005).
+import { archTests as acdMemoryNodeSchemaTests } from "./acd-memory-node-schema.test.mjs";
 
 export const tests = [
   ...acdAnchorTaxonomyAdditiveTests,
@@ -99,4 +113,13 @@ export const tests = [
   ...acdEpisodicSourceProvenanceTests,
   // milestone 159 / story 01 — FF-15901..FF-15903 (see the import note).
   ...acdAutoMemorySourceTests,
+  // milestone 178 / story 02 — FF-17802 (see the import note).
+  ...acdAssetsSpellAofMemoryTests,
+  // milestone 178 / story 03 — FF-17803 (see the import note).
+  ...acdRecordOriginResolvesTests,
+  // milestone 179 / story 01 — FF-17901 (see the import note).
+  ...acdKnowledgeEnginePortTests,
+  // milestone 180 / story 01 — FF-18001 and FF-18002 (see the import notes).
+  ...acdMemoryConfigOneReaderTests,
+  ...acdMemoryNodeSchemaTests,
 ];

@@ -205,12 +205,12 @@ export function controlStreamServerServices() {
 // The fleet UI server over the mesh's own status query and terminal mirror, with the fixture workspace loader.
 // The board, assignment, loop-stop and provider routes are never reached; the dist is always the suite's own.
 export function meshUiServeServices() {
-  const { queryGlobalMeshStatus, workspaceIdForProjectRoot } = globalMeshQueryServices();
+  const { queryGlobalMeshStatus } = globalMeshQueryServices();
   const { createTerminalMirror } = meshTerminalMirrorServices();
   const { buildTerminalInputEnvelope } = meshTerminalRelayBridgeServices();
   const owner = "the fleet UI server";
   return createMeshUiServer({
-    assetPath: unreached(owner, "assetPath"), serveBoard: unreached(owner, "serveBoard"), queryGlobalMeshStatus, workspaceIdForProjectRoot, resolveCacheStalenessSeconds,
+    assetPath: unreached(owner, "assetPath"), serveBoard: unreached(owner, "serveBoard"), queryGlobalMeshStatus, resolveCacheStalenessSeconds,
     loadWorkspace: loadFixtureWorkspace, assignWork: unreached(owner, "assignWork"), STOP_REFUSALS: unreachedValue(owner, "STOP_REFUSALS"), stopLoop: unreached(owner, "stopLoop"), createTerminalMirror, buildTerminalInputEnvelope,
     PROVIDER_IDS: unreachedValue(owner, "PROVIDER_IDS"), reportDegrade,
   });

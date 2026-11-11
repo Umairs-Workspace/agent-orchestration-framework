@@ -5,7 +5,7 @@ import { updateWork } from "../../../work/update.mjs";
 import { formatFriendlyApplyAction, relativeDisplayPath } from "../../../render-plan.mjs";
 import { RUNTIME_FLAGS, hasRuntimeOptions, parseRuntimes } from "../../../spine/flags.mjs";
 
-export function assembleCommandsInitUpdate({ workInitServices, workMemoryServices }) {
+export function assembleCommandsInitUpdate({ workInitServices, workMemoryServices, configInspectServices = null }) {
   // work:init / work:update — render the ACD bundle into a repo, and re-render it
   // drift-checked against the install manifest (m42 wave (d) leg d1, wave-3 tail;
   // formerly cli.mjs's CLI-only workInitCommand / workUpdateCommand). Both ride
@@ -30,6 +30,9 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
   const { TAG_GROUPS } = workInitServices;
   const { WORK_INTAKE_CONFIG_PATH } = workInitServices;
   const { MEMORY_BACKEND_CONFIG_PATH } = workMemoryServices;
+  // 190/ADR-008 §5 — the project doctor's test-layout family, called here so a project taking a new
+  // bundle hears what its test declaration leaves out without remembering to ask.
+  const testLayoutChecks = configInspectServices?.testLayoutChecks ?? (async () => []);
   // m43 / ADR-002 — the co-authored settings merge reports on the SAME envelope the
   // plan does, so a refusal (`claude-settings-unparseable`) or a restored drift is
   // visible on both faces rather than only in a log line.
@@ -262,7 +265,12 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
         dryRun: Boolean(input.dryRun),
         force: Boolean(input.force),
       });
-      return { ...result, targetDir: input.targetDir };
+      if (result.notInitialized) return { ...result, targetDir: input.targetDir };
+      // The check only reads, so a dry run prints it too.
+      const testLayout = (await testLayoutChecks(input.targetDir))
+        .filter((check) => check.severity === "warning")
+        .map(({ id, severity, message }) => ({ id, severity, message }));
+      return { ...result, targetDir: input.targetDir, testLayout };
     },
 
     cli: {
@@ -288,6 +296,7 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
         if (result.dryRun) lines.push("dry-run: the following changes would be applied (nothing written):");
         lines.push(...actionLines(result));
         lines.push(...notInstallableLines(result.notInstallable));
+        lines.push(...memoryConfigLines(result.memoryConfig));
         if (!result.dryRun) {
           const { created, updated, skipped, deleted } = result.summary;
           const drift = result.summary["drift-warning"];
@@ -296,6 +305,7 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
           lines.push(`Updated ACD: ${created} created, ${updated} updated, ${skipped} up-to-date, ${deleted} deleted, ${drift} drift-warning.`);
           lines.push(`Manifest: ${relativeDisplayPath(result.manifestPath, result.targetDir)}`);
         }
+        lines.push(...testLayoutLines(result.testLayout));
         return lines.join("\n");
       },
 
@@ -311,7 +321,9 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
           manifest: result.manifestWritten ? relativeDisplayPath(result.manifestPath, result.targetDir) : null,
           actions: jsonActions(result),
           notInstallable: result.notInstallable,
+          ...(result.memoryConfig ? { memoryConfig: result.memoryConfig } : {}),
           claudeSettings: result.claudeSettings ?? null,
+          testLayout: result.testLayout ?? [],
         };
       },
 
@@ -320,4 +332,20 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
   };
 
   return { workInitCommand, workInitConfigCommand, workUpdateCommand };
+}
+
+// 180/ADR-006 — one line per memory key moved and per pair left as written; none when both are
+// empty, so a current project's update output is unchanged.
+function memoryConfigLines(memoryConfig) {
+  if (!memoryConfig) return [];
+  return [
+    ...memoryConfig.moves.map(({ from, to }) => `memory: ${from} → ${to}`),
+    ...memoryConfig.conflicts.map(({ path: from, replacement }) => `memory: ${from} and ${replacement} both set — left as written; choose one`),
+  ];
+}
+
+// 190/ADR-008 §5 — one line per test-layout warning, each already naming its repair; none when the
+// family is all ok, so a project whose declaration covers its tree sees no change.
+function testLayoutLines(testLayout = []) {
+  return testLayout.map(({ id, message }) => `warning: ${id} - ${message}`);
 }

@@ -131,6 +131,11 @@ export const archTests = [
               assert.ok(Array.isArray(record.tags) && record.tags.every((tag) => typeof tag === "string"), `record ${record.id} field "tags" is an array of strings`);
               continue;
             }
+            // 178/ADR-002: `origin` is the second array field; an imported record is no stream item.
+            if (field === "origin") {
+              assert.deepEqual(record.origin, [], `record ${record.id} carries origin []`);
+              continue;
+            }
             assert.equal(typeof record[field], "string", `record ${record.id} field "${field}" is a string`);
           }
         }

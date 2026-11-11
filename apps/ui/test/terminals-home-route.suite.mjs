@@ -541,7 +541,10 @@ export const terminalsHomeRouteTests = [
         // Its form lives in RuntimeSettings.tsx; the existing ceiling stays 1300.
         // Scope-load guards/global explanation replace existing lines. No rationale
         // was trimmed and the other surface counts/ceilings stay exactly as above.
-        ["apps/ui/src/config/App.tsx", 1300, 1300, "154/10's configuration-only execution region import and mount"],
+        // 1300 -> 1282 at `aof:verify 180` (F-180-02): 180/03's Memory section took the file to 1,318,
+        // over its ceiling, so the section metadata moved out whole to `sections.tsx` and only its
+        // import stays. Eighteen lines of headroom.
+        ["apps/ui/src/config/App.tsx", 1282, 1300, "154/10's execution region import and mount, then 180/03's Memory section with the section metadata moved to sections.tsx"],
       ];
       for (const [file, expected, ceiling, why] of untouched) {
         const lines = await gateLineCount(file);

@@ -1,4 +1,4 @@
-import { appendFile, mkdir, readFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 import { writeText } from "@aof/foundation/fs";
@@ -9,13 +9,16 @@ import {
   detailCell,
   gateInstant,
   gateResult,
+  isNotFinishedRow,
+  newestRegressionRow,
+  parseRegressionRows,
   regressionRecordPath,
   satisfiesDoor,
   scopeCell,
 } from "../regression-record.mjs";
 
 // Core supplies configured resolution, execution, notification and transition services.
-export function createRegressionGateCommand({ execFile, gateToolchain, headCommit, isRunning, launchRunner, readRuns, reportDegrade = () => {}, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runBounded, runTest }) {
+export function createRegressionGateCommand({ execFile, gateToolchain, headCommit, isRunning, launchRunner, readRuns, reportDegrade = () => {}, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runBounded, runTest, testRecord = null, gateScratch = null }) {
 // `aof work regression-gate <ref>` — THE GATE RUN (milestone 96 / story 04, ADR-008 §1, §2).
 // FF-9606 is its control.
 //
@@ -80,6 +83,16 @@ const JOBS_UNDECLARED = "regression-gate-jobs-undeclared";
 // A STOPPED GATE (160/ADR-005 §3): the driven run that launched it stopped, so the gate aborted its suite.
 // A stop is not a test result, so nothing is recorded — the repair is to run the gate again.
 const STOPPED = "regression-gate-stopped";
+// 190/ADR-005 §1 — a resume's refusals, each its own repair. The tree changed: run the gate again. The
+// newest row is not `not-finished`: there is nothing a resume could finish. The record of what finished
+// is gone: run the gate again. And the project declares no way to tell its gate program which files to
+// run or where to write its report, so a resume could only run the whole tree under a resume's name.
+const RESUME_TREE_CHANGED = "regression-gate-resume-tree-changed";
+const NOTHING_TO_RESUME = "regression-gate-nothing-to-resume";
+const RESUME_REPORT_MISSING = "regression-gate-resume-report-missing";
+const RESUME_UNDECLARED = "regression-gate-resume-undeclared";
+// The name the stored sharded report goes by, beside the gate run's record.
+const SHARDED_REPORT = "sharded-report";
 
 // THE LAUNCH ENVIRONMENT (160/ADR-005 §1, m159/F-2). The suite inherits none of the session's `GIT_*`,
 // `CLAUDE*` or `AOF_*` variables — an inherited `GIT_ASKPASS` turned a clone-credential case red — and
@@ -249,8 +262,11 @@ function runLine({ mode, jobs, minutes, budgetMinutes, overBudget }) {
 // The detail cell, composed in ONE place and in ONE order: what failed, then what did not finish, then
 // what is not isolated, then the run line — so a red row still leads with its failures, the units that ran
 // out of time are named apart from them, and a green row is never empty.
-function rowDetail({ red, outcome, failures, unfinished, notIsolated, run }) {
+function rowDetail({ red, outcome, failures, unfinished, notIsolated, run, resumed = null }) {
   const parts = [];
+  // 190/ADR-005 §3 — a resumed run's row says what it resumed and how much of it ran again, first,
+  // so the accept door's reader sees a combined row as one.
+  if (resumed != null) parts.push(`resumed from ${resumed.from}: ${resumed.rerun} of ${resumed.total} units re-run`);
   if (red) parts.push(failureDetail(outcome, failures));
   if (unfinished != null) parts.push(unfinished);
   if (notIsolated.length > 0) parts.push(`not isolated: ${notIsolated.join(", ")}`);
@@ -290,6 +306,11 @@ async function runRegressionGate(input, deps = {}) {
     env = process.env,
     bounded = runBounded,
     runs = readRuns,
+    // 190/ADR-005 — the test-record store and a scratch directory for the program's report and a
+    // resume's file list. NULL BY DEFAULT, like `runTest`'s: only the CLI face hands them in, so a
+    // suite driving the gate with a stub never files the stub's verdict as a record of a real tree.
+    record = null,
+    scratch = null,
   } = deps;
 
   const ref = typeof input?.ref === "string" ? input.ref.trim() : "";
@@ -358,6 +379,24 @@ async function runRegressionGate(input, deps = {}) {
     );
   }
 
+  // (3b) A RESUME (190/ADR-005 §1) — checked after the tree is clean and before anything runs, so each
+  // refusal launches nothing and appends nothing.
+  const resumed = input?.resume === true
+    ? await prepareResume({ item, target, read, record, projectRoot, gate: mode === SHARDED ? gate : null })
+    : null;
+  let scratchDir = null;
+  let reportPath = null;
+  let filesPath = null;
+  if (record != null && scratch != null && mode === SHARDED && gate?.reportArgs != null) {
+    scratchDir = await scratch.make();
+    reportPath = path.join(scratchDir, "report.json");
+    if (resumed != null) {
+      filesPath = path.join(scratchDir, "files.txt");
+      await writeFile(filesPath, `${resumed.files.join("\n")}\n`, "utf8");
+    }
+  }
+  const programInputs = { report: reportPath, files: filesPath, noLanes: resumed?.noLanes === true };
+
   // (4) THE RUN — the shipped command body, asked for the whole tree. Nothing about the selection is
   // re-decided here; `scope` and `widened` come back as `aof test` computed them. What the gate
   // injects is WHICH PROGRAM that body launches — the toolchain module composes the gate's program
@@ -385,7 +424,7 @@ async function runRegressionGate(input, deps = {}) {
         if (gateDeclared.ok !== true) return gateDeclared;
         const compiled = resolveTestToolchain(declared, options);
         return compiled.ok === true
-          ? Object.freeze({ ok: true, toolchain: gateToolchain(compiled.toolchain, gate, settings) })
+          ? Object.freeze({ ok: true, toolchain: gateToolchain(compiled.toolchain, gate, { ...settings, ...programInputs }) })
           : compiled;
       },
       run: async (toolchain, files, options) => (observed = await launch(toolchain, files, { ...options, ...stoppable, launch: boundedLaunch })),
@@ -439,7 +478,7 @@ async function runRegressionGate(input, deps = {}) {
     instant: gateInstant(input?.now),
     scope: scopeCell({ scope: outcome.scope, widened: outcome.widened ?? [] }),
     result,
-    detail: rowDetail({ red, outcome, failures, unfinished, notIsolated: report.notIsolated, run }),
+    detail: rowDetail({ red, outcome, failures, unfinished, notIsolated: report.notIsolated, run, resumed }),
   };
 
   // (6) THE APPEND — read-modify-write through the atomic seam. A malformed existing document stops
@@ -452,6 +491,41 @@ async function runRegressionGate(input, deps = {}) {
     if (error?.code !== "ENOENT") throw error;
   }
   await write(target, appendRegressionRow(existing, row, displayPath(target)));
+
+  // (7) THE TEST RECORD (190/ADR-005 §2, §4). Every launched gate run is also an ADR-001 record of scope
+  // `all`, so a later `aof test --scope all` on this content is answered from it; a run that did not
+  // finish keeps its program's report beside the record, for its resume. Keyed AFTER the row is
+  // appended: the row is the gate's own write, and keying before it would leave the record on a tree
+  // that stopped existing the moment it was written — neither the UAT answer nor the resume's
+  // same-content check could ever match it. A store that fails never costs the row.
+  if (record != null && outcome.launched === true) {
+    try {
+      const ledger = await record.openLedger({ projectRoot });
+      if (ledger.ok === true) {
+        const written = await record.writeRecord(ledger, {
+          scope: GATE_SCOPE,
+          askedScope: GATE_SCOPE,
+          selected: GATE_SCOPE,
+          widened: outcome.widened ?? [],
+          gate: outcome.scope === GATE_SCOPE && (outcome.widened ?? []).length === 0,
+          // A run that did not finish never EXITED with a verdict, whatever its exit code says: the
+          // record leaf reads that, in the gate's own words and precedence (`gateResult`).
+          outcome: notFinished ? "stopped" : "exited",
+          failures,
+          runner: outcome.runner ?? null,
+          report: outcome.report == null ? null : { ok: outcome.report.ok, format: outcome.report.format, contradiction: outcome.report.contradiction },
+          exit: green ? 0 : 1,
+          wallMs: Math.round(minutes * 60_000),
+          source: "gate",
+        }, { instant: row.instant });
+        const sharded = notFinished && reportPath != null ? await read(reportPath, "utf8").then(JSON.parse).catch(() => null) : null;
+        if (sharded != null) await record.writeAttachment(ledger, written, SHARDED_REPORT, sharded);
+      }
+    } catch (error) {
+      reportDegrade("regression-gate-record", error);
+    }
+  }
+  if (scratchDir != null) await scratch.remove(scratchDir);
 
   return Object.freeze({
     ref: item.ref,
@@ -471,6 +545,68 @@ async function runRegressionGate(input, deps = {}) {
     slowest: report.slowest,
     logs: report.logs,
     exit: green ? 0 : 1,
+  });
+}
+
+// THE RESUME'S PRECONDITIONS AND ITS FILES (190/ADR-005 §1, §2). The newest row must be `not-finished`;
+// the run it names must be on THIS content; its stored report must still be there; and the gate
+// program must be able to hear a file list. Only then is "what did not finish" answerable: every unit
+// the report names as killed or never started, as the files it ran — a killed packed unit already comes
+// back as all of its files — and the lanes, only when one of them is among them.
+async function prepareResume({ item, target, read, record, projectRoot, gate }) {
+  let text = null;
+  try {
+    text = await read(target, "utf8");
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+  const newest = text == null ? null : newestRegressionRow(parseRegressionRows(text, displayPath(target)));
+  if (newest == null || !isNotFinishedRow(newest)) {
+    const error = commandError(
+      `Nothing to resume for ${item.ref}: its newest regression row is ${newest == null ? "absent" : `\`${newest.result}\``}, and only a \`not-finished\` row leaves units to finish. Run the gate without --resume.`,
+      NOTHING_TO_RESUME,
+      409,
+    );
+    error.detail = { ref: item.ref, newest: newest?.result ?? null };
+    throw error;
+  }
+  if (gate?.filesArgs == null || gate?.reportArgs == null) {
+    throw commandError(
+      `A resume needs the gate program to be told which files to run and where to write its report — declare \`filesArgs\` and \`reportArgs\` in the project's gate declaration. Without them a resume could only run the whole tree under a resume's name.`,
+      RESUME_UNDECLARED,
+      409,
+    );
+  }
+  const ledger = record == null ? null : await record.openLedger({ projectRoot });
+  const prior = ledger?.ok === true ? await record.findGateRun(ledger, newest.instant) : null;
+  if (prior != null && prior.key !== ledger.key) {
+    const error = commandError(
+      `The tree has changed since the gate run of ${newest.instant} stopped (tree ${prior.key.slice(0, 7)}, now ${ledger.key.slice(0, 7)}), and half a run of one tree plus half a run of another is no run of either. Run the gate again without --resume.`,
+      RESUME_TREE_CHANGED,
+      409,
+    );
+    error.detail = { ref: item.ref, from: prior.key, now: ledger.key };
+    throw error;
+  }
+  const report = prior == null ? null : await record.readAttachment(ledger, prior, SHARDED_REPORT);
+  if (report == null || typeof report.units !== "object" || report.units == null) {
+    throw commandError(
+      `The record of what the gate run of ${newest.instant} finished is gone — the store keeps its newest records only — and a resume with no record of what finished would be a guess. Run the gate again without --resume.`,
+      RESUME_REPORT_MISSING,
+      409,
+    );
+  }
+  const lanes = new Set(report.lanes ?? []);
+  const unitOf = new Map(Object.entries(report.units).flatMap(([unit, files]) => files.map((file) => [file, unit])));
+  const unfinished = [...(report.notFinished ?? []), ...(report.notStarted ?? [])];
+  const units = new Set(unfinished.map((key) => unitOf.get(key) ?? key));
+  const files = [...new Set(unfinished.flatMap((key) => (lanes.has(key) ? [] : report.units[key] ?? [key])))].sort();
+  return Object.freeze({
+    from: newest.instant,
+    files,
+    noLanes: ![...units].some((unit) => lanes.has(unit)),
+    rerun: units.size,
+    total: Object.keys(report.units).length,
   });
 }
 
@@ -498,6 +634,7 @@ const regressionGateCommand = {
       now: { type: "string" },
       serial: { type: "boolean" },
       jobs: { type: ["string", "number"] },
+      resume: { type: "boolean" },
     },
     required: ["ref"],
     additionalProperties: false,
@@ -511,16 +648,21 @@ const regressionGateCommand = {
       // for `--story` for the same reason: a slug fallback would record a near-miss story's run
       // under this item's name.
       resolve: (ref) => resolveItemExact(ctx, ref),
+      // 190/ADR-005 — the record store and scratch, and only here: the CLI face is the one caller
+      // whose gate program is the project's own.
+      record: testRecord,
+      scratch: gateScratch,
     });
   },
 
   cli: {
     route: ["work", "regression-gate"],
     spec: {
-      usage: "aof work regression-gate <ref> [--serial] [--jobs N] [--json]",
+      usage: "aof work regression-gate <ref> [--serial] [--jobs N] [--resume] [--json]",
       flags: {
         serial: { type: "boolean", description: "run the project's plain test program instead of its declared gate program" },
         jobs: { type: "string", description: "the gate program's worker count, through its declared jobsArgs template" },
+        resume: { type: "boolean", description: "re-run only the units the newest not-finished run left, on the same content, and record one row for the whole" },
       },
     },
 
@@ -528,6 +670,7 @@ const regressionGateCommand = {
       ref: positionals[0],
       ...(options.serial === true ? { serial: true } : {}),
       ...(options.jobs != null ? { jobs: options.jobs } : {}),
+      ...(options.resume === true ? { resume: true } : {}),
     }),
 
     // The verdict, the row's detail, then where the time went — the program's own slowest-files
@@ -549,5 +692,5 @@ function displayPath(value) {
   return path.relative(process.cwd(), value) || ".";
 }
 
-return { DIRTY_TREE, JOBS_INVALID, JOBS_UNDECLARED, SETTINGS_CONFLICT, STOPPED, cleanLaunchEnv, regressionGateCommand, runRegressionGate };
+return { DIRTY_TREE, JOBS_INVALID, JOBS_UNDECLARED, NOTHING_TO_RESUME, RESUME_REPORT_MISSING, RESUME_TREE_CHANGED, RESUME_UNDECLARED, SETTINGS_CONFLICT, STOPPED, cleanLaunchEnv, regressionGateCommand, runRegressionGate };
 }

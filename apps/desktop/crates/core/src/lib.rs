@@ -36,10 +36,15 @@
 //! Milestone 167 · story 05:
 //! - [`guard`] — the pure judgement of a sustained CPU overrun from the OS's own sample, against
 //!   the budget `mesh status --json` hands over; shown and logged, never acted on (ADR-006).
+//!
+//! Milestone 175 · story 00:
+//! - [`reap`] — the reap ladder off Windows: SIGTERM each supervised process group, a 5 s grace,
+//!   SIGKILL the survivors; and the stop ladder's last rung as a group kill (ADR-001 §2-§3).
 
 pub mod guard;
 pub mod icon;
 pub mod poll;
+pub mod reap;
 pub mod read_only_inventory;
 pub mod render_state;
 pub mod resolve;

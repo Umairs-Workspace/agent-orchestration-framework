@@ -26,13 +26,17 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // module is asserted to produce neither, which is what makes the claim clearable by a module that
 // cannot honestly produce provenance. Provenance is 72/02's.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
+import { importSpecifiers } from "../../support/module-family.mjs";
 const registrationDecision = _aofApplication.work.audit.census.registrationDecision;
 const runnerImportedSuites = _aofApplication.work.audit.census.runnerImportedSuites;
+const registrationSources = _aofApplication.work.audit.census.registrationSources;
+const isSuiteFile = _aofApplication.work.testSelect.isSuiteFile;
+const resolveTestToolchain = _aofApplication.work.toolchain.resolveTestToolchain;
 const registrationReport = _aofApplication.work.testSelect.registrationReport;
 import { IMPORT_OF, SPREAD_ROW, bindingsOf, directoryCensus, readIndexes, registrationSurface } from "../../support/registration/registration-surface.mjs";
 
@@ -229,7 +233,70 @@ export const archTests = [
       assert.deepEqual([...green.unregistered], [], "…and nothing is reported against it");
     },
   },
+  {
+    // 190/01 FF-19005 (ADR-003 §1) — a second leg: a suite the runner registers is a suite the
+    // selection can choose. Otherwise `impacted` could never select it, and every change it alone
+    // covers would widen (41 of RESEARCH Q1's 76 stories did, for exactly this).
+    name: "arch/190 FF-19005 (acd-suite-registration-single-decider): every registered suite is selectable",
+    run: async () => {
+      const config = JSON.parse(readFileSync(path.join(repoRoot, ".aof/aof.config.json"), "utf8"));
+      const compiled = resolveTestToolchain(config, { projectRoot: repoRoot });
+      assert.equal(compiled.ok, true, compiled.message);
+      const { roots, suiteSuffixes } = compiled.toolchain;
+
+      const sources = [...await registrationSources(repoRoot)];
+      for (const owner of ["packages", "apps"]) {
+        for (const name of readdirSync(path.join(repoRoot, owner))) {
+          const rel = `${owner}/${name}/test/index.mjs`;
+          if (existsSync(path.join(repoRoot, rel))) sources.push({ rel, source: sourceOf(rel) });
+        }
+      }
+      const registered = new Set(sources.flatMap(({ rel, source }) => [...runnerImportedSuites(source, rel)]));
+      assert.ok(registered.size > 500, `the registry was read, not an empty list: ${registered.size} suite files`);
+      assert.ok([...registered].some((file) => file.startsWith("packages/")), "…and it reaches the package-owned suites");
+
+      const unselectable = [...registered].filter((file) => !isSuiteFile(file, roots, suiteSuffixes)).sort();
+      assert.deepEqual(unselectable, [], "a suite the runner registers is a suite by the declared work.test.roots and work.test.suiteSuffixes");
+      // …and the leg fails on a registered suite the declaration cannot see.
+      assert.equal(isSuiteFile("packages/work/test/domain.suite.mjs", ["test"], [".test.mjs"]), false, "a planted narrower declaration leaves a package suite unselectable");
+    },
+  },
+  {
+    // 190/04 FF-19006 (ADR-008 §1) — a third leg: the test-layout check has no predicate of its own.
+    // A second membership rule in the doctor would agree with `isSuiteFile` until the day one of
+    // them changed, and the doctor would then call a selectable file unselectable, or the reverse.
+    name: "arch/190 FF-19006 (acd-suite-registration-single-decider): the test-layout check decides membership only through isSuiteFile",
+    run: () => {
+      const code = stripComments(sourceOf(LAYOUT));
+      assert.deepEqual(layoutPredicateProblems(code), [], LAYOUT);
+      assert.match(code, /import\s*\{[^}]*\bisSuiteFile\b[^}]*\}\s*from\s*["']\.\/select\.mjs["']/u, "isSuiteFile is reached by import");
+      assert.match(code, /\bisSuiteFile\s*\(/u, "…and called");
+      // Self-check: each planted second answer is reported, by what it is.
+      for (const [planted, problem] of [
+        ["const own = (file) => roots.some((root) => file.startsWith(root));", "iterates the declared roots or suffixes itself"],
+        ["const declared = config.work.test;", "reads work.test from the config rather than through toolchain.mjs"],
+        ["import { openLedger } from \"./record.mjs\";", "imports the test record store"],
+        ["import { relations } from \"@aof/knowledge/code\";", "imports the code corpus"],
+      ]) {
+        assert.ok(layoutPredicateProblems(`${code}\n${planted}`).includes(problem), `planted: ${planted}`);
+      }
+    },
+  },
 ];
+
+const LAYOUT = "packages/work/src/testing/layout.mjs";
+
+// What FF-19006 forbids in the layout module, each named by the second answer it would be.
+export function layoutPredicateProblems(code) {
+  const problems = [];
+  if (/\b(?:roots|suffixes|suiteSuffixes)\s*\??\.\s*(?:some|every|find|filter|includes)\s*\(/u.test(code)) problems.push("iterates the declared roots or suffixes itself");
+  if (/[\w$)\]]\s*\??\.\s*work\s*\??\.\s*test\b|\[\s*["']work["']\s*\]/u.test(code)) problems.push("reads work.test from the config rather than through toolchain.mjs");
+  // The specifiers come from the one extractor (FF-11901), never a pattern of this control's own.
+  const specifiers = importSpecifiers(code).map((entry) => entry.specifier);
+  if (specifiers.some((spec) => /(?:^|\/)record(?:\.mjs)?$/u.test(spec))) problems.push("imports the test record store");
+  if (specifiers.some((spec) => spec.startsWith("@aof/knowledge") || /graph/u.test(spec))) problems.push("imports the code corpus");
+  return problems;
+}
 
 // ── FF-11906 (119/ADR-010 §1-§4) — EXTENDS this control; it does not sit beside it. ─────────────
 //

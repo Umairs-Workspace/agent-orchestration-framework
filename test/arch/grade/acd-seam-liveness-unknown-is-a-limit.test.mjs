@@ -125,16 +125,22 @@ export const archTests = [
       assert.equal(code.length > SOURCE_FLOOR, true, `${MODULE_REL} was read and stripped to something real (${code.length} chars, floor ${SOURCE_FLOOR})`);
       assert.deepEqual(graphRoutes(MODULE_REL, code), [], `${MODULE_REL} holds no route to a graph other than the shipped read`);
 
-      // The POSITIVE half: it reaches the artifact through the shipped reader, and by import.
-      assert.match(stripComments(readFileSync(new URL("../../../packages/core/src/application/bindings/work-audit/seam-liveness.mjs", import.meta.url), "utf8")), /import \{[^}]*normalizeGraph[^}]*\} from "@aof\/knowledge\/graph-normalize"/u, "it imports the shipped normalizer from its one home");
-      assert.match(code, /\breadGraph\b/u, "…and the shipped read");
-      assert.match(code, /\bgraphJsonPath\b/u, "…and the shipped path resolver, rather than assembling an artifact path of its own");
+      // The POSITIVE half: it reaches the graph through the ONE shared reader. Since 179/ADR-004
+      // that reader is the code corpus's `relations`, the port's verb, bound in core from the port
+      // composed over the graphify code backend — the reader moved; the invariant did not.
+      const binding = stripComments(readFileSync(new URL("../../../packages/core/src/application/bindings/work-audit/seam-liveness.mjs", import.meta.url), "utf8"));
+      assert.match(binding, /const \{\s*relations\s*\} = codeRelationsServices/u, "core hands the lane the code readers' port");
+      assert.match(binding, /createAuditSeamLiveness\(\{[^}]*\brelations\b/u, "…as its relations");
+      assert.match(code, /await\s+relations\s*\(/u, "…and the lane asks it");
+      for (const name of ["readGraph", "normalizeGraph", "graphJsonPath"]) {
+        assert.equal(new RegExp(`\\b${name}\\b`, "u").test(code), false, `${name}: no artifact reader reaches the lane beside the port`);
+      }
 
-      // `computeImpact` is deliberately NOT among them, and that is ADR-006 §1a rather than an
-      // omission: it is O(paths × (nodes + edges)) and re-walks every edge once per path in its own
-      // map, which over ~150 candidates is ~12 s inside a command that has to stay cheap. The
-      // inverted single pass is the composition the ADR prescribes, and the bound it exists for is
-      // driven behaviourally in `work-audit-seam-liveness.test.mjs`.
+      // It asks ONCE, with every candidate — never the per-path question, which ADR-006 §1a prices
+      // at ~12 s over ~150 candidates. Since 179/ADR-002 the one `relations` call walks the edges
+      // once however many paths it is asked, and that bound is driven behaviourally in
+      // `work-audit-seam-liveness.test.mjs`.
+      assert.equal((code.match(/\brelations\s*\(/gu) ?? []).length, 1, "the lane holds exactly one relations call");
       assert.equal(/\bcomputeImpact\b/u.test(code), false, "and it does not ask the per-path question, which ADR-006 §1a prices at ~12 s over this repository's candidate set");
     },
   },

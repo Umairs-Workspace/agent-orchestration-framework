@@ -37,8 +37,8 @@ export function createMeshServeCommands({ launcherProbe, startLauncher, acquireM
 // this node's presence, starts global work propagation, and periodically re-reads the
 // fabric peer-map — binding NO listening broker socket (the "bind" is the fabric
 // self-address). Traps SIGINT/SIGTERM to stop cleanly.
-async function runMeshServeDaemon(options) {
-  const workspace = await loadWorkspace(process.cwd(), options.config);
+async function runMeshServeDaemon(options, workspaceRoot = process.cwd()) {
+  const workspace = await loadWorkspace(workspaceRoot, options.config);
   const launcherLock = await acquireMeshLauncherLock({ env: process.env });
   if (!launcherLock.acquired) {
     const pid = launcherLock.pid != null ? ` (pid ${launcherLock.pid})` : "";
@@ -160,9 +160,10 @@ const meshServeCommand = {
     },
 
     // The launcher seam: `--serve` selects the daemon body; anything else falls
-    // through to the probe/invoke path. The body resolves its own workspace from
-    // the cwd (the retired meshServeDaemonCommand contract, byte-for-byte).
-    launch: (options) => (options.serve === true ? (_input, faceCtx) => runMeshServeDaemon(faceCtx.options) : null),
+    // through to the probe/invoke path. The body loads the workspace the face resolved:
+    // `--workspace <path|id>` when given, else the cwd (TECH_DEBT 4: the flag was declared
+    // here and ignored, so a supervised daemon could only ever be its launch directory).
+    launch: (options) => (options.serve === true ? (_input, faceCtx) => runMeshServeDaemon(faceCtx.options, faceCtx.workspaceRoot) : null),
 
     // The status line: fabric health + self-address + registered mesh peer count + control-node role.
     render(result) {

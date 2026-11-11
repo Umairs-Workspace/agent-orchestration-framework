@@ -226,8 +226,11 @@ export function targetResolutionProblems(rawSource) {
   problems.push(...codedRefusalProblems(seam.region, "workspace-not-local", 409, "a resolved projectRoot that is not on this machine must name its own cause"));
 
   // inv.6 — the mint's target is ASSERTED, with the VERB-IDENTICAL derivation.
-  if (!/config\s*\??\.\s*mesh\s*\??\.\s*workspaceId/.test(pre) || !/workspaceIdForProjectRoot\s*\(/.test(pre)) {
-    problems.push("the assign branch does not derive the loaded workspace's own id the way the verb's resolveItem does (`config?.mesh?.workspaceId ?? workspaceIdForProjectRoot(projectRoot)`) — it would assert a lookalike, not the value the mint stamps (ADR-012 AMENDMENT inv.6)");
+  // The verb's `resolveItem` (assignment.mjs) derives through the ONE identity home,
+  // `resolveWorkspaceId(workspace)`, since m42 item 4. The assign branch must call the same
+  // function on the workspace it loaded, never a hand-spelled lookalike of it (TECH_DEBT 4).
+  if (!/resolveWorkspaceId\s*\(\s*assignWorkspace\s*\)/.test(pre)) {
+    problems.push("the assign branch does not derive the loaded workspace's own id the way the verb's resolveItem does (`resolveWorkspaceId(assignWorkspace)`) — it would assert a lookalike, not the value the mint stamps (ADR-012 AMENDMENT inv.6)");
   }
   const mismatchAt = pre.search(/["']workspace-id-mismatch["']/);
   if (mismatchAt < 0) {
@@ -344,7 +347,7 @@ const CLEAN = [
   '    if (!row) { sendApiError(response, 404, "Workspace is not in the mesh projection.", "workspace-not-found"); return; }',
   '    if (!row.projectRoot || !existsSync(row.projectRoot)) { sendApiError(response, 409, "That workspace is not checked out on this machine.", "workspace-not-local"); return; }',
   '    const assignWorkspace = await loadWorkspace(row.projectRoot, undefined, { env: globalStoreOptions?.env });',
-  '    const ownWorkspaceId = assignWorkspace.config?.mesh?.workspaceId ?? workspaceIdForProjectRoot(assignWorkspace.projectRoot);',
+  '    const ownWorkspaceId = resolveWorkspaceId(assignWorkspace);',
   '    if (ownWorkspaceId !== workspaceId) { sendApiError(response, 409, "The resolved workspace is not the requested one.", "workspace-id-mismatch"); return; }',
   '    const result = await assignWork(assignWorkspace, ref, nodeId, { globalWorkStoreOptions: globalStoreOptions ?? {} });',
   '    if (!result.ok) { const { ok: _ok, error: message, code, ...extra } = result; sendApiError(response, assignGateStatus(code), message, code, extra); return; }',
@@ -393,7 +396,7 @@ const PLANT_FALLBACK = CLEAN
 // the mint would stamp THAT (inv.6).
 const PLANT_NO_ASSERTION = CLEAN
   .replace(
-    '    const ownWorkspaceId = assignWorkspace.config?.mesh?.workspaceId ?? workspaceIdForProjectRoot(assignWorkspace.projectRoot);',
+    '    const ownWorkspaceId = resolveWorkspaceId(assignWorkspace);',
     '',
   )
   .replace(
@@ -405,7 +408,7 @@ const PLANT_NO_ASSERTION = CLEAN
 // committed, "detected" too late.
 const PLANT_ASSERT_AFTER_MINT = CLEAN
   .replace(
-    '    const ownWorkspaceId = assignWorkspace.config?.mesh?.workspaceId ?? workspaceIdForProjectRoot(assignWorkspace.projectRoot);',
+    '    const ownWorkspaceId = resolveWorkspaceId(assignWorkspace);',
     '',
   )
   .replace(
@@ -415,7 +418,7 @@ const PLANT_ASSERT_AFTER_MINT = CLEAN
   .replace(
     '    sendJson(response, 200, result);',
     [
-      '    const ownWorkspaceId = assignWorkspace.config?.mesh?.workspaceId ?? workspaceIdForProjectRoot(assignWorkspace.projectRoot);',
+      '    const ownWorkspaceId = resolveWorkspaceId(assignWorkspace);',
       '    if (ownWorkspaceId !== workspaceId) { sendApiError(response, 409, "The resolved workspace is not the requested one.", "workspace-id-mismatch"); return; }',
       '    sendJson(response, 200, result);',
     ].join("\n"),
@@ -452,7 +455,7 @@ const CLEAN_HOISTED = [
   '    if (!resolved) return;',
   '    const { row } = resolved;',
   '    const assignWorkspace = await loadWorkspace(row.projectRoot, undefined, { env: globalStoreOptions?.env });',
-  '    const ownWorkspaceId = assignWorkspace.config?.mesh?.workspaceId ?? workspaceIdForProjectRoot(assignWorkspace.projectRoot);',
+  '    const ownWorkspaceId = resolveWorkspaceId(assignWorkspace);',
   '    if (ownWorkspaceId !== workspaceId) { sendApiError(response, 409, "The resolved workspace is not the requested one.", "workspace-id-mismatch"); return; }',
   '    const result = await assignWork(assignWorkspace, ref, nodeId, { globalWorkStoreOptions: globalStoreOptions ?? {} });',
   '    if (!result.ok) { const { ok: _ok, error: message, code, ...extra } = result; sendApiError(response, assignGateStatus(code), message, code, extra); return; }',

@@ -80,14 +80,18 @@ async function git(args, { cwd, launch, deadlineMs }) {
 
 // THE CHANGED SET. Returns `{ ok: true, changed, base }` or a coded refusal.
 //
-//   since — null for the working tree (index + working tree), or a revision to widen the base to.
+//   since  — null for the working tree (index + working tree), or a revision to widen the base to.
+//   commit — a revision whose OWN change is the set (190/ADR-008 §2): what it changed against its
+//            first parent, and nothing of the working tree. It is the source a replay of history
+//            needs, so it is read alone; the caller keeps it exclusive of `since`.
 //
 // The three refusals are the module's whole error vocabulary and all three exist for one reason:
 // an answer that selected nothing must never be mistaken for an answer that found nothing
 // affected. They are kept APART because they are three different repairs — name a revision that
 // exists, make a change, or find out why git could not answer.
-async function changedFiles({ projectRoot, since = null, launch = runBounded, deadlineMs = CHANGED_SET_DEADLINE_MS } = {}) {
+async function changedFiles({ projectRoot, since = null, commit = null, launch = runBounded, deadlineMs = CHANGED_SET_DEADLINE_MS } = {}) {
   const options = { cwd: projectRoot, launch, deadlineMs };
+  if (commit != null) return await committedFiles(commit, options);
 
   if (since != null) {
     // ONLY GIT CAN SAY A REVISION DOES NOT RESOLVE, so the check is itself a child and cannot
@@ -134,6 +138,36 @@ async function changedFiles({ projectRoot, since = null, launch = runBounded, de
   }
 
   return Object.freeze({ ok: true, changed: Object.freeze(changed), base: since });
+}
+
+// ONE COMMIT'S CHANGE, against its FIRST parent: a merge's own change is what it brought onto the
+// line it was merged into, which is what a replay of that line asks about. A root commit has no
+// parent, so its change is every file it holds.
+async function committedFiles(commit, options) {
+  const parents = await git(["rev-list", "--parents", "-n", "1", `${commit}^{commit}`, "--"], options);
+  if (parents.outcome !== "exited" || parents.exitCode !== 0) {
+    return refusal(
+      SINCE_REV_UNRESOLVABLE,
+      `the revision ${JSON.stringify(commit)} does not resolve to a commit in this repository, so there is no change to replay. This is a refusal rather than a widening: the revision does not exist.`,
+      parents.stderr?.trim() || parents.error || null,
+    );
+  }
+  const [sha, firstParent] = String(parents.stdout).trim().split(/\s+/u);
+  const listed = firstParent == null
+    ? await git(["show", "--name-only", "--format=", sha], options)
+    : await git(["diff", "--name-only", firstParent, sha], options);
+  if (listed.outcome !== "exited" || listed.exitCode !== 0) {
+    return refusal(
+      CHANGED_SET_UNREADABLE,
+      `the files ${JSON.stringify(commit)} changed could not be read (${listed.attempted}), so the changed set is unknown — the revision resolved, so this is git failing to answer.`,
+      listed.stderr?.trim() || listed.error || null,
+    );
+  }
+  const changed = [...new Set(parseNameOnly(listed.stdout))].sort();
+  if (changed.length === 0) {
+    return refusal(CHANGED_SET_EMPTY, `the commit ${JSON.stringify(commit)} changed no file against its first parent, so there is nothing to select.`);
+  }
+  return Object.freeze({ ok: true, changed: Object.freeze(changed), base: sha, commit: sha });
 }
 
 return { CHANGED_SET_DEADLINE_MS, changedFiles, parseNameOnly, parsePorcelain };

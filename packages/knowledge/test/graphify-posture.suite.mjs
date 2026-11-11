@@ -2,7 +2,7 @@
 // task 00 — 00_claude-cli-classified-and-surfaced.feature.
 //
 // Covers EVERY @executable scenario AND every Scenario-Outline Examples row of that
-// feature against the REAL pure classifiers in ../packages/core/src/commands/graph-build.mjs
+// feature against the REAL pure classifiers in packages/knowledge/src/graphify-code-backend.mjs
 // (isNetworkBackend / isKnownNetworkBackend / classifyEgress) and the REAL graphify
 // backend's `status` surface, driven through the REAL seam (`runMemory`). No live
 // graphify binary is touched: the classifiers are pure functions of the backend name,
@@ -20,7 +20,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir } from "node:fs/promises";
-import { createGraphBuildCommand } from "@aof/knowledge/commands/graph-build";
+import { classifyEgress, isKnownNetworkBackend, isNetworkBackend } from "@aof/knowledge/graphify-code-backend";
 import { createMemory } from "@aof/knowledge/memory";
 import { createGraphifyBackend } from "@aof/knowledge/memory/graphify-backend";
 
@@ -28,13 +28,8 @@ import { createGraphifyBackend } from "@aof/knowledge/memory/graphify-backend";
 // `status` reads an absent store, so no graphify driver port, no command core, no record builder and
 // no gitignore writer is reached: each refuses.
 const refuse = (what) => () => { throw new Error(`the posture suite must not reach ${what}`); };
-const { isNetworkBackend, isKnownNetworkBackend, classifyEgress } = createGraphBuildCommand({
-  resolveGraphifyBinary: refuse("resolveGraphifyBinary"),
-  runGraphifyBuild: refuse("runGraphifyBuild"),
-  readGraph: refuse("readGraph"),
-  normalizeGraph: refuse("normalizeGraph"),
-  graphJsonPath: refuse("graphJsonPath"),
-});
+// The classifiers are pure module exports of the graphify code backend (179/ADR-002), so no factory
+// is built to reach them.
 const graphifyBackend = createGraphifyBackend({
   coreInvoke: refuse("coreInvoke"),
   loadWorkspace: refuse("loadWorkspace"),
@@ -56,12 +51,12 @@ async function freshProjectRoot() {
 }
 
 // Run `aof work memory status --json` through the REAL registry with graphify selected.
-async function runStatusJson() {
+async function runStatusJson(memory = { backend: "graphify" }) {
   const projectRoot = await freshProjectRoot();
   const lines = [];
-  const ctx = { workDir: path.join(projectRoot, "wiki", "work"), projectRoot, configMemory: { backend: "graphify" } };
+  const ctx = { workDir: path.join(projectRoot, "wiki", "work"), projectRoot, configMemory: memory };
   const outcome = await runMemory(["status", "--json"], {
-    config: { memory: { backend: "graphify" } },
+    config: { memory },
     resolveBackend: (cfg) => resolveConfiguredBackend(cfg),
     ctx,
     log: (l) => lines.push(l),
@@ -150,6 +145,28 @@ export const graphifyPostureTests = [
       // extraction backend (claude-cli) + its egress (docs-media) — both pinned above.
       assert.equal(classifyEgress("claude-cli"), "docs-media", "the live row's aof-side contract: claude-cli's hop is docs-media");
       assert.equal(isNetworkBackend("claude-cli"), true, "the live row's aof-side contract: claude-cli crosses the network");
+    },
+  },
+
+  // 180/01 task 02 — the extractor is read from `memory.backends.graphify` and reported at its new
+  // path; an absent one is still the claude-cli legacy default (180/ADR-004).
+  {
+    name: "180/01 task 02: E9 · the graphify extractor is read from backends and reported at its new path",
+    run: async () => {
+      const { outcome, parsed } = await runStatusJson({ backend: "graphify", backends: { graphify: { extractionBackend: "ollama" } } });
+      assert.equal(outcome.exitCode, 0);
+      assert.equal(parsed.extractionBackend, "ollama");
+      assert.equal(parsed.extractionSource, "project setting");
+      assert.equal(parsed.extractionPath, "memory.backends.graphify.extractionBackend");
+    },
+  },
+  {
+    name: "180/01 task 02: an absent extractor still reports claude-cli as the legacy default",
+    run: async () => {
+      const { parsed } = await runStatusJson({ backend: "graphify" });
+      assert.equal(parsed.extractionBackend, "claude-cli");
+      assert.equal(parsed.extractionSource, "legacy default");
+      assert.equal(parsed.extractionEgress, "docs-media");
     },
   },
 ];

@@ -29,10 +29,17 @@ const DESKTOP_MODULE = path.join(repoRoot, "packages", "mesh", "src", "commands"
 // than what they swept before and is what makes the preflight's "writes nothing" claim a
 // statement about a whole file rather than about a hand-maintained list of headers.
 const PREFLIGHT_MODULE = path.join(repoRoot, "packages", "mesh", "src", "commands", "desktop-preflight.mjs");
+// 175/02 moved the names into the layout module (175/ADR-002 §5) and the plist render into its
+// own pure module (175/ADR-004 §1). FF-17503 below widens this control over both.
+const LAYOUT_MODULE = path.join(repoRoot, "packages", "mesh", "src", "commands", "desktop-layout.mjs");
+const LAUNCH_AGENT_MODULE = path.join(repoRoot, "packages", "mesh", "src", "commands", "desktop-launch-agent.mjs");
 
 // The child-process APIs that cannot be injected — a call site using one of these is
 // unreachable from a test, whatever the module's seams say.
 const UNINJECTABLE = ["spawnSync", "execFile", "execFileSync", "execSync"];
+
+// A hard kill in any spelling: `-KILL`, `-9` or SIGKILL.
+const killsHard = (code) => /["']-(?:KILL|9)["']|SIGKILL/.test(code);
 
 async function desktopSource() {
   return stripComments(await readFile(DESKTOP_MODULE, "utf8"));
@@ -119,7 +126,7 @@ export const archTests = [
       const admit = functionBody(source, "function admitAutostartPlatform");
       assert.ok(admit != null, "the admission's region was found");
       assert.doesNotMatch(admit, /process\.platform/, "no `process.platform` is read inside the act itself");
-      assert.match(admit, /platform === "win32"/, "admission is exact and never case-folded");
+      assert.match(admit, /platform === "win32" \|\| platform === "darwin"/, "admission is exact — win32 and darwin (175/ADR-004 §3) — and never case-folded");
 
       const applyBody = functionBody(source, "async function applyAutostart");
       assert.doesNotMatch(applyBody, /process\.platform/, "nor inside the act it guards");
@@ -155,7 +162,8 @@ export const archTests = [
       const applyBody = functionBody(source, "async function applyAutostart");
       assert.notEqual(applyBody, null, "the act's region was found");
 
-      assert.match(source, /export const AUTOSTART_VALUE_NAME = "aof-mesh-desktop"/, "the value name is an exported constant");
+      const layout = stripComments(await readFile(LAYOUT_MODULE, "utf8"));
+      assert.match(layout, /export const AUTOSTART_VALUE_NAME = "aof-mesh-desktop"/, "the value name is an exported constant, in the layout module (175/ADR-002 §5)");
       assert.doesNotMatch(applyBody, /"aof-mesh-desktop"/, "the act never re-spells the name as a literal");
       assert.ok(
         [...applyBody.matchAll(/AUTOSTART_VALUE_NAME/g)].length >= 2,
@@ -281,7 +289,9 @@ export const archTests = [
 
       const face = await desktopSource();
       assert.equal(
-        [...face.matchAll(/runPreflight\(preflightSeams\(ctx\)\)/g)].length,
+        // 175/03: each verb overrides exactly one key, the install dir it resolved, so
+        // `--install-dir` reaches the bundle the darwin checks probe; every other seam is ctx's.
+        [...face.matchAll(/runPreflight\(preflightSeams\(\{ \.\.\.ctx, installDir: [^,{}]+ \}\)\)/g)].length,
         2,
         "and both verbs forward that one list rather than spelling ctx keys of their own",
       );
@@ -297,6 +307,79 @@ export const archTests = [
         ["claude-authenticated", "payload-build", "workspace-identity-pinned", "heartbeat-hook-installed"],
         "every check runs inside the guard, in PREFLIGHT_CHECKS' order",
       );
+    },
+  },
+  // ── 175/ADR-004 §4 — this control WIDENED over the darwin checks. They are their own frozen
+  // list (so the four above, and Windows' answer, are untouched), each runs inside the guard,
+  // and the daemons' `claude` is asked through the SAME `loggedIn` parse as the terminal's, in
+  // an env of exactly the plist's PATH and HOME.
+  {
+    name: "arch/175 FF-12607: the darwin checks are one frozen list run inside the guard, and the daemon probe reuses the one loggedIn parse in an env of exactly launchd's PATH, HOME, USER and LOGNAME",
+    run: async () => {
+      const source = await preflightSource();
+      assert.match(
+        source,
+        /PREFLIGHT_CHECKS_DARWIN = Object\.freeze\(\[\s*"macos-command-line-tools",\s*"rust-toolchain",\s*"app-not-quarantined",\s*"daemon-claude-authenticated",?\s*\]\)/,
+        "the four darwin checks are named by code, in one order, in one place",
+      );
+
+      const darwinBody = functionBody(source, "async function runDarwinChecks");
+      assert.ok(darwinBody != null, "the darwin checks' region was found");
+      assert.deepEqual(
+        [...darwinBody.matchAll(/await guarded\("([a-z-]+)"/g)].map((match) => match[1]),
+        ["macos-command-line-tools", "rust-toolchain", "app-not-quarantined", "daemon-claude-authenticated"],
+        "every darwin check runs inside the guard, in PREFLIGHT_CHECKS_DARWIN's order",
+      );
+      assert.match(functionBody(source, "async function runPreflight"), /platform !== "darwin"\) return checks/, "and they are appended on darwin only");
+
+      assert.equal([...source.matchAll(/loggedIn === true/g)].length, 1, "ONE loggedIn verdict in the module — the daemon probe does not parse a second time");
+      const daemonBody = functionBody(source, "async function checkDaemonClaudeAuthenticated");
+      assert.ok(daemonBody != null, "the daemon check's region was found");
+      assert.match(daemonBody, /return await checkClaudeAuthenticated\(runner,/, "it asks through the terminal check's parse, via the injected runner");
+      assert.match(daemonBody, /env: \{ PATH, HOME: home, USER: user, LOGNAME: user \}/, "with an env of exactly the plist's PATH and launchd's HOME, USER and LOGNAME (175/F-09)");
+      assert.doesNotMatch(daemonBody, /process\.env/, "and nothing of the terminal's environment");
+    },
+  },
+
+  // ── FF-17503 (milestone 175 / ADR-003 §5, ADR-004 §1) — this control WIDENED over the darwin
+  // verbs. `launchctl`, `pgrep` and `kill` reach the OS only through the one injected runner, the
+  // darwin stop sends no SIGKILL, the LaunchAgent act calls no `launchctl`, and the two modules
+  // 175/02 added do no I/O at all.
+  {
+    name: "arch/175 FF-17503: every launchctl, pgrep and kill is an argument to an injected runner, and the darwin stop path sends no SIGKILL",
+    run: async () => {
+      const source = await desktopSource();
+      const literals = [...source.matchAll(/["'](launchctl|pgrep|kill)["']/g)].length;
+      const viaRunner = [...source.matchAll(/await (?:run|kill|list)\(["'](launchctl|pgrep|kill)["']/g)].length;
+      assert.ok(literals >= 4, `the module does name them (non-vacuous): ${literals}`);
+      assert.equal(viaRunner, literals, "every launchctl/pgrep/kill literal is the file an injected runner is asked to run");
+
+      for (const header of ["async function stopDesktopApp", "async function awaitExit"]) {
+        const body = functionBody(source, header);
+        assert.ok(body != null, `${header}'s region was found`);
+        assert.equal(killsHard(body), false, `${header} sends no SIGKILL`);
+      }
+      assert.match(functionBody(source, "async function stopDesktopApp"), /await awaitExit\(/, "the darwin stop waits for the exit");
+
+      const launchAgent = functionBody(source, "async function applyLaunchAgent");
+      assert.ok(launchAgent != null, "the LaunchAgent act's region was found");
+      assert.doesNotMatch(launchAgent, /launchctl|\brun\(/, "the LaunchAgent act calls no launchctl and no runner — it registers for the next login and starts nothing");
+
+      for (const file of [LAYOUT_MODULE, LAUNCH_AGENT_MODULE]) {
+        const text = stripComments(await readFile(file, "utf8"));
+        assert.doesNotMatch(text, /node:(?:fs|child_process)|\bspawn\s*\(|\b(?:readFile|writeFile|rm|mkdir)\s*\(/, `${path.basename(file)} does no I/O`);
+      }
+    },
+  },
+  {
+    name: "arch/175 FF-17503: self-check — a planted SIGKILL or a direct launchctl spawn trips the detector the shipped module passes",
+    run: async () => {
+      assert.equal(killsHard('await kill("kill", ["-TERM", String(pid)]);'), false);
+      assert.equal(killsHard('await kill("kill", ["-KILL", String(pid)]);'), true, "a planted -KILL trips");
+      assert.equal(killsHard('await kill("kill", ["-9", String(pid)]);'), true, "a planted -9 trips");
+      assert.equal(killsHard("process.kill(pid, 'SIGKILL');"), true, "a planted SIGKILL trips");
+      const planted = 'spawnSync("launchctl", ["kickstart", service]);';
+      assert.equal([...planted.matchAll(/await (?:run|kill|list)\(["'](launchctl|pgrep|kill)["']/g)].length, 0, "a direct launchctl call is not counted as runner-borne");
     },
   },
 ];

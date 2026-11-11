@@ -27,15 +27,15 @@ mod supervisor;
 use mesh_desktop_core::icon::{icon_state, AppSupervisionState, FleetSummary, ServerProcessState};
 use mesh_desktop_core::read_only_inventory::{window_affordance_inventory, ALLOWED_MESH_VERBS};
 use mesh_desktop_core::tray_menu::{
-    tray_menu, FleetHeaderSummary, MenuItemId, MenuItemKind, Role, ServerState, UiState,
-    WindowVisibility,
+    menu_needs_replacing, tray_menu, FleetHeaderSummary, MenuItem as CoreMenuItem, MenuItemId,
+    MenuItemKind, Role, ServerState, UiState, WindowVisibility,
 };
 use mesh_desktop_core::view_model::node_rows;
 use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use mesh_desktop_core::supervision::{MESH_SERVE_ID, MESH_UI_ID};
-use supervisor::{SharedState, SupervisorCommand, SupervisorState};
+use supervisor::{Reaper, SharedState, SupervisorCommand, SupervisorState};
 use tauri::menu::{Menu, MenuItem as TauriMenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, RunEvent, State, WindowEvent};
@@ -46,6 +46,8 @@ use tokio::sync::mpsc::UnboundedSender;
 struct AppState {
     shared: SharedState,
     tx: UnboundedSender<SupervisorCommand>,
+    /// What `RunEvent::Exit` takes the supervised tree down through (175/ADR-001 §4).
+    reaper: Reaper,
 }
 
 /// One node row handed to the WebView over IPC — a thin serialization of the core's
@@ -254,10 +256,8 @@ fn do_toggle_window(app: &AppHandle, shared: &SharedState) {
     }
 }
 
-/// Build the native tray menu from the core's PURE `tray_menu()` model — this function
-/// only translates the returned descriptor into `tauri::menu` items; it makes NO
-/// menu-shape decisions of its own (those live in `mesh_desktop_core::tray_menu`).
-fn build_tray_menu(app: &AppHandle, s: &SupervisorState) -> tauri::Result<Menu<tauri::Wry>> {
+/// The core's PURE `tray_menu()` descriptor for the current supervisor state.
+fn tray_menu_items(s: &SupervisorState) -> Vec<CoreMenuItem> {
     let role = if s.is_control_node { Role::Control } else { Role::Worker };
     // A non-stopped local server ("running"/"restarting") shows the "Stop mesh" control.
     let server = if s.server_signal() == "stopped" { ServerState::Stopped } else { ServerState::Running };
@@ -272,7 +272,13 @@ fn build_tray_menu(app: &AppHandle, s: &SupervisorState) -> tauri::Result<Menu<t
         None => FleetHeaderSummary::Loading,
     };
 
-    let items = tray_menu(role, server, ui, window, fleet);
+    tray_menu(role, server, ui, window, fleet)
+}
+
+/// Build the native tray menu from the core's descriptor — this function only translates
+/// it into `tauri::menu` items; it makes NO menu-shape decisions of its own (those live in
+/// `mesh_desktop_core::tray_menu`).
+fn build_tray_menu(app: &AppHandle, items: &[CoreMenuItem]) -> tauri::Result<Menu<tauri::Wry>> {
     let builder = Menu::new(app)?;
     for item in items {
         match item.kind {
@@ -339,20 +345,32 @@ fn tray_icon_bytes(s: &SupervisorState) -> &'static [u8] {
     }
 }
 
-/// Rebuild the tray menu + icon from the current supervisor state. MUST run on the main
-/// thread (the only thread that may touch the native tray on Windows) — `supervisor::
-/// refresh_tray` marshals here via `run_on_main_thread`.
+/// What the native tray last showed: the menu descriptor and the glyph. Touched only on
+/// the main thread, inside `rebuild_tray`.
+static APPLIED_TRAY: Mutex<(Option<Vec<CoreMenuItem>>, Option<&'static [u8]>)> = Mutex::new((None, None));
+
+/// Refresh the tray menu + icon from the current supervisor state, replacing each only when
+/// it changed (175/F-04): on macOS a replaced menu closes while the operator has it open.
+/// MUST run on the main thread (the only thread that may touch the native tray on
+/// Windows) — `supervisor::refresh_tray` marshals here via `run_on_main_thread`.
 pub fn rebuild_tray(app: &AppHandle, shared: &SharedState) {
     if let Some(tray) = app.tray_by_id("main-tray") {
-        let (menu, icon_bytes) = {
+        let (items, icon_bytes) = {
             let g = shared.lock().expect("supervisor state mutex poisoned");
-            (build_tray_menu(app, &g).ok(), tray_icon_bytes(&g))
+            (tray_menu_items(&g), tray_icon_bytes(&g))
         };
-        if let Some(menu) = menu {
-            let _ = tray.set_menu(Some(menu));
+        let mut applied = APPLIED_TRAY.lock().expect("applied tray mutex poisoned");
+        if menu_needs_replacing(applied.0.as_deref(), &items) {
+            if let Ok(menu) = build_tray_menu(app, &items) {
+                let _ = tray.set_menu(Some(menu));
+                applied.0 = Some(items);
+            }
         }
-        if let Ok(img) = tauri::image::Image::from_bytes(icon_bytes) {
-            let _ = tray.set_icon(Some(img));
+        if !applied.1.is_some_and(|shown| std::ptr::eq(shown, icon_bytes)) {
+            if let Ok(img) = tauri::image::Image::from_bytes(icon_bytes) {
+                let _ = tray.set_icon(Some(img));
+                applied.1 = Some(icon_bytes);
+            }
         }
     }
 }
@@ -432,12 +450,33 @@ fn main() {
             // Start the LIVE supervisor engine: the `mesh status --json` poll, the
             // role-driven `tokio::process` watchdog with restart/backoff, and the
             // Windows Job-Object kill-on-close reap (supervisor.rs).
-            let tx = supervisor::spawn_engine(handle.clone(), install_dir, shared.clone());
-            app.manage(AppState { shared: shared.clone(), tx });
+            let (tx, reaper) = supervisor::spawn_engine(handle.clone(), install_dir, shared.clone());
+            app.manage(AppState { shared: shared.clone(), tx, reaper });
+
+            // A terminate request is a Quit (175/ADR-001 §4): `aof mesh desktop stop` sends
+            // SIGTERM, and it takes the same `app.exit(0)` the tray's Quit takes, so the reap
+            // runs on `RunEvent::Exit` either way.
+            #[cfg(unix)]
+            {
+                let quit = handle.clone();
+                tauri::async_runtime::spawn(async move {
+                    use tokio::signal::unix::{signal, SignalKind};
+                    if let Ok(mut terminate) = signal(SignalKind::terminate()) {
+                        if terminate.recv().await.is_some() {
+                            let app = quit.clone();
+                            let _ = quit.run_on_main_thread(move || app.exit(0));
+                        }
+                    }
+                });
+            }
 
             let (menu, icon_bytes) = {
                 let g = shared.lock().expect("supervisor state mutex poisoned");
-                (build_tray_menu(&handle, &g)?, tray_icon_bytes(&g))
+                let items = tray_menu_items(&g);
+                let menu = build_tray_menu(&handle, &items)?;
+                let icon_bytes = tray_icon_bytes(&g);
+                *APPLIED_TRAY.lock().expect("applied tray mutex poisoned") = (Some(items), Some(icon_bytes));
+                (menu, icon_bytes)
             };
 
             let _tray = TrayIconBuilder::with_id("main-tray")
@@ -484,19 +523,26 @@ fn main() {
                         "quit" => {
                             // Quit is the ONLY full exit (DESIGN §Surface 2 region 5). It
                             // ends the process, closing the Job Object handle so the OS
-                            // reaps the whole supervised child tree (ADR-002 d3).
+                            // reaps the whole supervised child tree (ADR-002 d3); off
+                            // Windows `RunEvent::Exit` reaps the process groups (175/ADR-001).
                             app.exit(0);
                         }
                         _ => {}
                     }
                 })
-                // The menu opens on RIGHT-click only, freeing left-click for the Windows
-                // convention below (left toggles the window, right opens the menu).
-                .show_menu_on_left_click(false)
+                // Windows: the menu opens on RIGHT-click only, freeing left-click for the
+                // Windows convention below (left shows the window, right opens the menu).
+                // macOS: a left-click opens the menu, the Mac convention, and the window is
+                // its Show window item (175/00 Q2, 175/DESIGN Surface M2).
+                .show_menu_on_left_click(cfg!(target_os = "macos"))
                 .on_tray_icon_event(|tray, event| {
                     // Left-click the tray icon → show + focus the window (restore from the
                     // ambient hidden-to-tray state). DESIGN §Surface 2: the icon is the
-                    // ambient presence; clicking it brings the fleet view back.
+                    // ambient presence; clicking it brings the fleet view back. Not on
+                    // macOS, where that click is the menu's.
+                    if cfg!(target_os = "macos") {
+                        return;
+                    }
                     if let TrayIconEvent::Click {
                         button: MouseButton::Left,
                         button_state: MouseButtonState::Up,
@@ -532,15 +578,25 @@ fn main() {
         })
         .build(tauri::generate_context!())
         .expect("error while building the aof mesh desktop app")
-        .run(|_app, event| {
+        .run(|app, event| match event {
             // Ambient residency, the exit half (RESEARCH §1): an IMPLICIT exit (all
             // windows gone) is prevented so the app stays resident in the tray. An
             // EXPLICIT exit (Quit → `app.exit(code)`, `code` is Some) is honoured — the
             // one path that truly quits.
-            if let RunEvent::ExitRequested { code, api, .. } = event {
-                if code.is_none() {
-                    api.prevent_exit();
+            //
+            // Not on macOS (175/ADR-001 §4): the window's close only ever hides it, so no
+            // implicit exit can arise there, and an OS quit must never be prevented. As
+            // measured (175/00 Notes), a logout or a `quit` Apple Event does not ask here at
+            // all: tao's `applicationWillTerminate` arrives as `RunEvent::Exit` directly.
+            #[cfg(not(target_os = "macos"))]
+            RunEvent::ExitRequested { code: None, api, .. } => api.prevent_exit(),
+            // Every exit path ends here — Quit, a SIGTERM, an OS quit — so the reap runs here:
+            // the supervised process groups are taken down before the process goes (ADR-001).
+            RunEvent::Exit => {
+                if let Some(state) = app.try_state::<AppState>() {
+                    state.reaper.reap();
                 }
             }
+            _ => {}
         });
 }

@@ -297,6 +297,11 @@ function assertFrozenRecordShape(record, label) {
       assert.ok(Array.isArray(record.tags) && record.tags.every((tag) => typeof tag === "string"), `${label}: field "tags" is an array of strings ([] when absent)`);
       continue;
     }
+    // 178/ADR-002: `origin` is the second array field, [] for a record no stream item carries.
+    if (field === "origin") {
+      assert.ok(Array.isArray(record.origin) && record.origin.every((entry) => typeof entry === "string"), `${label}: field "origin" is an array of strings ([] when absent)`);
+      continue;
+    }
     assert.equal(typeof record[field], "string", `${label}: field "${field}" is a string (present-as-"" when absent)`);
   }
 }

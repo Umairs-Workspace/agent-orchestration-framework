@@ -20,7 +20,9 @@ export const PROPOSAL_REASONS = Object.freeze([
   "test-lane",
 ]);
 export const GRAPH_UNAVAILABLE = Object.freeze(["absent", "unreadable"]);
-export function createStoryContractDeriver({ graphArtifactBuiltAt, graphJsonPath, normalizeGraph, readGraph, computeImpact }) {
+// The graph arrives as ONE capability, `relations(paths, { projectRoot })` — the knowledge-engine
+// port's code verb, bound in core (179/ADR-004).
+export function createStoryContractDeriver({ relations }) {
 
 // src/story-contract-derive.mjs — the DERIVATION of a story's read and write sets
 // (milestone 96 / story 01, ADR-004): a PROPOSAL an author subtracts from, never a
@@ -53,9 +55,9 @@ export function createStoryContractDeriver({ graphArtifactBuiltAt, graphJsonPath
 //
 // THE GRAPH IS READ, NEVER BUILT (ADR-004 §2, 72/ADR-002 §1). A build is minutes even on
 // the unchanged path, and a proposal that might cost minutes before it costs seconds is
-// not one an author will run. The artifact is reached through the shipped
-// `readGraph`/`normalizeGraph`/`computeImpact` and nowhere else — no second parse of a
-// graph path, no child process. An absent or unreadable artifact is an ANSWER, not an
+// not one an author will run. The artifact is reached through the code corpus's
+// `relations` (179/ADR-004) and nowhere else — no second parse of a graph path, no child
+// process. An absent or unreadable artifact is an ANSWER, not an
 // empty set: the proposal says the coupling was unavailable, because "no coupling found"
 // and "I could not learn the coupling" rendering identically is the falsehood-shaped-as-an-
 // answer this family refuses elsewhere.
@@ -136,24 +138,16 @@ function owningSuite(file, { testRoots, allSuites }) {
   return `${root}/${wanted}`;
 }
 
-// Read the graph ONCE, through the shipped reader. Absent and unreadable are ANSWERS —
-// each named, each with its own repair — never an empty edge set wearing the shape of a
-// complete one.
-function loadGraph(projectRoot) {
-  const artifact = graphJsonPath(projectRoot);
-  let raw;
-  try {
-    raw = readGraph(artifact);
-  } catch (error) {
-    return { graph: null, path: artifact, available: false, unavailable: error?.code === "ENOENT" ? "absent" : "unreadable", builtAt: null };
+// Ask the graph ONCE, through the code corpus's `relations`. Absent and unreadable are
+// ANSWERS — each named, each with its own repair — never an empty edge set wearing the shape
+// of a complete one. The port's `no-graph` is this module's `absent`; its `graph-unreadable`
+// (a file that does not parse, or a shape the normaliser refuses) is `unreadable`.
+async function askGraph(projectRoot, subjectPaths) {
+  const answer = await relations(subjectPaths, { projectRoot });
+  if (answer.served !== false && answer.available === true) {
+    return { files: answer.files, path: answer.artifact, available: true, unavailable: null, builtAt: answer.builtAt };
   }
-  try {
-    return { graph: normalizeGraph(raw), path: artifact, available: true, unavailable: null, builtAt: graphArtifactBuiltAt(artifact) };
-  } catch {
-    // A shape the normaliser refuses (a graphify format change) is UNREADABLE, not absent:
-    // the file is there and says something this build cannot interpret.
-    return { graph: null, path: artifact, available: false, unavailable: "unreadable", builtAt: null };
-  }
+  return { files: [], path: answer.artifact ?? null, available: false, unavailable: answer.unavailable === "no-graph" ? "absent" : "unreadable", builtAt: null };
 }
 
 // Every `file:line` citation in the given documents, in document order then path order.
@@ -189,7 +183,7 @@ function citationsIn(documents) {
  * Returns `{ reads, files, graph, unknownCoupling, complete, unreadableDocuments }`, where
  * `reads`/`files` are ordered, deduped entries of `{ path, reason, declared }`.
  */
-function deriveStoryContract({
+async function deriveStoryContract({
   projectRoot,
   subjects = [],
   declaredReads = [],
@@ -203,12 +197,12 @@ function deriveStoryContract({
   const declaredFileSet = new Set(declaredFiles.map(norm));
   const subjectPaths = subjects.map(norm);
 
-  const loaded = loadGraph(path.resolve(projectRoot ?? "."));
+  const loaded = await askGraph(path.resolve(projectRoot ?? "."), subjectPaths);
   const readEntries = [];
   const unknownCoupling = [];
 
   if (loaded.available && subjectPaths.length > 0) {
-    for (const impact of computeImpact(loaded.graph, subjectPaths)) {
+    for (const impact of loaded.files) {
       if (!impact.present) {
         // UNKNOWN, never uncoupled. A node the graph does not carry has coupling this build
         // could not learn; reporting it as "no dependents" is the same falsehood as reporting

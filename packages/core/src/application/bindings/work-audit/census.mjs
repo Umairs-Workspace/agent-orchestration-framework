@@ -34,7 +34,8 @@ export function assembleWorkAuditCensus({  } = {}) {
     sweepDeclarationProblems,
     sweepLimits,
     walkSuiteFiles,
+    workspaceExportMap,
   } = createAuditCensus({ runBounded, DEFAULT_DEADLINE_MS, isToolkitRoot, toolkitProgram, nodeExecutable: toolkitNode });
 
-  return { AUDIT_FINDING_CODES, CENSUS_SWEEPS, LEDGER_PROJECT, LIMIT_KEYS, PROBE_PROGRAM, SWEEP_BASES, TEST_ROOTS, UNREGISTERED_BASELINE, assembledSuite, assertSweepsDeclared, baselineProblems, ledgerApplies, limitDeclarationProblems, limitRecord, readFinding, readRecord, readRegistrationIndexes, registrationDecision, registrationSources, runCensus, runnerBindings, runnerImportedSuites, runnerSpreadNames, spreadClaimLimit, sweepDeclarationProblems, sweepLimits, walkSuiteFiles };
+  return { AUDIT_FINDING_CODES, CENSUS_SWEEPS, LEDGER_PROJECT, LIMIT_KEYS, PROBE_PROGRAM, SWEEP_BASES, TEST_ROOTS, UNREGISTERED_BASELINE, assembledSuite, assertSweepsDeclared, baselineProblems, ledgerApplies, limitDeclarationProblems, limitRecord, readFinding, readRecord, readRegistrationIndexes, registrationDecision, registrationSources, runCensus, runnerBindings, runnerImportedSuites, runnerSpreadNames, spreadClaimLimit, sweepDeclarationProblems, sweepLimits, walkSuiteFiles, workspaceExportMap };
 }

@@ -159,7 +159,10 @@ export const doctorExamplesLaneTests = [
       assert.deepEqual([...EXAMPLE_LANE_CODES], ["example-question-open", "example-provenance-unanchored", "example-map-malformed", "example-rule-no-example", "example-map-too-many-rules", "example-untraced"]);
       assert.ok(Object.isFrozen(EXAMPLE_LANE_CODES));
       assert.equal(CHECK_GROUPS.at(-1), examplesGroup, "examplesGroup is the last entry of CHECK_GROUPS");
-      assert.equal(CHECK_GROUPS.at(-2), diagramsGroup, "…directly after diagramsGroup");
+      // 181 appended the rubric configuration lane after diagramsGroup, as the last built-in lane;
+      // the examples lane still follows every built-in lane, so it is the eleventh.
+      assert.equal(CHECK_GROUPS.at(-2).name, "rubricConfigurationGroup", "…directly after the last built-in lane, 181's rubric configuration lane");
+      assert.equal(CHECK_GROUPS.at(-3), diagramsGroup, "…which follows diagramsGroup");
       const module = await import("@aof/specification-by-example/doctor-lane");
       const exported = [...Object.keys(module), ...Object.keys(_aofApplication.work.doctorExamples)];
       assert.deepEqual(exported.filter((name) => name.endsWith("_FINDING_CODES")), []);

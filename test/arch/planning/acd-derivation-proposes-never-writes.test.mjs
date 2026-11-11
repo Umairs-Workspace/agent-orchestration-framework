@@ -17,8 +17,8 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //      them a transitive dependency on an artifact reader they have no concern with.
 //   2. NO WRITE PATH. The derivation holds no write of an item document and imports no write seam,
 //      so "the author subtracts" is a property of the module rather than a convention.
-//   3. THE GRAPH IS READ, NEVER BUILT. It reaches the artifact only through the shipped
-//      `readGraph`/`normalizeGraph`/`computeImpact` — no second parse of a graph path, no `graph
+//   3. THE GRAPH IS READ, NEVER BUILT. It reaches the artifact only through the code corpus's
+//      `relations` (179/ADR-004, the reader that moved) — no second parse of a graph path, no `graph
 //      build` of any form, no child process, and no dynamic import (72/FF-7204's own shape, over a
 //      different subject).
 //   4. THE REASONS ARE A CLOSED EXPORTED SET. Every entry carries one, and a further source is an
@@ -85,11 +85,16 @@ export const archTests = [
     name: "arch/96/01 FF-9602 (3) THE GRAPH IS READ, NEVER BUILT — the shipped reader and impact core only, with no second parse, no build and no child process",
     run: async () => {
       const derive = await source(DERIVE);
-      const specifiers = importsOf(await source("packages/core/src/application/bindings/story-contract-derive.mjs"));
-      assert.ok(specifiers.includes("@aof/knowledge/graph-normalize"), "it reaches the artifact through the shipped normaliser");
-      assert.ok(specifiers.includes("@aof/knowledge/graph-impact"), "…and the shipped impact reader");
-      assert.match(derive, /createStoryContractDeriver\(\{[^}]*readGraph[^}]*computeImpact/, "the implementation receives the configured readers");
-      assert.ok(!derive.includes("JSON.parse"), "it holds no second parse of a graph artifact — readGraph owns that");
+      // Since 179/ADR-004 the one reader is the code corpus's `relations`, bound in core from the
+      // port composed over the graphify code backend. The reader moved; the invariant did not.
+      const binding = await source("packages/core/src/application/bindings/story-contract-derive.mjs");
+      assert.match(binding, /const \{\s*relations\s*\} = codeRelationsServices/, "core hands the derivation the code readers' port");
+      assert.match(binding, /createStoryContractDeriver\(\{\s*relations\s*\}\)/, "…as its relations");
+      assert.match(derive, /createStoryContractDeriver\(\{[^}]*\brelations\b/, "the implementation receives the one configured reader");
+      for (const reader of ["readGraph", "normalizeGraph", "computeImpact", "graphJsonPath", "@aof/knowledge"]) {
+        assert.ok(!derive.includes(reader), `the derivation names "${reader}" — no artifact reader reaches it beside the port`);
+      }
+      assert.ok(!derive.includes("JSON.parse"), "it holds no second parse of a graph artifact — the code backend owns that");
       for (const build of ["graph build", "graph:build", "buildGraph", "graphify "]) {
         assert.ok(!derive.includes(build), `it invokes a graph build ("${build}") — a build is minutes, and a proposal that costs minutes is one nobody runs`);
       }
@@ -137,7 +142,7 @@ export const archTests = [
           }),
           "utf8",
         );
-        const proposal = deriveStoryContract({
+        const proposal = await deriveStoryContract({
           projectRoot: root,
           subjects: ["src/x.mjs"],
           declaredFiles: ["src/x.mjs"],
@@ -172,7 +177,7 @@ export const archTests = [
             await mkdir(path.join(root, "graphify-out"), { recursive: true });
             await writeFile(path.join(root, "graphify-out", "graph.json"), row.text, "utf8");
           }
-          const proposal = deriveStoryContract({
+          const proposal = await deriveStoryContract({
             projectRoot: root,
             subjects: ["src/x.mjs"],
             documents: [{ path: "SPEC.md", text: "`src/cited.mjs:9`" }],

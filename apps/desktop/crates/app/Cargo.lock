@@ -1964,6 +1964,7 @@ dependencies = [
 name = "mesh-desktop-app"
 version = "0.1.0"
 dependencies = [
+ "libc",
  "mesh-desktop-core",
  "opener",
  "serde",

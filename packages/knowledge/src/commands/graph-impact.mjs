@@ -1,8 +1,5 @@
-import { existsSync } from "node:fs";
 import { commandError } from "@aof/contracts/error";
-import { readGraph, normalizeGraph, graphJsonPath, graphArtifactBuiltAt } from "../graph-normalize.mjs";
 import { relativiseGraphPath } from "./shared.mjs";
-import { computeImpact } from "../graph-impact.mjs";
 // graph:impact — the DETERMINISTIC, file-anchored coupling lookup the running ACD
 // agents consume (milestone 11, re-open / ADR-007). Where `graph:query` is a fuzzy,
 // similarity-seeded NL traversal (legible but unreliable — it seeds on doc nodes and
@@ -21,15 +18,17 @@ import { computeImpact } from "../graph-impact.mjs";
 // distinct facts, and the human render states which one it is; conflating them let a
 // failed build be recorded as the architectural finding "these modules have no coupling".
 //
-// It reads the STRUCTURED graph.json via the pure `normalizeGraph` (09/ADR-001's
-// PERMITTED structured handle — the SAME read 10's memory backend uses), NOT the
-// forbidden opaque markdown stdout. It is NOT a graphify spawn (graph.json is a file
-// read; 09/ADR-002) — so it adds NO new spawn site. ADVISORY: it returns coupling
-// FACTS the agent reasons over; it feeds no gate/merge (ADR-004 still holds).
+// Since 179/ADR-002 this command is a FACE over the knowledge-engine port: it asks
+// `relations(paths)` of the code corpus, which the graphify code backend answers from the
+// STRUCTURED graph.json (09/ADR-001's permitted handle, never the markdown stdout, never a
+// spawn). The face reads no artifact itself, so the code graph has one reader that also owns
+// its absence. ADVISORY: it returns coupling FACTS the agent reasons over; it feeds no
+// gate/merge (ADR-004 still holds).
 //
-// PRECONDITION (ADR-001, @executable): a graph must be built first. If
-// <projectRoot>/graphify-out/graph.json is absent, `run` throws a build-first
-// "no-graph" error BEFORE any read — deterministically CI-checkable, no binary needed.
+// PRECONDITION (ADR-001, @executable): a graph must be built first. When the port answers
+// `no-graph`, `run` throws today's build-first 424 — ahead of the empty-paths check, so it is
+// deterministically CI-checkable with no binary. An artifact that does not parse is refused as
+// `graph-unreadable`, naming the cause the port reports.
 //
 // WHY IT IS REGISTERED — the comment that stood above this module's entry in `src/command-core.mjs`,
 // moved here unedited (119/02, FF-11908: the registry cites, it does not explain).
@@ -39,17 +38,16 @@ import { computeImpact } from "../graph-impact.mjs";
 //   dependents straight from graph.json's edges). Reads the structured graph via the
 //   pure normalizer (NOT a spawn, NOT a markdown parse) — supersedes the milestone's
 //   original ADR-002 "zero production code" stance, which left it with no real consumer.
-// graphArtifactBuiltAt is the SHARED derivation graph:build reports too, so the
-// freshness this command prints is the same instant that build printed — a call-time
-// `new Date()` here would be the very dishonesty that family of fixes removed.
+// The port's `builtAt` is graphArtifactBuiltAt, the SHARED derivation graph:build reports
+// too, so the freshness this command prints is the same instant that build printed — a
+// call-time `new Date()` here would be the very dishonesty that family of fixes removed.
+//
+// The pure core, `computeImpact`, lives at `../graph-impact.mjs` and is no longer re-exported
+// here: a face that names it is the edge FF-17903 forbids.
 
-// THE PURE CORE MOVED DOWN (72/ADR-002 §1) and is RE-EXPORTED here, so this command keeps its
-// verb and every existing consumer of `computeImpact` from this path is byte-unchanged. Test
-// selection needs the same computation and could not reach it here: the layer gate forbids any
-// `src/*.mjs` importing `./commands/*`, and its dynamic-import escape is shut by FF-7204.
-export { computeImpact };
-
-export const graphImpactCommand = {
+// Configured application services are supplied by core; construction performs no I/O.
+export function createGraphImpactCommand({ relations }) {
+const graphImpactCommand = {
   id: "graph:impact",
   input: {
     type: "object",
@@ -61,32 +59,31 @@ export const graphImpactCommand = {
   },
 
   async run(input, ctx) {
-    const projectRoot = ctx.workspace.projectRoot;
-    const graphPath = graphJsonPath(projectRoot);
+    const answer = await relations(Array.isArray(input.paths) ? input.paths : [], { projectRoot: ctx.workspace.projectRoot });
 
-    // Build-first precondition, surfaced BEFORE any read (mirrors graph:query). A
+    if (answer.served === false) throw commandError(`The knowledge engine serves no code relations (${answer.code}).`, answer.code, 424);
+
+    // Build-first precondition, surfaced BEFORE the empty-paths check (mirrors graph:query). A
     // deterministic, binary-independent @executable path.
-    if (!existsSync(graphPath)) {
+    if (answer.unavailable === "no-graph") {
       throw commandError(
         "No graph found — a graph must be built first (run `aof graph build <folder>`).",
         "no-graph",
         424
       );
     }
+    if (answer.unavailable === "graph-unreadable") {
+      throw commandError(`The graph at ${answer.artifact} could not be read (${answer.cause}) — rebuild it with \`aof graph build .\`.`, "graph-unreadable", 424);
+    }
     if (!Array.isArray(input.paths) || input.paths.length === 0) {
       throw commandError("graph:impact needs at least one path (the file[s] to analyse).", "no-paths", 400);
     }
 
-    // Pure structured read (09/ADR-001's permitted handle) — NOT a spawn, NOT a
-    // markdown parse. The same read 10's backend uses.
-    const graph = normalizeGraph(readGraph(graphPath));
-    const files = computeImpact(graph, input.paths);
-    // The artifact's OWN mtime — the same honest freshness `graph:build` reports, at the
-    // point the answer is actually consumed. An agent grounding a boundary or a review
+    // `builtAt` is the ARTIFACT's own mtime — the same honest freshness `graph:build` reports,
+    // at the point the answer is actually consumed. An agent grounding a boundary or a review
     // rank reads the impact, not the build it may not have run; without this, a coupling
     // answer over a month-old graph is presented exactly like one over a fresh graph.
-    // Never a wall-clock stamp (that is the defect this whole family closes).
-    return { graphPath, builtAt: graphArtifactBuiltAt(graphPath), files };
+    return { graphPath: answer.artifact, builtAt: answer.builtAt, files: answer.files };
   },
 
   cli: {
@@ -139,3 +136,6 @@ export const graphImpactCommand = {
     json: (result) => relativiseGraphPath(result),
   },
 };
+
+return { graphImpactCommand };
+}

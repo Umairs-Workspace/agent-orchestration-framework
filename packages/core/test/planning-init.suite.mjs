@@ -1382,5 +1382,16 @@ export const planningInitTests = [
         await rm(second, { recursive: true, force: true });
       }
     })
-  }
+  },
+  // 178/02 E7 — the Cowork shatter skill is rendered from shatter.md, so it spells the canonical
+  // memory command (178/ADR-003).
+  {
+    name: "178/02 E7 · the Cowork planning skill is rendered with aof memory recall and no aof work memory",
+    run: () => withPlanner(async (repo, plannerSource, home) => {
+      await runFace(repo, "--runtime cowork --force", { plannerSource, aofHome: home });
+      const bundle = (await readFile(path.join(home, "cowork", "aof.plugin"))).toString("utf8");
+      assert.ok(bundle.includes("aof memory recall"), "the rendered shatter skill holds aof memory recall");
+      assert.equal(/aof\s+work\s+memory/u.test(bundle), false, "…and holds no aof work memory");
+    })
+  },
 ];

@@ -28,7 +28,10 @@ import { meshDesktopStopTests } from "./mesh-desktop-stop.test.mjs";
 import { meshDesktopAutostartTests } from "./mesh-desktop-autostart.test.mjs";
 // milestone 126 / story 06 — the FOURTH preflight check: a workspace with no
 // `claude-run-heartbeat` hook is named, and the count of three is superseded.
-import { meshDesktopPreflightHeartbeatTests } from "./mesh-desktop-preflight-heartbeat.test.mjs";
+// milestone 175 / story 03 — on darwin the preflight appends four checks: the build tools, the
+// bundle's quarantine, and the daemons' `claude` probed in the LaunchAgent's own environment.
+// Cases on the preflight's own suite, so it exports both arrays.
+import { meshDesktopPreflightHeartbeatTests, meshDesktopPreflightMacosTests } from "./mesh-desktop-preflight-heartbeat.test.mjs";
 
 export const tests = [
   // milestone 36 / story 03 — mesh desktop CLI verbs (dispatch / install / run)
@@ -39,4 +42,6 @@ export const tests = [
   // milestone 126 / story 04 — autostart + the preflight
   ...meshDesktopAutostartTests,
   ...meshDesktopPreflightHeartbeatTests,
+  // milestone 175 / story 03 — the darwin preflight checks
+  ...meshDesktopPreflightMacosTests,
 ];

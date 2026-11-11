@@ -23,7 +23,7 @@ const GITIGNORE_ENTRY = "aof.memory.index.json";
 
 const MEMORY_RECORD_KEYS = [
   "recordType", "id", "item", "itemSlug", "title",
-  "area", "stage", "kind", "owner", "status", "tags", "summary", "text", "source",
+  "area", "stage", "kind", "owner", "status", "tags", "origin", "summary", "text", "source",
 ];
 
 const FIXTURE_RETRO = `# 01 · Fixture — Retrospective
@@ -128,15 +128,16 @@ export const archTests = [
         const result = await reindex(null, ctx);
         assert.ok(result.records.length >= 2, "fixture produced a lesson and an adr");
         for (const record of result.records) {
-          // exactly the frozen key set, all strings but `tags` (148/ADR-003: an array).
+          // exactly the frozen key set, all strings but `tags` (148/ADR-003: an array) and `origin`
+          // (178/ADR-002: an array).
           assert.deepEqual(
             Object.keys(record).sort(),
             [...MEMORY_RECORD_KEYS].sort(),
             `record ${record.id} has exactly the frozen MemoryRecord keys`,
           );
           for (const key of MEMORY_RECORD_KEYS) {
-            if (key === "tags") {
-              assert.ok(Array.isArray(record.tags), `record ${record.id} field "tags" is an array`);
+            if (key === "tags" || key === "origin") {
+              assert.ok(Array.isArray(record[key]), `record ${record.id} field "${key}" is an array`);
               continue;
             }
             assert.equal(typeof record[key], "string", `record ${record.id} field "${key}" is a string`);

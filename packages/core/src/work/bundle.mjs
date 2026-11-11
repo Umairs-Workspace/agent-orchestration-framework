@@ -19,10 +19,12 @@
 import path from "node:path";
 import { hashContent } from "../lock.mjs";
 import { renderConfigOutputs } from "../adapters.mjs";
+import { RUNTIMES } from "../model.mjs";
 import { installableBundleResources } from "./bundle-runtime.mjs";
 import { normalizeEffort } from "@aof/execution/session-model";
 import { assetBase, readAssetText, listAssetMembers, packageAssetClass } from "../asset-base.mjs";
 import { INTEGRATIONS } from "../integrations.mjs";
+import { PRACTICES } from "../practices.mjs";
 import { applyFrozenAgentScopes, bundledFrozenSet, compileFrozenSet } from "../frozen-set.mjs";
 
 // ADR-005 comment-form stamp: every template-rendered file declares itself
@@ -43,19 +45,30 @@ export function bundleRoot() {
 // appended. An appended member records its owning integration (`integration`, the id ADR-005 gates
 // on) and the asset class its text is read from (`assetClass`); core's members carry neither. A
 // contributed id that is already declared is refused here, at load, naming the member and package.
-export function readDescriptor({ integrations = INTEGRATIONS } = {}) {
+//
+// 179/ADR-004 §4 — each practice's members are appended after the integrations', with an
+// `assetClass` and NO `integration` key: a practice is opted into per invocation, never gated by a
+// project switch. `readFragment` reads one contributor's fragment; it is a parameter so a test can
+// hand in a fragment no installed package ships.
+const readPackageFragment = (assetClass) => JSON.parse(readAssetText(assetClass, "bundle.json"));
+
+export function readDescriptor({ integrations = INTEGRATIONS, practices = PRACTICES, readFragment = readPackageFragment } = {}) {
   const descriptor = JSON.parse(readAssetText("bundle", "bundle.json"));
   const declared = new Map(descriptor.members.map((member) => [member.id, "core"]));
-  for (const integration of integrations) {
-    if (!integration.assets?.package) continue;
-    const assetClass = packageAssetClass(integration.assets.package);
-    const fragment = JSON.parse(readAssetText(assetClass, "bundle.json"));
+  const contributors = [
+    ...integrations.map((contribution) => ({ contribution, integration: contribution.id })),
+    ...practices.map((contribution) => ({ contribution, integration: null })),
+  ];
+  for (const { contribution, integration } of contributors) {
+    if (!contribution.assets?.package) continue;
+    const assetClass = packageAssetClass(contribution.assets.package);
+    const fragment = readFragment(assetClass);
     for (const member of fragment.members ?? []) {
       if (declared.has(member.id)) {
-        throw new Error(`Bundle member "${member.id}" contributed by ${integration.name} is already declared by ${declared.get(member.id)}.`);
+        throw new Error(`Bundle member "${member.id}" contributed by ${contribution.name} is already declared by ${declared.get(member.id)}.`);
       }
-      declared.set(member.id, integration.name);
-      descriptor.members.push({ ...member, integration: integration.id, assetClass });
+      declared.set(member.id, contribution.name);
+      descriptor.members.push({ ...member, ...(integration ? { integration } : {}), assetClass });
     }
   }
   return descriptor;
@@ -150,6 +163,8 @@ export function loadBundle({ descriptor = readDescriptor() } = {}) {
         body
       };
       if (member.integration) resource.integration = member.integration;
+      // 179/ADR-007 — a member may refuse every mapped runtime it does not declare (bundle-runtime.mjs).
+      if (member.mapped === false) resource.mapped = false;
       if (frontmatter.model) resource.model = frontmatter.model;
       if (member.variants) {
         resource.runtimeVariants = Object.fromEntries(Object.entries(member.variants).map(([runtime, variant]) => {
@@ -256,8 +271,13 @@ function templateOutputPath(member, file) {
 export function renderBundleTemplateOutputs(bundle, options = {}) {
   const runtimes = options.runtimes ?? null;
   // Templates are runtime-independent; emit once, tagged with the first selected
-  // runtime (or "bundle") purely for manifest shape compatibility.
-  const runtime = runtimes && runtimes.length > 0 ? runtimes[0] : "bundle";
+  // runtime in REGISTRY order (or "bundle") purely for manifest shape compatibility.
+  // Registry order, not the caller's: the tag decides which ownership rule a re-init
+  // applies, so `--runtime codex,claude` over a `claude,codex` install must not turn
+  // the lock's own templates into unowned Codex collisions.
+  const runtime = runtimes && runtimes.length > 0
+    ? Object.keys(RUNTIMES).find((candidate) => runtimes.includes(candidate)) ?? runtimes[0]
+    : "bundle";
   const outputs = [];
   for (const member of bundle.templates) {
     for (const file of member.files) {

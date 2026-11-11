@@ -5,9 +5,11 @@ import { canonicalRecurrence } from "@aof/work/memory-vocabulary";
 import { ACCOUNTING_COUNTERS, accountMemory } from "@aof/work/memory-accounting";
 import { commandError } from "@aof/contracts/error";
 import { resolveGraphifyExtraction } from "./graphify-backends.mjs";
-import { resolveMemorySources } from "./memory/claude-auto-memory.mjs";
+import { legacyMessage, readMemoryConfig } from "./memory-config.mjs";
+import { createKnowledgeEngine } from "./engine.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
-export function createMemory({ loadLocalBackend, loadGraphifyBackend }) {
+// `createEngine` composes the knowledge-engine port (179/ADR-003); a harness injects a recording one.
+export function createMemory({ loadLocalBackend, loadGraphifyBackend, createEngine = createKnowledgeEngine }) {
 // `aof work memory <verb>` — the memory SEAM (milestone 05, story 00).
 //
 // This module owns the agent-facing verb surface (recall / record-recall / ingest /
@@ -139,7 +141,7 @@ function applyDefaultBackendSelection(config, defaultBackend) {
 // in-memory stub under any name (e.g. "local") WITHOUT the real module existing.
 async function resolveConfiguredBackend(config, registry = BACKEND_REGISTRY) {
   const name = selectBackendName(config);
-  resolveMemorySources(config?.memory); // 159/ADR-001 — an invalid source list is refused before any verb runs
+  readMemoryConfig(config); // 180/ADR-001 — an invalid or twice-spelled memory node is refused before any verb runs
   const loader = registry[name];
   if (!loader) {
     throw new Error(`Unknown memory backend "${name}". Registered: ${Object.keys(registry).join(", ")}.`);
@@ -150,7 +152,7 @@ async function resolveConfiguredBackend(config, registry = BACKEND_REGISTRY) {
 
 // ----------------------------------------------------------------- argv ----
 
-// Parse `aof work memory <verb> [query] [<ref>] [--scope-flags] [--limit N] [--json]`.
+// Parse `aof memory <verb> [query] [<ref>] [--scope-flags] [--limit N] [--json]`.
 //   recall : a free-text query string (first positional).
 //   record-recall : the owning item's <ref> (first positional) and `--input <json-file>`.
 //   recurrence : the new lesson's text (the positionals, as recall's query) and `--exclude <item>/R<n>`,
@@ -311,7 +313,10 @@ function renderRecallBlock(recallResult, { limit } = {}) {
     // in it), after the title and before the tags, so the source stays last. Every other record's
     // line is byte-for-byte what it was.
     const summary = layerOf(record.recordType) === "episodic" && record.summary ? ` · ${record.summary}` : "";
-    return `${id} · ${record.kind || record.recordType} · ${record.area} · ${record.title}${summary}${tags} · ${record.source}`;
+    // 178/ADR-002 — the planning documents the record's item came from, after the tags and before
+    // the source. A record with none, and one from a store before version 4, renders as before.
+    const origin = Array.isArray(record.origin) && record.origin.length > 0 ? ` · origin ${record.origin.join("; ")}` : "";
+    return `${id} · ${record.kind || record.recordType} · ${record.area} · ${record.title}${summary}${tags}${origin} · ${record.source}`;
   });
   return lines.join("\n") + "\n";
 }
@@ -360,11 +365,17 @@ function renderMemory(verb, result, { block = false, limit, help = false, render
     }
     if (result.conformance) lines.push(`conformance: ${conformanceText(result.conformance)}`);
     if (result.effectiveness) lines.push(...effectivenessLines(result.effectiveness));
+    // 180/ADR-005 — the corpora served, then one line per old key with its new home. Before the
+    // stale-index line, which stays last (178/01 E9).
+    if (result.config) {
+      lines.push(`corpora: ${result.config.corpora.join(", ")}`);
+      for (const entry of result.config.legacy) lines.push(`legacy: ${legacyMessage(entry)}`);
+    }
     // 148/ADR-003 — a store built before the current index version is named, with the verb that
     // rebuilds it, rather than reported as if its numbers were current.
     const index = result.index;
     if (index?.stale) {
-      lines.push(`memory: the index is version ${index.version}, this build writes ${index.current} — run \`aof work memory ingest\` to rebuild it`);
+      lines.push(`memory: the index is version ${index.version}, this build writes ${index.current} — run \`aof memory ingest\` to rebuild it`);
     }
     return lines.join("\n");
   }
@@ -448,7 +459,7 @@ function defaultRender(verb, result, { json, block, limit, help }, log) {
 // this same constant — two spellings of the flag vocabulary had already drifted once
 // (`--all`/`--block` present in one and absent from the other), and a usage line that
 // disagrees with itself is the seam saying two things about its own surface.
-const MEMORY_USAGE = "aof work memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--lessons] [--input <file>] [--exclude <item>/R<n>] [--json]";
+const MEMORY_USAGE = "aof memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--lessons] [--input <file>] [--exclude <item>/R<n>] [--json]";
 
 function memoryUsage() {
   return [
@@ -496,31 +507,37 @@ function gateMemoryVerb(verb) {
 // doors run the same routing: `runMemory` below (argv in, collector out) and the routed
 // `work:memory` command (the face's input in, data out).
 //
-// Routing (ADR-003):
-//   recall  -> backend.recall(query, scope, opts, ctx)
-//   recurrence -> backend.recall(query, {}, { limit: Infinity }, ctx), scored by the calibrated matcher
-//   reindex -> backend.reindex(only, ctx)
-//   ingest  -> backend.reindex(only, ctx)  ALIAS (no `ingest` interface method)
-//   status  -> backend.status(ctx)
+// THROUGH THE PORT (179/ADR-003). The resolved backend is wrapped in the knowledge-engine port,
+// composed here once per call, and every verb reaches it through the port's own verb. A backend
+// whose declaration the port cannot honour is refused at that construction — loudly, before any
+// verb runs — so the seam never meets a `corpus-unserved` miss and does not tolerate one.
+//
+// Routing (05/ADR-003, through the port):
+//   recall  -> port.recall(query, scope, opts, ctx)              -> backend.recall
+//   recurrence -> port.recall(query, {}, { limit: Infinity }, ctx), scored by the calibrated matcher
+//   reindex -> port.ingest("work", { only }, ctx)                -> backend.reindex(only, ctx)
+//   ingest  -> port.ingest("work", { only }, ctx)  ALIAS (no `ingest` interface method)
+//   status  -> port.status("work", ctx)                          -> backend.status(ctx)
 // The verb is the caller's to gate; an unknown one reaches no method and yields undefined.
 async function executeMemoryVerb({ verb, query = "", only = null, exclude = null, scope = {}, opts = {}, lessons = false } = {}, { backend, ctx = {} } = {}) {
-  if (verb === "recall") return backend.recall(query, scope, opts, ctx);
+  const port = createEngine({ backends: [backend] });
+  if (verb === "recall") return port.recall(query, scope, opts, ctx);
   if (verb === RECURRENCE_VERB) {
     // 153/ADR-002 — whole-index candidates (no scope: recall's kind filter is NOT applied, because a
     // recurrence crosses kinds), then the matcher's own score. Retrieval only nominates; the order,
     // the threshold and the qualifying reference are the matcher's, so both backends agree.
-    const recalled = await backend.recall(query, {}, { limit: Infinity }, ctx);
+    const recalled = await port.recall(query, {}, { limit: Infinity }, ctx);
     return evaluateRecurrence({ text: query, records: recalled?.records ?? [], exclude });
   }
-  // ingest is an ALIAS of reindex (ADR-003, FINDINGS §4): same interface method.
-  if (verb === "reindex" || verb === "ingest") return backend.reindex(only, ctx);
+  // ingest is an ALIAS of reindex (ADR-003, FINDINGS §4): the port's ingest of "work" calls reindex.
+  if (verb === "reindex" || verb === "ingest") return port.ingest("work", { only }, ctx);
   if (verb === "status") {
     // 148/ADR-004 §2 — status is COMPOSED here: the backend's own facts,
     // unchanged, then one unbounded recall, over which the seam adds `types`, `layers` and
     // `conformance`. Counting at the seam rather than per backend is what keeps the two backends
     // from disagreeing about what the store holds (m40/R3: graphify's own split names two types).
-    const base = await backend.status(ctx);
-    const recalled = await backend.recall("", {}, { limit: Infinity }, ctx);
+    const base = await port.status("work", ctx);
+    const recalled = await port.recall("", {}, { limit: Infinity }, ctx);
     const records = recalled?.records ?? [];
     const status = { ...base, ...statusPartition(records) };
     // 153/ADR-003 — observed effectiveness is the work-owned accounting reader's, over the ledgers and
@@ -561,7 +578,16 @@ async function runMemoryVerb(input, { config, resolveBackend = resolveConfigured
     }
   }
   const backend = await resolveBackend(config);
-  return executeMemoryVerb(input, { backend, ctx: { ...ctx, configMemory: config?.memory ?? ctx.configMemory ?? {} } });
+  const result = await executeMemoryVerb(input, { backend, ctx: { ...ctx, configMemory: config?.memory ?? ctx.configMemory ?? {} } });
+  // 180/ADR-005 — status names the memory node as it was read: the corpora served and every old
+  // key still spelled. Added here, after the port answers, so no backend learns of the config.
+  if (input.verb === "status" && result) result.config = statusConfig(config);
+  return result;
+}
+
+function statusConfig(config) {
+  const { corpora, corporaSource, legacy } = readMemoryConfig(config);
+  return { corpora, corporaSource, legacy };
 }
 
 // THE IN-PROCESS ENTRY over ARGV — a thin composition of the same path the routed door
@@ -625,8 +651,9 @@ export const MEMORY_BACKEND_CONFIG_PATH = ["memory", "backend"].join(".");
 export function inspectMemoryConfiguration(config) {
   const declared = declaredBackendName(config);
   const backend = selectBackendName(config);
-  resolveGraphifyExtraction(config?.memory); // validate an authored nested setting even when inactive
-  resolveMemorySources(config?.memory); // 159/ADR-001 — likewise memory.sources
+  // 180/ADR-001 — the whole node is read, so every block is validated whether or not its engine is
+  // active (154/09), and a setting spelled twice is refused.
+  const node = readMemoryConfig(config);
   if (!['none', 'local', 'graphify'].includes(backend)) {
     const error = commandError(`Unknown memory backend "${backend}". Registered: none, local, graphify.`, 'invalid-memory-backend', 400);
     error.path = MEMORY_BACKEND_CONFIG_PATH;
@@ -634,5 +661,8 @@ export function inspectMemoryConfiguration(config) {
   }
   const extraction = backend === 'graphify' ? resolveGraphifyExtraction(config?.memory) : null;
   return { backend, source: declared === null ? 'default' : 'project setting', path: MEMORY_BACKEND_CONFIG_PATH,
-    dependencies: extraction?.dependencies ?? [], extraction };
+    dependencies: extraction?.dependencies ?? [], extraction,
+    corpora: node.corpora, corporaSource: node.corporaSource,
+    paths: { backend: MEMORY_BACKEND_CONFIG_PATH, corpora: node.paths.corpora, graph: node.paths.graph, extraction: node.paths.extraction },
+    legacy: node.legacy };
 }

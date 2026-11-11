@@ -1,12 +1,14 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import { createStoryContractDeriver } from "@aof/work/story-contract-derive";
-import { graphArtifactBuiltAt, graphJsonPath, normalizeGraph, readGraph } from "@aof/knowledge/graph-normalize";
-import { computeImpact } from "@aof/knowledge/graph-impact";
 
-export function assembleStoryContractDerive({  } = {}) {
-  // Core constructs this application service from its owning package.
+export function assembleStoryContractDerive({ codeRelationsServices }) {
+  // Core constructs this application service from its owning package. The graph is the code
+  // corpus's `relations`, asked through the port over the graphify code backend's read half
+  // (179/ADR-004), which reaches no graphify process.
 
-  const { PROPOSAL_REASONS, GRAPH_UNAVAILABLE, deriveStoryContract } = createStoryContractDeriver({ graphArtifactBuiltAt, graphJsonPath, normalizeGraph, readGraph, computeImpact });
+  const { relations } = codeRelationsServices;
+
+  const { PROPOSAL_REASONS, GRAPH_UNAVAILABLE, deriveStoryContract } = createStoryContractDeriver({ relations });
 
   return { PROPOSAL_REASONS, GRAPH_UNAVAILABLE, deriveStoryContract };
 }

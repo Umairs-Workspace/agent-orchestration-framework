@@ -10,7 +10,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // injected-exec-closure idiom) — no real Tauri app is started, no window opens
 // (the story's RESOLVED developer-amigo note).
 import assert from "node:assert/strict";
-import { chmod, writeFile } from "node:fs/promises";
+import { chmod, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 const discoverDesktopApp = _aofApplication.mesh.commandTools.mesh.desktop.discoverDesktopApp;
 const launchDesktopApp = _aofApplication.mesh.commandTools.mesh.desktop.launchDesktopApp;
@@ -25,6 +25,45 @@ const getCommand = _aofApplication.getCommand;
 const invoke = _aofApplication.invoke;
 const runCommandFace = _aofApplication.cli.runCommandFace;
 import { withMeshDesktopFixture, seedInstalledApp } from "../../support/mesh-desktop-fixture.mjs";
+
+// 175/02 — a fake launchd that MODELS one job, `com.aof.mesh.desktop` in `gui/501`, and records
+// every command as one line. `print` exits 0 for a loaded job and 113 (launchd's "could not
+// find service") otherwise; `bootstrap` loads the job.
+function makeFakeLaunchd({ loaded = false, state = "running" } = {}) {
+  const asked = [];
+  let isLoaded = loaded;
+  const runner = async (file, args) => {
+    asked.push([file, ...args].join(" "));
+    if (file !== "launchctl") return { stdout: "", stderr: "", code: -1 };
+    const [verb] = args;
+    if (verb === "print") return isLoaded ? { stdout: `\tstate = ${state}\n`, stderr: "", code: 0 } : { stdout: "", stderr: "Could not find service", code: 113 };
+    if (verb === "kickstart") return { stdout: "", stderr: "", code: isLoaded ? 0 : 113 };
+    if (verb === "bootout") {
+      const was = isLoaded;
+      isLoaded = false;
+      return { stdout: "", stderr: "", code: was ? 0 : 113 };
+    }
+    if (verb === "bootstrap") {
+      if (isLoaded) return { stdout: "", stderr: "Bootstrap failed: 5: Input/output error", code: 5 };
+      isLoaded = true;
+      return { stdout: "", stderr: "", code: 0 };
+    }
+    return { stdout: "", stderr: "Unrecognized subcommand", code: 64 };
+  };
+  return { runner, asked };
+}
+
+// 175/02 — an install dir holding an installed fixture bundle, with an injected home.
+async function withDarwinInstall(fn) {
+  await withMeshDesktopFixture(async (fixture) => {
+    const bundle = path.join(fixture.installDir, "aof-mesh-desktop.app");
+    const inner = path.join(bundle, "Contents", "MacOS", "AOF Desktop");
+    await mkdir(path.dirname(inner), { recursive: true });
+    await writeFile(inner, "fixture-bundle-exe", "utf8");
+    await chmod(inner, 0o755);
+    return await fn(fixture);
+  }, { seedArtifacts: false });
+}
 
 async function captureConsole(run) {
   const logs = [];
@@ -81,6 +120,9 @@ function inertPreflightCtx() {
     hookFileFn: async () => true,
     bundleHookFn: () => ({ id: "claude-run-heartbeat", event: "PostToolUse" }),
     nodeId: "fixture-node",
+    // 175/03 — the preflight's answer is pinned to Windows' four, so it reaches no darwin probe
+    // on a Mac host either.
+    platform: "win32",
   };
 }
 
@@ -94,7 +136,7 @@ export const meshDesktopRunTests = [
         await seedInstalledApp(installDir);
         const { spawnFn, calls } = makeFixtureSpawn();
 
-        const result = await launchDesktopApp({ installDir, spawnFn });
+        const result = await launchDesktopApp({ platform: "win32", installDir, spawnFn });
         assert.equal(result.ok, true, "ok:true reporting the launch");
         assert.equal(result.appPath, path.join(installDir, DESKTOP_APP_EXE), "discovered by absolute co-located path");
 
@@ -115,7 +157,7 @@ export const meshDesktopRunTests = [
       await withMeshDesktopFixture(async ({ installDir }) => {
         const { spawnFn, calls } = makeFixtureSpawn();
         await assert.rejects(
-          () => launchDesktopApp({ installDir, spawnFn }),
+          () => launchDesktopApp({ platform: "win32", installDir, spawnFn }),
           (error) => {
             assert.equal(error.code, "desktop-not-installed");
             assert.match(error.message, /aof mesh desktop install/, "names the install verb");
@@ -135,14 +177,14 @@ export const meshDesktopRunTests = [
       await withMeshDesktopFixture(async ({ installDir }) => {
         await seedInstalledApp(installDir);
         const { spawnFn, calls } = makeFixtureSpawn();
-        const result = await launchDesktopApp({ installDir, spawnFn });
+        const result = await launchDesktopApp({ platform: "win32", installDir, spawnFn });
         assert.equal(result.ok, true);
         assert.equal(calls.length, 1);
       });
 
       // Row 2: is empty (app never installed) -> refuses, names the install verb.
       await withMeshDesktopFixture(async ({ installDir }) => {
-        await assert.rejects(() => discoverDesktopApp({ installDir }), (error) => {
+        await assert.rejects(() => discoverDesktopApp({ platform: "win32", installDir }), (error) => {
           assert.equal(error.code, "desktop-not-installed");
           assert.match(error.message, /aof mesh desktop install/);
           return true;
@@ -152,7 +194,7 @@ export const meshDesktopRunTests = [
       // Row 3: holds only the aof binary (no desktop app placed yet) -> refuses,
       // names the install verb.
       await withMeshDesktopFixture(async ({ installDir }) => {
-        await assert.rejects(() => discoverDesktopApp({ installDir }), (error) => {
+        await assert.rejects(() => discoverDesktopApp({ platform: "win32", installDir }), (error) => {
           assert.equal(error.code, "desktop-not-installed");
           assert.match(error.message, /aof mesh desktop install/);
           return true;
@@ -166,7 +208,7 @@ export const meshDesktopRunTests = [
       await withMeshDesktopFixture(async ({ installDir }) => {
         const { mkdir } = await import("node:fs/promises");
         await mkdir(path.join(installDir, DESKTOP_APP_EXE), { recursive: true });
-        await assert.rejects(() => discoverDesktopApp({ installDir }), (error) => {
+        await assert.rejects(() => discoverDesktopApp({ platform: "win32", installDir }), (error) => {
           assert.equal(error.code, "desktop-not-runnable");
           assert.match(error.message, /re-run `aof mesh desktop install`/i, "a re-install hint");
           return true;
@@ -183,7 +225,7 @@ export const meshDesktopRunTests = [
       await withMeshDesktopFixture(async ({ installDir }) => {
         await seedInstalledApp(installDir);
         await chmod(path.join(installDir, DESKTOP_APP_EXE), 0o644);
-        await assert.rejects(() => discoverDesktopApp({ installDir }), (error) => {
+        await assert.rejects(() => discoverDesktopApp({ platform: "win32", installDir }), (error) => {
           assert.equal(error.code, "desktop-not-runnable");
           return true;
         });
@@ -200,7 +242,7 @@ export const meshDesktopRunTests = [
         await seedInstalledApp(installDir);
         const { spawnFn, calls } = makeFixtureSpawn();
         const command = getCommand("mesh:desktop-run");
-        const result = await invoke("mesh:desktop-run", { installDir }, { spawnFn, ...inertPreflightCtx() });
+        const result = await invoke("mesh:desktop-run", { installDir }, { platform: "win32", spawnFn, ...inertPreflightCtx() });
         assert.equal(calls.length, 1, "the injected spawn ran exactly once");
         const parsed = command.cli.json(result);
         assert.equal(parsed.ok, true);
@@ -234,6 +276,140 @@ export const meshDesktopRunTests = [
           },
         );
       }, { seedArtifacts: false });
+    },
+  },
+
+  // ── milestone 175 / story 02, task 01_run-starts-the-app-in-the-login-session.feature ──
+  //
+  // launchd is a FAKE that models the job `com.aof.mesh.desktop` in `gui/501`: `print` answers
+  // whether it is loaded, `kickstart` starts a loaded one, `bootstrap` loads and starts it. The
+  // home is injected, so the plist the verb looks for is the fixture's, never `~/Library`.
+
+  // Scenario: E4 · a loaded LaunchAgent is kickstarted, and nothing is spawned
+  {
+    name: "175/02 task01 E4 · a loaded LaunchAgent is kickstarted, and nothing is spawned",
+    async run() {
+      await withDarwinInstall(async ({ installDir, home }) => {
+        const launchd = makeFakeLaunchd({ loaded: true });
+        const { spawnFn, calls } = makeFixtureSpawn();
+        const result = await launchDesktopApp({ platform: "darwin", installDir, home, uid: 501, runner: launchd.runner, spawnFn, env: {} });
+        assert.ok(launchd.asked.includes("launchctl kickstart gui/501/com.aof.mesh.desktop"), launchd.asked.join(" | "));
+        assert.equal(calls.length, 0, "spawnFn was never called");
+        assert.equal(result.launch, "launchd", "the answer names the launch as launchd");
+      });
+    },
+  },
+
+  // Scenario: E5 · a plist on disk that is not loaded is bootstrapped
+  {
+    name: "175/02 task01 E5 · a plist on disk that is not loaded is bootstrapped",
+    async run() {
+      await withDarwinInstall(async ({ installDir, home }) => {
+        const plist = path.join(home, "Library", "LaunchAgents", "com.aof.mesh.desktop.plist");
+        await mkdir(path.dirname(plist), { recursive: true });
+        await writeFile(plist, "<plist/>", "utf8");
+        const launchd = makeFakeLaunchd({ loaded: false });
+        const { spawnFn, calls } = makeFixtureSpawn();
+        const result = await launchDesktopApp({ platform: "darwin", installDir, home, uid: 501, runner: launchd.runner, spawnFn, env: {} });
+        assert.ok(launchd.asked.includes(`launchctl bootstrap gui/501 ${plist}`), launchd.asked.join(" | "));
+        assert.equal(calls.length, 0, "spawnFn was never called");
+        assert.equal(result.launch, "launchd");
+      });
+    },
+  },
+
+  // 175/F-08 · a loaded job that is not running is reloaded from the plist on disk, so a
+  // re-registration (a new PATH, a renamed executable) is what starts, not the stale definition
+  {
+    name: "175/F-08 · a loaded but stopped job is booted out and bootstrapped from the plist on disk, never kickstarted",
+    async run() {
+      await withDarwinInstall(async ({ installDir, home }) => {
+        const plist = path.join(home, "Library", "LaunchAgents", "com.aof.mesh.desktop.plist");
+        await mkdir(path.dirname(plist), { recursive: true });
+        await writeFile(plist, "<plist/>", "utf8");
+        const launchd = makeFakeLaunchd({ loaded: true, state: "not running" });
+        const { spawnFn, calls } = makeFixtureSpawn();
+        const result = await launchDesktopApp({ platform: "darwin", installDir, home, uid: 501, runner: launchd.runner, spawnFn, env: {} });
+        const bootout = launchd.asked.indexOf("launchctl bootout gui/501/com.aof.mesh.desktop");
+        const bootstrap = launchd.asked.indexOf(`launchctl bootstrap gui/501 ${plist}`);
+        assert.ok(bootout >= 0 && bootstrap > bootout, launchd.asked.join(" | "));
+        assert.ok(!launchd.asked.some((c) => /launchctl kickstart/.test(c)), "the stale definition is never kickstarted");
+        assert.equal(calls.length, 0, "spawnFn was never called");
+        assert.equal(result.launch, "launchd");
+      });
+    },
+  },
+
+  // Scenario: E6 · with no LaunchAgent, a GUI terminal spawns the bundle's executable detached
+  {
+    name: "175/02 task01 E6 · with no LaunchAgent, a GUI terminal spawns the bundle's executable detached",
+    async run() {
+      await withDarwinInstall(async ({ installDir, home }) => {
+        const launchd = makeFakeLaunchd({ loaded: false });
+        const { spawnFn, calls } = makeFixtureSpawn();
+        const result = await launchDesktopApp({ platform: "darwin", installDir, home, uid: 501, runner: launchd.runner, spawnFn, env: {} });
+        assert.equal(calls.length, 1, "spawnFn was called once");
+        assert.equal(calls[0].command, path.join(installDir, "aof-mesh-desktop.app", "Contents", "MacOS", "AOF Desktop"));
+        assert.equal(calls[0].options.detached, true, "detached");
+        assert.equal(calls[0].options.stdio, "ignore", "stdio ignored");
+        assert.ok(!launchd.asked.some((c) => /launchctl (kickstart|bootstrap)/.test(c)), "no kickstart or bootstrap was asked for");
+        assert.equal(result.launch, "spawn");
+      });
+    },
+  },
+
+  // Scenario: E7 · with no LaunchAgent, SSH is refused and nothing starts
+  {
+    name: "175/02 task01 E7 · with no LaunchAgent, SSH is refused desktop-run-needs-gui-session and nothing starts",
+    async run() {
+      await withDarwinInstall(async ({ installDir, home }) => {
+        const launchd = makeFakeLaunchd({ loaded: false });
+        const { spawnFn, calls } = makeFixtureSpawn();
+        await assert.rejects(
+          launchDesktopApp({
+            platform: "darwin", installDir, home, uid: 501, runner: launchd.runner, spawnFn,
+            env: { SSH_CONNECTION: "10.0.0.5 51022 10.0.0.9 22" },
+          }),
+          (error) => {
+            assert.equal(error.code, "desktop-run-needs-gui-session");
+            assert.match(error.message, /aof mesh desktop install --autostart/, "the message names the way in from SSH");
+            return true;
+          },
+        );
+        assert.equal(calls.length, 0, "spawnFn was never called");
+      });
+    },
+  },
+
+  // Scenario: an uninstalled app is refused before launchd is asked anything
+  {
+    name: "175/02 task01 an uninstalled app is refused desktop-not-installed before launchd is asked anything",
+    async run() {
+      await withMeshDesktopFixture(async ({ installDir, home }) => {
+        const launchd = makeFakeLaunchd({ loaded: true });
+        await assert.rejects(
+          launchDesktopApp({ platform: "darwin", installDir, home, uid: 501, runner: launchd.runner, spawnFn: makeFixtureSpawn().spawnFn, env: {} }),
+          (error) => error.code === "desktop-not-installed",
+        );
+        assert.deepEqual(launchd.asked, [], "the runner was asked for no launchctl command at all");
+      }, { seedArtifacts: false });
+    },
+  },
+
+  // Scenario: Windows still spawns the exe directly
+  {
+    name: "175/02 task01 Windows still spawns the exe directly, and launchd is never asked",
+    async run() {
+      await withMeshDesktopFixture(async ({ installDir, home }) => {
+        await seedInstalledApp(installDir);
+        const launchd = makeFakeLaunchd({ loaded: true });
+        const { spawnFn, calls } = makeFixtureSpawn();
+        const result = await invoke("mesh:desktop-run", { installDir }, { platform: "win32", home, runner: launchd.runner, spawnFn, ...inertPreflightCtx() });
+        assert.equal(calls.length, 1);
+        assert.equal(calls[0].command, path.join(installDir, DESKTOP_APP_EXE));
+        assert.deepEqual(launchd.asked, [], "no launchctl command");
+        assert.equal(result.launch, "spawn");
+      });
     },
   },
 ];

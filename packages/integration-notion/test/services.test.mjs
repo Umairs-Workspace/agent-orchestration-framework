@@ -26,7 +26,7 @@ test('external JavaScript CLI uses the supplied Node runtime lazily and honors e
   assert.equal(reads, 1, 'explicit override avoids the default lookup');
 });
 import { createNotionSync } from '@aof/integration-notion/sync-work';
-import { createNotionContribution, createNotionAssociateCommand, createNotionSyncWorkCommand } from '@aof/integration-notion/commands';
+import { contribution } from '@aof/integration-notion/contribution';
 
 test('sidecar policy is injected and independent instances preserve board and reindex identities', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'aof-notion-package-'));
@@ -78,13 +78,14 @@ test('CLI factories retain independent descriptors and pass synthetic auth throu
 test('package command contribution preserves no-op and dry-run behavior without opening services', async () => {
   const commandError = (message, code) => Object.assign(new Error(message), { code });
   const { syncMilestoneWork } = createNotionSync({ commandError });
-  const syncWork = createNotionSyncWorkCommand({ commandError, syncMilestoneWork });
-  const associate = createNotionAssociateCommand({ commandError });
-  const contribution = createNotionContribution({ syncWork, associate });
-  assert.deepEqual(contribution.commands.map(command => command.id), ['notion:sync-work', 'notion:associate']);
+  assert.equal(contribution.id, 'notion');
+  assert.equal(contribution.name, '@aof/integration-notion');
+  assert.equal(contribution.assets, undefined, 'Notion ships no bundle members');
+  const [syncWork, associate] = contribution.commands({ commandError }, { syncWork: { syncMilestoneWork } });
+  assert.deepEqual([syncWork.id, associate.id], ['notion:sync-work', 'notion:associate']);
   const input = syncWork.cli.argv(['1'], { 'dry-run': true });
   const result = await syncWork.run(input, { workspace: { config: {} } });
   assert.equal(result.configured, false);
   assert.match(syncWork.cli.render(result), /not configured/);
-  assert.throws(() => createNotionContribution({ syncWork }), /both package command descriptors/);
+  assert.deepEqual(contribution.commands({ commandError }).map(command => command.id), ['notion:sync-work', 'notion:associate'], 'the descriptors build before any service is composed');
 });

@@ -15,7 +15,9 @@ export function runNativeWorkspaceTests(root = repository, name = null) {
   if (!files.length) return { cases: 0, files: 0, owners: [] };
   const home = mkdtempSync(path.join(os.tmpdir(), 'aof-native-test-home-'));
   try {
-    const result = spawnSync(process.execPath, ['--test', ...files], { cwd: root, encoding: 'utf8', timeout: 90_000,
+    // The count below is read off TAP's `# tests N`, so the reporter is named: Node 23+ defaults to
+    // `spec` even off a TTY, which would read a green run as untrustworthy (PR #22, Node 24).
+    const result = spawnSync(process.execPath, ['--test', '--test-reporter=tap', ...files], { cwd: root, encoding: 'utf8', timeout: 90_000,
       windowsHide: true, env: { ...process.env, AOF_GLOBAL_HOME: home } });
     if (result.status !== 0) throw Error(result.error?.message ?? result.stdout + result.stderr);
     const cases = Number([...result.stdout.matchAll(/^# tests (\d+)\r?$/gmu)].at(-1)?.[1]);

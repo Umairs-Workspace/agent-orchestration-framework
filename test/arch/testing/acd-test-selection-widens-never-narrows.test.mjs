@@ -35,6 +35,7 @@ import { fileURLToPath } from "node:url";
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 import { graphArtifactBuiltAt, graphJsonPath } from "@aof/knowledge/graph-normalize";
 const WIDENING_REASONS = _aofApplication.work.testSelect.WIDENING_REASONS;
+const NARROWING_REASONS = _aofApplication.work.testSelect.NARROWING_REASONS;
 const selectSuites = _aofApplication.work.testSelect.selectSuites;
 const wideningRuleProblems = _aofApplication.work.testSelect.wideningRuleProblems;
 
@@ -142,11 +143,11 @@ function plantGraph(root, { nodes = [], links = [] } = {}, raw = null) {
 
 const link = (from, to) => ({ source: `n${from}`, target: `n${to}`, relation: "imports", confidence: "EXPLICIT" });
 
-function withRoot(plant, run) {
+async function withRoot(plant, run) {
   const root = tempRoot();
   try {
     plant(root);
-    return run(root);
+    return await run(root);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -155,7 +156,7 @@ function withRoot(plant, run) {
 export const archTests = [
   {
     name: "arch/72 FF-7202 (acd-test-selection-widens-never-narrows): the selector opens no route to the graph but the shared one — no build, no second read, no second parse, no child process",
-    run: () => {
+    run: async () => {
       const modules = modulesOf(GRAPH_FAMILY);
       assert.ok(modules.length >= MODULE_FLOOR, `the graph family was read and is non-vacuous: ${modules.length} module(s), floor ${MODULE_FLOOR}`);
       for (const module of modules) assert.ok(module.code.length > 200, `${module.rel} was actually read (${module.code.length} bytes)`);
@@ -164,21 +165,23 @@ export const archTests = [
       assert.deepEqual(problems, [], `the graph is READ, never built, and only through the shared reader:\n  ${problems.join("\n  ")}`);
 
       // …and the shared reader is genuinely how it is reached, so this is "one route" and not
-      // "none". An absence over a module that never touches the graph is free.
+      // "none". An absence over a module that never touches the graph is free. Since 179/ADR-004
+      // the one route is the code corpus's `relations`, the port's verb, bound in core from the
+      // port composed over the graphify code backend — the reader moved; the invariant did not.
       const selector = stripComments(sourceOf(SELECTOR));
       const composition = stripComments(sourceOf("packages/core/src/application/bindings/work/test-select.mjs"));
+      for (const code of [selector, composition]) assert.match(code, /createTestSelector\(\{[^}]*\brelations\b/u, "relations: the code corpus's one reader is injected");
       for (const name of ["normalizeGraph", "readGraph", "graphJsonPath", "graphArtifactBuiltAt", "computeImpact"]) {
-        for (const code of [selector, composition]) assert.match(code, new RegExp("createTestSelector\\(\\{[^}]*\\b" + name + "\\b", "u"), name + ": shared graph service is injected");
+        for (const code of [selector, composition]) assert.doesNotMatch(code, new RegExp("\\b" + name + "\\b", "u"), name + ": no artifact reader reaches the selector beside the port");
       }
-      assert.match(composition, /import\s*\{[^}]*normalizeGraph[^}]*\}\s*from\s+"@aof\/knowledge\/graph-normalize"/u, "the selector reaches the artifact through the shipped normalizer");
-      assert.match(composition, /import\s*\{[^}]*computeImpact[^}]*\}\s*from\s+"@aof\/knowledge\/graph-impact"/u, "…and through the shipped impact core");
-      assert.match(selector, /graphJsonPath\s*\(/u, "…at the one artifact path the tree already derives");
+      assert.match(composition, /const \{\s*relations\s*\} = codeRelationsServices/u, "the selector reaches the graph through the code readers' port, over the code backend's read half");
+      assert.match(selector, /await\s+relations\s*\(/u, "…by asking relations");
     },
   },
 
   {
     name: "arch/72 FF-7202 (acd-test-selection-widens-never-narrows): self-check — each of the four routes is reported by the file that holds it, and the bounded git reader is a PLACEMENT rather than an exemption",
-    run: () => {
+    run: async () => {
       for (const { route, test } of GRAPH_ROUTES) {
         const planted = {
           "an invocation of the graph build": 'await invoke("graph:build", { folder });',
@@ -227,7 +230,7 @@ export const archTests = [
 
   {
     name: "arch/72 FF-7202 (acd-test-selection-widens-never-narrows): each of the four widening reasons is driven POSITIVELY against a planted graph, and the rule is asserted two-sided",
-    run: () => {
+    run: async () => {
       const rows = [
         { reason: "no-graph", plant: () => {}, changed: "packages/core/src/a.mjs" },
         { reason: "not-in-graph", plant: (root) => plantGraph(root, { nodes: ["packages/core/src/other.mjs"] }), changed: "packages/core/src/a.mjs" },
@@ -236,8 +239,8 @@ export const archTests = [
       ];
 
       for (const row of rows) {
-        withRoot(row.plant, (root) => {
-          const result = selectSuites({ projectRoot: root, changed: [row.changed], allSuites: ALL_SUITES, roots: ROOTS });
+        await withRoot(row.plant, async (root) => {
+          const result = await selectSuites({ projectRoot: root, changed: [row.changed], allSuites: ALL_SUITES, roots: ROOTS });
           assert.equal(result.scope, "all", `${row.reason}: yields scope "all"`);
           assert.deepEqual([...result.selected].sort(), [...ALL_SUITES].sort(), `${row.reason}: …the whole suite, not a proper subset`);
           const named = result.widened.find((entry) => entry.file === row.changed);
@@ -260,7 +263,7 @@ export const archTests = [
 
   {
     name: "arch/72 FF-7202 (acd-test-selection-widens-never-narrows): no option the selection accepts suppresses a widening, and an unknown suppressing key leaves the widening standing",
-    run: () => {
+    run: async () => {
       const accepted = acceptedOptionKeys(sourceOf(SELECTOR));
       assert.ok(Array.isArray(accepted) && accepted.length > 0, `the selector's own accepted option keys were cut from its parameter list: ${JSON.stringify(accepted)}`);
       for (const key of accepted) {
@@ -279,11 +282,11 @@ export const archTests = [
       }
 
       // And an unknown suppressing key, passed anyway, changes nothing: the widening stands.
-      withRoot((root) => plantGraph(root, { nodes: ["packages/core/src/other.mjs"] }), (root) => {
+      await withRoot((root) => plantGraph(root, { nodes: ["packages/core/src/other.mjs"] }), async (root) => {
         const base = { projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS };
-        const plain = selectSuites(base);
+        const plain = await selectSuites(base);
         for (const banned of SUPPRESSING) {
-          const result = selectSuites({ ...base, [banned]: true });
+          const result = await selectSuites({ ...base, [banned]: true });
           assert.equal(result.scope, "all", `${banned}: the widening stands`);
           assert.deepEqual([...result.widened], [...plain.widened], `${banned}: …and is still named`);
         }
@@ -293,7 +296,7 @@ export const archTests = [
 
   {
     name: "arch/72 FF-7202 (acd-test-selection-widens-never-narrows): builtAt is the ARTIFACT's file mtime or exactly null, and no module in this story reads a clock",
-    run: () => {
+    run: async () => {
       const past = new Date("2018-03-04T05:06:07.000Z");
 
       // On the two widening paths where an artifact WAS read, the instant is present and equal to
@@ -302,9 +305,9 @@ export const archTests = [
         ["a file absent from the graph", (root) => plantGraph(root, { nodes: ["packages/core/src/other.mjs"] }), "packages/core/src/a.mjs"],
         ["a file with no suite dependent", (root) => plantGraph(root, { nodes: ["packages/core/src/a.mjs", "packages/core/src/b.mjs"], links: [link(1, 0)] }), "packages/core/src/a.mjs"],
       ]) {
-        withRoot(plant, (root) => {
+        await withRoot(plant, async (root) => {
           utimesSync(graphJsonPath(root), past, past);
-          const result = selectSuites({ projectRoot: root, changed: [changed], allSuites: ALL_SUITES, roots: ROOTS });
+          const result = await selectSuites({ projectRoot: root, changed: [changed], allSuites: ALL_SUITES, roots: ROOTS });
           assert.equal(result.scope, "all", `${label}: widened`);
           assert.equal(result.builtAt, graphArtifactBuiltAt(graphJsonPath(root)), `${label}: builtAt is the artifact's own mtime`);
           assert.ok(result.builtAt.startsWith("2018-03-04"), `${label}: …the stamped past instant, not now`);
@@ -314,15 +317,15 @@ export const archTests = [
       // On `no-graph` there is no file and no instant to take. On `graph-unreadable` the file
       // EXISTS and has a perfectly good mtime — and that instant is DELIBERATELY DISCARDED,
       // because nothing the artifact claims is trustworthy once it does not parse.
-      withRoot(() => {}, (root) => {
-        const result = selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+      await withRoot(() => {}, async (root) => {
+        const result = await selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
         assert.equal(result.builtAt, null, "no-graph: exactly null");
         assert.equal(result.widened[0].reason, "no-graph", "…and the widening says why");
       });
-      withRoot((root) => plantGraph(root, {}, "{ not json"), (root) => {
+      await withRoot((root) => plantGraph(root, {}, "{ not json"), async (root) => {
         utimesSync(graphJsonPath(root), past, past);
         assert.notEqual(graphArtifactBuiltAt(graphJsonPath(root)), null, "the unreadable artifact HAS an mtime, so discarding it is a decision");
-        const result = selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        const result = await selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
         assert.equal(result.builtAt, null, "graph-unreadable: exactly null, the mtime deliberately discarded");
         assert.equal(result.widened[0].reason, "graph-unreadable", "…and the widening says why");
       });
@@ -338,21 +341,52 @@ export const archTests = [
 
   {
     name: "arch/72 FF-7202 (acd-test-selection-widens-never-narrows): selection is PURE — the same changed set against two planted graphs answers twice in one process",
-    run: () => {
-      const answer = (nodes, links) => withRoot((root) => plantGraph(root, { nodes, links }), (root) => [
-        ...selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS }).selected,
+    run: async () => {
+      const answer = (nodes, links) => withRoot((root) => plantGraph(root, { nodes, links }), async (root) => [
+        ...(await selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS })).selected,
       ]);
 
-      const first = answer(["packages/core/src/a.mjs", "test/a.test.mjs"], [link(1, 0)]);
-      const second = answer(["packages/core/src/a.mjs", "test/b.test.mjs"], [link(1, 0)]);
+      const first = await answer(["packages/core/src/a.mjs", "test/a.test.mjs"], [link(1, 0)]);
+      const second = await answer(["packages/core/src/a.mjs", "test/b.test.mjs"], [link(1, 0)]);
       assert.deepEqual(first, ["test/a.test.mjs"], "graph A answers A");
       assert.deepEqual(second, ["test/b.test.mjs"], "graph B answers B, in the same process");
       assert.notDeepEqual(first, second, "so nothing is cached across calls — the optimisation this forbids is the one ADR-002 prices");
 
       // …and the other order too, because a cache that warms on the first call would pass one
       // direction and fail the other.
-      const third = answer(["packages/core/src/a.mjs", "test/a.test.mjs"], [link(1, 0)]);
+      const third = await answer(["packages/core/src/a.mjs", "test/a.test.mjs"], [link(1, 0)]);
       assert.deepEqual(third, first, "and graph A still answers A after graph B");
+    },
+  },
+  {
+    // 190/01 FF-19003 (ADR-003 §3–§5) — the second leg: narrowing is closed and positive.
+    name: "arch/190 FF-19003 (acd-test-selection-widens-never-narrows): narrowing is closed and positive",
+    run: async () => {
+      assert.deepEqual([...NARROWING_REASONS], ["graph-dependent", "suite-itself", "imported-by-changed", "declared-coupling", "not-yet-written"], "the narrowing reasons are exactly the five");
+      assert.ok(Object.isFrozen(NARROWING_REASONS), "…frozen, so a sixth is an edit with an ADR behind it");
+
+      // A real narrowed result is admitted: every selected suite carries a reason from the five.
+      await withRoot((root) => plantGraph(root, { nodes: ["packages/core/src/a.mjs", "test/a.test.mjs"], links: [link(1, 0)] }), async (root) => {
+        const result = await selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        assert.equal(result.scope, "impacted");
+        assert.ok(result.resolutions.length > 0 && result.resolutions.every((entry) => NARROWING_REASONS.includes(entry.reason)));
+        assert.deepEqual(wideningRuleProblems(result, ALL_SUITES), []);
+
+        // It fails when a selected suite in a narrowed result carries no reason…
+        const unexplained = { ...result, selected: [...result.selected, "test/b.test.mjs"] };
+        assert.ok(wideningRuleProblems(unexplained, ALL_SUITES).some((problem) => problem.includes("test/b.test.mjs")), "a selected suite no resolution names fails");
+        // …when a resolution carries a reason outside the five…
+        const foreign = { ...result, resolutions: [{ ...result.resolutions[0], reason: "trust-me" }] };
+        assert.ok(wideningRuleProblems(foreign, ALL_SUITES).length > 0, "a sixth narrowing reason fails");
+      });
+
+      // …and when a widened result carries a narrowing reason.
+      await withRoot(() => {}, async (root) => {
+        const widened = await selectSuites({ projectRoot: root, changed: ["packages/core/src/a.mjs"], allSuites: ALL_SUITES, roots: ROOTS });
+        assert.deepEqual([...widened.resolutions], [], "a widened run carries no narrowing reason");
+        const leaked = { ...widened, resolutions: [{ file: "packages/core/src/a.mjs", reason: "graph-dependent", suites: [] }] };
+        assert.ok(wideningRuleProblems(leaked, ALL_SUITES).length > 0, "a widened result carrying a narrowing reason fails");
+      });
     },
   },
 ];

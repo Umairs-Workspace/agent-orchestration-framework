@@ -23,7 +23,7 @@ export function assembleCommandsWorkMemory({ workMemoryServices, commandsResolve
   // and resolvers, and handed to the memory seam as a function.
   const { recordRecall } = createRecallRecorder({ resolveItemExact, requireLocalCheckout, transitionRecallRecorded, threadPropagationWarnings });
 
-  const { memoryCommand } = createMemoryCommand({ MEMORY_USAGE, RECORD_RECALL_VERB, SCOPE_FLAGS, memoryJson, parseMemoryArgv, recordRecall, renderMemory, renderWithPropagationWarnings, resolveConfiguredBackend, runMemoryVerb });
+  const { memoryCommand, memoryAliasCommand } = createMemoryCommand({ MEMORY_USAGE, RECORD_RECALL_VERB, SCOPE_FLAGS, memoryJson, parseMemoryArgv, recordRecall, renderMemory, renderWithPropagationWarnings, resolveConfiguredBackend, runMemoryVerb });
 
-  return { memoryCommand };
+  return { memoryCommand, memoryAliasCommand };
 }

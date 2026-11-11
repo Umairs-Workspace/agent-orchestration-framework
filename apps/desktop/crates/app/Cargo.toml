@@ -15,7 +15,9 @@ tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-single-instance = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tokio = { version = "1", features = ["rt-multi-thread", "process", "time", "macros", "sync", "io-util"] }
+# `signal` (175/ADR-001 §4): the SIGTERM listener that turns a terminate request into Quit. Its
+# `signal-hook-registry` is already in Cargo.lock, so the feature adds no package (RESEARCH M6).
+tokio = { version = "1", features = ["rt-multi-thread", "process", "time", "macros", "sync", "io-util", "signal"] }
 # ADR-002 d4 / DESIGN §Surface 2 region 3: the default-browser launch for the tray's
 # "Open web UI" (`opener::open_browser`, a non-`Command::new` launch so it never trips
 # `acd-desktop-trusted-spawn`). Cross-platform, so it lives in the shared deps.
@@ -31,6 +33,12 @@ win32job = "2.0.3"
 # 167/ADR-006: the desktop guard's OS sample (`GetProcessTimes` by process handle). 0.61.2 is
 # already in Cargo.lock (a transitive of the Tauri tree), so declaring it adds no package.
 windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_System_Threading"] }
+
+# 175/ADR-001 §2-§3: `killpg` carries out the reap ladder and the stop ladder's last rung off
+# Windows. 0.2.186 is already in Cargo.lock (a transitive of the Tauri tree), so declaring it adds
+# no package, in the same way `windows-sys` was declared above.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2.186"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

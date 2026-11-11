@@ -26,6 +26,8 @@ use std::time::{Duration, Instant};
 
 use mesh_desktop_core::guard::{degrade_log_line, footer_notice, GuardEvent, OverrunWatch};
 use mesh_desktop_core::poll::FleetDataCommand;
+#[cfg(unix)]
+use mesh_desktop_core::reap::{last_rung_kill, GroupSignal, ReapPlan, ReapStep, Signal, REAP_GRACE_MS};
 use mesh_desktop_core::status::CostView;
 
 use crate::cpu_sample::{CpuSampler, OsCpuSampler};
@@ -397,17 +399,137 @@ fn assign_to_job(job: &Option<Arc<SharedJob>>, child: &tokio::process::Child) {
     }
 }
 
-// A non-Windows build (ADR-001 portable-core posture) supervises without the Win32
-// Job Object — a later macOS/Linux tray swaps a process-group/cgroup behind the same
-// neutral "reap the supervised tree" seam.
-#[cfg(not(windows))]
-type SharedJob = ();
-#[cfg(not(windows))]
-fn create_job() -> Option<Arc<SharedJob>> {
-    None
+/// A child's exit leaves the Job Object to the OS: nothing to release on Windows.
+#[cfg(windows)]
+fn release_from_job(_job: &Option<Arc<SharedJob>>, _pid: u32) {}
+
+// ------------------------------------------------------------------------------------
+// Unix process groups — the same seam, filled (175/ADR-001 §1).
+// ------------------------------------------------------------------------------------
+
+/// Off Windows the "job" is the set of live supervised process groups, in spawn order. Each
+/// supervised child is spawned with `process_group(0)`, so it leads its own group and its pid
+/// names it; a child's exit takes its id out. The exit reaps whatever the set holds.
+#[cfg(unix)]
+#[derive(Default)]
+struct SharedJob {
+    groups: Mutex<Vec<u32>>,
 }
-#[cfg(not(windows))]
-fn assign_to_job(_job: &Option<Arc<SharedJob>>, _child: &tokio::process::Child) {}
+
+#[cfg(unix)]
+fn create_job() -> Option<Arc<SharedJob>> {
+    Some(Arc::new(SharedJob::default()))
+}
+
+/// Record a freshly-spawned child's process group — its own pid, since it leads it. A spawn
+/// that lands after the reap has taken its snapshot is not in it, so it is killed here instead:
+/// the reap marks the exit before it takes the lock, and this reads the mark under the lock.
+#[cfg(unix)]
+fn assign_to_job(job: &Option<Arc<SharedJob>>, child: &tokio::process::Child) {
+    if let (Some(job), Some(pid)) = (job.as_ref(), child.id()) {
+        let mut groups = job.groups.lock().unwrap();
+        if exiting() {
+            signal_group(last_rung_kill(pid));
+        } else if !groups.contains(&pid) {
+            groups.push(pid);
+        }
+    }
+}
+
+/// A supervised child has exited and been waited on: its group is no longer the reap's.
+#[cfg(unix)]
+fn release_from_job(job: &Option<Arc<SharedJob>>, pid: u32) {
+    if let Some(job) = job.as_ref() {
+        job.groups.lock().unwrap().retain(|group| *group != pid);
+    }
+}
+
+/// Send one signal to a whole process group. A group that is already gone answers ESRCH,
+/// which is the outcome a kill wants anyway.
+#[cfg(unix)]
+fn signal_group(target: GroupSignal) {
+    let signal = match target.signal {
+        Signal::Term => libc::SIGTERM,
+        Signal::Kill => libc::SIGKILL,
+    };
+    // SAFETY: `killpg` takes two plain integers and touches no memory of ours.
+    unsafe {
+        libc::killpg(target.group as libc::pid_t, signal);
+    }
+}
+
+/// Whether a process group still has a member — signal 0 checks without delivering anything.
+#[cfg(unix)]
+fn group_alive(group: u32) -> bool {
+    // SAFETY: as `signal_group`.
+    unsafe { libc::killpg(group as libc::pid_t, 0) == 0 }
+}
+
+// ------------------------------------------------------------------------------------
+// The exit — every exit path reaps the supervised groups (175/ADR-001 §4).
+// ------------------------------------------------------------------------------------
+
+/// Set once the app is exiting, before any group is signalled, so a watchdog that sees its
+/// child die during the reap never relaunches it.
+static EXITING: AtomicBool = AtomicBool::new(false);
+
+fn exiting() -> bool {
+    EXITING.load(Ordering::SeqCst)
+}
+
+/// The handle the app's `RunEvent::Exit` reaps the supervised tree through.
+#[derive(Clone)]
+pub struct Reaper {
+    #[cfg_attr(windows, allow(dead_code))]
+    job: Option<Arc<SharedJob>>,
+}
+
+impl Reaper {
+    /// On Windows the Job Object reaps the tree when the process exits and its handle closes,
+    /// so there is nothing to do here.
+    #[cfg(windows)]
+    pub fn reap(&self) {}
+
+    /// Carry out the reap plan (`mesh_desktop_core::reap`): SIGTERM each live group, watch them
+    /// go for up to the grace, then SIGKILL the survivors. It blocks the calling thread for at
+    /// most the grace and holds no lock while it waits, so the watchdogs can still settle their
+    /// children's exits.
+    #[cfg(unix)]
+    pub fn reap(&self) {
+        EXITING.store(true, Ordering::SeqCst);
+        let Some(job) = self.job.as_ref() else { return };
+        let groups: Vec<u32> = job.groups.lock().unwrap().clone();
+        let grace = Duration::from_millis(REAP_GRACE_MS);
+        let mut plan = ReapPlan::new(groups, REAP_GRACE_MS);
+        let start = Instant::now();
+        loop {
+            let elapsed = start.elapsed().as_millis().min(u64::MAX as u128) as u64;
+            match plan.step(elapsed, group_alive) {
+                ReapStep::Term(groups) => {
+                    for group in &groups {
+                        signal_group(GroupSignal { group: *group, signal: Signal::Term });
+                    }
+                    while start.elapsed() < grace && groups.iter().any(|group| group_alive(*group)) {
+                        std::thread::sleep(REAP_POLL);
+                    }
+                }
+                ReapStep::WaitUntil(until_ms) => {
+                    std::thread::sleep(Duration::from_millis(until_ms).saturating_sub(start.elapsed()));
+                }
+                ReapStep::Kill(groups) => {
+                    for group in groups {
+                        signal_group(GroupSignal { group, signal: Signal::Kill });
+                    }
+                }
+                ReapStep::Done => return,
+            }
+        }
+    }
+}
+
+/// How often the reap looks for its groups to have gone during the grace.
+#[cfg(unix)]
+const REAP_POLL: Duration = Duration::from_millis(50);
 
 // ------------------------------------------------------------------------------------
 // Jitter — a real, non-fixed jitter source for the restart backoff (ADR-002 d2).
@@ -457,11 +579,14 @@ fn seed_for(id: &str) -> u64 {
 // ------------------------------------------------------------------------------------
 
 /// Spawn the supervisor engine on its OWN dedicated multi-thread tokio runtime (a
-/// background OS thread), returning the command channel the IPC layer drives it with.
+/// background OS thread), returning the command channel the IPC layer drives it with and
+/// the reaper the app's exit takes the supervised tree down through (175/ADR-001 §4).
 /// A dedicated runtime keeps full control of the process + timer drivers `tokio::process`
 /// needs, independent of Tauri's own event loop.
-pub fn spawn_engine(app: AppHandle, install_dir: PathBuf, shared: SharedState) -> UnboundedSender<SupervisorCommand> {
+pub fn spawn_engine(app: AppHandle, install_dir: PathBuf, shared: SharedState) -> (UnboundedSender<SupervisorCommand>, Reaper) {
     let (tx, rx) = unbounded_channel();
+    let job = create_job();
+    let reaper = Reaper { job: job.clone() };
     std::thread::Builder::new()
         .name("mesh-supervisor".into())
         .spawn(move || {
@@ -469,19 +594,19 @@ pub fn spawn_engine(app: AppHandle, install_dir: PathBuf, shared: SharedState) -
                 .enable_all()
                 .build()
                 .expect("build the supervisor tokio runtime");
-            rt.block_on(engine_main(app, install_dir, shared, rx));
+            rt.block_on(engine_main(app, install_dir, shared, job, rx));
         })
         .expect("spawn the supervisor thread");
-    tx
+    (tx, reaper)
 }
 
 async fn engine_main(
     app: AppHandle,
     install_dir: PathBuf,
     shared: SharedState,
+    job: Option<Arc<SharedJob>>,
     mut rx: UnboundedReceiver<SupervisorCommand>,
 ) {
-    let job = create_job();
 
     // The two mesh daemons are the supervised set's two STATICALLY SEEDED members
     // (126/ADR-005 §7): they are not supplied, because `mesh status` — the command the
@@ -767,6 +892,10 @@ async fn supervise_child(
     let mut ladder = StopLadder::default();
 
     loop {
+        // The app is exiting and the reap owns every group now: nothing is spawned again.
+        if exiting() {
+            return;
+        }
         if ctl.retired() {
             // Take this declaration's ramp signal out with it. The reconcile removed the
             // entry when it retired the controller, but the watchdog writes "stopped" on
@@ -866,6 +995,10 @@ async fn supervise_child(
         cmd.stderr(std::process::Stdio::piped());
         #[cfg(windows)]
         cmd.creation_flags(CREATE_NO_WINDOW);
+        // Each supervised child leads its own process group, so a group signal reaches
+        // everything it starts (175/ADR-001 §1). The Windows arm is the Job Object.
+        #[cfg(unix)]
+        cmd.process_group(0);
 
         let mut child = match cmd.spawn() {
             Ok(child) => child,
@@ -881,7 +1014,8 @@ async fn supervise_child(
             }
         };
         assign_to_job(&job, &child);
-        ctl.set_pid(child.id());
+        let spawned_pid = child.id();
+        ctl.set_pid(spawned_pid);
         attempt = 0;
         set_signal(&shared, &id, "running");
         // A successful (re)start clears only THIS child's notice — the reason is stale
@@ -974,6 +1108,21 @@ async fn supervise_child(
         // The child is gone or going: the guard samples nothing more for it.
         ctl.set_pid(None);
 
+        let result = match result {
+            // Its exit is settled; its group leaves the reap.
+            WaitResult::Exited(status) => {
+                if let Some(pid) = spawned_pid {
+                    release_from_job(&job, pid);
+                }
+                WaitResult::Exited(status)
+            }
+            other => other,
+        };
+        // A child that died in the exit's reap is neither classified nor relaunched.
+        if exiting() {
+            return;
+        }
+
         match result {
             WaitResult::Exited(status) => {
                 let msg = format!(
@@ -1018,8 +1167,11 @@ async fn supervise_child(
                 // it out of scope); a declaration never reaches this arm.
                 out_handle.abort();
                 err_handle.abort();
-                let _ = child.start_kill();
+                kill_now(&mut child);
                 let _ = child.wait().await;
+                if let Some(pid) = spawned_pid {
+                    release_from_job(&job, pid);
+                }
                 set_signal(&shared, &id, "stopped");
             }
             WaitResult::Kill => {
@@ -1032,6 +1184,9 @@ async fn supervise_child(
                     tree_kill(pid).await;
                 }
                 let _ = child.wait().await;
+                if let Some(pid) = spawned_pid {
+                    release_from_job(&job, pid);
+                }
                 ctl.desired.store(false, Ordering::SeqCst);
                 set_signal(&shared, &id, "stopped");
             }
@@ -1098,14 +1253,26 @@ async fn tree_kill(pid: u32) {
     let _ = cmd.output().await;
 }
 
-// A non-Windows build has no `taskkill` — the neutral seam a later macOS/Linux tray
-// fills with a process-group kill, the posture `assign_to_job` already takes. Until
-// then the direct child is signalled, and its tree is not reaped.
-#[cfg(not(windows))]
+/// Off Windows the tree kill is SIGKILL to the child's process group, never to its bare pid
+/// (175/ADR-001 §3): the child leads that group, so the loop's own children go with it. The
+/// rung is the core's `last_rung_kill`; this only delivers it, with no spawn.
+#[cfg(unix)]
 async fn tree_kill(pid: u32) {
-    let mut cmd = Command::new("kill");
-    cmd.args(["-KILL", &pid.to_string()]);
-    let _ = cmd.output().await;
+    signal_group(last_rung_kill(pid));
+}
+
+/// A daemon's immediate stop. On Windows it ends the direct child, as it always has; off
+/// Windows it is the same group kill as the ladder's last rung, so the daemon's own children
+/// are not orphaned (175/ADR-001 R1: every kill the supervisor makes reaches the group).
+#[cfg(windows)]
+fn kill_now(child: &mut tokio::process::Child) {
+    let _ = child.start_kill();
+}
+#[cfg(unix)]
+fn kill_now(child: &mut tokio::process::Child) {
+    if let Some(pid) = child.id() {
+        signal_group(last_rung_kill(pid));
+    }
 }
 
 /// Apply the core's exit classification (36/ADR-002 d2, 126/ADR-006 §6-§7). The

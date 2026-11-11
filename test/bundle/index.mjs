@@ -13,6 +13,8 @@
 // coded tamper, and the human ownership-marker escape hatch (FF-5505/FF-5506).
 import { yarnInstallationTests } from "./yarn-installation.test.mjs";
 import { coreWorkspaceTests } from "./core-workspace.test.mjs";
+// milestone 175 / story 01 — install-local builds the desktop app on macOS, and edits no profile.
+import { installLocalDesktopTests } from "./install-local-desktop.test.mjs";
 // milestone 12 — managed tool provisioning (story 01: the lifecycle surface —
 // the project:provision command + CLI dispatch, ADR-003 task 00; the three
 // store-aware doctorConfig checks superseding graphify-binary, ADR-003 task 01;
@@ -149,4 +151,6 @@ export const tests = [
   ...explainCommandTests,
   ...yarnInstallationTests,
   ...coreWorkspaceTests,
+  // milestone 175 / story 01 — install-local's desktop plan, its bundle rotation, and no profile writes.
+  ...installLocalDesktopTests,
 ];

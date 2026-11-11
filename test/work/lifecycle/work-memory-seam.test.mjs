@@ -31,6 +31,11 @@ const BACKEND_REGISTRY = _aofApplication.knowledge.work.memory.BACKEND_REGISTRY;
 const MEMORY_VERBS = _aofApplication.knowledge.work.memory.MEMORY_VERBS;
 const memoryUsage = _aofApplication.knowledge.work.memory.memoryUsage;
 import noneBackend from "@aof/knowledge/memory/none-backend";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { createMemory } from "@aof/knowledge/memory";
+import { createKnowledgeEngine, RECORD_CORPORA } from "@aof/knowledge/engine";
 
 // ------------------------------------------------------------ test rig ----
 
@@ -47,6 +52,7 @@ function makeStub({ backendName = "local" } = {}) {
   const RENDERED_TEXT = "recall \"q\"  →  1 hit(s)\n  ▸ [ADR-002 · m01] t\n    ↳ …:66\n";
   const backend = {
     name: backendName,
+    corpora: RECORD_CORPORA,
     async recall(query, scope, opts, ctx) {
       calls.push({ method: "recall", query, scope, opts, ctx });
       return { query, scope, records: fixedRecords, text: RENDERED_TEXT };
@@ -513,5 +519,88 @@ export const workMemorySeamTests = [
         assert.ok(!r.output.includes(r.rig.RENDERED_TEXT), "does not print the text blob");
       }
     }
-  }))
+  })),
+
+  // ── 179/03 task 01 — every memory verb reaches its backend through the port ────────────────
+  // The seam is built from the knowledge factory with a RECORDING port factory: each port it
+  // composes logs the verb it is asked, then routes it as the real port does. The backend logs
+  // each method it receives and declares the shared record corpora.
+  ...[
+    { argv: ["recall", "x"], port: "recall", backend: ["recall"] },
+    { argv: ["recurrence", "x"], port: "recall", backend: ["recall"] },
+    { argv: ["ingest"], port: 'ingest of "work"', backend: ["reindex with null"] },
+    { argv: ["reindex", "39"], port: 'ingest of "work"', backend: ['reindex with "39"'] },
+    { argv: ["status"], port: 'status of "work"', backend: ["status", "recall"] },
+  ].map((row) => ({
+    name: `179/03 task 01 outline: each verb reaches the backend through the port's verb, never directly — ${row.argv.join(" ")}`,
+    async run() {
+      const rig = portRig();
+      const outcome = await rig.memory.runMemory(row.argv, { config: {}, resolveBackend: rig.resolveBackend });
+      assert.equal(outcome.exitCode, 0);
+      assert.equal(rig.portCalls[0], row.port, `the port was asked ${row.port}`);
+      assert.deepEqual(rig.backendCalls, row.backend, `the backend received ${row.backend.join(", then ")}`);
+      assert.equal(rig.composed(), 1, "one port per call");
+    },
+  })),
+  {
+    name: "179/03 task 01: record-recall resolves no backend and composes no port",
+    async run() {
+      const rig = portRig();
+      const recorded = [];
+      await rig.memory.runMemory(["record-recall", "39", "--input", "obs.json"], {
+        config: {}, resolveBackend: rig.resolveBackend, recordRecall: async (_ctx, request) => { recorded.push(request); return { recorded: true }; },
+      });
+      assert.deepEqual(recorded, [{ ref: "39", inputPath: "obs.json" }], "the ledger path ran");
+      assert.equal(rig.resolved.length, 0, "the backend resolver was never called");
+      assert.equal(rig.composed(), 0, "no port was composed");
+    },
+  },
+  {
+    name: "179/03 task 01: help and an unknown verb still resolve nothing",
+    async run() {
+      const rig = portRig();
+      const root = mkdtempSync(path.join(os.tmpdir(), "aof-179-03-help-"));
+      try {
+        const ctx = { projectRoot: root, workDir: path.join(root, "wiki", "work") };
+        const help = await rig.memory.runMemory(["reindex", "-h"], { config: {}, resolveBackend: rig.resolveBackend, ctx });
+        assert.equal(help.exitCode, 0);
+        const unknown = await rig.memory.runMemory(["frobnicate"], { config: {}, resolveBackend: rig.resolveBackend, ctx });
+        assert.notEqual(unknown.exitCode, 0);
+        assert.equal(rig.resolved.length, 0, "the backend resolver was never called");
+        assert.equal(rig.composed(), 0, "no port was composed");
+        assert.ok(!existsSync(path.join(root, ".aof", "aof.memory.index.json")), "no index file was written");
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  },
 ];
+
+// The 179/03 rig: a seam whose port factory and backend both record what they are asked.
+function portRig() {
+  const backendCalls = [];
+  const portCalls = [];
+  const resolved = [];
+  let composed = 0;
+  const backend = {
+    name: "local",
+    corpora: RECORD_CORPORA,
+    async recall(query, scope) { backendCalls.push("recall"); return { query, scope, records: [], text: "" }; },
+    async reindex(only) { backendCalls.push(`reindex with ${only === null ? "null" : JSON.stringify(only)}`); return { recordCount: 0 }; },
+    async status() { backendCalls.push("status"); return { backend: "local", recordCount: 0 }; },
+  };
+  const createEngine = (options) => {
+    composed += 1;
+    const port = createKnowledgeEngine(options);
+    return Object.freeze({
+      ingest: (corpus, ...rest) => { portCalls.push(`ingest of "${corpus}"`); return port.ingest(corpus, ...rest); },
+      recall: (...args) => { portCalls.push("recall"); return port.recall(...args); },
+      relations: (...args) => { portCalls.push("relations"); return port.relations(...args); },
+      status: (corpus, ...rest) => { portCalls.push(`status of "${corpus}"`); return port.status(corpus, ...rest); },
+    });
+  };
+  const refuse = (what) => () => { throw new Error(`the 179/03 rig must not reach ${what}`); };
+  const memory = createMemory({ loadLocalBackend: refuse("the local backend loader"), loadGraphifyBackend: refuse("the graphify backend loader"), createEngine });
+  const resolveBackend = () => { resolved.push(true); return backend; };
+  return { memory, resolveBackend, backendCalls, portCalls, resolved, composed: () => composed };
+}

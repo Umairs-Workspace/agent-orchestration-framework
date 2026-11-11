@@ -182,7 +182,22 @@ nobody needs to redirect stdout by hand to see what a remote node is doing.
 
 ## 4. Workspace identity is derived from the local path
 
-**Status:** open (raised 2026-07-26). **Severity:** medium-high — it breaks cross-machine reasoning.
+**Status:** largely addressed. What remains is (E), a rekey of duplicate ids, which is its own
+backlog milestone: `backlog/milestone_workspace-id-rekey`. Raised 2026-07-26. **Severity:**
+medium-high — it breaks cross-machine reasoning.
+
+- **m42 wave (b), archived.** One identity home (`resolveWorkspaceId`), the clone-time pin,
+  `--workspace` on the mesh verbs, and the Mac checkout re-pinned. This status line was never
+  updated then.
+- **2026-10-30, at 175's verify**, the four residues found running the desktop app from launchd
+  (cwd `/`):
+  - **(A) `be93f5dd`.** A folder with no aof config is not a workspace, asked before the enable
+    arm, so the `/` warning every 15 s is gone.
+  - **(B) `946f7472`.** `mesh serve --serve --workspace` is honoured.
+  - **(C) `95c235a8`.** The fleet UI's assign, stop and local scope resolve through the one home,
+    and the single-home control sees the binding alias.
+  - **(D) `13b4dc14`.** Repo availability reads the pinned managed checkout, so a launchd worker
+    can clone and the launch folder is never written. This also fixes item 21.
 
 **What's wrong.** A workspaceId is `sha256(absolute project path)` (`workspaceIdFor`). The *same repo*
 therefore has a different id on every machine: `lark-guard-portal` is `1f164bd03ea535da` on the control
@@ -755,6 +770,13 @@ roster showed the new build roughly 90 minutes before either daemon had restarte
 ---
 
 ## 21. A worker clones into its managed checkout even when one is already there, and fails the assignment
+
+**Status:** addressed 2026-10-30 (`13b4dc14`, at 175's verify, as item 4's part D). The marker the
+re-check read lived in the daemon's in-memory launch config, loaded once, so it was never seen
+after the first clone. Availability now also reads the managed checkout's own pin from disk, and
+clone-on-miss onto a checkout pinned to this workspace reuses it instead of cloning. Two things
+are still open: refreshing that checkout (a FETCH) before reuse, and confirmation in a live
+two-node soak.
 
 **Measured 2026-08-05**, running `43/05`'s `@manual` two-node soak. With a managed checkout already
 present at `~/.aof/mesh/checkouts/<workspaceId>`, a dispatch fails outright:
@@ -3447,3 +3469,16 @@ only bound on its size is a line ceiling (`test/loop/loop-command-wave.test.mjs`
 **The fix.** Split the doors (probe/stop/hand-off) from the launch body along the seams the
 wave and cycle extractions used; `packages/work-loop/src` is at its file budget, so the split
 needs a stated row raise. `packages/work-loop/src/commands/loop.mjs:91`
+
+---
+
+## 93. `readMemoryConfig` still reads the pre-180 spellings — a bounded legacy read that must be removed in 0.2.0
+
+**Status:** open (raised 2026-10-30 by developer, at `180/ADR-001`). **Severity:** low.
+**What's wrong.** `memory.sources`, `memory.graphify` and the root `graph` are still read, warned
+about and admitted by the schema, so every memory setting keeps two spellings for one release.
+**How it bites.** Two homes per setting: the conflict refusal, the legacy list, `LEGACY_MEMORY_KEYS`
+and three deprecated schema properties all exist only to carry them.
+**The fix.** In 0.2.0, the release after the one that ships 180, drop the legacy branches from
+`readMemoryConfig` and the deprecated `sources`, `graphify` and root `graph` from the schema, keeping
+`rewriteLegacyMemoryConfig` until `aof work update` stops finding moves. `packages/knowledge/src/memory-config.mjs:176`

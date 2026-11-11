@@ -1,6 +1,7 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import path from "node:path";
 import { access, readFile, rm } from "node:fs/promises";
+import { LEGACY_MEMORY_KEYS, readMemoryConfig, replaceMemoryNode, rewriteLegacyMemoryConfig } from "@aof/knowledge/memory-config";
 import { collectAdapterWarnings } from "../../adapter-warnings.mjs";
 import {
   CAPABILITIES,
@@ -62,7 +63,7 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
         hooks: [],
         projectDocs: [],
         settings: {},
-        ...(scope === "project" ? { executionSettings: { runtime: null, runtimes: {} }, ...inspectExecutionSettings({}, options), assetRuntimes: [] } : {}),
+        ...(scope === "project" ? { executionSettings: { runtime: null, runtimes: {} }, ...inspectExecutionSettings({}, options), assetRuntimes: [], memory: {}, memoryLegacy: [] } : {}),
         diagnostics: [],
         adapterWarnings: [],
         capabilities: capabilitiesPayload(),
@@ -106,6 +107,7 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
         executionSettings: { ...(raw.work?.agents?.session == null ? {} : { session: raw.work.agents.session }), ...(raw.work?.loop?.runtimes == null ? {} : { phaseRuntimes: raw.work.loop.runtimes }), runtime: raw.work?.loop?.runtime ?? null, runtimes: raw.work?.agents?.runtimes ?? {} },
         ...inspectExecutionSettings(raw, options),
         assetRuntimes: inspection.assetRuntimes,
+        ...editableMemory(raw),
       } : {}),
       diagnostics,
       adapterWarnings,
@@ -226,7 +228,7 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
     const paths = workspacePaths(projectDir);
     const configPath = await findProjectConfig(projectDir, options.config);
     const existing = await readExistingConfig(configPath, defaultConfigName(projectDir, "project"));
-    const config = {
+    let config = {
       ...baseConfig(existing, projectDir, "project"),
       ...(Object.hasOwn(input, "mcpServers") ? { mcpServers: input.mcpServers } : existing.mcpServers ? { mcpServers: existing.mcpServers } : {}),
       ...(Object.hasOwn(input, "hooks") ? { hooks: input.hooks } : existing.hooks ? { hooks: existing.hooks } : {}),
@@ -234,6 +236,20 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
       ...(Object.hasOwn(input, "workflows") ? { workflows: input.workflows } : existing.workflows ? { workflows: existing.workflows } : {}),
       ...(Object.hasOwn(input, "settings") ? { settings: input.settings } : existing.settings ? { settings: existing.settings } : {})
     };
+
+    if (Object.hasOwn(input, "memory")) {
+      // 180/DESIGN Surface 1 — the node the section showed, which is always the new shape. It replaces
+      // `memory`, the root `graph` it superseded goes, and the memory reader judges the result before
+      // anything is written, so a refusal carries that reader's own code and path.
+      const refused = memorySectionRefusal(input.memory);
+      if (refused) return { ok: false, diagnostics: [refused] };
+      config = replaceMemoryNode(config, input.memory);
+      try {
+        readMemoryConfig(config);
+      } catch (error) {
+        return { ok: false, diagnostics: [diagnostic("error", error.path ?? "memory", error.message, true, error.code)] };
+      }
+    }
 
     if (Object.hasOwn(input, "executionSettings")) {
       const edit = input.executionSettings;
@@ -376,6 +392,31 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
 
   function defaultConfigName(projectDir, scope) {
     return scope === "global" ? "global-assets" : path.basename(path.resolve(projectDir));
+  }
+
+  // 180/ADR-001, DESIGN Surface 1 — the Memory section shows the node in the new shape and names each
+  // old key it replaces. A config the reader refuses (a pair spelled twice, an invalid value) is shown
+  // exactly as written: resolving it is the operator's, and the refusal is already a diagnostic.
+  function editableMemory(raw) {
+    try {
+      const { legacy } = readMemoryConfig(raw);
+      return { memory: rewriteLegacyMemoryConfig(raw).config.memory ?? {}, memoryLegacy: legacy };
+    } catch {
+      return { memory: raw.memory ?? {}, memoryLegacy: [] };
+    }
+  }
+
+  // The editor writes no key on its way out: a saved node carrying an old spelling is refused.
+  function memorySectionRefusal(node) {
+    if (node === null || typeof node !== "object" || Array.isArray(node)) {
+      return diagnostic("error", "memory", "The Memory section must be a JSON object.", true, "invalid-memory-section");
+    }
+    // The old spellings inside the node, from the one old-to-new table (180/ADR-001).
+    const legacy = LEGACY_MEMORY_KEYS.find(({ from }) => from.startsWith("memory.") && Object.hasOwn(node, from.slice("memory.".length)));
+    if (legacy) {
+      return diagnostic("error", legacy.from, `${legacy.from} is the old spelling — write ${legacy.to} instead.`, true, "memory-config-legacy-write");
+    }
+    return null;
   }
 
   function baseConfig(existing, projectDir, scope, overrides = {}) {

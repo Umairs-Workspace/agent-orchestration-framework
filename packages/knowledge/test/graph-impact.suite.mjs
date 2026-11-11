@@ -4,7 +4,46 @@
 // NON-VACUOUS value test: it asserts the command returns EXACT coupling, not that a
 // prompt contains certain words.
 import assert from "node:assert/strict";
-import { computeImpact, graphImpactCommand } from "@aof/knowledge/commands/graph-impact";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { computeImpact } from "@aof/knowledge/graph-impact";
+import { createCodeGraphReader } from "@aof/knowledge/graphify-code-relations";
+import { createGraphImpactCommand } from "@aof/knowledge/commands/graph-impact";
+import { createGraphifyCodeBackend } from "@aof/knowledge/graphify-code-backend";
+import { createKnowledgeEngine } from "@aof/knowledge/engine";
+import { graphArtifactBuiltAt, graphJsonPath, normalizeGraph, readGraph } from "@aof/knowledge/graph-normalize";
+
+// 179/ADR-002: graph:impact is a face over the port's `relations`, which the graphify code backend
+// answers from the real structured read. The build half is never reached here: each port refuses.
+const refuse = (what) => () => { throw new Error(`the impact suite must not reach ${what}`); };
+function codePort({ resolveGraphifyBinary = () => ({ found: false, hint: "no graphify here" }), read = readGraph } = {}) {
+  const { graphifyCodeBackend } = createGraphifyCodeBackend({
+    resolveGraphifyBinary, readGraph: read, normalizeGraph, graphJsonPath, graphArtifactBuiltAt,
+    runGraphifyBuild: refuse("runGraphifyBuild"), isCodeOnlyWholeRootBuild: refuse("isCodeOnlyWholeRootBuild"),
+    git: refuse("git"), ensureGraphifyOutGitignore: refuse("ensureGraphifyOutGitignore"),
+  });
+  return createKnowledgeEngine({ backends: [graphifyCodeBackend] });
+}
+const { graphImpactCommand } = createGraphImpactCommand({ relations: codePort().relations });
+
+// Task 01's fixture: a hand-written NetworkX graph.json. a imports b, c calls into a, lonely has no
+// cross-file edge, and missing is on disk but is no node.
+const FIXTURE_GRAPH = {
+  directed: true, multigraph: false, graph: {},
+  nodes: ["a", "b", "c", "lonely"].map((id) => ({ id, label: `${id}.mjs`, file_type: "code", source_file: `src/${id}.mjs` })),
+  links: [{ source: "a", target: "b", relation: "imports" }, { source: "c", target: "a", relation: "calls" }],
+};
+function fixtureProject(graphText = JSON.stringify(FIXTURE_GRAPH)) {
+  const root = mkdtempSync(path.join(os.tmpdir(), "aof-179-02-"));
+  mkdirSync(path.join(root, "src"), { recursive: true });
+  for (const name of ["a", "b", "c", "lonely", "missing"]) writeFileSync(path.join(root, "src", `${name}.mjs`), `// ${name}\n`);
+  if (graphText != null) {
+    mkdirSync(path.join(root, "graphify-out"), { recursive: true });
+    writeFileSync(graphJsonPath(root), graphText);
+  }
+  return root;
+}
 
 // A tiny normalized graph (the normalizeGraph output shape): nodes carry
 // id/sourceFile; edges carry source/target (node ids). Models:
@@ -174,6 +213,105 @@ export const tests = [
       assert.deepEqual(graphImpactCommand.cli.argv(["src/a.mjs", "src/b.mjs"]), {
         paths: ["src/a.mjs", "src/b.mjs"],
       });
+    },
+  },
+
+  ...[
+    { state: "absent", graph: null, unavailable: "no-graph", cause: () => "ENOENT" },
+    { state: 'a file holding "{not json"', graph: "{not json", unavailable: "graph-unreadable", cause: () => { try { JSON.parse("{not json"); } catch (error) { return error.message; } } },
+    // The normaliser refuses an `edges` array with no `links` key, and its error carries a code,
+    // so the cause is that code (ADR-002: the error's code, else its message).
+    { state: 'valid JSON with no "links" key', graph: JSON.stringify({ nodes: [], edges: [] }), unavailable: "graph-unreadable", cause: () => { try { normalizeGraph({ nodes: [], edges: [] }); } catch (error) { return error.code ?? error.message; } } },
+  ].map((row) => ({
+    name: `179/02 task 01 outline: relations reports the code corpus unavailable from one place, with its cause — ${row.state}`,
+    run: async () => {
+      const root = fixtureProject(row.graph);
+      try {
+        const answer = await codePort().relations(["src/a.mjs"], { projectRoot: root });
+        assert.equal(answer.served, true);
+        assert.equal(answer.available, false);
+        assert.equal(answer.unavailable, row.unavailable);
+        assert.equal(answer.cause, row.cause());
+        assert.deepEqual(answer.files, []);
+        assert.equal(answer.builtAt, null);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  })),
+  {
+    name: "179/02 task 01: status of the code corpus reports binary and artifact from the same availability check",
+    run: async () => {
+      const root = fixtureProject(null);
+      try {
+        const answer = await codePort().status("code", { projectRoot: root });
+        assert.equal(answer.binary, "graphify-missing");
+        assert.equal(answer.unavailable, "no-graph");
+        assert.equal(answer.builtAt, null);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "179/02 task 01: relations walks the edges once per call, however many paths are asked",
+    run: () => {
+      const files = Array.from({ length: 200 }, (_, i) => `src/f${i}.mjs`);
+      const nodes = files.map((file, i) => ({ id: `n${i}`, sourceFile: file }));
+      const edges = files.flatMap((_, i) => [{ source: `n${i}`, target: `n${(i + 1) % 200}` }, { source: `n${i}`, target: `n${(i * 7) % 200}` }]);
+      let walks = 0;
+      const counted = { nodes, hyperedges: [], edges: { [Symbol.iterator]() { walks += 1; return edges[Symbol.iterator](); } } };
+      const asked = files.filter((_, i) => i % 4 === 0);
+      const answers = computeImpact(counted, asked);
+      assert.equal(walks, 1, "the edges were walked exactly once");
+      const plain = { nodes, edges, hyperedges: [] };
+      asked.forEach((file, i) => assert.deepEqual(answers[i], computeImpact(plain, [file])[0], `${file} answers as it does alone`));
+    },
+  },
+  {
+    name: "179/02 task 01: two calls in one process read the artifact twice, so a rebuilt graph is seen",
+    run: async () => {
+      const root = fixtureProject();
+      let reads = 0;
+      const port = codePort({ read: (graphPath) => { reads += 1; return readGraph(graphPath); } });
+      try {
+        const [first] = (await port.relations(["src/a.mjs"], { projectRoot: root })).files;
+        assert.deepEqual(first.dependencies, ["src/b.mjs"]);
+        const rebuilt = { ...FIXTURE_GRAPH, links: [...FIXTURE_GRAPH.links, { source: "a", target: "lonely", relation: "imports" }] };
+        writeFileSync(graphJsonPath(root), JSON.stringify(rebuilt));
+        const [second] = (await port.relations(["src/a.mjs"], { projectRoot: root })).files;
+        assert.deepEqual(second.dependencies, ["src/b.mjs", "src/lonely.mjs"]);
+        assert.equal(reads, 2, "the artifact is read on every call");
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    // 190/01 task 00 (ADR-003 §2): the transitive form is one read of the artifact.
+    name: "190/01 the transitive form is one read of the artifact",
+    async run() {
+      // c → b → a (each imports the next), d → a, and a cycle x ↔ y with y → c.
+      const graph = {
+        directed: true, multigraph: false, graph: {},
+        nodes: ["a", "b", "c", "d", "x", "y"].map((id) => ({ id, label: `${id}.mjs`, file_type: "code", source_file: `src/${id}.mjs` })),
+        links: [["b", "a"], ["c", "b"], ["d", "a"], ["x", "y"], ["y", "x"], ["y", "c"]].map(([source, target]) => ({ source, target, relation: "imports" })),
+      };
+      const root = fixtureProject(JSON.stringify(graph));
+      try {
+        let reads = 0;
+        const { relations } = createCodeGraphReader({ readGraph: (file) => { reads += 1; return readGraph(file); }, normalizeGraph, graphJsonPath, graphArtifactBuiltAt });
+        const answer = await relations(["src/a.mjs", "src/c.mjs", "src/x.mjs"], { projectRoot: root, transitive: true });
+        assert.equal(reads, 1, "the artifact is read once");
+        const dependents = Object.fromEntries(answer.files.map((entry) => [entry.file, entry.dependents]));
+        assert.deepEqual(dependents["src/a.mjs"], ["src/b.mjs", "src/c.mjs", "src/d.mjs", "src/x.mjs", "src/y.mjs"], "every file that reaches a through import edges");
+        assert.deepEqual(dependents["src/c.mjs"], ["src/x.mjs", "src/y.mjs"], "the cycle ends the walk");
+        assert.deepEqual(dependents["src/x.mjs"], ["src/y.mjs"]);
+        const direct = await relations(["src/a.mjs"], { projectRoot: root });
+        assert.deepEqual(direct.files[0].dependents, ["src/b.mjs", "src/d.mjs"], "without the option, direct importers only, as before");
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
     },
   },
 ];

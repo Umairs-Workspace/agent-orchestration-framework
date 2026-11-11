@@ -73,7 +73,9 @@ export const configEditorTests = [
   {
     name: "supported config edits preserve the complete work subtree",
     run: preservesWorkConfig
-  }
+  },
+  // 180/03 task 01 — saving the Memory section (see `memorySaveTests`).
+  ...memorySaveTests(),
 ];
 
 async function withExecutionProject(run) {
@@ -431,4 +433,66 @@ async function preservesWorkConfig() {
   } finally {
     await rm(targetDir, { recursive: true, force: true });
   }
+}
+
+// 180/03 task 01 — saving the Memory section writes only the new shape, keeps every other section,
+// and refuses what the memory reader refuses with its own code and path (180/ADR-001, ADR-006,
+// DESIGN Surface 1). THE FIXTURE is the feature's: a temp project under an isolated AOF_GLOBAL_HOME
+// whose config is the scenario's; "saving" is `saveEditableSections` with body { memory: <node> }.
+// Declared as a function so the array above can spread it before the module's later bindings exist.
+function memorySaveTests() {
+  const t = (name, run) => ({ name: `180/03 task 01: ${name}`, run });
+  async function withMemoryProject(config, run) {
+    const root = await mkdtemp(path.join(os.tmpdir(), "aof-180-03-save-"));
+    const configPath = path.join(root, ".aof", "aof.config.json");
+    const options = { env: { ...process.env, AOF_GLOBAL_HOME: path.join(root, "global") } };
+    try {
+      await mkdir(path.dirname(configPath));
+      await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+      await run({ root, configPath, options, read: async () => JSON.parse(await readFile(configPath, "utf8")) });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }
+  const NEW_SHAPE = { backend: "local", corpora: ["work", "imports", "code", "operator"] };
+
+  return [
+    t("E5 · a memory save leaves every other section byte for byte as it was", () => {
+      const config = { name: "p", resources: [{ kind: "skill", id: "context", body: "Keep context", runtimes: ["claude"] }], memory: { backend: "local" },
+        work: { dir: "./wiki/work", agents: { mode: "solo" } }, mesh: { fabric: "direct", address: "127.0.0.1" }, settings: { claude: { permissions: { allow: ["Read"] } } } };
+      return withMemoryProject(config, async ({ root, options, read }) => {
+        const result = await saveEditableSections(root, { memory: NEW_SHAPE }, options);
+        assert.equal(result.ok, true, JSON.stringify(result.diagnostics));
+        const saved = await read();
+        for (const key of ["work", "mesh", "resources", "settings"]) assert.equal(JSON.stringify(saved[key]), JSON.stringify(config[key]), key);
+        assert.deepEqual(saved.memory, NEW_SHAPE);
+      });
+    }),
+    t("removing the graph key from the node turns sharing off", () => withMemoryProject({ name: "p", resources: [], graph: { share: "git-refs" }, memory: { backend: "local" } }, async ({ root, options, read }) => {
+      assert.equal((await saveEditableSections(root, { memory: { backend: "local" } }, options)).ok, true);
+      const saved = await read();
+      assert.equal("graph" in saved, false);
+      assert.equal("graph" in saved.memory, false);
+    })),
+    ...[
+      [{ corpora: ["work", "imports", "code", "planning"] }, "invalid-memory-corpora", "memory.corpora.3"],
+      [{ backends: { graphify: { extractionBackend: "codex" } } }, "invalid-memory-extraction-backend", "memory.backends.graphify.extractionBackend"],
+      [{ graph: { share: "always" } }, "graph-share-unknown", "memory.graph.share"],
+      [{ sources: ["claude-auto-memory"] }, "memory-config-legacy-write", "memory.sources"],
+      [["work"], "invalid-memory-section", "memory"],
+    ].map(([node, code, at]) => t(`the save refuses what the memory reader refuses, with its code and path — ${code}`, () => withMemoryProject({ name: "p", resources: [], memory: { backend: "local" } }, async ({ root, configPath, options }) => {
+      const before = await readFile(configPath, "utf8");
+      const result = await saveEditableSections(root, { memory: node }, options);
+      assert.equal(result.ok, false);
+      assert.deepEqual(result.diagnostics.map((item) => [item.code, item.path]), [[code, at]]);
+      assert.equal(await readFile(configPath, "utf8"), before);
+    }))),
+    t("a save from a conflicting config keeps the saved node and removes the root graph", () => withMemoryProject({ name: "p", resources: [], graph: { share: "off" }, memory: { graph: { share: "git-refs" } } }, async ({ root, options, read }) => {
+      const result = await saveEditableSections(root, { memory: { graph: { share: "git-refs" } } }, options);
+      assert.equal(result.ok, true, JSON.stringify(result.diagnostics));
+      const saved = await read();
+      assert.deepEqual(saved.memory, { graph: { share: "git-refs" } });
+      assert.equal("graph" in saved, false);
+    })),
+  ];
 }

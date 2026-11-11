@@ -5,6 +5,7 @@ import { stat } from "node:fs/promises";
 import { probeFabric, selfAddress, resolvePeers, fabricGuidance } from "./fabric.mjs";
 import { meshRole, resolveWorkerStreamTarget } from "./role.mjs";
 import { syncCadenceFromConfig } from "./sync-cadence.mjs";
+import { hasOwnWorkspaceConfig } from "./workspace-identity.mjs";
 import { buildSessionSpawnAckEnvelope } from "./session-spawn-directive.mjs";
 import { intervalTicker } from "./presence-loop.mjs";
 import { readPresentedCredential } from "./relay.mjs";
@@ -352,7 +353,12 @@ function resolveAggregationWorkspaces(ws, registryResult) {
     seen.add(key);
     workspaces.push({ workDir, workspaceId });
   };
-  addWorkspace(ws.workDir, resolveWorkspaceId(ws));
+  // The launch folder joins the set only when it is a workspace. Under launchd the daemon's cwd is
+  // `/`: counted as one, every tick read a work cache nobody writes and armed a watch on
+  // `/wiki/work` (175/F-14). A launch workspace with no projectRoot to check is unaffected, as in
+  // the publisher's decision.
+  const launchRoot = typeof ws.projectRoot === "string" && ws.projectRoot.length > 0 ? ws.projectRoot : null;
+  if (launchRoot == null || hasOwnWorkspaceConfig(launchRoot)) addWorkspace(ws.workDir, resolveWorkspaceId(ws));
   if (registryResult.ok) {
     for (const entry of registryResult.workspaces) addWorkspace(entry.workDir, entry.workspaceId);
   }

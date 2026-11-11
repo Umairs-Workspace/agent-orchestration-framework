@@ -8,7 +8,7 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // A chore carries no .feature (acd-chore-no-feature), so these are the DoD boxes
 // stated as assertions:
 //   · box 4 — after the call, .aof/aof.config.json exists with memory.backend
-//             "graphify" set active by default;
+//             "local" set active by default (180/02 Q1 changed it from "graphify");
 //   · box 5 — the inferred layers/refinements/domains land as a work.tags block;
 //   · box 6 — an EXISTING config with no tags is FILLED and nothing else is
 //             touched (work.dir/work.agents/memory/headroom/mesh and a foreign
@@ -116,7 +116,7 @@ export const workInitConfigTests = [
 
         const config = await readWrittenConfig(repo);
         assert.equal(config.work.intake, "backlog", "a fresh repository lands on the backlog with no prompt edit");
-        assert.equal(config.memory.backend, "graphify", "beside the memory backend — both defaults land in the same write");
+        assert.equal(config.memory.backend, "local", "beside the memory backend — both defaults land in the same write");
 
         // The FACE, not a second spelling of it: the `--json` document a caller reads.
         const document = workInitConfigCommand.cli.json({ ...result, targetDir: repo });
@@ -173,7 +173,7 @@ export const workInitConfigTests = [
   // DoD box 4 + 5 — a repo with NO config gets one, memory.backend active by
   // default and the inferred vocabulary written.
   {
-    name: "work/init-config: a repo with no config gets one carrying memory.backend \"graphify\" and the inferred work.tags",
+    name: "work/init-config: a repo with no config gets one carrying memory.backend \"local\" and the inferred work.tags",
     run: async () => {
       const repo = await repoFixture();
       try {
@@ -186,7 +186,7 @@ export const workInitConfigTests = [
         assert.ok(existsSync(configPathOf(repo)), ".aof/aof.config.json exists after the call");
 
         const config = await readWrittenConfig(repo);
-        assert.equal(config.memory.backend, "graphify", "memory.backend is graphify, active by default");
+        assert.equal(config.memory.backend, "local", "memory.backend is local, active by default (180/02 Q1)");
         assert.equal(result.backendWritten, true, "the result reports the backend as newly set");
         assert.deepEqual(config.work.tags, {
           layers: ["@cli", "@ui"],
@@ -294,7 +294,7 @@ export const workInitConfigTests = [
         const result = await initConfig({ targetDir: repo });
         const config = await readWrittenConfig(repo);
 
-        assert.equal(config.memory.backend, "graphify");
+        assert.equal(config.memory.backend, "local");
         assert.equal(result.tagsWritten, false);
         assert.equal(result.tagsKept, false, "nothing was kept either — nothing was offered");
         assert.equal(config.work?.tags, undefined, "no empty tags husk is written");
@@ -341,4 +341,68 @@ export const workInitConfigTests = [
       }
     },
   },
+
+  // 180/02 task 01 — see `newShapeInitTests`.
+  ...newShapeInitTests(),
 ];
+
+// 180/02 task 01 — `aof work init` writes only the new memory shape, and a new project's backend is
+// `local` (180/02 Q1, 180/ADR-005, ADR-006). THE FIXTURE is the feature's: a temp directory under an
+// isolated AOF_GLOBAL_HOME. "init-config" is the `work:init-config` engine with `--layers @cli`, and
+// its envelope and text are read through the command's own faces. Declared as a function so the
+// array above can spread it before the module's later bindings are initialised.
+function newShapeInitTests() {
+  const t = (name, run) => ({ name: `180/02 task 01: ${name}`, run });
+  const initWork = _aofApplication.assets.work.init.initWork;
+  const layers = { layers: ["@cli"], refinements: [], domains: [] };
+  const writeConfig = (repo, config) => writeFile(configPathOf(repo), `${JSON.stringify(config, null, 2)}\n`);
+  async function withRepo(run) {
+    const repo = await repoFixture();
+    try { await run(repo); } finally { await rm(repo, { recursive: true, force: true }); }
+  }
+  const run = async (repo) => {
+    const result = await initConfig({ targetDir: repo, tags: layers });
+    return { result, json: workInitConfigCommand.cli.json({ ...result, targetDir: repo }), text: workInitConfigCommand.cli.render({ ...result, targetDir: repo }) };
+  };
+  const OLD_KEYS = (config) => [config.memory?.sources !== undefined && "memory.sources", config.memory?.graphify !== undefined && "memory.graphify", config.graph !== undefined && "graph"].filter(Boolean);
+
+  return [
+    t("E9 · a new project's config holds the new shape with backend local", () => withRepo(async (repo) => {
+      const { json, text } = await run(repo);
+      const config = await readWrittenConfig(repo);
+      assert.deepEqual(config.memory, { backend: "local" });
+      assert.equal("graph" in config, false);
+      assert.equal(json.memoryBackend, "local");
+      assert.equal(json.backendWritten, true);
+      assert.ok(text.split("\n").includes("memory.backend: local (set)"), text);
+    })),
+    ...["graphify", "none", "local"].map((backend) => t(`an existing selection is kept — ${backend}`, () => withRepo(async (repo) => {
+      await writeConfig(repo, { name: "p", resources: [], memory: { backend } });
+      const { json } = await run(repo);
+      assert.equal((await readWrittenConfig(repo)).memory.backend, backend);
+      assert.equal(json.backendWritten, false);
+    }))),
+    t("E10 · init leaves an old-shape config's old keys for update", () => withRepo(async (repo) => {
+      const before = { name: "p", resources: [], graph: { share: "git-refs", remote: "upstream" }, memory: { backend: "local", sources: ["claude-auto-memory"], graphify: { extractionBackend: "ollama" } } };
+      await writeConfig(repo, before);
+      const { json } = await run(repo);
+      const after = await readWrittenConfig(repo);
+      assert.equal(JSON.stringify(after.memory), JSON.stringify(before.memory));
+      assert.equal(JSON.stringify(after.graph), JSON.stringify(before.graph));
+      assert.equal(json.backendWritten, false);
+    })),
+    t("init writes no old memory key in any path it takes", async () => {
+      for (const [label, arrange] of [
+        ["no config", async () => {}],
+        ["an empty config {}", (repo) => writeConfig(repo, {})],
+        ["a config created by aof work init --with-headroom", (repo) => initWork({ targetDir: repo, runtimes: ["claude"], withHeadroom: true })],
+      ]) {
+        await withRepo(async (repo) => {
+          await arrange(repo);
+          await run(repo);
+          assert.deepEqual(OLD_KEYS(await readWrittenConfig(repo)), [], label);
+        });
+      }
+    }),
+  ];
+}

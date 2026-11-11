@@ -18,8 +18,10 @@ else `work.ui.baseUrl` (may be absent — ACD never boots the app; the project s
 The ref may be a **milestone**, a **story**, a **uat session**, a **spike**, or a **chore**. A uat
 session (`type: uat`) is a cross-milestone acceptance gate: its record doc is its own `SESSION.md` (not
 a milestone `VERIFICATION.md`), and the scenarios in scope are the `@manual`/`@uat` ones across the
-milestones it accepts (its `depends:` list). Run those milestones' `@executable` suite + fitness
-functions first as an integrated **regression sweep** (green) before the manual/human lanes. The same
+milestones it accepts (its `depends:` list). Run one integrated **regression sweep** (green) before
+the manual/human lanes: a single `aof test --scope all` for the whole session, never one run per
+accepted milestone. When the content has not changed since the newest gate run, that sweep is answered
+from the gate run's record, and the answer is the evidence. The same
 steps below apply — just write to `SESSION.md` and read scenarios across the accepted span.
 
 **Spike/chore dispatch (ADR-003) — skip straight to `<spike-chore>` below.** A `spike` or `chore` is
@@ -130,7 +132,8 @@ that have content** — no empty "None" placeholders (absence of a section is in
 
    **Developer handback on a blocker decline.** After recording the finding and its new `@bug`
    task, return a declined story that is `in-review` to development with
-   `aof work status <ref> in-progress` (the story ref). If already `in-progress`, retain it.
+   `aof work status <ref> in-progress --if-applicable` (the story ref); a story already
+   `in-progress` stays there, and the flag reads that as data, not a refusal.
    Use the status verb, never edit frontmatter directly, and check that it succeeded before
    reporting the handback complete.
    Record the decline and routing in the accept decision. This status is the loop's durable
@@ -140,8 +143,8 @@ that have content** — no empty "None" placeholders (absence of a section is in
    execution failure, even though the story has not been accepted.
 
    **Recall prior findings at triage.** Before a finding's triage is decided, refresh the index and
-   recall the stream's earlier findings: first `aof work memory ingest`, then
-   `aof work memory recall "<the finding's text>" --kind finding --block` — across the whole stream,
+   recall the stream's earlier findings: first `aof memory ingest`, then
+   `aof memory recall "<the finding's text>" --kind finding --block` — across the whole stream,
    with no item and no stage filter. The candidates support the triage and never decide it: compare
    each by cause and evidence, excluding the finding's own identity (its `item` and `id`). A
    candidate with the same cause and evidence is cited as the prior occurrence (`<item>/<id>`) and
@@ -156,7 +159,7 @@ that have content** — no empty "None" placeholders (absence of a section is in
    `scope` `{"kind":"finding"}` and `records` — one `{item, id, recordType, verdict}` per returned
    line, the finding's own identity included, each with an explicit verdict `honoured`, `departed`
    or `irrelevant`, never a default. Submit it ONCE on the item being verified:
-   `aof work memory record-recall <ref> --input <triage observation file>`. An empty block is still
+   `aof memory record-recall <ref> --input <triage observation file>`. An empty block is still
    submitted, as `"records": []` — no verdict and no extra retrieval is invented.
 
    **Who fills the `id` column, and when.** Reviewers report findings UNNUMBERED — an ordered list,
@@ -202,7 +205,7 @@ that have content** — no empty "None" placeholders (absence of a section is in
    reader of one story finds nothing of that story in the milestone above it. Measured before story
    85: 57 `RETROSPECTIVE.md` at driver level and **zero** under `stories/`. The conditional is
    unchanged — a story that surfaced nothing worth a lesson writes no doc, and says so. Then
-   **fold the just-written lessons into memory**: run `aof work memory ingest` so this milestone's
+   **fold the just-written lessons into memory**: run `aof memory ingest` so this milestone's
    `R<n>` entries + `ADR-NNN` blocks become recallable in the next milestone's `aof:refine`/`aof:continue`
    (a no-op when memory is off — safe to run always). Then **archive** the STATE `## Feedback (for retro)`
    section as part of the compaction — its lessons have graduated, exactly as durable decisions graduate
@@ -252,7 +255,7 @@ that have content** — no empty "None" placeholders (absence of a section is in
      condition that stops the gap being true. Leave NO residual `<…>` placeholder in any section.
 
    **A milestone's outcome is AUTHORED, never a concatenation of its stories'.** The aggregation
-   happens in the INDEX — `aof work memory ingest` unions every item's records into one recall surface
+   happens in the INDEX — `aof memory ingest` unions every item's records into one recall surface
    — so a milestone that restates its stories' capabilities writes one fact twice, and every recall
    then has to dedupe it. State what is true AT THE MILESTONE LEVEL that no single story's outcome
    states alone; where a story states a capability whole, CITE it as `m<NN/SS>/<id>` rather than
@@ -286,9 +289,13 @@ a story you are accepting should already read `in-review`.
     `REGRESSION.md` carrying the commit, the instant, the scope and the result. Run it, then accept.
   - **A `not-finished` row is no verdict on the code (160/ADR-006).** The run was held to its budget
     and stopped, or a unit ran out of time, or the gate's own deadline expired; the door refuses it as
-    `regression-gate-not-finished`. Its repair is to re-run the gate, or to speed the run up so it
-    finishes inside its budget. **Never route a not-finished row to a code repair**, and never count
-    its unfinished units as failures: only a `red` row names failing cases.
+    `regression-gate-not-finished`. Its repair is `aof work regression-gate <NN> --resume`, which
+    re-runs only the units the stopped run left, on the same content, and appends one row for the
+    whole. A resume refuses when the content has changed since that run — half a run of one tree and
+    half of another is no run of either — and then the repair is
+    to re-run the gate, or to speed the run up so it finishes inside its budget.
+    **Never route a not-finished row to a code repair**, and never count its unfinished units as
+    failures: only a `red` row names failing cases.
   - **The escape is `--gate-override "<reason>"`, for an ENVIRONMENT that cannot host the run** — the
     case m66 and 63/R12 both name (a node with no browser lane, a runner that cannot start here). It
     permits the move and writes the reason into `REGRESSION.md` as its own row. It is not the way

@@ -16,13 +16,15 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // a derivation that only works on the repository it was written against is a ledger with extra
 // steps.
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
 import { graphJsonPath } from "@aof/knowledge/graph-normalize";
 const TEST_ROOTS = _aofApplication.work.audit.census.TEST_ROOTS;
 import { readFinding } from "@aof/work/audit/reads";
+import { createAuditSeamLiveness } from "@aof/work/audit/seam-liveness";
+import { stripComments } from "../../support/source-slice.mjs";
 const SEAM_LIVENESS_FINDING_CODES = _aofApplication.work.audit.seamLiveness.SEAM_LIVENESS_FINDING_CODES;
 const dependentsIndex = _aofApplication.work.audit.seamLiveness.dependentsIndex;
 const exportedNames = _aofApplication.work.audit.seamLiveness.exportedNames;
@@ -211,26 +213,36 @@ export const seamLivenessTests = [
     },
   },
   {
-    name: "seam-liveness: the graph is walked ONCE for the whole candidate set, never once per candidate",
-    run() {
+    // 179/ADR-004: the lane no longer walks the edges itself. It asks the code corpus's `relations`
+    // ONCE with every candidate, and `relations` walks the edges once per call however many paths it
+    // is asked (179/ADR-002, proven in packages/knowledge/test/graph-impact.suite.mjs). The bound is
+    // the same; who keeps it moved.
+    name: "seam-liveness: the graph is asked ONCE for the whole candidate set, never once per candidate",
+    async run() {
       for (const count of [50, 150]) {
-        const files = Array.from({ length: count }, (_, index) => `src/m${index}.mjs`);
-        let walks = 0;
-        const edges = [];
-        const graph = {
-          nodes: files.map((file, index) => ({ id: `n${index}`, sourceFile: file })),
-          get edges() { walks += 1; return edges; },
-        };
-
-        const index = dependentsIndex(graph);
-        assert.equal(walks, 1, `${count} candidates: the edges are walked once, and the number does not grow with the candidate count`);
-        assert.equal(index.present.size, count, "…and every candidate's presence was resolved from that one pass");
-
-        // The contrast the bound exists for: asked per candidate, the same walk happens per candidate.
-        walks = 0;
-        for (const file of files) { void file; void graph.edges; }
-        assert.equal(walks, count, `${count} candidates: a per-candidate walk would cost ${count} passes, which is what ADR-006 §1a prices at ~12 s`);
+        const files = Object.fromEntries(Array.from({ length: count }, (_, index) => [`src/m${index}.mjs`, EXPORTS_ONE]));
+        const root = project(files);
+        try {
+          writeGraph(root, { files: Object.keys(files), edges: [] });
+          const asked = [];
+          const real = _aofApplication.knowledge.engine.codeEngine.relations;
+          const { runSeamLiveness: lane } = createAuditSeamLiveness({ relations: async (paths, ctx) => { asked.push(paths); return real(paths, ctx); }, TEST_ROOTS });
+          const result = await lane({ root });
+          assert.equal(asked.length, 1, `${count} candidates: relations is asked once, and the number does not grow with the candidate count`);
+          assert.equal(asked[0].length, count, "…with every candidate in that one question");
+          assert.equal(result.findings.filter((finding) => finding.code === "audit-seam-unwired").length, count, "…and every candidate's presence was resolved from that one answer");
+        } finally {
+          rmSync(root, { recursive: true, force: true });
+        }
       }
+
+      // The index is built from the one answer, keyed by the path the lane asked about.
+      const index = dependentsIndex(["src/a.mjs", "src/b.mjs"], [
+        { file: "src/a.mjs", present: true, dependencies: [], dependents: ["src/c.mjs"] },
+        { file: "src/b.mjs", present: false, dependencies: [], dependents: [] },
+      ]);
+      assert.deepEqual([...index.present], ["src/a.mjs"], "only a present file is present");
+      assert.deepEqual([...index.dependents.get("src/a.mjs")], ["src/c.mjs"], "…with the dependents relations answered");
     },
   },
   {
@@ -520,4 +532,68 @@ export const seamLivenessTests = [
       assert.notDeepEqual(named(withoutImport.findings), named(withImport.findings), "so the second answer is not the first repeated");
     },
   },
+
+  // ── 179/04 task 00 — the seam lane asks relations once and reports as before ────────────────
+  // 179/02 task 01's graph — a imports b, c calls a, lonely has no edges — with each module's
+  // source on disk, composed as core composes the lane, over the application's own code port, with
+  // a `relations` that records every call it receives.
+  {
+    name: "179/04 task 00 outline: each reader asks relations once, with every path it needs — the seam-liveness lane over the fixture's src/",
+    async run() {
+      const { asked } = await seamOverReaderFixture(READER_GRAPH_179);
+      assert.equal(asked.length, 1, "relations was called exactly once");
+      assert.deepEqual([...asked[0]].sort(), ["src/a.mjs", "src/b.mjs", "src/lonely.mjs"], "…with every exporting module under src/");
+      const lane = readFileSync(new URL("../../../packages/work/src/audit/seam-liveness.mjs", import.meta.url), "utf8");
+      assert.doesNotMatch(stripComments(lane), /\b(?:readGraph|normalizeGraph|graphJsonPath)\b|graph\.json/u, "the reader opened no graph file itself");
+    },
+  },
+  {
+    name: "179/04 task 00: seam liveness finds the same uncalled export as before",
+    async run() {
+      const { result } = await seamOverReaderFixture(READER_GRAPH_179);
+      const unwired = result.findings.filter((finding) => finding.code === "audit-seam-unwired");
+      assert.deepEqual(unwired.map((finding) => finding.path), ["src/lonely.mjs"], "a finding for src/lonely.mjs, and none for src/a.mjs or src/b.mjs");
+      assert.match(unwired[0].message, /`unused`/u, "…naming unused");
+    },
+  },
+  ...[
+    { state: "absent", graph: null, limit: () => "no code graph was available — the artifact is not on disk, and this project may never have built one" },
+    { state: 'a file holding "{not json"', graph: "{not json", limit: () => { try { JSON.parse("{not json"); } catch (error) { return `the code graph could not be read (${error.message})`; } } },
+  ].map((row) => ({
+    name: `179/04 task 00 outline: seam liveness reports an unavailable graph as a limit with the same sentence — ${row.state}`,
+    async run() {
+      const { result } = await seamOverReaderFixture(row.graph);
+      assert.deepEqual(result.findings.filter((finding) => finding.code === "audit-seam-unwired"), [], "it raises no finding");
+      assert.ok(JSON.stringify(result.limits).includes(JSON.stringify(row.limit()).slice(1, -1)), `its limit reads "${row.limit()}"`);
+    },
+  })),
 ];
+
+// ── 179/04 fixture ──────────────────────────────────────────────────────────────────────────────
+
+const READER_GRAPH_179 = JSON.stringify({
+  directed: true, multigraph: false, graph: {},
+  nodes: ["a", "b", "c", "lonely"].map((name) => ({ id: `n${name}`, label: `${name}.mjs`, source_file: `src/${name}.mjs` })),
+  links: [{ source: "na", target: "nb", relation: "imports", confidence: "EXPLICIT" }, { source: "nc", target: "na", relation: "calls", confidence: "EXPLICIT" }],
+});
+
+async function seamOverReaderFixture(graphText) {
+  const root = project({
+    "src/a.mjs": 'import { b } from "./b.mjs";\nexport function a() { return b(); }\n',
+    "src/b.mjs": "export function b() { return 1; }\n",
+    "src/c.mjs": 'import { a } from "./a.mjs";\nawait a();\n',
+    "src/lonely.mjs": "export function unused() { return 0; }\n",
+  });
+  try {
+    if (graphText != null) {
+      mkdirSync(path.join(root, "graphify-out"), { recursive: true });
+      writeFileSync(graphJsonPath(root), graphText);
+    }
+    const asked = [];
+    const real = _aofApplication.knowledge.engine.codeEngine.relations;
+    const { runSeamLiveness: lane } = createAuditSeamLiveness({ relations: async (paths, ctx) => { asked.push([...paths]); return real(paths, ctx); }, TEST_ROOTS });
+    return { result: await lane({ root }), asked };
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}

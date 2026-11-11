@@ -117,6 +117,12 @@ registry + the `.aof` records); decide them together. Until then, consider the c
 
 ## Other deferred items (backlog)
 
+- **Crash containment for the desktop app on macOS** — if the supervisor is killed with SIGKILL or
+  crashes, its daemons' process groups survive, because macOS has no parent-death signal. Quit,
+  `aof mesh desktop stop` and a logout all reap them. The fix is a parent-watch inside the daemons
+  (a `ppid` poll), which is daemon code. Until then the deploy rules' macOS section gives the
+  manual recovery. Deferred by 175/ADR-001 §5. (Milestone 175.)
+
 - **`aof mesh logs --follow`** — a live tail mode on the log reader (m42 descoped it by decision:
   polling `--tail` covers the operator need; follow is a CLI nicety, not debt). (Milestone 42.)
 

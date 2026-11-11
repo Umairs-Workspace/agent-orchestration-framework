@@ -65,6 +65,10 @@ export const NUMBER_CONSUMER_FILES = Object.freeze([
   // number; the driver is found behind `item.number != null` and every story behind the same guard
   // in `isMember`. Guarded; none is allow-listed.
   "packages/work/src/ready-wave.mjs",
+  // 182 — `aof work renumber` finds its one item behind `row.number != null`, refuses an occupied
+  // target over the same guard, and checks the identity record's own `number` before it moves
+  // anything. Guarded; none is allow-listed.
+  "packages/work/src/renumber.mjs",
 ]);
 
 // The sites the rule cannot classify, each with the reason it is admitted. Keyed by file +

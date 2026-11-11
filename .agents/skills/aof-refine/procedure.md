@@ -153,9 +153,9 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
        missing baseline). A surface with neither a committed mock nor a checklist has no baseline.
 
      **Recall prior lessons first (before authoring ADRs/stories).** Role-scoped, run unconditionally
-     (memory may be off — see below): the **architect**, before writing an ADR, runs `aof work memory
+     (memory may be off — see below): the **architect**, before writing an ADR, runs `aof memory
      recall "<the decision in a few words>" --area architecture --block`; the **PO**, before the
-     break-down, runs a recall keyed to the milestone's domain — `aof work memory recall "<milestone
+     break-down, runs a recall keyed to the milestone's domain — `aof memory recall "<milestone
      objective keywords>" --item <ref> --block`. Read the returned block and acknowledge any surfaced
      **near-miss** relevant to a decision — honoured, or consciously departed from, in `ARCHITECTURE.md`
      (or `STATE.md`). An **empty block means nothing to surface** (memory may be off) — proceed
@@ -171,9 +171,9 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
      recordType, verdict}` per returned line, each with an explicit verdict `honoured`, `departed`
      or `irrelevant`, never a default. The architect uses edge `refine-architect`, actor
      `architect` and scope `{"area":"architecture"}`, then submits
-     `aof work memory record-recall <ref> --input <architect observation file>`. The PO uses edge
+     `aof memory record-recall <ref> --input <architect observation file>`. The PO uses edge
      `refine-po`, actor `product-owner` and scope `{"item":"<ref>"}`, then submits
-     `aof work memory record-recall <ref> --input <PO observation file>`. Each submits exactly once,
+     `aof memory record-recall <ref> --input <PO observation file>`. Each submits exactly once,
      on the item being refined. An empty block is still submitted, as `"records": []`, with no
      verdict invented. The prose that acknowledges a near-miss cites the recall id it explains.
   2. **Break down** (with `aof-architect`): partition into **independent** stories — minimise

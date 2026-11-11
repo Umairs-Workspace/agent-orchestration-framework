@@ -1937,6 +1937,15 @@ export const driveCommandPhaseDriverTests = [
       assert.equal(Object.hasOwn(PHASE_MODE_FLAGS, "manual"), false, "no mode flag spells --manual");
     },
   },
+  // 179/01 — the same control extends to `--teach`: an operator-led mode is typed, never composed.
+  {
+    name: "179/01 the loop never composes --teach [continue, {\"loop\":{\"agents\":{\"continue\":{\"mode\":\"teach\"}}}} → /aof:continue 03/01 --solo]",
+    async run() {
+      await assertDriveComposes("continue", { loop: { agents: { continue: { mode: "teach" } } } }, "/aof:continue 03/01 --solo");
+      for (const flag of ["manual", "teach"]) assert.equal(Object.hasOwn(PHASE_MODE_FLAGS, flag), false, `no mode flag spells --${flag}`);
+      assert.ok(Object.values(PHASE_MODE_FLAGS).every((value) => !/--(?:manual|teach)\b/u.test(String(value))), "no composed flag carries --manual or --teach");
+    },
+  },
   {
     name: "155/00 the drive spells no default of its own — solo and orchestrated appear only in PHASE_MODE_FLAGS, and the flag is composed from sessionAgentMode",
     async run() {

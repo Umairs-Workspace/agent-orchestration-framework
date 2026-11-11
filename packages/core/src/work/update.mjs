@@ -23,13 +23,15 @@
 //     shared synthesis — no `runtime === "codex"`/`"claude"` installability branch
 //     lives here. (Guarded by acd-capability-delegation.)
 import path from "node:path";
+import { existsSync } from "node:fs";
+import { rewriteLegacyMemoryConfig } from "@aof/knowledge/memory-config";
 import { readLock, writeLock } from "../lock.mjs";
 import { createLockManifest, executeApplyActions, planApplyActions } from "../render-plan.mjs";
 import { RUNTIMES } from "../model.mjs";
 import { loadBundle } from "./bundle.mjs";
 import { bundleVersion, summarizeActions, synthesizeBundleConfig } from "./bundle-synthesis.mjs";
 import { workspacePaths } from "../workspace.mjs";
-import { readConfig } from "./headroom.mjs";
+import { readConfig, writeConfig } from "./headroom.mjs";
 import { ensureAofGitignore, ensureWorkDirGitFiles, workDirFor } from "../aof-gitignore.mjs";
 // m43 / ADR-002: the co-authored `.claude/settings.json` is not in the render plan;
 // the claude hook ENTRY lands through the surgical merge (the SAME call init makes, so
@@ -106,6 +108,9 @@ export async function updateWork(options = {}) {
   const actions = await planApplyActions(desiredOutputs, previousLock, { force, targetDir });
 
   if (dryRun) {
+    // 180/ADR-006 — the dry run reports the memory moves too. It read no config before, so a config
+    // that does not parse still previews the bundle rather than failing here.
+    const memoryConfig = await migrateMemoryConfig(await readConfig(targetDir).catch(() => null), { dryRun });
     return {
       targetDir,
       runtimes,
@@ -117,6 +122,7 @@ export async function updateWork(options = {}) {
       desiredOutputs,
       manifestPath: lockPath,
       manifestWritten: false,
+      ...(memoryConfig ? { memoryConfig } : {}),
       summary: summarizeActions(actions)
     };
   }
@@ -130,10 +136,13 @@ export async function updateWork(options = {}) {
   // existing install. Idempotent and additive, exactly as on the init path.
   await ensureAofGitignore(targetDir);
 
-  const { config } = await readConfig(targetDir);
+  const projectConfig = await readConfig(targetDir);
+  const { config } = projectConfig;
   // 147/03 (R4) — the WORK DIR's own git files are ensured on update too, so an existing install
   // gets them: the heartbeat queues ignored and `STATE.md` merged by union, in every worktree.
   await ensureWorkDirGitFiles(workDirFor(targetDir, config));
+
+  const memoryConfig = await migrateMemoryConfig(projectConfig, { dryRun });
 
   const claudeSettings = await applyClaudeSettingsMerge(targetDir, config);
 
@@ -183,9 +192,23 @@ export async function updateWork(options = {}) {
     manifest,
     manifestPath: lockPath,
     manifestWritten: true,
+    ...(memoryConfig ? { memoryConfig } : {}),
     claudeSettings,
     summary: summarizeActions(actions)
   };
+}
+
+// 180/ADR-006 — the old memory shape is rewritten into the node by FILLING, never re-authoring. The
+// mapping, the node's key order and the conflict rule are `rewriteLegacyMemoryConfig`'s; this step
+// only decides whether to write. No project config means no step and no config created; nothing
+// moved means no write at all, so a current config keeps its bytes and its mtime; a pair spelled
+// both ways is left as written and reported. The write is the one read-merge-write (127/ADR-005).
+async function migrateMemoryConfig(projectConfig, { dryRun }) {
+  if (!projectConfig || !existsSync(projectConfig.configPath)) return null;
+  const { config, moves, conflicts } = rewriteLegacyMemoryConfig(projectConfig.config);
+  const written = moves.length > 0 && !dryRun;
+  if (written) await writeConfig(projectConfig.configPath, config);
+  return { moves, conflicts, written };
 }
 
 function normalizeRuntimes(runtimes) {

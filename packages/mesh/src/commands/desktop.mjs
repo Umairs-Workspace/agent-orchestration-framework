@@ -1,12 +1,21 @@
-import { access, constants as fsConstants, copyFile, mkdir, mkdtemp, rename, rm, stat } from "node:fs/promises";
+import { access, constants as fsConstants, copyFile, cp, mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { guardMeshPositionals } from "./face-shared.mjs";
-export const DESKTOP_APP_EXE = "aof-mesh-desktop.exe";
-export const WEBVIEW2_BOOTSTRAPPER = "MicrosoftEdgeWebview2Setup.exe";
-export const AUTOSTART_RUN_KEY = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-export const AUTOSTART_VALUE_NAME = "aof-mesh-desktop";
+import {
+  AUTOSTART_RUN_KEY,
+  AUTOSTART_VALUE_NAME,
+  DESKTOP_APP_EXE,
+  LAUNCH_AGENT_LABEL,
+  WEBVIEW2_BOOTSTRAPPER,
+  bundleExecutable,
+  desktopLayout,
+  resolveDesktopInstallDir,
+} from "./desktop-layout.mjs";
+// The names live in the layout module (175/ADR-002 §5); these re-exports keep the binding's
+// `commandTools` shape what it was.
+export { AUTOSTART_RUN_KEY, AUTOSTART_VALUE_NAME, DESKTOP_APP_EXE, WEBVIEW2_BOOTSTRAPPER };
 
 // Core supplies configured services; constructing command definitions performs no I/O.
 export function createMeshDesktopCommands({ defaultRunner, preflightSeams, renderPreflight, runPreflight }) {
@@ -42,25 +51,34 @@ export function createMeshDesktopCommands({ defaultRunner, preflightSeams, rende
 // nothing here decides it. `defaultRunner` lives there too — one spawn seam, injectable
 // end to end, reached by the autostart act and the process discovery below as well.
 
-// The desktop app's placed file names (Windows-first, ADR-001 §Tauri). Kept as
-// named constants so install/run agree on exactly what "the installed app" means.
+// The desktop app's names and the install-dir derivation live in `desktop-layout.mjs`
+// (175/ADR-002 §5), so install/run/stop and `install-local` agree on exactly what "the
+// installed app" means on each platform.
 
-// resolveDesktopInstallDir(options) -> the per-user install dir the app + the
-// WebView2 bootstrapper land in, CO-LOCATED with the m28 `aof` binary
-// ($HOME/.aof/bin, ADR-003 decision 3 / m28/ADR-006's join point). Injectable
-// (options.installDir, else AOF_DESKTOP_INSTALL_DIR, else derived from
-// options.env/AOF_GLOBAL_HOME/homedir) so a test drives a FIXTURE dir, never the
-// real machine — mirrors paths.mjs's defaultGlobalWorkspaceDir env-override idiom.
-function resolveDesktopInstallDir(options = {}) {
-  if (typeof options.installDir === "string" && options.installDir.length > 0) {
-    return path.resolve(options.installDir);
+// The layout for one call: the platform is an input (`options.platform`, else the host's),
+// and so is the home the LaunchAgent sits under, so every darwin leg runs on any host.
+function layoutFor(options = {}) {
+  return desktopLayout({
+    platform: options.platform ?? process.platform,
+    installDir: resolveDesktopInstallDir(options),
+    home: options.home ?? os.homedir(),
+  });
+}
+
+// Whether this HOST's filesystem carries POSIX execute bits. Windows reports none, so there a
+// present file is the runnable signal; this is a property of the disk being read, not of the
+// platform being installed for, which is why it reads the host.
+function hostHasExecuteBits() {
+  return process.platform !== "win32";
+}
+
+async function isExecutableFile(target) {
+  try {
+    const stats = await stat(target);
+    return stats.isFile() && (!hostHasExecuteBits() || (stats.mode & 0o111) !== 0);
+  } catch {
+    return false;
   }
-  const env = options.env ?? process.env;
-  if (typeof env.AOF_DESKTOP_INSTALL_DIR === "string" && env.AOF_DESKTOP_INSTALL_DIR.length > 0) {
-    return path.resolve(env.AOF_DESKTOP_INSTALL_DIR);
-  }
-  const home = env.AOF_GLOBAL_HOME ? path.resolve(env.AOF_GLOBAL_HOME) : path.join(os.homedir(), ".aof");
-  return path.join(home, "bin");
 }
 
 // A calm coded refusal — the ONLY error shape this module throws. `code` is what
@@ -125,7 +143,9 @@ function requireArtifactSource(value, code, message) {
 // deterministically and cross-platform (POSIX chmod bits don't reliably lock a
 // directory against its own owner on every OS/filesystem, notably Windows).
 async function installDesktopApp(options = {}) {
-  const installDir = resolveDesktopInstallDir(options);
+  const layout = layoutFor(options);
+  if (layout.platform === "darwin") return await installDesktopBundle(options, layout);
+  const installDir = layout.installDir;
   const checkWritable = typeof options.isWritableDirFn === "function" ? options.isWritableDirFn : isWritableDir;
   const appArtifactPath = requireArtifactSource(
     options.appArtifactPath,
@@ -161,8 +181,8 @@ async function installDesktopApp(options = {}) {
       ok: true,
       dryRun: true,
       installDir,
-      appPath: path.join(installDir, DESKTOP_APP_EXE),
-      bootstrapperPath: path.join(installDir, WEBVIEW2_BOOTSTRAPPER),
+      appPath: layout.placed,
+      bootstrapperPath: layout.bootstrapper,
       placed: false,
     };
   }
@@ -207,8 +227,8 @@ async function installDesktopApp(options = {}) {
       );
     }
 
-    const appPath = path.join(installDir, DESKTOP_APP_EXE);
-    const bootstrapperPath = path.join(installDir, WEBVIEW2_BOOTSTRAPPER);
+    const appPath = layout.placed;
+    const bootstrapperPath = layout.bootstrapper;
     try {
       await moveInPlace(stagedAppPath, appPath);
       await moveInPlace(stagedBootstrapperPath, bootstrapperPath);
@@ -234,6 +254,80 @@ async function installDesktopApp(options = {}) {
     return { ok: true, installDir, appPath, bootstrapperPath, placed: true };
   } finally {
     await rm(stageDir, { recursive: true, force: true });
+  }
+}
+
+// installDesktopBundle(options, layout) — the darwin install (175/ADR-003 §1): the
+// `--app-artifact` is an `.app` directory, placed whole by the same stage-then-swap, and no
+// bootstrapper is asked for, because WebView2 is a Windows requirement. A bundle with no
+// executable inside is the same `app-artifact-missing` refusal as a missing exe, decided before
+// anything is staged.
+async function installDesktopBundle(options, layout) {
+  const { installDir, placed } = layout;
+  const checkWritable = typeof options.isWritableDirFn === "function" ? options.isWritableDirFn : isWritableDir;
+  const missing = () =>
+    refuse(
+      "app-artifact-missing",
+      "The packaged desktop app bundle is missing, or holds no Contents/MacOS executable. Re-build it (`node scripts/install-local.mjs --desktop`) and try again.",
+    );
+  const source = requireArtifactSource(options.appArtifactPath, "app-artifact-missing", missing().message);
+  if (!(await isExecutableFile(bundleExecutable(source)))) throw missing();
+
+  if (options.dryRun === true) {
+    return { ok: true, dryRun: true, installDir, appPath: placed, placed: false };
+  }
+
+  const notWritable = () =>
+    refuse(
+      "install-dir-not-writable",
+      `${installDir} is not writable. Fix write access to that folder (check permissions/ownership) and try again.`,
+    );
+  if (!(await checkWritable(installDir))) throw notWritable();
+
+  const stageDir = await mkdtemp(path.join(os.tmpdir(), "aof-mesh-desktop-install-"));
+  try {
+    const staged = path.join(stageDir, path.basename(placed));
+    try {
+      await cp(source, staged, { recursive: true, preserveTimestamps: true, verbatimSymlinks: true });
+    } catch {
+      throw notWritable();
+    }
+    if (!(await checkWritable(installDir))) throw notWritable();
+    try {
+      await moveBundleInPlace(staged, placed);
+    } catch {
+      throw notWritable();
+    }
+    return { ok: true, installDir, appPath: placed, placed: true };
+  } finally {
+    await rm(stageDir, { recursive: true, force: true });
+  }
+}
+
+// moveBundleInPlace(source, target) — a bundle is a directory, which `rename` will not move
+// over a non-empty one, so a live bundle is renamed aside to `<bundle>.bak.<ts>` first: a
+// running app keeps its mapped image, and `install-local` prunes the backups (175/ADR-002 §3).
+async function moveBundleInPlace(source, target) {
+  let backup = null;
+  if (await pathExists(target)) {
+    backup = `${target}.bak.${backupStamp()}`;
+    for (let n = 2; await pathExists(backup); n += 1) backup = `${target}.bak.${backupStamp()}-${n}`;
+    await rename(target, backup);
+  }
+  try {
+    try {
+      await rename(source, target);
+    } catch (error) {
+      if (error?.code !== "EXDEV") throw error;
+      await cp(source, target, { recursive: true, preserveTimestamps: true, verbatimSymlinks: true });
+      await rm(source, { recursive: true, force: true });
+    }
+  } catch (error) {
+    // The new bundle did not land: put the live one back, so a failed install leaves the app
+    // exactly where it was rather than not installed at all.
+    await rm(target, { recursive: true, force: true });
+    if (backup != null) await rename(backup, target);
+    throw error;
   }
 }
 
@@ -287,8 +381,9 @@ function backupStamp() {
 // (ADR-004 §4's trusted co-located resolution, the thin 00<->03 contract this
 // story's placement makes true).
 async function discoverDesktopApp(options = {}) {
-  const installDir = resolveDesktopInstallDir(options);
-  const appPath = path.join(installDir, DESKTOP_APP_EXE);
+  const layout = layoutFor(options);
+  if (layout.platform === "darwin") return await discoverDesktopBundle(layout);
+  const appPath = layout.placed;
 
   let stats;
   try {
@@ -312,7 +407,7 @@ async function discoverDesktopApp(options = {}) {
   // there. On POSIX (dev-machine / CI), also require an execute bit — a present
   // but non-executable file is the "corrupt install" refusal, never a crash on
   // spawn.
-  if (process.platform !== "win32") {
+  if (hostHasExecuteBits()) {
     const executable = (stats.mode & 0o111) !== 0;
     if (!executable) {
       throw refuse(
@@ -325,6 +420,24 @@ async function discoverDesktopApp(options = {}) {
   return appPath;
 }
 
+// The darwin discovery: the bundle must be a directory, and its inner executable a runnable
+// file. Anything else is the same not-runnable refusal, with a re-install hint.
+async function discoverDesktopBundle({ placed, executable }) {
+  let stats;
+  try {
+    stats = await stat(placed);
+  } catch {
+    throw refuse("desktop-not-installed", "The desktop app is not installed. Run `aof mesh desktop install` first.");
+  }
+  if (!stats.isDirectory() || !(await isExecutableFile(executable))) {
+    throw refuse(
+      "desktop-not-runnable",
+      "The installed desktop app is not runnable (it may be corrupt). Re-run `aof mesh desktop install` to repair it.",
+    );
+  }
+  return executable;
+}
+
 // launchDesktopApp(options) -> { ok:true, pid, appPath } — discovers the installed
 // app then launches it DETACHED (the aof house detached-spawn idiom): stdio
 // ignored, unref()'d, so the CLI process can exit/resolve without waiting on the
@@ -333,7 +446,22 @@ async function discoverDesktopApp(options = {}) {
 // child_process.spawn; a test injects a fixture-executable spawn to assert the
 // SHAPE (detached, argv, resolved absolute path) without starting a real window.
 async function launchDesktopApp(options = {}) {
+  // Discovery comes FIRST on every platform: an uninstalled app is refused before launchd is
+  // asked anything, so the bijection gate's `--json` probe in an isolated home never reaches
+  // the operator's real LaunchAgent (175/02 PLAN, known traps).
   const appPath = await discoverDesktopApp(options);
+  const layout = layoutFor(options);
+  if (layout.platform === "darwin") {
+    const viaLaunchd = await launchThroughLaunchd(options, layout);
+    if (viaLaunchd != null) return { ...viaLaunchd, appPath };
+    const env = options.env ?? process.env;
+    if (typeof env.SSH_CONNECTION === "string" && env.SSH_CONNECTION.length > 0) {
+      throw refuse(
+        "desktop-run-needs-gui-session",
+        "This is an SSH session, and an app started from it would run outside your login session, where `claude` is signed out. Register the app once from the Mac with `aof mesh desktop install --autostart`, and `run` will start it through launchd from here.",
+      );
+    }
+  }
   const spawnFn = typeof options.spawnFn === "function" ? options.spawnFn : spawn;
 
   const child = spawnFn(appPath, [], {
@@ -350,7 +478,43 @@ async function launchDesktopApp(options = {}) {
   }
   if (child && typeof child.unref === "function") child.unref();
 
-  return { ok: true, pid: child?.pid ?? null, appPath };
+  return { ok: true, pid: child?.pid ?? null, appPath, launch: "spawn" };
+}
+
+// launchThroughLaunchd(options, layout) -> the launch answer when launchd started the app, or
+// null when no LaunchAgent is registered (175/ADR-003 §2). A plist on disk is bootstrapped,
+// which starts it (RunAtLoad). If the job is already loaded but not running, it is booted out
+// first, because a loaded job keeps the definition it was loaded with: after
+// `install --autostart` rewrote the plist (a new PATH, a renamed executable), a kickstart would
+// start the stale copy (175/F-08). A running job, or a loaded one whose plist is gone, is
+// kickstarted. launchd starts the job inside the login session even when asked from SSH. Every
+// `launchctl` goes through the one injected runner.
+async function launchThroughLaunchd(options, layout) {
+  const run = typeof options.runner === "function" ? options.runner : defaultRunner();
+  const uid = options.uid ?? process.getuid?.();
+  const domain = `gui/${uid}`;
+  const service = `${domain}/${LAUNCH_AGENT_LABEL}`;
+
+  const printed = await run("launchctl", ["print", service]);
+  const loaded = printed?.code === 0;
+  const running = loaded && /^\s*state = running\s*$/m.test(printed?.stdout ?? "");
+  const onDisk = await pathExists(layout.launchAgent);
+  let argv;
+  if (onDisk && !running) {
+    if (loaded) await run("launchctl", ["bootout", service]);
+    argv = ["bootstrap", domain, layout.launchAgent];
+  } else if (loaded) argv = ["kickstart", service];
+  else return null;
+
+  const answer = await run("launchctl", argv);
+  if (answer?.code !== 0) {
+    const said = typeof answer?.stderr === "string" ? answer.stderr.trim() : "";
+    throw refuse(
+      "desktop-run-launchd-failed",
+      `launchd did not start the desktop app: \`launchctl ${argv[0]}\` exited ${answer?.code ?? "with no code"}.${said ? ` ${said}` : ""}`,
+    );
+  }
+  return { ok: true, pid: null, launch: "launchd", service };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -377,9 +541,9 @@ async function launchDesktopApp(options = {}) {
 // Both seams are injectable (`listFn` / `killFn`) so the tests drive the parse
 // and the refusal without a real process anywhere near them.
 
-// The supervisor's process name per platform. Windows-first (ADR-001 §Tauri).
+// The supervisor's process name per platform, from the layout (175/ADR-002 §5).
 function desktopProcessName(platform = process.platform) {
-  return platform === "win32" ? DESKTOP_APP_EXE : "aof-mesh-desktop";
+  return desktopLayout({ platform, installDir: "", home: "" }).processName;
 }
 
 // Parse `tasklist /NH /FO CSV` output -> [pid]. Tolerates the "INFO: No tasks…"
@@ -456,25 +620,61 @@ async function stopDesktopApp(options = {}) {
   }
 
   const kill = typeof options.killFn === "function" ? options.killFn : defaultRunner();
-  const stopped = [];
+  const signalled = [];
   const failed = [];
   for (const pid of pids) {
     const { code } =
       platform === "win32"
         ? await kill("taskkill", ["/PID", String(pid), "/T", "/F"])
         : await kill("kill", ["-TERM", String(pid)]);
-    if (code === 0) stopped.push(pid);
+    if (code === 0) signalled.push(pid);
     else failed.push(pid);
   }
 
-  if (stopped.length === 0) {
+  if (signalled.length === 0) {
     throw refuse(
       "desktop-stop-failed",
       `Found the desktop app (pid ${failed.join(", ")}) but could not stop it — it may be running as another user or elevated. Re-run this from the same account that launched it.`,
     );
   }
 
+  // Off Windows SIGTERM is a graceful Quit that reaps the daemons (175/ADR-001 §4), so the verb
+  // waits for each pid to go before it answers: a `stop` that returned early would let the next
+  // `run` hand off to a dying instance and leave nothing running (RESEARCH M10). It never
+  // escalates — a pid that outlives the wait is refused by name and left running (ADR-003 §3).
+  const stopped = platform === "win32" ? signalled : await awaitExit(signalled, kill, options);
+
   return { ok: true, stopped, alreadyStopped: false, dryRun: false, failed, processName: desktopProcessName(platform) };
+}
+
+// How long `stop` waits for a SIGTERM'd supervisor to exit: the 5 s reap grace plus headroom
+// (175/ADR-003 §3, 175/02 Q1), polled.
+const STOP_WAIT_MS = 20_000;
+const STOP_POLL_MS = 250;
+
+// awaitExit(pids, run, options) -> the pids, once every one is gone; throws
+// `desktop-stop-timeout` naming any still alive when the wait runs out. Liveness is
+// `kill -0 <pid>` through the same injected runner; the clock and the sleep are injectable too.
+async function awaitExit(pids, run, options = {}) {
+  const now = typeof options.nowFn === "function" ? options.nowFn : Date.now;
+  const sleep = typeof options.sleepFn === "function" ? options.sleepFn : (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const deadline = now() + STOP_WAIT_MS;
+  let alive = [...pids];
+  for (;;) {
+    const still = [];
+    for (const pid of alive) {
+      if ((await run("kill", ["-0", String(pid)]))?.code === 0) still.push(pid);
+    }
+    alive = still;
+    if (alive.length === 0) return pids;
+    if (now() >= deadline) {
+      throw refuse(
+        "desktop-stop-timeout",
+        `Asked the desktop app (pid ${alive.join(", ")}) to quit, and it was still running ${STOP_WAIT_MS / 1000} s later. It was left running; quit it from its menu-bar menu, then re-run this.`,
+      );
+    }
+    await sleep(Math.min(STOP_POLL_MS, Math.max(0, deadline - now())));
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -529,11 +729,11 @@ function resolveAutostartAction(input = {}) {
 // fills only `undefined` and `??` only null-ish, so the empty string reaches here as
 // itself and is refused by name rather than quietly becoming `process.platform`.
 function admitAutostartPlatform(platform) {
-  if (platform === "win32") return;
+  if (platform === "win32" || platform === "darwin") return;
   const named = typeof platform === "string" && platform.length > 0 ? `\`${platform}\`` : "unset";
   throw refuse(
     "autostart-unsupported-platform",
-    `Login autostart is Windows-only and this platform is ${named}. The desktop supervisor ships for Windows; nothing was registered.`,
+    `Login autostart is for Windows and macOS, and this platform is ${named}. The desktop supervisor ships for those two; nothing was registered.`,
   );
 }
 
@@ -549,6 +749,7 @@ async function applyAutostart(options = {}) {
   if (action == null) return null;
 
   admitAutostartPlatform(options.platform);
+  if (options.platform === "darwin") return await applyLaunchAgent(options);
 
   const installDir = options.installDir;
   const data = path.join(installDir, DESKTOP_APP_EXE);
@@ -592,6 +793,62 @@ async function applyAutostart(options = {}) {
   throw autostartFault(action, { code, stderr });
 }
 
+// applyLaunchAgent(options) — the darwin autostart (175/ADR-004 §1-§2): write or delete the
+// per-user LaunchAgent plist through an injected file seam. It never calls `launchctl`: the
+// write registers the app for the next login and starts nothing, and the removal never stops a
+// running app. A rewrite with the same content is no change, and an absent plist is a success.
+async function applyLaunchAgent(options) {
+  const { action, installDir } = options;
+  const layout = desktopLayout({ platform: "darwin", installDir, home: options.home ?? os.homedir() });
+  const files = { ...defaultLaunchAgentFiles, ...(options.files ?? {}) };
+  const env = options.env ?? process.env;
+  const shape = {
+    action,
+    label: LAUNCH_AGENT_LABEL,
+    plistPath: layout.launchAgent,
+    ...(action === "write" ? { executable: layout.executable, path: env.PATH ?? "" } : {}),
+  };
+  if (options.dryRun === true) return { ...shape, dryRun: true, changed: false };
+
+  const prior = await files.read(layout.launchAgent);
+  try {
+    if (action === "remove") {
+      if (prior == null) return { ...shape, dryRun: false, changed: false, alreadyAbsent: true };
+      await files.remove(layout.launchAgent);
+      return { ...shape, dryRun: false, changed: true };
+    }
+    // Loaded here, on the one path that renders a plist, so no other verb pays for the module.
+    const { renderLaunchAgent } = await import("./desktop-launch-agent.mjs");
+    const xml = renderLaunchAgent({ label: LAUNCH_AGENT_LABEL, executable: layout.executable, path: shape.path });
+    if (prior === xml) return { ...shape, dryRun: false, changed: false };
+    await files.write(layout.launchAgent, xml);
+    return { ...shape, dryRun: false, changed: true };
+  } catch (error) {
+    const which = action === "write" ? "autostart-write-failed" : "autostart-remove-failed";
+    const verb = action === "write" ? "write" : "remove";
+    throw refuse(which, `Could not ${verb} the login autostart LaunchAgent ${layout.launchAgent}: ${error?.message ?? "the file seam failed"}.`);
+  }
+}
+
+// The real file seam the LaunchAgent act writes through — a test hands in its own.
+const defaultLaunchAgentFiles = {
+  read: async (file) => {
+    try {
+      return await readFile(file, "utf8");
+    } catch (error) {
+      if (error?.code === "ENOENT") return null;
+      throw error;
+    }
+  },
+  write: async (file, text) => {
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, text, "utf8");
+  },
+  remove: async (file) => {
+    await rm(file, { force: true });
+  },
+};
+
 // The coded refusal for a registry fault, carrying what the runner actually said — a
 // spawn fault (`code: -1`) says `reg` could not be run, an answer with no `code` at all
 // is a fault rather than a silent success, and a stack trace never reaches the operator.
@@ -610,6 +867,7 @@ function autostartFault(action, { code, stderr }) {
 // dry-run says what it would do and that nothing changed; a removal that found nothing
 // says so rather than claiming a change it did not make.
 function renderAutostart(autostart) {
+  if (autostart.plistPath) return renderLaunchAgentAutostart(autostart);
   const where = `${autostart.valueName} under ${autostart.key}`;
   if (autostart.dryRun) {
     return autostart.action === "write"
@@ -622,6 +880,24 @@ function renderAutostart(autostart) {
   return autostart.alreadyAbsent
     ? `There was nothing to remove — ${where} was not set.`
     : `Login autostart removed: ${where}.`;
+}
+
+// The darwin autostart line, naming the LaunchAgent plist it wrote — or would have.
+function renderLaunchAgentAutostart(autostart) {
+  const where = `the LaunchAgent ${autostart.plistPath}`;
+  if (autostart.dryRun) {
+    return autostart.action === "write"
+      ? `Would register login autostart: ${where}, starting ${autostart.executable}. Nothing was changed.`
+      : `Would remove login autostart: ${where}. Nothing was changed.`;
+  }
+  if (autostart.action === "write") {
+    return autostart.changed
+      ? `Login autostart is registered: ${where}. It takes effect at your next login.`
+      : `Login autostart was already registered: ${where}.`;
+  }
+  return autostart.alreadyAbsent
+    ? `There was nothing to remove — ${where} was not there.`
+    : `Login autostart removed: ${where}. A running app keeps running until you quit it.`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -666,7 +942,9 @@ const meshDesktopInstallCommand = {
 
     // A coded refusal from the core (app-artifact-missing / install-dir-not-writable /
     // desktop-app-running) THROWS — the face's one envelope applies.
+    const platform = ctx.platform ?? process.platform;
     const installed = await installDesktopApp({
+      platform,
       installDir: input.installDir ?? ctx.installDir,
       env: ctx.env,
       appArtifactPath: input.appArtifact ?? ctx.appArtifactPath,
@@ -677,15 +955,19 @@ const meshDesktopInstallCommand = {
 
     const autostart = await applyAutostart({
       action,
-      platform: ctx.platform ?? process.platform,
+      platform,
       installDir: installed.installDir,
       runner: ctx.runner,
+      home: ctx.home,
+      env: ctx.env,
+      files: ctx.files,
       dryRun,
     });
 
     // The preflight rides the SUCCESS answer only, so a refusal above carried its
-    // `{ ok, error, code }` envelope unchanged and no probe was spawned behind it.
-    const preflight = await runPreflight(preflightSeams(ctx));
+    // `{ ok, error, code }` envelope unchanged and no probe was spawned behind it. It is handed
+    // the install dir this verb placed into, so `--install-dir` reaches the bundle it checks.
+    const preflight = await runPreflight(preflightSeams({ ...ctx, installDir: installed.installDir }));
 
     return {
       ...installed,
@@ -756,15 +1038,20 @@ const meshDesktopRunCommand = {
     // the face envelopes them; a successful launch is DETACHED and this run
     // returns immediately (never a long-lived body — not a launcher-seam verb).
     const launched = await launchDesktopApp({
+      platform: ctx.platform,
       installDir: input.installDir ?? ctx.installDir,
       env: ctx.env,
+      home: ctx.home,
+      uid: ctx.uid,
+      runner: ctx.runner,
       spawnFn: ctx.spawnFn,
     });
 
     // BOTH verbs report the preflight, identically (ADR-007 §4, alternative (d)): a
     // check nobody runs is prose, and `run` is the verb an operator actually types at
-    // every relaunch. A failing check does not refuse either verb.
-    const preflight = await runPreflight(preflightSeams(ctx));
+    // every relaunch. A failing check does not refuse either verb. The install dir is the one
+    // this verb launched from, as on `install`.
+    const preflight = await runPreflight(preflightSeams({ ...ctx, installDir: input.installDir ?? ctx.installDir }));
 
     return { ...launched, preflight };
   },
@@ -787,7 +1074,13 @@ const meshDesktopRunCommand = {
     },
 
     render: (result) =>
-      [`Launched the desktop app (${result.appPath}).`, "Preflight:", ...renderPreflight(result.preflight)].join("\n"),
+      [
+        result.launch === "launchd"
+          ? `Started the desktop app through launchd (${result.service}), in your login session.`
+          : `Launched the desktop app (${result.appPath}).`,
+        "Preflight:",
+        ...renderPreflight(result.preflight),
+      ].join("\n"),
 
     json: (result) => ({ ok: true, ...result }),
   },
@@ -813,6 +1106,8 @@ const meshDesktopStopCommand = {
       platform: ctx.platform,
       listFn: ctx.listFn,
       killFn: ctx.killFn,
+      nowFn: ctx.nowFn,
+      sleepFn: ctx.sleepFn,
     });
   },
 

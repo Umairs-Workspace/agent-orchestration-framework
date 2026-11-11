@@ -1,6 +1,7 @@
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
+import { SHARE_MODES, readMemoryConfig } from "./memory-config.mjs";
 import { BUNDLE_VERSION, PUBLISHED_GRAPHS_KEPT, bundleGraph, gitRead, layOutBundle, readBuiltAtCommit, unpackBundle } from "./graph-bundle.mjs";
 // src/graph-share.mjs — the codebase graph shared through the project's own git remote (174). A
 // commit's graph is a bundle blob behind `refs/aof/graph/v<bundle version>/<commit>`: `ls-remote`
@@ -8,6 +9,7 @@ import { BUNDLE_VERSION, PUBLISHED_GRAPHS_KEPT, bundleGraph, gitRead, layOutBund
 // object, no history, no new service and no new credential (spike 173).
 //
 // THE ONE MODULE THAT NAMES `refs/aof/graph/` (174/ADR-002, FF-17401). It imports no memory module
+// but the config reader `memory-config.mjs`, which reaches no index, backend or transport (180/ADR-001),
 // and no mesh transport, and no memory module imports it: only the codebase graph at the project
 // root travels this way, never the memory work graph or the memory index (m38/ADR-016).
 //
@@ -18,8 +20,7 @@ import { BUNDLE_VERSION, PUBLISHED_GRAPHS_KEPT, bundleGraph, gitRead, layOutBund
 // and that refusal is what makes the first publish of a commit the one that stays (ADR-003).
 
 export const GRAPH_REF_PREFIX = `refs/aof/graph/v${BUNDLE_VERSION}/`;
-export const SHARE_MODES = Object.freeze(["git-refs", "off"]);
-const DEFAULT_REMOTE = "origin";
+export { SHARE_MODES };
 const REMOTE_TIMEOUT_MS = 120_000;
 // A full object id (SHA-1 or SHA-256). Every id the remote names is checked against it before it
 // reaches an argv: a remote answers ls-remote, so its output is input, never trusted.
@@ -30,26 +31,13 @@ export function graphRef(commit) {
   return `${GRAPH_REF_PREFIX}${commit}`;
 }
 
-// readShareSettings(config) → { share, remote }. `graph.share` absent or "off" is today's
-// behaviour; "git-refs" turns sharing on; anything else is refused before anything runs, naming
-// the accepted values. `graph.remote` names the remote, `origin` by default.
+// readShareSettings(config) → { share, remote }. The code corpus's share settings live at
+// `memory.graph` (180/ADR-003), or at the legacy root `graph`, and `memory-config.mjs` reads both.
+// `share` absent or "off" is today's behaviour; "git-refs" turns sharing on; anything else is
+// refused before anything runs, naming the accepted values and the key the author wrote. `remote`
+// names the remote, `origin` by default.
 export function readShareSettings(config) {
-  const graph = config?.graph ?? {};
-  if (typeof graph !== "object" || Array.isArray(graph)) {
-    throw commandError(`graph is ${JSON.stringify(graph)} — it is an object, such as { "share": "git-refs" }.`, "graph-share-unknown", 400);
-  }
-  const share = graph.share ?? "off";
-  if (!SHARE_MODES.includes(share)) {
-    throw commandError(
-      `graph.share is ${JSON.stringify(share)} — aof knows ${SHARE_MODES.map((mode) => `"${mode}"`).join(" and ")}.`,
-      "graph-share-unknown",
-      400
-    );
-  }
-  const remote = graph.remote ?? DEFAULT_REMOTE;
-  if (typeof remote !== "string" || remote === "" || remote.startsWith("-")) {
-    throw commandError(`graph.remote is ${JSON.stringify(remote)} — name a git remote, such as "origin".`, "graph-share-unknown", 400);
-  }
+  const { share, remote } = readMemoryConfig(config).graph;
   return { share, remote };
 }
 

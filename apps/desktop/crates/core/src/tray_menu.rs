@@ -169,9 +169,55 @@ pub fn tray_menu(
     items
 }
 
+/// Whether a tray refresh must hand the native tray a NEW menu (175/F-04). A refresh runs on
+/// every 3 s poll and every child transition, and on macOS replacing the status item's menu
+/// dismisses it while it is open — so the operator's click was undone within seconds. Only a
+/// menu whose descriptor differs from the one already applied is replaced; an unchanged one is
+/// left alone, on every platform.
+pub fn menu_needs_replacing(applied: Option<&[MenuItem]>, next: &[MenuItem]) -> bool {
+    applied != Some(next)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn control_menu(window: WindowVisibility) -> Vec<MenuItem> {
+        tray_menu(
+            Role::Control,
+            ServerState::Running,
+            UiState::Running,
+            window,
+            FleetHeaderSummary::Populated { online: 1, stale: 0 },
+        )
+    }
+
+    // 175/F-04: the first refresh applies a menu; a refresh with the same descriptor does not
+    // replace it, so an open menu stays open across polls.
+    #[test]
+    fn an_unchanged_menu_is_not_replaced() {
+        let applied = control_menu(WindowVisibility::Hidden);
+        assert!(menu_needs_replacing(None, &applied), "the first refresh applies a menu");
+        assert!(
+            !menu_needs_replacing(Some(&applied), &control_menu(WindowVisibility::Hidden)),
+            "a poll that changes nothing leaves the open menu alone"
+        );
+    }
+
+    // 175/F-04: a real change (a label, an enabled flag, the header) still replaces it.
+    #[test]
+    fn a_changed_menu_is_replaced() {
+        let applied = control_menu(WindowVisibility::Hidden);
+        assert!(menu_needs_replacing(Some(&applied), &control_menu(WindowVisibility::Visible)), "Show -> Hide window");
+        let stopped = tray_menu(
+            Role::Control,
+            ServerState::Stopped,
+            UiState::Running,
+            WindowVisibility::Hidden,
+            FleetHeaderSummary::Populated { online: 1, stale: 0 },
+        );
+        assert!(menu_needs_replacing(Some(&applied), &stopped), "Stop mesh -> Start mesh");
+    }
 
     // Scenario: a control node with the server running renders the full menu in
     // order — Stop mesh, all items present.

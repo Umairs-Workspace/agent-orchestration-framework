@@ -1,7 +1,7 @@
 ---
 aof-generated: true
 description: Execute/resume a work item — build its tasks to green, then structural + behavioural review. For a milestone, walks every story to built-and-reviewed; refining stays with `aof:refine`, accepting with `aof:verify`.
-argument-hint: "<item ref, or a NN/MM-PP story span> [--solo | --orchestrated | --manual] [--thinking <level>]"
+argument-hint: "<item ref, or a NN/MM-PP story span> [--solo | --orchestrated] [--thinking <level>]"
 aof-invocation: /aof:continue
 aof-runtime: claude
 ---
@@ -41,8 +41,8 @@ where the operator is and is never dispatched to a worker.)
 </config>
 
 <config>
-Parse `$ARGUMENTS` into the item **ref**, an optional **`--solo`**, **`--orchestrated`** or
-**`--manual`** flag and an optional **`--thinking <level>`**.
+Parse `$ARGUMENTS` into the item **ref**, an optional **`--solo`** or **`--orchestrated`** flag and
+an optional **`--thinking <level>`**.
 
 **Execution mode.** Resolve from `work.agents.mode`, which governs the continue an operator types:
 `work.agents.mode: "orchestrated"` resolves to orchestrated (spawn the role agents), and
@@ -52,10 +52,7 @@ shares. Reach for `--orchestrated` when an independent perspective is worth its 
 spawned reviewer did not write the code and cannot be talked into liking it. **`--solo` OVERRIDES an
 orchestrated config to solo for this run**, and **`--orchestrated` OVERRIDES a solo config to
 orchestrated for this run** — its twin in the other direction. The two together are contradictory:
-STOP before any role runs and report it. **`--manual` together with `--solo` or `--orchestrated` is
-contradictory too** — `--manual` says the operator builds, which leaves no agent to choose: STOP
-before any role runs and before any run is minted, and report it. `--manual` is a per-run flag and
-never a `work.agents.mode` value, and the loop never composes it (`<manual_mode>` below).
+STOP before any role runs and report it.
 The loop composes a flag on every continue it drives: `work.loop.agents.continue.mode` when set,
 else `work.agents.mode`, else `solo` — the one built-in default, whose home is
 `packages/contracts/src/agent-mode.mjs`. A loop-driven continue therefore follows `work.agents.mode`
@@ -91,44 +88,6 @@ listed **READY**, resume its lineage with `aof work resume <ref>` and carry on f
 starting fresh: the prior session and its working tree are intact, and a fresh start pays for that work
 twice. If it is listed **parked**, say when it becomes ready and stop — retrying early burns one of three
 attempts on a kill that is certain to repeat. If the sweep is empty, proceed normally.
-
-<manual_mode>
-**`--manual` — the operator builds, and this session hands them a guide.** `--solo` and
-`--orchestrated` decide which agents do the work; `--manual` says the operator does. When
-`$ARGUMENTS` carries it, walk this region after the re-entry sweep above, in place of the dispatch
-on type below, and nothing else in `<process>`.
-
-- **One story or one task, never more.** A milestone or a `NN/MM-PP` span is refused before any run
-  is minted: run `aof work next <ref> --json` and name the ready stories it answers, to take one at a
-  time as `aof:continue <story> --manual`. Mint nothing, move nothing, and stop.
-- **Read the story exactly as the story lane's step 1 reads it, and no wider** — its `reads:` set
-  under `<read_depth>`, and its task features. A story whose `reads:` is absent, or whose tasks are
-  thin or untagged, halts and sends the operator to `aof:refine <ref>`, exactly as step 1 does.
-- **Mint the run with `aof work run-start <ref> --json` before the guide is printed** — the story
-  lane's step 2, whose `run.started` reactor starts the story. The session writes no status move of
-  its own.
-- **Every manual run runs `aof test --scope impacted --story <ref>` once, before the guide** — the
-  first run and every re-run alike, so the guide is always headed by what is still red.
-- **Print the guide, with its parts in this order:**
-  - the scenarios still red, by name;
-  - the user story;
-  - each task file with its scenario names, read from `aof work tasks <ref> --json`;
-  - every `reads:` entry and every `files:` entry, each with one line on why it matters;
-  - the test files among `files:`, and the command `aof test --scope impacted --story <ref>` that
-    gates them;
-  - the build plan's mechanism and known traps, when the story has a `PLAN.md`;
-  - an order to take the tasks in, with the reason for it.
-
-  When every scenario is green the guide says so, and names `aof:review <ref>` as the next step.
-- **The guide is printed in the terminal only**, and no guide file is written to the story folder:
-  a re-run prints it again, current, from the same sources.
-- **Build nothing.** No `aof-developer` is spawned, in solo and in orchestrated mode alike, and no
-  file outside the item's own folder is written. No gate ladder is walked and no reviewer is
-  spawned: reviewing the operator's build is `aof:review`'s.
-- **Close the run with `aof work run-complete <ref> --outcome done` after the guide is printed**,
-  then stop. The hand-back is `guided: <ref> is yours to build`, and it names `aof:review <ref>`
-  next — never `aof:verify`.
-</manual_mode>
 
 Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the span:
 
@@ -275,6 +234,12 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      - A file outside `reads:` that is genuinely required: read it, then report that the declared
        read set is incomplete. The escape prevents blind work; the report makes refine repair it.
      - Never inline a large file into a spawned agent prompt. Hand the agent the path and anchor.
+     - **A hand-off from a human is read too.** Any `Hand-off <ref>` entry in the item's `STATE.md`
+       is read, and only that entry — the parent milestone's `STATE.md` for a nested story, the
+       story's own for a standalone one. It means a human built part of this story before handing
+       it over, so the build treats the files the entry names as the human's starting point rather
+       than a blank, and the build's report names every human-written line it changed, and why.
+       The entry informs the build; it confers no mode and protects nothing.
      </read_depth>
   2. **Mint its run — before any code.** `aof work run-start <ref> --json`, where `<ref>` is
      **this member's own story — never the milestone**, whose run the orchestrator already minted
@@ -305,9 +270,17 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      `files:` is the changed set, so the run is the suites this story's write set can actually have
      touched — the declaration paying for a third time, after the wave planner and `validate`. Do
      **not** name individual suite files: that is `--scope file` wearing prose, and it is a
-     selection made by judgement rather than by the declaration. A declared path the graph has not
-     seen — the test the developer is about to write — WIDENS the run rather than dropping it, so
+     selection made by judgement rather than by the declaration. A changed file narrows the run only
+     on what is positively known — a new suite selects itself, a new module its changed importer
+     inherits, a declared path not yet written contributes nothing — and anything else WIDENS it, so
      the narrowing can never be silent, and every widening is named in the summary line.
+
+     **Each run leaves a record, and a repeat on unchanged content is answered from it.** Asking again
+     with nothing changed launches nothing: the summary line says `answered from the run of
+     <instant>`, and that answer is the evidence — written by the command from the run it made, never
+     by the party being checked. It is not a cache to distrust; change the code and the next ask runs
+     again. Only a suspected flake earns `--fresh`, which runs anyway: say in the report that the run
+     was a deliberate repeat to chase that flake, as its record does.
 
      **The build stops at one of two terminators, and it says which one it stopped at.**
 
@@ -334,7 +307,7 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      </build_terminator>
 
      **Recall prior gotchas first.** Before building, the developer runs (unconditionally — memory may
-     be off) `aof work memory recall "<milestone domain / story keywords>" --kind near-miss --block` and
+     be off) `aof memory recall "<milestone domain / story keywords>" --kind near-miss --block` and
      considers the surfaced gotchas, recording at `aof:verify` (in `VERIFICATION.md`) any that shaped the
      build. An **empty block means nothing to surface** (memory may be off) — proceed unchanged.
      **Keep the result; capture it once, when the build decision is made.** The developer retains
@@ -347,12 +320,12 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      `actor` `developer`, `query` (verbatim), `scope` `{"kind":"near-miss"}` and `records` — one
      `{item, id, recordType, verdict}` per returned line, each with an explicit verdict `honoured`,
      `departed` or `irrelevant`, never a default. Submit it ONCE on the story:
-     `aof work memory record-recall <ref> --input <observation file>`. An empty block is still
+     `aof memory record-recall <ref> --input <observation file>`. An empty block is still
      submitted, as `"records": []` — no verdict and no extra retrieval is invented.
      **Recall the prior attempt on a retry (attempt 2 or later).** When this build is the story's
      attempt 2 or later — its minted run's `attempt` is 2 or more — the developer refreshes the
      index and recalls the story's whole delivery history BEFORE any implementation: first
-     `aof work memory ingest`, then `aof work memory recall "" --item <ref> --area delivery --all --json`.
+     `aof memory ingest`, then `aof memory recall "" --item <ref> --area delivery --all --json`.
      No stage filter is added: it would hide the verify findings. Attempt 1 has no episodic edge, so
      a first attempt skips this block entirely. From the actual result, identify the prior attempt —
      the run this run's `retryOf` names, otherwise the latest terminal earlier attempt — and, before
@@ -369,7 +342,7 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      `scope` `{"item":"<ref>","area":"delivery"}` and `records` — one `{item, id, recordType,
      verdict}` per returned record, each with an explicit verdict `honoured`, `departed` or
      `irrelevant`, never a default. Submit it ONCE on the story:
-     `aof work memory record-recall <ref> --input <episodic observation file>`. An empty block is still
+     `aof memory record-recall <ref> --input <episodic observation file>`. An empty block is still
      submitted, as `"records": []` — no verdict and no extra retrieval is invented. This edge is in
      addition to the near-miss recall above, which is unchanged.
   4. **Gate** — the free deterministic ladder, walked BEFORE any review lane is spawned.
@@ -435,9 +408,9 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      `aof work dispatch --list --json` reports, and spawn the remainder as earlier lanes return.
 
      **A review lane runs `aof test --scope impacted --story <ref>` too, and never names suite files
-     by hand.** Measured, this is the largest single item in a review lane's wall clock — one
-     behavioural review at 58.6% test runner, another at 54.3%, a fix round at 45.6% — and it is
-     time the operator waits through for no information. **A story-scoped green does not accept a
+     by hand.** The lanes start together on one diff, so they make one run: the first lane's ask
+     launches it, the others wait for it and are answered from its record, and every lane reads the
+     same answer. That answer is the evidence, not a reason to run again. **A story-scoped green does not accept a
      milestone.** It says this story's suites pass; the milestone's own regression gate is what says
      the tree does, and 63/R7 is explicit that story-scoped suites are what make that gate
      load-bearing rather than ceremonial. Never report a narrowed run as a whole one — the summary
@@ -651,8 +624,6 @@ Report what landed, each task's green-status, and the review verdicts — then n
 was, and the command that follows it. Never print the accept hand-off after a stop:
 
 - **walked to the Review gate** — every member built and reviewed. Next: `aof:verify <ref>`.
-- **guided: `<ref>` is yours to build** — a manual continue printed the guide and built nothing.
-  Next: `aof:review <ref>`, once the operator's build is green.
 - **stopped: `<ref>` unrefined** — its contract is not authored/tagged. Next: `aof:refine <ref>`.
 - **stopped: blocked on `<waitingOn>`** — `aof work next` answered `blocked`. Next: finish what it
   names, then re-run `aof:continue <ref>`.

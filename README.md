@@ -30,9 +30,9 @@ Use `aof work renumber <ref> --to <number>` to move one live numbered item to a 
 
 `aof work renumber 175 --to 181 --dry-run` previews the paths and references; omit `--dry-run` to apply. The verb preserves status, updates current work-document references, publishes the existing stream remap, and rebuilds the full configured memory index. Held items are refused before writing.
 
-Recall observations and captured test evidence remain original. The stream's `.renumber-history.json` lets recall accounting follow earlier observations to the moved lesson; include that file when transferring the work stream to another checkout. It is not a permanent alias: a later item may reuse the old number. Source-code labels and bare prose numbers are not rewritten automatically. Inspect the returned remap when integrating across branches.
+Recall ledgers are updated in place: every recall that names the moved item, or a lesson of it, is rewritten to the new ref, so memory accounting needs no side file and a later item that reuses the old number inherits nothing. Captured test evidence and run records are left as they were. Source-code labels and bare prose numbers are not rewritten automatically. Inspect the returned remap when integrating across branches.
 
-If memory refresh fails after the move, the result reports `moved: true` and exits nonzero; run `aof work memory ingest` to recover. An abrupt interruption during filesystem edits requires inspecting the source, destination and history before retrying. Do not renumber work held by a running phase.
+If memory refresh fails after the move, the result reports `moved: true` and exits nonzero; run `aof work memory ingest` to recover. An abrupt interruption during filesystem edits requires inspecting the source and destination before retrying. Do not renumber work held by a running phase.
 
 ## Local setup
 
@@ -100,7 +100,9 @@ The unit of independence is the **story** — boundaries follow real coupling so
 | `/aof:shatter` / `$aof-shatter` | a planning PRD → a series of framed milestone SPECs, with cross-milestone `depends` edges (the roadmap) |
 | `/aof:refine` / `$aof-refine` | break a milestone into independent stories, or author a story's task contracts via Three Amigos (PO scenarios + QA examples + developer feasibility); produces ARCHITECTURE / DESIGN / RESEARCH as needed |
 | `/aof:continue` / `$aof-continue` | execute/resume a work item — build its tasks to green, then structural + behavioural review; owns the milestone walk (every story, fanned out across the ready set), while refining stays with `/aof:refine` and accepting with `/aof:verify` |
-| `/aof:review` / `$aof-review` | review the operator's own build — after `/aof:continue <ref> --manual` hands you a guide and you write the code, run its tests, the gate ladder and the review lanes over your change, and hand every finding back; fixes nothing, and a clean review leaves the story `in-review` for `/aof:verify` |
+| `/aof:manual` / `$aof-manual` | hand you a guide to build one story or task yourself — enters through the build door, starts the story, runs its tests once and prints the scenarios still red, the contract, the files that matter and why, and an order to take the tasks in; builds nothing, and a hand-off to an agent is written to the item's `STATE.md` for `/aof:continue` to read |
+| `/aof:teach` | teach you to build one story or task yourself — enters through the build door, says what you own and what AOF will write, then helps one question at a time and never writes your code on any turn; a request to write it is answered with `/aof:continue` or `/aof:manual`. Supported and tested on Claude Code only: Codex and OpenCode render no teach command, and `aof work continue <ref> --teach` still answers `/aof:teach <ref>` there |
+| `/aof:review` / `$aof-review` | review the operator's own build — after `/aof:manual <ref>` hands you a guide and you write the code, run its tests, the gate ladder and the review lanes over your change, and hand every finding back; fixes nothing, and a clean review leaves the story `in-review` for `/aof:verify` |
 | `/aof:verify` / `$aof-verify` | verify + accept — run the automated + agent-run checks, bring a human in only for `@uat`, log/triage findings, capture lessons in RETROSPECTIVE, sign off |
 | `/aof:validate` / `$aof-validate` | validate the stream — `aof work validate` + the agent-only checks (test-traceability, litmus) |
 | `/aof:autonomous` / `$aof-autonomous` | **deprecated** — the code-owned loop shell `aof work loop` replaced it in milestone 53. It still runs a range of milestones end-to-end, unattended (a thin sequencer that runs refine → build → verify on each item in dependency order, gating on `aof work validate`; resumable), so a run already in flight finishes; start new ones with `aof work loop` |
@@ -204,7 +206,7 @@ aof work validate [ref] [--json]     # folder↔frontmatter, tag vocabulary, dep
 aof work doc <ref> <DOC> [--json]    # read a record doc (SPEC / STATE / ARCHITECTURE / …)
 aof work tasks <ref> [--json]        # an item's task list
 aof work feedback <ref> --note "…" [--actor …]   # append an attributed feedback bullet (the only CLI write)
-aof work memory <verb> [args] [--json]           # recall / brief / ingest / reindex / status
+aof memory <verb> [args] [--json]                # recall / record-recall / recurrence / ingest / reindex / status
 aof work ui [--port 4180]            # serve the local board UI (built apps/ui/dist) — one origin
 aof work orchestrator [fable|opus] [--show]      # pick the main-session (orchestrator) model — Fable 5 or Opus 4.8
 aof work delegation [on|off] [--gpt-model <id>] [--show]   # toggle bulk-work delegation (default off), optionally set the model
@@ -242,12 +244,30 @@ Agents recall prior decisions, ADRs, and lessons across milestones through a con
 - **AOF.md digest** — a recallable per-milestone summary as a memory source (milestone 14).
 
 ```sh
-aof work memory status
-aof work memory reindex            # rebuild the derived index from the work stream
-aof work memory recall "pin line endings"
+aof memory status
+aof memory reindex                 # rebuild the derived index from the work stream
+aof memory recall "pin line endings"
 ```
 
 The derived index is git-ignored and re-derivable — never an authoritative second copy.
+
+Every memory setting lives in the one `memory` node (milestone 180):
+
+```jsonc
+"memory": {
+  "backend": "graphify",
+  "corpora": ["work", "imports", "code", "operator"],              // absent ≡ work, imports, code
+  "graph": { "share": "git-refs", "remote": "origin" },            // the code graph's sharing
+  "backends": { "graphify": { "extractionBackend": "claude-cli" } } // each engine's own settings
+}
+```
+
+`memory.corpora` names what memory serves: `work`, `imports` and `code` always, plus the optional
+`operator` corpus (your Claude auto-memory notes). `memory.graph.share` and `memory.graph.remote` share
+the codebase graph; `memory.backends.graphify.extractionBackend` picks graphify's extractor. No key
+configures egress — `aof memory status` and `aof graph build` report it. The old spellings
+`memory.sources`, `memory.graphify` and a root `graph` still read for one release with a warning in
+`aof project doctor` and `aof memory status`; `aof work update` rewrites them.
 
 ### Graphify codebase intelligence (milestones 09 · 11)
 
@@ -271,7 +291,7 @@ aof graph publish                  # publish this clone's graph there (clean def
 aof graph prune                    # keep only the newest 20 default-branch commits' graphs
 ```
 
-`graphify-out/` is a derived, git-ignored build artifact (rebuild on demand, never committed). To reuse a graph built on another machine instead, `aof graph export <path>` writes it to one file and `aof graph import <path>` lays it down in a second clone of the same project: it reports the graph's age and how many commits it is behind HEAD, re-keys graphify's cache to the clone's line endings, and replaces an existing graph only with `--force`. `aof graph build .` runs no graphify while no file the graph was built from has changed — on the receiving clone too, whatever its line endings. To skip the carry altogether, set `"graph": { "share": "git-refs" }` in `.aof/aof.config.json`: `aof graph build .` then takes the graph already published for HEAD on the project's own remote (`graph.remote`, default `origin`) when it has no current graph of its own, and after a build from a clean tree of a default-branch commit publishes it there for the next clone, worktree or node. A commit's graph is a blob behind `refs/aof/graph/v1/<commit>`, which a plain clone never downloads. The first publish of a commit wins, nothing is ever force-pushed, and each publish prunes to the newest 20 default-branch commits. A remote that can't be reached is a warning, never a failed build, and a node without push access only fetches. A published graph stays fetchable by its hash after its ref is deleted, so publishing is opt-in per project. Only the codebase graph is shared; the memory work graph and index never are. `aof graph impact` is the **deterministic, edge-based** coupling lookup the review/refine agents consume; `aof graph query` is the fuzzier NL hint.
+`graphify-out/` is a derived, git-ignored build artifact (rebuild on demand, never committed). To reuse a graph built on another machine instead, `aof graph export <path>` writes it to one file and `aof graph import <path>` lays it down in a second clone of the same project: it reports the graph's age and how many commits it is behind HEAD, re-keys graphify's cache to the clone's line endings, and replaces an existing graph only with `--force`. `aof graph build .` runs no graphify while no file the graph was built from has changed — on the receiving clone too, whatever its line endings. To skip the carry altogether, set `"memory": { "graph": { "share": "git-refs" } }` (`memory.graph.share`) in `.aof/aof.config.json`: `aof graph build .` then takes the graph already published for HEAD on the project's own remote (`memory.graph.remote`, default `origin`) when it has no current graph of its own, and after a build from a clean tree of a default-branch commit publishes it there for the next clone, worktree or node. A commit's graph is a blob behind `refs/aof/graph/v1/<commit>`, which a plain clone never downloads. The first publish of a commit wins, nothing is ever force-pushed, and each publish prunes to the newest 20 default-branch commits. A remote that can't be reached is a warning, never a failed build, and a node without push access only fetches. A published graph stays fetchable by its hash after its ref is deleted, so publishing is opt-in per project. Only the codebase graph is shared; the memory work graph and index never are. `aof graph impact` is the **deterministic, edge-based** coupling lookup the review/refine agents consume; `aof graph query` is the fuzzier NL hint.
 
 ### Notion work-board sync (milestones 17 · 18)
 

@@ -55,19 +55,21 @@ const GRAPH_REACHING_ALLOWLIST = new Set([
   path.join("packages/core/src/application/bindings/commands/graph/query.mjs"),
   path.join("packages/core/src/application/bindings/commands/graph/triage.mjs"),
   path.join("packages", "knowledge", "src/graphify.mjs"),                 // imports the normalizer
-  path.join("packages", "knowledge", "src", "commands", "graph-build.mjs"),  // imports the driver
   path.join("packages", "knowledge", "src", "commands", "graph-query.mjs"),  // imports the driver
   path.join("packages", "knowledge", "src", "commands", "graph-triage.mjs"), // imports the driver
-  path.join("packages", "knowledge", "src", "commands", "graph-impact.mjs"), // imports the normalizer (11/ADR-007): the
-                                                    // deterministic edge-based coupling command — reaches
-                                                    // the graph via the pure read (NOT a spawn), exactly
-                                                    // as 10's backend does.
-  path.join("packages/core/src/application/bindings/work/test-select.mjs"),           // imports the normalizer (72/ADR-002 §1): test selection
-                                                      // reaches the graph by the pure read — never a build and
-                                                      // never a spawn. A build is minutes even when nothing
-                                                      // changed, and an inner-loop tool that might cost minutes
-                                                      // before it costs seconds is not one.
   path.join("packages", "knowledge", "src/memory/graphify-backend.mjs"), // imports the normalizer (10)
+  // 179/ADR-002 — the graphify code backend builds the code graph and reads its edges behind the
+  // knowledge-engine port. This binding hands it the driver's services; the backend itself imports
+  // only the normalizer, for the code readers' driver-free port (179/ADR-004). The graph:build and
+  // graph:impact faces reach the graph only through the port, so they left this list.
+  path.join("packages/core/src/application/bindings/knowledge-engine.mjs"),
+  // PR #22 — the backend's read half, split into its own module so the code readers' port reaches
+  // no part of the build (77/FF-7703). The same reader, moved: the backend imports it and no longer
+  // imports the normalizer itself, so it left this list.
+  path.join("packages", "knowledge", "src", "graphify-code-relations.mjs"),
+  // 179/ADR-004 — test selection, the story-contract derivation and the seam-liveness lane, with
+  // their three core bindings, left this list: each asks the code corpus's `relations` through the
+  // port, so the binding above is the one reacher they share.
   // 166 — the graph carried between clones: export reads graph.json's path and age through the
   // normalizer, import lays it back where every reader resolves it and asks the driver's resolver
   // for the local graphify version. Neither builds, queries or spawns.
@@ -80,17 +82,6 @@ const GRAPH_REACHING_ALLOWLIST = new Set([
   // themselves import neither; they receive these from their bindings. Neither builds or spawns.
   path.join("packages/core/src/application/bindings/commands/graph/fetch.mjs"),
   path.join("packages/core/src/application/bindings/commands/graph/publish.mjs"),
-  path.join("packages/core/src/application/bindings/story-contract-derive.mjs"), // configured knowledge ports
-  path.join("packages", "work", "src/story-contract-derive.mjs"),      // imports the normalizer (96/ADR-004): the read/write-set
-                                                      // derivation reaches the graph by the pure read — never a
-                                                      // build and never a spawn, for 72/ADR-002 §1's reasons
-                                                      // carried over intact. Its own control (FF-9602) asserts
-                                                      // the absence of the build and the spawn directly.
-  path.join("packages/core/src/application/bindings/work-audit/seam-liveness.mjs"), // Core supplies the existing graph adapter.
-  path.join("packages", "work", "src", "audit", "seam-liveness.mjs"), // imports the normalizer (77/ADR-006 §1): the seam-liveness
-                                                       // audit lane reaches the graph by the pure read — never a
-                                                       // build and never a spawn, for 72/ADR-002 §1's reasons
-                                                       // carried over intact.
 ]);
 
 // The exact 09 scanner: strip line + block comments AND string/template literals so
@@ -208,18 +199,12 @@ export const archTests = [
         const suppliedKnowledge = rel.startsWith(path.join("packages", "knowledge", "src") + path.sep)
           && /\b(?:runGraphifyBuild|runGraphifyQuery|runGraphifyTriage)\s*\(/u.test(source)
           && /function createGraph(?:Build|Query|Triage)Command\(\{[^}]*\brunGraphify(?:Build|Query|Triage)\b/u.test(source);
-        const suppliedReader = rel === path.join("packages", "work", "src", "audit", "seam-liveness.mjs");
-        if (suppliedReader) {
-          assert.match(source, /createAuditSeamLiveness\(\{[^}]*normalizeGraph[^}]*readGraph/u, "the moved reader receives the existing graph services");
-          assert.match(source, /normalizeGraph\(readGraph\(artifact\)\)/u, "and it still uses the supplied reader");
-        }
-        const suppliedDeriver = rel === path.join("packages", "work", "src/story-contract-derive.mjs");
-        if (suppliedDeriver) {
-          assert.match(source, /createStoryContractDeriver\(\{[^}]*normalizeGraph[^}]*readGraph/u);
-          assert.match(source, /raw = readGraph\(artifact\)/u);
-          assert.match(source, /normalizeGraph\(raw\)/u);
-        }
-        if (importsDriver || importsNormalizer || suppliedReader || suppliedKnowledge || suppliedDeriver) reachers.push(rel);
+        // A module SUPPLIED the graph's reader functions reaches the graph as surely as one that
+        // imports them. Since 179/ADR-004 the seam lane and the derivation are supplied `relations`
+        // instead, so supplying `readGraph` to any work-owned factory is itself the reach.
+        const suppliedReader = rel.startsWith(path.join("packages", "work", "src") + path.sep)
+          && /function create\w+\(\{[^}]*\b(?:readGraph|normalizeGraph)\b/u.test(source);
+        if (importsDriver || importsNormalizer || suppliedReader || suppliedKnowledge) reachers.push(rel);
       }
       const offenders = reachers.filter((rel) => !GRAPH_REACHING_ALLOWLIST.has(rel));
       assert.deepEqual(

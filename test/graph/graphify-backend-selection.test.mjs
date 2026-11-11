@@ -13,7 +13,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //   00_backend-registered-and-selectable.feature
 //     — a config naming graphify is schema-valid
 //     — it dispatches to the graphify backend (status reports "graphify")
-//     — the module's default export is the frozen { name, recall, reindex, status }
+//     — the module's default export is the frozen { name, corpora, recall, reindex, status } (179/ADR-003)
 //     — an unregistered name is rejected by the $defs/memory.backend enum
 //     — Outline: the configured backend determines who answers (local/none/graphify/absent)
 //     — Outline: an unregistered name is rejected, never silently dispatched
@@ -72,7 +72,8 @@ async function runGraphify(argv, { config = { memory: { backend: "graphify" } } 
   return { outcome, output: lines.join("\n"), projectRoot };
 }
 
-const FROZEN_KEYS = ["name", "recall", "reindex", "status"];
+// 179/ADR-003 widened the frozen interface by exactly one key, the corpora declaration.
+const FROZEN_KEYS = ["name", "corpora", "recall", "reindex", "status"];
 
 export const graphifyBackendSelectionTests = [
   // ====================================================================
@@ -100,11 +101,11 @@ export const graphifyBackendSelectionTests = [
   {
     name: "graphify/selection: the graphify backend module's default export is the frozen interface",
     run: async () => {
-      // its keys are EXACTLY name, recall, reindex, status — no more, no less.
+      // its keys are EXACTLY name, corpora, recall, reindex, status — no more, no less.
       assert.deepEqual(
         Object.keys(graphifyBackend).sort(),
         [...FROZEN_KEYS].sort(),
-        "default export keys are exactly { name, recall, reindex, status }"
+        "default export keys are exactly { name, corpora, recall, reindex, status }"
       );
       assert.equal(graphifyBackend.name, "graphify", '"name" is "graphify"');
       for (const method of ["recall", "reindex", "status"]) {

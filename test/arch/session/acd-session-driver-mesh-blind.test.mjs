@@ -143,10 +143,13 @@ export const archTests = [
       // 171 F-171-01 moves the byte gate out of the session screen into `@aof/contracts/tui-ready`, a
       // zero-import contracts leaf the browser's dock reads too, so 39 -> 40 with no lifecycle, provider or mesh edge.
       assert.ok(graph.seen.has(path.join(root, "packages/contracts/src/tui-ready.mjs")), "171 F-171-01 adds the byte gate's leaf through the session screen");
-      assert.equal(graph.seen.size, 40, "the 31-module assembly plus seven explicitly owned Codex/policy and observation leaves, the cost meter, and the byte gate");
+      // 181: the driver and the Codex adapter read the phase-completion contract from runtime-session.mjs,
+      // an execution module whose own imports are node built-ins alone, so 40 -> 41 with no lifecycle,
+      // provider or mesh edge.
+      assert.equal(graph.seen.size, 41, "the 31-module assembly plus seven explicitly owned Codex/policy and observation leaves, the cost meter, the byte gate, and the phase-completion contract's module");
       assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/otel-attribution", "@aof/execution/pty", "@aof/execution/session-driver", "@aof/work/phase-brief"], "the adapter uses only the two execution APIs");
       const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
-      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/contracts/src/tui-ready.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-executable.mjs", "packages/execution/src/codex-process-environment.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-events.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs"], "native transport and observation stay in execution; no work, mesh or core import is introduced");
+      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/contracts/src/tui-ready.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-executable.mjs", "packages/execution/src/codex-process-environment.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-events.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/runtime-session.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs"], "native transport and observation stay in execution; no work, mesh or core import is introduced");
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
       const terminalWs = path.join(root, "packages/server/src/terminal-ws.mjs");
@@ -339,7 +342,14 @@ export const archTests = [
       // 171 F-171-01 — the session screen reads readiness through the byte gate's zero-import contracts
       // leaf, `@aof/contracts/tui-ready` (168 -> 169); it does no I/O and reaches no lifecycle module.
       assert.ok(sinkGraph.seen.has(path.join(root, "packages/contracts/src/tui-ready.mjs")), "the byte gate's leaf");
-      assert.equal(sinkGraph.seen.size, 169, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
+      // 184–186 (chores 175–177, "Notion onto the seam") — core names no integration package outside
+      // the registry, so the facade's composition reaches `core/integrations.mjs` and through it each
+      // integration's contribution: Hyperagent's commands and contribution, and Notion's CLI,
+      // contribution and the sync, mapping, projection and routing modules it composes (169 -> 182).
+      // None is a driver or a lifecycle module; the driver fences above are unchanged.
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/core/src/integrations.mjs")), "the integration registry");
+      for (const owner of ["packages/integration-hyperagent/src/contribution.mjs", "packages/integration-notion/src/contribution.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
+      assert.equal(sinkGraph.seen.size, 182, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, and the integration registry's contributions");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

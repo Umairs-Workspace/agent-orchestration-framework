@@ -35,10 +35,11 @@ aofVersion: <aof-version>
 ## Plan
 
 <!-- How the session runs — which lanes are automated vs human. "Could be automated": the
-     `@executable` suite and agent-runnable `@manual` scenarios are re-run as a regression sweep
-     across the accepted milestones; only the `@uat` (human-judgment) scenarios need a person. -->
+     `@executable` suite is one regression sweep for the whole session, answered from the newest gate
+     run when nothing has changed, and agent-runnable `@manual` scenarios are re-run; only the `@uat`
+     (human-judgment) scenarios need a person. -->
 
-- [ ] Regression sweep — re-run the `@executable` suite + fitness functions across the accepted milestones (green)
+- [ ] Regression sweep — one `aof test --scope all` for the session: the `@executable` suite + fitness functions (green)
 - [ ] Re-run agent-runnable `@manual` scenarios (evidence below)
 - [ ] Broker the human `@uat` scenarios (sign-off below)
 
