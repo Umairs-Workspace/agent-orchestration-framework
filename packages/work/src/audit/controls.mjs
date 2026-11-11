@@ -120,7 +120,13 @@ export const RUNNERS_CONFIG_KEY = "work.controls.runners";
 // every row. The `test_` prefix is anchored at the start of the name (or of a path
 // segment, since the predicate also sees repo-relative paths), so a source that merely
 // contains it (`latest_test_data.py`) and the fixture module `conftest.py` stay out.
-const CONTROL_FILE_NAME = /\.(?:test|spec)\.[A-Za-z0-9]+$|Tests?\.(?:cs|fs|vb)$|(?:^|\/)test_[A-Za-z0-9_]*\.py$|_test\.py$/;
+//
+// A FOURTH, GO. `go test` compiles exactly the files named `*_test.go`; nothing else in a
+// package is a test, so the suffix is the whole rule. A downstream Go milestone citing
+// `services/mcp/internal/sandbox/boundary_test.go` got `control-unresolved` on every row
+// (a downstream project's m08 and m10, 24 landed controls). The suffix is anchored at the
+// extension, so `latest_test_data.go`, `testing.go` and `contest.go` stay out.
+const CONTROL_FILE_NAME = /\.(?:test|spec)\.[A-Za-z0-9]+$|Tests?\.(?:cs|fs|vb)$|(?:^|\/)test_[A-Za-z0-9_]*\.py$|_test\.py$|_test\.go$/;
 
 export function isControlFileName(name) {
   return CONTROL_FILE_NAME.test(String(name ?? ""));
