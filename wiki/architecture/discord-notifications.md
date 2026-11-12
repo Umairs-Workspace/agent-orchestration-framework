@@ -268,10 +268,10 @@ hour.
 
 | Command | Options | What it does | Reply |
 |---|---|---|---|
-| `/status` | `workspace` (optional) | lists what is in progress in each project, with its execution and node and any question waiting | only you see it |
-| `/asks` | `workspace` (optional) | lists the questions waiting or parked, each with a link to the bot's question message | only you see it |
-| `/loop stop` | `scope`, `workspace` (optional) | asks the loop for that scope to stop. The first request drains, and a second cancels the session in flight | the channel sees it |
-| `/loop resume` | `scope`, `workspace` (optional) | hands a halted supervised loop back to the desktop app, which relaunches it with `--resume` on its next poll | the channel sees it |
+| `/status` | `project` (optional) | lists what is in progress in each project, with its execution and node and any question waiting | only you see it |
+| `/asks` | `project` (optional) | lists the questions waiting or parked, each with a link to the bot's question message | only you see it |
+| `/loop stop` | `scope`, `project` (optional) | asks the loop for that scope to stop. The first request drains, and a second cancels the session in flight | the channel sees it |
+| `/loop resume` | `scope`, `project` (optional) | hands a halted supervised loop back to the desktop app, which relaunches it with `--resume` on its next poll | the channel sees it |
 
 **Who can run them.** A command reaches only the projects whose Discord channel is the one it is
 run in, and only for people on that channel's `allow` list (see "Answering by reply" above). A
@@ -279,10 +279,14 @@ command in a channel no project uses answers *This channel is not an aof project
 not on any `allow` list gets a refusal ending `(discord-command-not-allowed)`, and nothing runs. A
 command sent in a direct message is refused, because a direct message names no project.
 
-**Several projects in one channel.** `/status` and `/asks` show one section per project. `/loop`
-acts on exactly one project, so name it with `workspace:` (its folder name or its workspace id).
-Without it, a channel that reaches several projects refuses with `(discord-scope-ambiguous)` and
-names each one.
+**Several projects in one channel.** `/status` and `/asks` show one section per project, and
+`project:` narrows them to one. `/loop` acts on exactly one project. Without `project:`, it takes the
+one project that has a loop on the scope, and refuses with `(discord-scope-ambiguous)`, naming each
+one, when several have. You don't have to type the project: pick it from the list Discord offers as
+you type `project:`. The list offers only the projects whose channel `allow` list holds you, the
+same ones the command would reach. Someone on no `allow` list is offered nothing. A typed folder
+name or workspace id still works, and a name no project here has is refused with
+`(discord-scope-ambiguous)`, naming the projects there are.
 
 **What the loop commands say.** `/loop stop` answers in the channel with who asked:
 

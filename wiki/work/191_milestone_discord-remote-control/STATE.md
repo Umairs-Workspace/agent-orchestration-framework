@@ -57,3 +57,31 @@ doc: state
   id because the live store did not answer, so the doctor could not anchor the two answers to it.
   It was completed, and 20261112T103644390Z-0001 was minted with `--session` naming this session.
   The doctor then anchored 191/03 Q1 and 191/06 Q1 to their recorded answers.
+
+## Feedback (for retro)
+
+- 2026-11-12 — 191/05 (continue, solo). Found while reviewing the build:
+  - **Recorded finding: ADR-006 §2 and the 05 contract disagree slightly.** The ADR says the offer
+    is "filtered by the typed prefix". The locked contract and PLAN also rank containment matches
+    after prefix matches (`aof` before `taof`), and the build follows the contract. The ADR text is
+    narrower than what shipped and wants a one-line amendment at `aof:verify`.
+  - **The declared `reads:` set was incomplete.** E1 asserts the stop request's `workspaceId`,
+    which `packages/work-loop/src/stop.mjs` writes from `config.mesh.workspaceId`, and the choices'
+    `value` comes from `packages/mesh/src/workspace-identity.mjs` (`resolveWorkspaceId`). Both were
+    read and neither is declared.
+  - **`aof test --scope impacted --story 191/05` widened to all 1,273 suites (`no-graph`).** This
+    checkout has no code graph, and building one needs `aof project provision graphify`, a tool
+    install this lane did not make. A full-suite run is ruled out on this machine (it binds
+    `:4182`), so the evidence is the six suites that import the module, run by file and green:
+    `test/discord/discord-commands.test.mjs`, `test/discord/discord-bot.test.mjs`,
+    `test/arch/loop/acd-loop-ask-answered-from-discord.test.mjs`,
+    `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs`,
+    `test/arch/testing/acd-source-directory-budget.test.mjs` and the node:test
+    `packages/messaging/test/services.test.mjs`. The milestone regression gate is still owed.
+  - **@manual 02 (the guide) was checked by reading it.** The command table names `project` on all
+    four rows and never `workspace`. The "Several projects in one channel" paragraph says to pick
+    from the list, and that the list offers only projects whose channel `allow` list holds the
+    user. That paragraph also now states 131/14's rule, that `/loop` takes the one project with a
+    loop on the scope. The old text predated it.
+  - **By hand, still owed:** after a daemon restart, typing `/loop stop project:` in the channel
+    should offer the projects (PLAN Verification). Not run: this lane does not restart daemons.

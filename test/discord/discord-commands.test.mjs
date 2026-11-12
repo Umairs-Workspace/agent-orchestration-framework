@@ -80,18 +80,19 @@ const edit = (sequence) => sequence.filter((entry) => entry.kind === "request" &
 export const discordCommandsTests = [
   // ── task 00: the table and its registration ─────────────────────────────────────────────────
   {
-    name: "131/11 task00 — the table is the four commands: status, asks, and loop with stop and resume, each taking scope and workspace",
+    name: "131/11 task00 (191/05) — the table is the four commands: status, asks, and loop with stop and resume, each taking scope and project",
     run() {
       assert.deepEqual(COMMANDS.map((command) => command.name), ["status", "asks", "loop"]);
       const optionsOf = (list) => Object.fromEntries(list.map((option) => [option.name, option]));
-      for (const command of COMMANDS.slice(0, 2)) assert.deepEqual(optionsOf(command.options).workspace, { type: 3, name: "workspace", description: optionsOf(command.options).workspace.description, required: false });
+      for (const command of COMMANDS.slice(0, 2)) assert.deepEqual(optionsOf(command.options).project, { type: 3, name: "project", description: optionsOf(command.options).project.description, required: false, autocomplete: true });
       const loop = COMMANDS[2];
       assert.deepEqual(loop.options.map((sub) => [sub.name, sub.type]), [["stop", 1], ["resume", 1]]);
       for (const sub of loop.options) {
         const options = optionsOf(sub.options);
         assert.equal(options.scope.type, 3);
         assert.equal(options.scope.required, true, `${sub.name}: a required string scope`);
-        assert.equal(options.workspace.required, false, `${sub.name}: an optional string workspace`);
+        assert.equal(options.project.required, false, `${sub.name}: an optional string project`);
+        assert.equal(options.project.autocomplete, true, `${sub.name}: an autocompleted project`);
       }
       assert.ok(Object.isFrozen(COMMANDS));
     },
@@ -190,7 +191,7 @@ export const discordCommandsTests = [
     },
   },
   {
-    name: "131/11 task01 (131/14 task00) — an ambiguous loop command names its candidates, and workspace: picks one",
+    name: "131/11 task01 (131/14 task00) — an ambiguous loop command names its candidates, and project: picks one",
     async run() {
       const both = [served("alpha", { allow: [ALPHA_USER] }), served("beta", { allow: [BETA_USER, ALPHA_USER] })];
       // 131/14: two projects are ambiguous only when BOTH have a loop on the scope.
@@ -200,8 +201,9 @@ export const discordCommandsTests = [
       assert.match(edit(ambiguous.sequence), /discord-scope-ambiguous/u);
       assert.match(edit(ambiguous.sequence), /alpha/u);
       assert.match(edit(ambiguous.sequence), /beta/u);
+      assert.match(edit(ambiguous.sequence), /`project:`/u, "the refusal names the option by its one word");
       const picked = context({ workspaces: both, invoke: async () => ({ ok: true, request: "drain", state: "requested" }) });
-      await handleInteraction(interaction({ name: "loop", sub: "stop", options: { scope: "131", workspace: "beta" } }), picked);
+      await handleInteraction(interaction({ name: "loop", sub: "stop", options: { scope: "131", project: "beta" } }), picked);
       assert.deepEqual(invokes(picked.sequence).map((entry) => [entry.id, entry.workspace]), [["work:loop", "beta"]]);
     },
   },
@@ -214,7 +216,7 @@ export const discordCommandsTests = [
       for (const sub of ["stop", "resume"]) {
         const ctx = { ...context({ workspaces: both, invoke: answer }), hasLoopOn: onlyBeta };
         await handleInteraction(interaction({ name: "loop", sub, options: { scope: "131" } }), ctx);
-        assert.deepEqual(invokes(ctx.sequence).map((entry) => [entry.id, entry.workspace]), [["work:loop", "beta"]], `/loop ${sub} reaches the project with the loop, with no workspace:`);
+        assert.deepEqual(invokes(ctx.sequence).map((entry) => [entry.id, entry.workspace]), [["work:loop", "beta"]], `/loop ${sub} reaches the project with the loop, with no project:`);
       }
       const none = { ...context({ workspaces: both, invoke: answer }), hasLoopOn: async () => false };
       await handleInteraction(interaction({ name: "loop", sub: "stop", options: { scope: "131" } }), none);
@@ -377,30 +379,239 @@ export const discordCommandsTests = [
       });
     },
   },
+
+  // ── 191/05 task00: one word for the project on every command ────────────────────────────────
+  {
+    name: "191/05 task00 — each command addresses the project it is given, by folder or by id (three rows)",
+    async run() {
+      const answer = async (id) => (id === "work:loop" ? { ok: true, request: "drain", state: "requested", live: true } : []);
+      for (const [label, spec] of [
+        ["/status project:aof", { name: "status", options: { project: "aof" } }],
+        ["/asks project:ws-a", { name: "asks", options: { project: "ws-a" } }],
+        ["/loop resume scope:191 project:ws-a", { name: "loop", sub: "resume", options: { scope: "191", project: "ws-a" } }],
+      ]) {
+        const ctx = { ...context({ workspaces: pair(), invoke: answer }), hasLoopOn: async () => true };
+        await handleInteraction(interaction(spec), ctx);
+        assert.deepEqual([...new Set(invokes(ctx.sequence).map((entry) => entry.workspace))], ["aof"], `${label} addresses only aof`);
+      }
+    },
+  },
+  {
+    name: "191/05 task00 — an unknown project is refused discord-scope-ambiguous, naming the ones there are",
+    async run() {
+      const ctx = context({ workspaces: pair() });
+      await handleInteraction(interaction({ name: "status", options: { project: "aoff" } }), ctx);
+      assert.deepEqual(invokes(ctx.sequence), [], "nothing is invoked");
+      const reply = edit(ctx.sequence);
+      assert.match(reply, /\(discord-scope-ambiguous\)$/u);
+      assert.match(reply, /\baof\b/u);
+      assert.match(reply, /\bnotes\b/u);
+    },
+  },
+  {
+    name: "191/05 task00 E1 — /loop stop scope:191 project:aof writes the stop request for scope 191 in workspace ws-a",
+    async run() {
+      await withLoopProject({ live: true, folder: "aof", workspaceId: "ws-a", scope: "191" }, async ({ workspace, loopRunId, invokeReal }) => {
+        const notes = projectAt("notes", "ws-n");
+        const ctx = { ...context({ workspaces: [workspace, notes], invoke: invokeReal }), hasLoopOn: async () => true };
+        await handleInteraction(interaction({ name: "loop", sub: "stop", options: { scope: "191", project: "aof" } }), ctx);
+        assert.deepEqual(invokes(ctx.sequence).map((entry) => [entry.id, entry.workspace]), [["work:loop", "aof"]]);
+        const record = await readStopRequest(loopStopsDir(), loopRunId);
+        assert.equal(record.scope, "191");
+        assert.equal(record.workspaceId, "ws-a");
+      });
+    },
+  },
+  {
+    name: "191/05 task00 E2 — after READY a guild holding the old table is overwritten once with the new one, and no option is named workspace",
+    async run() {
+      const events = degradeSink();
+      try {
+        const clock = fakeClock();
+        const fake = fakeGateway();
+        const calls = [];
+        // The guild's last overwrite carried the old table: what Discord holds names `workspace`.
+        let held = [{ name: "status", options: [{ type: 3, name: "workspace" }] }];
+        const fetch = async (url, init) => {
+          const route = url.replace("https://discord.com/api/v10", "");
+          const body = init.body == null ? null : JSON.parse(init.body);
+          calls.push({ method: init.method, route, body });
+          if (init.method === "PUT") held = body;
+          if (/^\/channels\/\d+$/u.test(route)) return { status: 200, headers: { get: () => "application/json" }, json: async () => ({ id: CHANNEL, guild_id: GUILD }) };
+          return { status: 200, headers: { get: () => "application/json" }, json: async () => [] };
+        };
+        const bot = startDiscordBot({
+          token: TOKEN,
+          fetch,
+          timers: clock.timers,
+          servedWorkspaces: async () => pair(),
+          gateway: (options) => startGateway({ ...options, request: fake.request, socketFactory: fake.socketFactory, timers: clock.timers, random: () => 0.5 }),
+        });
+        try {
+          await flush();
+          fake.current().receive({ op: 0, t: "READY", s: 1, d: { session_id: "s1", resume_gateway_url: "wss://resume.example.test", application: { id: APP } } });
+          for (let i = 0; i < 100 && !calls.some((call) => call.method === "PUT"); i += 1) await new Promise((resolve) => setTimeout(resolve, 10));
+          await flush();
+          const puts = calls.filter((call) => call.method === "PUT");
+          assert.deepEqual(puts.map((call) => call.route), [`/applications/${APP}/guilds/${GUILD}/commands`], "the guild is overwritten once");
+          assert.deepEqual(held, JSON.parse(JSON.stringify(COMMANDS)), "with the new table");
+          const project = (options) => options.find((option) => option.name === "project");
+          for (const [label, options] of [
+            ["/status", held[0].options],
+            ["/asks", held[1].options],
+            ["/loop stop", held[2].options[0].options],
+            ["/loop resume", held[2].options[1].options],
+          ]) {
+            assert.deepEqual(project(options), { type: 3, name: "project", description: project(options).description, required: false, autocomplete: true }, `${label}: an optional autocompleted string project`);
+          }
+          const names = [];
+          const walk = (options) => { for (const option of options ?? []) { names.push(option.name); walk(option.options); } };
+          for (const command of held) walk(command.options);
+          assert.ok(!names.includes("workspace"), `no command or subcommand has an option named workspace: ${names.join(", ")}`);
+          assert.equal(events.filter((event) => event.code === "discord-command-register-failed").length, 0);
+        } finally {
+          bot.stop();
+        }
+      } finally {
+        releaseDegradeSink();
+      }
+    },
+  },
+
+  // ── 191/05 task01: the project is offered, never refused, while typing ──────────────────────
+  {
+    name: "191/05 task01 — an autocomplete answers type 8 with the kept projects, without a deferral or a verb",
+    async run() {
+      const ctx = context({ workspaces: pair() });
+      const choices = await handleInteraction(autocomplete({ name: "status", value: "" }), ctx);
+      assert.deepEqual(ctx.sequence, [{
+        kind: "request",
+        method: "POST",
+        route: "/interactions/700000000000000001/interaction-token/callback",
+        body: { type: 8, data: { choices: [{ name: "aof", value: "ws-a" }, { name: "notes", value: "ws-n" }] } },
+      }], "one type 8 callback: no type 5, no invoke, no edit");
+      assert.deepEqual(choices, [{ name: "aof", value: "ws-a" }, { name: "notes", value: "ws-n" }]);
+      const loop = context({ workspaces: pair() });
+      await handleInteraction(autocomplete({ name: "loop", sub: "stop", value: "no", others: { scope: "191" } }), loop);
+      assert.deepEqual(offered(loop.sequence), [{ name: "notes", value: "ws-n" }], "a /loop subcommand's focused project is offered too");
+    },
+  },
+  {
+    name: "191/05 task01 — a prefix match ranks above a containment match",
+    async run() {
+      const ctx = context({ workspaces: [projectAt("taof", "ws-t"), projectAt("aof", "ws-a")] });
+      await handleInteraction(autocomplete({ value: "aof" }), ctx);
+      assert.deepEqual(offered(ctx.sequence).map((choice) => choice.name), ["aof", "taof"]);
+    },
+  },
+  {
+    name: "191/05 task01 — never more than 25 choices",
+    async run() {
+      const thirty = Array.from({ length: 30 }, (_, i) => projectAt(`p${String(i).padStart(2, "0")}`, `ws-${i}`));
+      const ctx = context({ workspaces: thirty });
+      await handleInteraction(autocomplete({ value: "" }), ctx);
+      assert.equal(offered(ctx.sequence).length, 25);
+    },
+  },
+  {
+    name: "191/05 task01 — an interaction from nowhere useful gets an empty list (two rows)",
+    async run() {
+      for (const [label, spec] of [
+        ["from a direct message", { member: false }],
+        ["from a channel no project serves", { channel: "555555555555555555" }],
+      ]) {
+        const ctx = context({ workspaces: pair() });
+        await handleInteraction(autocomplete({ value: "", ...spec }), ctx);
+        assert.deepEqual(ctx.sequence.map((entry) => entry.body), [{ type: 8, data: { choices: [] } }], label);
+      }
+      const events = degradeSink();
+      try {
+        const failing = { ...context(), servedWorkspaces: async () => { throw Object.assign(new Error("no"), { code: "workspace-load-failed" }); } };
+        await handleInteraction(autocomplete({ value: "" }), failing);
+        assert.deepEqual(failing.sequence.map((entry) => entry.body), [{ type: 8, data: { choices: [] } }], "a failed read is still answered, empty");
+        assert.equal(events.filter((event) => event.code === "discord-autocomplete-failed").length, 1, "and reported");
+      } finally {
+        releaseDegradeSink();
+      }
+    },
+  },
+  {
+    name: "191/05 task01 E3 — a user allowed on one project is offered only that one",
+    async run() {
+      const workspaces = [projectAt("aof", "ws-a"), projectAt("notes", "ws-n", { allow: [BETA_USER] })];
+      for (const value of ["", "a"]) {
+        const ctx = context({ workspaces });
+        await handleInteraction(autocomplete({ value }), ctx);
+        assert.deepEqual(offered(ctx.sequence), [{ name: "aof", value: "ws-a" }], `typed "${value}"`);
+      }
+    },
+  },
+  {
+    name: "191/05 task01 E4 — a user on no allowlist is offered nothing, and nothing is posted",
+    async run() {
+      const ctx = context({ workspaces: pair() });
+      await handleInteraction(autocomplete({ value: "a", user: "444444444444444444" }), ctx);
+      assert.deepEqual(ctx.sequence.map((entry) => [entry.method, entry.body]), [["POST", { type: 8, data: { choices: [] } }]], "one empty type 8 callback: no refusal text, no edit");
+    },
+  },
+  {
+    name: "191/05 task01 E5 — case is ignored",
+    async run() {
+      const ctx = context({ workspaces: pair() });
+      await handleInteraction(autocomplete({ value: "NO" }), ctx);
+      assert.deepEqual(offered(ctx.sequence), [{ name: "notes", value: "ws-n" }]);
+    },
+  },
 ];
+
+// A served workspace with a folder and a pinned workspace id, on CHANNEL, allowing ALPHA_USER.
+function projectAt(folder, workspaceId, { allow = [ALPHA_USER] } = {}) {
+  return {
+    projectRoot: path.join(os.tmpdir(), "aof-discord-commands", folder),
+    config: { name: folder, mesh: { workspaceId }, work: { notify: { channels: { discord: { type: "discord", channelId: CHANNEL, allow } } } } },
+  };
+}
+// The background: a channel serving "aof" (id ws-a) and "notes" (id ws-n), ALPHA_USER allowed on both.
+const pair = () => [projectAt("aof", "ws-a"), projectAt("notes", "ws-n")];
+
+// An autocomplete interaction (type 4) with `project` focused, as the gateway hands one.
+function autocomplete({ name = "status", sub = null, value = "", others = {}, user = ALPHA_USER, channel = CHANNEL, member = true } = {}) {
+  const base = interaction({ name, sub, options: others, user, channel, member });
+  const focused = { type: 3, name: "project", value, focused: true };
+  const data = sub == null
+    ? { ...base.data, options: [...base.data.options, focused] }
+    : { ...base.data, options: [{ ...base.data.options[0], options: [...base.data.options[0].options, focused] }] };
+  return { ...base, type: 4, data };
+}
+// The choices of the one type 8 callback a sequence holds.
+const offered = (sequence) => {
+  const callbacks = sequence.filter((entry) => entry.kind === "request" && entry.body?.type === 8);
+  assert.equal(callbacks.length, 1, "exactly one type 8 callback");
+  return callbacks[0].body.data.choices;
+};
 
 // A project with milestone 131 and one run record carrying a SUPERVISED loop declaration, under a
 // fresh global home set on the process. `live` makes the run running with a fresh heartbeat; else it
 // is done. `invokeReal` runs the registered verb in-process with a spawn seam that records.
-async function withLoopProject({ live }, body) {
+async function withLoopProject({ live, folder = "project", workspaceId = null, scope = "131" }, body) {
   const tmp = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-discord-loop-")));
   const previous = process.env.AOF_GLOBAL_HOME;
   process.env.AOF_GLOBAL_HOME = path.join(tmp, "home");
   try {
-    const root = path.join(tmp, "project");
-    const itemDir = path.join(root, "wiki", "work", "131_milestone_fixture");
+    const root = path.join(tmp, folder);
+    const itemDir = path.join(root, "wiki", "work", `${scope}_milestone_fixture`);
     await mkdir(path.join(itemDir, "runs"), { recursive: true });
     await mkdir(path.join(root, ".aof"), { recursive: true });
-    await writeFile(path.join(itemDir, "SPEC.md"), "---\ntype: milestone\nnumber: 131\nslug: fixture\ntitle: Fixture\nstatus: in-progress\ndepends: []\ncreated: 2026-09-25\nupdated: 2026-09-25\nschema: 1\naofVersion: 0.1.0\n---\n# Fixture\n", "utf8");
+    await writeFile(path.join(itemDir, "SPEC.md"), `---\ntype: milestone\nnumber: ${scope}\nslug: fixture\ntitle: Fixture\nstatus: in-progress\ndepends: []\ncreated: 2026-09-25\nupdated: 2026-09-25\nschema: 1\naofVersion: 0.1.0\n---\n# Fixture\n`, "utf8");
     const at = new Date().toISOString();
     const loopRunId = "lr-131";
     const record = {
-      runId: "run-1", itemRef: "131", retryOf: null, state: live ? "running" : "done", attempt: 1,
+      runId: "run-1", itemRef: scope, retryOf: null, state: live ? "running" : "done", attempt: 1,
       failureReason: null, resumeAfter: null, reclaimedAt: null, createdAt: at, heartbeatAt: live ? at : null, updatedAt: at,
-      brief: { loop: { loopRunId, scope: "131", level: "L2", cap: 3, phase: "continue", cycle: 1, startedAt: at, id: "loop:autonomous-cascade", supervised: true } },
+      brief: { loop: { loopRunId, scope, level: "L2", cap: 3, phase: "continue", cycle: 1, startedAt: at, id: "loop:autonomous-cascade", supervised: true } },
     };
     await writeFile(path.join(itemDir, "runs", "run-1.json"), JSON.stringify(record, null, 2), "utf8");
-    await writeFile(path.join(root, ".aof", "aof.config.json"), JSON.stringify({ name: "fixture", work: { dir: "wiki/work", notify: { channels: { discord: { type: "discord", channelId: CHANNEL, allow: [ALPHA_USER] } } } } }, null, 2), "utf8");
+    await writeFile(path.join(root, ".aof", "aof.config.json"), JSON.stringify({ name: "fixture", ...(workspaceId == null ? {} : { mesh: { workspaceId } }), work: { dir: "wiki/work", notify: { channels: { discord: { type: "discord", channelId: CHANNEL, allow: [ALPHA_USER] } } } } }, null, 2), "utf8");
     const workspace = await loadWorkspace(root, undefined, { env: process.env });
     const { invoke } = await Promise.resolve(Object.freeze({
   loadWorkspace: _aofApplication.loadWorkspace,
