@@ -29,7 +29,7 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // ISOLATION IS MANDATORY: every scenario runs inside withMeshWorkerExecFixture, whose
 // AOF_GLOBAL_HOME is a disposable temp dir — real session records are written here.
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -385,8 +385,10 @@ export const meshSessionSpawnHandlerTests = [
 
       assert.equal(wire.acks[0].ok, true, `the spawn succeeded (acks: ${JSON.stringify(wire.acks)})`);
       assert.equal(
-        path.resolve(ptySpawn.calls[0].options.cwd),
-        path.resolve(assignmentTree),
+        // Compared by REAL path: `git worktree list` answers with the resolved path, and on macOS
+        // the temp root `/var/folders/...` is a symlink to `/private/var/folders/...`.
+        realpathSync(ptySpawn.calls[0].options.cwd),
+        realpathSync(assignmentTree),
         "the shell opens in the item's LIVE assignment worktree — where the work actually is",
       );
       assert.equal(

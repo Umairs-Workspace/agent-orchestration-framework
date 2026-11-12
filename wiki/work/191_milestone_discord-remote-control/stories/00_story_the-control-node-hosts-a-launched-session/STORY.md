@@ -4,7 +4,7 @@ number: 00
 slug: the-control-node-hosts-a-launched-session
 title: "The control node hosts a launched session — a start aimed at the control's own node opens its PTY there, through the worker's own handler"
 parent: 191
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-11-11
 updated: 2026-11-12
@@ -51,9 +51,9 @@ it. FF-19101 founds `acd-launched-session-from-discord.test.mjs`.
 
 ## Tasks
 
-- [ ] 00 [a spawn for the control's own node opens a local session](tasks/00_a-spawn-for-the-controls-own-node-opens-a-local-session.feature)
-- [ ] 01 [the router sends each frame to exactly one place](tasks/01_the-router-sends-each-frame-to-exactly-one-place.feature)
-- [ ] 02 [FF-19101 holds one handler for both roles](tasks/02_ff-19101-holds-one-handler-for-both-roles.feature)
+- [x] 00 [a spawn for the control's own node opens a local session](tasks/00_a-spawn-for-the-controls-own-node-opens-a-local-session.feature)
+- [x] 01 [the router sends each frame to exactly one place](tasks/01_the-router-sends-each-frame-to-exactly-one-place.feature)
+- [x] 02 [FF-19101 holds one handler for both roles](tasks/02_ff-19101-holds-one-handler-for-both-roles.feature)
 
 ## Notes
 

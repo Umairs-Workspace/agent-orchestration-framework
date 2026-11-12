@@ -92,9 +92,6 @@ doc: state
   suite starts a real control launcher without binding a broker. Red probes: with the control
   handler disabled, 4 of the 5 task-00 scenarios fail (the fifth is the unchanged no-relay path).
   FF-19101 trips on the pre-191 launcher, and on every hand-written plant.
-
-## Feedback (for retro)
-
 - 2026-11-12 — **191/00 review (solo), Important, routed as an amendment to ADR-001 §1/§3, for the
   operator and architect to ratify. No item was created.** ADR-001 §1 hands the control's handler
   the worker's own `workerHasRepo` and `meshCheckoutPath`. Read at source
@@ -114,3 +111,32 @@ doc: state
   resolve a served workspace's checkout from its descriptor `projectRoot`, which also needs
   `session-spawn-handler.mjs`, outside 00's write set, and (b) an adoption path for `mesh.relay.url`
   on a single-node control.
+- 2026-11-12 — **191/00 continue, cycle 2 (solo, run 20261112T124150064Z-0001).** The first run
+  closed `done`, but the story stayed `in-progress` with its task boxes unticked, so the loop sent it
+  back. The lane's merge home also left this section headed twice; the two are now one. The code was
+  not rebuilt. Re-verified instead:
+  - **Tests, by file.** `aof test --scope impacted --story 191/00` widened to all 1,274 suites
+    (`no-graph`), and a full run is ruled out on this machine. The evidence is 14 suites run by
+    file and green (166 cases): the five declared suites, the fleet route suite, the relay bridge,
+    and the session/loop/mesh arch controls that import the two changed modules. The node:test
+    `packages/mesh/test/relay.test.mjs` passed 5/5 under `node --test`. The milestone regression
+    gate is still owed.
+  - **Fixed at this close:** `session-spawn-handler/00` (the live assignment worktree case, from
+    2026-09-13 and not this story's code) failed on macOS. `git worktree list` answers
+    `/private/var/...` where the fixture holds the `/var/...` symlink. It now compares
+    `realpathSync` on both sides. The file is in 00's `files:`.
+  - **Typecheck and lint:** the repo has no tsconfig or linter. `node --check` is clean on every
+    changed module and suite. The one grade-baseline failure (`arch/m42-item-3`) is
+    `packages/execution/src/pty.mjs`, outside this story, and unchanged.
+  - **Gate:** validate PASS; doctor exit 0, advisory warnings only.
+  - **Review (solo, every lens inline):** structural PASS (FF-19101 green, so one factory serves both
+    branches and `stop()` reaches the control's handler); behavioural PASS (all 10 task scenarios,
+    the 4 Examples rows and the budget row green); craft: one Nit, recorded. No Blockers, one round.
+  - **Recorded finding (Nit):** a local spawn that throws synchronously makes `apply()` answer
+    `false`, but a local spawn whose promise rejects answers `true`. Both report the degrade and
+    the refusal, and nothing reads that boolean for the spawn lane. A `terminal-resume` for the
+    control's own node still goes to `dispatchDirective` and is refused as not-connected. ADR-001
+    §2 does not route resume, so this is out of scope, but 03's `session-end` lane should decide
+    whether resume joins it.
+  - The near-miss recall returned an empty block again (recorded, 0 verdicts). The run's `attempt`
+    is 1, so no episodic recall was due.
