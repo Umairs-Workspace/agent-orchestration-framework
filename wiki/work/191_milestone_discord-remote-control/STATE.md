@@ -230,3 +230,76 @@ doc: state
   - **Gate:** validate PASS; doctor exit 0, advisory warnings only. **Review (solo, inline):**
     structural PASS after the fix above; behavioural PASS (all 15 task 00–02 scenarios and rows
     green; FF-19102's leg and its four plants green); craft PASS. No Blockers, one round.
+- 2026-11-12 — 191/02 built and reviewed (continue, solo, run 20261112T135900559Z-0000, attempt 1,
+  so there is no prior attempt to recall). The near-miss recall returned an empty block.
+  `planSessionStart` (`packages/mesh/src/session-start.mjs`) holds the route's five checks, with the
+  same order, codes, statuses and messages. It also mints the id and builds the spawn envelope, so
+  neither face names a frame builder (FF-19103 leg, with four hand-written plants). The route's 21
+  locked scenarios are green and unedited, and two scenarios were added that prove each refusal is
+  the plan's own.
+  - **Amendment for the operator and architect to ratify, not fixable in this write set: E7's "its
+    start time".** The list reads `queryGlobalMeshStatus`, whose `sessions[]` entry is the presence
+    projection frozen by 48/ADR-005 (`acd-session-entry-frozen-wire`): it carries `lastPingAt` and no
+    `startedAt`. The verb answers `startedAt` when an entry states one, else `null`, plus
+    `lastPingAt`, and never invents one. In production every entry therefore lists `startedAt: null`.
+    To honour E7 literally, the presence entry and the index entry must gain `startedAt`. That is an
+    additive amendment to 48/ADR-005's frozen wire, and it touches `presence.mjs`, `global-query.mjs`,
+    `apps/ui/src/fleet/api.ts` and the frozen-wire arch-test. Alternatively, E7 is relaxed to "its
+    last ping". The Discord `/session list` reply (191/06) inherits whichever is chosen.
+  - **The declared write set was incomplete: eight suites outside `files:` were amended.** Each change
+    states its reason in place:
+    - The `packages/mesh/src` budget row, 53 → 54 for `session-start.mjs`. It lives in the declared
+      budget file, but the row itself was not named.
+    - The registry count, 138 → 140, in `test/command/application-assembly.test.mjs` (twice) and
+      `packages/core/test/application.test.mjs`.
+    - The mesh contribution list, 17 → 19, in `packages/mesh/test/commands.test.mjs`.
+    - Two structural tests pinned the session route to `resolveLocalWorkspaceRow`:
+      `test/arch/ui/acd-fleet-board-link-resolved.test.mjs` and
+      `test/mesh/ui/mesh-ui-serve.test.mjs` (loop-stop-route/02). Each now follows the route into
+      `planSessionStart`, and the first holds the core to the same probe-before-use rule (409
+      `workspace-not-local`).
+    - `acd-session-attribution-single-authority`'s `itemRef` leg is scoped to the hook seam's
+      factory. The verbs carry `itemRef` onto the spawn frame, never onto a record. The
+      table-read and store-import legs still sweep the whole file.
+    - The `acd-session-driver-mesh-blind` facade closure, 182 → 185. It gains three pure leaves, each
+      asserted by name. The start core is a deferred import and is asserted absent.
+    - The mesh allow-list in `test/bundle/yarn-installation.test.mjs`, for the new imports.
+  - **Grade gate (work:grade), fixed: FF-16004's module ceiling.** `aof work find 160` evaluated 753
+    modules against its pinned 752. The one module more was `session-start.mjs`: both faces imported
+    it statically, and every CLI verb loads `ui-serve.mjs` and `commands/session.mjs` through the
+    registry. Both faces now import it deferred, inside the branch that starts a session
+    (`const { planSessionStart } = await import(…)`). The count is back at 752 and the ceiling is
+    unraised. FF-19103's import leg accepts the deferred form and gains two plants (the deferred core
+    passes, a deferred lookalike trips). The attribution and mesh-blind amendments, and the
+    module-placement finding below, still stand: `launchSessionName` and the face vocabulary are
+    static imports of the module.
+  - **Recorded finding (Important, routed as a story shape for the operator): the verbs share a
+    module with the session hook seam.** ADR-003 places them in `commands/session.mjs`, which is the
+    `aof session start|ping|end` hook seam. FF-7205 keeps that module light, because it runs on every
+    prompt. Following the ADR pulled three leaves into the hook's static import closure, and it forced the
+    attribution and mesh-blind amendments above. Moving the verbs to
+    `commands/session-verbs.mjs` would undo all three, but it means amending ADR-003 §2 and FF-19103's
+    named file, and the `commands` budget row moves 22 → 23. The operator decides at `aof:verify`.
+  - **`aof test --scope impacted --story 191/02` widened to all 1,275 suites (`no-graph`)**, exactly
+    as 191/05 found, and it started the full suite. The full suite is ruled out on this machine
+    because the live daemon holds `:4182`, so the run was stopped before it got there. The evidence
+    is instead the 137 suites that reach the changed modules, run by file with an isolated
+    `AOF_GLOBAL_HOME` and `global-work-propagation` left out: 1,391 cases. After the amendments
+    above, 21 still fail, and every one is environmental. On macOS `os.tmpdir()` is a symlinked
+    `/var`, so `/private/var` realpaths don't match (yarn-installation production ×3,
+    distribution-workspaces ×2, work-memory/00 and the FF-5301 laundering self-check).
+    `GIT_ASKPASS` is inherited from this VS Code shell (clone-credential ×3). This worktree has no
+    `apps/ui/dist` and no `apps/ui/node_modules`. Two workspace-boundaries cases fail on audit drift
+    in `work-loop/src/commands/loop.mjs`, a file this story does not touch. The milestone
+    regression gate is still owed.
+  - **Recorded finding (Nit): scaled waits.** E1's "after 6 s" and E2's "45 s pass" run against the
+    real relay with a 0.5 s delay and a 1.5 s `--wait`. The bound's length is not what is under test.
+    The 64 KiB scan bound is proved over fakes, in both directions.
+  - **Recorded finding (Nit): the route now reads the control's identity before the workspace
+    check.** `controlNodeId()` is memoised and loads the daemon's own launch workspace. A fault
+    loading it would now answer an unknown workspace with `session-route-failed` rather than 404.
+    The order of the codes is unchanged.
+  - **By hand, still owed (PLAN Verification):** `aof mesh session start
+    agent-orchestration-framework --wait 45000 --json` on this laptop. Not run: the global config
+    here has no `mesh.relay.url` (191/00's review), so it refuses `session-dispatch-unavailable`
+    until that adoption path lands.

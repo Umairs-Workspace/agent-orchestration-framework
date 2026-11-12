@@ -349,7 +349,15 @@ export const archTests = [
       // None is a driver or a lifecycle module; the driver fences above are unchanged.
       assert.ok(sinkGraph.seen.has(path.join(root, "packages/core/src/integrations.mjs")), "the integration registry");
       for (const owner of ["packages/integration-hyperagent/src/contribution.mjs", "packages/integration-notion/src/contribution.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
-      assert.equal(sinkGraph.seen.size, 182, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, and the integration registry's contributions");
+      // 191/02 (191/ADR-003) — the registered `mesh:session-*` verbs live in commands/session.mjs,
+      // which the facade already reached through the session-hook seam, so its static closure gains
+      // three pure leaves: the handler module's `launchSessionName`, the spawn wire module it
+      // imports and the mesh face vocabulary (182 -> 185). The start core itself is a deferred
+      // import (FF-16004) and is not in it. None is a driver or a lifecycle module; the driver
+      // fences above are unchanged.
+      for (const leaf of ["packages/mesh/src/session-spawn-directive.mjs", "packages/mesh/src/session-spawn-handler.mjs", "packages/mesh/src/commands/face-shared.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, leaf)), leaf);
+      assert.ok(!sinkGraph.seen.has(path.join(root, "packages/mesh/src/session-start.mjs")), "the start core is deferred, not in the static closure");
+      assert.equal(sinkGraph.seen.size, 185, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, and the integration registry's contributions");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

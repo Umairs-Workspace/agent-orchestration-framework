@@ -40,6 +40,7 @@ const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecor
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 const createTerminalInputRouter = _aofApplication.mesh.terminalInput.createTerminalInputRouter;
 import { SESSION_SPAWN_KIND } from "@aof/mesh/session-spawn-directive";
+import { planSessionStart } from "@aof/mesh/session-start";
 const startControlStreamServer = _aofApplication.mesh.controlStreamServer.startControlStreamServer;
 const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
 const createWorkerWsTransport = _aofApplication.mesh.workerStreamClient.createWorkerWsTransport;
@@ -834,6 +835,66 @@ export const meshUiSessionRouteTests = [
       assert.equal(foreign.routed, false);
       assert.equal(foreign.dispatched.length, 0);
       assert.equal(foreign.logs.length, 0, "a foreign kind is not even logged — it belongs to another consumer");
+    },
+  },
+  // ═══ 191/02 task 00 — the route answers THROUGH the one start core ═══════════════════════
+  //
+  // The scenarios above are locked and stay unedited; these two prove the route now reaches
+  // `planSessionStart` (191/ADR-003 §1) rather than spelling its own checks. The plan is asked
+  // the same question the route was, over the same mesh status the route read, and every
+  // refusal the client sees is the plan's — code, HTTP status and message — byte for byte.
+
+  // ══ Scenario: the fleet route answers through the plan, unchanged to its client ══
+  {
+    name: "mesh-ui-session-route/191-02 a 409 control-identity-unknown from the route carries the plan's message verbatim",
+    async run() {
+      await withSessionRouteFixture(async ({ url, pushed }) => {
+        const response = await postSession(url, { nodeId: "n1", workspaceId: "ws-aof" });
+        const body = await response.json();
+        const plan = planSessionStart({
+          status: { workspaces: [{ workspaceId: "ws-aof", projectRoot: "/x" }], nodes: [{ nodeId: "n1", freshness: "live" }] },
+          workspaceId: "ws-aof",
+          nodeId: "n1",
+          issuer: null,
+          relayAvailable: true,
+          pathExists: () => true,
+        });
+        assert.equal(plan.ok, false);
+        assert.equal(response.status, plan.status, "the route answers the plan's HTTP status");
+        assert.equal(body.code, plan.code, "…its code");
+        assert.equal(body.error, plan.message, "…and its message, verbatim");
+        assert.equal(pushed.length, 0, "a refused plan pushes nothing");
+      }, { controlNodeId: null });
+    },
+  },
+  {
+    name: "mesh-ui-session-route/191-02 every refusal the route answers after the body is read is the plan's own — the same code, status and message for the same mesh status",
+    async run() {
+      const cases = [
+        { label: "an unknown workspace", body: { nodeId: "n1", workspaceId: "ws-missing" }, fixture: {} },
+        { label: "a stale target", body: { nodeId: "n2", workspaceId: "ws-aof" }, fixture: { nodes: [{ nodeId: "n1", live: true }, { nodeId: "n2", live: false }] } },
+        { label: "no relay", body: { nodeId: "n1", workspaceId: "ws-aof" }, fixture: { relay: false } },
+      ];
+      for (const { label, body: request, fixture } of cases) {
+        await withSessionRouteFixture(async ({ url, globalStoreOptions }) => {
+          const response = await postSession(url, request);
+          const body = await response.json();
+          const status = await _aofApplication.mesh.globalMeshQuery.queryGlobalMeshStatus({ ...globalStoreOptions });
+          const plan = planSessionStart({
+            status,
+            workspaceId: request.workspaceId,
+            nodeId: request.nodeId,
+            issuer: "control-a",
+            relayAvailable: fixture.relay !== false,
+          });
+          assert.equal(plan.ok, false, `${label}: the plan refuses`);
+          assert.deepEqual(
+            { status: response.status, code: body.code, error: body.error },
+            { status: plan.status, code: plan.code, error: plan.message },
+            `${label}: the route's refusal is the plan's`,
+          );
+        }, fixture);
+      }
     },
   },
 ];

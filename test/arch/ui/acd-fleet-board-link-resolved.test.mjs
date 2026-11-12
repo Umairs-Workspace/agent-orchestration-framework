@@ -132,9 +132,11 @@ function resolverHelperBody(code) {
 // used for anything else. The ordering half is the whole rule: the board-url route DID
 // hold the row and DID hand it to a collaborator that reads `projectRoot`; what it did not
 // do was ask first, and it launched a real board server on a path this machine never had.
-function reachabilityProbeFault(body, row) {
+// `probeFn` names the existence check: `existsSync` on the face, and `pathExists` in the start core
+// (191/ADR-003 §1), whose port defaults to `existsSync` so a test can pin locality.
+function reachabilityProbeFault(body, row, probeFn = "existsSync") {
   const probe = new RegExp(
-    `!\\s*${row}\\.projectRoot\\s*\\|\\|\\s*!\\s*existsSync\\(\\s*${row}\\.projectRoot\\s*\\)`,
+    `!\\s*${row}\\.projectRoot\\s*\\|\\|\\s*!\\s*${probeFn}\\(\\s*${row}\\.projectRoot\\s*\\)`,
   );
   const found = probe.exec(body);
   if (!found) return `no reachability probe on \`${row}.projectRoot\``;
@@ -352,7 +354,12 @@ export const archTests = [
       // …AND THE FIFTH ROUTE (130/03's `POST /api/mesh/loop-stop`) joins the list on the day it
       // is written, exactly as this clause predicted for the third — through the helper, so
       // the obligation it inherits is the one the helper is checked for below.
-      const RESOLVING_ROUTES = ["/api/mesh/assign", "/api/mesh/board-url", "/api/mesh/loop-stop", "/api/mesh/session"];
+      // …AND THE THIRD ROUTE MOVED ITS RESOLUTION INTO THE START CORE (191/ADR-003 §1). Since 191/02
+      // `POST /api/mesh/session` hands the payload to `planSessionStart` (session-start.mjs), which
+      // binds the row, probes it and refuses 409 `workspace-not-local` for the route and for
+      // `aof mesh session start` alike. So the route is no longer a resolver HERE; the obligation
+      // follows it into the core and is checked there, below, by this same detector.
+      const RESOLVING_ROUTES = ["/api/mesh/assign", "/api/mesh/board-url", "/api/mesh/loop-stop"];
       const resolving = resolvers.map((region) => region.path).sort();
       for (const route of RESOLVING_ROUTES) assert.ok(resolving.includes(route), `${route} resolves a workspaces row — the sweep must find it, or the detector has stopped reaching the subject`);
       for (const route of resolving) assert.ok(RESOLVING_ROUTES.includes(route), `${route} resolves a workspaces row and is not one of the three the fleet admits`);
@@ -360,6 +367,16 @@ export const archTests = [
         resolving.length > 0,
         "the sweep finds the routes that resolve a `workspaces` row out of queryGlobalMeshStatus — if this list is empty, the detector has stopped reaching the subject",
       );
+
+      const sessionRoute = routeRegions(code).find((region) => region.path === "/api/mesh/session");
+      assert.ok(sessionRoute, "the session route is reached by the slicer");
+      assert.match(sessionRoute.body, /\bplanSessionStart\s*\(/, "/api/mesh/session resolves its workspace through planSessionStart (191/ADR-003 §1)");
+      const coreCode = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "session-start.mjs"), "utf8"));
+      const planBody = functionBody(coreCode, "export function planSessionStart(");
+      assert.ok(planBody, "planSessionStart's body can be cut");
+      const planRow = resolvedWorkspaceRow(planBody);
+      assert.equal(planRow, "row", "planSessionStart binds a `(….workspaces ?? []).find(` row");
+      assert.equal(reachabilityProbeFault(planBody, planRow, "pathExists"), null, "…and probes it, refusing 409 workspace-not-local, before anything consumes it");
 
       // The helper is checked ONCE, on its own body, with its own binding — and a route that
       // calls it inherits that verdict. A route that binds inline is checked on its branch.

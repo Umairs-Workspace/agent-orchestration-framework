@@ -5,7 +5,7 @@ slug: sessions-start-and-list-from-the-cli
 title: "Sessions start and list from the CLI — `aof mesh session start` starts Claude with Remote Control and answers its link, through the one start core the fleet route also uses"
 parent: 191
 depends: [01]
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-11-11
 updated: 2026-11-12
@@ -58,10 +58,10 @@ verbs. `mesh:session-start`, with its bounded watch of the relay for the link or
 
 ## Tasks
 
-- [ ] 00 [one start core for the route and the verb](tasks/00_one-start-core-for-the-route-and-the-verb.feature)
-- [ ] 01 [a start resolves the project, the node and the item](tasks/01_a-start-resolves-the-project-the-node-and-the-item.feature)
-- [ ] 02 [a start waits for the link or the refusal, and never lies](tasks/02_a-start-waits-for-the-link-or-the-refusal.feature)
-- [ ] 03 [the list shows what is running](tasks/03_the-list-shows-what-is-running.feature)
+- [x] 00 [one start core for the route and the verb](tasks/00_one-start-core-for-the-route-and-the-verb.feature)
+- [x] 01 [a start resolves the project, the node and the item](tasks/01_a-start-resolves-the-project-the-node-and-the-item.feature)
+- [x] 02 [a start waits for the link or the refusal, and never lies](tasks/02_a-start-waits-for-the-link-or-the-refusal.feature)
+- [x] 03 [the list shows what is running](tasks/03_the-list-shows-what-is-running.feature)
 
 ## Notes
 

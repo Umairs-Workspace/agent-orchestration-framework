@@ -218,6 +218,20 @@ function recordViolations(source) {
   return violations;
 }
 
+// hookSeamSlice(source) → the `aof session start|ping|end` hook seam's factory: the part of
+// commands/session.mjs that writes a session record. Since 191/02 the file also holds the
+// registered `mesh:session-*` verbs, which start a session through the relay and write no record;
+// they begin at `export function createMeshSessionVerbs`. A slice that lost the seam is refused
+// rather than vacuously clean.
+function hookSeamSlice(source) {
+  const start = source.indexOf("export function createMeshSessionCommands(");
+  const end = source.indexOf("export function createMeshSessionVerbs(");
+  assert.ok(start >= 0, "the hook seam's factory is found in commands/session.mjs");
+  const slice = source.slice(start, end > start ? end : source.length);
+  assert.match(slice, /startSession\(/, "…and the slice holds the record write it guards (non-vacuous)");
+  return slice;
+}
+
 // The session WRITE path never reads the assignment table: the derivation is
 // one-directional BY CONSTRUCTION, not by convention.
 function writePathViolations(entries) {
@@ -371,8 +385,13 @@ export const archTests = [
         ...recordViolations(await readSource(SESSION_FILE)),
         ...writePathViolations([
           [SESSION_FILE, await readSource(SESSION_FILE)],
-          [SESSION_CLI_FILE, await readSource(SESSION_CLI_FILE)],
+          [SESSION_CLI_FILE, hookSeamSlice(await readSource(SESSION_CLI_FILE))],
         ]),
+        // The registered session verbs share the file (191/ADR-003) and carry an `itemRef` onto the
+        // SPAWN FRAME, never onto a record. They write no record at all — but the whole file still
+        // never reads the assignment table or imports its surface.
+        ...writePathViolations([[SESSION_CLI_FILE, await readSource(SESSION_CLI_FILE)]])
+          .filter((violation) => !violation.includes("no attribution vocabulary")),
       ];
       assert.deepEqual(violations, [], `the session record has grown an attribution copy:\n${violations.join("\n")}`);
     },

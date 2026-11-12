@@ -2271,6 +2271,86 @@
     }
   },
   {
+    "id": "mesh:session-start",
+    "input": {
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string"
+        },
+        "node": {
+          "type": "string"
+        },
+        "item": {
+          "type": "string"
+        },
+        "waitMs": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "project"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "mesh",
+        "session",
+        "start"
+      ],
+      "spec": {
+        "usage": "aof mesh session start <project> [--node <id>] [--item <ref>] [--wait <ms>] [--workspace <path|id>] [--json]",
+        "flags": {
+          "node": {
+            "type": "string",
+            "description": "the node to start it on (default: this control)"
+          },
+          "item": {
+            "type": "string",
+            "description": "a work item in the project to start it on"
+          },
+          "wait": {
+            "type": "string",
+            "description": "how long to watch for the session's link, in ms (default 0)"
+          },
+          "workspace": {
+            "type": "string",
+            "description": "target workspace: a path, or a registered workspace id"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "mesh:session-list",
+    "input": {
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "mesh",
+        "session",
+        "list"
+      ],
+      "spec": {
+        "usage": "aof mesh session list [<project>] [--workspace <path|id>] [--json]",
+        "flags": {
+          "workspace": {
+            "type": "string",
+            "description": "target workspace: a path, or a registered workspace id"
+          }
+        }
+      }
+    }
+  },
+  {
     "id": "mesh:assign",
     "input": {
       "type": "object",
