@@ -1,4 +1,5 @@
 import { discordInviteUrl, isDiscordBotToken, isDiscordSnowflake, renderDiscord, renderDiscordTest, sendDiscord } from "./discord.mjs";
+import { choiceLabels } from "./discord-buttons.mjs";
 import { trimRun } from "@aof/foundation/text";
 
 // Core supplies configured application services; construction performs no I/O.
@@ -26,7 +27,9 @@ export function createNotifier({ reportDegrade, resolveWorkspaceId, recordAskMes
 // THE ASK INDEX (131/10, ADR-008 §4). A delivered `session-needs-input` or
 // `session-parked-unanswered` is recorded by its posted message id (`./ask-messages.mjs`), so a
 // Discord reply to it can find its ask. The record is best-effort: a write that fails degrades
-// `notify-ask-index` and never turns a delivery into a failure.
+// `notify-ask-index` and never turns a delivery into a failure. 191/07 (ADR-007 §3): a message posted
+// WITH buttons is indexed too — a halt or a death adds its `scope` and `nodeId`, and an ask adds the
+// `choices` its buttons carry — so a tap finds its context by message id, never from the client.
 
 // The seven events, in ADR-005 §3's order. A site passes one of these as a literal.
 const EVENTS = Object.freeze([
@@ -45,6 +48,8 @@ const DEFAULT_TOKEN_ENV = "AOF_DISCORD_BOT_TOKEN";
 const NOTIFY_TIMEOUT_MS = 5000;
 // The events whose posted message is indexed, so a reply to it answers the ask (ADR-008 §4).
 const ASK_EVENTS = Object.freeze(["session-needs-input", "session-parked-unanswered"]);
+// The events whose message is indexed only when it was posted with buttons (191/07, ADR-007 §3).
+const HALT_EVENTS = Object.freeze(["loop-halted", "loop-died"]);
 
 // The channel registry: per type, one renderer, one sender, the credential shape it `accepts`, the
 // channel-id shape it takes (`validChannelId`), the setup URL `init` prints (`invite`), the message
@@ -100,9 +105,9 @@ function resolveNotifyConfig(config) {
 const ANSWER_PATH = (ref) => `aof work answer ${ref} "…"`;
 const RESUME_PATH = (ref) => `aof work loop ${ref} --resume`;
 const EVENT_SHAPES = Object.freeze({
-  "session-needs-input": { phase: true, elapsedMs: true, question: true, answerPath: ANSWER_PATH },
+  "session-needs-input": { phase: true, elapsedMs: true, question: true, choices: true, answerPath: ANSWER_PATH },
   "session-answered": { phase: true, elapsedMs: true, outcome: ["by", "answer"] },
-  "session-parked-unanswered": { phase: true, elapsedMs: true, question: true, outcome: ["askedAt", "parkedAt"], answerPath: ANSWER_PATH },
+  "session-parked-unanswered": { phase: true, elapsedMs: true, question: true, choices: true, outcome: ["askedAt", "parkedAt"], answerPath: ANSWER_PATH },
   "loop-halted": { elapsedMs: true, stop: ["id", "producer", "remedy", "ref"], answerPath: RESUME_PATH },
   "loop-died": { elapsedMs: true, outcome: ["cause"], answerPath: RESUME_PATH },
   "loop-relaunched": { elapsedMs: true, outcome: ["cause"] },
@@ -124,10 +129,11 @@ function notifyError(message, code) {
   return error;
 }
 
-// buildNotifyEnvelope(event, fields, { config, now }) → the ONE builder of the eleven-key envelope,
+// buildNotifyEnvelope(event, fields, { config, now }) → the ONE builder of the twelve-key envelope,
 // frozen through: `{ event, ref, at, node, phase, elapsedMs, question, stop, outcome, answerPath,
-// link }`. `node` is `fields.node` when given (a worker's ask posted by the control, 131/ADR-010 §4),
-// else `config.mesh.nodeId ?? null`; `link` is the configured template with every
+// link, choices }`. `choices` (191/07, ADR-007 §2) is an ask's fixed answers as labels — `[]` when it
+// has none — and `null` on every other event. `node` is `fields.node` when given (a worker's ask
+// posted by the control, 131/ADR-010 §4), else `config.mesh.nodeId ?? null`; `link` is the configured template with every
 // `{ref}` filled (read through `resolveNotifyConfig`, so a channel-less block has no link). An
 // event that is not one of the seven is a programmer error, refused `notify-unknown-event`.
 function buildNotifyEnvelope(event, fields = {}, { config = {}, now = () => new Date() } = {}) {
@@ -151,6 +157,7 @@ function buildNotifyEnvelope(event, fields = {}, { config = {}, now = () => new 
     outcome: shape.outcome ? pick(given.outcome, shape.outcome) : null,
     answerPath: shape.answerPath ? shape.answerPath(ref) : null,
     link: resolved?.link == null ? null : resolved.link.replaceAll("{ref}", String(ref)),
+    choices: shape.choices ? Object.freeze(choiceLabels(given.choices)) : null,
   });
 }
 
@@ -177,20 +184,27 @@ async function resolveBotToken(env = process.env) {
   return nonBlank(token) && CHANNELS.discord.accepts(token) ? token : null;
 }
 
-// Records a delivered ask message in the index, and degrades rather than throws when it cannot.
-async function indexAskMessage(workspace, envelope, channel, messageId) {
-  if (!ASK_EVENTS.includes(envelope.event) || messageId == null) return;
+// Records a delivered message in the index, and degrades rather than throws when it cannot: every
+// ask, and a halt or a death only when it was posted with buttons (`body.components`). A halt's
+// record names the halted item as its `ref` and the loop's scope as its `scope`; an ask posted with
+// buttons adds the `choices` they carry, in order.
+async function indexMessage(workspace, envelope, channel, messageId, body) {
+  const ask = ASK_EVENTS.includes(envelope.event);
+  const buttons = Array.isArray(body?.components) && body.components.length > 0;
+  if (messageId == null || !(ask || (buttons && HALT_EVENTS.includes(envelope.event)))) return;
   try {
     await recordAskMessage({
       messageId,
       channelId: channel.channelId,
       event: envelope.event,
-      ref: envelope.ref,
+      ref: ask ? envelope.ref : envelope.stop?.ref ?? null,
       workspaceId: resolveWorkspaceId(workspace),
       projectRoot: typeof workspace?.projectRoot === "string" ? workspace.projectRoot : null,
+      ...(ask ? {} : { scope: envelope.ref ?? null, nodeId: envelope.node ?? null }),
+      ...(ask && buttons ? { choices: [...(envelope.choices ?? [])] } : {}),
     });
   } catch (error) {
-    degrade("notify-ask-index", `notify channel "${channel.name}" posted the ask for ${String(envelope.ref)}, but its message could not be indexed for a reply (${error?.code === "notify-ask-index" ? error.message : error instanceof Error ? error.name : "error"})`);
+    degrade("notify-ask-index", `notify channel "${channel.name}" posted the ${ask ? "ask" : "notice"} for ${String(envelope.ref)}, but its message could not be indexed for a ${ask ? "reply" : "tap"} (${error?.code === "notify-ask-index" ? error.message : error instanceof Error ? error.name : "error"})`);
   }
 }
 
@@ -247,7 +261,7 @@ async function deliver(workspace, channel, envelope, { env, fetch, timeoutMs }) 
   const result = await entry.send(token, channel.channelId, body, { fetch, timeoutMs, onError: (name) => { errorName = name; } });
   if (result.ok) {
     const messageId = result.messageId ?? null;
-    await indexAskMessage(workspace, envelope, channel, messageId);
+    await indexMessage(workspace, envelope, channel, messageId, body);
     return { channel: channel.name, channelId: channel.channelId, messageId };
   }
   if (result.reason === "rate-limited") {

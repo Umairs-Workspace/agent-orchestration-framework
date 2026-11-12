@@ -37,6 +37,14 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // `discord-command-not-allowed` and nothing is invoked; `decideSupervisedDeclarations` yields a
 // done-latest supervised declaration's row only when it is in `resumeRequested`.
 //
+// FF-19107, structural then fixture (191/07, ADR-007's invariant) — a leg in this family's control,
+// beside FF-13113. `packages/messaging/src/discord-buttons.mjs` imports no `child_process` and every
+// `invoke(` in it names `work:answer`, `work:loop` or `mesh:session-start`; only that module spells a
+// `custom_id` prefix ("aof:answer:", "aof:resume", "aof:session") in `packages/messaging/src/`; and a
+// tap whose `custom_id` carries extra segments naming another project dispatches into the index
+// record's workspace, never the id's. FF-13112's one answer call becomes two: the reply's and the
+// button's, each `via: "discord"`.
+//
 // NON-VACUOUS (QA ruling 1): the sweep must find `packages/core/src/discord/gateway.mjs`, `packages/core/src/discord/replies.mjs`,
 // `packages/core/src/discord/commands.mjs`, one `invoke("work:answer"` call and at least one command dispatch. Every
 // sweep reports what it read.
@@ -76,6 +84,11 @@ const ALLOWED_VERBS = Object.freeze(["work:list", "work:loop"]);
 const STOP_HOME = "packages/work-loop/src/stop-request.mjs";
 const STOP_CORE = "packages/work-loop/src/stop.mjs";
 const RESUME_SEGMENT = "loop-resumes";
+// FF-19107 (191/07, ADR-007).
+const BUTTONS_MODULE = "packages/messaging/src/discord-buttons.mjs";
+const BUTTON_VERBS = Object.freeze(["work:answer", "work:loop", "mesh:session-start"]);
+const BUTTON_ID_PREFIXES = Object.freeze(["aof:answer:", "aof:resume", "aof:session"]);
+const MESSAGING_SRC = "packages/messaging/src/";
 
 function assertRead(what, count, floor, unit = "file(s)") {
   assert.ok(count >= floor, `NOTHING WAS READ: ${what} walked ${count} ${unit}, below its floor of ${floor} — a rename, a moved directory or a truncated read must fail here rather than pass vacuously over an empty sweep`);
@@ -163,6 +176,14 @@ export function commandDispatches(code) {
     ids.push(/^\s*["']([^"']+)["']\s*$/u.exec(first)?.[1] ?? "?");
   }
   return ids;
+}
+
+// buttonIdSpellers(units) → every `packages/messaging/src/` module whose comment-stripped code spells
+// a `custom_id` prefix as a string literal, by file. PURE, so the red probe runs it over a patched unit.
+export function buttonIdSpellers(units) {
+  return units
+    .filter(({ rel, code }) => rel.startsWith(MESSAGING_SRC) && BUTTON_ID_PREFIXES.some((prefix) => code.includes(`"${prefix}`) || code.includes(`'${prefix}`) || code.includes(`\`${prefix}`)))
+    .map(({ rel }) => rel);
 }
 
 // FF-13113's fixture: a command's context over fakes, every request and invoke in one sequence, and
@@ -279,7 +300,8 @@ export const archTests = [
       assert.deepEqual(writes, [], `packages/core/src/discord/** imports no write export of ${ASK_REQUEST} and nothing from ${RUN_STORE} — found ${writes.join(", ")}. An answer from Discord enters only through work:answer (ADR-008's invariant)`);
       const calls = answerCalls(units);
       assertRead(`the invoke("work:answer" calls in ${FAMILY}`, calls.length, 1, "call(s)");
-      assert.deepEqual(calls, [{ rel: REPLIES, via: "discord" }], `packages/core/src/discord/**'s one answer call is invoke("work:answer", …) in ${REPLIES} carrying via: "discord" — found ${JSON.stringify(calls)}`);
+      // 191/07: a button's answer is the second door, through the same verb and via (ADR-007 §5).
+      assert.deepEqual([...calls].sort((x, y) => x.rel.localeCompare(y.rel)), [{ rel: BUTTONS_MODULE, via: "discord" }, { rel: REPLIES, via: "discord" }], `the family's answer calls are invoke("work:answer", …) in ${BUTTONS_MODULE} and ${REPLIES}, each carrying via: "discord" — found ${JSON.stringify(calls)}`);
 
       const spellers = units.filter(({ code }) => code.includes('"discord-asks"')).map(({ rel }) => rel);
       assert.deepEqual(spellers, [INDEX], `the discord-asks segment is spelled only in ${INDEX} — found ${spellers.join(", ")}`);
@@ -392,6 +414,72 @@ export const archTests = [
       }).rows.length;
       assert.equal(decide(new Set(["lr-1"])), 1, "a done-latest supervised declaration in resumeRequested yields its row");
       assert.equal(decide(null), 0, "and without it yields none");
+    },
+  },
+  {
+    name: "arch/191 FF-19107 (acd-loop-ask-answered-from-discord): structural — discord-buttons.mjs reaches only work:answer, work:loop and mesh:session-start and imports no child_process, and only it spells a custom_id",
+    run: async () => {
+      const units = await srcUnits();
+      assertRead("the src/** sweep", units.length, 150);
+      const buttons = units.find(({ rel }) => rel === BUTTONS_MODULE);
+      assert.ok(buttons != null, `NOT FOUND: ${BUTTONS_MODULE} — the module FF-19107 governs has moved`);
+      const dispatched = commandDispatches(buttons.code);
+      assertRead(`the invoke( calls in ${BUTTONS_MODULE}`, dispatched.length, 3, "call(s)");
+      const strays = dispatched.filter((id) => !BUTTON_VERBS.includes(id));
+      assert.deepEqual(strays, [], `every invoke( in ${BUTTONS_MODULE} names ${BUTTON_VERBS.join(", ")} — it also names ${strays.join(", ")}. A button reaches what a reply or a command reaches (ADR-007's invariant)`);
+      assert.deepEqual([...new Set(dispatched)].sort(), [...BUTTON_VERBS].sort(), "and each of the three is reached");
+      assert.deepEqual(childProcessImporters([buttons]), [], `${BUTTONS_MODULE} imports no child_process`);
+
+      const spellers = buttonIdSpellers(units);
+      assert.deepEqual(spellers, [BUTTONS_MODULE], `a custom_id prefix (${BUTTON_ID_PREFIXES.join(", ")}) is spelled only in ${BUTTONS_MODULE} — spelled in ${spellers.join(", ")}. Build an id with buttonId(), read one with parseButtonId() (ADR-007 §4)`);
+      for (const prefix of BUTTON_ID_PREFIXES) assert.ok(buttons.code.includes(`"${prefix}"`), `NON-VACUOUS: ${BUTTONS_MODULE} spells "${prefix}"`);
+
+      // The red probes run the SHIPPED detectors over patched units.
+      const spawning = units.map((unit) => unit.rel === BUTTONS_MODULE ? { ...unit, code: `import { spawn } from "node:child_process";\n${unit.code}` } : unit);
+      assert.deepEqual(childProcessImporters(spawning).filter((rel) => rel === BUTTONS_MODULE), [BUTTONS_MODULE], "red probe: a child_process import in the buttons module is seen");
+      assert.deepEqual(commandDispatches(`${buttons.code}\nawait context.invoke("work:drive", {}, {});`).filter((id) => !BUTTON_VERBS.includes(id)), ["work:drive"], "red probe: a fourth verb is seen, by name");
+      const respelled = units.map((unit) => unit.rel === "packages/messaging/src/discord.mjs" ? { ...unit, code: `${unit.code}\nconst id = "aof:resume";\n` } : unit);
+      assert.deepEqual(buttonIdSpellers(respelled).sort(), [BUTTONS_MODULE, "packages/messaging/src/discord.mjs"].sort(), "red probe: a second spelling is seen, by file");
+    },
+  },
+  {
+    name: "arch/191 FF-19107 (acd-loop-ask-answered-from-discord): fixture — a custom_id carrying extra segments naming another project dispatches into the index record's workspace, never the id's",
+    run: async () => {
+      const handleButton = _aofApplication.messaging.discord.buttons.handleButton;
+      const recordAskMessage = _aofApplication.messaging.askMessages.recordAskMessage;
+      const os = await import("node:os");
+      const { mkdtemp, rm } = await import("node:fs/promises");
+      const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-ff-19107-"));
+      const previous = process.env.AOF_GLOBAL_HOME;
+      process.env.AOF_GLOBAL_HOME = path.join(tmp, "home");
+      try {
+        const channel = "111111111111111111";
+        const home = { projectRoot: path.join(tmp, "alpha"), config: { work: { notify: { channels: { discord: { type: "discord", channelId: channel, allow: ["222222222222222222"] } } } } } };
+        const other = { projectRoot: path.join(tmp, "beta"), config: home.config };
+        await recordAskMessage({ messageId: "900100000000000001", channelId: channel, event: "loop-halted", ref: "191/02", workspaceId: "ws-a", projectRoot: home.projectRoot, scope: "191", nodeId: "node-a" });
+        const dispatched = [];
+        const context = {
+          request: async () => ({ ok: true, status: 200, json: null }),
+          invoke: async (id, input, ctx) => { dispatched.push({ id, input, root: ctx?.workspace?.projectRoot }); return { ok: true, nodeId: "node-a", name: "alpha · s1", link: null }; },
+          loadWorkspace: async (root) => (root === home.projectRoot ? home : root === other.projectRoot ? other : { projectRoot: root, config: {} }),
+          answerContext: {},
+        };
+        const press = (customId) => handleButton({
+          id: "600000000000000001", token: "t", application_id: "800000000000000000", type: 3, channel_id: channel,
+          member: { user: { id: "222222222222222222", username: "umami" } },
+          message: { id: "900100000000000001", channel_id: channel }, data: { custom_id: customId },
+        }, context);
+        await press(`aof:resume:${other.projectRoot}:ws-b:999`);
+        await press("aof:session:ws-b:192/00:node-b");
+        assert.deepEqual(dispatched.map(({ id, input, root }) => ({ id, input, root })), [
+          { id: "work:loop", input: { scope: "191", handOff: true }, root: home.projectRoot },
+          { id: "mesh:session-start", input: { project: "ws-a", item: "191/02", node: "node-a", waitMs: 45000 }, root: home.projectRoot },
+        ], "the scope, item, node, project and workspace are the index record's — nothing from the id's extra segments");
+      } finally {
+        if (previous === undefined) delete process.env.AOF_GLOBAL_HOME;
+        else process.env.AOF_GLOBAL_HOME = previous;
+        await rm(tmp, { recursive: true, force: true });
+      }
     },
   },
 ];

@@ -176,7 +176,7 @@ export const notifyChannelsTests = [
     async run() {
       const src = SOURCE_DIRECTORY_BUDGETS.find((entry) => entry.directory === "packages/messaging/src");
       assert.ok(src, "the messaging owner has an exact budget");
-      assert.equal(src.ceiling, 11);
+      assert.equal(src.ceiling, 12, "191/07: discord-buttons.mjs is the twelfth");
       assert.equal(src.allowance, 0);
       for (const member of ["form.mjs", "secret.mjs", "ask-messages.mjs"]) assert.ok(src.why.includes(member), `its why names ${member}`);
       const members = await readdir(path.join(repoRoot, src.directory));
@@ -359,8 +359,8 @@ export const notifyChannelsTests = [
     run() {
       const config = { mesh: { nodeId: "node-2976" }, work: { notify: { channels: { ops: { type: "discord" } }, link: "https://example.test/{ref}" } } };
       const e = buildNotifyEnvelope("session-needs-input", { ref: "127/02", phase: "build", elapsedMs: 720000, question: "Move the residue?" }, { config, now: NOW });
-      assert.deepEqual(e, { event: "session-needs-input", ref: "127/02", at: "2026-09-23T17:00:00.000Z", node: "node-2976", phase: "build", elapsedMs: 720000, question: "Move the residue?", stop: null, outcome: null, answerPath: 'aof work answer 127/02 "…"', link: "https://example.test/127/02" });
-      assert.deepEqual(Object.keys(e), ["event", "ref", "at", "node", "phase", "elapsedMs", "question", "stop", "outcome", "answerPath", "link"]);
+      assert.deepEqual(e, { event: "session-needs-input", ref: "127/02", at: "2026-09-23T17:00:00.000Z", node: "node-2976", phase: "build", elapsedMs: 720000, question: "Move the residue?", stop: null, outcome: null, answerPath: 'aof work answer 127/02 "…"', link: "https://example.test/127/02", choices: [] });
+      assert.deepEqual(Object.keys(e), ["event", "ref", "at", "node", "phase", "elapsedMs", "question", "stop", "outcome", "answerPath", "link", "choices"], "191/07 (ADR-007 §2): an ask's envelope gains its choices, the twelfth key");
       assert.deepEqual([...EVENTS], ["session-needs-input", "session-answered", "session-parked-unanswered", "loop-halted", "loop-died", "loop-relaunched", "milestone-accepted"]);
       assert.ok(Object.isFrozen(EVENTS));
 

@@ -420,7 +420,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const discordCommands = assembleDiscordCommands({ degradeServices: degrade, notifyAskMessagesServices: notifyAskMessages, loopStopRequestServices: loopStopRequest, provideLoopStop: async () => { lifetime.assertReady(); return loopStop; } });
   const discordGateway = assembleDiscordGateway({ degradeServices: degrade });
   const discordReplies = assembleDiscordReplies({ loopAskRequestServices: loopAskRequest, notifyAskMessagesServices: notifyAskMessages });
-  const discordBot = assembleDiscordBot({ degradeServices: degrade, discordCommandsServices: discordCommands, discordGatewayServices: discordGateway, discordRepliesServices: discordReplies, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; }, provideWork: async () => { lifetime.assertReady(); return work; }, provideMeshPresence: async () => { lifetime.assertReady(); return meshPresence; }, provideWorkAcceptorObservations: async () => { lifetime.assertReady(); return workAcceptorObservations; } });
+  const discordBot = assembleDiscordBot({ degradeServices: degrade, discordCommandsServices: discordCommands, discordGatewayServices: discordGateway, discordRepliesServices: discordReplies, loopAskRequestServices: loopAskRequest, notifyAskMessagesServices: notifyAskMessages, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; }, provideWork: async () => { lifetime.assertReady(); return work; }, provideMeshPresence: async () => { lifetime.assertReady(); return meshPresence; }, provideWorkAcceptorObservations: async () => { lifetime.assertReady(); return workAcceptorObservations; } });
   const memoryGraphifyBackend = assembleMemoryGraphifyBackend({ commandCoreServices: commandPort, memoryLocalIndexingServices: memoryLocalIndexing });
   const memoryLocalBackend = assembleMemoryLocalBackend({ memoryLocalIndexingServices: memoryLocalIndexing });
   const meshDeclarations = assembleMeshDeclarations({ meshPresenceServices: meshPresence, runStoreServices: runStore, commandsRunRetryServices: commandsRunRetry, workServices: work, loopStopRequestServices: loopStopRequest, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
@@ -909,6 +909,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
         commands: discordCommands,
         gateway: discordGateway,
         replies: discordReplies,
+        buttons: Object.freeze({ handleButton: discordBot.handleButton }),
         bot: discordBot,
       }),
     }),

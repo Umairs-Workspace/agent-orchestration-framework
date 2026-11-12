@@ -18,11 +18,21 @@ export function createAskMessages({ messagingStoreDir }) {
 // notifier's injected `env`. A message id that is not a snowflake is never used as a file name, so an
 // id arriving over the gateway can never leave `discord-asks/`. Records older than 30 days are pruned
 // at each write (DEFAULT DECISION: a parked ask can be answered days later).
+//
+// 191/07 (ADR-007 §3): a message posted WITH buttons is recorded too, so a tap finds its context by
+// message id. A halt or a death adds `scope` and `nodeId`; an ask adds the `choices` its buttons
+// carry. The keys are ADDITIVE: written only when given, and never required on read, so a record
+// written before them still reads. A reply answers only an ask's record (`readAskMessage`); a tap
+// reads any record (`readIndexedMessage`).
 
 const INDEX_SEGMENT = "discord-asks";
 const SNOWFLAKE_RE = /^[0-9]{17,20}$/u;
 const RECORD_FILE_RE = /^[0-9]{17,20}\.json$/u;
 const ASK_MESSAGE_KEYS = Object.freeze(["messageId", "channelId", "event", "ref", "workspaceId", "projectRoot", "postedAt"]);
+// The additive keys (191/07), written after the seven only when the fields carry them.
+const BUTTON_MESSAGE_KEYS = Object.freeze(["scope", "nodeId", "choices"]);
+// The events a reply answers: the two asks (ADR-008 §4).
+const ASK_EVENTS = Object.freeze(["session-needs-input", "session-parked-unanswered"]);
 // DEFAULT DECISION (ADR-008 §4): how long an ask message stays answerable by reply.
 const ASK_MESSAGE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -70,13 +80,15 @@ async function recordAskMessage(fields, { now = () => new Date() } = {}) {
   await prune(dir, at.getTime());
   const record = {};
   for (const key of ASK_MESSAGE_KEYS) record[key] = key === "postedAt" ? at.toISOString() : fields[key] ?? null;
+  for (const key of BUTTON_MESSAGE_KEYS) if (fields[key] !== undefined) record[key] = fields[key];
   await writeText(path.join(dir, `${record.messageId}.json`), `${JSON.stringify(record, null, 2)}\n`);
   return record;
 }
 
-// readAskMessage(messageId) → the record, or `null` for an id that is not a snowflake (no file is
-// read), an absent file, and anything that is not a record of the seven keys. Never throws.
-async function readAskMessage(messageId) {
+// readIndexedMessage(messageId) → the record, whatever its event, or `null` for an id that is not a
+// snowflake (no file is read), an absent file, and anything that is not a record of the seven keys.
+// The one read a tap makes (191/07). Never throws.
+async function readIndexedMessage(messageId) {
   if (!isSnowflake(messageId)) return null;
   let parsed;
   try {
@@ -87,6 +99,13 @@ async function readAskMessage(messageId) {
   if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) return null;
   if (parsed.messageId !== messageId || !ASK_MESSAGE_KEYS.every((key) => Object.hasOwn(parsed, key))) return null;
   return parsed;
+}
+
+// readAskMessage(messageId) → the record when it is an ASK's, else `null` — the read a reply makes,
+// so a reply to a halt's message answers nothing. Never throws.
+async function readAskMessage(messageId) {
+  const record = await readIndexedMessage(messageId);
+  return record != null && ASK_EVENTS.includes(record.event) ? record : null;
 }
 
 // findAskMessage({ workspaceId, ref }) → the latest-posted record for that ask, or `null` — the one
@@ -109,5 +128,5 @@ async function findAskMessage({ workspaceId, ref } = {}) {
   return latest;
 }
 
-return { ASK_MESSAGE_KEYS, ASK_MESSAGE_TTL_MS, askMessagesDir, recordAskMessage, readAskMessage, findAskMessage };
+return { ASK_MESSAGE_KEYS, ASK_MESSAGE_TTL_MS, askMessagesDir, recordAskMessage, readIndexedMessage, readAskMessage, findAskMessage };
 }

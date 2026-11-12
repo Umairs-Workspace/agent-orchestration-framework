@@ -193,11 +193,23 @@ async function readAskQuestion({ cwd, env = process.env, sessionId, sinceOffset 
 // to `<item>/runs/.asks-pending.ndjson`; this reads it back.
 const PENDING_ASKS_FILE = ".asks-pending.ndjson";
 
-// readPendingAsk({ itemDir, sessionId, since, cwd, env }) → null | { question, toolUseId, at } —
+// askChoicesFromInput(input) → string[] — PURE (191/07, ADR-007 §2). A human-input call's fixed
+// answers as data: the option labels when the call holds EXACTLY ONE question with options, else
+// `[]` — codex's rule (`nativeQuestion` in `codex-protocol-profile.mjs`). Never throws.
+function askChoicesFromInput(input) {
+  const questions = input?.questions;
+  if (!Array.isArray(questions) || questions.length !== 1) return [];
+  const options = questions[0]?.options;
+  if (!Array.isArray(options)) return [];
+  return options.filter((option) => typeof option?.label === "string").map((option) => option.label);
+}
+
+// readPendingAsk({ itemDir, sessionId, since, cwd, env }) → null | { question, toolUseId, at, choices } —
 // the session's LAST recorded human-input call when it was recorded at or after `since` (an ISO
 // instant; a resumed session never answers a call it lost, so an older record is history) and the
 // transcript holds no result for it. The question is composed as `askQuestionFromTurn` composes a
-// pending tool's. NEVER throws: an absent file, record or session is `null`.
+// pending tool's, and `choices` as `askChoicesFromInput` reads them. NEVER throws: an absent file,
+// record or session is `null`.
 async function readPendingAsk({ itemDir, sessionId, since = null, cwd, env = process.env } = {}) {
   try {
     if (typeof itemDir !== "string" || itemDir.length === 0 || typeof sessionId !== "string" || sessionId.length === 0) return null;
@@ -214,7 +226,7 @@ async function readPendingAsk({ itemDir, sessionId, since = null, cwd, env = pro
     const transcript = await fsp.readFile(path.join(claudeProjectsDir({ cwd, env }), `${sessionId}.jsonl`), "utf8").catch(() => "");
     if (transcript.includes(`"tool_use_id":"${last.toolUseId}"`)) return null;
     const question = askQuestionFromTurn({ stopReason: "tool_use", answered: false, humanInputTool: { name: last.name, input: last.input } });
-    return question == null ? null : { question, toolUseId: last.toolUseId, at: last.at };
+    return question == null ? null : { question, toolUseId: last.toolUseId, at: last.at, choices: askChoicesFromInput(last.input) };
   } catch (error) {
     reportDegrade("ask-question-unreadable", error, { sessionId: sessionId ?? null });
     return null;

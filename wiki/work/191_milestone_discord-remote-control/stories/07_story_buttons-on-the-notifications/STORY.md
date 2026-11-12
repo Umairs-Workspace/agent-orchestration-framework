@@ -5,7 +5,7 @@ slug: buttons-on-the-notifications
 title: "Buttons on the notifications — a halt carries Resume and Open a session here, a fixed-choice question carries one button per choice, and a tap is checked and dispatched like a reply"
 parent: 191
 depends: [02]
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-11-11
 updated: 2026-11-12
@@ -29,7 +29,6 @@ files:
   - packages/messaging/src/notify.mjs
   - packages/messaging/src/ask-messages.mjs
   - packages/messaging/package.json
-  - packages/core/src/application/bindings/discord/buttons.mjs
   - packages/core/src/application/bindings/discord/bot.mjs
   - packages/core/src/application/assemble.mjs
   - packages/work/src/observe.mjs
@@ -41,6 +40,7 @@ files:
   - test/loop/loop-command-stops.test.mjs
   - test/arch/loop/acd-loop-ask-answered-from-discord.test.mjs
   - test/arch/testing/acd-source-directory-budget.test.mjs
+  - test/arch/command/acd-cli-entry-executes.test.mjs
   - wiki/architecture/discord-notifications.md
 ---
 # 191/07 · Buttons on the notifications
@@ -61,10 +61,10 @@ FF-13113.
 
 ## Tasks
 
-- [ ] 00 [a Claude question keeps its choices](tasks/00_a-claude-question-keeps-its-choices.feature)
-- [ ] 01 [the right notifications carry buttons](tasks/01_the-right-notifications-carry-buttons.feature)
-- [ ] 02 [a tap is checked and dispatched like a reply](tasks/02_a-tap-is-checked-and-dispatched-like-a-reply.feature)
-- [ ] 03 [FF-19107 holds a button to what a reply reaches](tasks/03_ff-19107-holds-a-button-to-what-a-reply-reaches.feature)
+- [x] 00 [a Claude question keeps its choices](tasks/00_a-claude-question-keeps-its-choices.feature)
+- [x] 01 [the right notifications carry buttons](tasks/01_the-right-notifications-carry-buttons.feature)
+- [x] 02 [a tap is checked and dispatched like a reply](tasks/02_a-tap-is-checked-and-dispatched-like-a-reply.feature)
+- [x] 03 [FF-19107 holds a button to what a reply reaches](tasks/03_ff-19107-holds-a-button-to-what-a-reply-reaches.feature)
 - [ ] 04 [the guide shows the buttons](tasks/04_the-guide-shows-the-buttons.feature)
 
 ## Notes

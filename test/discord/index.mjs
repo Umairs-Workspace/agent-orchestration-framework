@@ -8,13 +8,18 @@
 //
 // milestone 131 / story 11 — the slash commands (ADR-009): the table and its registration, the
 // deferral and the allowlist, the two views, `/loop stop` and `/loop resume` (tasks 00 to 04).
+//
+// milestone 191 / story 07 — the buttons on a notification (ADR-007): which messages carry them,
+// the index records a tap reads, and the tap itself (tasks 01 and 02).
 import { discordBotTests } from "./discord-bot.test.mjs";
+import { discordButtonsTests } from "./discord-buttons.test.mjs";
 import { discordCommandsTests } from "./discord-commands.test.mjs";
 import { discordGatewayTests } from "./discord-gateway.test.mjs";
 import { discordRepliesTests } from "./discord-replies.test.mjs";
 
 export const tests = [
   ...discordBotTests,
+  ...discordButtonsTests,
   ...discordCommandsTests,
   ...discordGatewayTests,
   ...discordRepliesTests,

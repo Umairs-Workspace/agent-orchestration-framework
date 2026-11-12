@@ -1455,6 +1455,42 @@ function composerTests() {
       },
     },
     {
+      // 191/07 task00 (ADR-007 §2): the pending call's labels ride the ask file and the envelope
+      // handed to notify — seen here as one button per choice on a channel that takes taps.
+      name: "191/07 task00 — the ask record carries the choices, and the session-needs-input envelope handed to notify carries the same",
+      async run() {
+        const answeredBash = [
+          { type: "assistant", message: { stop_reason: "tool_use", content: [{ type: "tool_use", id: "toolu_0", name: "Bash", input: { command: "aof work doctor" } }] } },
+          { type: "user", message: { content: [{ type: "tool_result", tool_use_id: "toolu_0", content: "ok" }] } },
+        ];
+        const notifyBlock = { channels: { ops: { type: "discord", channelId: "123456789012345678", tokenEnv: "HOOK", allow: ["222222222222222222"] } } };
+        await withComposer(async ({ item, record, posts, deps, phaseRun, site, redriveDone }) => {
+          const call = { runId: record.runId, sessionId: "S1", toolUseId: "toolu_1", name: "AskUserQuestion", input: { questions: [{ question: "Ship it?", options: [{ label: "Yes, ship it" }, { label: "No, hold" }] }] }, at: "2026-09-23T17:11:00.000Z" };
+          await mkdir(path.join(item.dir, "runs"), { recursive: true });
+          await writeFile(path.join(item.dir, "runs", ".asks-pending.ndjson"), `${JSON.stringify(call)}\n`, "utf8");
+          let file = null;
+          const wait = fakeWait({ expiredFrom: 1, onNext: async () => { file ??= await fileOf(record.runId); } });
+          await awaitAnswer(phaseRun, site(redriveDone()), deps({ askWait: wait }));
+          assert.deepEqual(file.choices, ["Yes, ship it", "No, hold"], "the ask file's choices");
+          assert.deepEqual(posts[0].components?.[0]?.components?.map((part) => part.label), ["Yes, ship it", "No, hold"], "the session-needs-input envelope carried the same choices");
+          assert.deepEqual(posts[1].components?.[0]?.components?.map((part) => part.label), ["Yes, ship it", "No, hold"], "and so did the parked one");
+        }, { transcript: answeredBash, notifyBlock });
+      },
+    },
+    {
+      name: "191/07 task00 — an ask with no pending call has no choices",
+      async run() {
+        const notifyBlock = { channels: { ops: { type: "discord", channelId: "123456789012345678", tokenEnv: "HOOK", allow: ["222222222222222222"] } } };
+        await withComposer(async ({ record, posts, deps, phaseRun, site, redriveDone }) => {
+          let file = null;
+          const wait = fakeWait({ expiredFrom: 1, onNext: async () => { file ??= await fileOf(record.runId); } });
+          await awaitAnswer(phaseRun, site(redriveDone()), deps({ askWait: wait }));
+          assert.ok(file.choices === undefined || (Array.isArray(file.choices) && file.choices.length === 0), `the ask file's choices are absent or [] — ${JSON.stringify(file.choices)}`);
+          assert.ok(!("components" in posts[0]), "a question in words carries no buttons");
+        }, { notifyBlock });
+      },
+    },
+    {
       name: "131/03 task00 — the bound parks the run and says so once; a stop parks and tells nobody; the record stays running",
       async run() {
         await withComposer(async ({ item, record, posts, deps, phaseRun, site, redriveDone }) => {
@@ -2496,9 +2532,27 @@ function pendingAskHookTests() {
       run: () => withTree(async ({ itemDir, env, cwd, record, pending }) => {
         await pending([record({ toolUseId: "toolu_old", at: "2026-10-03T21:40:00.000Z", input: { questions: [{ question: "an older one" }] } }), record()]);
         const read = await readPendingAsk({ itemDir, sessionId: "S1", since: "2026-10-03T21:44:47.000Z", cwd, env });
-        assert.deepEqual(read, { question: `${QUESTION}\n- A\n- B`, toolUseId: "toolu_1", at: "2026-10-03T21:45:50.000Z" });
+        assert.deepEqual(read, { question: `${QUESTION}\n- A\n- B`, toolUseId: "toolu_1", at: "2026-10-03T21:45:50.000Z", choices: ["A", "B"] });
         assert.equal(await readPendingAsk({ itemDir, sessionId: "S2", cwd, env }), null, "another session's record is not this session's question");
         assert.equal(await readPendingAsk({ itemDir: path.join(itemDir, "absent"), sessionId: "S1", cwd, env }), null, "no record file is no question");
+      }),
+    },
+    {
+      // 191/07 task00 (ADR-007 §2): the labels are the answer's data for exactly one question —
+      // codex's rule — and the question text is today's, unchanged.
+      name: "191/07 task00 — the pending ask answers the labels for exactly one question (three rows)",
+      run: () => withTree(async ({ itemDir, env, cwd, record, pending }) => {
+        const options = (...labels) => labels.map((label) => ({ label, description: "" }));
+        for (const [label, questions, choices, question] of [
+          ["one question with options", [{ question: "Ship?", options: options("Yes, ship it", "No, hold") }], ["Yes, ship it", "No, hold"], "Ship?\n- Yes, ship it\n- No, hold"],
+          ["one question with no options", [{ question: "Why?" }], [], "Why?"],
+          ["two questions, each with two options", [{ question: "Q1", options: options("A", "B") }, { question: "Q2", options: options("C", "D") }], [], "Q1\n- A\n- B\n\nQ2\n- C\n- D"],
+        ]) {
+          await pending([record({ input: { questions } })]);
+          const read = await readPendingAsk({ itemDir, sessionId: "S1", cwd, env });
+          assert.deepEqual(read.choices, choices, `${label}: choices`);
+          assert.equal(read.question, question, `${label}: the question text is unchanged from today's`);
+        }
       }),
     },
     {

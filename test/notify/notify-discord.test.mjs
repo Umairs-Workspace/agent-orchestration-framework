@@ -3,7 +3,9 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // (04_the-discord-message-keeps-its-headline-command-and-link.feature; ADR-005 §2, DESIGN §3), and
 // story 09 task 03 (ADR-007 §5): the render is the bot's own, with no `username`, and every
 // `content` expectation below is byte-for-byte 02's. Story 10 task 04 (ADR-008 §7): a channel that
-// takes answers by reply renders the two ask action lines offering the reply.
+// takes answers by reply renders the two ask action lines offering the reply. 191/07 task 01
+// (ADR-007 §1): the same `replyable` channel gets `components` — a halt's two buttons, or one per
+// fixed choice — and the content beside them is byte-for-byte unchanged.
 //
 // The Discord renderer is a pure function of the envelope, so every case here is one envelope from
 // the one builder and one `renderDiscord` call — no network, no clock beyond the builder's injected
@@ -190,6 +192,29 @@ export const notifyDiscordTests = [
       assert.equal(lines.at(-2), 'Answer: reply to this message, or `aof work answer 127/02 "…"`', "the whole action line");
       assert.equal(lines.at(-1), LINK_LINE, "and the link");
       assert.ok(content.includes(TO_LINK), "the body was clipped");
+    },
+  },
+  {
+    name: "191/07 task01 — buttons are rendered only for a replyable channel, beside unchanged content, and a choice of exactly 80 characters still fits (six rows)",
+    run() {
+      const halt = E({ event: "loop-halted", ref: "191", elapsedMs: 60000, stop: { id: "x", remedy: "fix", ref: "191/02" } });
+      const label = (body) => (body.components ?? []).flatMap((row) => row.components).map((part) => part.label);
+      for (const [name, envelope, labels] of [
+        ["a halt", halt, ["Resume", "Open a session here"]],
+        ["a death", E({ event: "loop-died", ref: "191", outcome: { cause: "x" } }), ["Resume", "Open a session here"]],
+        ["two choices", ASK({ choices: ["A", "B"] }), ["A", "B"]],
+        ["five choices, one of 80 characters", ASK({ choices: ["A", "B", "C", "D", a(80)] }), ["A", "B", "C", "D", a(80)]],
+        ["a codex ask's choice objects", ASK({ choices: [{ label: "A", description: "a" }, { label: "B", description: "b" }] }), ["A", "B"]],
+        ["a blank choice", ASK({ choices: ["A", "  "] }), []],
+      ]) {
+        const quiet = renderDiscord(envelope);
+        const loud = renderDiscord(envelope, { replyable: true });
+        assert.ok(!("components" in quiet), `${name}: a channel with no allowlist renders none`);
+        assert.deepEqual(label(loud), labels, `${name}: the buttons`);
+        assert.equal(loud.content, renderDiscord(envelope, { replyable: true }).content, `${name}: deterministic`);
+        if (labels.length > 0) assert.deepEqual(Object.keys(loud), ["content", "allowed_mentions", "components"], `${name}: components follow the two keys`);
+      }
+      assert.equal(renderDiscord(halt, { replyable: true }).content, renderDiscord(halt, { replyable: false }).content, "a halt's content is the same with or without buttons");
     },
   },
 ];
