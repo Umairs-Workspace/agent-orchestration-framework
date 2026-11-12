@@ -1,0 +1,61 @@
+{
+  "runId": "20261112T122947594Z-0004",
+  "itemRef": "191",
+  "state": "running",
+  "attempt": 1,
+  "outcome": null,
+  "sessionId": null,
+  "brief": {
+    "loop": {
+      "loopRunId": "3e5ed9bd-583b-4467-9531-f2972feb5e6a",
+      "scope": "191",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-11-12T11:02:07.586Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        }
+      }
+    },
+    "wave": {
+      "members": [
+        "191/04"
+      ],
+      "baseCommit": "afd9976703ef498698b1a25d8364a1a10fa424d9",
+      "bound": 3
+    }
+  },
+  "createdAt": "2026-11-12T12:29:47.594Z",
+  "updatedAt": "2026-11-12T12:29:47.594Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": null,
+  "asks": []
+}
