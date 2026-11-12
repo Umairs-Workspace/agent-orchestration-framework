@@ -1344,6 +1344,13 @@ async function startLauncher(ws, options = {}) {
             spawn: (frame) => sessionSpawnHandler(frame),
             input: (frame) => typeof sessionSpawnHandler?.handleTerminalInput === "function"
               && sessionSpawnHandler.handleTerminalInput(frame) === true,
+            // 191/ADR-004 §1 — a `session-end` for this node ends the session through the same
+            // handler. The port carries `end` only when the handler has one, so the router says
+            // truthfully that a frame was dropped (`session-end-local-unavailable`) instead of
+            // that it was handled; the verb then reports the end unconfirmed.
+            ...(typeof sessionSpawnHandler.end === "function"
+              ? { end: (frame) => sessionSpawnHandler.end(frame?.sessionId) }
+              : {}),
           },
           // A router-side not-connected result is a PROVABLE pre-spawn
           // refusal. Restore only the exact reservation that produced this
@@ -1651,6 +1658,20 @@ async function startLauncher(ws, options = {}) {
         Promise.resolve(sessionSpawnHandler(frame)).catch((error) => {
           reportDegrade("mesh-launcher", error);
         });
+      });
+      // 191/ADR-004 §1 — the session-end DOWN-frame goes to the SAME handler's end lane, which
+      // halts only a PTY it opened and logs any other id (`session-end-not-launched`). The
+      // property is checked, never assumed, and a fault is a degrade: a broken end lane must not
+      // take the receive lane down with it.
+      client.onSessionEnd?.((frame) => {
+        try {
+          if (typeof sessionSpawnHandler?.end !== "function") return;
+          Promise.resolve(sessionSpawnHandler.end(frame?.sessionId)).catch((error) => {
+            reportDegrade("mesh-launcher", error);
+          });
+        } catch (error) {
+          reportDegrade("mesh-launcher", error);
+        }
       });
 
       // m42 "interactive worker terminals" — the terminal-input DOWN-frame's

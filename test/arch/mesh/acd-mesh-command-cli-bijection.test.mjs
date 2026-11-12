@@ -190,9 +190,13 @@ function argsFor(sub) {
     // the fixture has no local project by that name in the hermetic global store, so the run
     // refuses { ok:false, code:"session-project-unknown" } BEFORE any relay is touched — exit 1 +
     // parseable, and nothing is ever started by this probe. session-list reads only: an empty
-    // store answers { ok:true, sessions:[] } — exit 0. (`session end` is 191/03's case.)
+    // store answers { ok:true, sessions:[] } — exit 0.
     case "session-start": return ["mesh", "session", "start", "no-such-project", "--json"];
     case "session-list": return ["mesh", "session", "list", "--json"];
+    // milestone 191 / story 03 (ADR-004 §3) — session-end: no live presence row in the hermetic
+    // store carries that id, so the run refuses { ok:false, code:"session-not-found" } BEFORE any
+    // relay is touched — exit 1 + parseable, and nothing is ever ended by this probe.
+    case "session-end": return ["mesh", "session", "end", "11111111-2222-4333-8444-555555555555", "--json"];
     default: throw new Error(`unmapped subcommand ${sub}`);
   }
 }

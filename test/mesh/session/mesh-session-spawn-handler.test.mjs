@@ -65,7 +65,10 @@ const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 const meshSessionCommand = _aofHooks.commandsMeshSession.meshSessionCommand;
 const buildSessionIndex = _aofApplication.mesh.globalMeshQuery.buildSessionIndex;
-import { LAUNCH_COLUMNS, launchCommandLine, launchSessionName } from "@aof/mesh/session-spawn-handler";
+import { LAUNCH_COLUMNS, launchCommandLine, launchSessionName, createSessionSpawnServices } from "@aof/mesh/session-spawn-handler";
+import { buildSessionEndEnvelope, buildSessionEndFrame } from "@aof/mesh/session-spawn-directive";
+import { createMeshSessionVerbs } from "@aof/mesh/commands/session";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import {
   withMeshWorkerExecFixture,
   markRepoPublished,
@@ -1358,6 +1361,8 @@ export const meshSessionSpawnHandlerTests = [
   ...controlHostsLaunchedSessionTests(),
   // 191/01 tasks 00–02 — a launched session runs Claude with Remote Control on. Hoisted below.
   ...launchedClaudeSessionTests(),
+  // 191/03 task 01 (and task 02's E5) — a node ends only a session it launched. Hoisted below.
+  ...endLaunchedSessionTests(),
 ];
 
 // ═══ 191/00 task 00: the control node hosts a launched session (191/ADR-001) ══════════════════
@@ -1834,6 +1839,315 @@ function launchedClaudeSessionTests() {
         await Promise.resolve();
         assert.deepEqual(wire.ends, [{ sessionId: LAUNCH_ID }], "exactly one terminal end is sent");
         assert.equal(handler.handleTerminalInput({ sessionId: LAUNCH_ID, bytes: "x" }), false, "nothing is left to type into — no bare shell behind the exec");
+      }),
+    },
+  ];
+}
+
+// ═══ 191/03 task 01: a node ends only a session it launched (191/ADR-004 §2) ═════════════════════
+//
+// The handler is built from the SHIPPED factory (`createSessionSpawnServices`) over the shipped
+// session API, with ONE change: `endSession` is wrapped so its calls are counted before they reach
+// the real one. "endSession called once" is then a count, and the record on disk is still the real
+// outcome. The PTY, the clock and the ticker are doubles, exactly as above.
+const END_NODE = "wsl-2";
+const END_WS = "ws-a";
+const END_A = "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10";
+const END_B = "5d2a7f40-1c3e-4b6a-9e8d-0f1a2b3c4d5e";
+const END_STRANGER = "9f8e7d6c-5b4a-4321-8fed-cba987654321";
+const endKey = (sessionId) => ({ nodeId: END_NODE, workspaceId: END_WS, assistant: "claude", sessionId });
+
+// endHandler(fixture, { now, ptys }) — a handler whose `endSession` calls are recorded. `clock.at`
+// overrides the handler's clock from the moment a lane sets it.
+function endHandler(fixture, { now = () => NOW, ptys = [createFakePty({ pid: 11 }), createFakePty({ pid: 22 })], ptySpawn } = {}) {
+  const clock = { at: null };
+  const endCalls = [];
+  const logs = [];
+  const { createMeshWorkerSessionSpawnHandler: createCountingHandler } = createSessionSpawnServices({
+    createTerminalSpawn,
+    loadNodePty: _aofApplication.server.terminalWs.loadNodePty,
+    addSessionWorktree: _aofApplication.mesh.worktree.addSessionWorktree,
+    meshSessionWorktreePath,
+    sessionWorktreeSlug: _aofApplication.mesh.worktree.sessionWorktreeSlug,
+    findItemWorktree: _aofApplication.mesh.worktree.findItemWorktree,
+    startSession: _aofHooks.meshSession.startSession,
+    pingSession: _aofHooks.meshSession.pingSession,
+    endSession: async (workspace, key) => {
+      endCalls.push(key.sessionId);
+      return _aofHooks.meshSession.endSession(workspace, key);
+    },
+    loadWorkspace,
+    resolveWorkspaceId,
+    reportDegrade: () => {},
+  });
+  let next = 0;
+  const wire = createWireRecorder();
+  const intervals = createManualIntervals();
+  const handler = createCountingHandler({
+    loadWs: () => Promise.resolve(fixture.workspace),
+    nodeId: END_NODE,
+    workerHasRepo,
+    meshCheckoutPath,
+    globalWorkStoreOptions: { env: fixture.env },
+    sendTerminalFrame: wire.sendTerminalFrame,
+    sendTerminalEnd: wire.sendTerminalEnd,
+    sendSessionSpawnAck: wire.sendSessionSpawnAck,
+    onLog: (entry) => logs.push(entry),
+    now: () => clock.at ?? now(),
+    setIntervalImpl: intervals.setIntervalImpl,
+    clearIntervalImpl: intervals.clearIntervalImpl,
+    ptySpawn: ptySpawn ?? (async () => ptys[next++]),
+    platform: "darwin",
+    env: { SHELL: "/bin/zsh" },
+  });
+  const notLaunched = () => logs.filter((entry) => entry.code === "session-end-not-launched");
+  return { handler, wire, intervals, ptys, endCalls, logs, notLaunched, clock };
+}
+
+// The Background: a handler with launched sessions A and B, each a Claude launch on its own PTY.
+async function withTwoLaunched(fn, options) {
+  return withLaunchFixture(async (fixture) => {
+    const built = endHandler(fixture, options);
+    await built.handler(launchFrame({ sessionId: END_A }));
+    await built.handler(launchFrame({ sessionId: END_B }));
+    assert.deepEqual(built.wire.acks.map((ack) => [ack.sessionId, ack.ok]), [[END_A, true], [END_B, true]], "Background: both sessions are launched");
+    return fn({ fixture, ...built });
+  });
+}
+
+function endLaunchedSessionTests() {
+  return [
+    // ══ Scenario: ending one session ends only that one ══
+    {
+      name: "191/03 task01 — ending one session ends only that one: its PTY is killed, its ping interval cleared, its terminal end sent and endSession called once — and the other session is still open and still pinging",
+      run: async () => withTwoLaunched(async ({ fixture, handler, wire, intervals, ptys, endCalls, notLaunched, clock }) => {
+        const pending = handler.end(END_A);
+        // The halt is the shutdown path's own SYNCHRONOUS half: done before `end` yields.
+        assert.equal(ptys[0].killed, true, "that session's PTY is killed");
+        assert.equal(intervals.intervals[0].cleared, true, "its ping interval is cleared");
+        assert.deepEqual(wire.ends, [{ sessionId: END_A }], "its terminal end is sent");
+        assert.equal(await pending, true, "end answers that it ended a session it owned");
+        assert.deepEqual(endCalls, [END_A], "endSession is called once, for that session");
+        assert.equal(await readSessionRecord(fixture.workspace, endKey(END_A)), null, "its record is ended");
+        assert.equal(ptys[0].dataListenerCount + ptys[0].exitListenerCount, 0, "every reference to its PTY is released");
+        assert.equal(handler.handleTerminalInput({ sessionId: END_A, bytes: "x" }), false, "nothing is left to type into");
+
+        // …and B is untouched: open, reachable, and still pinging.
+        assert.equal(ptys[1].killed, false, "the other session's PTY is still open");
+        assert.equal(intervals.intervals[1].cleared, false, "the other session's ping interval is still armed");
+        assert.ok(await readSessionRecord(fixture.workspace, endKey(END_B)), "the other session's record is still there");
+        assert.equal(handler.handleTerminalInput({ sessionId: END_B, bytes: "still\n" }), true, "the other session still takes keys");
+        // Its next 30 s ping lands on its own record, at the instant the clock now reads.
+        assert.equal((await readSessionRecord(fixture.workspace, endKey(END_B))).lastPingAt, NOW);
+        clock.at = plusSeconds(NOW, 30);
+        await intervals.intervals[1].fn();
+        assert.equal((await readSessionRecord(fixture.workspace, endKey(END_B))).lastPingAt, plusSeconds(NOW, 30), "the other session is still pinging");
+        assert.equal(await readSessionRecord(fixture.workspace, endKey(END_A)), null, "…and the ended session's record stays ended");
+        assert.deepEqual(wire.ends, [{ sessionId: END_A }], "no end marker is sent for the other session");
+        assert.deepEqual(notLaunched(), [], "nothing is logged as not-launched");
+        await handler.stopAll();
+      }),
+    },
+
+    // ══ Scenario: a second end of the same session does nothing more ══
+    {
+      name: "191/03 task01 — a second end of the same session does nothing more: endSession is still called only once, and session-end-not-launched is logged",
+      run: async () => withTwoLaunched(async ({ handler, wire, ptys, endCalls, notLaunched }) => {
+        assert.equal(await handler.end(END_A), true, "Given: the handler has ended the session");
+        assert.equal(await handler.end(END_A), false, "the second end answers that it ended nothing");
+        assert.deepEqual(endCalls, [END_A], "endSession is still called only once");
+        assert.deepEqual(wire.ends, [{ sessionId: END_A }], "no second end marker");
+        assert.equal(notLaunched().length, 1, "session-end-not-launched is logged");
+        assert.match(notLaunched()[0].message, new RegExp(END_A), "…naming the id");
+        assert.equal(ptys[1].killed, false, "the other session is untouched by either end");
+        await handler.stopAll();
+      }),
+    },
+
+    // ══ Rule R1 · E4: the id of a terminal-started Claude is not ended ══
+    {
+      name: "191/03 task01 — E4 · the id of a terminal-started Claude is not ended: a session record written by claude's own hooks, with no launcher PTY → nothing is killed, no record is ended, and session-end-not-launched is logged once",
+      run: async () => withTwoLaunched(async ({ fixture, handler, wire, intervals, ptys, endCalls, notLaunched }) => {
+        // The record `claude`'s own SessionStart hook writes, through the REAL `aof session` face.
+        const hookCwd = fixture.root;
+        const started = await runHook(["start", "--json"], {
+          cwd: hookCwd,
+          env: fixture.env,
+          stdinText: JSON.stringify({ session_id: END_STRANGER, cwd: hookCwd, hook_event_name: "SessionStart" }),
+          now: () => NOW,
+          loadWorkspace: (cwd, config) => loadWorkspace(cwd, config, { env: fixture.env }),
+        });
+        assert.equal(started.ok, true, JSON.stringify(started));
+        const strangerKey = { nodeId: END_NODE, workspaceId: started.workspaceId, assistant: started.assistant, sessionId: END_STRANGER };
+        assert.ok(await readSessionRecord(fixture.workspace, strangerKey), "Given: the terminal-started session has a record on this node");
+
+        assert.equal(await handler.end(END_STRANGER), false);
+
+        assert.deepEqual(ptys.map((pty) => pty.killed), [false, false], "nothing is killed");
+        assert.deepEqual(endCalls, [], "no record is ended — endSession is never called");
+        assert.ok(await readSessionRecord(fixture.workspace, strangerKey), "the terminal-started session's record is still there");
+        assert.deepEqual(intervals.intervals.map((interval) => interval.cleared), [false, false], "no ping interval is cleared");
+        assert.deepEqual(wire.ends, [], "no end marker is sent");
+        assert.equal(notLaunched().length, 1, "session-end-not-launched is logged once");
+        await handler.stopAll();
+      }),
+    },
+
+    // ══ PLAN's known trap: the end must not race the spawn ══
+    {
+      name: "191/03 task01 — an end for a session whose spawn is still in flight is not owned: it is logged, it is not queued, and the session then opens as if no end had been sent",
+      run: async () => withLaunchFixture(async (fixture) => {
+        // The spawn is held open INSIDE the handler, at its PTY factory, so the session id is
+        // reserved (`pendingSessions`) and nothing is live yet.
+        let release;
+        const gate = new Promise((resolve) => { release = resolve; });
+        let entered = false;
+        const pty = createFakePty();
+        const { handler, wire, endCalls, notLaunched } = endHandler(fixture, {
+          ptySpawn: async () => { entered = true; await gate; return pty; },
+        });
+        const spawning = handler(launchFrame({ sessionId: END_A }));
+        await waitFor(() => entered, { label: "the spawn to reach its PTY factory" });
+        assert.equal(await handler.end(END_A), false, "the end arrives before the spawn has opened anything");
+        assert.equal(notLaunched().length, 1, "it is logged as not launched");
+        release();
+        await spawning;
+        assert.deepEqual(wire.acks.map((ack) => [ack.sessionId, ack.ok]), [[END_A, true]], "the spawn still succeeds");
+        assert.equal(pty.killed, false, "the end was not queued: the session is open");
+        assert.deepEqual(endCalls, [], "…and its record was never ended");
+        assert.ok(await readSessionRecord(fixture.workspace, endKey(END_A)));
+        await handler.stopAll();
+      }),
+    },
+
+    // ══ ADR-004 §1 — both launcher branches hand a received end to the handler's end lane ══
+    {
+      name: "191/03 task01 — a WORKER launcher registers onSessionEnd: a session-end frame on its stream ends the launched session (PTY killed, record ended, end marker sent), and one for an id it never launched ends nothing",
+      run: async () => withSpawnFixture(async (fixture) => {
+        const workspace = await withControlNode(fixture, "control-a");
+        await publishNodeRecord(workspace, NODE_ID, { nodeId: NODE_ID, host: NODE_ID, os: "linux", runtimes: [], skills: [], aofVersion: "1.0.0", publishedAt: NOW });
+        const transport = createFakeTransport();
+        const pty = createFakePty();
+        const intervals = createManualIntervals();
+        const handle = await startLauncher(workspace, {
+          ticker: manualTicker(),
+          peerPollTicker: manualTicker(),
+          globalWorkStoreOptions: { env: fixture.env },
+          resolveWorkerStreamTarget: async () => ({ target: "127.0.0.1" }),
+          createWorkerWsTransport: () => transport,
+          now: () => NOW,
+          sessionSpawnHandlerOptions: {
+            ptySpawn: createRecordingPtySpawn({ pty }),
+            setIntervalImpl: intervals.setIntervalImpl,
+            clearIntervalImpl: intervals.clearIntervalImpl,
+          },
+        });
+        try {
+          assert.equal(handle.role, "worker", "the fixture node resolves as a worker");
+          const key = { nodeId: NODE_ID, workspaceId: fixture.workspaceId, assistant: "claude", sessionId: END_A };
+          const notLaunched = () => handle.warnings.filter((warning) => warning.code === "session-end-not-launched");
+          transport.deliver(spawnFrame(fixture, { sessionId: END_A }));
+          await waitFor(() => existsSync(sessionRecordPath(workspace, key)), { label: "the launched session's record" });
+
+          transport.deliver(buildSessionEndFrame(NODE_ID, { sessionId: END_STRANGER, at: NOW }));
+          await waitFor(() => notLaunched().length === 1, { label: "the not-launched log" });
+          assert.equal(pty.killed, false, "an end for an id this node never launched kills nothing");
+          assert.ok(existsSync(sessionRecordPath(workspace, key)), "…and ends no record");
+
+          transport.deliver(buildSessionEndFrame(NODE_ID, { sessionId: END_A, at: NOW }));
+          await waitFor(() => !existsSync(sessionRecordPath(workspace, key)), { label: "the end to remove the session record" });
+          assert.equal(pty.killed, true, "the launched session's PTY is killed");
+          assert.deepEqual(intervals.intervals.map((interval) => interval.cleared), [true], "its ping interval is cleared");
+          assert.ok(
+            transport.frames.some((frame) => frame.kind === TERMINAL_FRAME_KIND && frame.signal?.sessionId === END_A && frame.signal?.end === true),
+            "the end marker went up the worker's stream",
+          );
+          assert.equal(notLaunched().length, 1, "only the stranger's id was logged as not launched");
+        } finally {
+          handle.stop();
+        }
+      }),
+    },
+    {
+      name: "191/03 task01 — the CONTROL's router ends a local session: a session-end envelope for ctl-1 reaches the local handler's end and never dispatchDirective — the PTY is killed, the record ended and the end marker pushed",
+      run: async () => withControlFixture(async (fixture) => {
+        const control = await startControl(fixture);
+        try {
+          await openLocalSession(control);
+          assert.equal(control.routers[0].apply(buildSessionEndEnvelope(CTL_ID, { sessionId: CTL_SESSION, at: NOW })), true);
+          assert.equal(control.pty.killed, true, "the local session's PTY is killed");
+          assert.deepEqual(control.intervals.intervals.map((interval) => interval.cleared), [true], "its ping interval is cleared");
+          await waitFor(() => !existsSync(sessionRecordPath(fixture.workspace, CTL_KEY)), { label: "the end to remove the session record" });
+          assert.ok(
+            control.pushes.some((envelope) => envelope.kind === TERMINAL_FRAME_KIND && envelope.signal?.sessionId === CTL_SESSION && envelope.signal?.end === true),
+            "the end marker reached the loopback push",
+          );
+          assert.deepEqual(control.dispatched, [], "a frame for the control's own node never reaches dispatchDirective");
+          // …and an end for another node still goes down that node's stream, never to the local handler.
+          control.routers[0].apply(buildSessionEndEnvelope("wsl-2", { sessionId: END_B, at: NOW }));
+          assert.deepEqual(control.dispatched, [buildSessionEndFrame("wsl-2", { sessionId: END_B, at: NOW })]);
+        } finally {
+          control.handle.stop();
+        }
+      }),
+    },
+
+    // ══ 191/03 task02 · Rule R2 · E5: an untouched session is still running and listed the next morning ══
+    {
+      name: "191/03 task02 — E5 · an untouched session is still running and listed the next morning: started at 09:00 with no input or output since, at 08:00 the next day the handler has not ended it and mesh:session-list still answers it",
+      run: async () => withLaunchFixture(async (fixture) => {
+        const START = Date.parse("2026-11-12T09:00:00.000Z");
+        const MORNING = Date.parse("2026-11-13T08:00:00.000Z");
+        let clockMs = START;
+        const { handler, wire, intervals, ptys, endCalls } = endHandler(fixture, { now: () => new Date(clockMs).toISOString() });
+        await handler(launchFrame({ sessionId: END_A }));
+        assert.equal(intervals.intervals.length, 1, "the ping interval is the only timer a launched session arms");
+
+        // 23 hours pass with no key typed and no byte painted: the only thing that runs is the
+        // 30 s ping, on its own cadence, every time.
+        const typedAtLaunch = ptys[0].writes.length;
+        for (clockMs = START + SESSION_PING_INTERVAL_MS; clockMs <= MORNING; clockMs += SESSION_PING_INTERVAL_MS) {
+          await intervals.intervals[0].fn();
+        }
+        clockMs = MORNING;
+
+        assert.equal(ptys[0].killed, false, "the handler has not killed its PTY");
+        assert.equal(intervals.intervals[0].cleared, false, "its ping interval is still armed");
+        assert.equal(intervals.intervals.length, 1, "…and no second timer was ever armed");
+        assert.deepEqual(endCalls, [], "the handler has not ended it");
+        assert.deepEqual(wire.ends, [], "no end marker was sent");
+        assert.equal(ptys[0].writes.length, typedAtLaunch, "nothing was typed into it either");
+        const source = await readFile(path.join(repoRoot, "packages", "mesh", "src", "session-spawn-handler.mjs"), "utf8");
+        const code = source.replace(/\/\/[^\n]*/g, "");
+        assert.doesNotMatch(code, /setTimeout\s*\(|idle/i, "the handler module arms no timeout and names no idle limit (ADR-004 §5)");
+
+        // `mesh:session-list`, over the presence this node would publish at 08:00.
+        const nowIso = new Date(MORNING).toISOString();
+        const sessions = (await readLiveSessions(fixture.workspace, END_NODE, { now: nowIso })).map((entry) => ({ ...entry, nodeId: END_NODE }));
+        assert.ok(sessions.some((entry) => entry.sessionId === END_A), `the node's presence still carries it (got ${JSON.stringify(sessions)})`);
+        const realNow = Date.now;
+        Date.now = () => MORNING;
+        try {
+          const { meshSessionListCommand } = createMeshSessionVerbs({
+            queryGlobalMeshStatus: async () => ({
+              workspaces: [{ workspaceId: END_WS, projectRoot: fixture.root, name: "aof" }],
+              nodes: [{ nodeId: END_NODE, freshness: "live", presence: { sessions } }],
+              sessions,
+            }),
+            isSessionLive: _aofHooks.meshSession.isSessionLive,
+            resolveSessionTtlSeconds: _aofHooks.meshSession.resolveSessionTtlSeconds,
+            reportDegrade: () => {},
+          });
+          const listed = await meshSessionListCommand.run({}, { workspace: { config: {} } });
+          assert.deepEqual(listed.sessions.map((entry) => entry.sessionId), [END_A], "mesh:session-list still answers it");
+          assert.equal(listed.sessions[0].name, launchSessionName("aof", END_A), "…by the name `/session end` takes");
+        } finally {
+          Date.now = realNow;
+        }
+        // …so `/session end` is how it is ended: the end lane still owns it, a day later.
+        assert.equal(await handler.end(END_A), true);
+        assert.equal(ptys[0].killed, true);
+        assert.deepEqual(endCalls, [END_A]);
       }),
     },
   ];

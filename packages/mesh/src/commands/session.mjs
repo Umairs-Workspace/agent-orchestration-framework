@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import { access } from "node:fs/promises";
 import { commandError } from "@aof/contracts/error";
 import { MESH_WORKSPACE_FLAG, guardMeshPositionals } from "./face-shared.mjs";
-import { SESSION_SPAWN_ACK_KIND } from "../session-spawn-directive.mjs";
+import { SESSION_SPAWN_ACK_KIND, buildSessionEndFrame, buildSessionEndEnvelope } from "../session-spawn-directive.mjs";
 import { launchSessionName } from "../session-spawn-handler.mjs";
 
 
@@ -343,13 +343,14 @@ async function meshSessionCommand(args, ctx = {}) {
 return { resolveSessionIdentity, meshSessionCommand, readStdinText, resolveNodeId };
 }
 
-// ═══════════════════════ 191/ADR-003 — `aof mesh session start|list` ═══════════════════════
+// ═════════════════ 191/ADR-003, ADR-004 — `aof mesh session start|list|end` ═════════════════
 //
 // The REGISTERED session verbs, beside (never inside) the CLI-only `aof session start|ping|end`
 // hook seam above: those write this node's own session record for a session that already exists;
 // these ask the mesh to START one — `claude --remote-control` in a project, on the control or on a
-// named node — and list the live ones. They take the `mesh:` prefix, so the mesh CLI bijection gate
-// covers them with no edit to its predicate (the `mesh:terminal-resume` precedent).
+// named node — list the live ones, and END one a node launched. They take the `mesh:` prefix, so
+// the mesh CLI bijection gate covers them with no edit to its predicate (the `mesh:terminal-resume`
+// precedent).
 //
 // FF-19103: `mesh:session-start` reaches the dispatch only through `planSessionStart`
 // (session-start.mjs), the core the fleet route also uses, and pushes the envelope the plan hands
@@ -365,6 +366,35 @@ export const SESSION_LINK_SCAN_BYTES = 64 * 1024;
 // The longest a start may be asked to wait. Discord asks 45 s (ADR-003 §3); a wait is a watch on
 // one socket, so the bound only keeps a typo from holding a CLI open for an hour.
 export const MAX_SESSION_START_WAIT_MS = 600_000;
+
+// 191/ADR-004 §3 — how long an end waits for the session's record to leave its node's presence,
+// and how often it looks. Presence is republished on a ticker of about 5 s, so 15 s is three
+// cadences: long enough that a real end is seen, short enough to answer from a phone.
+export const SESSION_END_CONFIRM_MS = 15_000;
+export const SESSION_END_POLL_MS = 1_000;
+
+// The wall clock an end waits on. A test hands its own through `ctx.sessionEndClock`, so the 15 s
+// bound is asserted at the bound rather than waited out.
+const WALL_CLOCK = Object.freeze({
+  now: () => Date.now(),
+  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+});
+
+// presenceOf(status, { nodeId, sessionId }) → "gone" | "listed" | "unreadable" — whether the NODE'S
+// OWN presence record still carries the session (ADR-004 §4).
+//
+// It reads `nodes[].presence.sessions[]`, never the payload's `sessions[]` index. The index drops
+// every session of a node that is no longer `live`, so a node that DIED mid-wait would read there
+// as "the row is gone" and be answered as a confirmed end. A dead node's presence record is frozen
+// with the session still in it, which is the truth: nothing removed it. Only the node removing its
+// own record and republishing makes the row "gone". A node missing from the roster, or one whose
+// presence carries no session array, states nothing either way.
+function presenceOf(status, { nodeId, sessionId }) {
+  const node = (status?.nodes ?? []).find((candidate) => candidate?.nodeId === nodeId);
+  const sessions = node?.presence?.sessions;
+  if (!Array.isArray(sessions)) return "unreadable";
+  return sessions.some((entry) => entry?.sessionId === sessionId) ? "listed" : "gone";
+}
 
 // firstSessionLink(text) → the first link in `text` that is followed by at least one more
 // character, or null. A match that runs to the very end of what has arrived may be a link cut
@@ -705,5 +735,150 @@ export function createMeshSessionVerbs({
     },
   };
 
-  return { meshSessionStartCommand, meshSessionListCommand };
+  // ── 191/ADR-004 §3 — `mesh:session-end` ────────────────────────────────────────────────────
+  //
+  // Asks the node holding a launched session to halt it, then answers whether it did. The relay
+  // push returns nothing and there is no ack kind (§4), so the end is CONFIRMED FROM PRESENCE: the
+  // node removes its own session record when its handler ends the session, and the verb reads that
+  // node's presence until the record is gone or SESSION_END_CONFIRM_MS pass. An end it cannot
+  // confirm is answered `ended: false` — the request was sent — and never as a success.
+  //
+  // WHICH SESSION. `session` is the session id, or the ADR-002 name `session list` prints. It must
+  // be carried by a live presence row (the rows `session list` answers, under the one shared
+  // liveness predicate); anything else refuses `session-not-found` BEFORE the relay is touched.
+  // `node` narrows the rows to that node; it is never a way to send an end to a node whose
+  // presence does not carry the session.
+  function resolveLiveSession(status, sessionArg, nodeArg, ctx) {
+    const ttlMs = resolveSessionTtlSeconds(ctx?.workspace?.config) * 1000;
+    const nowMs = Date.now();
+    const live = (status?.sessions ?? [])
+      .filter((entry) => typeof entry?.sessionId === "string" && entry.sessionId.length > 0)
+      .filter((entry) => nodeArg.length === 0 || entry.nodeId === nodeArg)
+      .filter((entry) => isSessionLive(entry, nowMs, ttlMs));
+    // The id is the address, so an exact id wins over a name that happens to spell another's.
+    const byId = live.filter((entry) => entry.sessionId === sessionArg);
+    const matches = byId.length > 0 ? byId : live.filter((entry) => launchSessionName(entry.repo, entry.sessionId) === sessionArg);
+    if (matches.length === 0) {
+      throw commandError(
+        `No live session is called "${sessionArg}"${nodeArg.length > 0 ? ` on ${nodeArg}` : ""} — nothing was sent. \`aof mesh session list\` shows the live ones.`,
+        "session-not-found",
+        404,
+      );
+    }
+    if (matches.length > 1) {
+      const named = matches.map((entry) => `${entry.sessionId} on ${entry.nodeId}`).sort();
+      throw commandError(
+        `More than one live session is called "${sessionArg}" (${named.join(", ")}) — name it by its session id, with --node.`,
+        "session-ambiguous",
+        409,
+      );
+    }
+    return matches[0];
+  }
+
+  const meshSessionEndCommand = {
+    id: "mesh:session-end",
+    input: {
+      type: "object",
+      properties: {
+        session: { type: "string" },
+        node: { type: "string" },
+      },
+      required: ["session"],
+      additionalProperties: false,
+    },
+
+    async run(input, ctx) {
+      const sessionArg = typeof input.session === "string" ? input.session.trim() : "";
+      if (sessionArg.length === 0) {
+        throw commandError("A session is required: aof mesh session end <session id or name>.", "invalid-input", 400);
+      }
+      const nodeArg = typeof input.node === "string" ? input.node.trim() : "";
+      const row = resolveLiveSession(await statusOf(ctx), sessionArg, nodeArg, ctx);
+      const { sessionId, nodeId } = row;
+      const name = launchSessionName(row.repo, sessionId);
+
+      const push = createTerminalRelayPushTransport(ctx?.workspace?.config);
+      if (push == null) {
+        throw commandError(
+          "No mesh relay is configured on this control node, so a session cannot be ended from here (set config.mesh.relay.url).",
+          "session-dispatch-unavailable",
+          503,
+        );
+      }
+      const clock = ctx?.sessionEndClock ?? WALL_CLOCK;
+      try {
+        const frame = buildSessionEndFrame(nodeId, { sessionId, at: new Date(clock.now()).toISOString() });
+        await push.push(buildSessionEndEnvelope(nodeId, frame));
+      } catch (error) {
+        // The transport's own message names the relay's host and port; it is logged, never answered.
+        reportDegrade("mesh-session-end", error);
+        throw commandError("The session-end directive could not be handed to the mesh relay.", "session-dispatch-failed", 503);
+      } finally {
+        // Closed on every exit, a throw included — a forgotten socket keeps the process alive.
+        try { push.close?.(); } catch (error) { reportDegrade("mesh-session-end", error); }
+      }
+
+      // CONFIRM AT THE SOURCE (§3–§4). One read per SESSION_END_POLL_MS until the node's own
+      // presence no longer carries the session, or the window closes. A read that fails states
+      // nothing, so it neither confirms the end nor stops the wait.
+      const deadline = clock.now() + SESSION_END_CONFIRM_MS;
+      let last = "listed";
+      do {
+        await clock.sleep(SESSION_END_POLL_MS);
+        try {
+          last = presenceOf(await statusOf(ctx), { nodeId, sessionId });
+        } catch (error) {
+          reportDegrade("mesh-session-end", error);
+          last = "unreadable";
+        }
+        if (last === "gone") return { ok: true, ended: true, sessionId, nodeId, name };
+      } while (clock.now() < deadline);
+
+      return {
+        // Not a confirmed end: `ok` says so, and the CLI exits 1 on it (`cli.exit`).
+        ok: false,
+        ended: false,
+        code: "session-end-unconfirmed",
+        // Whether the last read still carried the session — false only when that node's presence
+        // could not be read at all.
+        listed: last === "listed",
+        sessionId,
+        nodeId,
+        name,
+      };
+    },
+
+    cli: {
+      route: ["mesh", "session", "end"],
+      spec: {
+        usage: "aof mesh session end <session> [--node <id>] [--workspace <path|id>] [--json]",
+        flags: {
+          node: { type: "string", description: "the node the session is on (default: the node its presence names)" },
+          ...MESH_WORKSPACE_FLAG,
+        },
+      },
+
+      argv: (positionals, options = {}) => {
+        guardMeshPositionals("session end", positionals, { max: 1 });
+        return {
+          ...(typeof positionals[0] === "string" && positionals[0].length > 0 ? { session: positionals[0] } : {}),
+          ...(typeof options.node === "string" && options.node.length > 0 ? { node: options.node } : {}),
+        };
+      },
+
+      render(result) {
+        if (result.ended) return `session ended: ${result.name} on ${result.nodeId}  ${result.sessionId}`;
+        return result.listed
+          ? `session NOT CONFIRMED ENDED: the request was sent to ${result.nodeId}, and ${result.name} is still listed after ${SESSION_END_CONFIRM_MS / 1000} s.\nCheck: \`aof mesh session list\`. A session \`claude\` started in a terminal was not launched by aof and cannot be ended from here.`
+          : `session NOT CONFIRMED ENDED: the request was sent to ${result.nodeId}, but its presence could not be read to confirm ${result.name} ended.\nCheck: \`aof mesh session list\`.`;
+      },
+
+      exit: (result) => (result.ended ? 0 : 1),
+
+      json: (result) => result,
+    },
+  };
+
+  return { meshSessionStartCommand, meshSessionListCommand, meshSessionEndCommand };
 }

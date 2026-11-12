@@ -228,13 +228,15 @@ async function resolveSessionWorktree(projectRoot, itemRef, options = {}) {
 //                              and the platform whose default shell is resolved.
 //
 // The returned handler NEVER throws (the never-crash receive-lane discipline every
-// frame handler on this client keeps) and carries TWO properties:
+// frame handler on this client keeps) and carries THREE properties:
 //   handler.handleTerminalInput(frame) → boolean
 // the input lane for the PTYs THIS handler owns. It returns `true` when it wrote (so
 // the launcher can fall through to the assignment input handler otherwise);
+//   handler.end(sessionId) → Promise<boolean>
+// the end lane (191/ADR-004 §2): halts the ONE session it owns under that id, `true` when it did;
 //   handler.stopAll() → Promise
 // the GRACEFUL-SHUTDOWN door the launcher's own stop() calls (see below).
-// Both are properties rather than a module-level registry on purpose: the live-PTY map
+// All are properties rather than a module-level registry on purpose: the live-PTY map
 // stays per-handler, so nothing leaks between two handlers (or two tests) and there is no
 // module-global mutable state to reset.
 function createMeshWorkerSessionSpawnHandler(options = {}) {
@@ -323,9 +325,9 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
 
   const resolveNow = () => (typeof now === "function" ? now() : now);
 
-  const log = (level, message) => {
+  const log = (level, message, code = "session-spawn") => {
     try {
-      onLog?.({ code: "session-spawn", level, message });
+      onLog?.({ code, level, message });
     } catch (error) {
       reportDegrade("mesh-session-spawn-handler", error);
     }
@@ -705,8 +707,10 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
   // is synchronous by contract) still gets a free event loop and a control that was told
   // each stream ended, inside its own call. Only the record-removal tail is deferred; it
   // runs for every session in parallel, and a fault in one never blocks another.
-  handleSessionSpawn.stopAll = function stopAll() {
-    const entries = [...liveSessions.values()];
+  //
+  // haltEntries(entries) is that door's body, and `end` below goes through it for ONE entry, so a
+  // session ended on request is halted by exactly the steps a shutdown halts it by.
+  const haltEntries = (entries) => {
     const halted = [];
     for (const entry of entries) {
       try {
@@ -727,6 +731,37 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
         Promise.resolve(pending).catch((error) => reportDegrade("mesh-session-spawn-handler", error)),
       ),
     );
+  };
+
+  handleSessionSpawn.stopAll = function stopAll() {
+    return haltEntries([...liveSessions.values()]);
+  };
+
+  // end(sessionId) → Promise<boolean> — THE END LANE (191/ADR-004 §2), called by the launcher for
+  // a `session-end` frame. It halts the ONE session this handler owns under that id: the PTY
+  // killed, its ping interval cleared and its end marker sent before this function yields, then
+  // its record ended — `haltEntries`, the shutdown's own steps, for one entry. Resolves `true`.
+  //
+  // AN ID THIS HANDLER DOES NOT OWN IS LOGGED AND NOTHING ELSE HAPPENS (`session-end-not-launched`,
+  // resolves `false`). "Own" is `liveSessions`, the map of PTYs this handler opened, so three
+  // cases land here by construction rather than by a check each:
+  //   - a `claude` someone started in a terminal: it has a session record and no PTY here, so
+  //     nothing is killed and `endSession` is never called for a record this handler did not write;
+  //   - a session already ended (a second end, or one that raced the PTY's own exit);
+  //   - a session whose spawn is still in flight (`pendingSessions`). The end is NOT queued: an
+  //     end that waited for a spawn to finish would kill a session its sender had not yet seen
+  //     start. The verb reports it unconfirmed and the operator ends it again.
+  //
+  // Never throws, and never touches another session: every step it runs is that entry's own closure.
+  handleSessionSpawn.end = function end(sessionId) {
+    const id = nonEmptyString(sessionId);
+    const entry = id == null ? null : liveSessions.get(id);
+    if (entry == null) {
+      log("warn", `session ${id ?? "<no id>"}: session-end-not-launched — this node holds no launched PTY for that id, so nothing was ended`, "session-end-not-launched");
+      return Promise.resolve(false);
+    }
+    log("info", `session ${id}: ended on request`, "session-end");
+    return haltEntries([entry]).then(() => true);
   };
 
   return handleSessionSpawn;

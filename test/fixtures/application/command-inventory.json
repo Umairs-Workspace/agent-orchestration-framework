@@ -2351,6 +2351,44 @@
     }
   },
   {
+    "id": "mesh:session-end",
+    "input": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "string"
+        },
+        "node": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "session"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "mesh",
+        "session",
+        "end"
+      ],
+      "spec": {
+        "usage": "aof mesh session end <session> [--node <id>] [--workspace <path|id>] [--json]",
+        "flags": {
+          "node": {
+            "type": "string",
+            "description": "the node the session is on (default: the node its presence names)"
+          },
+          "workspace": {
+            "type": "string",
+            "description": "target workspace: a path, or a registered workspace id"
+          }
+        }
+      }
+    }
+  },
+  {
     "id": "mesh:assign",
     "input": {
       "type": "object",

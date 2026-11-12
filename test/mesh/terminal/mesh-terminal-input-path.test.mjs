@@ -57,7 +57,7 @@ import { assembleAssignmentRecord, insertAssignment, readAssignment } from "@aof
 const applyAssignmentStatusFrame = _aofApplication.mesh.controlStreamServer.applyAssignmentStatusFrame;
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
-import { buildSessionSpawnEnvelope, SESSION_SPAWN_KIND } from "@aof/mesh/session-spawn-directive";
+import { buildSessionSpawnEnvelope, SESSION_SPAWN_KIND, SESSION_END_KIND, buildSessionEndFrame, buildSessionEndEnvelope } from "@aof/mesh/session-spawn-directive";
 const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 
 const NOW = "2026-07-27T10:00:00.000Z";
@@ -872,7 +872,21 @@ export const meshTerminalInputPathTests = [
   ...resumeAnswerRouterTests(),
   // 191/00 task 01 — the router sends each frame to exactly one place. Hoisted below.
   ...controlLocalRouterTests(),
+  // 191/03 task 00 — the router's end lane (191/ADR-004 §1). Hoisted below.
+  ...sessionEndRouterTests(),
 ];
+
+// withDegrades(fn) — run `fn(events)` with the degrade sink captured, for the lanes below that prove a
+// fault was reported rather than thrown.
+async function withDegrades(fn) {
+  const events = [];
+  setDegradeSinkForTest(() => ({ write: (event) => events.push(event) }));
+  try {
+    await fn(events);
+  } finally {
+    setDegradeSinkForTest(undefined);
+  }
+}
 
 // ---- 191/00 task 01 — the router sends each frame to exactly one place (191/ADR-001 §2) ----------
 // Routing by node id is the whole rule: a frame for the local handler port's node goes to that
@@ -904,15 +918,6 @@ function controlLocalRouterTests() {
       } : {}),
     });
     return { router, dispatched, spawned, typed, refusals, logs };
-  }
-  async function withDegrades(fn) {
-    const events = [];
-    setDegradeSinkForTest(() => ({ write: (event) => events.push(event) }));
-    try {
-      await fn(events);
-    } finally {
-      setDegradeSinkForTest(undefined);
-    }
   }
   return [
     {
@@ -1066,6 +1071,125 @@ function resumeAnswerRouterTests() {
           for (const entry of [...logs, ...offline.logs]) assert.ok(!entry.message.includes("zq-answer-marker"), `row ${index}: no log line contains the marker`);
           assert.ok(offline.logs.some((entry) => entry.code === "terminal-resume-target-not-connected"), `row ${index}: the not-connected line was logged`);
         }
+      },
+    },
+  ];
+}
+
+// ---- 191/03 task 00 — the end lane has both ends: the router's half (191/ADR-004 §1) --------------
+// A `session-end` envelope is routed by node exactly as 191/00 routes a spawn: the local handler
+// port's own node to its `end`, every other node to `dispatchDirective`. Every row counts BOTH
+// destinations. No exit announces a refusal — the lane has no ack kind (ADR-004 §4).
+function sessionEndRouterTests() {
+  const CTL = "ctl-1";
+  const SESSION = "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10";
+  const AT = "2026-11-12T09:00:00.000Z";
+  function endRouter({ port = true, end, sent = true, withEnd = true } = {}) {
+    const dispatched = [];
+    const ended = [];
+    const spawned = [];
+    const typed = [];
+    const refusals = [];
+    const logs = [];
+    const router = createTerminalInputRouter({
+      dispatchDirective: (directive) => { dispatched.push(directive); return sent ? { sent: true } : { sent: false, code: "target-not-connected" }; },
+      now: () => NOW,
+      onLog: (entry) => logs.push(entry),
+      onSessionSpawnRefused: (detail) => refusals.push(detail),
+      ...(port ? {
+        localHandler: {
+          nodeId: CTL,
+          spawn: (frame) => { spawned.push(frame); return Promise.resolve(); },
+          input: (frame) => { typed.push(frame); return true; },
+          ...(withEnd ? { end: end ?? ((frame) => { ended.push(frame); return Promise.resolve(true); }) } : {}),
+        },
+      } : {}),
+    });
+    return { router, dispatched, ended, spawned, typed, refusals, logs };
+  }
+  return [
+    // ══ Scenario: the frame and its envelope round trip ══
+    {
+      name: "191/03 task00 — the frame and its envelope round trip: buildSessionEndFrame(\"wsl-2\", { sessionId, at }) wrapped in its relay envelope is rebuilt by the router as a frame of kind \"session-end\" for node wsl-2 and that session",
+      run() {
+        const frame = buildSessionEndFrame("wsl-2", { sessionId: SESSION, at: AT });
+        const { router, dispatched } = endRouter();
+        assert.equal(router.apply(buildSessionEndEnvelope("wsl-2", frame)), true);
+        assert.deepEqual(dispatched, [frame], "the rebuilt down-frame is the built one, byte for byte");
+        assert.equal(dispatched[0].kind, "session-end");
+        assert.equal(dispatched[0].to, "wsl-2");
+        assert.equal(dispatched[0].sessionId, SESSION);
+        // …and through the wire's own serialisation, which is what the relay actually carries.
+        const overTheWire = endRouter();
+        overTheWire.router.apply(JSON.parse(JSON.stringify(buildSessionEndEnvelope("wsl-2", frame))));
+        assert.deepEqual(overTheWire.dispatched, [frame]);
+      },
+    },
+    // ══ Scenario Outline: the router routes an end by node ══
+    {
+      name: "191/03 task00 — the router routes an end by node (Examples: ctl-1 → the local handler's end 1, dispatchDirective 0; wsl-2 → 0, 1)",
+      run() {
+        for (const row of [{ node: CTL, local: 1, remote: 0 }, { node: "wsl-2", local: 0, remote: 1 }]) {
+          const { router, dispatched, ended, spawned, typed, refusals } = endRouter();
+          assert.equal(router.apply(buildSessionEndEnvelope(row.node, { sessionId: SESSION, at: AT })), true, `${row.node}: apply answers true`);
+          assert.equal(ended.length, row.local, `${row.node}: the local handler's end receives it ${row.local} times`);
+          assert.equal(dispatched.length, row.remote, `${row.node}: dispatchDirective receives it ${row.remote} times`);
+          assert.equal(spawned.length + typed.length, 0, `${row.node}: no other local lane receives it`);
+          assert.deepEqual(refusals, [], `${row.node}: nothing is announced on the spawn outcome lane`);
+          const [received] = row.local === 1 ? ended : dispatched;
+          assert.deepEqual(received, buildSessionEndFrame(row.node, { sessionId: SESSION, at: AT }), `${row.node}: one wire shape for both destinations`);
+        }
+      },
+    },
+    {
+      name: "191/03 task00 — a router with no local handler port sends an end for ctl-1 down the stream as before, and an end the target is not connected for is logged once and announces nothing",
+      run() {
+        const { router, dispatched, ended, refusals, logs } = endRouter({ port: false, sent: false });
+        assert.equal(router.apply(buildSessionEndEnvelope(CTL, { sessionId: SESSION, at: AT })), false, "apply answers false — the end did not land");
+        assert.equal(dispatched.length, 1);
+        assert.equal(dispatched[0].to, CTL);
+        assert.equal(ended.length, 0);
+        assert.equal(logs.filter((entry) => entry.code === "session-end-target-not-connected").length, 1);
+        assert.deepEqual(refusals, [], "no refusal is announced: the lane has no ack kind, and the verb reads presence");
+      },
+    },
+    {
+      name: "191/03 task00 — a session-end envelope missing its node or its session is dropped with a coded warn, and one that lost its `at` is stamped by the router",
+      run() {
+        for (const envelope of [
+          { kind: SESSION_END_KIND, nodeId: "", signal: { sessionId: SESSION, at: AT } },
+          { kind: SESSION_END_KIND, nodeId: "wsl-2", signal: { sessionId: "", at: AT } },
+          { kind: SESSION_END_KIND, nodeId: "wsl-2", signal: null },
+          { kind: SESSION_END_KIND, nodeId: "wsl-2" },
+        ]) {
+          const { router, dispatched, ended, logs } = endRouter();
+          assert.equal(router.apply(envelope), false);
+          assert.equal(dispatched.length + ended.length, 0, "nothing is routed");
+          assert.equal(logs.filter((entry) => entry.code === "session-end-invalid").length, 1);
+        }
+        const { router, dispatched } = endRouter();
+        router.apply({ kind: SESSION_END_KIND, nodeId: "wsl-2", signal: { sessionId: SESSION } });
+        assert.equal(dispatched[0].at, NOW, "a frame is never dispatched without an `at`");
+      },
+    },
+    {
+      name: "191/03 task00 — a local end that throws is a degrade, never a router crash, and never falls through to dispatchDirective (sync throw and rejected promise); a port with no end lane drops the frame with a coded warn",
+      async run() {
+        for (const [label, end] of [
+          ["a synchronous throw", () => { throw new Error("local end exploded"); }],
+          ["a rejected promise", () => Promise.reject(new Error("local end exploded"))],
+        ]) {
+          await withDegrades(async (events) => {
+            const { router, dispatched } = endRouter({ end });
+            assert.doesNotThrow(() => router.apply(buildSessionEndEnvelope(CTL, { sessionId: SESSION, at: AT })), `${label}: apply never throws`);
+            await waitFor(() => events.some((event) => event.code === "mesh-terminal-input" && /local end exploded/.test(event.message)));
+            assert.equal(dispatched.length, 0, `${label}: the frame never reaches dispatchDirective`);
+          });
+        }
+        const partial = endRouter({ withEnd: false });
+        assert.equal(partial.router.apply(buildSessionEndEnvelope(CTL, { sessionId: SESSION, at: AT })), false);
+        assert.equal(partial.dispatched.length, 0, "a port with no end lane still never falls through to dispatchDirective");
+        assert.equal(partial.logs.filter((entry) => entry.code === "session-end-local-unavailable").length, 1);
       },
     },
   ];

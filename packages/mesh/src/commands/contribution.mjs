@@ -2,7 +2,7 @@
 
 
 // Core supplies configured services; constructing command definitions performs no I/O.
-export function createMeshContribution({ meshIdentityCommand, meshStatusCommand, meshHeartbeatCommand, meshRelayCommand, meshInviteCommand, meshJoinCommand, meshRevokeCommand, meshServeCommand, meshLogsCommand, meshTerminalResumeCommand, meshSessionStartCommand, meshSessionListCommand, meshAssignCommand, meshRecoverPushCommand, meshRepoPublishCommand, meshUiCommand, meshDesktopInstallCommand, meshDesktopRunCommand, meshDesktopStopCommand }) {
+export function createMeshContribution({ meshIdentityCommand, meshStatusCommand, meshHeartbeatCommand, meshRelayCommand, meshInviteCommand, meshJoinCommand, meshRevokeCommand, meshServeCommand, meshLogsCommand, meshTerminalResumeCommand, meshSessionStartCommand, meshSessionListCommand, meshSessionEndCommand, meshAssignCommand, meshRecoverPushCommand, meshRepoPublishCommand, meshUiCommand, meshDesktopInstallCommand, meshDesktopRunCommand, meshDesktopStopCommand }) {
 // The mesh feature owns its complete command surface; core only assembles this contribution.
 
 const meshContribution = Object.freeze({
@@ -20,6 +20,7 @@ const meshContribution = Object.freeze({
     meshTerminalResumeCommand,
     meshSessionStartCommand,
     meshSessionListCommand,
+    meshSessionEndCommand,
     meshAssignCommand,
     meshRecoverPushCommand,
     meshRepoPublishCommand,

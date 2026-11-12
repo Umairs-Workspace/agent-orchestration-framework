@@ -8,6 +8,9 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 //   tasks/01_a-start-resolves-the-project-the-node-and-the-item.feature
 //   tasks/02_a-start-waits-for-the-link-or-the-refusal.feature
 //   tasks/03_the-list-shows-what-is-running.feature
+// And milestone 191 / story 03 — `mesh:session-end` (191/ADR-004 §3–§4):
+//   tasks/02_the-end-is-confirmed-from-presence.feature   (E5's handler half is in
+//     mesh-session-spawn-handler.test.mjs, beside the handler it is about)
 //
 // TWO HARNESSES, and which one a lane uses is deliberate:
 //
@@ -28,9 +31,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { createMeshSessionVerbs, SESSION_LINK_SCAN_BYTES } from "@aof/mesh/commands/session";
+import { createMeshSessionVerbs, SESSION_LINK_SCAN_BYTES, SESSION_END_CONFIRM_MS, SESSION_END_POLL_MS } from "@aof/mesh/commands/session";
 import { planSessionStart } from "@aof/mesh/session-start";
-import { SESSION_SPAWN_KIND, buildSessionSpawnAckEnvelope } from "@aof/mesh/session-spawn-directive";
+import { SESSION_SPAWN_KIND, SESSION_END_KIND, buildSessionSpawnAckEnvelope, buildSessionEndEnvelope } from "@aof/mesh/session-spawn-directive";
 import { launchSessionName } from "@aof/mesh/session-spawn-handler";
 
 const TERMINAL_FRAME_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_FRAME_KIND;
@@ -85,7 +88,8 @@ function fakeVerbs(status, { relay = true, pushError = null, onPush = null, find
   let subscriberCreated = 0;
   const emit = (envelope) => handler?.(JSON.stringify(envelope));
   const verbs = createMeshSessionVerbs({
-    queryGlobalMeshStatus: async () => status,
+    // A function is asked on every read, so a lane can change what presence says between polls.
+    queryGlobalMeshStatus: async () => (typeof status === "function" ? status() : status),
     loadWorkspace: async (projectRoot) => ({ projectRoot }),
     TERMINAL_FRAME_KIND,
     createTerminalRelayPushTransport: (config) => (relay && config?.mesh?.relay?.url
@@ -126,7 +130,62 @@ function fakeVerbs(status, { relay = true, pushError = null, onPush = null, find
     get subscriberCreated() { return subscriberCreated; },
     start: (input) => verbs.meshSessionStartCommand.run(input, ctx),
     list: (input = {}) => verbs.meshSessionListCommand.run(input, ctx),
+    end: (input, extra = {}) => verbs.meshSessionEndCommand.run(input, { ...ctx, ...extra }),
+    endCli: verbs.meshSessionEndCommand.cli,
   };
+}
+
+// ── 191/03 task 02 — the end's two fakes: a relay (above) and a mesh status that changes ──────────
+
+const END_ID = "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10";
+const END_NAME = "aof-0b9e6c1e";
+const END_NODE = "node-6eb3";
+
+// A clock the test owns: `sleep` moves it and returns at once, so "after 4 s" and "after 15 s" are
+// read off the clock the verb itself waited on rather than waited out.
+function fakeClock() {
+  const start = Date.now();
+  let at = start;
+  const sleeps = [];
+  return {
+    now: () => at,
+    sleep: async (ms) => { sleeps.push(ms); at += ms; },
+    sleeps,
+    get elapsed() { return at - start; },
+  };
+}
+
+// presenceStatus(rows, { freshness, presence }) — the slice of the mesh status payload the end
+// reads: each node's OWN presence (`nodes[].presence.sessions[]`) and the index derived from it,
+// which — as the real one does — carries only the sessions of a node that is `live`.
+function presenceStatus(rows, { freshness = "live", presence = true } = {}) {
+  const nodeIds = [...new Set([END_NODE, "wsl-2", ...rows.map((row) => row.nodeId)])];
+  return {
+    workspaces: [],
+    nodes: nodeIds.map((nodeId) => ({
+      nodeId,
+      freshness,
+      ...(presence ? { presence: { sessions: rows.filter((row) => row.nodeId === nodeId).map(({ nodeId: _nodeId, ...session }) => session) } } : {}),
+    })),
+    sessions: freshness === "live" ? rows : [],
+  };
+}
+
+const liveRow = (overrides = {}) => ({ nodeId: END_NODE, sessionId: END_ID, workspaceId: "ws-a", repo: "aof", assistant: "claude", lastPingAt: NOW(), ...overrides });
+
+// endFixture({ leavesAfterMs }) — the Background: a fake relay, a fake mesh status, and the live
+// session END_ID named END_NAME on END_NODE, whose row leaves presence once the verb's own clock
+// has moved `leavesAfterMs` (never, when it is null).
+function endFixture({ leavesAfterMs = null, rows = [liveRow()], after = null, ...verbOptions } = {}) {
+  const clock = fakeClock();
+  const reads = [];
+  const verbs = fakeVerbs(() => {
+    reads.push(clock.elapsed);
+    if (after != null && clock.elapsed > 0) return after(clock.elapsed);
+    const gone = leavesAfterMs != null && clock.elapsed >= leavesAfterMs;
+    return presenceStatus(gone ? rows.filter((row) => row.sessionId !== END_ID) : rows);
+  }, verbOptions);
+  return { clock, reads, verbs, end: (input) => verbs.end(input, { sessionEndClock: clock }) };
 }
 
 const frameFor = (envelope, bytes) => buildTerminalFrameEnvelope(envelope.nodeId, envelope.signal.sessionId, bytes);
@@ -232,6 +291,7 @@ function waitFor(predicate, { timeoutMs = 15_000, label = "condition" } = {}) {
 }
 
 const spawnsHeard = (client) => client.heard.filter((envelope) => envelope?.kind === SESSION_SPAWN_KIND);
+const endsHeard = (client) => client.heard.filter((envelope) => envelope?.kind === SESSION_END_KIND);
 
 // ═════════════════════════════════════════ the cases ═════════════════════════════════════════
 
@@ -734,6 +794,208 @@ export const meshSessionVerbsTests = [
         const answer = await verbs.list({ project: "aof" });
         assert.deepEqual(answer.sessions.map((entry) => entry.sessionId), ["s1"]);
       });
+    },
+  },
+
+  // ═══ 191/03 task 02 — the end is confirmed from presence (191/ADR-004 §3–§4) ════════════════
+
+  // ══ Scenario: a session can be named by its name instead of its id ══
+  {
+    name: "191/03 task02 — a session can be named by its name instead of its id: `end aof-0b9e6c1e` with the row leaving presence after 2 s pushes a session-end envelope for node-6eb3 and that session, and answers ended: true",
+    async run() {
+      const { end, verbs, clock } = endFixture({ leavesAfterMs: 2000 });
+      const answer = await end({ session: END_NAME });
+      assert.equal(verbs.pushed.length, 1, "one envelope is pushed");
+      assert.deepEqual(verbs.pushed[0], buildSessionEndEnvelope(END_NODE, { sessionId: END_ID, at: verbs.pushed[0].signal.at }));
+      assert.equal(verbs.pushed[0].kind, "session-end");
+      assert.equal(verbs.pushed[0].nodeId, END_NODE);
+      assert.equal(verbs.pushed[0].signal.sessionId, END_ID);
+      assert.equal(answer.ended, true);
+      assert.equal(clock.elapsed, 2000, "it answers when the row leaves, not at the end of the window");
+    },
+  },
+  {
+    name: "191/03 task02 — the CLI face carries the verb: `aof mesh session end aof-0b9e6c1e --json` pushes the session-end envelope onto the real relay, and answers ended: true (exit 0) once node-6eb3's presence no longer carries the session",
+    async run() {
+      const now = NOW();
+      const session = { sessionId: END_ID, workspaceId: "ws-a", repo: "aof", assistant: "claude", lastPingAt: now, workspaceHasRun: false, relaying: true };
+      await withMeshFixture(async ({ home, roots, relay }) => {
+        const far = await relayClient(relay.url);
+        try {
+          const running = runCli(roots["ws-n"], home, ["mesh", "session", "end", END_NAME, "--json"]);
+          await waitFor(() => endsHeard(far).length === 1, { label: "the session-end envelope" });
+          assert.deepEqual(endsHeard(far)[0], buildSessionEndEnvelope(END_NODE, { sessionId: END_ID, at: endsHeard(far)[0].signal.at }), "the relay carries the lane's own envelope");
+          // The node's half, played here: it ends the session, removes its record and republishes
+          // its presence without it — through the real publisher, into the store the CLI reads.
+          const primary = await loadWorkspace(roots["ws-a"], undefined, { env: { AOF_GLOBAL_HOME: home } });
+          await publishPresenceRecord(primary, END_NODE, { nodeId: END_NODE, heartbeatAt: NOW(), activeRuns: [], sessions: [], aofVersion: "0.1.0" });
+          const result = await running;
+          assert.equal(result.status, 0, `${result.stdout}${result.stderr}`);
+          assert.equal(result.json.ended, true);
+          assert.equal(result.json.sessionId, END_ID);
+          assert.equal(result.json.nodeId, END_NODE);
+          assert.equal(result.json.name, END_NAME);
+          assert.equal(endsHeard(far).length, 1, "the request is sent once");
+        } finally {
+          far.close();
+        }
+      }, { sessions: [session] });
+    },
+  },
+
+  // ══ Rule R1 · E1: the record leaving presence confirms the end ══
+  {
+    name: "191/03 task02 — E1 · the record leaving presence confirms the end: `end <id>` with the row leaving after 4 s answers ended: true with that session and node node-6eb3 — read once a second, and not before the row left",
+    async run() {
+      const { end, verbs, clock, reads } = endFixture({ leavesAfterMs: 4000 });
+      const answer = await end({ session: END_ID });
+      assert.deepEqual(
+        { ended: answer.ended, sessionId: answer.sessionId, nodeId: answer.nodeId },
+        { ended: true, sessionId: END_ID, nodeId: END_NODE },
+      );
+      assert.equal(answer.ok, true);
+      assert.equal(answer.name, END_NAME);
+      assert.equal(clock.elapsed, 4000);
+      assert.deepEqual(reads, [0, 1000, 2000, 3000, 4000], "one read to find the session, then one a second until it is gone");
+      assert.deepEqual(verbs.log, ["push", "push-closed"], "the push transport is closed once the request is sent");
+      assert.equal(verbs.subscriberCreated, 0, "confirmation reads presence — it subscribes to nothing");
+      assert.equal(verbs.endCli.exit(answer), 0);
+      assert.match(verbs.endCli.render(answer), /^session ended: aof-0b9e6c1e on node-6eb3/);
+    },
+  },
+
+  // ══ Rule R1 · E2: an end the node never carries out is reported as unconfirmed ══
+  {
+    name: "191/03 task02 — E2 · an end the node never carries out is reported as unconfirmed: the row still in presence after 15 s answers ended: false, saying the request was sent and the session is still listed",
+    async run() {
+      const { end, verbs, clock } = endFixture({ leavesAfterMs: null });
+      const answer = await end({ session: END_ID });
+      assert.equal(answer.ended, false);
+      assert.equal(answer.ok, false, "an unconfirmed end is never answered as a success");
+      assert.equal(answer.code, "session-end-unconfirmed");
+      assert.equal(answer.listed, true, "the session is still listed");
+      assert.equal(verbs.pushed.length, 1, "the request was sent");
+      assert.equal(answer.sessionId, END_ID);
+      assert.equal(answer.nodeId, END_NODE);
+      assert.equal(SESSION_END_CONFIRM_MS, 15_000);
+      assert.equal(clock.elapsed, 15_000, "it waits 15 s, and no longer");
+      assert.equal(clock.sleeps.length, 15_000 / SESSION_END_POLL_MS, "one read a second for the whole window");
+      const said = verbs.endCli.render(answer);
+      assert.match(said, /the request was sent to node-6eb3/);
+      assert.match(said, /aof-0b9e6c1e is still listed/);
+      assert.equal(verbs.endCli.exit(answer), 1, "…and the CLI exits 1 on it");
+    },
+  },
+  {
+    name: "191/03 task02 — a node that goes quiet mid-wait is NOT a confirmed end: its sessions drop out of the status index while its own frozen presence still carries the row, and the answer is ended: false; a presence that cannot be read at all answers ended: false, not listed",
+    async run() {
+      // The node stopped heartbeating: the index (`sessions[]`) no longer lists it, which read
+      // naively is "the row is gone". Its own presence record is frozen with the session in it.
+      const stale = endFixture({ after: () => presenceStatus([liveRow()], { freshness: "stale" }) });
+      const quiet = await stale.end({ session: END_ID });
+      assert.equal(quiet.ended, false, "a row that only left the index is not a record the node removed");
+      assert.equal(quiet.listed, true);
+      assert.equal(stale.clock.elapsed, 15_000);
+
+      const unreadable = endFixture({ after: () => presenceStatus([liveRow()], { presence: false }) });
+      const blind = await unreadable.end({ session: END_ID });
+      assert.equal(blind.ended, false);
+      assert.equal(blind.listed, false, "nothing was read, so nothing is claimed either way");
+      assert.match(unreadable.verbs.endCli.render(blind), /its presence could not be read/);
+
+      // A status read that throws mid-wait states nothing: it neither confirms nor stops the wait.
+      let failing = true;
+      const flaky = endFixture({ after: (elapsed) => {
+        if (failing && elapsed <= 2000) throw new Error("store busy");
+        failing = false;
+        return presenceStatus([]);
+      } });
+      const recovered = await flaky.end({ session: END_ID });
+      assert.equal(recovered.ended, true);
+      assert.equal(flaky.clock.elapsed, 3000, "the read that worked is the one that confirmed it");
+    },
+  },
+
+  // ══ Rule R1 · E3: an id no live session carries is refused and nothing is sent ══
+  {
+    name: "191/03 task02 — E3 · an id no live session carries is refused session-not-found and nothing is pushed to the relay — and so is a session whose record is past its TTL, or one on another node than the one named",
+    async run() {
+      const unknown = endFixture();
+      await assert.rejects(
+        () => unknown.end({ session: "11111111-2222-4333-8444-555555555555" }),
+        (error) => error.code === "session-not-found" && error.status === 404,
+      );
+      assert.deepEqual(unknown.verbs.pushed, [], "nothing is pushed to the relay");
+      assert.deepEqual(unknown.verbs.log, [], "no transport is even opened");
+      assert.equal(unknown.clock.elapsed, 0, "…and nothing is waited for");
+
+      const ttl = resolveSessionTtlSeconds(undefined);
+      const expired = endFixture({ rows: [liveRow({ lastPingAt: new Date(Date.now() - (ttl + 30) * 1000).toISOString() })] });
+      await assert.rejects(() => expired.end({ session: END_ID }), (error) => error.code === "session-not-found");
+      assert.deepEqual(expired.verbs.pushed, []);
+
+      const elsewhere = endFixture();
+      await assert.rejects(() => elsewhere.end({ session: END_ID, node: "wsl-2" }), (error) => error.code === "session-not-found");
+      assert.deepEqual(elsewhere.verbs.pushed, [], "an end is never sent to a node whose presence does not carry the session");
+
+      await assert.rejects(() => endFixture().end({ session: "   " }), (error) => error.code === "invalid-input");
+    },
+  },
+  {
+    name: "191/03 task02 — E3 · `aof mesh session end 11111111-2222-4333-8444-555555555555 --json` refuses session-not-found with exit 1, and the real relay carries nothing",
+    async run() {
+      await withMeshFixture(async ({ home, roots, relay }) => {
+        const far = await relayClient(relay.url);
+        try {
+          const result = await runCli(roots["ws-a"], home, ["mesh", "session", "end", "11111111-2222-4333-8444-555555555555", "--json"]);
+          assert.equal(result.status, 1, result.stdout);
+          assert.equal(result.json.ok, false);
+          assert.equal(result.json.code, "session-not-found");
+          assert.deepEqual(endsHeard(far), [], "nothing is pushed to the relay");
+        } finally {
+          far.close();
+        }
+      }, { sessions: [{ sessionId: END_ID, workspaceId: "ws-a", repo: "aof", assistant: "claude", lastPingAt: NOW(), workspaceHasRun: false, relaying: true }] });
+    },
+  },
+  {
+    name: "191/03 task02 — the node defaults to the one the session's presence row names and `--node` narrows to it; a name two live sessions share is refused session-ambiguous; an exact id wins over a name",
+    async run() {
+      const onWorker = endFixture({ rows: [liveRow({ nodeId: "wsl-2" })], after: () => presenceStatus([]) });
+      const answer = await onWorker.end({ session: END_ID });
+      assert.equal(onWorker.verbs.pushed[0].nodeId, "wsl-2", "the envelope goes to the node that holds the session, not to the control");
+      assert.equal(answer.nodeId, "wsl-2");
+
+      // The same id on two nodes: `--node` says which, and without it nothing is sent.
+      const twoNodes = () => endFixture({ rows: [liveRow(), liveRow({ nodeId: "wsl-2" })], after: () => presenceStatus([liveRow()]) });
+      const ambiguous = twoNodes();
+      await assert.rejects(() => ambiguous.end({ session: END_NAME }), (error) => error.code === "session-ambiguous" && error.status === 409);
+      assert.deepEqual(ambiguous.verbs.pushed, []);
+      const narrowed = twoNodes();
+      assert.equal((await narrowed.end({ session: END_NAME, node: "wsl-2" })).ended, true);
+      assert.equal(narrowed.verbs.pushed[0].nodeId, "wsl-2");
+
+      // A session whose NAME spells another session's id: the id is the address.
+      const shadow = endFixture({ rows: [liveRow(), liveRow({ sessionId: "aof-0b9e6c1e", repo: "x" })], after: () => presenceStatus([liveRow()]) });
+      await shadow.end({ session: "aof-0b9e6c1e" });
+      assert.equal(shadow.verbs.pushed[0].signal.sessionId, "aof-0b9e6c1e", "an exact id wins over a name");
+    },
+  },
+  {
+    name: "191/03 task02 — with no relay configured the end refuses session-dispatch-unavailable, and a relay that will not take the envelope refuses session-dispatch-failed with its transport closed — neither waits, and neither is answered as an end",
+    async run() {
+      const noRelay = endFixture({ relay: false });
+      await assert.rejects(() => noRelay.end({ session: END_ID }), (error) => error.code === "session-dispatch-unavailable" && error.status === 503);
+      assert.equal(noRelay.clock.elapsed, 0);
+
+      const broken = endFixture({ pushError: new Error("connect ECONNREFUSED 127.0.0.1:4180") });
+      await assert.rejects(
+        () => broken.end({ session: END_ID }),
+        (error) => error.code === "session-dispatch-failed" && error.status === 503 && !/127\.0\.0\.1/.test(error.message),
+        "the relay's host and port are logged, never answered",
+      );
+      assert.deepEqual(broken.verbs.log, ["push-closed"], "the transport is closed on the throw");
+      assert.equal(broken.clock.elapsed, 0);
     },
   },
 ];
