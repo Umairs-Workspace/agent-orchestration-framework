@@ -1,9 +1,9 @@
 {
   "runId": "20261112T110216357Z-0002",
   "itemRef": "191",
-  "state": "running",
+  "state": "done",
   "attempt": 1,
-  "outcome": null,
+  "outcome": "done",
   "sessionId": null,
   "brief": {
     "loop": {
@@ -51,7 +51,7 @@
     }
   },
   "createdAt": "2026-11-12T11:02:16.357Z",
-  "updatedAt": "2026-11-12T11:42:57.286Z",
+  "updatedAt": "2026-11-12T11:51:17.881Z",
   "failureReason": null,
   "heartbeatAt": "2026-11-12T11:42:57.286Z",
   "retryOf": null,
