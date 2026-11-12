@@ -28,14 +28,24 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // reply is refused `ask-already-answered` and names the first answerer.
 //
 // FF-13113, structural then fixture (131/11). `packages/core/src/discord/**` imports no `node:child_process`; every
-// `invoke(` in `packages/core/src/discord/commands.mjs` names `work:list` or `work:loop`; the `loop-resumes` segment is
+// `invoke(` in `packages/core/src/discord/commands.mjs` names an allowed verb (`work:list` or `work:loop` as first
+// written; FF-19106 below widens the set); the `loop-resumes` segment is
 // spelled only in `packages/core/src/loop/stop-request.mjs`; and `handOffLoop` writes the resume request and imports
-// no `child_process`. Fixture over injected fakes: each of the four commands sends its `type: 5`
+// no `child_process`. Fixture over injected fakes: each command sends its `type: 5`
 // callback before any `invoke`, the views with `flags: 64`; an autocomplete interaction (type 4,
-// 191/05) is not a command: it is never deferred, dispatches no verb, and is answered by one `type: 8`
-// callback; a user not in `allow` gets
+// 191/05) is not a command: it is never deferred and is answered by one `type: 8` callback, and a
+// `project` offer dispatches no verb; a user not in `allow` gets
 // `discord-command-not-allowed` and nothing is invoked; `decideSupervisedDeclarations` yields a
 // done-latest supervised declaration's row only when it is in `resumeRequested`.
+//
+// FF-19106 (191/06, 191/ADR-006 §5) — FF-13113 AS AMENDED, on purpose: the commands' verb set grows
+// from two to exactly six. Every `invoke(` in `packages/messaging/src/discord-commands.mjs` names
+// `work:list`, `work:loop`, `mesh:session-start`, `mesh:session-list`, `mesh:session-end` or
+// `mesh:status`, and each of the six is named by at least one — a verb allowed and never reached is a
+// hole in the list, not headroom. The `child_process` leg is unchanged: starting a session is a
+// directive the node acts on, never a process the bot owns. The fixture runs EVERY command the table
+// registers, read from `COMMANDS` itself so a new row cannot escape it: each sends its `type: 5`
+// callback before its first `invoke`, a view privately and an action in the channel.
 //
 // FF-19107, structural then fixture (191/07, ADR-007's invariant) — a leg in this family's control,
 // beside FF-13113. `packages/messaging/src/discord-buttons.mjs` imports no `child_process` and every
@@ -62,7 +72,8 @@ const isStale = _aofApplication.execution.runs.isStale;
 const retryReadiness = _aofApplication.execution.runs.retryReadiness;
 const startGateway = _aofApplication.messaging.discord.gateway.startGateway;
 const handleReply = _aofApplication.messaging.discord.replies.handleReply;
-import { ALLOWED, STRANGER, TOKEN, degradeSink, fakeClock, fakeGateway, flush, ready, releaseDegradeSink, reply, withReplyWorld } from "../../discord/discord-fixture.mjs";
+const COMMANDS = _aofApplication.messaging.discord.commands.COMMANDS;
+import { ALLOWED, SESSION_ID, SESSION_NAME, STRANGER, TOKEN, degradeSink, fakeClock, fakeGateway, fakeVerbs, flush, ready, releaseDegradeSink, reply, withReplyWorld } from "../../discord/discord-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const toPosix = (value) => String(value).split(path.sep).join("/");
@@ -78,9 +89,21 @@ const INDEX = "packages/messaging/src/ask-messages.mjs";
 // `ask-request.mjs`'s exports that write an ask file. A reader (`readAsk`, `readAsks`, `loopAsksDir`)
 // is not one of them.
 const ASK_WRITES = Object.freeze(["openAsk", "parkAsk", "clearAsk", "answerAsk"]);
-// FF-13113 (131/11, ADR-009).
+// FF-13113 (131/11, ADR-009), amended by FF-19106 (191/06, 191/ADR-006 §5): exactly these six.
 const COMMANDS_MODULE = "packages/messaging/src/discord-commands.mjs";
-const ALLOWED_VERBS = Object.freeze(["work:list", "work:loop"]);
+const ALLOWED_VERBS = Object.freeze(["work:list", "work:loop", "mesh:session-start", "mesh:session-list", "mesh:session-end", "mesh:status"]);
+// Where each registered command answers, keyed `<command> <subcommand>`: 64 a private view, null an
+// action the channel sees. A row of the table with no entry here fails the fixture by name.
+const COMMAND_FLAGS = Object.freeze({
+  status: 64,
+  asks: 64,
+  "loop stop": null,
+  "loop resume": null,
+  "loop start": null,
+  "session start": 64,
+  "session list": 64,
+  "session end": null,
+});
 const STOP_HOME = "packages/work-loop/src/stop-request.mjs";
 const STOP_CORE = "packages/work-loop/src/stop.mjs";
 const RESUME_SEGMENT = "loop-resumes";
@@ -178,6 +201,18 @@ export function commandDispatches(code) {
   return ids;
 }
 
+// verbCensus(code) → FF-19106's two answers over the commands module's code: `strays`, the verbs an
+// `invoke(` names outside `ALLOWED_VERBS`, and `unreached`, the allowed verbs no `invoke(` names.
+// PURE, so the red probes run this shipped detector over patched code.
+export function verbCensus(code) {
+  const dispatched = commandDispatches(code);
+  return {
+    dispatched,
+    strays: dispatched.filter((id) => !ALLOWED_VERBS.includes(id)),
+    unreached: ALLOWED_VERBS.filter((id) => !dispatched.includes(id)),
+  };
+}
+
 // buttonIdSpellers(units) → every `packages/messaging/src/` module whose comment-stripped code spells
 // a `custom_id` prefix as a string literal, by file. PURE, so the red probe runs it over a patched unit.
 export function buttonIdSpellers(units) {
@@ -187,19 +222,41 @@ export function buttonIdSpellers(units) {
 }
 
 // FF-13113's fixture: a command's context over fakes, every request and invoke in one sequence, and
-// one served project whose channel allows user 222….
+// one served project (id `ws-alpha`) whose channel allows user 222…. The verbs are the shared fakes
+// (191/06), holding one live session in that project so `/session end` has one to end.
 function commandWorld() {
   const sequence = [];
-  const workspace = { projectRoot: "/tmp/aof-ff-13113/alpha", config: { work: { notify: { channels: { discord: { type: "discord", channelId: "111111111111111111", allow: ["222222222222222222"] } } } } } };
+  const workspace = { projectRoot: "/tmp/aof-ff-13113/alpha", config: { mesh: { workspaceId: "ws-alpha" }, work: { notify: { channels: { discord: { type: "discord", channelId: "111111111111111111", allow: ["222222222222222222"] } } } } } };
+  const session = { sessionId: SESSION_ID, nodeId: "node-a", workspaceId: "ws-alpha", project: "alpha", startedAt: null, lastPingAt: null, name: SESSION_NAME };
+  const verbs = fakeVerbs({
+    sessions: [session],
+    start: { ok: true, outcome: "no-link", ...session, item: null, link: null },
+    end: { ok: true, ended: true, sessionId: SESSION_ID, nodeId: "node-a", name: SESSION_NAME },
+    loop: { ok: true, request: "drain", state: "requested", handedOff: true, requested: true },
+  });
   return {
     sequence,
     context: {
       request: async (method, route, body) => { sequence.push({ kind: "request", method, route, body }); return { ok: true, status: 200, json: null }; },
-      invoke: async (id) => { sequence.push({ kind: "invoke", id }); return id === "work:list" ? [] : { ok: true, request: "drain", state: "requested", handedOff: true }; },
+      invoke: async (id, input, ctx) => { sequence.push({ kind: "invoke", id }); return await verbs(id, input, ctx); },
       servedWorkspaces: async () => [workspace],
       now: () => new Date("2026-09-25T12:00:00.000Z"),
     },
   };
+}
+// One runnable interaction `data` per command the table registers — a subcommand each where a
+// command has them — with every REQUIRED option filled, as `[key, data]`, the key `COMMAND_FLAGS`'s.
+const REQUIRED_VALUES = Object.freeze({ scope: "131", project: "alpha", session: SESSION_NAME });
+function registeredCommands() {
+  const filled = (options) => options.filter((option) => option.required === true).map((option) => {
+    assert.ok(Object.hasOwn(REQUIRED_VALUES, option.name), `NO VALUE: the fixture has nothing to fill the required option "${option.name}" with — give it one in REQUIRED_VALUES`);
+    return { type: option.type, name: option.name, value: REQUIRED_VALUES[option.name] };
+  });
+  return COMMANDS.flatMap((command) => {
+    const subs = command.options.filter((option) => option.type === 1);
+    if (subs.length === 0) return [[command.name, { name: command.name, options: filled(command.options) }]];
+    return subs.map((sub) => [`${command.name} ${sub.name}`, { name: command.name, options: [{ type: 1, name: sub.name, options: filled(sub.options) }] }]);
+  });
 }
 const interactionOf = (data, userId) => ({
   id: "700000000000000001", token: "t", application_id: "800000000000000000", type: 2,
@@ -348,7 +405,7 @@ export const archTests = [
     },
   },
   {
-    name: "arch/131 FF-13113 (acd-loop-ask-answered-from-discord): structural — src/discord/** imports no node:child_process, every invoke( in commands.mjs names work:list or work:loop, the resume segment has one home, and the hand-off spawns nothing",
+    name: "arch/131 FF-13113 + arch/191 FF-19106 (acd-loop-ask-answered-from-discord): structural — src/discord/** imports no node:child_process, every invoke( in discord-commands.mjs names one of exactly six verbs and each of the six is named, the resume segment has one home, and the hand-off spawns nothing",
     run: async () => {
       const units = await srcUnits();
       assertRead("the src/** sweep", units.length, 150);
@@ -356,10 +413,12 @@ export const archTests = [
       assert.ok(commands != null, `NOT FOUND: ${COMMANDS_MODULE} — the module the control governs has moved`);
       const spawners = childProcessImporters(units);
       assert.deepEqual(spawners, [], `packages/core/src/discord/** imports no node:child_process — found in ${spawners.join(", ")}. A command dispatches a registered verb and starts no process (ADR-009's invariant)`);
-      const dispatched = commandDispatches(commands.code);
-      assertRead(`the invoke( calls in ${COMMANDS_MODULE}`, dispatched.length, 1, "call(s)");
-      const strays = dispatched.filter((id) => !ALLOWED_VERBS.includes(id));
-      assert.deepEqual(strays, [], `every invoke( in ${COMMANDS_MODULE} names work:list or work:loop — it also names ${strays.join(", ")}`);
+      // FF-19106: exactly the six of 191/ADR-006 §5 — none other named, and none of them unnamed.
+      assert.deepEqual([...ALLOWED_VERBS], ["work:list", "work:loop", "mesh:session-start", "mesh:session-list", "mesh:session-end", "mesh:status"], "ALLOWED_VERBS is exactly the six verbs of 191/ADR-006 §5");
+      const { dispatched, strays, unreached } = verbCensus(commands.code);
+      assertRead(`the invoke( calls in ${COMMANDS_MODULE}`, dispatched.length, ALLOWED_VERBS.length, "call(s)");
+      assert.deepEqual(strays, [], `every invoke( in ${COMMANDS_MODULE} names one of ${ALLOWED_VERBS.join(", ")} — it also names ${strays.join(", ")}. A command dispatches only a verb 191/ADR-006 §5 lists; widening the list is an ADR, not an edit here`);
+      assert.deepEqual(unreached, [], `each of the six verbs is named by at least one invoke( in ${COMMANDS_MODULE} — none names ${unreached.join(", ")}. Drop a verb no command reaches from ALLOWED_VERBS, with the ADR that allowed it`);
 
       const resumeSpellers = units.filter(({ code }) => code.includes(RESUME_SEGMENT)).map(({ rel }) => rel);
       assert.deepEqual(resumeSpellers, [STOP_HOME], `the literal "${RESUME_SEGMENT}" is spelled only in ${STOP_HOME} — spelled in ${resumeSpellers.join(", ")}. Read the path through loopResumesDir() (ADR-009 §6)`);
@@ -372,17 +431,24 @@ export const archTests = [
       const spawning = units.map((unit) => unit.rel === COMMANDS_MODULE ? { ...unit, code: `import { spawn } from "node:child_process";\n${unit.code}` } : unit);
       assert.deepEqual(childProcessImporters(spawning), [COMMANDS_MODULE], "red probe: a child_process import is seen, by file");
       assert.deepEqual(commandDispatches('await context.invoke("work:drive", {}, { workspace });'), ["work:drive"], "red probe: a third verb is seen, by name");
+      // FF-19106's red probes, over the shipped module's own code: a seventh verb is a stray, a verb
+      // the module no longer names is unreached, and a verb named by a variable is not a named verb.
+      assert.deepEqual(verbCensus(`${commands.code}\nawait context.invoke("work:drive", {}, { workspace });`).strays, ["work:drive"], "red probe: a seventh verb is seen, by name");
+      assert.deepEqual(verbCensus(commands.code.replaceAll('"mesh:status"', '"work:list"')).unreached, ["mesh:status"], "red probe: an allowed verb no command reaches is seen, by name");
+      assert.deepEqual(verbCensus(`${commands.code}\nawait context.invoke(verbId, {}, { workspace });`).strays, ["?"], "red probe: a verb that is not a literal is a stray");
     },
   },
   {
-    name: "arch/131 FF-13113 (acd-loop-ask-answered-from-discord): fixture — each of the four commands is deferred before any dispatch, the views ephemerally; an autocomplete is no command and is never deferred; a user not in allow reaches nothing; a handed-back done declaration yields its row",
+    name: "arch/131 FF-13113 + arch/191 FF-19106 (acd-loop-ask-answered-from-discord): fixture — every command the table registers is deferred before any dispatch, a view privately and an action in the channel; an autocomplete is no command and is never deferred; a user not in allow reaches nothing; a handed-back done declaration yields its row",
     run: async () => {
-      for (const [label, command, flags] of [
-        ["/status", { name: "status", options: [] }, 64],
-        ["/asks", { name: "asks", options: [] }, 64],
-        ["/loop stop", { name: "loop", options: [{ type: 1, name: "stop", options: [{ type: 3, name: "scope", value: "131" }] }] }, null],
-        ["/loop resume", { name: "loop", options: [{ type: 1, name: "resume", options: [{ type: 3, name: "scope", value: "131" }] }] }, null],
-      ]) {
+      // EVERY command of the table, read from the table (FF-19106): a row added later is run here
+      // too, and must say in COMMAND_FLAGS where it answers.
+      const registered = registeredCommands();
+      assertRead("the commands the table registers", registered.length, 8, "command(s)");
+      assert.deepEqual(registered.map(([key]) => key).sort(), Object.keys(COMMAND_FLAGS).sort(), "COMMAND_FLAGS says where each registered command answers, and names no command the table lacks");
+      for (const [key, command] of registered) {
+        const label = `/${key}`;
+        const flags = COMMAND_FLAGS[key];
         const world = commandWorld();
         await handleInteraction(interactionOf(command, "222222222222222222"), world.context);
         const firstInvoke = world.sequence.findIndex((entry) => entry.kind === "invoke");
