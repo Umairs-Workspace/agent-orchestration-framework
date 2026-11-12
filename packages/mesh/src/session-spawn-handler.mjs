@@ -1,6 +1,52 @@
 import path from "node:path";
 import { existsSync } from "node:fs";
+import { knownSessionLaunch } from "./session-spawn-directive.mjs";
 export const SESSION_PING_INTERVAL_MS = 30_000;
+
+// ─────────────────────────────── 191/ADR-002 — the one command line a spawn types ────
+//
+// A `session-spawn` frame may name a `launch` from the closed set SESSION_LAUNCHES. The frame
+// never carries the bytes: the node BUILDS the one line it types, here, from that name, the
+// control-minted session id and a session name — and refuses (null) unless every value is
+// one that needs no quoting in any shell. FF-19102 holds the handler to it: the only bytes it
+// writes into a PTY at spawn are this function's answer.
+
+// The width a Claude launch opens at (ADR-002 §6): Remote Control's `/rc active` link sits
+// in a footer Claude hides on a narrow terminal. A bare shell keeps 80×24.
+export const LAUNCH_COLUMNS = 200;
+
+const CANONICAL_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SESSION_NAME = /^[A-Za-z0-9._-]{1,64}$/;
+const OUTSIDE_NAME_CLASS = /[^A-Za-z0-9._-]/g;
+
+// launchCommandLine(launch, { sessionId, name, platform }) → the bytes to type, or null.
+//
+// POSIX: `exec` replaces the shell, so when `claude` ends the PTY ends and no bare shell is
+// left behind (ADR-002 §2). win32: `ComSpec` is cmd.exe, which has no `exec`, so `& exit`
+// closes the shell when `claude` returns, and the line ends CR LF.
+//
+// A name that starts with `-` is refused as well as one outside the class: `--remote-control`
+// takes an OPTIONAL value, so `claude` would read such a name as a flag of its own.
+// `launchSessionName` never produces one.
+export function launchCommandLine(launch, { sessionId, name, platform } = {}) {
+  if (launch !== "claude-remote-control") return null;
+  if (typeof sessionId !== "string" || !CANONICAL_UUID.test(sessionId)) return null;
+  if (typeof name !== "string" || !SESSION_NAME.test(name) || name.startsWith("-")) return null;
+  const command = `claude --remote-control ${name} --session-id ${sessionId}`;
+  return platform === "win32" ? `${command} & exit\r\n` : `exec ${command}\n`;
+}
+
+// launchSessionName(folder, sessionId) → `<project folder>-<first 8 of the session id>`
+// (ADR-002 §3), every character outside `[A-Za-z0-9._-]` mapped to `-`, clipped to 64 with the
+// id kept whole. `folder` is the session record's `repo`, so the name is derivable from a
+// record alone (`/session list`, ADR-003 §5). Leading dashes are dropped from the folder part
+// (see launchCommandLine); a folder with nothing left names the session by its id alone.
+export function launchSessionName(folder, sessionId) {
+  const id = String(sessionId ?? "").slice(0, 8).replace(OUTSIDE_NAME_CLASS, "-");
+  const room = Math.max(0, 64 - id.length - 1);
+  const head = String(folder ?? "").replace(OUTSIDE_NAME_CLASS, "-").replace(/^-+/, "").slice(0, room);
+  return head.length > 0 ? `${head}-${id}` : id;
+}
 
 // Configured runtime services are supplied by core. Construction starts no I/O or timers.
 export function createSessionSpawnServices({ createTerminalSpawn, loadNodePty, addSessionWorktree, meshSessionWorktreePath, sessionWorktreeSlug, findItemWorktree, startSession, pingSession, endSession, loadWorkspace, resolveWorkspaceId, reportDegrade }) {
@@ -333,9 +379,14 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
 
   async function spawnSession(sessionId, frame) {
     const workspaceId = nonEmptyString(frame?.workspaceId);
+    // 191/ADR-002 §1 — a NAME from the closed set, or null for a bare shell. The worker's receive
+    // lane hands the RAW wire frame on, so the builder's drop is re-applied here: anything outside
+    // SESSION_LAUNCHES is a bare shell with nothing typed (191/01 E3), never a refusal.
+    const launch = knownSessionLaunch(frame?.launch);
     // ADR-007 decision 3 — a LABEL. It selects the session key's third component (and
-    // therefore which lane of the grid this renders in); it selects no binary.
-    const assistant = nonEmptyString(frame?.assistant) ?? "claude";
+    // therefore which lane of the grid this renders in); it selects no binary. A Claude
+    // launch IS claude, so its label is the truth (191/ADR-002 §4) whatever the frame said.
+    const assistant = launch === "claude-remote-control" ? "claude" : (nonEmptyString(frame?.assistant) ?? "claude");
     const itemRef = nonEmptyString(frame?.itemRef);
 
     if (workspaceId == null) {
@@ -387,6 +438,22 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
       }
     }
 
+    // `repo` uses the canonical `config.name` the workspace registry/descriptor themselves
+    // store, falling back to the checkout's directory name so the field is never empty. It is
+    // also the folder the launched session is named after (191/ADR-002 §3).
+    const repo = nonEmptyString(ws?.config?.name) ?? (ws?.projectRoot != null ? path.basename(ws.projectRoot) : null);
+
+    // 191/ADR-002 §2 — the launch line is BUILT before anything is created, so a launch whose
+    // line cannot be built refuses with no worktree, no PTY and no record behind it.
+    let launchLine = null;
+    if (launch != null) {
+      launchLine = launchCommandLine(launch, { sessionId, name: launchSessionName(repo, sessionId), platform });
+      if (launchLine == null) {
+        await refuse(sessionId, "session-spawn-failed", `the ${launch} launch line could not be built: the session id must be a canonical UUID and the name must match [A-Za-z0-9._-]{1,64}`);
+        return;
+      }
+    }
+
     // cwd: the checkout root, or the item's worktree when the directive names one.
     let cwd = ws?.projectRoot ?? null;
     if (itemRef != null) {
@@ -408,7 +475,7 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
     try {
       term = await ptySpawn(shell, [], {
         name: "xterm-256color",
-        cols: 80,
+        cols: launchLine != null ? LAUNCH_COLUMNS : 80,
         rows: 24,
         cwd,
         env,
@@ -431,12 +498,23 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
       }
     };
 
+    // TYPED ONCE, straight after the spawn and before anything is registered (191/ADR-002 §5).
+    // The bytes are `launchCommandLine`'s answer and nothing else (FF-19102). A failed write
+    // kills the PTY and refuses, and no record was ever written.
+    if (launchLine != null) {
+      try {
+        term.write(launchLine);
+      } catch (error) {
+        reportDegrade("mesh-session-spawn-handler", error);
+        killTerm();
+        await refuse(sessionId, "session-spawn-failed", `the ${launch} launch line could not be typed: ${String(error?.message ?? error)}`);
+        return;
+      }
+    }
+
     // REGISTER IMMEDIATELY on a successful spawn (ADR-004 decision 1). The record is
-    // byte-identical in schema to a hook-registered one; `repo` uses the canonical
-    // `config.name` the workspace registry/descriptor themselves store, falling back to
-    // the checkout's directory name so the field is never empty.
+    // byte-identical in schema to a hook-registered one; `repo` is resolved above.
     const sessionKey = { nodeId, workspaceId, assistant, sessionId };
-    const repo = nonEmptyString(ws?.config?.name) ?? (ws?.projectRoot != null ? path.basename(ws.projectRoot) : null);
     try {
       // `relaying: true` — 50/ADR-008 decision 8. THE WORKER STATES IT, AND ONLY THE
       // WORKER: this handler bridges the PTY's output up this node's stream (the
@@ -585,7 +663,7 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
       settle().catch((error) => reportDegrade("mesh-session-spawn-handler", error));
     });
 
-    log("info", `session ${sessionId}: ${shell} opened in ${cwd} (workspace ${workspaceId}, assistant label "${assistant}")`);
+    log("info", `session ${sessionId}: ${shell} opened in ${cwd} (workspace ${workspaceId}, assistant label "${assistant}"${launch != null ? `, launched as ${launch}` : ""})`);
     await ack(sessionId, true);
   }
 

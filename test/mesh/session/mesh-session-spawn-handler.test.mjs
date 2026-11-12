@@ -63,6 +63,9 @@ const createTerminalInputRouter = _aofApplication.mesh.terminalInput.createTermi
 const startLauncher = _aofApplication.mesh.launcher.startLauncher;
 const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const meshSessionCommand = _aofHooks.commandsMeshSession.meshSessionCommand;
+const buildSessionIndex = _aofApplication.mesh.globalMeshQuery.buildSessionIndex;
+import { LAUNCH_COLUMNS, launchCommandLine, launchSessionName } from "@aof/mesh/session-spawn-handler";
 import {
   withMeshWorkerExecFixture,
   markRepoPublished,
@@ -1353,6 +1356,8 @@ export const meshSessionSpawnHandlerTests = [
   },
   // 191/00 task 00 — a spawn for the control's own node opens a local session. Hoisted below.
   ...controlHostsLaunchedSessionTests(),
+  // 191/01 tasks 00–02 — a launched session runs Claude with Remote Control on. Hoisted below.
+  ...launchedClaudeSessionTests(),
 ];
 
 // ═══ 191/00 task 00: the control node hosts a launched session (191/ADR-001) ══════════════════
@@ -1553,6 +1558,282 @@ function controlHostsLaunchedSessionTests() {
           control.pushes.some((e) => e.kind === TERMINAL_FRAME_KIND && e.signal?.sessionId === CTL_SESSION && e.signal?.end === true),
           "the end marker reached the loopback push before it closed",
         );
+      }),
+    },
+  ];
+}
+
+// ═══ 191/01: a launched session runs Claude with Remote Control on (191/ADR-002) ═════════════════
+//
+// The node "wsl-2" serving workspace "ws-a", through the SHIPPED handler, repo guard and session
+// API — only the PTY, the clock and the ticker are doubles, exactly as above. The typed bytes are
+// asserted against the literal lines of the contract (E1/E2), never only against the function
+// that produced them.
+const LAUNCH_NODE = "wsl-2";
+const LAUNCH_WS = "ws-a";
+const LAUNCH_ID = "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10";
+const CLAUDE_RC = "claude-remote-control";
+const LAUNCH_KEY = { nodeId: LAUNCH_NODE, workspaceId: LAUNCH_WS, assistant: "claude", sessionId: LAUNCH_ID };
+const E1_LINE = `exec claude --remote-control aof-0b9e6c1e --session-id ${LAUNCH_ID}\n`;
+const E2_LINE = `claude --remote-control aof-0b9e6c1e --session-id ${LAUNCH_ID} & exit\r\n`;
+
+async function withLaunchFixture(fn, { name = "aof" } = {}) {
+  return withMeshWorkerExecFixture(async (fixture) => {
+    const configPath = path.join(fixture.root, ".aof", "aof.config.json");
+    const onDisk = JSON.parse(await readFile(configPath, "utf8"));
+    onDisk.name = name;
+    onDisk.mesh = { ...onDisk.mesh, nodeId: LAUNCH_NODE, workspaceId: LAUNCH_WS };
+    await writeFile(configPath, `${JSON.stringify(onDisk, null, 2)}\n`, "utf8");
+    await markRepoPublished(fixture.root, { workspaceId: LAUNCH_WS });
+    await seedNodeWorkspaceMembership({ home: fixture.home }, { nodeId: LAUNCH_NODE, workspaceId: LAUNCH_WS });
+    const workspace = await loadWorkspace(fixture.root, undefined, { env: fixture.env });
+    const prior = process.env.AOF_GLOBAL_HOME;
+    process.env.AOF_GLOBAL_HOME = fixture.home;
+    try {
+      return await fn({ ...fixture, workspace, workspaceId: LAUNCH_WS });
+    } finally {
+      if (prior === undefined) delete process.env.AOF_GLOBAL_HOME; else process.env.AOF_GLOBAL_HOME = prior;
+    }
+  }, { milestoneNumber: "191", storySlug: "launch", storyNumber: "01" });
+}
+
+// A PTY and a wire that write into ONE ordered log, so "the write precedes the ok ack" is read off
+// the order things happened in rather than inferred.
+function orderedLaunchHandler(fixture, { platform = "darwin", env = { SHELL: "/bin/zsh" }, pty = createFakePty(), options = {} } = {}) {
+  const events = [];
+  const write = pty.write.bind(pty);
+  pty.write = (bytes) => { events.push({ write: String(bytes) }); write(bytes); };
+  const ptySpawn = createRecordingPtySpawn({ pty });
+  const wire = createWireRecorder();
+  const sendAck = wire.sendSessionSpawnAck;
+  wire.sendSessionSpawnAck = async (result) => { events.push({ ack: result }); return sendAck(result); };
+  const built = buildHandler(fixture, { wire, options: { nodeId: LAUNCH_NODE, ptySpawn, platform, env, ...options } });
+  return { ...built, events, pty, ptySpawn };
+}
+
+const launchFrame = (overrides = {}) => buildSessionSpawnFrame(LAUNCH_NODE, {
+  sessionId: LAUNCH_ID, workspaceId: LAUNCH_WS, assistant: "claude", itemRef: null, launch: CLAUDE_RC, at: NOW, ...overrides,
+});
+
+// runHook(args, ctx) — the REAL `aof session` face, its one-line envelope captured off stdout.
+async function runHook(args, ctx) {
+  const lines = [];
+  const original = console.log;
+  const originalExitCode = process.exitCode;
+  console.log = (line) => lines.push(line);
+  try {
+    await meshSessionCommand(args, ctx);
+  } finally {
+    console.log = original;
+    process.exitCode = originalExitCode;
+  }
+  return JSON.parse(lines[lines.length - 1]);
+}
+
+function launchedClaudeSessionTests() {
+  return [
+    // ── task 00 ──
+    {
+      name: "191/01 task00 — the relay envelope and the router's rebuild carry launch through: a session-spawn envelope for \"wsl-2\" with launch \"claude-remote-control\" is dispatched to wsl-2 carrying it, and a value outside the set is dropped by the rebuild",
+      run: async () => {
+        const dispatched = [];
+        const router = createTerminalInputRouter({ dispatchDirective: (directive) => { dispatched.push(directive); return { sent: true }; }, now: () => NOW });
+        router.apply(buildSessionSpawnEnvelope(LAUNCH_NODE, { sessionId: LAUNCH_ID, workspaceId: LAUNCH_WS, assistant: "claude", itemRef: null, launch: CLAUDE_RC, at: NOW }));
+        assert.equal(dispatched.length, 1, "one frame dispatched");
+        assert.equal(dispatched[0].to, LAUNCH_NODE, "…to wsl-2");
+        assert.equal(dispatched[0].launch, CLAUDE_RC, "…carrying the launch");
+
+        // A hand-made envelope that smuggles text past the envelope builder: the router rebuilds
+        // through the frame builder, so the frame it dispatches carries no launch at all.
+        const smuggled = buildSessionSpawnEnvelope(LAUNCH_NODE, { sessionId: "s-2", workspaceId: LAUNCH_WS, assistant: "claude", itemRef: null, at: NOW });
+        smuggled.signal.launch = "bash -i";
+        router.apply(smuggled);
+        assert.equal(dispatched.length, 2, "the smuggled envelope is still a spawn");
+        assert.ok(!Object.hasOwn(dispatched[1], "launch"), "…but its launch is dropped by the rebuild");
+      },
+    },
+    {
+      name: "191/01 task00 — E3 · a launch that names anything else opens a bare shell with nothing typed: the built frame has no launch, and a RAW wire frame carrying launch \"bash -i\" opens the operator's shell at 80×24 and receives no write",
+      run: async () => withLaunchFixture(async (fixture) => {
+        assert.ok(!Object.hasOwn(launchFrame({ launch: "bash -i" }), "launch"), "the frame's launch is absent once built");
+
+        // The worker's receive lane hands the RAW frame on, so the handler applies the set itself.
+        const raw = { ...launchFrame({ launch: undefined }), launch: "bash -i" };
+        const { handler, wire, ptySpawn, pty } = orderedLaunchHandler(fixture);
+        await handler(raw);
+        assert.equal(ptySpawn.calls.length, 1, "a PTY opens");
+        assert.equal(ptySpawn.calls[0].bin, "/bin/zsh", "…running the operator's shell");
+        assert.deepEqual(ptySpawn.calls[0].args, [], "…bare");
+        assert.equal(ptySpawn.calls[0].options.cols, 80, "…at the bare-shell width");
+        assert.deepEqual(pty.writes, [], "and nothing is typed into it");
+        assert.deepEqual(wire.acks, [{ sessionId: LAUNCH_ID, ok: true, code: undefined }], "the spawn is ok — a bare shell, not a refusal");
+        await handler.stopAll();
+      }),
+    },
+
+    // ── task 01 ──
+    {
+      name: "191/01 task01 — the handler types the line once, before the ok ack: on darwin the PTY receives exactly one write, the darwin line, which precedes the ok session-spawn-ack, and the PTY was opened 200 columns wide",
+      run: async () => withLaunchFixture(async (fixture) => {
+        const { handler, events, ptySpawn, pty } = orderedLaunchHandler(fixture, { platform: "darwin" });
+        await handler(launchFrame());
+        assert.deepEqual(pty.writes, [E1_LINE], "exactly one write, the darwin line (E1)");
+        assert.deepEqual(events.map((event) => Object.keys(event)[0]), ["write", "ack"], "the write precedes the ack");
+        assert.equal(events[1].ack.ok, true, "…and the ack is ok");
+        assert.equal(ptySpawn.calls[0].options.cols, 200, "the PTY was opened 200 columns wide");
+        assert.equal(LAUNCH_COLUMNS, 200, "…the width ADR-002 §6 names");
+        assert.equal(ptySpawn.calls[0].bin, "/bin/zsh", "the line is typed into the operator's shell — the PTY's program is still the shell (50/ADR-007)");
+        await handler.stopAll();
+      }),
+    },
+    {
+      name: "191/01 task01 — on win32 the handler types the cmd.exe line (E2) into ComSpec",
+      run: async () => withLaunchFixture(async (fixture) => {
+        const { handler, ptySpawn, pty } = orderedLaunchHandler(fixture, { platform: "win32", env: { ComSpec: "C:\\WINDOWS\\system32\\cmd.exe" } });
+        await handler(launchFrame());
+        assert.equal(ptySpawn.calls[0].bin, "C:\\WINDOWS\\system32\\cmd.exe");
+        assert.deepEqual(pty.writes, [E2_LINE]);
+        await handler.stopAll();
+      }),
+    },
+    {
+      name: "191/01 task01 — a bare-shell spawn types nothing and keeps 80 columns: a frame with no launch → no write, the PTY opened 80 columns by 24 rows",
+      run: async () => withLaunchFixture(async (fixture) => {
+        const { handler, ptySpawn, pty } = orderedLaunchHandler(fixture);
+        await handler(launchFrame({ launch: undefined }));
+        assert.deepEqual(pty.writes, [], "the PTY receives no write");
+        assert.equal(ptySpawn.calls[0].options.cols, 80);
+        assert.equal(ptySpawn.calls[0].options.rows, 24);
+        await handler.stopAll();
+      }),
+    },
+    {
+      name: "191/01 task01 — a launch whose line cannot be built refuses and leaves nothing behind: session id \"not-a-uuid\" → a session-spawn-failed ack, no PTY opened, no session record written",
+      run: async () => withLaunchFixture(async (fixture) => {
+        const { handler, wire, ptySpawn, intervals } = orderedLaunchHandler(fixture);
+        await handler(launchFrame({ sessionId: "not-a-uuid" }));
+        assert.deepEqual(wire.acks, [{ sessionId: "not-a-uuid", ok: false, code: "session-spawn-failed" }]);
+        assert.equal(ptySpawn.calls.length, 0, "no PTY is opened, so none is left open");
+        assert.equal(intervals.intervals.length, 0, "no ping interval is armed");
+        assert.equal(await readSessionRecord(fixture.workspace, { ...LAUNCH_KEY, sessionId: "not-a-uuid" }), null, "no session record is written");
+        assert.equal(handler.handleTerminalInput({ sessionId: "not-a-uuid", bytes: "x" }), false, "and nothing answers for the id");
+      }),
+    },
+    {
+      name: "191/01 task01 — a launch line the PTY refuses to take is session-spawn-failed: the PTY is killed and no record is left",
+      run: async () => withLaunchFixture(async (fixture) => {
+        const pty = createFakePty();
+        pty.write = () => { throw new Error("EIO"); };
+        const { handler, wire, intervals } = orderedLaunchHandler(fixture, { pty });
+        await handler(launchFrame());
+        assert.deepEqual(wire.acks, [{ sessionId: LAUNCH_ID, ok: false, code: "session-spawn-failed" }]);
+        assert.equal(pty.killed, true, "the PTY is torn down");
+        assert.equal(intervals.intervals.length, 0, "no ping interval is armed");
+        assert.equal(await readSessionRecord(fixture.workspace, LAUNCH_KEY), null, "no session record is left");
+      }),
+    },
+    {
+      name: "191/01 task01 — E1 · on macOS the node types an exec of claude with Remote Control; E2 · on Windows it types claude and closes the shell after it; on Linux the line is the POSIX one",
+      run() {
+        const args = { sessionId: LAUNCH_ID, name: "aof-0b9e6c1e" };
+        assert.equal(launchCommandLine(CLAUDE_RC, { ...args, platform: "darwin" }), E1_LINE, "E1");
+        assert.equal(launchCommandLine(CLAUDE_RC, { ...args, platform: "win32" }), E2_LINE, "E2");
+        assert.equal(launchCommandLine(CLAUDE_RC, { ...args, platform: "linux" }), E1_LINE, "Linux is the POSIX line");
+      },
+    },
+    {
+      name: "191/01 task01 — it refuses anything it cannot type safely (Examples: a non-UUID id, a name with a shell metacharacter, an empty name, a launch of \"bash\") — and a name that would read as a flag",
+      run() {
+        const rows = [
+          [CLAUDE_RC, "not-a-uuid", "aof-0b9e6c1e"],
+          [CLAUDE_RC, LAUNCH_ID, "aof; rm -rf ~"],
+          [CLAUDE_RC, LAUNCH_ID, ""],
+          ["bash", LAUNCH_ID, "aof-0b9e6c1e"],
+          // Beyond the table: `--remote-control [name]` takes an optional value, so a leading dash
+          // would be read by claude as an option of its own.
+          [CLAUDE_RC, LAUNCH_ID, "--dangerously-skip-permissions"],
+        ];
+        for (const [launch, sessionId, name] of rows) {
+          for (const platform of ["darwin", "win32", "linux"]) {
+            assert.equal(launchCommandLine(launch, { sessionId, name, platform }), null, `${launch} / ${sessionId} / ${JSON.stringify(name)} on ${platform} → null`);
+          }
+        }
+      },
+    },
+    {
+      name: "191/01 task01 — E5 · characters outside the class become dashes: a workspace named \"my project!\" names session 0b9e6c1e… \"my-project--0b9e6c1e\", and that is the name the handler types",
+      run: async () => withLaunchFixture(async (fixture) => {
+        assert.equal(launchSessionName("my project!", LAUNCH_ID), "my-project--0b9e6c1e");
+        const { handler, pty } = orderedLaunchHandler(fixture);
+        await handler(launchFrame());
+        assert.deepEqual(pty.writes, [`exec claude --remote-control my-project--0b9e6c1e --session-id ${LAUNCH_ID}\n`], "the handler derives the name from the workspace it loaded");
+        await handler.stopAll();
+      }, { name: "my project!" }),
+    },
+    {
+      name: "191/01 task01 — E6 · a long folder name is clipped to 64 and keeps the id; a plain folder name is kept as it is; and the name is readable from the session record alone",
+      run: async () => {
+        const long = launchSessionName("a".repeat(90), LAUNCH_ID);
+        assert.equal(long.length, 64, "64 characters long");
+        assert.ok(long.endsWith("-0b9e6c1e"), "…ending -0b9e6c1e");
+        assert.equal(launchSessionName("aof", LAUNCH_ID), "aof-0b9e6c1e", "a plain folder name is kept");
+        assert.equal(launchSessionName("-rf", LAUNCH_ID), "rf-0b9e6c1e", "a leading dash never survives into the name");
+        await withLaunchFixture(async (fixture) => {
+          const { handler } = orderedLaunchHandler(fixture);
+          await handler(launchFrame());
+          const record = await readSessionRecord(fixture.workspace, LAUNCH_KEY);
+          assert.equal(launchSessionName(record.repo, record.sessionId), "aof-0b9e6c1e", "the record's repo and id name the session (ADR-002 §3)");
+          await handler.stopAll();
+        });
+      },
+    },
+
+    // ── task 02 ──
+    {
+      name: "191/01 task02 — Claude's hook ping lands on the launcher's record: a launched session registered as (wsl-2, ws-a, claude, id), then the REAL `aof session ping` hook path from that session's cwd → the session index holds exactly one record for ws-a on wsl-2",
+      run: async () => withLaunchFixture(async (fixture) => {
+        const { handler, ptySpawn } = orderedLaunchHandler(fixture);
+        await handler(launchFrame());
+        assert.ok(await readSessionRecord(fixture.workspace, LAUNCH_KEY), "the launcher registered (wsl-2, ws-a, claude, id)");
+
+        // Claude's UserPromptSubmit hook: the payload Claude Code sends — its session id (the one
+        // the launcher handed it with --session-id) and its cwd — and nothing else. The node id
+        // and workspace id are resolved by the hook path itself, from that cwd.
+        const hookCwd = ptySpawn.calls[0].options.cwd;
+        const envelope = await runHook(["ping", "--json"], {
+          cwd: hookCwd,
+          env: fixture.env,
+          stdinText: JSON.stringify({ session_id: LAUNCH_ID, cwd: hookCwd, hook_event_name: "UserPromptSubmit" }),
+          now: () => plusSeconds(NOW, 5),
+          loadWorkspace: (cwd, config) => loadWorkspace(cwd, config, { env: fixture.env }),
+        });
+        assert.equal(envelope.ok, true, `the hook ping succeeded: ${JSON.stringify(envelope)}`);
+        assert.equal(envelope.nodeId, LAUNCH_NODE, "the hook resolved this node");
+        assert.equal(envelope.workspaceId, LAUNCH_WS, "…and the launcher's workspace id from the session's cwd");
+        assert.equal(envelope.sessionId, LAUNCH_ID, "…under the control-minted id");
+
+        const sessions = await readLiveSessions(fixture.workspace, LAUNCH_NODE, { now: plusSeconds(NOW, 6), config: fixture.workspace.config });
+        const index = buildSessionIndex({ nodes: [{ nodeId: LAUNCH_NODE, freshness: "live", presence: { sessions } }] });
+        const forWs = index.sessions.filter((entry) => entry.nodeId === LAUNCH_NODE && entry.workspaceId === LAUNCH_WS);
+        assert.equal(forWs.length, 1, `exactly one record for ws-a on wsl-2: ${JSON.stringify(forWs)}`);
+        assert.equal(forWs[0].sessionId, LAUNCH_ID, "…the launched session, one slot");
+        await handler.stopAll();
+      }),
+    },
+    {
+      name: "191/01 task02 — E4 · Claude exiting ends the PTY and the session record: the exec'd claude exits 0 → endSession for its key, its ping interval cleared and one terminal end sent",
+      run: async () => withLaunchFixture(async (fixture) => {
+        const { handler, wire, intervals, pty } = orderedLaunchHandler(fixture);
+        await handler(launchFrame());
+        assert.ok(await readSessionRecord(fixture.workspace, LAUNCH_KEY), "the launched Claude session is open");
+        pty.fireExit(0);
+        await waitFor(() => wire.ends.length > 0, { label: "the terminal end" });
+        assert.equal(await readSessionRecord(fixture.workspace, LAUNCH_KEY), null, "endSession removed the record for its key");
+        assert.equal(intervals.intervals[0].cleared, true, "its ping interval is cleared");
+        pty.fireExit(0);
+        await Promise.resolve();
+        assert.deepEqual(wire.ends, [{ sessionId: LAUNCH_ID }], "exactly one terminal end is sent");
+        assert.equal(handler.handleTerminalInput({ sessionId: LAUNCH_ID, bytes: "x" }), false, "nothing is left to type into — no bare shell behind the exec");
       }),
     },
   ];

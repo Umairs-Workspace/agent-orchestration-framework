@@ -21,6 +21,15 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //      delivered to both opens two sessions, and to neither vanishes. This leg drives the SHIPPED
 //      router.
 //
+// ── FF-19102 · Discord never types a shell (191/ADR-002 §1–§2, its Invariant) ────────────────────
+// A value carried from Discord to another machine must never become a command. So:
+//
+//   4. `SESSION_LAUNCHES` is frozen and is exactly ["claude-remote-control"].
+//   5. Inside `spawnSession` — the handler's spawn path — every write into a PTY writes an
+//      identifier whose every assignment is `launchCommandLine(…)`'s answer (or the `null` it starts
+//      from). The input lane's `write:` closure, registered for terminal-input frames, is the
+//      operator's keystrokes after the spawn and is not a spawn-time write.
+//
 // Every plant below is HAND-WRITTEN (never a string-replace on the real file) and asserts the
 // detector trips on it, so a detector that can no longer see is red rather than vacuously green.
 import assert from "node:assert/strict";
@@ -28,7 +37,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments, matchedParenSpan } from "../../support/source-slice.mjs";
-import { buildSessionSpawnEnvelope } from "@aof/mesh/session-spawn-directive";
+import { buildSessionSpawnEnvelope, SESSION_LAUNCHES } from "@aof/mesh/session-spawn-directive";
 import { SOURCE_DIRECTORY_BUDGETS } from "../testing/acd-source-directory-budget.test.mjs";
 
 const createTerminalInputRouter = _aofApplication.mesh.terminalInput.createTerminalInputRouter;
@@ -187,6 +196,53 @@ export async function exclusivityProblems(makeRouter) {
 
 const shippedRouter = (ports) => createTerminalInputRouter({ ...ports, now: () => "2026-11-12T00:00:00.000Z" });
 
+// ── leg 5 (FF-19102) ───────────────────────────────────────────────────────────────────────────────
+
+const HANDLER_FILE = path.join(MESH_SRC, THE_HANDLER);
+const BUILDER = "launchCommandLine";
+
+// spawnWriteProblems(handlerSource) → every spawn-time PTY write whose bytes are not
+// launchCommandLine's answer. `spawnWrites` is returned too, so a detector that found nothing to
+// judge is visibly vacuous rather than green.
+export function spawnWriteProblems(handlerSource) {
+  const code = lf(stripComments(handlerSource));
+  const header = /\basync\s+function\s+spawnSession\s*\(/.exec(code);
+  if (header == null) return { problems: ["could not locate `async function spawnSession(` in the handler"], spawnWrites: 0 };
+  const params = matchedParenSpan(code, header.index + header[0].length - 1);
+  const fn = braceSpan(code, params.close + 1);
+  if (fn == null) return { problems: ["could not cut spawnSession's body"], spawnWrites: 0 };
+  // Blank out the input lane: the `write:` property of the entry `liveSessions.set(` registers.
+  let body = fn.body;
+  const register = /\bliveSessions\s*\.\s*set\s*\(/.exec(body);
+  if (register != null) {
+    const span = matchedParenSpan(body, register.index + register[0].length - 1);
+    if (span != null) body = body.slice(0, span.open) + "(" + " ".repeat(span.body.length) + ")" + body.slice(span.close + 1);
+  }
+  const problems = [];
+  let spawnWrites = 0;
+  const writeCall = /\.\s*write\s*\(/g;
+  let match;
+  while ((match = writeCall.exec(body)) !== null) {
+    const span = matchedParenSpan(body, match.index + match[0].length - 1);
+    const argument = span?.body.trim() ?? "";
+    spawnWrites += 1;
+    if (!/^[A-Za-z_$][\w$]*$/.test(argument)) {
+      problems.push(`spawnSession writes \`${argument}\` into a PTY — the only spawn-time bytes are ${BUILDER}'s answer (FF-19102)`);
+      continue;
+    }
+    const assigned = [...body.matchAll(new RegExp(`(?<![\\w$.])${argument.replace(/\$/g, "\\$")}\\s*=(?!=)\\s*([^;]*)`, "g"))].map((m) => m[1].trim());
+    if (assigned.length === 0) {
+      problems.push(`spawnSession writes \`${argument}\`, which is never assigned in spawnSession — its bytes are not ${BUILDER}'s answer (FF-19102)`);
+      continue;
+    }
+    for (const value of assigned) {
+      if (value === "null" || new RegExp(`^${BUILDER}\\s*\\(`).test(value)) continue;
+      problems.push(`spawnSession writes \`${argument}\`, assigned \`${value.slice(0, 60)}\` — only ${BUILDER}'s answer may reach a PTY at spawn (FF-19102)`);
+    }
+  }
+  return { problems, spawnWrites };
+}
+
 // ── plants ─────────────────────────────────────────────────────────────────────────────────────────
 
 const CLEAN_LAUNCHER = `
@@ -303,6 +359,41 @@ const NEITHER_LOCAL = (ports) => ({
   },
 });
 
+// FF-19102 plants: the shipped shape (a line built by launchCommandLine, typed once), and three
+// ways a frame's text could reach the PTY instead.
+const CLEAN_SPAWN = `
+async function spawnSession(sessionId, frame) {
+  const launch = knownSessionLaunch(frame?.launch);
+  let launchLine = null;
+  if (launch != null) { launchLine = launchCommandLine(launch, { sessionId, name, platform }); }
+  term = await ptySpawn(shell, [], { cols: 80 });
+  if (launchLine != null) { try { term.write(launchLine); } catch (error) { killTerm(); } }
+  liveSessions.set(sessionId, { write: (bytes) => { term.write(String(bytes)); return {}; } });
+}
+`;
+const WRITES_FRAME_TEXT = `
+async function spawnSession(sessionId, frame) {
+  term = await ptySpawn(shell, [], { cols: 80 });
+  if (frame.command) term.write(frame.command + "\\n");
+}
+`;
+const LINE_FROM_FRAME = `
+async function spawnSession(sessionId, frame) {
+  let launchLine = null;
+  if (frame.launch) { launchLine = \`claude \${frame.launch}\\n\`; }
+  term = await ptySpawn(shell, [], { cols: 80 });
+  if (launchLine != null) term.write(launchLine);
+}
+`;
+const LINE_REASSIGNED = `
+async function spawnSession(sessionId, frame) {
+  let launchLine = launchCommandLine(launch, { sessionId, name, platform });
+  if (frame.override) launchLine = frame.override;
+  term = await ptySpawn(shell, [], { cols: 80 });
+  term.write(launchLine);
+}
+`;
+
 export const archTests = [
   {
     name: "arch/191 FF-19101 (acd-launched-session-from-discord): the launcher builds its session-spawn handler from createMeshWorkerSessionSpawnHandler in BOTH its control and its worker branch, with the same literal keys",
@@ -333,6 +424,33 @@ export const archTests = [
     async run() {
       const problems = await exclusivityProblems(shippedRouter);
       assert.deepEqual(problems, [], problems.join("\n"));
+    },
+  },
+  {
+    name: "arch/191 FF-19102 (acd-launched-session-from-discord): SESSION_LAUNCHES is frozen and holds exactly \"claude-remote-control\"",
+    run() {
+      assert.ok(Object.isFrozen(SESSION_LAUNCHES), "SESSION_LAUNCHES is frozen");
+      assert.deepEqual([...SESSION_LAUNCHES], ["claude-remote-control"], "a launch is a name from a closed set of one, never text the node runs");
+    },
+  },
+  {
+    name: "arch/191 FF-19102 (acd-launched-session-from-discord): session-spawn-handler.mjs writes into a PTY at spawn only launchCommandLine's answer",
+    async run() {
+      const { problems, spawnWrites } = spawnWriteProblems(await readFile(HANDLER_FILE, "utf8"));
+      assert.ok(spawnWrites >= 1, "the detector sees the handler's one spawn-time write (non-vacuous)");
+      assert.deepEqual(problems, [], problems.join("\n"));
+    },
+  },
+  {
+    name: "arch/191 FF-19102 (acd-launched-session-from-discord) self-check: a spawn that writes frame text, a line built from the frame, and a line reassigned after launchCommandLine each trip — and the shipped shape, input lane included, does not",
+    run() {
+      const clean = spawnWriteProblems(CLEAN_SPAWN);
+      assert.deepEqual(clean.problems, [], `the clean plant passes: ${clean.problems.join(" | ")}`);
+      assert.equal(clean.spawnWrites, 1, "…with its one spawn-time write seen and the input lane's write blanked");
+      assert.match(spawnWriteProblems(WRITES_FRAME_TEXT).problems.join(" "), /writes `frame\.command/, "writing frame text trips");
+      assert.match(spawnWriteProblems(LINE_FROM_FRAME).problems.join(" "), /assigned `/, "a line built from the frame trips");
+      assert.match(spawnWriteProblems(LINE_REASSIGNED).problems.join(" "), /assigned `frame\.override/, "a line reassigned from the frame trips");
+      assert.match(spawnWriteProblems("function other() {}").problems.join(" "), /could not locate/, "a renamed spawn path is not found, never vacuously clean");
     },
   },
   {

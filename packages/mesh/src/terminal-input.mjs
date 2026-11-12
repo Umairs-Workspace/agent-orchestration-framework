@@ -237,6 +237,9 @@ function createTerminalInputRouter({ dispatchDirective, now, onLog, onSessionSpa
           workspaceId,
           assistant: signal.assistant,
           itemRef: signal.itemRef,
+          // 191/ADR-002 §1 — carried through the builder, which drops any value outside
+          // SESSION_LAUNCHES: the router forwards a launch NAME, never text.
+          launch: signal.launch,
           at: typeof signal.at === "string" && signal.at.length > 0 ? signal.at : resolveNow(),
         });
         // 191/ADR-001 §2 — the control's OWN node: its local handler, never `dispatchDirective`.
