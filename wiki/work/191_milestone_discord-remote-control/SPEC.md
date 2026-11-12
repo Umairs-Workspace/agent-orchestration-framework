@@ -78,7 +78,7 @@ Open unknowns for refine (a researcher's first questions):
 Cut at refine, 2026-11-11 (ARCHITECTURE ADR-008). 00 → 01 → 02 → 03 in sequence on the session
 lane; 04 and 05 run beside them; 06 waits for 02–05; 07 waits for 02.
 
-- [ ] [00 · The control node hosts a launched session](stories/00_story_the-control-node-hosts-a-launched-session/STORY.md)
+- [x] [00 · The control node hosts a launched session](stories/00_story_the-control-node-hosts-a-launched-session/STORY.md)
 - [ ] [01 · A launched session runs Claude with Remote Control on](stories/01_story_a-launched-session-runs-claude-with-remote-control/STORY.md)
 - [ ] [02 · Sessions start and list from the CLI](stories/02_story_sessions-start-and-list-from-the-cli/STORY.md)
 - [ ] [03 · A launched session can be ended](stories/03_story_a-launched-session-can-be-ended/STORY.md)

@@ -11,6 +11,21 @@ doc: state
   ARCHITECTURE ADR-001–008, FF-19101–19107 declared `pending`, eight stories with example maps.
   Contracts and build briefs authored for every story once the two business questions below were
   answered.
+- 2026-11-12 — **191/00 accepted** (`aof:verify 191/00`, run 20261112T182929251Z-0002). Its ten
+  scenarios and FF-19101 are green, and FF-19101's red probe is recorded. Four findings are open in
+  `VERIFICATION.md`, none 191/00's to close: F-01 blocks 191/07 (FF-5301's ceiling), and F-03 blocks
+  the milestone's outsider check (the ADR-001 §1/§3 amendment from 00's review, still unratified).
+  00's two Feedback entries below graduated into its `RETROSPECTIVE.md` (R1, R2) and its
+  `OUTCOME.md` Gaps. They stay in place until the milestone's compaction.
+- 2026-11-12 — **191/01 verified, held `in-review`** (`aof:verify 191/01`, run 20261112T185213337Z-0001).
+  Its 15 `@executable` scenarios and rows and FF-19102 are green, and FF-19102's red probe is
+  recorded. Task 03's two measurements were made against a real `claude` in a stand-in process: the
+  Remote Control link is in the PTY's bytes at 200 columns, as plain text, so ADR-002 §6 stands, and
+  a session worktree of this trusted project does not stop at the trust dialog. Task 03's first
+  scenario is unsigned (F-06): the daemons run a 31 October payload, F-03 blocks a start for this
+  node, and nobody looked at the Claude app. The operator was asked whether it is carried to the
+  outsider check. F-05 (ADR-002 §4: two records for one launched session) waits for the operator's
+  ratification.
 
 ## Notes & decisions
 
