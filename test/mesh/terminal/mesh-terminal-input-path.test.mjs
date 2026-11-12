@@ -1,6 +1,7 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // test/mesh/terminal/mesh-terminal-input-path.test.mjs — m42 "interactive worker terminals"
 // (SECURITY T14's read-only decision operator-overridden 2026-07-27; the
 // constrained shape is pinned structurally by
@@ -56,6 +57,8 @@ import { assembleAssignmentRecord, insertAssignment, readAssignment } from "@aof
 const applyAssignmentStatusFrame = _aofApplication.mesh.controlStreamServer.applyAssignmentStatusFrame;
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
+import { buildSessionSpawnEnvelope, SESSION_SPAWN_KIND } from "@aof/mesh/session-spawn-directive";
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 
 const NOW = "2026-07-27T10:00:00.000Z";
 const NODE_ID = "worker-a";
@@ -867,7 +870,137 @@ export const meshTerminalInputPathTests = [
   },
   // 131/04 — hoisted below.
   ...resumeAnswerRouterTests(),
+  // 191/00 task 01 — the router sends each frame to exactly one place. Hoisted below.
+  ...controlLocalRouterTests(),
 ];
+
+// ---- 191/00 task 01 — the router sends each frame to exactly one place (191/ADR-001 §2) ----------
+// Routing by node id is the whole rule: a frame for the local handler port's node goes to that
+// handler and never to `dispatchDirective`; a frame for any other node goes down its stream and
+// never to the handler. Every row counts BOTH destinations, so "exactly one" is measured.
+function controlLocalRouterTests() {
+  const CTL = "ctl-1";
+  const SESSION = "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10";
+  const envelopeFor = (kind, node) => (kind === SESSION_SPAWN_KIND
+    ? buildSessionSpawnEnvelope(node, { sessionId: SESSION, workspaceId: "ws-a", assistant: "claude", itemRef: null, at: NOW })
+    : buildTerminalInputEnvelope(node, SESSION, "ls\r"));
+  function routerWithPort({ port = true, spawn, input } = {}) {
+    const dispatched = [];
+    const spawned = [];
+    const typed = [];
+    const refusals = [];
+    const logs = [];
+    const router = createTerminalInputRouter({
+      dispatchDirective: (directive) => { dispatched.push(directive); return { sent: false, code: "target-not-connected" }; },
+      now: () => NOW,
+      onLog: (entry) => logs.push(entry),
+      onSessionSpawnRefused: (detail) => refusals.push(detail),
+      ...(port ? {
+        localHandler: {
+          nodeId: CTL,
+          spawn: spawn ?? ((frame) => { spawned.push(frame); return Promise.resolve(); }),
+          input: input ?? ((frame) => { typed.push(frame); return true; }),
+        },
+      } : {}),
+    });
+    return { router, dispatched, spawned, typed, refusals, logs };
+  }
+  async function withDegrades(fn) {
+    const events = [];
+    setDegradeSinkForTest(() => ({ write: (event) => events.push(event) }));
+    try {
+      await fn(events);
+    } finally {
+      setDegradeSinkForTest(undefined);
+    }
+  }
+  return [
+    {
+      name: "191/00 task01 — each lane routes by the frame's node id (Examples: session-spawn/terminal-input × ctl-1/wsl-2)",
+      run() {
+        const rows = [
+          { kind: SESSION_SPAWN_KIND, node: CTL, local: 1, remote: 0 },
+          { kind: SESSION_SPAWN_KIND, node: "wsl-2", local: 0, remote: 1 },
+          { kind: TERMINAL_INPUT_KIND, node: CTL, local: 1, remote: 0 },
+          { kind: TERMINAL_INPUT_KIND, node: "wsl-2", local: 0, remote: 1 },
+        ];
+        for (const row of rows) {
+          const { router, dispatched, spawned, typed } = routerWithPort();
+          router.apply(envelopeFor(row.kind, row.node));
+          const local = row.kind === SESSION_SPAWN_KIND ? spawned : typed;
+          const otherLocal = row.kind === SESSION_SPAWN_KIND ? typed : spawned;
+          assert.equal(local.length, row.local, `${row.kind} for ${row.node}: the local handler receives it ${row.local} times`);
+          assert.equal(otherLocal.length, 0, `${row.kind} for ${row.node}: the other local lane receives nothing`);
+          assert.equal(dispatched.length, row.remote, `${row.kind} for ${row.node}: dispatchDirective receives it ${row.remote} times`);
+          if (row.local === 1) {
+            assert.equal(local[0].sessionId, SESSION, "the local handler is handed the frame's session");
+            assert.equal(local[0].to, CTL, "…addressed to its own node");
+          }
+          if (row.remote === 1) assert.equal(dispatched[0].to, row.node, "the remote frame goes down that node's stream");
+        }
+      },
+    },
+    {
+      name: "191/00 task01 — the local spawn frame is the SAME down-frame a worker's receive lane is handed (built by buildSessionSpawnFrame)",
+      run() {
+        const local = routerWithPort();
+        local.router.apply(envelopeFor(SESSION_SPAWN_KIND, CTL));
+        const remote = routerWithPort();
+        remote.router.apply(envelopeFor(SESSION_SPAWN_KIND, CTL.replace("ctl", "wkr")));
+        assert.deepEqual({ ...local.spawned[0], to: null }, { ...remote.dispatched[0], to: null }, "one wire shape for both destinations");
+        assert.equal(local.spawned[0].kind, SESSION_SPAWN_KIND);
+        assert.equal(local.spawned[0].workspaceId, "ws-a");
+      },
+    },
+    {
+      name: "191/00 task01 — a router with no local handler port behaves exactly as before: the spawn for ctl-1 is dispatched once and the not-sent answer is announced as a refusal",
+      run() {
+        const { router, dispatched, spawned, typed, refusals, logs } = routerWithPort({ port: false });
+        assert.equal(router.apply(envelopeFor(SESSION_SPAWN_KIND, CTL)), false, "apply answers false — the spawn did not land");
+        assert.equal(dispatched.length, 1, "dispatchDirective receives it once");
+        assert.equal(dispatched[0].to, CTL);
+        assert.deepEqual(refusals, [{ nodeId: CTL, sessionId: SESSION, code: "session-target-not-connected" }], "the not-sent answer is announced on the outcome lane as a refusal, as today");
+        assert.ok(logs.some((entry) => entry.code === "session-spawn-target-not-connected"), "…with the same log line as today");
+        assert.equal(spawned.length + typed.length, 0);
+      },
+    },
+    {
+      name: "191/00 task01 — a local handler that throws on spawn is a degrade, never a router crash, and a refusal for that session is announced (sync throw and rejected promise)",
+      async run() {
+        for (const [label, spawn] of [
+          ["a synchronous throw", () => { throw new Error("local spawn exploded"); }],
+          ["a rejected promise", () => Promise.reject(new Error("local spawn exploded"))],
+        ]) {
+          await withDegrades(async (events) => {
+            const { router, dispatched, refusals } = routerWithPort({ spawn });
+            assert.doesNotThrow(() => router.apply(envelopeFor(SESSION_SPAWN_KIND, CTL)), `${label}: apply never throws`);
+            await waitFor(() => refusals.length === 1);
+            assert.ok(events.some((event) => event.code === "mesh-terminal-input" && /local spawn exploded/.test(event.message)), `${label}: a mesh-terminal-input degrade is reported`);
+            assert.deepEqual(refusals, [{ nodeId: CTL, sessionId: SESSION, code: "session-target-not-connected" }], `${label}: a refusal for that session is announced on the outcome lane`);
+            assert.equal(dispatched.length, 0, `${label}: the frame never falls through to dispatchDirective`);
+          });
+        }
+      },
+    },
+    {
+      name: "191/00 task01 — local input the launched registry does not claim is dropped with ONE logged miss, never dispatched; a throwing input lane is a degrade",
+      async run() {
+        const unclaimed = routerWithPort({ input: () => false });
+        assert.equal(unclaimed.router.apply(envelopeFor(TERMINAL_INPUT_KIND, CTL)), false);
+        assert.equal(unclaimed.router.apply(envelopeFor(TERMINAL_INPUT_KIND, CTL)), false);
+        assert.equal(unclaimed.dispatched.length, 0, "an unclaimed local frame never reaches dispatchDirective");
+        assert.equal(unclaimed.logs.filter((entry) => entry.code === "terminal-input-local-unclaimed").length, 1, "the miss is reported once per tuple");
+        assert.ok(unclaimed.logs.every((entry) => !entry.message.includes("ls\r")), "a keystroke's content is never logged");
+        await withDegrades(async (events) => {
+          const throwing = routerWithPort({ input: () => { throw new Error("input lane broke"); } });
+          assert.equal(throwing.router.apply(envelopeFor(TERMINAL_INPUT_KIND, CTL)), false);
+          assert.ok(events.some((event) => event.code === "mesh-terminal-input"), "a mesh-terminal-input degrade is reported");
+          assert.equal(throwing.dispatched.length, 0);
+        });
+      },
+    },
+  ];
+}
 
 // ---- 131/04 task 03 — the control router forwards the answer on the DOWN frame, unlogged ---------
 function resumeAnswerRouterTests() {

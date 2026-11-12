@@ -57,3 +57,32 @@ doc: state
   id because the live store did not answer, so the doctor could not anchor the two answers to it.
   It was completed, and 20261112T103644390Z-0001 was minted with `--session` naming this session.
   The doctor then anchored 191/03 Q1 and 191/06 Q1 to their recorded answers.
+- 2026-11-12 — 191/00 built (solo, run 20261112T112500688Z-0000, attempt 1, so there is no prior
+  attempt to recall). The near-miss recall returned an empty block. The launcher grew two
+  options-gated test seams beside its existing `startTerminalIngress` one:
+  `createTerminalRelayPushTransport` and `startTerminalInputSubscriber`. With them, the task-00
+  suite starts a real control launcher without binding a broker. Red probes: with the control
+  handler disabled, 4 of the 5 task-00 scenarios fail (the fifth is the unchanged no-relay path).
+  FF-19101 trips on the pre-191 launcher, and on every hand-written plant.
+
+## Feedback (for retro)
+
+- 2026-11-12 — **191/00 review (solo), Important, routed as an amendment to ADR-001 §1/§3, for the
+  operator and architect to ratify. No item was created.** ADR-001 §1 hands the control's handler
+  the worker's own `workerHasRepo` and `meshCheckoutPath`. Read at source
+  (`packages/mesh/src/worker-repo-admission.mjs` `workerHasRepo`, `session-spawn-handler.mjs`'s
+  foreign-workspace branch), those answer "available" only for a workspace with a local
+  `mesh.repo.published` marker or a managed checkout under `checkouts/<id>`. They then open a
+  foreign workspace's shell at `meshCheckoutPath(id)`. On the control, a project the channel serves
+  is checked out at its registered descriptor `projectRoot`. That is the same fact the fleet route's
+  `workspace-not-local` probe reads (RESEARCH Q4), and neither seam reads it. So a start for any
+  such project refuses with `session-repo-unavailable`, a stated refusal rather than a session.
+  The only exception is the daemon's own launch workspace with a published marker, and the
+  supervisor launches the daemon cwd-less. Measured read-only on this laptop: the global
+  `~/.aof/aof.config.json` has no `mesh.repo` and no `mesh.relay.url`. With no relay URL, §3 builds
+  no local handler at all, so a start refuses exactly as before. 191/00's locked contract is met:
+  its fixture seeds the marker and the membership row the worker's guard reads. But the
+  milestone's outsider check on this laptop needs, before 191/06 is accepted, (a) the control to
+  resolve a served workspace's checkout from its descriptor `projectRoot`, which also needs
+  `session-spawn-handler.mjs`, outside 00's write set, and (b) an adoption path for `mesh.relay.url`
+  on a single-node control.
