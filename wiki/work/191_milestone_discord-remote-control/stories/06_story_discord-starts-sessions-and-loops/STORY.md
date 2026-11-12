@@ -5,7 +5,7 @@ slug: discord-starts-sessions-and-loops
 title: "Discord starts sessions and loops — `/session start|list|end` and `/loop start` dispatch the registered verbs, behind the channel's allowlist"
 parent: 191
 depends: [02, 03, 04, 05]
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-11-11
 updated: 2026-11-12
@@ -45,12 +45,12 @@ and `/loop start`), `node`, `item` and `session` autocomplete, the replies, and 
 
 ## Tasks
 
-- [ ] 00 [the table carries the new commands](tasks/00_the-table-carries-the-new-commands.feature)
-- [ ] 01 [a session starts from the channel, privately](tasks/01_a-session-starts-from-the-channel-privately.feature)
-- [ ] 02 [sessions are listed and ended from the channel](tasks/02_sessions-are-listed-and-ended-from-the-channel.feature)
-- [ ] 03 [a loop starts from the channel](tasks/03_a-loop-starts-from-the-channel.feature)
-- [ ] 04 [FF-19106 grows the verb set by exactly the session verbs](tasks/04_ff-19106-grows-the-verb-set-by-exactly-the-session-verbs.feature)
-- [ ] 05 [the guide lists the new commands](tasks/05_the-guide-lists-the-new-commands.feature)
+- [x] 00 [the table carries the new commands](tasks/00_the-table-carries-the-new-commands.feature)
+- [x] 01 [a session starts from the channel, privately](tasks/01_a-session-starts-from-the-channel-privately.feature)
+- [x] 02 [sessions are listed and ended from the channel](tasks/02_sessions-are-listed-and-ended-from-the-channel.feature)
+- [x] 03 [a loop starts from the channel](tasks/03_a-loop-starts-from-the-channel.feature)
+- [x] 04 [FF-19106 grows the verb set by exactly the session verbs](tasks/04_ff-19106-grows-the-verb-set-by-exactly-the-session-verbs.feature)
+- [x] 05 [the guide lists the new commands](tasks/05_the-guide-lists-the-new-commands.feature)
 
 ## Notes
 

@@ -437,3 +437,79 @@ doc: state
   - **Recorded finding (Nit, 191/02's suite): `mesh-session-verbs/02 E5` times out under load.**
     Its 15 s wait for the spawn envelope expired twice while another test run held the machine, and
     never on a quiet one.
+- 2026-11-12 — 191/06 built and reviewed (continue, solo, run 20261112T172410958Z-0000, attempt 1,
+  so there is no prior attempt to recall). The near-miss recall returned an empty block.
+  `COMMANDS` gains `/session start|list|end` and `/loop start`. `node`, `item` and `session` are
+  autocompleted from `mesh:status`, `work:list` and `mesh:session-list`, read only in a project the
+  user is listed on. `/session start` invokes `mesh:session-start` with the project's id and
+  `waitMs: 45000`, and its reply is private. `/session end` ends only a live session of a project
+  the user is listed on. `/loop start` invokes `work:loop` with `{ scope, startHandOff: true }`.
+  The deferral is a table (`IN_CHANNEL`) keyed by command and subcommand. FF-13113's
+  `ALLOWED_VERBS` is the six of ADR-006 §5 (FF-19106), each reached, with red probes for a seventh
+  verb, an unreached verb and a verb that is not a literal. The FF fixture now runs every row of
+  `COMMANDS`, read from the table. The guide lists the four commands.
+  - **Tests, by file.** `aof test --scope impacted --story 191/06` widened to the full suite
+    (`no-graph`), as on every story of this milestone. It was stopped after 25 minutes with no
+    verdict, because a full run is ruled out on this machine. The evidence, on the final tree
+    (366c6b7), run by file with an isolated `AOF_GLOBAL_HOME`: the nine suites this story touches
+    or is held by, 0 red; the 122 suites that sweep the source tree or name a changed file, 1 red.
+    That one is `arch/m42-item-3` (`packages/execution/src/pty.mjs`, 2 silent catches against a
+    baseline of 0), which 191/03 recorded and this diff does not touch. `yarn-installation`
+    production ×3 failed on an earlier tree for the `/var` → `/private/var` reason 191/03 recorded.
+    `packages/messaging/test/services.test.mjs` is a node:test file and passed under `node --test`
+    (4 cases). The milestone regression gate is still owed.
+  - **Gate.** `aof work validate 191/06` passed. `aof work doctor 191/06` answered healthy, with 0
+    errors and the three standing warnings. Both were walked again after the one fix below.
+  - **Review, one round, no Blocker** (solo: structural, behavioural and craft lenses, by the
+    session that wrote the code, so without an independent reader). No UI, so no design lens.
+    All 22 `@executable` scenarios map to a named case. The guide (@manual 05) was checked by
+    reading it: the table has the four rows with their options and who sees the reply, and the
+    text says a start replies only to the person who ran it, that the session is Claude with
+    Remote Control signed in as the machine's own `claude` and never a shell, and that it runs
+    until `/session end`, Quit or a restart with no idle limit.
+  - **Fixed at the close (Important): `/session list` would have shown no time on a live node.**
+    The presence wire carries no `startedAt` (191/02's open amendment, above), so every real row
+    answers `startedAt: null` and E5's age never appears. The line now falls back to
+    `last seen <elapsed> ago` from `lastPingAt`, which is the verb's own fallback on the terminal,
+    and shows no time when neither is stated. A stated start still reads as E5 says. The guide
+    says both. If 191/02's amendment adds `startedAt` to the wire, the age appears with no change
+    here.
+  - **Departure from PLAN: `/loop start` does not look for a loop to pick its project.** PLAN says
+    it reuses `answerLoop`'s project choice. With several projects and no `project:`, that choice
+    asks which project has a loop on the scope, and a scope being started has usually never run,
+    so every start would be refused `discord-loop-not-found`. `/loop start` instead asks for
+    `project:`, naming the projects (`discord-scope-ambiguous`). With one project, or with
+    `project:`, the choice is the shared one.
+  - **Recorded finding: `/session end` cannot tell a mistyped name from someone else's session,
+    by design.** It reads the sessions of the projects the user is listed on and no others, so
+    `mesh:session-list` is never asked about a project the user may not address. A miss is
+    refused `discord-command-not-allowed` when the channel serves a project the user is not on,
+    and `discord-session-not-found` when every project is theirs. Two codes are new here and are
+    not in ADR-006: `discord-session-not-found` and `discord-session-ambiguous` (two live sessions
+    under one typed name). They want a line in the ADR at `aof:verify`.
+  - **Recorded finding: `/session start` naming a project the user is not on is refused
+    `discord-command-not-allowed`**, by that project's own `allow` key. `/status`, `/asks` and
+    `/loop` still answer `discord-scope-ambiguous` ("no project here is named …") for the same
+    case, as 191/05 left them. E4 required the session answer. Aligning the older commands is a
+    story shape for the operator, since their replies are locked by 131/11 and 191/05.
+  - **Recorded finding (Nit): `node` is offered by a different liveness read than the start
+    checks.** ADR-006 §2 names `mesh:status`, where a node is live when it has beaten and is not
+    stale. `planSessionStart` reads the global projection's `freshness`. They can disagree at the
+    edge. The offer only suggests, and the verb then refuses in its own words (E3).
+  - **Recorded finding (Nit): the 45 s wait has two homes**, `SESSION_WAIT_MS` in
+    `discord-buttons.mjs` and in `discord-commands.mjs`. `packages/messaging/src` is at its
+    12-file ceiling with no allowance, so a shared leaf needs its own budget decision.
+  - **Recorded finding (unmeasured): an offer must answer inside Discord's 3 s.** `node` and `item`
+    each make one verb read and `session` makes one per project the user is on. The suite proves
+    the choices, not the time on a live control node. It belongs in the by-hand check.
+  - **The declared `reads:` set was incomplete.** Read and not declared:
+    `packages/mesh/src/session-start.mjs` (the refusal E3 quotes),
+    `packages/mesh/src/commands/identity.mjs` (`mesh:status`'s node rows),
+    `packages/work-loop/src/stop.mjs` (the start hand-off's refusals),
+    `packages/work/src/commands/list.mjs`, `packages/messaging/src/form.mjs` and
+    `packages/messaging/src/discord-buttons.mjs`. `files:` was complete.
+  - **PLAN's by-hand check was not run here.** From the phone: `/session start project:<this
+    repo>` answers privately with a link or the name, the session opens in the Claude app,
+    `/session end` ends it, and `/loop start` on a scratch scope is started by the desktop app.
+    It needs the payload installed (`node scripts/install-local.mjs --skip-ui`) and the desktop
+    app restarted, which is the operator's. It is owed at `aof:verify`.

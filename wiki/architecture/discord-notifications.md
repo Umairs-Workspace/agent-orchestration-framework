@@ -299,7 +299,7 @@ message is refused too.
 
 ## Slash commands
 
-The bot answers four commands in an aof channel. They use the `applications.commands` scope and
+The bot answers eight commands in an aof channel. They use the `applications.commands` scope and
 the USE_APPLICATION_COMMANDS permission, which the invite URL already grants, so the bot needs no
 second invite. The commands appear in a server once the bot is connected: the control node
 registers them in every server an aof channel lives in when it connects, and checks again every
@@ -311,6 +311,10 @@ hour.
 | `/asks` | `project` (optional) | lists the questions waiting or parked, each with a link to the bot's question message | only you see it |
 | `/loop stop` | `scope`, `project` (optional) | asks the loop for that scope to stop. The first request drains, and a second cancels the session in flight | the channel sees it |
 | `/loop resume` | `scope`, `project` (optional) | hands a halted supervised loop back to the desktop app, which relaunches it with `--resume` on its next poll | the channel sees it |
+| `/loop start` | `scope`, `project` (optional) | asks the desktop app to start a new supervised loop on that scope, on its next poll | the channel sees it |
+| `/session start` | `project`, `node` (optional), `item` (optional) | starts Claude in that project and answers with the link that opens it, or with the session's name | only you see it |
+| `/session list` | `project` (optional) | lists the live sessions in each project, each with its name, its node and how long it has run or when it was last seen | only you see it |
+| `/session end` | `session` | ends that session, and says so once the node confirms it has gone | the channel sees it |
 
 **Who can run them.** A command reaches only the projects whose Discord channel is the one it is
 run in, and only for people on that channel's `allow` list (see "Answering by reply" above). A
@@ -318,12 +322,14 @@ command in a channel no project uses answers *This channel is not an aof project
 not on any `allow` list gets a refusal ending `(discord-command-not-allowed)`, and nothing runs. A
 command sent in a direct message is refused, because a direct message names no project.
 
-**Several projects in one channel.** `/status` and `/asks` show one section per project, and
-`project:` narrows them to one. `/loop` acts on exactly one project. Without `project:`, it takes the
-one project that has a loop on the scope, and refuses with `(discord-scope-ambiguous)`, naming each
-one, when several have. You don't have to type the project: pick it from the list Discord offers as
-you type `project:`. The list offers only the projects whose channel `allow` list holds you, the
-same ones the command would reach. Someone on no `allow` list is offered nothing. A typed folder
+**Several projects in one channel.** `/status`, `/asks` and `/session list` show one section per
+project, and `project:` narrows them to one. `/loop` acts on exactly one project. Without `project:`,
+`/loop stop` and `/loop resume` take the one project that has a loop on the scope, and refuse with
+`(discord-scope-ambiguous)`, naming each one, when several have. `/loop start` has no loop to go by
+yet, so in a channel with several projects it asks you to pick one with `project:`.
+`/session start` always takes its `project`. You don't have to type the project: pick it from the
+list Discord offers as you type `project:`. The list offers only the projects whose channel `allow`
+list holds you, the same ones the command would reach. Someone on no `allow` list is offered nothing. A typed folder
 name or workspace id still works, and a name no project here has is refused with
 `(discord-scope-ambiguous)`, naming the projects there are.
 
@@ -348,6 +354,67 @@ to run in a terminal instead: `aof work loop <scope> --resume`. A loop that is s
 refused, `loop-hand-off-running`, and one that last ran on another node is refused,
 `loop-hand-off-not-local`: hand it back on that node. From a terminal, the same hand-off is
 `aof work loop <scope> --hand-off`.
+
+**`/loop start` starts nothing itself either.** It writes a start request, and the desktop app
+starts the scope as a new supervised loop on its next poll. It answers `@<name> asked the supervisor
+to start <scope> — it starts on its next poll`. It needs the desktop app running on the control
+node. Two refusals are worth knowing:
+
+- `loop-start-running`: a loop on that scope is already running, so there is nothing to start.
+- `loop-start-resumable`: the scope has a halted supervised loop. Starting again would reset its
+  budget, so the reply points you at `/loop resume scope:<scope>` instead.
+
+From a terminal, the same request is `aof work loop <scope> --hand-off-start`.
+
+### Starting a session from Discord
+
+`/session start project:<project>` starts Claude in that project so you can open it from your
+phone. Pick the project from the list Discord offers. `node:` and `item:` are optional, and each
+has its own list:
+
+- `node:` offers the nodes that are online now. Leave it out to start on the control node, which
+  has every project a channel serves.
+- `item:` offers the project's work items that are in progress. With an item, the session starts
+  in that item's worktree.
+
+**Only you see the reply**, because it carries the link that opens the session. It is one of:
+
+- `Claude started on <node> in **<project>**: <link>`. Tap the link to open the session in the
+  Claude app.
+- `Claude started on <node> in **<project>**, with no link yet. Open the Claude app, tap **Code**,
+  and find **<name>** there.` The bot watches for the link for 45 seconds. With no link in that
+  time the session is still started, and the Claude app lists it under that name.
+- `The session in **<project>** was not started (<code>): …`, with the reason. For example,
+  `session-target-not-connected` means the node you picked is not online, and
+  `session-item-unknown` means the project has no such work item.
+
+**What a start needs on the machine.** The session is Claude with Remote Control: the node runs
+`claude --remote-control` itself, signed in as that machine's own `claude`. It is never a shell,
+and nothing typed in Discord reaches a command line. So the node needs `claude` installed and
+signed in, and the desktop app running, as for the loop commands. The session opens in the Claude
+app of the account that machine's `claude` is signed in to. If that `claude` is signed out, the
+session still starts but Remote Control fails, so no link arrives: sign in on the machine, end the
+session with `/session end`, and start again.
+
+**A session runs until you end it.** There is no idle limit. A session ends when you run
+`/session end`, when `claude` itself exits, or when the desktop app on that node is quit or
+restarted.
+
+**Seeing and ending sessions.** `/session list` shows the live sessions in the channel's projects,
+only to you, one line each: `<name> — <node> · <how long it has run>`. When a node has not reported
+when a session started, the line ends `· last seen <how long> ago` instead.
+`/session end session:<name>` ends one. Pick the session from the list Discord offers, which shows the same names. The list holds
+only the sessions of projects whose `allow` list holds you, and a session in any other project is
+refused, ending `(discord-command-not-allowed)`. The channel sees the result:
+
+- `@<name> ended <session> on <node>`, once the node confirms the session has gone.
+- `@<name> asked <node> to end <session> — the request was sent, but <session> is still listed
+  (session-end-unconfirmed)`, when the node did not confirm within 15 seconds. Run `/session list`
+  to see whether it went. A `claude` you started yourself in a terminal was not started by aof, and
+  cannot be ended from Discord.
+
+From a terminal, the same three are `aof mesh session start <project>`, `aof mesh session list` and
+`aof mesh session end <session>`.
 
 ## Options
 

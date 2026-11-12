@@ -7,8 +7,12 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // are observed through a faked `discordRequest` (00 QA ruling 1), the hour and the gateway are 10's
 // fakes, and `invoke` is injected and records its calls (01 QA ruling 1) — except where a case runs
 // the REAL verb over real run records, to read back what it wrote.
+//
+// milestone 191 / story 06, tasks 00 to 03 (191/ADR-006 §3-§4): `/session start|list|end` and
+// `/loop start`. Each case runs the REAL bot on the shared fake gateway (`onBot`), over the fixture's
+// fake verbs, which answer in the registered verbs' own shapes.
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 const COMMANDS = _aofApplication.messaging.discord.commands.COMMANDS;
@@ -20,12 +24,13 @@ const startDiscordBot = _aofApplication.messaging.discord.bot.startDiscordBot;
 const startGateway = _aofApplication.messaging.discord.gateway.startGateway;
 const recordAskMessage = _aofApplication.messaging.askMessages.recordAskMessage;
 const loopResumesDir = _aofApplication.loop.stopRequest.loopResumesDir;
+const loopStartsDir = _aofApplication.loop.stopRequest.loopStartsDir;
 const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
 const readStopRequest = _aofApplication.loop.stopRequest.readStopRequest;
 const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
-import { TOKEN, degradeSink, fakeClock, fakeGateway, flush, releaseDegradeSink } from "./discord-fixture.mjs";
+import { CONTROL_NODE, SESSION_ID, SESSION_NAME, TOKEN, coded, degradeSink, fakeClock, fakeGateway, fakeVerbs, flush, onBot, releaseDegradeSink } from "./discord-fixture.mjs";
 
 const CHANNEL = "111111111111111111";
 const GUILD = "900000000000000000";
@@ -80,13 +85,13 @@ const edit = (sequence) => sequence.filter((entry) => entry.kind === "request" &
 export const discordCommandsTests = [
   // ── task 00: the table and its registration ─────────────────────────────────────────────────
   {
-    name: "131/11 task00 (191/05) — the table is the four commands: status, asks, and loop with stop and resume, each taking scope and project",
+    name: "131/11 task00 (191/05, 191/06) — the table is status, asks, loop with stop, resume and start, each taking scope and project, and session",
     run() {
-      assert.deepEqual(COMMANDS.map((command) => command.name), ["status", "asks", "loop"]);
+      assert.deepEqual(COMMANDS.map((command) => command.name), ["status", "asks", "loop", "session"]);
       const optionsOf = (list) => Object.fromEntries(list.map((option) => [option.name, option]));
       for (const command of COMMANDS.slice(0, 2)) assert.deepEqual(optionsOf(command.options).project, { type: 3, name: "project", description: optionsOf(command.options).project.description, required: false, autocomplete: true });
       const loop = COMMANDS[2];
-      assert.deepEqual(loop.options.map((sub) => [sub.name, sub.type]), [["stop", 1], ["resume", 1]]);
+      assert.deepEqual(loop.options.map((sub) => [sub.name, sub.type]), [["stop", 1], ["resume", 1], ["start", 1]]);
       for (const sub of loop.options) {
         const options = optionsOf(sub.options);
         assert.equal(options.scope.type, 3);
@@ -562,7 +567,278 @@ export const discordCommandsTests = [
       assert.deepEqual(offered(ctx.sequence), [{ name: "notes", value: "ws-n" }]);
     },
   },
+
+  // ── 191/06 task00: the table carries the new commands ───────────────────────────────────────
+  {
+    name: "191/06 task00 — the session command and its three subcommands, and /loop start beside stop and resume",
+    run() {
+      // [name, required, autocomplete] per option, in the order Discord is given them.
+      const shape = (sub) => sub.options.map((option) => [option.name, option.required, option.autocomplete === true]);
+      const session = COMMANDS.find((command) => command.name === "session");
+      assert.deepEqual(session.options.map((sub) => [sub.name, sub.type]), [["start", 1], ["list", 1], ["end", 1]]);
+      const [start, list, end] = session.options;
+      assert.deepEqual(shape(start), [["project", true, true], ["node", false, true], ["item", false, true]], "/session start: a required project, then an optional node and item, each autocompleted");
+      assert.deepEqual(shape(list), [["project", false, true]], "/session list: an optional autocompleted project");
+      assert.deepEqual(shape(end), [["session", true, true]], "/session end: a required autocompleted session");
+      const loop = COMMANDS.find((command) => command.name === "loop");
+      assert.deepEqual(loop.options.map((sub) => sub.name), ["stop", "resume", "start"]);
+      assert.deepEqual(shape(loop.options[2]), [["scope", true, false], ["project", false, true]], "/loop start: a required scope and an optional autocompleted project");
+      // What Discord itself refuses: a description over 100 characters, an option that is not a string.
+      const walk = (options) => options.flatMap((option) => [option, ...walk(option.options ?? [])]);
+      for (const entry of [...COMMANDS, ...walk(COMMANDS.flatMap((command) => command.options))]) {
+        assert.ok(entry.description.length >= 1 && entry.description.length <= 100, `${entry.name}: a description Discord accepts (${entry.description.length} characters)`);
+      }
+      assert.ok(Object.isFrozen(session) && Object.isFrozen(session.options) && session.options.every((sub) => Object.isFrozen(sub) && Object.isFrozen(sub.options)), "the new rows are frozen like the rest");
+    },
+  },
+  {
+    name: "191/06 task00 — each new option is offered from its own source (three rows)",
+    async run() {
+      const verbs = () => fakeVerbs({ items: { "ws-a": [{ ref: "191/02", status: "in-progress" }, { ref: "191/01", status: "done" }] }, sessions: [liveSession()] });
+      for (const [sub, option, choice, verb] of [
+        ["start", "node", { name: CONTROL_NODE, value: CONTROL_NODE }, ["mesh:status", {}]],
+        ["start", "item", { name: "191/02", value: "191/02" }, ["work:list", { mesh: true }]],
+        ["end", "session", { name: SESSION_NAME, value: SESSION_ID }, ["mesh:session-list", { project: "ws-a" }]],
+      ]) {
+        const sequence = await onBot(autocomplete({ name: "session", sub, focus: option, value: "", user: SAM }), { workspaces: aofOnly(), invoke: verbs() });
+        assert.deepEqual(offered(sequence), [choice], `/session ${sub} ${option}: the choices are its source's, and nothing else`);
+        assert.deepEqual(invokes(sequence).map((entry) => [entry.id, entry.input, entry.workspace]), [[...verb, "aof"]], `/session ${sub} ${option}: read through ${verb[0]}, in aof`);
+        assert.deepEqual(sequence.filter((entry) => entry.kind === "request").map((entry) => entry.body.type), [8], `/session ${sub} ${option}: one type 8 callback, no deferral, no edit`);
+      }
+    },
+  },
+  {
+    name: "191/06 task00 — a session in a project the user may not address is not offered, and that project is never read",
+    async run() {
+      const sequence = await onBot(autocomplete({ name: "session", sub: "end", focus: "session", value: "", user: SAM }), { workspaces: aofAndNotes(), invoke: fakeVerbs({ sessions: [liveSession(), NOTES_SESSION] }) });
+      assert.deepEqual(offered(sequence), [{ name: SESSION_NAME, value: SESSION_ID }], `${NOTES_SESSION.name} is not among the choices`);
+      assert.deepEqual(invokes(sequence).map((entry) => [entry.id, entry.input, entry.workspace]), [["mesh:session-list", { project: "ws-a" }, "aof"]], "mesh:session-list is asked about aof only");
+    },
+  },
+  {
+    name: "191/06 task00 — an offer is filtered by what was typed, holds only what is live or in progress, and a stranger is offered nothing",
+    async run() {
+      const stale = { nodeId: "wsl-2", presence: { nodeId: "wsl-2", heartbeatAt: "2026-09-25T09:00:00.000Z" }, stale: true };
+      const silent = { nodeId: "mini-1", stale: false };
+      const nodes = await onBot(autocomplete({ name: "session", sub: "start", focus: "node", value: "", user: SAM }), { workspaces: aofOnly(), invoke: fakeVerbs({ nodes: [CONTROL_NODE, stale, silent, "node-7297"] }) });
+      assert.deepEqual(offered(nodes).map((choice) => choice.value), [CONTROL_NODE, "node-7297"], "a stale node and one that never beat are not offered");
+      const typed = await onBot(autocomplete({ name: "session", sub: "start", focus: "node", value: "NODE-7", user: SAM }), { workspaces: aofOnly(), invoke: fakeVerbs({ nodes: [CONTROL_NODE, "node-7297"] }) });
+      assert.deepEqual(offered(typed).map((choice) => choice.value), ["node-7297"], "case is ignored, as for a project");
+
+      // The item is the PICKED project's: with two kept projects, the one `project` names so far.
+      const both = [projectAt("aof", "ws-a", { allow: [SAM] }), projectAt("notes", "ws-n", { allow: [SAM] })];
+      const items = { "ws-a": [{ ref: "191/02", status: "in-progress" }], "ws-n": [{ ref: "07/01", status: "in-progress" }] };
+      const picked = await onBot(autocomplete({ name: "session", sub: "start", focus: "item", value: "", others: { project: "ws-n" }, user: SAM }), { workspaces: both, invoke: fakeVerbs({ items }) });
+      assert.deepEqual(offered(picked), [{ name: "07/01", value: "07/01" }]);
+      const unpicked = await onBot(autocomplete({ name: "session", sub: "start", focus: "item", value: "", user: SAM }), { workspaces: both, invoke: fakeVerbs({ items }) });
+      assert.deepEqual(offered(unpicked), [], "with no project picked among several, no item is offered");
+      assert.deepEqual(invokes(unpicked), [], "and nothing is read");
+
+      for (const option of ["node", "item", "session"]) {
+        const stranger = await onBot(autocomplete({ name: "session", sub: option === "session" ? "end" : "start", focus: option, value: "", user: "444444444444444444" }), { workspaces: aofOnly(), invoke: fakeVerbs({ sessions: [liveSession()] }) });
+        assert.deepEqual(stranger.map((entry) => [entry.kind, entry.body]), [["request", { type: 8, data: { choices: [] } }]], `${option}: a user on no allowlist is offered nothing, and no verb is dispatched`);
+      }
+    },
+  },
+
+  // ── 191/06 task01: a session starts from the channel, privately ─────────────────────────────
+  {
+    name: "191/06 task01 — the start is deferred privately before anything else, then mesh:session-start is invoked with the project's id and waitMs 45000",
+    async run() {
+      const sequence = await onBot(sam({ name: "session", sub: "start", options: { project: "aof" } }), { workspaces: aofOnly(), invoke: fakeVerbs({ start: started() }) });
+      assert.deepEqual(sequence.map((entry) => (entry.kind === "invoke" ? `invoke ${entry.id} ${entry.workspace}` : `${entry.method} ${entry.route}`)), [
+        "POST /interactions/700000000000000001/interaction-token/callback",
+        "invoke mesh:session-start aof",
+        `PATCH /webhooks/${APP}/interaction-token/messages/@original`,
+      ]);
+      assert.deepEqual(sequence[0].body, { type: 5, data: { flags: 64 } }, "the first request is the type 5 callback, with flags 64");
+      assert.deepEqual(sequence[1].input, { project: "ws-a", waitMs: 45000 });
+    },
+  },
+  {
+    name: "191/06 task01 — an item and a node are passed through",
+    async run() {
+      const sequence = await onBot(sam({ name: "session", sub: "start", options: { project: "aof", node: "wsl-2", item: "191/02" } }), { workspaces: aofOnly(), invoke: fakeVerbs({ start: started({ nodeId: "wsl-2", item: "191/02" }) }) });
+      assert.deepEqual(invokes(sequence).map((entry) => [entry.id, entry.input]), [["mesh:session-start", { project: "ws-a", node: "wsl-2", item: "191/02", waitMs: 45000 }]]);
+    },
+  },
+  {
+    name: "191/06 task01 — a verb that throws still edits the reply, coded or not",
+    async run() {
+      const thrown = await onBot(sam({ name: "session", sub: "start", options: { project: "aof" } }), { workspaces: aofOnly(), invoke: fakeVerbs({ start: coded("session-route-failed", "The session could not be routed.") }) });
+      assert.equal(edit(thrown), "The session in **aof** was not started (session-route-failed): The session could not be routed.");
+      const broken = await onBot(sam({ name: "session", sub: "start", options: { project: "aof" } }), { workspaces: aofOnly(), invoke: fakeVerbs({ start: new TypeError("boom") }) });
+      assert.equal(edit(broken), "/session start failed (TypeError).", "an uncoded throw is still answered, by the one edit");
+      for (const sequence of [thrown, broken]) assert.equal(sequence.filter((entry) => entry.method === "PATCH").length, 1, "exactly one edit of the original reply");
+    },
+  },
+  {
+    name: "191/06 task01 R1 E1 — the link comes back, and only @sam sees it",
+    async run() {
+      const link = "https://claude.ai/code/session_01AbC-x_9";
+      const sequence = await onBot(sam({ name: "session", sub: "start", options: { project: "aof" } }), { workspaces: aofOnly(), invoke: fakeVerbs({ start: started({ outcome: "started", link }) }) });
+      assert.equal(edit(sequence), `Claude started on ${CONTROL_NODE} in **aof**: ${link}`);
+      assert.deepEqual(sequence[0].body, { type: 5, data: { flags: 64 } }, "deferred with flags 64, so only @sam sees the reply");
+    },
+  },
+  {
+    name: "191/06 task01 R1 E2 — with no link, the reply names the session and where to find it",
+    async run() {
+      const sequence = await onBot(sam({ name: "session", sub: "start", options: { project: "aof" } }), { workspaces: aofOnly(), invoke: fakeVerbs({ start: started({ outcome: "no-link" }) }) });
+      assert.equal(edit(sequence), `Claude started on ${CONTROL_NODE} in **aof**, with no link yet. Open the Claude app, tap **Code**, and find **${SESSION_NAME}** there.`);
+    },
+  },
+  {
+    name: "191/06 task01 R1 E3 — an offline node is refused in the verb's words, and a node's own refusal by its code",
+    async run() {
+      const offline = coded("session-target-not-connected", 'Node "wsl-2" has no live connection to this control node.');
+      const sequence = await onBot(sam({ name: "session", sub: "start", options: { project: "aof", node: "wsl-2" } }), { workspaces: aofOnly(), invoke: fakeVerbs({ start: offline }) });
+      assert.equal(edit(sequence), 'The session in **aof** was not started (session-target-not-connected): Node "wsl-2" has no live connection to this control node.');
+      // The verb's OTHER refusal: the node acknowledged the spawn with a refusal, answered as a value.
+      const refused = await onBot(sam({ name: "session", sub: "start", options: { project: "aof" } }), { workspaces: aofOnly(), invoke: fakeVerbs({ start: started({ ok: false, outcome: "refused", code: "session-spawn-refused" }) }) });
+      assert.equal(edit(refused), `The session in **aof** was not started (session-spawn-refused): ${CONTROL_NODE} refused it before it began`);
+    },
+  },
+  {
+    name: "191/06 task01 R1 E4 — a user not on the allowlist starts nothing, in a channel of one project or of several",
+    async run() {
+      // The feature's stranger is user 222…: ALPHA_USER here, who is on no list of this channel.
+      const sequence = await onBot(interaction({ name: "session", sub: "start", options: { project: "aof" }, user: ALPHA_USER }), { workspaces: aofOnly(), invoke: fakeVerbs({ start: started() }) });
+      assert.match(edit(sequence), /\(discord-command-not-allowed\)$/u);
+      assert.deepEqual(invokes(sequence), [], "mesh:session-start is never invoked");
+      // Allowed on notes, not on aof: naming aof is refused as not allowed, by the project's own key.
+      const elsewhere = await onBot(interaction({ name: "session", sub: "start", options: { project: "aof" }, user: BETA_USER }), { workspaces: aofAndNotes(), invoke: fakeVerbs({ start: started() }) });
+      assert.equal(edit(elsewhere), "You are not on the answer list of aof (`work.notify.channels.discord.allow`) — nothing was started (discord-command-not-allowed)");
+      assert.deepEqual(invokes(elsewhere), [], "and nothing is invoked");
+      const unknown = await onBot(sam({ name: "session", sub: "start", options: { project: "aoff" } }), { workspaces: aofOnly(), invoke: fakeVerbs({ start: started() }) });
+      assert.match(edit(unknown), /^No project here is named aoff — the projects are aof \(discord-scope-ambiguous\)$/u, "autocomplete suggests and does not gate: a typed project is still resolved");
+      assert.deepEqual(invokes(unknown), []);
+    },
+  },
+
+  // ── 191/06 task02: sessions are listed and ended from the channel ───────────────────────────
+  {
+    name: "191/06 task02 — a session in a project @sam may not address is not ended, and that project is never read",
+    async run() {
+      const sequence = await onBot(sam({ name: "session", sub: "end", options: { session: NOTES_SESSION.name } }), { workspaces: aofAndNotes(), invoke: fakeVerbs({ sessions: [liveSession(), NOTES_SESSION], end: { ok: true, ended: true } }) });
+      assert.match(edit(sequence), /nothing was ended \(discord-command-not-allowed\)$/u);
+      assert.deepEqual(invokes(sequence).map((entry) => [entry.id, entry.input, entry.workspace]), [["mesh:session-list", { project: "ws-a" }, "aof"]], "mesh:session-end is never invoked, and only aof's sessions are read");
+      // By its id too — what a picker would have sent, had it offered the session.
+      const byId = await onBot(sam({ name: "session", sub: "end", options: { session: NOTES_SESSION.sessionId } }), { workspaces: aofAndNotes(), invoke: fakeVerbs({ sessions: [liveSession(), NOTES_SESSION], end: { ok: true, ended: true } }) });
+      assert.match(edit(byId), /\(discord-command-not-allowed\)$/u);
+      assert.ok(!invokes(byId).some((entry) => entry.id === "mesh:session-end"));
+    },
+  },
+  {
+    name: "191/06 task02 — an end the verb cannot confirm says so, and a name no session carries is refused before the verb",
+    async run() {
+      const unconfirmed = { ok: false, ended: false, code: "session-end-unconfirmed", listed: true, sessionId: SESSION_ID, nodeId: CONTROL_NODE, name: SESSION_NAME };
+      const sequence = await onBot(sam({ name: "session", sub: "end", options: { session: SESSION_NAME } }), { workspaces: aofOnly(), invoke: fakeVerbs({ sessions: [liveSession()], end: unconfirmed }) });
+      assert.equal(edit(sequence), `@sam asked ${CONTROL_NODE} to end ${SESSION_NAME} — the request was sent, but ${SESSION_NAME} is still listed (session-end-unconfirmed). \`/session list\` shows whether it went.`);
+      assert.equal(sequence[0].body.data?.flags ?? null, null, "said where the channel sees it");
+      const unreadable = await onBot(sam({ name: "session", sub: "end", options: { session: SESSION_NAME } }), { workspaces: aofOnly(), invoke: fakeVerbs({ sessions: [liveSession()], end: { ...unconfirmed, listed: false } }) });
+      assert.match(edit(unreadable), new RegExp(`the request was sent, but ${CONTROL_NODE}'s presence could not be read to confirm it \\(session-end-unconfirmed\\)`, "u"));
+      const refused = await onBot(sam({ name: "session", sub: "end", options: { session: SESSION_NAME } }), { workspaces: aofOnly(), invoke: fakeVerbs({ sessions: [liveSession()], end: coded("session-dispatch-failed", "The session-end directive could not be handed to the mesh relay.") }) });
+      assert.equal(edit(refused), `/session end ${SESSION_NAME} was refused (session-dispatch-failed): The session-end directive could not be handed to the mesh relay.`);
+
+      const missing = await onBot(sam({ name: "session", sub: "end", options: { session: "aof-ffffffff" } }), { workspaces: aofOnly(), invoke: fakeVerbs({ sessions: [liveSession()] }) });
+      assert.match(edit(missing), /^No live session is called aof-ffffffff .*\(discord-session-not-found\)$/u, "every project here is @sam's, so a miss is a session that is not there");
+      assert.ok(!invokes(missing).some((entry) => entry.id === "mesh:session-end"), "nothing is sent");
+    },
+  },
+  {
+    name: "191/06 task02 R2 E5 — the list is private and shows the kept projects only",
+    async run() {
+      const sequence = await onBot(sam({ name: "session", sub: "list" }), { workspaces: aofAndNotes(), invoke: fakeVerbs({ sessions: [liveSession(), NOTES_SESSION] }), now: () => NOW });
+      assert.deepEqual(sequence[0].body, { type: 5, data: { flags: 64 } }, "deferred with flags 64");
+      assert.equal(edit(sequence), `**aof**\n${SESSION_NAME} — ${CONTROL_NODE} · 40m`);
+      assert.deepEqual(invokes(sequence).map((entry) => [entry.id, entry.input, entry.workspace]), [["mesh:session-list", { project: "ws-a" }, "aof"]], "mesh:session-list was asked only about ws-a");
+
+      const empty = await onBot(sam({ name: "session", sub: "list", options: { project: "aof" } }), { workspaces: aofOnly(), invoke: fakeVerbs() });
+      assert.equal(edit(empty), "**aof**\nno live sessions");
+      const failing = await onBot(sam({ name: "session", sub: "list" }), { workspaces: aofOnly(), invoke: async () => { throw coded("session-project-unknown"); } });
+      assert.equal(edit(failing), "**aof**\ncould not read aof: session-project-unknown");
+      // A presence that states no start time (every one, until the wire carries it: 191/02's
+      // amendment) has no age to show. Its last ping is shown instead, and never an invented age.
+      const ageless = await onBot(sam({ name: "session", sub: "list" }), { workspaces: aofOnly(), invoke: fakeVerbs({ sessions: [liveSession({ startedAt: null })] }), now: () => NOW });
+      assert.equal(edit(ageless), `**aof**\n${SESSION_NAME} — ${CONTROL_NODE} · last seen 10s ago`);
+      const timeless = await onBot(sam({ name: "session", sub: "list" }), { workspaces: aofOnly(), invoke: fakeVerbs({ sessions: [liveSession({ startedAt: null, lastPingAt: null })] }), now: () => NOW });
+      assert.equal(edit(timeless), `**aof**\n${SESSION_NAME} — ${CONTROL_NODE}`);
+    },
+  },
+  {
+    name: "191/06 task02 R2 E6 — an end is attributed in the channel once it is confirmed, by the session's name or its id",
+    async run() {
+      for (const typed of [SESSION_NAME, SESSION_ID]) {
+        const sequence = await onBot(sam({ name: "session", sub: "end", options: { session: typed } }), { workspaces: aofOnly(), invoke: fakeVerbs({ sessions: [liveSession()], end: { ok: true, ended: true, sessionId: SESSION_ID, nodeId: CONTROL_NODE, name: SESSION_NAME } }) });
+        assert.deepEqual(sequence[0].body, { type: 5 }, "deferred with no flags");
+        assert.equal(edit(sequence), `@sam ended ${SESSION_NAME} on ${CONTROL_NODE}`);
+        assert.deepEqual(invokes(sequence).map((entry) => [entry.id, entry.input, entry.workspace]), [
+          ["mesh:session-list", { project: "ws-a" }, "aof"],
+          ["mesh:session-end", { session: SESSION_ID }, "aof"],
+        ], `typed "${typed}": the verb is given the session's id, in its own project`);
+      }
+    },
+  },
+
+  // ── 191/06 task03: a loop starts from the channel ───────────────────────────────────────────
+  {
+    name: "191/06 task03 — the start is deferred in-channel, and R3 E7: it is handed to the supervisor and attributed",
+    async run() {
+      const sequence = await onBot(sam({ name: "loop", sub: "start", options: { scope: "191", project: "aof" } }), { workspaces: aofOnly(), invoke: fakeVerbs({ loop: { ok: true, requested: true, scope: "191", path: "/tmp/loop-starts/ws-a--191.json" } }) });
+      assert.deepEqual(sequence[0], { kind: "request", method: "POST", route: "/interactions/700000000000000001/interaction-token/callback", body: { type: 5 } }, "the first request is the type 5 callback, with no flags");
+      assert.deepEqual(invokes(sequence).map((entry) => [entry.id, entry.input, entry.workspace]), [["work:loop", { scope: "191", startHandOff: true }, "aof"]]);
+      assert.equal(edit(sequence), "@sam asked the supervisor to start 191 — it starts on its next poll");
+    },
+  },
+  {
+    name: "191/06 task03 R3 E8 — a halted supervised scope is pointed at resume, and any other refusal is shown in the verb's words",
+    async run() {
+      const resumable = { ok: false, code: "loop-start-resumable", message: "Scope 131 has a halted supervised loop (lr-131) — a fresh start would reset its budget. Resume it instead: `/loop resume 131`, or `aof work loop 131 --hand-off` (loop-start-resumable)." };
+      for (const answer of [resumable, coded(resumable.code, resumable.message)]) {
+        const sequence = await onBot(sam({ name: "loop", sub: "start", options: { scope: "131", project: "aof" } }), { workspaces: aofOnly(), invoke: fakeVerbs({ loop: answer }) });
+        assert.equal(edit(sequence), "/loop start 131 was refused (loop-start-resumable): 131 has a halted supervised loop, and a fresh start would reset its budget — resume it with `/loop resume scope:131`");
+      }
+      const running = await onBot(sam({ name: "loop", sub: "start", options: { scope: "131", project: "aof" } }), { workspaces: aofOnly(), invoke: fakeVerbs({ loop: coded("loop-start-running", "Loop lr-131 in scope 131 is running — there is nothing to start (loop-start-running).") }) });
+      assert.equal(edit(running), "/loop start 131 was refused (loop-start-running): Loop lr-131 in scope 131 is running — there is nothing to start (loop-start-running).");
+    },
+  },
+  {
+    name: "191/06 task03 R3 E8 — the REAL verb refuses a halted supervised scope, writes no start request and starts nothing",
+    async run() {
+      await withLoopProject({ live: false, folder: "aof", workspaceId: "ws-a" }, async ({ workspace, invokeReal, spawned }) => {
+        const ctx = context({ workspaces: [workspace], invoke: invokeReal });
+        await handleInteraction(interaction({ name: "loop", sub: "start", options: { scope: "131", project: "aof" }, username: "sam" }), ctx);
+        assert.deepEqual(invokes(ctx.sequence).map((entry) => [entry.id, entry.input]), [["work:loop", { scope: "131", startHandOff: true }]], "the real verb takes the input the command hands it");
+        assert.equal(edit(ctx.sequence), "/loop start 131 was refused (loop-start-resumable): 131 has a halted supervised loop, and a fresh start would reset its budget — resume it with `/loop resume scope:131`");
+        assert.deepEqual(await readdir(loopStartsDir()).catch(() => []), [], "no start request was written");
+        assert.equal(spawned.length, 0, "no process was spawned");
+      });
+    },
+  },
+  {
+    name: "191/06 task03 — with several projects and no project:, a start asks which one, and looks for no loop to tell it",
+    async run() {
+      const both = [projectAt("aof", "ws-a", { allow: [SAM] }), projectAt("notes", "ws-n", { allow: [SAM] })];
+      const ctx = { ...context({ workspaces: both, invoke: fakeVerbs({ loop: { ok: true, requested: true } }) }), hasLoopOn: async () => { throw new Error("not consulted: a scope that has never run has no loop to find"); } };
+      await handleInteraction(sam({ name: "loop", sub: "start", options: { scope: "191" } }), ctx);
+      assert.equal(edit(ctx.sequence), "This channel serves several projects — pick the one to start 191 in with `project:`: aof, notes (discord-scope-ambiguous)");
+      assert.deepEqual(invokes(ctx.sequence), [], "nothing is invoked");
+    },
+  },
 ];
+
+// ── 191/06's background ─────────────────────────────────────────────────────────────────────────
+// @sam (user 111…) is on aof's allowlist; notes, where it is served, allows only BETA_USER.
+const SAM = "111111111111111111";
+const aofOnly = () => [projectAt("aof", "ws-a", { allow: [SAM] })];
+const aofAndNotes = () => [projectAt("aof", "ws-a", { allow: [SAM] }), projectAt("notes", "ws-n", { allow: [BETA_USER] })];
+const sam = (spec) => interaction({ user: SAM, username: "sam", ...spec });
+// A live session as `mesh:session-list` answers one: in aof, on the control, started 40 minutes before NOW.
+const liveSession = (overrides = {}) => ({ sessionId: SESSION_ID, nodeId: CONTROL_NODE, workspaceId: "ws-a", project: "aof", startedAt: "2026-09-25T11:20:00.000Z", lastPingAt: "2026-09-25T11:59:50.000Z", name: SESSION_NAME, ...overrides });
+const NOTES_SESSION = liveSession({ sessionId: "5d2a7f40-1c1d-4b7a-8f3e-6a9b0c2d4e5f", workspaceId: "ws-n", project: "notes", name: "notes-5d2a7f40" });
+// `mesh:session-start`'s answer: a session on the control in aof, with no link unless one is given.
+const started = (overrides = {}) => ({ ok: true, outcome: "no-link", sessionId: SESSION_ID, nodeId: CONTROL_NODE, workspaceId: "ws-a", project: "aof", item: null, name: SESSION_NAME, link: null, ...overrides });
 
 // A served workspace with a folder and a pinned workspace id, on CHANNEL, allowing ALPHA_USER.
 function projectAt(folder, workspaceId, { allow = [ALPHA_USER] } = {}) {
@@ -574,10 +850,10 @@ function projectAt(folder, workspaceId, { allow = [ALPHA_USER] } = {}) {
 // The background: a channel serving "aof" (id ws-a) and "notes" (id ws-n), ALPHA_USER allowed on both.
 const pair = () => [projectAt("aof", "ws-a"), projectAt("notes", "ws-n")];
 
-// An autocomplete interaction (type 4) with `project` focused, as the gateway hands one.
-function autocomplete({ name = "status", sub = null, value = "", others = {}, user = ALPHA_USER, channel = CHANNEL, member = true } = {}) {
+// An autocomplete interaction (type 4) with `focus` (default `project`) focused, as the gateway hands one.
+function autocomplete({ name = "status", sub = null, focus = "project", value = "", others = {}, user = ALPHA_USER, channel = CHANNEL, member = true } = {}) {
   const base = interaction({ name, sub, options: others, user, channel, member });
-  const focused = { type: 3, name: "project", value, focused: true };
+  const focused = { type: 3, name: focus, value, focused: true };
   const data = sub == null
     ? { ...base.data, options: [...base.data.options, focused] }
     : { ...base.data, options: [{ ...base.data.options[0], options: [...base.data.options[0].options, focused] }] };
