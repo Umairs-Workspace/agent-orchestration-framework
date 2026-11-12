@@ -1,0 +1,55 @@
+{
+  "runId": "20261112T103644390Z-0001",
+  "itemRef": "191",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "83045825-0a74-4f76-931a-a30989c65296",
+  "brief": {
+    "answers": [
+      {
+        "token": "191/03 Q1",
+        "question": "191/03 Q1 · A Claude session started from Discord keeps running until someone ends it with /session end, quits the desktop app, or the machine restarts. If you start one from your phone and forget it, it stays open. Should such a session end on its own after a stretch with no activity (nothing typed in or printed out)?",
+        "answer": "No limit",
+        "toolUseId": "toolu_01BYc1sXTasdMyeG9TwWGnrR",
+        "sessionId": "83045825-0a74-4f76-931a-a30989c65296",
+        "at": "2026-11-12T10:32:18.157Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "191/06 Q1",
+        "question": "191/06 Q1 · The reply to /session start carries a tap-to-open link to the new Claude session. Only someone signed in to your Claude account can actually use that link. Who should see the reply?",
+        "answer": "Only me",
+        "toolUseId": "toolu_01BYc1sXTasdMyeG9TwWGnrR",
+        "sessionId": "83045825-0a74-4f76-931a-a30989c65296",
+        "at": "2026-11-12T10:32:18.157Z",
+        "entrypoint": "claude-vscode"
+      }
+    ]
+  },
+  "createdAt": "2026-11-12T10:36:44.390Z",
+  "updatedAt": "2026-11-12T10:36:58.840Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": {
+    "model": "<synthetic>|claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 614,
+      "output": 346502,
+      "cacheRead": 63890856,
+      "cacheCreate": 1477185
+    },
+    "costUsd": 29.90607255,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 298,
+    "toolCalls": 139,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}
