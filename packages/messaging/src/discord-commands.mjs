@@ -9,7 +9,7 @@ export function createDiscordCommands({ reportDegrade, findAskMessage, STOP_STAT
 // for the two actions. Nothing here starts a process: `/loop resume` hands the declaration to the
 // supervisor through `work:loop`'s `handOff`, and the supervisor — the desktop app — relaunches it.
 //
-// THE ORDER is the contract (ADR-009 §4). Every interaction is DEFERRED first — the `type: 5`
+// THE ORDER is the contract (ADR-009 §4). Every COMMAND is DEFERRED first — the `type: 5`
 // callback, before any config read or dispatch, well inside Discord's 3 s — and answered last by ONE
 // edit of the original response. `/status` and `/asks` are views and defer ephemerally; the `/loop`
 // subcommands steer a loop and answer where the channel can see who asked.
@@ -17,8 +17,15 @@ export function createDiscordCommands({ reportDegrade, findAskMessage, STOP_STAT
 // WHO REACHES WHAT (ADR-009 §2-§3, §7). The workspaces COUNTED are the served ones whose `work.notify`
 // has a discord channel with the interaction's `channel_id`; of those, the ones KEPT are those whose
 // matched channel's `allow` holds the user. A DM names no project and is refused. A `/loop` command
-// needs exactly one kept workspace: its `workspace` option names it by id or folder name, and several
+// needs exactly one kept workspace: its `project` option names it by id or folder name, and several
 // with no option is refused naming each candidate.
+//
+// PICKED, NOT TYPED (191/05, ADR-006 §1-§2). Every command's project option is `project`, with
+// `autocomplete: true`. An AUTOCOMPLETE interaction (type 4) is not a command: it is never deferred
+// (Discord allows none), dispatches no verb, and is answered at once with a type 8 callback whose
+// choices are the KEPT workspaces — the same allowlist that guards the command, so it never offers a
+// project the user could not then address. A DM, an unserved channel or a stranger gets `[]`, never
+// a refusal. Autocomplete only suggests: the command still resolves what arrives, by id then folder.
 //
 // The renders read `src/notify/form.mjs`, so a waiting row reads exactly as it does on the terminal
 // and in a posted message's first line; a reply longer than Discord's 2,000 characters is clipped at a
@@ -30,23 +37,27 @@ const DEFERRED_CHANNEL_MESSAGE = 5;
 const APPLICATION_COMMAND = 2;
 const SUB_COMMAND = 1;
 const STRING = 3;
+const AUTOCOMPLETE = 4;
+const AUTOCOMPLETE_RESULT = 8;
+// Discord's own ceiling on an autocomplete answer.
+const MAX_CHOICES = 25;
 // DEFAULT DECISION (ADR-009 §1): the hourly re-registration pass.
 const REGISTER_INTERVAL_MS = 60 * 60 * 1000;
 
-const WORKSPACE_OPTION = Object.freeze({ type: STRING, name: "workspace", description: "The project to address, by id or folder name, when this channel serves several", required: false });
+const PROJECT_OPTION = Object.freeze({ type: STRING, name: "project", description: "The project to address, picked from the ones this channel serves you", required: false, autocomplete: true });
 const SCOPE_OPTION = Object.freeze({ type: STRING, name: "scope", description: "The loop's scope, as `aof work loop` takes it (e.g. 131 or 131-133)", required: true });
 
 // THE TABLE (ADR-009 §1): what every guild an aof channel lives in is given, bulk-overwritten.
 const COMMANDS = Object.freeze([
-  Object.freeze({ name: "status", type: 1, description: "What is in progress in this channel's projects", options: Object.freeze([WORKSPACE_OPTION]) }),
-  Object.freeze({ name: "asks", type: 1, description: "The questions waiting on an answer in this channel's projects", options: Object.freeze([WORKSPACE_OPTION]) }),
+  Object.freeze({ name: "status", type: 1, description: "What is in progress in this channel's projects", options: Object.freeze([PROJECT_OPTION]) }),
+  Object.freeze({ name: "asks", type: 1, description: "The questions waiting on an answer in this channel's projects", options: Object.freeze([PROJECT_OPTION]) }),
   Object.freeze({
     name: "loop",
     type: 1,
     description: "Stop a loop, or hand a supervised one back to the supervisor",
     options: Object.freeze([
-      Object.freeze({ type: SUB_COMMAND, name: "stop", description: "Ask the loop to stop: the first request drains, a second cancels the in-flight session", options: Object.freeze([SCOPE_OPTION, WORKSPACE_OPTION]) }),
-      Object.freeze({ type: SUB_COMMAND, name: "resume", description: "Ask the supervisor to relaunch a supervised loop with --resume", options: Object.freeze([SCOPE_OPTION, WORKSPACE_OPTION]) }),
+      Object.freeze({ type: SUB_COMMAND, name: "stop", description: "Ask the loop to stop: the first request drains, a second cancels the in-flight session", options: Object.freeze([SCOPE_OPTION, PROJECT_OPTION]) }),
+      Object.freeze({ type: SUB_COMMAND, name: "resume", description: "Ask the supervisor to relaunch a supervised loop with --resume", options: Object.freeze([SCOPE_OPTION, PROJECT_OPTION]) }),
     ]),
   }),
 ]);
@@ -106,10 +117,12 @@ function commandOf(data) {
   const top = Array.isArray(data?.options) ? data.options : [];
   const sub = top.find((option) => option?.type === SUB_COMMAND) ?? null;
   const options = {};
+  let focused = null;
   for (const option of sub == null ? top : (Array.isArray(sub.options) ? sub.options : [])) {
     if (option?.type === STRING && typeof option.value === "string") options[option.name] = option.value;
+    if (option?.focused === true) focused = { name: option.name, value: typeof option.value === "string" ? option.value : "" };
   }
-  return { name: data?.name ?? null, sub: sub?.name ?? null, options };
+  return { name: data?.name ?? null, sub: sub?.name ?? null, options, focused };
 }
 
 // clipReply(text) → at most 2,000 characters, cut at a line boundary with `… and N more`.
@@ -215,19 +228,24 @@ function stopSentence(answer) {
 // this module's static closure stays the two verbs it dispatches.
 
 
+// The kept workspaces a typed `project` names: by workspace id, then by folder name.
+function named(kept, wanted) {
+  return kept.filter((workspace) => resolveWorkspaceId(workspace) === wanted || folderOf(workspace) === wanted);
+}
+
 async function answerLoop(command, kept, user, context) {
   const scope = command.options.scope;
   let targets = kept;
-  if (typeof command.options.workspace === "string") {
-    const wanted = command.options.workspace;
-    targets = kept.filter((workspace) => resolveWorkspaceId(workspace) === wanted || folderOf(workspace) === wanted);
+  if (typeof command.options.project === "string") {
+    const wanted = command.options.project;
+    targets = named(kept, wanted);
     if (targets.length === 0) {
-      return refusal("discord-scope-ambiguous", `No project here is named ${wanted} — pick one of ${kept.map(folderOf).join(", ")} with \`workspace:\``);
+      return refusal("discord-scope-ambiguous", `No project here is named ${wanted} — pick one of ${kept.map(folderOf).join(", ")} with \`project:\``);
     }
   } else if (kept.length > 1) {
     // ONE CHANNEL, SEVERAL PROJECTS (operator, 07's live run): the scope names a loop, and only a
     // project that has one on it can mean it. The one project with a loop on the scope is taken;
-    // `workspace:` is asked for only when two projects both have one.
+    // `project:` is asked for only when two projects both have one.
     const hasLoopOn = context.hasLoopOn ?? hasLoopOnDefault;
     const flags = await Promise.all(kept.map((workspace) => hasLoopOn(workspace, scope).catch(() => false)));
     targets = kept.filter((_, index) => flags[index]);
@@ -236,7 +254,7 @@ async function answerLoop(command, kept, user, context) {
     }
   }
   if (targets.length !== 1) {
-    return refusal("discord-scope-ambiguous", `Several projects in this channel have a loop on scope ${scope} — pick one of ${targets.map(folderOf).join(", ")} with \`workspace:\``);
+    return refusal("discord-scope-ambiguous", `Several projects in this channel have a loop on scope ${scope} — pick one of ${targets.map(folderOf).join(", ")} with \`project:\``);
   }
   const [workspace] = targets;
   const who = `@${user.username}`;
@@ -250,19 +268,28 @@ async function answerLoop(command, kept, user, context) {
   return `${who} handed ${scope} to the supervisor — it relaunches with --resume on its next poll`;
 }
 
-// The reply to one deferred command (everything after the deferral).
-async function answerCommand(interaction, command, context) {
+// reach(interaction, context) → who the interaction reaches, read ONCE (each served workspace loaded
+// once): `{ dm: true }` for a direct message, else `{ user, counted, kept }` — COUNTED the served
+// workspaces whose discord channel is this one, KEPT those whose matched channel's `allow` holds the
+// user (ADR-009 §2-§3). The command and the autocomplete both read it, so an offer never names a
+// project the command would then refuse.
+async function reach(interaction, context) {
   const user = interaction.member?.user;
-  if (!isPlainObject(interaction.member) || !isPlainObject(user)) {
-    return refusal("discord-command-dm", "aof's commands answer in a project channel, not in a direct message");
-  }
+  if (!isPlainObject(interaction.member) || !isPlainObject(user)) return { dm: true };
   const counted = [];
   for (const workspace of await context.servedWorkspaces()) {
     const match = discordChannels(workspace).find(([, channel]) => channel.channelId === interaction.channel_id);
     if (match != null) counted.push({ workspace, channel: match[1], name: match[0] });
   }
-  if (counted.length === 0) return "This channel is not an aof project channel — enable one with `aof messaging enable discord --channel <id>`.";
   const kept = counted.filter(({ channel }) => Array.isArray(channel.allow) && channel.allow.includes(user.id)).map(({ workspace }) => workspace);
+  return { dm: false, user, counted, kept };
+}
+
+// The reply to one deferred command (everything after the deferral).
+async function answerCommand(interaction, command, context) {
+  const { dm, user, counted, kept } = await reach(interaction, context);
+  if (dm) return refusal("discord-command-dm", "aof's commands answer in a project channel, not in a direct message");
+  if (counted.length === 0) return "This channel is not an aof project channel — enable one with `aof messaging enable discord --channel <id>`.";
   if (kept.length === 0) {
     const keys = [...new Set(counted.map(({ name }) => `work.notify.channels.${name}.allow`))].join(", ");
     return refusal("discord-command-not-allowed", `You are not on the answer list of any project in this channel (\`${keys}\`) — nothing was run`);
@@ -270,18 +297,61 @@ async function answerCommand(interaction, command, context) {
   const nowMs = context.now().getTime();
   if (command.name === "loop") return answerLoop(command, kept, user, context);
   let views = kept;
-  if (typeof command.options.workspace === "string") {
-    views = kept.filter((workspace) => resolveWorkspaceId(workspace) === command.options.workspace || folderOf(workspace) === command.options.workspace);
-    if (views.length === 0) return refusal("discord-scope-ambiguous", `No project here is named ${command.options.workspace} — the projects are ${kept.map(folderOf).join(", ")}`);
+  if (typeof command.options.project === "string") {
+    views = named(kept, command.options.project);
+    if (views.length === 0) return refusal("discord-scope-ambiguous", `No project here is named ${command.options.project} — the projects are ${kept.map(folderOf).join(", ")}`);
   }
   if (command.name === "status") return renderStatus(views, context, nowMs);
   return renderAsks(views, context, nowMs, interaction.guild_id);
 }
 
-// handleInteraction(interaction, context) → the reply's content. `context` is the bot's:
-// `{ request, invoke, servedWorkspaces, now }`. The deferral is sent FIRST; the one edit of the
-// original response is sent LAST, whatever happened between.
+// projectChoices(kept, typed) → at most 25 `{ name: <folder>, value: <workspaceId> }`, case ignored:
+// the projects whose folder starts with what was typed, then those that merely contain it, each group
+// in served order.
+function projectChoices(kept, typed) {
+  const needle = String(typed ?? "").toLowerCase();
+  const prefixed = [];
+  const containing = [];
+  for (const workspace of kept) {
+    const name = folderOf(workspace);
+    const value = resolveWorkspaceId(workspace);
+    if (name === "" || typeof value !== "string") continue;
+    const folded = name.toLowerCase();
+    if (folded.startsWith(needle)) prefixed.push({ name, value });
+    else if (folded.includes(needle)) containing.push({ name, value });
+  }
+  return [...prefixed, ...containing].slice(0, MAX_CHOICES);
+}
+
+// answerAutocomplete(interaction, context) → the choices sent. ONE type 8 callback, never deferred,
+// no verb: a DM, an unserved channel, a stranger, an unknown focused option or a failed read is `[]`.
+async function answerAutocomplete(interaction, context) {
+  let choices = [];
+  try {
+    const { focused } = commandOf(interaction.data);
+    if (focused?.name === PROJECT_OPTION.name) {
+      const { dm, kept } = await reach(interaction, context);
+      if (!dm) choices = projectChoices(kept, focused.value);
+    }
+  } catch (error) {
+    // The offer is still answered, empty: Discord shows nothing rather than an error, and the
+    // command itself reports whatever is wrong when it runs.
+    choices = [];
+    reportDegrade("discord-autocomplete-failed", new Error(`an autocomplete could not read the projects this channel serves (${error?.code ?? (error instanceof Error ? error.name : "error")})`));
+  }
+  await context.request("POST", `/interactions/${interaction.id}/${interaction.token}/callback`, {
+    type: AUTOCOMPLETE_RESULT,
+    data: { choices },
+  });
+  return choices;
+}
+
+// handleInteraction(interaction, context) → the reply's content (a command) or the choices offered
+// (an autocomplete). `context` is the bot's: `{ request, invoke, servedWorkspaces, now }`. A
+// command's deferral is sent FIRST; the one edit of the original response is sent LAST, whatever
+// happened between.
 async function handleInteraction(interaction, context) {
+  if (interaction?.type === AUTOCOMPLETE) return answerAutocomplete(interaction, context);
   if (interaction?.type !== APPLICATION_COMMAND) return null;
   const command = commandOf(interaction.data);
   const ephemeral = command.name !== "loop" || !isPlainObject(interaction.member);

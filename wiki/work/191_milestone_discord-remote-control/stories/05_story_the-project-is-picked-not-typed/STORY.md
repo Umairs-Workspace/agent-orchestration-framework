@@ -4,7 +4,7 @@ number: 05
 slug: the-project-is-picked-not-typed
 title: "The project is picked, not typed — every command's `workspace` option becomes `project`, offered by autocomplete from the projects the user may address"
 parent: 191
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-11-11
 updated: 2026-11-12
@@ -41,9 +41,9 @@ answered with type-8 choices from the kept workspaces. The guide's command table
 
 ## Tasks
 
-- [ ] 00 [one word for the project on every command](tasks/00_one-word-for-the-project-on-every-command.feature)
-- [ ] 01 [the project is offered, never refused, while typing](tasks/01_the-project-is-offered-while-typing.feature)
-- [ ] 02 [the guide says project, and shows the pick](tasks/02_the-guide-says-project.feature)
+- [x] 00 [one word for the project on every command](tasks/00_one-word-for-the-project-on-every-command.feature)
+- [x] 01 [the project is offered, never refused, while typing](tasks/01_the-project-is-offered-while-typing.feature)
+- [x] 02 [the guide says project, and shows the pick](tasks/02_the-guide-says-project.feature)
 
 ## Notes
 

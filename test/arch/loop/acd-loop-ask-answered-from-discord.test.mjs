@@ -31,7 +31,9 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // `invoke(` in `packages/core/src/discord/commands.mjs` names `work:list` or `work:loop`; the `loop-resumes` segment is
 // spelled only in `packages/core/src/loop/stop-request.mjs`; and `handOffLoop` writes the resume request and imports
 // no `child_process`. Fixture over injected fakes: each of the four commands sends its `type: 5`
-// callback before any `invoke`, the views with `flags: 64`; a user not in `allow` gets
+// callback before any `invoke`, the views with `flags: 64`; an autocomplete interaction (type 4,
+// 191/05) is not a command: it is never deferred, dispatches no verb, and is answered by one `type: 8`
+// callback; a user not in `allow` gets
 // `discord-command-not-allowed` and nothing is invoked; `decideSupervisedDeclarations` yields a
 // done-latest supervised declaration's row only when it is in `resumeRequested`.
 //
@@ -351,7 +353,7 @@ export const archTests = [
     },
   },
   {
-    name: "arch/131 FF-13113 (acd-loop-ask-answered-from-discord): fixture — each of the four commands is deferred before any dispatch, the views ephemerally; a user not in allow reaches nothing; a handed-back done declaration yields its row",
+    name: "arch/131 FF-13113 (acd-loop-ask-answered-from-discord): fixture — each of the four commands is deferred before any dispatch, the views ephemerally; an autocomplete is no command and is never deferred; a user not in allow reaches nothing; a handed-back done declaration yields its row",
     run: async () => {
       for (const [label, command, flags] of [
         ["/status", { name: "status", options: [] }, 64],
@@ -367,6 +369,12 @@ export const archTests = [
         assert.equal(world.sequence[callback].body.type, 5, `${label}: a type 5 callback`);
         assert.equal(world.sequence[callback].body.data?.flags ?? null, flags, `${label}: ${flags == null ? "in-channel" : "ephemeral"}`);
       }
+      // 191/05: an AUTOCOMPLETE interaction is not a command. It is never deferred (Discord allows no
+      // deferral for type 4) and dispatches no verb: its one request is the type 8 callback.
+      const typing = commandWorld();
+      await handleInteraction({ ...interactionOf({ name: "status", options: [{ type: 3, name: "project", value: "", focused: true }] }, "222222222222222222"), type: 4 }, typing.context);
+      assert.deepEqual(typing.sequence.map((entry) => entry.kind === "invoke" ? `invoke ${entry.id}` : `${entry.method} ${entry.route} type ${entry.body?.type}`), ["POST /interactions/700000000000000001/t/callback type 8"], "an autocomplete sends one type 8 callback: no type 5, no verb");
+
       const stranger = commandWorld();
       await handleInteraction(interactionOf({ name: "status", options: [] }, "444444444444444444"), stranger.context);
       assert.equal(stranger.sequence.filter((entry) => entry.kind === "invoke").length, 0, "a user not in allow: invoke is never called");
