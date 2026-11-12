@@ -55,9 +55,11 @@ const sessionRecordPath = _aofHooks.meshSession.sessionRecordPath;
 const DEFAULT_SESSION_TTL_SECONDS = _aofHooks.meshSession.DEFAULT_SESSION_TTL_SECONDS;
 const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
 const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
-import { buildSessionSpawnFrame, SESSION_SPAWN_ACK_KIND } from "@aof/mesh/session-spawn-directive";
+import { buildSessionSpawnFrame, buildSessionSpawnEnvelope, SESSION_SPAWN_ACK_KIND } from "@aof/mesh/session-spawn-directive";
 const TERMINAL_FRAME_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_FRAME_KIND;
 const TERMINAL_INPUT_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_INPUT_KIND;
+const buildTerminalInputEnvelope = _aofApplication.mesh.terminalRelayBridge.buildTerminalInputEnvelope;
+const createTerminalInputRouter = _aofApplication.mesh.terminalInput.createTerminalInputRouter;
 const startLauncher = _aofApplication.mesh.launcher.startLauncher;
 const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
@@ -1347,4 +1349,209 @@ export const meshSessionSpawnHandlerTests = [
       );
     }),
   },
+  // 191/00 task 00 — a spawn for the control's own node opens a local session. Hoisted below.
+  ...controlHostsLaunchedSessionTests(),
 ];
+
+// ═══ 191/00 task 00: the control node hosts a launched session (191/ADR-001) ══════════════════
+//
+// A REAL launcher started as the control node "ctl-1" with a configured relay. Only the edges that
+// would bind a socket are injected — the stream server, the relay broker, the loopback push (a
+// recorder) and the self-subscription (which hands the test the REAL router the launcher built,
+// so delivering an envelope into it is exactly what the subscriber does after parse) — plus the
+// PTY, as in every scenario above. The handler, the repo guard, the session records and the
+// router are the shipped ones.
+const CTL_ID = "ctl-1";
+const CTL_WS = "ws-a";
+const CTL_SESSION = "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10";
+
+async function withControlFixture(fn, { relay = true } = {}) {
+  return withMeshWorkerExecFixture(async (fixture) => {
+    const configPath = path.join(fixture.root, ".aof", "aof.config.json");
+    const onDisk = JSON.parse(await readFile(configPath, "utf8"));
+    onDisk.mesh = {
+      ...onDisk.mesh,
+      nodeId: CTL_ID,
+      workspaceId: CTL_WS,
+      fabric: "direct",
+      address: "127.0.0.1",
+      relay: { controlNode: CTL_ID, ...(relay ? { url: "ws://127.0.0.1:4999/ws/relay" } : {}) },
+    };
+    await writeFile(configPath, `${JSON.stringify(onDisk, null, 2)}\n`, "utf8");
+    await markRepoPublished(fixture.root, { workspaceId: CTL_WS });
+    await seedNodeWorkspaceMembership({ home: fixture.home }, { nodeId: CTL_ID, workspaceId: CTL_WS });
+    const workspace = await loadWorkspace(fixture.root, undefined, { env: fixture.env });
+    await publishNodeRecord(workspace, CTL_ID, { nodeId: CTL_ID, host: CTL_ID, os: "linux", runtimes: [], skills: [], aofVersion: "1.0.0", publishedAt: NOW });
+    const prior = process.env.AOF_GLOBAL_HOME;
+    process.env.AOF_GLOBAL_HOME = fixture.home;
+    try {
+      return await fn({ ...fixture, workspace });
+    } finally {
+      if (prior === undefined) delete process.env.AOF_GLOBAL_HOME; else process.env.AOF_GLOBAL_HOME = prior;
+    }
+  }, { milestoneNumber: "191", storySlug: "ctl", storyNumber: "00" });
+}
+
+// startControl(fixture, overrides) — the control launcher, with a recorder on every edge.
+async function startControl(fixture, { pty = createFakePty(), factory } = {}) {
+  const pushes = [];
+  const dispatched = [];
+  const routers = [];
+  const ptySpawn = createRecordingPtySpawn({ pty });
+  const intervals = createManualIntervals();
+  const handle = await startLauncher(fixture.workspace, {
+    ticker: manualTicker(),
+    peerPollTicker: manualTicker(),
+    propagationTicker: manualTicker(),
+    costTicker: manualTicker(),
+    controlDispatchReclaimTicker: false,
+    terminalIngress: false,
+    globalWorkStoreOptions: { env: fixture.env },
+    now: () => NOW,
+    startControlStreamServer: async () => ({
+      stop() {},
+      updatePeers() {},
+      dispatchDirective: (directive) => { dispatched.push(directive); return { sent: false, code: "target-not-connected" }; },
+    }),
+    relayMode: async () => ({ stop() {} }),
+    createTerminalRelayPushTransport: () => ({ push: (envelope) => { pushes.push(envelope); }, close() {} }),
+    startTerminalInputSubscriber: async (router) => { routers.push(router); return { stop() {} }; },
+    ...(factory ? { createMeshWorkerSessionSpawnHandler: factory } : {}),
+    sessionSpawnHandlerOptions: {
+      ptySpawn,
+      setIntervalImpl: intervals.setIntervalImpl,
+      clearIntervalImpl: intervals.clearIntervalImpl,
+    },
+  });
+  return { handle, pushes, dispatched, routers, ptySpawn, intervals, pty };
+}
+
+const CTL_KEY = { nodeId: CTL_ID, workspaceId: CTL_WS, assistant: "claude", sessionId: CTL_SESSION };
+const ctlSpawnEnvelope = (nodeId = CTL_ID, sessionId = CTL_SESSION) =>
+  buildSessionSpawnEnvelope(nodeId, { sessionId, workspaceId: CTL_WS, assistant: "claude", itemRef: null, at: NOW });
+const isOkAck = (sessionId) => (envelope) => envelope.kind === SESSION_SPAWN_ACK_KIND
+  && envelope.nodeId === CTL_ID && envelope.signal?.sessionId === sessionId && envelope.signal?.ok === true;
+
+// openLocalSession(control) — deliver the spawn on the relay and wait for its ok ack.
+async function openLocalSession(control) {
+  assert.equal(control.routers.length, 1, "the launcher subscribed ONE input router to its own broker");
+  control.routers[0].apply(ctlSpawnEnvelope());
+  await waitFor(() => control.pushes.some(isOkAck(CTL_SESSION)), { label: "the local session's ok ack on the loopback push" });
+}
+
+function controlHostsLaunchedSessionTests() {
+  return [
+    {
+      name: "191/00 task00 — a spawn for the control's own node opens a PTY at the workspace's checkout, writes the (ctl-1, ws-a, claude, id) session record and pushes an ok session-spawn-ack to the loopback relay — never dispatchDirective",
+      run: async () => withControlFixture(async (fixture) => {
+        const control = await startControl(fixture);
+        try {
+          assert.equal(control.handle.role, "control", "the fixture node resolves as the control");
+          await openLocalSession(control);
+
+          assert.equal(control.ptySpawn.calls.length, 1, "one PTY is spawned");
+          assert.equal(path.resolve(control.ptySpawn.calls[0].options.cwd), path.resolve(fixture.root), "its cwd is the checkout of ws-a");
+          const record = await readSessionRecord(fixture.workspace, CTL_KEY);
+          assert.ok(record, "a session record keyed (ctl-1, ws-a, claude, id) is written");
+          assert.equal(record.nodeId, CTL_ID);
+          assert.equal(record.workspaceId, CTL_WS);
+          assert.deepEqual(
+            control.pushes.filter((envelope) => envelope.kind === SESSION_SPAWN_ACK_KIND),
+            [{ kind: SESSION_SPAWN_ACK_KIND, nodeId: CTL_ID, signal: { sessionId: CTL_SESSION, ok: true, code: null } }],
+            "exactly one ok ack, the envelope a worker's ack becomes, under the control's own id",
+          );
+          assert.equal(control.dispatched.length, 0, "the control's own frame never reaches dispatchDirective");
+
+          // …and the same lane for ANOTHER node still goes down that node's stream, opening nothing here.
+          control.routers[0].apply(ctlSpawnEnvelope("wsl-2", "11111111-2222-4333-8444-555555555555"));
+          assert.equal(control.dispatched.length, 1, "a frame for another node is dispatched");
+          assert.equal(control.dispatched[0].to, "wsl-2");
+          assert.equal(control.ptySpawn.calls.length, 1, "…and opens no local PTY");
+        } finally {
+          control.handle.stop();
+        }
+      }),
+    },
+    {
+      name: "191/00 task00 — the local session's output reaches the fleet view through the loopback push, and its exit pushes the end marker and ends the record",
+      run: async () => withControlFixture(async (fixture) => {
+        const control = await startControl(fixture);
+        try {
+          await openLocalSession(control);
+          control.pty.emit("hello");
+          await waitFor(
+            () => control.pushes.some((e) => e.kind === TERMINAL_FRAME_KIND && e.nodeId === CTL_ID && e.signal?.sessionId === CTL_SESSION && e.signal?.bytes === "hello"),
+            { label: "the terminal-frame envelope carrying hello" },
+          );
+          control.pty.fireExit(0);
+          await waitFor(
+            () => control.pushes.some((e) => e.kind === TERMINAL_FRAME_KIND && e.nodeId === CTL_ID && e.signal?.sessionId === CTL_SESSION && e.signal?.end === true),
+            { label: "the terminal-end envelope for the tuple" },
+          );
+          await waitFor(() => !existsSync(sessionRecordPath(fixture.workspace, CTL_KEY)), { label: "the session record to be ended" });
+          assert.equal(await readSessionRecord(fixture.workspace, CTL_KEY), null, "the session record is ended");
+        } finally {
+          control.handle.stop();
+        }
+      }),
+    },
+    {
+      name: "191/00 task00 — keys typed into a local session reach its PTY",
+      run: async () => withControlFixture(async (fixture) => {
+        const control = await startControl(fixture);
+        try {
+          await openLocalSession(control);
+          control.routers[0].apply(buildTerminalInputEnvelope(CTL_ID, CTL_SESSION, "ls\r"));
+          await waitFor(() => control.pty.writes.length === 1, { label: "the keystrokes to reach the local PTY" });
+          assert.deepEqual(control.pty.writes, ["ls\r"], "the PTY of the session receives exactly ls\\r");
+          assert.equal(control.dispatched.length, 0, "the keys never went down a stream");
+        } finally {
+          control.handle.stop();
+        }
+      }),
+    },
+    {
+      name: "191/00 task00 — a control with no mesh.relay.url hosts nothing locally: no handler, no PTY, and a spawn for its own node is refused as before",
+      run: async () => withControlFixture(async (fixture) => {
+        let built = 0;
+        const factory = (...args) => { built += 1; return createMeshWorkerSessionSpawnHandler(...args); };
+        const control = await startControl(fixture, { factory });
+        try {
+          assert.equal(control.handle.role, "control");
+          assert.equal(built, 0, "no local session-spawn handler is built without a relay");
+          assert.equal(control.routers.length, 0, "and no self-subscription exists for a frame to arrive on");
+          assert.equal(control.ptySpawn.calls.length, 0, "no PTY is spawned");
+        } finally {
+          control.handle.stop();
+        }
+        // The router as it stands without a local port — the shape every relay-less control had —
+        // still refuses the spawn for that session on the outcome lane.
+        const refusals = [];
+        const router = createTerminalInputRouter({
+          dispatchDirective: () => ({ sent: false, code: "target-not-connected" }),
+          now: () => NOW,
+          onSessionSpawnRefused: (detail) => refusals.push(detail),
+        });
+        assert.equal(router.apply(ctlSpawnEnvelope()), false);
+        assert.deepEqual(refusals, [{ nodeId: CTL_ID, sessionId: CTL_SESSION, code: "session-target-not-connected" }], "the spawn is reported refused for that session, as it was before this story");
+      }, { relay: false }),
+    },
+    {
+      name: "191/00 task00 — stopping the control daemon halts its local session: the PTY is killed, its ping interval cleared and its record ended",
+      run: async () => withControlFixture(async (fixture) => {
+        const control = await startControl(fixture);
+        await openLocalSession(control);
+        assert.deepEqual(control.intervals.intervals.map((i) => i.cleared), [false], "the 30s ping interval is armed");
+        control.handle.stop();
+        assert.equal(control.pty.killed, true, "stop() killed the PTY");
+        assert.deepEqual(control.intervals.intervals.map((i) => i.cleared), [true], "stop() cleared its ping interval");
+        await waitFor(() => !existsSync(sessionRecordPath(fixture.workspace, CTL_KEY)), { label: "stop() to end the session record" });
+        assert.equal(await readSessionRecord(fixture.workspace, CTL_KEY), null, "the session record is ended");
+        assert.ok(
+          control.pushes.some((e) => e.kind === TERMINAL_FRAME_KIND && e.signal?.sessionId === CTL_SESSION && e.signal?.end === true),
+          "the end marker reached the loopback push before it closed",
+        );
+      }),
+    },
+  ];
+}

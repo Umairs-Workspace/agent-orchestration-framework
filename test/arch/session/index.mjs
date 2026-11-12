@@ -177,6 +177,8 @@ import { archTests as acdSessionSpawnAckHasReaderTests } from "./acd-session-spa
 import { archTests as acdSessionProducerFactSurvivesTheWireTests } from "./acd-session-producer-fact-survives-the-wire.test.mjs";
 import { archTests as acdAttributionIsCapturedOrAbsentTests } from "./acd-attribution-is-captured-or-absent.test.mjs";
 import { archTests as acdLoopTerminalIngressTests } from "./acd-loop-terminal-ingress.test.mjs";
+// milestone 191 — the launched-session controls (FF-19101; 191/01 and 191/02 add FF-19102/19103 as legs).
+import { archTests as acdLaunchedSessionFromDiscordTests } from "./acd-launched-session-from-discord.test.mjs";
 
 export const tests = [
   ...runtimeObservationFactsTests,
@@ -235,4 +237,6 @@ export const tests = [
   ...acdAttributionIsCapturedOrAbsentTests,
   // 162 — FF-16201: the loop drive's terminal ingress (loopback, token-gated, output-only, re-stamped).
   ...acdLoopTerminalIngressTests,
+  // 191 — FF-19101: one handler serves both roles; the router sends each frame to exactly one place.
+  ...acdLaunchedSessionFromDiscordTests,
 ];

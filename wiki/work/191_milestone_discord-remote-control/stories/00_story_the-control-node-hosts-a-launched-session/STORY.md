@@ -4,7 +4,7 @@ number: 00
 slug: the-control-node-hosts-a-launched-session
 title: "The control node hosts a launched session — a start aimed at the control's own node opens its PTY there, through the worker's own handler"
 parent: 191
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-11-11
 updated: 2026-11-12

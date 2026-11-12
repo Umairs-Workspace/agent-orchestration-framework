@@ -1163,7 +1163,10 @@ async function startLauncher(ws, options = {}) {
     // relay.url byte-identical).
     const relayEnabled = options?.relay !== false && configuredRelayUrl(config) != null;
     if (relayEnabled) {
-      controlTerminalPush = createTerminalRelayPushTransport(config);
+      // `options.createTerminalRelayPushTransport` is the test seam (the `startTerminalIngress`
+      // idiom): a fixture records what the control pushes instead of dialling a real broker.
+      const createPush = options?.createTerminalRelayPushTransport ?? createTerminalRelayPushTransport;
+      controlTerminalPush = createPush(config);
     }
     // 162/ADR-001 §2 — the control node's ingress leg: straight into the loopback push the
     // fabric-received frames above already ride. The envelope's node id is THIS daemon's own,
@@ -1173,6 +1176,36 @@ async function startLauncher(ws, options = {}) {
         frame: (sessionId, bytes) => controlTerminalPush.push(buildTerminalFrameEnvelope(nodeId, sessionId, bytes)),
         end: (sessionId) => controlTerminalPush.push(buildTerminalEndEnvelope(nodeId, sessionId)),
       };
+    }
+    // 191/ADR-001 §1 — the control node HOSTS its own launched sessions, through the WORKER'S
+    // handler, built from the same factory with the same literal keys as the worker branch below
+    // (FF-19101: one handler serves both roles, so the control's session stays the worker's
+    // session — one record, one fleet tile, reached by stop()). Only its three outbound legs are
+    // the control's own: bytes and the end marker go to `ingressForward` (162/ADR-001's loopback
+    // push, which the fleet mirror already reads under this node's id), and the ack is pushed into
+    // the same loopback push as the envelope a worker's ack becomes at `onSessionSpawnAck` below.
+    //
+    // §3 — no relay, no local session: with no `ingressForward` the bytes would reach no viewer,
+    // so no handler is built and a frame for this node refuses as it always did.
+    // §4 — assigned to the hoisted `sessionSpawnHandler`, which stop() already halts: a control
+    // daemon with a launched shell still exits on SIGTERM.
+    if (ingressForward != null) {
+      const localLegs = ingressForward;
+      const localPush = controlTerminalPush;
+      const createSessionSpawnHandler = options?.createMeshWorkerSessionSpawnHandler ?? createMeshWorkerSessionSpawnHandler;
+      sessionSpawnHandler = createSessionSpawnHandler({
+        loadWs: options?.workerExecutionLoadWs ?? (() => Promise.resolve(ws)),
+        nodeId,
+        workerHasRepo,
+        meshCheckoutPath,
+        globalWorkStoreOptions: options?.globalWorkStoreOptions,
+        sendTerminalFrame: (sessionId, bytes) => localLegs.frame(sessionId, bytes),
+        sendTerminalEnd: (sessionId) => localLegs.end(sessionId),
+        sendSessionSpawnAck: (result) => localPush.push(buildSessionSpawnAckEnvelope(nodeId, result)),
+        onLog: (entry) => emitWarning(launcherWarnings, { code: entry.code ?? "session-spawn", message: entry.message ?? "", path: null, level: entry.level ?? "info" }, options),
+        now: () => resolveNow(options),
+        ...(options?.sessionSpawnHandlerOptions ?? {}),
+      });
     }
     streamServer = await startServer({
       ...(boundAddress ? { bindAddress: boundAddress } : {}),
@@ -1301,6 +1334,17 @@ async function startLauncher(ws, options = {}) {
           // mint rather than by a `source` field the registry would have to trust.
           onSessionSpawnRefused: ({ nodeId: target, sessionId, code }) =>
             controlTerminalPush?.push(buildSessionSpawnAckEnvelope(target, { sessionId, ok: false, code })),
+          // 191/ADR-001 §2 — the control's OWN node is routed to its local handler, never to
+          // `dispatchDirective` (which has no entry for it); every other node's frame still goes
+          // down that node's stream. No local handler (no relay leg) means no port, and the
+          // router behaves exactly as before. The input lane is property-guarded, as on a worker:
+          // a handler without one claims nothing.
+          localHandler: sessionSpawnHandler == null ? null : {
+            nodeId,
+            spawn: (frame) => sessionSpawnHandler(frame),
+            input: (frame) => typeof sessionSpawnHandler?.handleTerminalInput === "function"
+              && sessionSpawnHandler.handleTerminalInput(frame) === true,
+          },
           // A router-side not-connected result is a PROVABLE pre-spawn
           // refusal. Restore only the exact reservation that produced this
           // envelope; an ambiguous command timeout is deliberately powerless.
@@ -1317,10 +1361,11 @@ async function startLauncher(ws, options = {}) {
           },
         });
         try {
-          terminalInputSubscriber = await startTerminalMirrorSubscriber({
-            transport: createTerminalMirrorSubscriberTransport(config),
-            mirror: inputRouter,
-          });
+          // `options.startTerminalInputSubscriber` is the test seam: a fixture is handed the
+          // router and delivers relay envelopes into it, as the real subscriber does after parse.
+          const startSubscriber = options?.startTerminalInputSubscriber
+            ?? ((router) => startTerminalMirrorSubscriber({ transport: createTerminalMirrorSubscriberTransport(config), mirror: router }));
+          terminalInputSubscriber = await startSubscriber(inputRouter);
         } catch (error) {
           emitWarning(launcherWarnings, { code: "terminal-input-subscriber-failed", message: error?.message ?? "The terminal-input relay subscriber failed to start.", path: null }, options);
           terminalInputSubscriber = null;
