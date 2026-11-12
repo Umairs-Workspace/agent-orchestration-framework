@@ -303,3 +303,61 @@ doc: state
     agent-orchestration-framework --wait 45000 --json` on this laptop. Not run: the global config
     here has no `mesh.relay.url` (191/00's review), so it refuses `session-dispatch-unavailable`
     until that adoption path lands.
+- 2026-11-12 — 191/07 built and reviewed (continue, solo, run 20261112T145751080Z-0000, attempt 1, so
+  no episodic recall was due). The near-miss recall returned an empty block (recorded, 0 verdicts).
+  - **Declared write set incomplete (for refine).** The build had to touch six files outside `files:`.
+    `test/notify/notify-channels.test.mjs` pins the envelope's keys and the `packages/messaging/src`
+    ceiling. `test/arch/loop/acd-loop-ask-reaches-every-face.test.mjs` (FF-13107) pins the eleven
+    envelope keys, and ADR-007 §2's `choices` makes twelve.
+    `packages/core/src/application/bindings/notify/ask-messages.mjs` exposes the new
+    `readIndexedMessage`. `packages/messaging/README.md` gets the new export's row. Two read-only
+    reads were also outside `reads:`: `replies.mjs`'s allowlist and actor rule, and
+    `discord-commands.mjs`'s deferral shape.
+  - **Semantic tightening, stated.** `readAskMessage` now answers only an ask's record. The index
+    also holds halts now, so a reply to a halt's message answers nothing, and `/asks` never links a
+    halt. A tap reads any record through `readIndexedMessage`.
+  - **Recorded (Nit, duplication).** `discord-buttons.mjs` re-states `channelOf` and `firstAnswer`
+    from `replies.mjs` (about 15 lines), and its `settle` mirrors `discord-commands.mjs`'s
+    `dispatchLoop`. A shared helper would touch both of those modules. A candidate for a
+    `pay-debt` pass, not a driver.
+  - **Handed to the operator as a story shape (needs new acceptance criteria).** A multi-select
+    `AskUserQuestion` (`multiSelect: true`) with one question still gets one button per option
+    under ADR-007 §2's codex rule, so one tap answers with a single label. The shape: "a
+    multi-select question is answered by reply". Either drop `choices` when `multiSelect` is
+    true, or render buttons that accumulate picks.
+  - **Test-run scope (environment).** `aof test --scope impacted --story 191/07` widens to the whole
+    tree: `packages/messaging/package.json` has no registered dependent, the guide is not in the
+    graph, and a dispatch worktree carries no `graphify-out/` until `aof graph build . --offline`.
+    The full suite is not runnable on this control node, because the live serve daemon holds
+    `:4182`. So the build ran a named focused set of 25 files (the Discord, notify and ask-face
+    suites; the budget and registration controls; `loop-command-stops`;
+    `run-session-limit-resume`; and the core, work-loop, work and messaging package suites).
+    Every case passed except two in `codex-ownership.suite.mjs`: `156 — retained ancestor lane …`
+    and `156 — retained diverged lane …`. Those fail identically at the base commit `e94eea59` on
+    this Mac, together with `154/04 ownership` (Codex CLI 0.159.0, below the 0.160.0 required).
+    `phases.suite.mjs`'s `156 — real resumed loop …` failed once and passed on re-run (a flake).
+    The milestone regression gate must still run the whole tree, on a node without a live daemon.
+- 2026-11-12 — 191/07 fix round (run 20261112T160014643Z-0001). `work:grade` failed FF-16004:
+  `aof work find 160` loaded 754 modules against its pinned ceiling of 752. The build had put two
+  modules on every verb's synchronous path: `@aof/messaging/discord-buttons` and a core binding of
+  its own (`bindings/discord/buttons.mjs`). **Fixed.** The press handler is now composed in the
+  bot's existing binding (`bindings/discord/bot.mjs`), and the separate binding is deleted (−1).
+  The remaining module is the grammar's leaf. `discord.mjs` must import it to name a message's
+  buttons synchronously, and ADR-007 §4 makes it the one home. So the ceiling rose to 753, with
+  its reason named in the row. `files:` now drops the deleted binding and names
+  `test/arch/command/acd-cli-entry-executes.test.mjs`.
+  - **Lesson.** A story that adds a module to a package the application assembles eagerly
+    should check FF-16004's ceiling in its own run. Refine could name
+    `test/arch/command/acd-cli-entry-executes.test.mjs` in `files:` whenever a story adds a core
+    binding or a messaging export.
+- 2026-11-12 — 191/07 fix round 2 (run 20261112T162359478Z-0002). `work:grade` failed two FF-7706
+  cases in `test/arch/audit/acd-audit-travels-two-roots.test.mjs` ("…gets an audit of its own
+  instruments" and "the census decides registration…"). Both failed on a child probe's deadline:
+  `timed-out` and `deadline-expired`, under `DEFAULT_DEADLINE_MS` = 60 s. Neither returned a
+  wrong answer. **Not reproduced, so no code change.** The suite passed 3 of 3 times in isolation,
+  each run about 4 s, with the machine at a load average of about 21–25. It reads nothing this
+  story changed (messaging, notify, the ask composer or `observe.mjs`).
+  - **Recorded (environment, for retro).** FF-7706's two probe cases are deadline-sensitive under
+    host contention. A grade run on a loaded control node can push a 4 s probe past 60 s. If this
+    recurs, it is a candidate for the grade's own scheduling (run the probe-spawning controls
+    alone), not for the story under grade.

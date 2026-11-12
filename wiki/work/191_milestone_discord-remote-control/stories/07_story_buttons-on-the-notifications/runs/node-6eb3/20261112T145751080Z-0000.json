@@ -1,0 +1,74 @@
+{
+  "runId": "20261112T145751080Z-0000",
+  "itemRef": "191/07",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "f7b7c494-5a65-4986-8e24-b581b902c523",
+  "brief": {
+    "loop": {
+      "loopRunId": "3e5ed9bd-583b-4467-9531-f2972feb5e6a",
+      "scope": "191",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-11-12T11:02:07.586Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        }
+      }
+    },
+    "lane": {
+      "worktree": "/Users/umairbutt/Source/umair/agent-orchestration-framework/.aof/mesh/dispatch-worktrees/dispatch-191-07",
+      "branch": "aof/mesh/191-07",
+      "baseCommit": "e94eea59cecf0d7b0ca506f10a08d8dded9246c4"
+    }
+  },
+  "createdAt": "2026-11-12T14:57:51.080Z",
+  "updatedAt": "2026-11-12T15:48:39.853Z",
+  "failureReason": null,
+  "heartbeatAt": "2026-11-12T15:22:43.516Z",
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 524,
+      "output": 242406,
+      "cacheRead": 59669980,
+      "cacheCreate": 646466
+    },
+    "costUsd": 23.9629035,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 256,
+    "toolCalls": 124,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

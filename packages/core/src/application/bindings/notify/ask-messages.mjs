@@ -6,7 +6,7 @@ export function assembleNotifyAskMessages({ notifySecretServices }) {
 
   const { messagingStoreDir } = notifySecretServices;
 
-  const { ASK_MESSAGE_KEYS, ASK_MESSAGE_TTL_MS, askMessagesDir, recordAskMessage, readAskMessage, findAskMessage } = createAskMessages({ messagingStoreDir });
+  const { ASK_MESSAGE_KEYS, ASK_MESSAGE_TTL_MS, askMessagesDir, recordAskMessage, readIndexedMessage, readAskMessage, findAskMessage } = createAskMessages({ messagingStoreDir });
 
-  return { ASK_MESSAGE_KEYS, ASK_MESSAGE_TTL_MS, askMessagesDir, recordAskMessage, readAskMessage, findAskMessage };
+  return { ASK_MESSAGE_KEYS, ASK_MESSAGE_TTL_MS, askMessagesDir, recordAskMessage, readIndexedMessage, readAskMessage, findAskMessage };
 }

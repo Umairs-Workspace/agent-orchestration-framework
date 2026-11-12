@@ -1,13 +1,17 @@
 import { discordRequest } from "./discord.mjs";
 
+// The interaction type of a button press.
+const MESSAGE_COMPONENT = 3;
+
 // Core supplies configured application services; construction performs no I/O.
-export function createDiscordBot({ reportDegrade, REGISTER_INTERVAL_MS, createRegistrar, handleInteraction, startGateway, handleReply, invokeRegistered, loadProject, resolveNodeWorkspaces, foldDispatchWorktree }) {
+export function createDiscordBot({ reportDegrade, REGISTER_INTERVAL_MS, createRegistrar, handleInteraction, handleButton, startGateway, handleReply, invokeRegistered, loadProject, resolveNodeWorkspaces, foldDispatchWorktree }) {
 // src/discord/bot.mjs — THE BOT (milestone 131 / stories 10-11; ADR-008 §1, ADR-009). The composer the
 // control node's launcher starts, by a deferred import, when this node is the control and a bot token
 // resolves: it holds the token, opens the one gateway connection (`./gateway.mjs`) and routes each
 // dispatch by its `t` to a handler. `MESSAGE_CREATE` is the answer by reply (`./replies.mjs`, 10);
-// `INTERACTION_CREATE` is a slash command (`./commands.mjs`, 11), and READY registers the commands in
-// every guild an aof channel lives in, then again every hour.
+// `INTERACTION_CREATE` is a slash command (`./commands.mjs`, 11) — or, with `type` 3, a tap on a
+// notification's button (`./discord-buttons.mjs`, 191/07, ADR-007 §5) — and READY registers the
+// commands in every guild an aof channel lives in, then again every hour.
 //
 // Every Discord call a handler makes goes through `discordRequest` with this bot's token, and every
 // verb a handler runs goes through `invoke`, reached by a deferred import of `command-core.mjs` — as
@@ -102,11 +106,12 @@ function startDiscordBot({
     return register(true);
   };
 
-  // The dispatch table: `t` → handler. A `t` with no handler is ignored.
+  // The dispatch table: `t` → handler. A `t` with no handler is ignored. An interaction of type 3 is
+  // a button's press (MESSAGE_COMPONENT); every other type is the command handler's.
   const handlers = Object.freeze({
     READY: onReady,
     MESSAGE_CREATE: (d) => handleReply(d, context),
-    INTERACTION_CREATE: (d) => handleInteraction(d, context),
+    INTERACTION_CREATE: (d) => (d?.type === MESSAGE_COMPONENT ? handleButton(d, context) : handleInteraction(d, context)),
   });
   const connection = gateway({
     token,

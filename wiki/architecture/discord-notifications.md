@@ -7,7 +7,8 @@ create the bot once in the Discord Developer Portal, store its token once per ma
 on per project with the id of the channel to post to.
 
 This guide covers the setup. The design is in milestone 131's `ARCHITECTURE.md`: ADR-007 (the bot
-posts, and replaces the webhook), ADR-005 (the notifier) and ADR-006 (the answer path).
+posts, and replaces the webhook), ADR-005 (the notifier) and ADR-006 (the answer path). The buttons
+on the notifications are milestone 191's ADR-007.
 
 > **Coming from the webhook?** aof no longer posts through an incoming webhook, and there is no
 > fallback to one. `aof messaging init discord` now refuses a webhook URL. Create the bot below,
@@ -257,6 +258,44 @@ visibly, and nothing changes.
 The bot's replies ping nobody. The answer is recorded as `@<username>`, never as a user id,
 because run records can be committed to a public repository. A question can be answered by reply
 for 30 days after it was posted.
+
+## Buttons on the notifications
+
+Some of the bot's messages carry buttons, so the common answers take one tap on a phone.
+
+| Message | Buttons |
+|---|---|
+| the loop halted, or the loop died | **Resume** and **Open a session here** |
+| a question with two to five fixed choices, waiting or parked | one button per choice, labelled with the choice |
+
+**Buttons appear only when the channel has an `allow` list** (see "Answering by reply" above), and
+**the `allow` list decides who can tap them.** A channel with no `allow` list gets the same
+messages with no buttons. A tap from someone not on the list is refused, ending
+`(discord-button-not-allowed)`, and names the list's key. Nothing runs.
+
+What each tap does:
+
+- **Resume** hands the loop back to the desktop app, which relaunches it with `--resume` on its next
+  poll. This is the same hand-off as `/loop resume` (see "Slash commands" below), with the same
+  needs and refusals: the loop must have been started with `--supervised`, and the desktop app must
+  be running.
+- **Open a session here** starts Claude at the item the loop halted on, on the node it ran on. The
+  reply carries the session's link when it posts one within 45 seconds. Otherwise the reply gives
+  the session's name, and you can find it under that name in the Claude app.
+- **A choice button** answers the question with that choice's text, at once, with no confirmation.
+  It goes through the same path as a reply: the same checks, the first answer wins, and
+  `answered by @<name>` is posted. The record says the answer came via Discord. After an answer, the
+  message's buttons are disabled. A second tap is refused: the reply names who answered first and
+  when, and the buttons are disabled.
+
+**Some questions are answered by reply.** A question with more than five choices, a choice longer
+than 80 characters, a single choice, a question that asks two things at once, or a free-text
+question with no choices gets no buttons. Answer it by reply, or with `aof work answer`, as before.
+A question asked from a worker node carries buttons only when the worker recorded its choices.
+
+The answer to a tap is shown only to you. A tap on a message older than 30 days is refused, ending
+`(discord-button-expired)`, because aof no longer keeps what that message was for. A tap in a direct
+message is refused too.
 
 ## Slash commands
 
