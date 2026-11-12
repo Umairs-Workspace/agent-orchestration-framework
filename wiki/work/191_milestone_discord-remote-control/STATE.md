@@ -361,3 +361,79 @@ doc: state
     host contention. A grade run on a loaded control node can push a 4 s probe past 60 s. If this
     recurs, it is a candidate for the grade's own scheduling (run the probe-spawning controls
     alone), not for the story under grade.
+- 2026-11-12 — 191/03 built and reviewed (continue, solo, run 20261112T151148339Z-0000, attempt 1,
+  so there is no prior attempt to recall). The near-miss recall returned an empty block.
+  `SESSION_END_KIND`, `buildSessionEndFrame` and `buildSessionEndEnvelope` join
+  `session-spawn-directive.mjs`. The worker client gains `onSessionEnd`, and the router an end lane
+  routed by node as 191/00 routes a spawn. `handler.end(sessionId)` halts one owned session through
+  the shutdown's own steps (`haltEntries`, which `stopAll` now also calls). Both launcher branches
+  hand a received end to it. `mesh:session-end` (`aof mesh session end <session> [--node]`) takes
+  the id or the ADR-002 name, refuses `session-not-found` before any relay is opened, pushes, and
+  reads presence once a second for up to 15 s.
+  - **How the end is confirmed (ADR-004 §3–§4, a choice the ADR left open).** The verb reads the
+    node's own presence record (`nodes[].presence.sessions[]`), not the payload's `sessions[]`
+    index. The index drops every session of a node that is no longer `live`, so a node that died
+    mid-wait would read there as "the row is gone" and be answered as an end. A frozen presence
+    record still carries the session, and the answer is `ended: false`. A presence that cannot be
+    read at all is also `ended: false`, with `listed: false`.
+  - **The answer's shape, for 191/06 to read.** `{ ok, ended, sessionId, nodeId, name }`. An
+    unconfirmed end adds `code: "session-end-unconfirmed"` and `listed`, has `ok: false`, and the
+    CLI exits 1 on it, as `session start` does for a refusal. Two refusals are added to the ADR's
+    one: `session-ambiguous` (409, a name two live sessions share) and the start core's own
+    `session-dispatch-unavailable` and `session-dispatch-failed` (503) for the relay. `--node`
+    narrows the rows to that node. It never sends an end to a node whose presence does not carry
+    the session.
+  - **An end during a spawn is not queued** (PLAN's trap): the id is reserved but not yet owned, so
+    it is logged `session-end-not-launched`, and the session then opens. Covered by a test.
+  - **Fixed here, a red 191/02 left: FF-B's reader pin for `SESSION_SPAWN_ACK_KIND`.**
+    `acd-wire-kind-has-both-ends` pins that kind's reading ends to exactly two files. 191/02's
+    watch in `commands/session.mjs` is a third, so the case was red on this branch before this
+    story started. The pin now names all three, and its red-at-head reconstruction removes the
+    third. `wireKindProblems` is unedited. Neither 191/02's story-scoped run nor the loop's grade
+    baseline had it.
+  - **The declared write set was incomplete: three suites outside `files:` were amended**, the
+    same three counts 191/02 moved. The registry count, 140 → 141, in
+    `test/command/application-assembly.test.mjs` (twice) and `packages/core/test/application.test.mjs`.
+    The mesh contribution list, 19 → 20, in `packages/mesh/test/commands.test.mjs`.
+  - **The declared read set was incomplete: two modules outside `reads:` were needed.**
+    `packages/mesh/src/global-query.mjs` (`buildSessionIndex`), because what the index drops decides
+    how the end is confirmed. `packages/mesh/src/session-start.mjs`, for the relay refusal's code
+    and words.
+  - **`aof test --scope impacted --story 191/03` widened to all 1,275 suites (`no-graph`)**, as
+    191/05 and 191/02 found, and started the full suite, which is ruled out on this machine
+    (`:4182`). It was stopped. A second `aof test` waits on the first one's lock, so the by-file
+    runs went through `scripts/test-shard.mjs` with an isolated `AOF_GLOBAL_HOME`. The evidence, on
+    the final tree: the seven suites this story touched or is held by, 159 cases, green. Every
+    fitness function (544 files, 2,400 cases), 3 red. The 106 suites outside `test/arch` that name
+    a changed module (`global-work-propagation` left out), 1,725 cases, 10 red. None of the 13 is
+    in this story's diff:
+    - `arch/m42-item-3`: `packages/execution/src/pty.mjs` has 2 silent catches against a baseline of
+      0. It is the one failure in this run's own grade baseline.
+    - `arch/126/00 FF-12602 leg 2`: 15 in-flight lines in `work-loop/src/commands/loop.mjs` against
+      a pinned 14. Both files were last changed by 191/04's lane commit.
+    - Environmental, and green when re-run with a real-path `TMPDIR` and no inherited `GIT_ASKPASS`
+      (their five files, 123 cases, 0 red): the FF-5301 laundering self-check, yarn-installation
+      production ×3, loops-commands/00 and /03, work/archive-is-a-move/00 and clone-credential ×3.
+    - `application/closing an application stops its owned HTTP server`: this worktree has no
+      `apps/ui/dist`.
+    The milestone regression gate is still owed.
+  - **PLAN's by-hand check was not run here** (start with 191/02's verb, then end it by name). It
+    needs the desktop app's daemons on this build: an install-local and a restart, which this lane
+    does not do. It goes to `aof:verify`.
+  - **Gate:** validate PASS; doctor healthy, exit 0, three advisory warnings (`numbering-gap`,
+    `rubric-join-unchecked`, `depends-edges-unchecked`). **Review (solo, inline):** structural PASS
+    against ADR-004 §1–§5 and ADR-001 §2; behavioural PASS (all 13 scenarios and rows of tasks
+    00–02 green, FF-19104 green with its red-without-readers plant); craft PASS after two fixes in
+    the tests (a duplicated degrade-capture helper hoisted, a clock wrapper removed). No Blockers,
+    one round.
+  - **Recorded finding (Important, added to 191/02's story shape for the operator): the hook seam's
+    module now holds three verbs.** `mesh:session-end` joins `commands/session.mjs` as ADR-004 §3
+    places it, about 180 more lines in the module `aof session ping` loads on every prompt. It adds
+    no static import. Moving the verbs to `commands/session-verbs.mjs` now moves three.
+  - **Recorded finding (Nit): the 15 s answer is proved over a fake clock, not a spawned CLI.** E1,
+    E2 and the by-name scenario assert the bound on the clock the verb waits on. The spawned-CLI
+    lanes cover the by-name end (the row leaves when the test republishes presence) and E3. A
+    spawned E2 would add 15 s of wall time to the suite.
+  - **Recorded finding (Nit, 191/02's suite): `mesh-session-verbs/02 E5` times out under load.**
+    Its 15 s wait for the spawn envelope expired twice while another test run held the machine, and
+    never on a quiet one.

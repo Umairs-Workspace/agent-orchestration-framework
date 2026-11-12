@@ -132,3 +132,31 @@ export function buildSessionSpawnAckEnvelope(nodeId, { sessionId, ok, code } = {
     },
   };
 }
+
+// ─────────────────────────────────── 191/ADR-004 — ending a launched session ────
+//
+// `session-end` is the lane's SECOND down-frame: it asks the node holding a launched session to
+// halt it. It lives here, beside the spawn kind, for the same reason that kind does — one home for
+// the literal, so the verb that pushes the envelope, the router that unwraps it and the worker
+// client that reads the frame share one contract.
+//
+// THERE IS NO `session-end-ack` (ADR-004 §4). The end is confirmed by the session's record
+// leaving the node's own presence, which the node writes and the control only reads.
+export const SESSION_END_KIND = "session-end";
+
+// buildSessionEndFrame(to, { sessionId, at }) → the DOWN-frame. It names the session and nothing
+// else: the node is the authority on whether it launched that id (`handler.end`), so the frame
+// carries no workspace, no assistant and nothing a node could be talked into acting on.
+export function buildSessionEndFrame(to, { sessionId, at } = {}) {
+  return { kind: SESSION_END_KIND, to, sessionId, at };
+}
+
+// buildSessionEndEnvelope(nodeId, { sessionId, at }) — the control-side relay envelope that carries
+// the frame above across processes, the exact sibling of `buildSessionSpawnEnvelope`: the frozen
+// `{ kind, nodeId, signal }` shape, the envelope kind IS the frame kind, and every frame field
+// rides inside `signal`. It takes the BUILT frame as its field bag.
+//
+// A pure projection of its inputs — no fs, no clock, no network.
+export function buildSessionEndEnvelope(nodeId, { sessionId, at } = {}) {
+  return { kind: SESSION_END_KIND, nodeId, signal: { sessionId: sessionId ?? null, at: at ?? null } };
+}

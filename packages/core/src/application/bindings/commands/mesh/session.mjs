@@ -20,7 +20,8 @@ export function assembleCommandsMeshSession({ workServices, meshSessionServices,
   return { resolveSessionIdentity, meshSessionCommand, readStdinText, resolveNodeId };
 }
 
-// 191/ADR-003 — the registered `mesh:session-start` / `mesh:session-list` verbs. A separate
+// 191/ADR-003, ADR-004 — the registered `mesh:session-start` / `mesh:session-list` /
+// `mesh:session-end` verbs. A separate
 // assembly from the hook seam above: those boot with no registry (FF-7205), these are registry
 // commands and reach `work:find` through the command port, resolved at call time.
 export function assembleCommandsMeshSessionVerbs({ globalMeshQueryServices, workServices, meshTerminalRelayBridgeServices, meshTerminalMirrorServices, meshSessionServices, degradeServices, commandPort }) {
@@ -32,7 +33,7 @@ export function assembleCommandsMeshSessionVerbs({ globalMeshQueryServices, work
   const { reportDegrade } = degradeServices;
   const invokeRegistered = (id, input, ctx) => commandPort.invoke(id, input, ctx);
 
-  const { meshSessionStartCommand, meshSessionListCommand } = createMeshSessionVerbs({ queryGlobalMeshStatus, loadWorkspace, TERMINAL_FRAME_KIND, createTerminalRelayPushTransport, createTerminalMirrorSubscriberTransport, parseInboundTerminalFrame, isSessionLive, resolveSessionTtlSeconds, invokeRegistered, reportDegrade });
+  const { meshSessionStartCommand, meshSessionListCommand, meshSessionEndCommand } = createMeshSessionVerbs({ queryGlobalMeshStatus, loadWorkspace, TERMINAL_FRAME_KIND, createTerminalRelayPushTransport, createTerminalMirrorSubscriberTransport, parseInboundTerminalFrame, isSessionLive, resolveSessionTtlSeconds, invokeRegistered, reportDegrade });
 
-  return { meshSessionStartCommand, meshSessionListCommand };
+  return { meshSessionStartCommand, meshSessionListCommand, meshSessionEndCommand };
 }

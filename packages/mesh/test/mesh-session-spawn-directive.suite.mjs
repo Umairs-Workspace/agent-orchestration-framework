@@ -6,6 +6,10 @@
 //   Task 01: worker-stream-client dispatches session-spawn to a registered handler;
 //            an unregistered handler drops the frame silently;
 //            a session-spawn frame does not interfere with the directive handler.
+// And milestone 191 / story 03 — tasks/00_the-end-lane-has-both-ends.feature (ADR-004 §1):
+//   the frame and its envelope (the builders' half; the router's rebuild is in
+//   test/mesh/terminal/mesh-terminal-input-path.test.mjs) and
+//   "a worker hands a received end to its handler".
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
@@ -14,10 +18,13 @@ import { WebSocketServer } from "ws";
 import {
   SESSION_SPAWN_KIND,
   SESSION_SPAWN_ACK_KIND,
+  SESSION_END_KIND,
   SESSION_LAUNCHES,
   buildSessionSpawnFrame,
   buildSessionSpawnAckFrame,
   buildSessionSpawnEnvelope,
+  buildSessionEndFrame,
+  buildSessionEndEnvelope,
 } from "@aof/mesh/session-spawn-directive";
 import { controlStreamServerServices, workerStreamClientServices } from "./support/mesh-services.mjs";
 const { startControlStreamServer } = controlStreamServerServices();
@@ -438,6 +445,64 @@ export const meshSessionSpawnDirectiveTests = [
       );
       assert.equal(warnings.length, 1);
       assert.equal(warnings[0].code, "worker-stream-send-failed");
+    },
+  },
+
+  // ═══ 191/03 task 00: the end lane has both ends (191/ADR-004 §1) ═══════════════════════════
+
+  // ══ Scenario: the frame and its envelope round trip (the builders' half) ══
+  {
+    name: "191/03 task00 — buildSessionEndFrame(\"wsl-2\", { sessionId, at }) is { kind: \"session-end\", to, sessionId, at } and its relay envelope is the frozen { kind, nodeId, signal } carrying the same session",
+    run() {
+      const sessionId = "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10";
+      const at = "2026-11-12T09:00:00.000Z";
+      assert.equal(SESSION_END_KIND, "session-end");
+      const frame = buildSessionEndFrame("wsl-2", { sessionId, at });
+      assert.deepEqual(frame, { kind: "session-end", to: "wsl-2", sessionId, at });
+      const envelope = buildSessionEndEnvelope("wsl-2", frame);
+      assert.deepEqual(envelope, { kind: "session-end", nodeId: "wsl-2", signal: { sessionId, at } });
+      assert.deepEqual(Object.keys(envelope), ["kind", "nodeId", "signal"], "nothing rides as a fourth top-level key — the relay parses only kind and nodeId");
+      assert.deepEqual(
+        buildSessionEndEnvelope("wsl-2", {}),
+        { kind: "session-end", nodeId: "wsl-2", signal: { sessionId: null, at: null } },
+        "a field nobody stated is null, never absent",
+      );
+    },
+  },
+
+  // ══ Scenario: a worker hands a received end to its handler ══
+  {
+    name: "191/03 task00 — a worker stream client with an onSessionEnd handler registered hands a received session-end frame to it once, and to no other lane",
+    run() {
+      const transport = createFakeTransport();
+      const client = createWorkerStreamClient({ transport, nodeId: "wsl-2", workspaceId: "ws-a", now: "2026-11-12T09:00:00.000Z" });
+      const ends = [];
+      const spawns = [];
+      const directives = [];
+      client.onSessionEnd((frame) => ends.push(frame));
+      client.onSessionSpawn((frame) => spawns.push(frame));
+      client.onDirective((frame) => directives.push(frame));
+
+      const frame = buildSessionEndFrame("wsl-2", { sessionId: "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10", at: "2026-11-12T09:00:00.000Z" });
+      transport.deliver(frame);
+
+      assert.deepEqual(ends, [frame], "the handler receives that frame once, unchanged");
+      assert.equal(spawns.length, 0, "the spawn lane does not see it");
+      assert.equal(directives.length, 0, "the directive lane does not see it");
+    },
+  },
+  {
+    name: "191/03 task00 — a session-end frame with no handler registered is dropped silently, and a handler replaced by a non-function is unregistered",
+    run() {
+      const transport = createFakeTransport();
+      const client = createWorkerStreamClient({ transport, nodeId: "wsl-2", workspaceId: "ws-a" });
+      const frame = buildSessionEndFrame("wsl-2", { sessionId: "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10", at: "2026-11-12T09:00:00.000Z" });
+      assert.doesNotThrow(() => transport.deliver(frame));
+      const ends = [];
+      client.onSessionEnd((received) => ends.push(received));
+      client.onSessionEnd(null);
+      assert.doesNotThrow(() => transport.deliver(frame));
+      assert.equal(ends.length, 0);
     },
   },
 ];

@@ -14,7 +14,7 @@ export function assembleCommandsMeshContribution({ commandsMeshIdentityServices,
   const { meshServeCommand } = commandsMeshServeServices;
   const { meshLogsCommand } = commandsMeshLogsServices;
   const { meshTerminalResumeCommand } = commandsMeshTerminalResumeServices;
-  const { meshSessionStartCommand, meshSessionListCommand } = commandsMeshSessionVerbsServices;
+  const { meshSessionStartCommand, meshSessionListCommand, meshSessionEndCommand } = commandsMeshSessionVerbsServices;
   const { meshAssignCommand } = commandsMeshAssignServices;
   const { meshRecoverPushCommand } = commandsMeshRecoverPushServices;
   const { meshRepoPublishCommand } = commandsMeshRepoServices;
@@ -23,7 +23,7 @@ export function assembleCommandsMeshContribution({ commandsMeshIdentityServices,
   const { meshDesktopRunCommand } = commandsMeshDesktopServices;
   const { meshDesktopStopCommand } = commandsMeshDesktopServices;
 
-  const { meshContribution } = createMeshContribution({ meshIdentityCommand, meshStatusCommand, meshHeartbeatCommand, meshRelayCommand, meshInviteCommand, meshJoinCommand, meshRevokeCommand, meshServeCommand, meshLogsCommand, meshTerminalResumeCommand, meshSessionStartCommand, meshSessionListCommand, meshAssignCommand, meshRecoverPushCommand, meshRepoPublishCommand, meshUiCommand, meshDesktopInstallCommand, meshDesktopRunCommand, meshDesktopStopCommand });
+  const { meshContribution } = createMeshContribution({ meshIdentityCommand, meshStatusCommand, meshHeartbeatCommand, meshRelayCommand, meshInviteCommand, meshJoinCommand, meshRevokeCommand, meshServeCommand, meshLogsCommand, meshTerminalResumeCommand, meshSessionStartCommand, meshSessionListCommand, meshSessionEndCommand, meshAssignCommand, meshRecoverPushCommand, meshRepoPublishCommand, meshUiCommand, meshDesktopInstallCommand, meshDesktopRunCommand, meshDesktopStopCommand });
 
   return { meshContribution };
 }

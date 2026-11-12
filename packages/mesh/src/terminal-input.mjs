@@ -1,4 +1,4 @@
-import { SESSION_SPAWN_KIND, buildSessionSpawnFrame } from "./session-spawn-directive.mjs";
+import { SESSION_SPAWN_KIND, SESSION_END_KIND, buildSessionSpawnFrame, buildSessionEndFrame } from "./session-spawn-directive.mjs";
 
 // Application services enter through explicit ports; construction starts no network or timer.
 export function createTerminalInput({ TERMINAL_INPUT_KIND, TERMINAL_RESUME_KIND, reportDegrade }) {
@@ -9,11 +9,11 @@ export function createTerminalInput({ TERMINAL_INPUT_KIND, TERMINAL_RESUME_KIND,
 // envelope (tuple-bound at the socket, mesh-ui-serve.mjs) and pushes it into the
 // loopback broker; the serve process SELF-SUBSCRIBES to its own broker and hands
 // every inbound frame here. This router:
-//   - is KIND-BLIND to everything but its THREE named kinds — TERMINAL_INPUT_KIND,
-//     TERMINAL_RESUME_KIND and (m50/story 02, ADR-006) SESSION_SPAWN_KIND (the
-//     mirror's own discipline — the same subscriber socket also carries every
-//     terminal-frame the control pushes for the fleet mirror; those return false
-//     untouched),
+//   - is KIND-BLIND to everything but its FOUR named kinds — TERMINAL_INPUT_KIND,
+//     TERMINAL_RESUME_KIND, (m50/story 02, ADR-006) SESSION_SPAWN_KIND and
+//     (191/ADR-004 §1) SESSION_END_KIND (the mirror's own discipline — the same
+//     subscriber socket also carries every terminal-frame the control pushes for
+//     the fleet mirror; those return false untouched),
 //   - validates SHAPE only (a non-empty target nodeId, a non-empty sessionId, a
 //     non-empty string of bytes) — the WORKER is the authority on whether that
 //     session is live (its input registry writes only an exactly-matched live
@@ -80,10 +80,11 @@ function liftAnswer(value) {
   return { text: value.text, by: value.by ?? null, askedAt: value.askedAt ?? null };
 }
 
-// THE LOCAL HANDLER PORT (191/ADR-001 §2). `localHandler` is `{ nodeId, spawn(frame), input(frame) }`
-// — the control node's OWN launched-session handler, built by the launcher from the worker's factory.
-// A `session-spawn` or `terminal-input` frame whose nodeId is the port's is handed to it and NEVER
-// to `dispatchDirective`, which has no entry for the control itself; a frame for any other node goes
+// THE LOCAL HANDLER PORT (191/ADR-001 §2). `localHandler` is
+// `{ nodeId, spawn(frame), input(frame), end(frame) }` — the control node's OWN launched-session
+// handler, built by the launcher from the worker's factory. A `session-spawn`, `terminal-input` or
+// (191/ADR-004 §1) `session-end` frame whose nodeId is the port's is handed to it and NEVER to
+// `dispatchDirective`, which has no entry for the control itself; a frame for any other node goes
 // down that node's stream exactly as before and never reaches the port. Routing by node id is the
 // whole rule: a frame delivered to both would open two sessions, and to neither would vanish.
 // Without a port (a worker, or a test that injects none) the router is unchanged.
@@ -145,6 +146,7 @@ function createTerminalInputRouter({ dispatchDirective, now, onLog, onSessionSpa
         envelope.kind !== TERMINAL_INPUT_KIND
         && envelope.kind !== TERMINAL_RESUME_KIND
         && envelope.kind !== SESSION_SPAWN_KIND
+        && envelope.kind !== SESSION_END_KIND
       ) return false;
       const signal = envelope.signal;
       const nodeId = typeof envelope.nodeId === "string" && envelope.nodeId.length > 0 ? envelope.nodeId : null;
@@ -286,6 +288,64 @@ function createTerminalInputRouter({ dispatchDirective, now, onLog, onSessionSpa
           return false;
         }
         log("info", "session-spawn-dispatched", `session spawn dispatched: session ${sessionId} (workspace ${workspaceId}) -> ${nodeId}`);
+        return true;
+      }
+
+      // The SESSION-END lane (191/ADR-004 §1): `mesh:session-end` pushes its envelope into the
+      // loopback relay, and it is routed by node EXACTLY as the spawn lane above routes a spawn —
+      // the control's own id to its local handler, every other id down that node's stream.
+      //
+      // SHAPE ONLY: a non-empty nodeId and sessionId. The router is not an authority on whether
+      // that node launched the session — the node's handler is, and it logs an id it does not own
+      // (`session-end-not-launched`) and does nothing else.
+      //
+      // NO REFUSAL IS ANNOUNCED on any exit, by design (ADR-004 §4): there is no `session-end-ack`
+      // kind. The verb confirms the end from the session's record leaving the node's own presence
+      // and answers `ended: false` when it does not, so a frame dropped here is reported as
+      // unconfirmed by the one reader that exists. Logged as ONE line per end — a deliberate
+      // operator act, like a spawn.
+      if (envelope.kind === SESSION_END_KIND) {
+        if (nodeId == null || sessionId == null) {
+          log("warn", "session-end-invalid", "session-end frame dropped: missing nodeId/sessionId");
+          return false;
+        }
+        // Rebuilt through the lane's OWN builder, so the local handler is handed the SAME frame a
+        // worker's receive lane would hand its own.
+        const frame = buildSessionEndFrame(nodeId, {
+          sessionId,
+          at: typeof signal.at === "string" && signal.at.length > 0 ? signal.at : resolveNow(),
+        });
+        // 191/ADR-001 §2 — the control's OWN node: its local handler, never `dispatchDirective`.
+        // A port with no `end` (an older or partial handler) ends nothing; the frame is dropped
+        // and still never falls through to the dispatch seam.
+        if (isLocal(nodeId)) {
+          if (typeof local.end !== "function") {
+            log("warn", "session-end-local-unavailable", `session end ${sessionId} dropped: this node's (${nodeId}) launched-session handler has no end lane`);
+            return false;
+          }
+          const localFault = (error) => reportDegrade("mesh-terminal-input", error);
+          try {
+            const pending = local.end(frame);
+            if (pending != null && typeof pending.then === "function") pending.then(undefined, localFault);
+          } catch (error) {
+            localFault(error);
+            return false;
+          }
+          log("info", "session-end-local", `session end handled locally: session ${sessionId} on ${nodeId}`);
+          return true;
+        }
+        let result;
+        try {
+          result = dispatchDirective(frame);
+        } catch (error) {
+          reportDegrade("mesh-terminal-input", error);
+          return false;
+        }
+        if (result?.sent !== true) {
+          log("warn", "session-end-target-not-connected", `session end ${sessionId} dropped: node ${nodeId} has no live stream connection (${result?.code ?? "no-code"})`);
+          return false;
+        }
+        log("info", "session-end-dispatched", `session end dispatched: session ${sessionId} -> ${nodeId}`);
         return true;
       }
 

@@ -5,7 +5,7 @@ slug: a-launched-session-can-be-ended
 title: "A launched session can be ended — `aof mesh session end` sends a `session-end` directive, the node halts only a session it launched, and presence confirms it"
 parent: 191
 depends: [02]
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-11-11
 updated: 2026-11-12
@@ -54,9 +54,9 @@ wire-kind sweep. There is no idle limit (191/03 Q1, operator): `/session list` i
 
 ## Tasks
 
-- [ ] 00 [the end lane has both ends](tasks/00_the-end-lane-has-both-ends.feature)
-- [ ] 01 [a node ends only a session it launched](tasks/01_a-node-ends-only-a-session-it-launched.feature)
-- [ ] 02 [the end is confirmed from presence](tasks/02_the-end-is-confirmed-from-presence.feature)
+- [x] 00 [the end lane has both ends](tasks/00_the-end-lane-has-both-ends.feature)
+- [x] 01 [a node ends only a session it launched](tasks/01_a-node-ends-only-a-session-it-launched.feature)
+- [x] 02 [the end is confirmed from presence](tasks/02_the-end-is-confirmed-from-presence.feature)
 
 ## Notes
 
