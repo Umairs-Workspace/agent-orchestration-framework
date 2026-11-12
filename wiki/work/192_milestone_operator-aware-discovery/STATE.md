@@ -1,7 +1,7 @@
 ---
 doc: state
 ---
-# Discovery researches the domain before it asks — State
+# 192 · Discovery researches the domain before it asks — State
 
 ## Progress
 

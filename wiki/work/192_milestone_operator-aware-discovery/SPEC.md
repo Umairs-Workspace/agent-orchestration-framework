@@ -1,6 +1,6 @@
 ---
 type: milestone
-number:
+number: 192
 slug: operator-aware-discovery
 title: "Discovery researches the domain before it asks — the operator is asked only what is theirs to decide, at their level"
 status: not-started
@@ -10,7 +10,7 @@ updated: 2026-11-12
 schema: 1
 aofVersion: 0.1.0
 ---
-# Discovery researches the domain before it asks — the operator is asked only what is theirs to decide, at their level
+# 192 · Discovery researches the domain before it asks — the operator is asked only what is theirs to decide, at their level
 
 ## Objective
 
