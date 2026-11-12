@@ -9,6 +9,7 @@ created: 2026-11-12
 updated: 2026-11-12
 schema: 1
 aofVersion: 0.1.0
+depends: [193]
 ---
 # 192 · Discovery researches the domain before it asks — the operator is asked only what is theirs to decide, at their level
 
@@ -35,6 +36,12 @@ reaches them that a cited source could have answered.
 ## Scope
 
 In scope:
+- **Off unless a project turns it on.** Operator-aware discovery is a part of the discovery
+  practice that a project opts into, with `work.examples.operatorAware`. With it off, discovery is
+  what it is today, and the commands carry none of this milestone's prose. Its prose ships as
+  fragments of the specification-by-example practice (milestone 193), not as text in core's
+  commands. The one thing that does not depend on the switch is the map's grammar: a map that
+  uses the new labels is judged the same wherever it is read.
 - **`domain` vs `policy` questions.** The example map's `business` label splits into `domain` (a
   fact about the world: regulation, industry convention, how a process normally runs) and `policy`
   (a choice only the operator or their client can make). An unplaceable question defaults to
@@ -60,7 +67,7 @@ In scope:
   - `working` — researched, then a short confirmation;
   - `new` or unlisted — researched, and asked with background first.
 
-  `role` reaches every PO and researcher prompt.
+  `role` reaches every PO and researcher prompt of a project that has turned this on.
 - **Explain-first question shape.** `I would pick` becomes mandatory on every operator question,
   interactive or driven. Below `expert`, a question also carries a `Background:` line: what the term
   means, why it matters to this build, and what is normal in the industry, with a source. The
@@ -79,13 +86,21 @@ Out of scope (deferred to a follow-up milestone once this one has been used in a
 
 The adoption path is not deferred (see the operator's rule on opt-in config). This milestone
 delivers:
-- `aof:init` asking for the operator's role;
-- `aof work doctor` warning once when `work.examples.enabled` is on but no `work.operator` is
+- `aof work init-config` turning operator-aware discovery on and writing the profile, and saying
+  at that moment what a missing profile means;
+- `aof work doctor` and `aof work update` warning once when it is on but no `work.operator` is
   declared.
+
+How a project learns that the practice exists at all is milestone 193's: `aof work update` lists
+each optional practice and the key that turns it on.
 
 ## Stories
 
-To be broken down by `aof:refine`.
+- [ ] `00_story_the-map-tells-a-fact-from-a-decision` — the map's grammar gains `domain`, `policy` and a cited `researched F<n>`, and every existing map and the default template read as they did
+- [ ] `01_story_the-gate-accepts-a-cited-finding` — the doctor and the build door accept a fact a named source settles, and refuse a citation that leads nowhere
+- [ ] `02_story_the-operator-says-who-they-are` — `work.operator` holds a role and a level per domain, with a machine-wide default a project overrides
+- [ ] `03_story_a-project-turns-it-on-and-is-told-what-it-needs` — `work.examples.operatorAware` is off by default; `init-config` turns it on and writes the profile, and the doctor and the update say once when it is on with no profile
+- [ ] `04_story_discovery-researches-before-it-asks` — as fragments of the practice, rendered only where the switch is on: refine researches a fact before it asks, returns what it settled as one batch, and every question explains itself
 
 ## Dependencies
 
@@ -94,4 +109,8 @@ To be broken down by `aof:refine`.
   discovery beat that they delivered (`packages/specification-by-example`,
   `packages/core/assets/commands/refine.md`, `packages/core/assets/agents/aof-product-owner.md`,
   `.aof/templates/work/story/EXAMPLES.md`).
-- `schemas/aof.schema.json`, for the new `work.operator` block.
+- `schemas/aof.schema.json`, for the new `work.operator` block and the `work.examples.operatorAware`
+  switch.
+- `193_milestone_buildable-commands`, not started. It delivers the slots and fragments this
+  milestone's prose is written as (story 04). Stories 00–03 are code and do not need it, but a
+  story cannot name another milestone in `depends:`, so the whole milestone waits on it.
