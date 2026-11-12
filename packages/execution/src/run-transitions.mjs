@@ -105,7 +105,7 @@ async function transitionRunStart(item, edge = {}, opts = {}) {
 //          `spendSettled` — the caller settled (or withheld) the spend itself, so it is not
 //          settled again here; the answers are still stamped (134/03, the driven settles).
 //          `env` / `home` — injectable for the resolution, defaulting to the process's.
-async function transitionRunComplete(item, { runId, outcome, failureReason = null, resumeAfter = null, now } = {}, opts = {}) {
+async function transitionRunComplete(item, { runId, outcome, failureReason = null, resumeAfter = null, now, suspended = null } = {}, opts = {}) {
   const {
     workspace = null,
     projectsDir = undefined,
@@ -127,6 +127,7 @@ async function transitionRunComplete(item, { runId, outcome, failureReason = nul
     failureReason,
     resumeAfter,
     now,
+    suspended,
     projectsDir: settleProjectsDir({ projectsDir, workspace, env, home }),
     settleSpend: !spendSettled,
   });

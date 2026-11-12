@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { readdir, stat } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { DEFAULT_HEARTBEAT_MS } from "@aof/contracts/loop-bounds";
+import { processAwakeClock } from "@aof/foundation/awake-clock";
 import { BRACKETED_PASTE_END, BRACKETED_PASTE_START, PASTE_SUBMIT_SETTLE_MS } from "@aof/contracts/tui-ready";
 import { createTerminalSpawn, releasePtyAfterTreeTermination } from "./pty.mjs";
 import { createCodexAppServerAdapter, codexServerCommand } from "./codex-app-server.mjs";
@@ -977,6 +978,8 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
     return { outcome: "failed", failureReason: "agent_error", sessionId: null, processStarted: false };
   }
   const attemptStartedAtMs = Date.now();
+  // The clock both per-attempt deadlines count on (a suspend is not run time); injectable for tests.
+  const awakeClock = options.awakeClock ?? processAwakeClock();
   // ADR-004 §3 — this invocation's key for its screen evidence, drawn once: the degrade throttle is
   // per (code, key), so a daemon hosting several sessions keeps every session's screen.
   const screenKey = randomUUID();
@@ -1203,7 +1206,7 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
       if (acceptTimer != null) { clearTimeout(acceptTimer); acceptTimer = null; }
       if (resubmitTimer != null) { clearTimeout(resubmitTimer); resubmitTimer = null; }
       if (livenessTimer != null) { clearInterval(livenessTimer); livenessTimer = null; }
-      if (startToCloseTimer != null) { clearTimeout(startToCloseTimer); startToCloseTimer = null; }
+      if (startToCloseTimer != null) { startToCloseTimer.clear(); startToCloseTimer = null; }
       if (heartbeatTimer != null) { clearTimeout(heartbeatTimer); heartbeatTimer = null; }
       if (killConfirmationTimer != null) { clearTimeout(killConfirmationTimer); killConfirmationTimer = null; }
     };
@@ -1460,11 +1463,13 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
     // kills, and settles through the same stop path as every other forced outcome.
     const deadlinePolicy = options.deadlinePolicy;
     const positiveMs = (value) => Number.isSafeInteger(value) && value > 0;
+    // 2026-11-12 — start-to-close counts AWAKE time from the attempt's start: a timer that wakes
+    // overdue from a host suspend re-arms for what is left rather than killing the session.
     if (positiveMs(deadlinePolicy?.startToCloseMs)) {
-      const deadlineAt = attemptStartedAtMs + deadlinePolicy.startToCloseMs;
-      startToCloseTimer = setTimeout(
+      startToCloseTimer = awakeClock.setTimeout(
         () => stopForOutcome({ outcome: "failed", failureReason: "timeout" }),
-        Math.max(1, deadlineAt - Date.now() + 1),
+        deadlinePolicy.startToCloseMs + 1,
+        { from: attemptStartedAtMs },
       );
     }
 
@@ -1494,7 +1499,10 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
           const silenceStartedAt = Number.isFinite(heartbeatAtMs)
             ? Math.max(graceEndsAt, heartbeatAtMs)
             : graceEndsAt;
-          const refreshedDeadlineAt = silenceStartedAt + deadlinePolicy.heartbeatMs;
+          // 2026-11-12 — a host suspend inside the silence is not the session going quiet: the
+          // window is pushed out by every suspended millisecond the awake clock saw in it, so a
+          // session that resumes after a closed lid is not killed for the hours it was frozen.
+          const refreshedDeadlineAt = silenceStartedAt + deadlinePolicy.heartbeatMs + awakeClock.suspendedMs(silenceStartedAt);
           // A check that fired for its own deadline, with no newer heartbeat moving the deadline
           // past it, has seen the whole window: it expires here. Re-reading the clock instead let a
           // timer that woke a hair early by wall time schedule a second read for the same window.

@@ -1,6 +1,7 @@
 import { spawn, execFile } from "node:child_process";
 import path from "node:path";
 import { resolveStartToCloseMs } from "@aof/contracts/loop-bounds";
+import { processAwakeClock } from "@aof/foundation/awake-clock";
 import { resolveExecution, validateExecutionEnvelope } from "./runtime-selection.mjs";
 import { CODEX_PROFILE, isSupportedCodexVersion, CODEX_RESULT_SCHEMA, CODEX_AUTO_REVIEW, CODEX_REVIEW_METHODS, parseCodexPhaseResult, permissionReply, validPermissionRequest, nativeReview, nativeQuestion, nativeUsage } from "./codex-protocol-profile.mjs";
 import { normalizeCodexActivity, reducePermissionReviews } from "./runtime-events.mjs";
@@ -69,6 +70,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
     const selectionSignal = options.signal ? AbortSignal.any([options.signal, selectionStop.signal]) : selectionStop.signal;
     const decoder = new TextDecoder("utf-8", { fatal: true });
     const requestMs = positive(options.requestTimeoutMs, CODEX_PROFILE.requestMs);
+    const awakeClock = options.awakeClock ?? processAwakeClock();
     const interruptMs = positive(options.interruptMs, CODEX_PROFILE.interruptMs);
     const closeMs = positive(options.closeMs, CODEX_PROFILE.closeMs);
     let resolveTerminal, resolveClosed;
@@ -78,7 +80,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
     function settle(result) {
       if (terminal) return;
       terminal = result; resolveTerminal(result); selectionStop.abort();
-      for (const { reject, timer } of pending.values()) { clearTimeout(timer); reject(failure(result.failureReason ?? "operation_settled")); }
+      for (const { reject, timer } of pending.values()) { timer.clear(); reject(failure(result.failureReason ?? "operation_settled")); }
       pending.clear();
     }
     function write(message) {
@@ -92,9 +94,10 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       if (pending.size >= 32) return Promise.reject(failure("protocol_request_limit"));
       return new Promise((resolve, reject) => {
         const id = ++sequence;
-        const timer = setTimeout(() => { pending.delete(id); reject(failure("protocol_timeout")); if (!finishing) fail("protocol_timeout"); }, ms);
+        // 2026-11-12 — awake time: a request in flight across a host suspend is not a protocol timeout.
+        const timer = awakeClock.setTimeout(() => { pending.delete(id); reject(failure("protocol_timeout")); if (!finishing) fail("protocol_timeout"); }, ms);
         pending.set(id, { resolve, reject, timer });
-        try { write({ id, method, params }); } catch (error) { pending.delete(id); clearTimeout(timer); reject(error); }
+        try { write({ id, method, params }); } catch (error) { pending.delete(id); timer.clear(); reject(error); }
       });
     }
     async function publishQuestion(question) {
@@ -169,7 +172,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       if (Object.hasOwn(message, "id") && !Object.hasOwn(message, "method")) {
         const entry = pending.get(message.id);
         if (!entry || (Object.hasOwn(message, "result") === Object.hasOwn(message, "error"))) { fail("protocol_unmatched_response"); return; }
-        pending.delete(message.id); clearTimeout(entry.timer);
+        pending.delete(message.id); entry.timer.clear();
         Object.hasOwn(message, "error") ? entry.reject(failure("protocol_rpc_error")) : entry.resolve(message.result);
         return;
       }
@@ -202,7 +205,8 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       } catch { fail("protocol_invalid_json"); }
     }
     const abort = () => fail("abort");
-    const deadline = setTimeout(() => fail("timeout"), resolveStartToCloseMs(options.deadlinePolicy?.startToCloseMs ?? options.timeoutMs));
+    // 2026-11-12 — start-to-close counts awake time, as the PTY driver's does.
+    const deadline = awakeClock.setTimeout(() => fail("timeout"), resolveStartToCloseMs(options.deadlinePolicy?.startToCloseMs ?? options.timeoutMs));
     options.signal?.addEventListener("abort", abort, { once: true });
     try {
       if (options.signal?.aborted) { abort(); return { ...terminal, sessionId, processStarted: false }; }
@@ -295,7 +299,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
     } finally {
       releaseTurn();
       selectionStop.abort();
-      clearTimeout(deadline); options.signal?.removeEventListener("abort", abort);
+      deadline.clear(); options.signal?.removeEventListener("abort", abort);
       finishing = true;
       if (reviewPending()) {
         // Best-effort bounded observation after stop, never a native decision or rollback.
@@ -328,7 +332,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
         child.stdout.removeListener("data", data);
         child.stdin.destroy(); child.stdout.destroy(); child.stderr.destroy();
       }
-      for (const entry of pending.values()) { clearTimeout(entry.timer); entry.reject(failure("operation_settled")); } pending.clear();
+      for (const entry of pending.values()) { entry.timer.clear(); entry.reject(failure("operation_settled")); } pending.clear();
     }
     return { ...terminal, sessionId, processStarted: Boolean(child), cliVersion, executable, ...(discoveryIssues.length ? { discoveryIssues } : {}), ...(probeIssues.length ? { probeIssues } : {}), profile: CODEX_PROFILE.name, profileVersion: CODEX_PROFILE.version, ...(detectedVersions.length ? { detectedVersions } : {}), ...(execution ? { execution } : {}), ...(cleanupWarnings.length ? { cleanupWarnings } : {}) };
   }

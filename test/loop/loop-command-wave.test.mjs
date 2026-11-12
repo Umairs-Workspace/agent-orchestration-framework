@@ -858,7 +858,9 @@ export const loopCommandWaveTests = [
           if (input.fixFile != null) fixFiles.push({ path: input.fixFile, text: await readFile(input.fixFile, "utf8"), existed: existsSync(input.fixFile) });
         } });
         const merges = [];
-        const registry = scriptedRegistry({ dispatch: async (input, ctx, real) => { const a = await real(); if (input.cleanup) merges.push(input.ref); return a; } });
+        // A cleanup the tree refused (a Windows lock) is retried before the next dispatch (2026-11-12), and a
+        // retry is not a second merge: only the cleanup that closed the lane is counted.
+        const registry = scriptedRegistry({ dispatch: async (input, ctx, real) => { const a = await real(); if (input.cleanup && a?.outcome !== "refused") merges.push(input.ref); return a; } });
         const { state } = await runWave(fx, { child, rubric, registry });
         assert.equal(state.state, "done");
         const runs = await laneRunsOf(fx, "07/01");

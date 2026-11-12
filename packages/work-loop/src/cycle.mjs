@@ -38,6 +38,7 @@ import {
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { MAX_REVIEW_ROUNDS, loopBoundsFromConfig, executionForPhase } from "@aof/contracts/loop-bounds";
+import { processAwakeClock } from "@aof/foundation/awake-clock";
 
 // Core supplies application services; creating this interface starts no work.
 export function createStoryCycle({
@@ -72,6 +73,9 @@ export function createStoryCycle({
   const { reportDegrade } = diagnostics;
   const { settleSpendFromTranscript } = spend;
   if (typeof invoke !== "function") throw new TypeError("createStoryCycle: invoke is required");
+  // 2026-11-12 — the loop process's awake clock, started with the cycle so it is ticking before any
+  // attempt it settles: a suspend it sees inside an attempt is stamped on the record at settle.
+  const awakeClock = processAwakeClock();
 
   const NO_PRINT = () => {};
 
@@ -776,6 +780,7 @@ export function createStoryCycle({
           failureReason: terminal === "failed" ? outcome.failureReason ?? "agent_error" : null,
           resumeAfter,
           now,
+          suspended: awakeClock.suspendedSpans(Date.parse(record.createdAt), Date.parse(now ?? new Date().toISOString())),
         },
         { ...transitionOptions, projectsDir: driven.settlementContext?.projectsDir, spendSettled: true },
       );

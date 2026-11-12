@@ -146,20 +146,58 @@ export function createWaveOrchestration({
   // cleanupLane(ref, lane, ctx, narrate) — a finished lane is closed through `work:dispatch
   // --cleanup <ref> --remove` (ADR-002 §6: the existing convergence gate, never a bare removal);
   // a refusal there is NARRATED and the lane is left for the sweep — never a halt.
+  //
+  // A REFUSED CLEANUP IS RETRIED, NOT FORGOTTEN (2026-11-12). On Windows a lane's tree is often still
+  // held for a moment after its session dies, so the removal fails and the tree stays a registered
+  // worktree — which admission counts as an occupied slot. Measured on loop 14: three merged lanes
+  // held all three slots and the loop halted `lane-open-failed` / at-capacity over nothing. Every
+  // refusal is remembered here and retried before the next dispatch and before any at-capacity halt.
+  const refusedCleanups = new Map();
   async function cleanupLane(ref, lane, ctx, narrate) {
     try {
       const answer = await invokeRegistered("work:dispatch", { cleanup: true, ref, remove: true }, ctx);
       if (answer?.outcome === "refused") {
+        refusedCleanups.set(lane.worktree, { ref, lane });
         await narrate(`Lane ${ref} — cleanup refused (${answer.code}): ${lane.worktree} left for aof work dispatch --sweep.`);
         return answer;
       }
+      refusedCleanups.delete(lane.worktree);
       await narrate(`Lane ${ref} — cleanup: ${answer?.outcome ?? "removed"}${answer?.branchRemoved ? `, branch ${lane.branch} removed` : ""}.`);
       return answer;
     } catch (error) {
       reportDegrade("loop-lane-cleanup", error);
+      refusedCleanups.set(lane.worktree, { ref, lane });
       await narrate(`Lane ${ref} — cleanup refused (${error?.code ?? "error"}): ${lane.worktree} left for aof work dispatch --sweep.`);
       return { outcome: "refused", code: error?.code ?? "error" };
     }
+  }
+
+  // retryRefusedCleanups(ctx, narrate) → how many lanes it freed. Quiet on a repeat refusal (the
+  // first one was narrated); a lane freed on retry is named.
+  async function retryRefusedCleanups(ctx, narrate) {
+    let freed = 0;
+    for (const [worktree, { ref, lane }] of [...refusedCleanups]) {
+      try {
+        const answer = await invokeRegistered("work:dispatch", { cleanup: true, ref, remove: true }, ctx);
+        if (answer?.outcome === "refused") continue;
+        refusedCleanups.delete(worktree);
+        // Freed only when the tree is really gone: an answer that removed nothing must never send the
+        // at-capacity branch round again over the same holder.
+        if (!existsSync(worktree)) freed += 1;
+        await narrate(`Lane ${ref} — cleanup: ${answer?.outcome ?? "removed"} on retry${answer?.branchRemoved ? `, branch ${lane.branch} removed` : ""}.`);
+      } catch (error) {
+        reportDegrade("loop-lane-cleanup", error);
+      }
+    }
+    return freed;
+  }
+
+  // The lane of THIS loop's scope a dispatch-lane branch names (`aof/mesh/14-02` → `14/02`), or null.
+  function scopedLaneRef(branch, scope) {
+    const match = /^aof\/mesh\/(.+)$/u.exec(typeof branch === "string" ? branch : "");
+    if (match == null) return null;
+    const ref = match[1].replace(/-/gu, "/");
+    return ref === scope || ref.startsWith(`${scope}/`) ? ref : null;
   }
 
   // runWaveBuild(shell) → { outcome: "complete" } | { outcome: "halt", act, details } | { outcome: "handoff", act }
@@ -546,6 +584,17 @@ export function createWaveOrchestration({
             const document = answer?.document ?? null;
             const outcome = childDriveOutcome(answer);
             const tail = Array.isArray(answer?.stderrTail) ? answer.stderrTail : [];
+            // A child killed before it printed its document carries no session id, but the session it
+            // drove recorded one on the run (2026-11-12: two `no session id (timeout)` lines over
+            // records that each named their session). The record is the fallback, never the guess.
+            if (!outcome.sessionId) {
+              try {
+                const recorded = (await readRuns(laneItem)).find((run) => run.runId === driveRecord.runId)?.sessionId;
+                if (typeof recorded === "string" && recorded.length > 0) outcome.sessionId = recorded;
+              } catch (error) {
+                reportDegrade("loop-lane-session-id", error);
+              }
+            }
             await narrate(`Lane ${ref} — drive: ${outcome.sessionId ? `session ${outcome.sessionId}` : "no session id"} (${answer?.outcome ?? "died"}${outcome.refusal ? `, ${outcome.refusal}` : ""}).`);
             // The tail narrates a drive that went wrong (`stderrTail`'s purpose, child-drive.mjs); a
             // drive that settled `done` has nothing to explain, and printing its stderr put a library's
@@ -846,6 +895,8 @@ export function createWaveOrchestration({
           ? ctx.runDispatchLane
           : (member) => openLane(member.ref, baseCommit, exec),
       };
+      // A slot a refused cleanup still holds is retried before admission counts it (see cleanupLane).
+      if (refusedCleanups.size > 0) await retryRefusedCleanups({ ...ctx, exec }, narrate);
       let dispatched;
       try {
         dispatched = await invokeRegistered("work:dispatch", { refs: wave.dispatch, ...laneBoundAsk }, dispatchCtx);
@@ -881,6 +932,21 @@ export function createWaveOrchestration({
       if (admitted.length === 0 && lanes.size === 0 && refused.length > 0) {
         const question = questionFirst();
         if (question != null) return question;
+        // BEFORE HALTING AT CAPACITY WITH NO LANE OF ITS OWN OPEN, the loop frees what it left behind:
+        // its remembered refused cleanups, plus any holder whose branch names a lane of this scope
+        // (a lane an earlier invocation merged and could not remove). Each goes through the gated
+        // cleanup verb, which refuses a lane holding work; a few spaced retries ride out a lock.
+        for (const holder of refused[0].value?.holders ?? []) {
+          const holderRef = scopedLaneRef(holder?.branch, resolved.scope);
+          if (holderRef != null && typeof holder?.worktree === "string" && !refusedCleanups.has(holder.worktree)) {
+            refusedCleanups.set(holder.worktree, { ref: holderRef, lane: { worktree: holder.worktree, branch: holder.branch } });
+          }
+        }
+        const retryDelayMs = Number.isSafeInteger(ctx.cleanupRetryDelayMs) && ctx.cleanupRetryDelayMs >= 0 ? ctx.cleanupRetryDelayMs : 15_000;
+        for (let attempt = 0; attempt < 3 && refusedCleanups.size > 0; attempt += 1) {
+          if (await retryRefusedCleanups({ ...ctx, exec: stepExec() }, narrate) > 0) return await tick();
+          if (retryDelayMs > 0) await new Promise((resolve) => { const handle = setTimeout(resolve, retryDelayMs); handle?.unref?.(); });
+        }
         const holders = refused[0].value?.holders ?? [];
         return {
           halt: {

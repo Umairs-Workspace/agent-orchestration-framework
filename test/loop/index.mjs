@@ -253,8 +253,14 @@ import { loopRecordFixtureShapeTests, loopRecordCommandTests } from "./loop-reco
 // constant severity over every cause × every status, codes structurally outside the gating sets, no
 // door naming the signature, and `done` succeeding over an unsigned record).
 import { loopRecordSignoffShapeTests } from "./loop-record-signoff-shape.test.mjs";
+// 2026-11-12 — a host suspend is charged to nobody (the budget, the record spans, the status line).
+import { loopSuspendNotChargedTests } from "./loop-suspend-not-charged.test.mjs";
+// 2026-11-12 — a retry of a timed-out continue resumes the session the deadline cut.
+import { loopTimeoutRetryResumesSessionTests } from "./loop-timeout-retry-resumes-session.test.mjs";
 
 export const tests = [
+  ...loopSuspendNotChargedTests,
+  ...loopTimeoutRetryResumesSessionTests,
   // milestone 52 / story 05 — the six behavioural suites and their coverage ledger
   ...workLoopsRecordTests,
   ...workLoopsValueTests,

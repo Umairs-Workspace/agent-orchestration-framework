@@ -146,10 +146,14 @@ export const archTests = [
       // 181: the driver and the Codex adapter read the phase-completion contract from runtime-session.mjs,
       // an execution module whose own imports are node built-ins alone, so 40 -> 41 with no lifecycle,
       // provider or mesh edge.
-      assert.equal(graph.seen.size, 41, "the 31-module assembly plus seven explicitly owned Codex/policy and observation leaves, the cost meter, the byte gate, and the phase-completion contract's module");
+      // 2026-11-12: the driver, the Codex adapter and the bounded spawn seam count their deadlines on the
+      // awake clock (a host suspend is not run time), a zero-import foundation leaf, so 41 -> 42 with no
+      // lifecycle, provider or mesh edge.
+      assert.ok(graph.seen.has(path.join(root, "packages/foundation/src/awake-clock.mjs")), "the awake clock is a zero-import foundation leaf");
+      assert.equal(graph.seen.size, 42, "the 31-module assembly plus seven explicitly owned Codex/policy and observation leaves, the cost meter, the byte gate, the phase-completion contract's module, and the awake clock");
       assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/otel-attribution", "@aof/execution/pty", "@aof/execution/session-driver", "@aof/work/phase-brief"], "the adapter uses only the two execution APIs");
       const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
-      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/contracts/src/tui-ready.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-executable.mjs", "packages/execution/src/codex-process-environment.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-events.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/runtime-session.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs"], "native transport and observation stay in execution; no work, mesh or core import is introduced");
+      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/contracts/src/tui-ready.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-executable.mjs", "packages/execution/src/codex-process-environment.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-events.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/runtime-session.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs", "packages/foundation/src/awake-clock.mjs"], "native transport and observation stay in execution (beside the zero-import awake clock); no work, mesh or core import is introduced");
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
       const terminalWs = path.join(root, "packages/server/src/terminal-ws.mjs");
@@ -349,7 +353,11 @@ export const archTests = [
       // None is a driver or a lifecycle module; the driver fences above are unchanged.
       assert.ok(sinkGraph.seen.has(path.join(root, "packages/core/src/integrations.mjs")), "the integration registry");
       for (const owner of ["packages/integration-hyperagent/src/contribution.mjs", "packages/integration-notion/src/contribution.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
-      assert.equal(sinkGraph.seen.size, 182, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, and the integration registry's contributions");
+      // 2026-11-12 — every deadline in the drive, the Codex adapter, the bounded spawn seam and the loop's
+      // settle counts awake time through `@aof/foundation/awake-clock`, a zero-import, zero-I/O leaf
+      // (182 -> 183); it reaches no lifecycle module.
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/foundation/src/awake-clock.mjs")), "the awake clock leaf");
+      assert.equal(sinkGraph.seen.size, 183, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, the integration registry's contributions, and the awake clock");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

@@ -925,9 +925,25 @@ const livenessMs = (record) => Date.parse(record?.heartbeatAt ?? record?.updated
 // applies only when BOTH arrive — a positive-integer threshold AND a callable predicate — because
 // the same arithmetic answers a second question: absent them, a non-terminal attempt is treated
 // as ALIVE and ends at `now`, which is the render's "how long has this been going".
+//
+// A SETTLED ATTEMPT THAT WENT SILENT BEFORE ITS CLOSE (2026-11-12). The heartbeat bound kills a
+// session silent for `stalenessMs`, so while a host is awake a settled attempt's close is never
+// more than one window past its last liveness. A close further out than that is downtime the
+// record could not name — measured: a 5-hour host suspend, then a wake that settled the attempt
+// `failed / timeout` and charged all five hours, halting the loop `deadline-exhausted`. Such an
+// attempt ends at most one window after its last liveness. A record that carries `suspended`
+// spans names its downtime exactly and is charged by them instead (`unchargedMs`), so the cap is
+// only the reading for a record written before the spans existed.
 function attemptEndMs(record, nowMs, stalenessMs, isStale) {
   if (record?.reclaimedAt != null) return livenessMs(record);
-  if (SETTLED_RUN_STATES.includes(record?.state)) return Date.parse(record?.updatedAt);
+  if (SETTLED_RUN_STATES.includes(record?.state)) {
+    const closedMs = Date.parse(record?.updatedAt);
+    const lastAliveMs = livenessMs(record);
+    if (positiveInteger(stalenessMs) && !Array.isArray(record?.suspended) && Number.isFinite(lastAliveMs) && Number.isFinite(closedMs)) {
+      return Math.min(closedMs, lastAliveMs + stalenessMs);
+    }
+    return closedMs;
+  }
   const stale = positiveInteger(stalenessMs)
     && typeof isStale === "function"
     && Number.isFinite(nowMs)
@@ -945,7 +961,35 @@ export function attemptElapsedMs(input = {}) {
   const nowMs = Date.parse(input.now);
   const endMs = attemptEndMs(record, nowMs, input.stalenessMs, input.isStale);
   if (!Number.isFinite(endMs)) return null;
-  return Math.max(0, endMs - createdAtMs - askWaitMs(record, createdAtMs, endMs, nowMs));
+  return Math.max(0, endMs - createdAtMs - unchargedMs(record, createdAtMs, endMs, nowMs));
+}
+
+// THE SPANS A HOST WAS SUSPENDED are charged to nobody (2026-11-12), exactly as a wait on a human
+// is: the settling process's awake clock writes each as `{ from, to }`, and they are merged with
+// the ask intervals below so an overlap of the two is never subtracted twice.
+function suspendedIntervals(record) {
+  const spans = Array.isArray(record?.suspended) ? record.suspended : [];
+  const out = [];
+  for (const span of spans) {
+    const fromMs = Date.parse(span?.from);
+    const toMs = Date.parse(span?.to);
+    if (Number.isFinite(fromMs) && Number.isFinite(toMs) && toMs > fromMs) out.push([fromMs, toMs]);
+  }
+  return out;
+}
+
+function unchargedMs(record, startMs, endMs, nowMs) {
+  return mergedIntervalsMs([...askIntervals(record, startMs, endMs, nowMs), ...clip(suspendedIntervals(record), startMs, endMs)]);
+}
+
+function clip(intervals, startMs, endMs) {
+  const out = [];
+  for (const [fromMs, toMs] of intervals) {
+    const from = Math.max(fromMs, startMs);
+    const to = Math.min(toMs, endMs);
+    if (to > from) out.push([from, to]);
+  }
+  return out;
 }
 
 // THE WAIT ON A HUMAN IS CHARGED TO NOBODY (131/ADR-001 §4). Each ask's interval runs from its
@@ -954,7 +998,7 @@ export function attemptElapsedMs(input = {}) {
 // whose chosen start or end does not parse, or whose clipped interval is empty, subtracts nothing;
 // a record with no `asks` subtracts nothing, so it answers exactly what it answered before. The
 // charge is derived from the instants on the record, never stored.
-function askWaitMs(record, startMs, endMs, nowMs) {
+function askIntervals(record, startMs, endMs, nowMs) {
   const asks = Array.isArray(record?.asks) ? record.asks : [];
   const intervals = [];
   for (const entry of asks) {
@@ -966,6 +1010,11 @@ function askWaitMs(record, startMs, endMs, nowMs) {
     const to = Math.min(toMs, endMs);
     if (to > from) intervals.push([from, to]);
   }
+  return intervals;
+}
+
+function mergedIntervalsMs(input) {
+  const intervals = [...input];
   intervals.sort((a, b) => a[0] - b[0]);
   let total = 0;
   let open = null;

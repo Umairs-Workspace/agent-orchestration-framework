@@ -11,7 +11,8 @@
     "./sqlite-runtime": "./src/sqlite-runtime.mjs",
     "./git-args": "./src/git-args.mjs",
     "./markdown": "./src/markdown.mjs",
-    "./text": "./src/text.mjs"
+    "./text": "./src/text.mjs",
+    "./awake-clock": "./src/awake-clock.mjs"
   },
   "files": [
     "src"
