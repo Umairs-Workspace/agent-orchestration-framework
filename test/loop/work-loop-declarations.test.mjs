@@ -36,6 +36,12 @@ const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
 const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
 const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
 const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
+const loopStartsDir = _aofApplication.loop.stopRequest.loopStartsDir;
+const readStartRequests = _aofApplication.loop.stopRequest.readStartRequests;
+const requestLoopResume = _aofApplication.loop.stopRequest.requestLoopResume;
+const requestLoopStart = _aofApplication.loop.stopRequest.requestLoopStart;
+const startRequestPath = _aofApplication.loop.stopRequest.startRequestPath;
+const handOffStart = _aofApplication.loop.stop.handOffStart;
 const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 import { stripComments } from "../support/source-slice.mjs";
 import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
@@ -84,6 +90,7 @@ function ask(runs, { ceilingMs = CEILING, now = NOW, items, ...rest } = {}) {
     retryReadiness,
     ...("stopped" in rest ? { stopped: rest.stopped } : {}),
     ...("resumeRequested" in rest ? { resumeRequested: rest.resumeRequested } : {}),
+    ...("startRequested" in rest ? { startRequested: rest.startRequested } : {}),
   });
 }
 
@@ -709,6 +716,169 @@ export const workLoopDeclarationsTests = [
         }
         await assert.rejects(readFile(path.join(loopResumesDir(), "lr-1.json"), "utf8"), "no resume request is written");
       }, { record: producerRecord({ state: "done", failureReason: null, reclaimedAt: null, heartbeatAt: null }) });
+    },
+  },
+  // ── 191/04 tasks 00 and 01 — the start request (ADR-005). The verb cases run the REAL CLI over the
+  // on-disk producer fixture (workspace id `ws-repo-a`, milestone 53) under the harness's isolated
+  // `AOF_GLOBAL_HOME`, whose `loopStartsDir()` holds the request; the engine cases add the one
+  // `startRequested` key to `ask`'s input. Every case removes the requests it wrote.
+  {
+    name: "191/04 task00 E1 — a scope that never ran gets a start request holding exactly five keys, and nothing is spawned",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      await withProducerFixture(async ({ dir }) => {
+        const runsDir = path.join(dir, "wiki", "work", "53_milestone_fixture", "runs");
+        const runsBefore = await readdir(runsDir);
+        const run = cliIn(dir, ["work", "loop", "53", "--hand-off-start", "--json"]);
+        assert.equal(run.status, 0, run.stderr || run.stdout);
+        const answer = JSON.parse(run.stdout);
+        assert.equal(answer.ok, true);
+        assert.equal(answer.requested, true);
+        assert.equal(answer.scope, "53");
+        assert.equal(path.dirname(answer.path), loopStartsDir(), `a path under <meshRoot>/loop-starts/: ${answer.path}`);
+        assert.equal(path.basename(path.dirname(answer.path)), "loop-starts");
+        const request = JSON.parse(await readFile(answer.path, "utf8"));
+        assert.deepEqual(Object.keys(request), ["scope", "workspaceId", "by", "requestedAt", "level"], "exactly the five keys");
+        assert.equal(request.scope, "53");
+        assert.equal(request.workspaceId, "ws-repo-a");
+        assert.equal(request.level, null, "level is null unless given");
+        assert.deepEqual(await readdir(runsDir), runsBefore, "no run was started: nothing was spawned");
+        const human = cliIn(dir, ["work", "loop", "53", "--hand-off-start"]);
+        assert.equal(human.status, 0, human.stderr);
+        assert.match(human.stdout, /53 — start requested: the supervisor starts a new supervised loop on its next poll\./u);
+      }, { record: null });
+      await rm(loopStartsDir(), { recursive: true, force: true });
+    },
+  },
+  {
+    name: "191/04 task00 — a scope the grammar refuses is refused before any read, and its incompatible companions are refused naming both flags (four rows)",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      await withProducerFixture(async ({ dir }) => {
+        const scoped = cliIn(dir, ["work", "loop", "../x", "--hand-off-start", "--json"]);
+        assert.notEqual(scoped.status, 0, "non-zero");
+        const refusal = JSON.parse(scoped.stdout);
+        assert.equal(refusal.ok, false);
+        assert.equal(refusal.code, "loop-start-scope", scoped.stdout);
+        for (const flag of ["--stop", "--resume", "--hand-off", "--dry-run"]) {
+          const run = cliIn(dir, ["work", "loop", "53", "--hand-off-start", flag, "--json"]);
+          assert.notEqual(run.status, 0, `--hand-off-start ${flag}: refused`);
+          const error = JSON.parse(run.stdout).error;
+          assert.ok(error.includes("--hand-off-start") && error.includes(flag), `--hand-off-start ${flag}: names both flags: ${error}`);
+        }
+        assert.deepEqual(await readStartRequests(loopStartsDir()), [], "no start request is written");
+      }, { record: null });
+    },
+  },
+  {
+    name: "191/04 task00 E3, E4 — a halted supervised scope is refused toward resume, a running scope is refused, and neither writes a request",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      const fresh = new Date().toISOString();
+      for (const [label, record, code] of [
+        ["E3 · halted supervised", producerRecord({ state: "done", failureReason: null, reclaimedAt: null, heartbeatAt: null }), "loop-start-resumable"],
+        ["E4 · running", producerRecord({ state: "running", failureReason: null, reclaimedAt: null, createdAt: fresh, heartbeatAt: fresh, updatedAt: fresh }), "loop-start-running"],
+      ]) {
+        await withProducerFixture(async ({ dir }) => {
+          const run = cliIn(dir, ["work", "loop", "53", "--hand-off-start", "--json"]);
+          assert.notEqual(run.status, 0, `${label}: non-zero`);
+          const answer = JSON.parse(run.stdout);
+          assert.equal(answer.ok, false, label);
+          assert.equal(answer.code, code, `${label}: ${run.stdout}`);
+          if (code === "loop-start-resumable") {
+            assert.ok(answer.error.includes("/loop resume 53"), `names /loop resume 53: ${answer.error}`);
+            assert.ok(answer.error.includes("aof work loop 53 --hand-off"), `names aof work loop 53 --hand-off: ${answer.error}`);
+          }
+          assert.deepEqual(await readStartRequests(loopStartsDir()), [], `${label}: no start request is written`);
+        }, { record });
+      }
+    },
+  },
+  {
+    name: "191/04 task00 E5 — two requests a second apart leave one request, holding the later requestedAt",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      await withProducerFixture(async ({ dir }) => {
+        const workspace = await loadWorkspace(dir, undefined, { env: process.env });
+        const first = await handOffStart(workspace, { scope: "53", now: () => new Date("2026-11-12T10:00:00.000Z") });
+        const second = await handOffStart(workspace, { scope: "53", now: () => new Date("2026-11-12T10:00:01.000Z") });
+        assert.equal(first.ok, true, JSON.stringify(first));
+        assert.equal(second.path, first.path, "one home per workspace and scope");
+        const standing = (await readStartRequests(loopStartsDir())).filter((request) => request.scope === "53");
+        assert.equal(standing.length, 1, "exactly one start request for 53");
+        assert.equal(standing[0].requestedAt, "2026-11-12T10:00:01.000Z");
+      }, { record: null });
+      await rm(loopStartsDir(), { recursive: true, force: true });
+    },
+  },
+  {
+    name: "191/04 task01 E2 — the next poll lists a fresh supervised start, with no --resume, and a level rides the argv",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      const route = _aofApplication.getCommand("work:loop").cli.route;
+      await withProducerFixture(async ({ dir, status }) => {
+        assert.deepEqual((await status()).declarations.rows, [], "no row before the request");
+        await requestLoopStart(loopStartsDir(), { scope: "53", workspaceId: "ws-repo-a", by: { node: "node-1", pid: 1 } });
+        const rows = (await status()).declarations.rows;
+        assert.deepEqual(rows, [{
+          id: "start:ws-repo-a:53",
+          label: "loop 53",
+          argv: [...route, "53", "--supervised"],
+          cwd: dir,
+          scope: "53",
+          level: null,
+          cap: null,
+        }], "one start row: the route, the scope and --supervised, with no --resume");
+        await requestLoopStart(loopStartsDir(), { scope: "53", workspaceId: "ws-repo-a", by: { node: "node-1", pid: 1 }, level: "L3" });
+        const levelled = (await status()).declarations.rows;
+        assert.deepEqual(levelled.map((row) => row.argv), [[...route, "53", "--level", "L3", "--supervised"]], "a level rides the argv before --supervised");
+        await requestLoopStart(loopStartsDir(), { scope: "53", workspaceId: "ws-other", by: { node: "node-1", pid: 1 } });
+        assert.equal((await status()).declarations.rows.length, 1, "a request for a workspace this node does not serve starts nothing");
+      }, { record: null });
+      await rm(loopStartsDir(), { recursive: true, force: true });
+    },
+  },
+  {
+    name: "191/04 task01 — a scope already running yields no start row, and a resume row is unchanged",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      const fresh = new Date().toISOString();
+      const live = producerRecord({ state: "running", failureReason: null, reclaimedAt: null, createdAt: fresh, heartbeatAt: fresh, updatedAt: fresh });
+      await withProducerFixture(async ({ dir }) => {
+        await requestLoopStart(loopStartsDir(), { scope: "53", workspaceId: "ws-repo-a", by: { node: "node-1", pid: 1 } });
+        const workspace = await loadWorkspace(dir, undefined, { env: process.env });
+        const rows = (await meshStatusCommand.run({ now: fresh, declarations: true }, { workspace, globalWorkStoreOptions: { env: process.env } })).declarations.rows;
+        assert.equal(rows.some((row) => row.id === "start:ws-repo-a:53"), false, `no start row: ${JSON.stringify(rows.map((row) => row.id))}`);
+        assert.deepEqual(rows.map((row) => row.id), ["lr-1"], "the live loop is listed on its own liveness");
+      }, { record: live });
+      await rm(loopStartsDir(), { recursive: true, force: true });
+
+      await withProducerFixture(async ({ status }) => {
+        await requestLoopResume(loopResumesDir(), { loopRunId: "lr-1", scope: "53", workspaceId: "ws-repo-a", by: { node: "node-1", pid: 1 } });
+        const rows = (await status()).declarations.rows;
+        assert.equal(rows.length, 1, "the handed-back declaration is listed");
+        assert.equal(rows[0].argv.at(-1), "--resume", `its argv still ends with --resume: ${rows[0].argv.join(" ")}`);
+        assert.equal(rows[0].argv.includes("--supervised"), false, "and carries no --supervised");
+        await unlink(path.join(loopResumesDir(), "lr-1.json"));
+      }, { record: producerRecord({ state: "done", failureReason: null, reclaimedAt: null, heartbeatAt: null }) });
+    },
+  },
+  {
+    name: "191/04 task01 — start rows are gated by the compute budget like every row (the engine over literal requests)",
+    run() {
+      const request = { workspaceId: "ws-1", scope: "191", level: null };
+      const admitted = ask([], { items: [], startRequested: [request] });
+      assert.deepEqual(admitted.starts, [{ workspaceId: "ws-1", projectRoot: "C:/repo", scope: "191", level: null }], "an admitting budget starts it");
+      assert.deepEqual(admitted.rows, [], "a start is never a declaration row");
+      assert.deepEqual(ask([], { items: [], ceilingMs: 0, startRequested: [request] }).starts, [], "a budget that admits no launch starts nothing");
+      // Beside a relaunch the same budget refuses: neither row is answered.
+      const spent = ask([run({ state: "failed", failureReason: "runtime_offline", attempt: 2 })], { ceilingMs: 0, startRequested: [{ ...request, scope: "192" }] });
+      assert.deepEqual([spent.rows.length, spent.starts.length], [0, 0], "the gate applies to every row alike");
+      assert.deepEqual(ask([], { items: [], startRequested: [request, request] }).starts.length, 1, "two requests for one scope start it once");
+      assert.deepEqual(ask([], { items: [] }).starts, [], "an absent list starts nothing");
+      assert.deepEqual(ask([], { items: [], startRequested: "191" }).starts, [], "an ill-typed list starts nothing");
+      const listed = ask([run()], { startRequested: [{ ...request, scope: "53" }] });
+      assert.deepEqual([listed.rows.length, listed.starts.length], [1, 0], "a scope with a row of its own is not started beside it");
     },
   },
 ];

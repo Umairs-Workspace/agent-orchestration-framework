@@ -30,10 +30,13 @@ export const LOOP_INPUT_KEYS = freeze(["scope", "level"]);
 // claim nobody can read is a claim nothing holds: `acd-trigger-is-a-caller-not-a-coordinator`
 // asserts every `--flag` token a caller composes is one `work:loop` DECLARES — in its
 // `cli.spec.flags` as well as in its input — so renaming the loop's flag reds there rather than at
-// three in the morning in a log nobody reads. A third token spelled here would be parsed as an
+// three in the morning in a log nobody reads. Any other token spelled here would be parsed as an
 // unknown flag and refused at the loop's door.
 export const LEVEL_FLAG = "--level";
 export const RESUME_FLAG = "--resume";
+// 191/04 (ADR-005 §3) — a start row's argv starts a NEW supervised loop: `--supervised`, never
+// `--resume`. The two options are one row's two kinds, so the composer never emits both.
+export const SUPERVISED_FLAG = "--supervised";
 
 export function loopInputOf(row) {
   const input = {};
@@ -56,5 +59,6 @@ export function argvFor(route, input, options = {}) {
     input?.scope,
     ...(level == null ? [] : [LEVEL_FLAG, level]),
     ...(options?.resume === true ? [RESUME_FLAG] : []),
+    ...(options?.supervised === true && options?.resume !== true ? [SUPERVISED_FLAG] : []),
   ]);
 }

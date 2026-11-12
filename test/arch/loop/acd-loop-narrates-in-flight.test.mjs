@@ -253,13 +253,14 @@ export const archTests = [
         // 143/03 — the THIRTEENTH and the TWELFTH, `model`, by the same rule.
         // 147/00 — the FOURTEENTH and the THIRTEENTH, `noRepair`, by the same rule.
         // 154/06 — the FIFTEENTH and the FOURTEENTH, runtime, by the same rule.
-        ["cap", "dryRun", "handOff", "level", "model", "noRepair", "quiet", "refine", "resume", "reviewClaims", "runtime", "scope", "stop", "supervised", "thinking"],
+        // 191/04 — the SIXTEENTH property and the FOURTEENTH flag, `startHandOff` (`--hand-off-start`).
+        ["cap", "dryRun", "handOff", "level", "model", "noRepair", "quiet", "refine", "resume", "reviewClaims", "runtime", "scope", "startHandOff", "stop", "supervised", "thinking"],
         "properties gained exactly one key",
       );
       assert.ok(!("verbose" in schema.properties), "`verbose` is an additional key on a closed schema");
 
       const flags = loopCommand.cli.spec.flags;
-      assert.equal(Object.keys(flags).length, 13, "assistant inferred from --model; execution exposes no runtime flag");
+      assert.equal(Object.keys(flags).length, 14, "assistant inferred from --model; execution exposes no runtime flag");
       assert.equal(flags.quiet.type, "boolean");
       assert.ok(typeof flags.quiet.description === "string" && flags.quiet.description.length > 0);
       assert.match(loopCommand.cli.spec.usage, /\[--quiet\]/u);

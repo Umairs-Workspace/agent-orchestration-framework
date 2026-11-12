@@ -4,7 +4,7 @@ import { argvFor } from "@aof/work-loop/argv";
 
 
 // Core supplies configured services and deferred application loaders. Construction is inert.
-export function createSupervisedDeclarations({ resolveNodeWorkspaces, isRunning, isStale, readRuns, retryReadiness, resolveAttemptCeiling, listItems, loadWorkspace, STOP_STATES, loopResumesDir, loopStopsDir, readResumeRequest, readStopRequest, loadCommandRegistry }) {
+export function createSupervisedDeclarations({ resolveNodeWorkspaces, isRunning, isStale, readRuns, retryReadiness, resolveAttemptCeiling, listItems, loadWorkspace, STOP_STATES, loopResumesDir, loopStopsDir, readResumeRequest, readStopRequest, loopStartsDir, readStartRequests, loadCommandRegistry }) {
 // THE DECLARATIONS PRODUCER (126/02, ADR-005 §2, §5-§8) — which declarations should be running on
 // this node now, composed into rows a supervisor can act on.
 //
@@ -86,6 +86,26 @@ async function handedBackLoops(workspaces) {
   return requested;
 }
 
+// THE START REQUESTS (191/ADR-005 §3) — every request standing for a member workspace, read through
+// the same module, and handed to the engine as its ADDITIVE `startRequested` list. A member with no
+// workspace id has no request a start could have named; a read that fails (one degrade event, the
+// module's own) starts nothing.
+async function startRequestsFor(workspaces) {
+  const requested = [];
+  const dir = loopStartsDir();
+  for (const workspace of workspaces) {
+    if (typeof workspace.workspaceId !== "string" || workspace.workspaceId.length === 0) continue;
+    let records = [];
+    try {
+      records = await readStartRequests(dir, { workspaceId: workspace.workspaceId });
+    } catch {
+      records = [];
+    }
+    for (const record of records) requested.push({ workspaceId: record.workspaceId, scope: record.scope, level: record.level ?? null });
+  }
+  return requested;
+}
+
 async function supervisedDeclarations(ws, localId, nowIso, ctx) {
   const resolved = await resolveNodeWorkspaces(localId, {
     globalWorkStoreOptions: ctx?.globalWorkStoreOptions ?? {},
@@ -130,7 +150,7 @@ async function supervisedDeclarations(ws, localId, nowIso, ctx) {
     workspaces.push({ workspaceId: member.workspaceId, projectRoot: member.projectRoot, items, ...(ceilingMs == null ? {} : { ceilingMs }) });
   }
 
-  const { rows } = decideSupervisedDeclarations({
+  const { rows, starts } = decideSupervisedDeclarations({
     workspaces,
     maxAttempts: resolveAttemptCeiling(ws.config),
     ceilingMs: scheduleToCloseFromConfig(ws),
@@ -146,6 +166,8 @@ async function supervisedDeclarations(ws, localId, nowIso, ctx) {
     // The hand-backs, so a halted supervised loop the operator asked for again is listed and
     // relaunched with --resume, which clears the request (131/ADR-009 §6).
     resumeRequested: await handedBackLoops(workspaces),
+    // The start requests, so a scope that never ran is started fresh and supervised (191/ADR-005 §3).
+    startRequested: await startRequestsFor(workspaces),
   });
 
   // The route is read off `work:loop`'s own registration through a DEFERRED import — 63/ADR-001's
@@ -170,7 +192,17 @@ async function supervisedDeclarations(ws, localId, nowIso, ctx) {
       scope: row.scope,
       level: row.level,
       cap: row.cap,
-    }))),
+    })).concat(starts.map((start) => Object.freeze({
+      id: `start:${start.workspaceId}:${start.scope}`,
+      label: `loop ${start.scope}`,
+      // A start row STARTS a new supervised loop and never resumes one (191/ADR-005 §3, FF-19105):
+      // no declaration exists yet to resume, and the launch it makes clears the request.
+      argv: argvFor(route, { scope: start.scope, level: start.level }, { supervised: true }),
+      cwd: start.projectRoot,
+      scope: start.scope,
+      level: start.level,
+      cap: null,
+    })))),
     skipped: Object.freeze(resolved.skipped),
   });
 }

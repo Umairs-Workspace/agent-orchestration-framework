@@ -76,8 +76,11 @@ export function assembleCommandsLoop({ runtimeSessionServices, workServices, loo
   const { buildNotifyEnvelope } = notifyNotifyServices;
   const { notify } = notifyNotifyServices;
   const { handOffLoop } = loopStopServices;
+  const { handOffStart } = loopStopServices;
   const { stopLoop } = loopStopServices;
   const { clearResumeRequest } = loopStopRequestServices;
+  const { spendStartRequest } = loopStopRequestServices;
+  const { loopStartsDir } = loopStopRequestServices;
   const { clearStopRequest } = loopStopRequestServices;
   const { createStopSource } = loopStopRequestServices;
   const { loopResumesDir } = loopStopRequestServices;
@@ -104,8 +107,8 @@ export function assembleCommandsLoop({ runtimeSessionServices, workServices, loo
     asks: { askBlockLines, askContext, askEnvFor, awaitAnswer, isParkedHalt, parkedHalt },
     loopDiagnostics: { installLoopDiagnostics, loopDiagLogDir, loopDiagScopeTag, readLastLoopDiagEvent },
     notifications: { buildNotifyEnvelope, notify },
-    stops: { handOffLoop, stopLoop },
-    stopRequests: { clearResumeRequest, clearStopRequest, createStopSource, loopResumesDir, loopStopsDir, markStopHonoured, readStopRequest, stopRequestPath },
+    stops: { handOffLoop, handOffStart, stopLoop },
+    stopRequests: { clearResumeRequest, clearStopRequest, createStopSource, loopResumesDir, loopStartsDir, loopStopsDir, markStopHonoured, readStopRequest, spendStartRequest, stopRequestPath },
     // Core composition: the package never imports the assembled registry.
     invoke: async (id, input, ctx) => {
       const { invoke } = await provideCommandCore();
