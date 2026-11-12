@@ -8,8 +8,25 @@
 export const SESSION_SPAWN_KIND = "session-spawn";
 export const SESSION_SPAWN_ACK_KIND = "session-spawn-ack";
 
-export function buildSessionSpawnFrame(to, { sessionId, workspaceId, assistant, itemRef = null, at } = {}) {
-  return {
+// SESSION_LAUNCHES — 191/ADR-002 §1, the CLOSED set of programs a launched session may be started
+// as. `launch` NAMES one of these; it is never text the node runs. The handler builds the one
+// command line it types from this name, a UUID and a name in a closed character class
+// (`launchCommandLine`, session-spawn-handler.mjs), so nothing a frame carries ever reaches a PTY.
+// Widening this set is an ADR, never an edit: FF-19102 pins it to exactly this one value.
+export const SESSION_LAUNCHES = Object.freeze(["claude-remote-control"]);
+
+// knownSessionLaunch(value) → the value when it is a member of SESSION_LAUNCHES, else null. Exact
+// match: no trimming, no case folding — a value that is not byte-for-byte a member is dropped. The
+// ONE membership test: the builders below and the worker's handler (which receives the RAW wire
+// frame) all ask it.
+export function knownSessionLaunch(value) {
+  return typeof value === "string" && SESSION_LAUNCHES.includes(value) ? value : null;
+}
+
+// `launch` is ADDITIVE and present only when it is known: absent (or dropped) means a bare shell,
+// exactly the pre-191 frame, so a frame without it is byte-identical to the one 50/ADR-002 froze.
+export function buildSessionSpawnFrame(to, { sessionId, workspaceId, assistant, itemRef = null, launch, at } = {}) {
+  const frame = {
     kind: SESSION_SPAWN_KIND,
     to,
     sessionId,
@@ -18,6 +35,9 @@ export function buildSessionSpawnFrame(to, { sessionId, workspaceId, assistant, 
     itemRef: typeof itemRef === "string" && itemRef.length > 0 ? itemRef : null,
     at,
   };
+  const known = knownSessionLaunch(launch);
+  if (known != null) frame.launch = known;
+  return frame;
 }
 
 export function buildSessionSpawnAckFrame({ sessionId, nodeId, ok, code } = {}) {
@@ -55,18 +75,19 @@ export function buildSessionSpawnAckFrame({ sessionId, nodeId, ok, code } = {}) 
 // router rebuilds a byte-identical down-frame from `signal` on the far side.
 //
 // A pure projection of its inputs — no fs, no clock, no network.
-export function buildSessionSpawnEnvelope(nodeId, { sessionId, workspaceId, assistant, itemRef, at } = {}) {
-  return {
-    kind: SESSION_SPAWN_KIND,
-    nodeId,
-    signal: {
-      sessionId: sessionId ?? null,
-      workspaceId: workspaceId ?? null,
-      assistant: assistant ?? null,
-      itemRef: itemRef ?? null,
-      at: at ?? null,
-    },
+export function buildSessionSpawnEnvelope(nodeId, { sessionId, workspaceId, assistant, itemRef, launch, at } = {}) {
+  const signal = {
+    sessionId: sessionId ?? null,
+    workspaceId: workspaceId ?? null,
+    assistant: assistant ?? null,
+    itemRef: itemRef ?? null,
+    at: at ?? null,
   };
+  // 191/ADR-002 §1 — the launch rides inside `signal` only when it is a known one, so the
+  // envelope can never carry a value the router's rebuild would then have to drop.
+  const known = knownSessionLaunch(launch);
+  if (known != null) signal.launch = known;
+  return { kind: SESSION_SPAWN_KIND, nodeId, signal };
 }
 
 // buildSessionSpawnAckEnvelope(nodeId, frame) — the RETURN direction's relay envelope

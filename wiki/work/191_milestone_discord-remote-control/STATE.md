@@ -188,3 +188,45 @@ doc: state
     whether resume joins it.
   - The near-miss recall returned an empty block again (recorded, 0 verdicts). The run's `attempt`
     is 1, so no episodic recall was due.
+- 2026-11-12 — 191/01 built (continue, solo, run 20261112T130412738Z-0000, attempt 1, so no
+  episodic recall was due). The near-miss recall returned an empty block (recorded, 0 verdicts).
+  - **Contract gap, measured (Important → amendment to ADR-002 §4, for the operator).** §4 says
+    Claude's own hooks register under the key the launcher registered, `(node, ws, "claude", id)`.
+    They do not: the hook path labels Claude `claude-code` (`packages/mesh/src/commands/session.mjs:230`,
+    the default when a hook payload arrives). Measured in task 02's scenario, through the real
+    `aof session ping --json` from the session's cwd: the store then holds TWO leaves for one id,
+    `claude` (relaying true, launcher) and `claude-code` (relaying false, hook). The session index
+    still holds exactly one entry for `(wsl-2, id)`, so the scenario is green and the grid shows one
+    slot. But the index's winner is the latest ping, so after `SessionStart` and every prompt the
+    hook's `relaying:false` record wins, and the launched pane reads as not relayed until the
+    launcher's next 30s ping. The fix is one label: register a Claude launch under the hook's
+    `claude-code`, read from ONE exported home in `commands/session.mjs`. That file is outside
+    `files:`, and the story note forbids widening it silently, so this lane built to the contract
+    as written and hands it back. The workspace id half of the note holds where `mesh.workspaceId`
+    is pinned (every published workspace; this repo pins it), so a session worktree's hook resolves
+    the same id. In an UNPINNED workspace a session worktree's cwd hashes to a different id (path
+    derivation), which is a second leaf for item sessions there.
+  - **Recorded finding (Nit → one-line ADR-002 §2/§3 amendment at verify).** `launchCommandLine`
+    also refuses a name that starts with `-`, and `launchSessionName` drops leading dashes from the
+    folder part. `--remote-control [name]` takes an optional value, so a folder such as `-rf` would
+    otherwise be read by `claude` as a flag. ADR-002 states only the character class.
+  - **Fixed at the close:** the closed-set test had two private spellings (directive and handler).
+    It is now one export, `knownSessionLaunch`, in `session-spawn-directive.mjs`.
+  - **A Claude launch forces the record's `assistant` to `claude`** whatever the frame said (§4,
+    "the launched record's assistant label is now the truth").
+  - **`aof test --scope impacted --story 191/01` widened to the full suite (`no-graph`), as 191/05
+    recorded.** It was stopped after 12 minutes: a full run is ruled out on this machine because the
+    live daemon holds `:4182`. The evidence is the 19 suites that import the three changed modules,
+    run by file with `--only` and an isolated `AOF_GLOBAL_HOME`. All 191/01 cases are green. The
+    remaining failures don't touch this change: `relay.test.mjs` and `runtime.test.mjs` are
+    node:test files the `--only` harness cannot run (their 10 node:test cases pass), and four cases
+    (`yarn-installation` ×3, FF-5301's two-hop plant) fail on macOS's `/var` → `/private/var` tmpdir
+    realpath in their own temp fixtures. After the close fix, the six core suites ran 130 cases, 0
+    failures. The milestone regression gate is still owed.
+  - **Task 03 (@manual) not run here.** It needs the desktop app's daemons on this build: an
+    install-local and a restart, which this lane does not do. It goes to `aof:verify`, along with
+    RESEARCH Q1/Q2's measurements (footer bytes at 200 columns, the trust dialog in a session
+    worktree). ADR-002 §6's 200 columns stays the default until then.
+  - **Gate:** validate PASS; doctor exit 0, advisory warnings only. **Review (solo, inline):**
+    structural PASS after the fix above; behavioural PASS (all 15 task 00–02 scenarios and rows
+    green; FF-19102's leg and its four plants green); craft PASS. No Blockers, one round.

@@ -14,8 +14,10 @@ import { WebSocketServer } from "ws";
 import {
   SESSION_SPAWN_KIND,
   SESSION_SPAWN_ACK_KIND,
+  SESSION_LAUNCHES,
   buildSessionSpawnFrame,
   buildSessionSpawnAckFrame,
+  buildSessionSpawnEnvelope,
 } from "@aof/mesh/session-spawn-directive";
 import { controlStreamServerServices, workerStreamClientServices } from "./support/mesh-services.mjs";
 const { startControlStreamServer } = controlStreamServerServices();
@@ -146,6 +148,38 @@ export const meshSessionSpawnDirectiveTests = [
           buildSessionSpawnFrame(row.nodeId, row),
           { kind: "session-spawn", to: row.nodeId, sessionId: row.sessionId, workspaceId: row.workspaceId, assistant: row.assistant, itemRef: row.itemRef, at: row.at },
         );
+      }
+    },
+  },
+  // ═══ 191/01 task 00: the launch field is a closed set on the wire (191/ADR-002 §1) ═══
+
+  {
+    name: "191/01 task00 — SESSION_LAUNCHES is exactly one value: frozen, and exactly [\"claude-remote-control\"]",
+    run() {
+      assert.ok(Object.isFrozen(SESSION_LAUNCHES), "SESSION_LAUNCHES is frozen");
+      assert.deepEqual([...SESSION_LAUNCHES], ["claude-remote-control"]);
+    },
+  },
+  {
+    name: "191/01 task00 — the builder keeps the one known launch and drops every other value (Examples: \"claude-remote-control\" kept; absent, \"CLAUDE-REMOTE-CONTROL\" and 7 absent)",
+    run() {
+      const base = { sessionId: "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10", workspaceId: "ws-a", assistant: "claude", itemRef: null, at: "2026-11-12T00:00:00.000Z" };
+      const rows = [
+        { given: { launch: "claude-remote-control" }, kept: "claude-remote-control" },
+        { given: {}, kept: undefined },
+        { given: { launch: "CLAUDE-REMOTE-CONTROL" }, kept: undefined },
+        { given: { launch: 7 }, kept: undefined },
+      ];
+      for (const row of rows) {
+        const frame = buildSessionSpawnFrame("wsl-2", { ...base, ...row.given });
+        assert.equal(frame.launch, row.kept, `launch ${JSON.stringify(row.given.launch)} → ${JSON.stringify(row.kept)}`);
+        if (row.kept === undefined) {
+          assert.ok(!Object.hasOwn(frame, "launch"), "a dropped launch is ABSENT, never a null key — the frame is the pre-191 one byte for byte");
+          assert.deepEqual(frame, buildSessionSpawnFrame("wsl-2", base), "…identical to the frame built with no launch at all");
+        }
+        const envelope = buildSessionSpawnEnvelope("wsl-2", { ...base, ...row.given });
+        assert.equal(envelope.signal.launch, row.kept, "the relay envelope keeps and drops exactly as the frame builder does");
+        assert.deepEqual(Object.keys(envelope), ["kind", "nodeId", "signal"], "the envelope stays { kind, nodeId, signal } — launch rides inside signal");
       }
     },
   },
