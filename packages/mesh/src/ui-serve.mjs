@@ -6,9 +6,7 @@ import { contentType, isLoopbackHost, safeStaticPath, sendTaggedJson, shouldServ
 import { isAssignmentPhase } from "./assignment-directive.mjs";
 import { resolveWorkspaceId } from "./workspace-identity.mjs";
 import { WebSocketServer } from "ws";
-import { buildSessionSpawnFrame, buildSessionSpawnEnvelope } from "./session-spawn-directive.mjs";
 import { createSpawnOutcomeRegistry } from "./session-spawn-outcome.mjs";
-import { randomUUID } from "node:crypto";
 import { COST_CLIENT_HEADER, processCostMeter, requestClient } from "@aof/foundation/cost-meter";
 export const DEFAULT_MESH_UI_PORT = 4181;
 export const MAX_TERMINAL_INPUT_BYTES = 32 * 1024;
@@ -138,12 +136,11 @@ export function createMeshUiServer({ assetPath, serveBoard, queryGlobalMeshStatu
 // message — so a client can only ever type into the exact session its socket was
 // opened for (no cross-session injection by construction).
 // milestone 50 / story 02 (ADR-001 + ADR-006) — the face's SECOND named write route,
-// POST /api/mesh/session. Both imports come from the session-spawn lane's ONE home
-// (src/mesh/session-spawn-directive.mjs, story 01): `buildSessionSpawnFrame` is
-// ADR-002's down-frame shape (which applies the `assistant`/`itemRef` defaults), and
-// `buildSessionSpawnEnvelope` wraps it in the FROZEN relay envelope the loopback
-// bridge already carries. No `sendDirective`, no `directiveTargets` — see ADR-006:
-// this process is NOT the process that owns the control stream.
+// POST /api/mesh/session. Since 191/ADR-003 §1 its checks, the session id and the relay
+// envelope all come from `planSessionStart` (src/mesh/session-start.mjs), the one start
+// core `aof mesh session start` shares (FF-19103: this route never builds the frame
+// itself). No `sendDirective`, no `directiveTargets` — see ADR-006: this process is NOT
+// the process that owns the control stream.
 // milestone 50 / story 04 (ADR-008 decision 4) — the SPAWN-OUTCOME REGISTRY: the
 // ephemeral, tuple-keyed, bounded answer to "what happened to the session I asked for?".
 // Constructed as a LITERAL here beside the mirror (never reachable only through a test
@@ -374,8 +371,8 @@ async function serveMeshUi({
   // config and the operator reads a refusal that names the WRONG cause (`ref-not-found`) —
   // or, on the board-url route, a real board server bound on a path this machine never had.
   // One fact, one code, one vocabulary: 409 `workspace-not-local`, never a second spelling.
-  // The `status` is handed back beside the row because the session route reads the node
-  // roster off the SAME payload for its connectivity answer (50/ADR-006 decision 7).
+  // (The session route no longer calls this helper: since 191/ADR-003 §1 its resolution is
+  // `planSessionStart`'s, which spells the same two refusals with the same words.)
   async function resolveLocalWorkspaceRow(workspaceId, response) {
     const status = await queryGlobalMeshStatus({ ...globalStoreOptions });
     const row = (status.workspaces ?? []).find((candidate) => candidate.workspaceId === workspaceId);
@@ -685,71 +682,41 @@ async function serveMeshUi({
       }
 
       try {
-        // The SANCTIONED resolution seam and m47/ADR-011's reachability probe — the shared
-        // helper's, the same call the two routes above make. Every card an operator can
-        // click resolves here, and nothing else does.
-        const resolved = await resolveLocalWorkspaceRow(workspaceId, response);
-        if (!resolved) return;
-        const { status } = resolved;
-        // The CONTROL's own machine identity — resolved from this daemon's launch
-        // workspace (the memo at the top of serveMeshUi), never from the target
-        // workspace. A control with no identity refuses BY NAME here rather than
-        // dispatching an unattributable directive.
-        const issuer = await controlNodeId();
-        if (!issuer) {
-          sendApiError(
-            response,
-            409,
-            "This control node has no mesh identity yet — run `aof mesh identity` before starting a session.",
-            "control-identity-unknown",
-          );
-          return;
-        }
-        // ADR-006 decision 7 — CONNECTIVITY IS ANSWERED FROM THE PROJECTION, NOT FROM
-        // THE DISPATCH. The assign route never needs this: it is store-FIRST, so the
-        // control's dispatch tick delivers an `assigned` row later, once the target is
-        // a connected admitted peer. A session spawn writes NO store record by design
-        // (ADR-002 decision 6), so it cannot borrow that deferred delivery — and the
-        // relay push is fan-out, which yields no synchronous delivery result to read.
-        // So the answer comes from the SAME queryGlobalMeshStatus payload already in
-        // hand: the node's presence freshness, i.e. exactly the fact the grid renders
-        // as "online". `stale`/`unknown`/absent all fail CLOSED.
+        // 191/ADR-003 §1 (FF-19103) — THE ONE START CORE. The route keeps its admission, body
+        // parsing and response writing; every check from here to the dispatch is
+        // `planSessionStart`'s, in the order and with the codes, statuses and messages this
+        // route answered before the lift (50/ADR-006: the sanctioned resolution seam and
+        // m47/ADR-011's reachability probe, the control's own identity as issuer, connectivity
+        // read off the projection's presence freshness, and an unconfigured relay as an honest
+        // 503). `aof mesh session start` asks the same core, so the fleet button, the terminal
+        // and Discord refuse for the same reasons in the same words — and the frame and its
+        // envelope are built there, never here.
         //
-        // A node that drops between this check and the push simply never spawns: only
-        // the worker writes a session record (ADR-004 decision 5), so the failure
-        // surfaces as a session that never appears — never as a ghost grid slot.
-        const target = (status.nodes ?? []).find((candidate) => candidate.nodeId === nodeId);
-        if (!target || target.freshness !== "live") {
-          sendApiError(response, 503, `Node "${nodeId}" has no live connection to this control node.`, "session-target-not-connected");
-          return;
-        }
-        // ADR-006 decision 5 — an UNCONFIGURED relay is an honest refusal, never a
-        // fake success. `terminalInputPush` is null exactly when `loopbackRelayUrl
-        // (config)` is (createTerminalRelayPushTransport returns null for an absent/
-        // malformed `mesh.relay.url`), so this is that same fact read through the seam
-        // this module already receives. Returning 200 here would promise a session
-        // that can never be spawned.
-        if (terminalInputPush == null) {
-          sendApiError(
-            response,
-            503,
-            "No mesh relay is configured on this control node, so a session cannot be dispatched (set config.mesh.relay.url).",
-            "session-dispatch-unavailable",
-          );
-          return;
-        }
-        // MINTED CONTROL-SIDE (ADR-002 decision 2): the session has a routable address
-        // before the worker receives the frame, which is what lets this 200 carry it.
-        const sessionId = randomUUID();
-        const frame = buildSessionSpawnFrame(nodeId, {
-          sessionId,
+        // A node that drops between the plan and the push simply never spawns: only the worker
+        // writes a session record (ADR-004 decision 5), so the failure surfaces as a session
+        // that never appears — never as a ghost grid slot.
+        //
+        // DEFERRED to this branch (FF-16004): every CLI verb loads this module through the
+        // registry, and only a session start needs the core.
+        const { planSessionStart } = await import("./session-start.mjs");
+        const status = await queryGlobalMeshStatus({ ...globalStoreOptions });
+        const plan = planSessionStart({
+          status,
           workspaceId,
+          nodeId,
+          issuer: await controlNodeId(),
+          relayAvailable: terminalInputPush != null,
           assistant,
           itemRef,
           at: new Date().toISOString(),
         });
+        if (!plan.ok) {
+          sendApiError(response, plan.status, plan.message, plan.code);
+          return;
+        }
+        const { sessionId } = plan;
         try {
-          await terminalInputPush.push(buildSessionSpawnEnvelope(nodeId, frame));
+          await terminalInputPush.push(plan.envelope);
         } catch (error) {
           // ONE CODE, ONE FACT (review fix, 2026-08-14): `session-dispatch-failed` means
           // exactly this — the relay hand-off itself threw, so nothing crossed the bridge.

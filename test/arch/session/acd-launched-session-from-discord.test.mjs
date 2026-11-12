@@ -30,6 +30,16 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //      from). The input lane's `write:` closure, registered for terminal-input frames, is the
 //      operator's keystrokes after the spawn and is not a spawn-time write.
 //
+// ── FF-19103 · One start core (191/ADR-003 §1, its Invariant) ────────────────────────────────────
+// The fleet's button, the terminal and Discord must refuse for the same reasons, in the same words.
+// So the fleet route (`ui-serve.mjs`) and the verb (`commands/session.mjs`) both reach the dispatch
+// only through `planSessionStart`'s answer:
+//
+//   6. each face imports `planSessionStart` from `session-start.mjs`;
+//   7. neither face names `buildSessionSpawnFrame` or `buildSessionSpawnEnvelope` in code — not
+//      imported, not called. The frame and its envelope are the plan's, built in `session-start.mjs`,
+//      and a face pushes the envelope the plan hands it.
+//
 // Every plant below is HAND-WRITTEN (never a string-replace on the real file) and asserts the
 // detector trips on it, so a detector that can no longer see is red rather than vacuously green.
 import assert from "node:assert/strict";
@@ -243,6 +253,32 @@ export function spawnWriteProblems(handlerSource) {
   return { problems, spawnWrites };
 }
 
+// ── leg 6/7 (FF-19103) ─────────────────────────────────────────────────────────────────────────────
+
+const START_FACES = Object.freeze(["ui-serve.mjs", "commands/session.mjs"]);
+const FRAME_BUILDERS = /\b(buildSessionSpawnFrame|buildSessionSpawnEnvelope)\b/g;
+// A static import, or the deferred one both faces use so a CLI verb that starts nothing does not load
+// the core (FF-16004's module ceiling): `const { planSessionStart } = await import("…/session-start.mjs")`.
+const IMPORTS_THE_CORE = new RegExp([
+  /\bimport\s*\{[^}]*\bplanSessionStart\b[^}]*\}\s*from\s*["'](?:\.\.?\/)+session-start\.mjs["']/.source,
+  /\{[^}]*\bplanSessionStart\b[^}]*\}\s*=\s*await\s+import\(\s*["'](?:\.\.?\/)+session-start\.mjs["']\s*\)/.source,
+].join("|"));
+
+// startCoreProblems(name, source) → why the face `name` does not reach the dispatch only through
+// `planSessionStart`. Comments never count.
+export function startCoreProblems(name, source) {
+  const code = lf(stripComments(source));
+  const problems = [];
+  if (!IMPORTS_THE_CORE.test(code)) {
+    problems.push(`packages/mesh/src/${name} does not import planSessionStart from session-start.mjs — every start face reaches the dispatch through the one core (FF-19103)`);
+  }
+  const named = [...new Set([...code.matchAll(FRAME_BUILDERS)].map((match) => match[1]))];
+  for (const builder of named) {
+    problems.push(`packages/mesh/src/${name} names ${builder} — a face pushes the envelope planSessionStart answers and never builds the frame itself (FF-19103)`);
+  }
+  return problems;
+}
+
 // ── plants ─────────────────────────────────────────────────────────────────────────────────────────
 
 const CLEAN_LAUNCHER = `
@@ -394,6 +430,50 @@ async function spawnSession(sessionId, frame) {
 }
 `;
 
+// FF-19103 plants: the shipped route shape, and three ways a face could leave the core.
+const CORE_ROUTE = `
+import { planSessionStart } from "./session-start.mjs";
+// buildSessionSpawnEnvelope is the plan's now; this comment names it and must not trip.
+async function route(request, response) {
+  const plan = planSessionStart({ status, workspaceId, nodeId, issuer, relayAvailable: push != null });
+  if (!plan.ok) return sendApiError(response, plan.status, plan.message, plan.code);
+  await push.push(plan.envelope);
+}
+`;
+const ROUTE_BUILDS_ITS_OWN = `
+import { planSessionStart } from "./session-start.mjs";
+import { buildSessionSpawnFrame, buildSessionSpawnEnvelope } from "./session-spawn-directive.mjs";
+async function route() {
+  const plan = planSessionStart({ status, workspaceId, nodeId, issuer, relayAvailable: true });
+  const frame = buildSessionSpawnFrame(nodeId, { sessionId: plan.sessionId, workspaceId });
+  await push.push(buildSessionSpawnEnvelope(nodeId, frame));
+}
+`;
+const VERB_WITHOUT_THE_CORE = `
+import { randomUUID } from "node:crypto";
+async function run(input) {
+  if (!row) throw commandError("unknown", "workspace-not-found", 404);
+  await push.push({ kind: "session-spawn", nodeId, signal: { sessionId: randomUUID() } });
+}
+`;
+const DEFERRED_CORE = `
+async function run() {
+  const { planSessionStart } = await import("../session-start.mjs");
+  const plan = planSessionStart({ status });
+  await push.push(plan.envelope);
+}
+`;
+const DEFERRED_LOOKALIKE = `
+async function run() {
+  const { planSessionStart } = await import("../my-own-start.mjs");
+  await push.push(planSessionStart({}).envelope);
+}
+`;
+const CORE_FROM_ELSEWHERE = `
+import { planSessionStart } from "./my-own-start.mjs";
+async function run() { const plan = planSessionStart({}); await push.push(plan.envelope); }
+`;
+
 export const archTests = [
   {
     name: "arch/191 FF-19101 (acd-launched-session-from-discord): the launcher builds its session-spawn handler from createMeshWorkerSessionSpawnHandler in BOTH its control and its worker branch, with the same literal keys",
@@ -451,6 +531,36 @@ export const archTests = [
       assert.match(spawnWriteProblems(LINE_FROM_FRAME).problems.join(" "), /assigned `/, "a line built from the frame trips");
       assert.match(spawnWriteProblems(LINE_REASSIGNED).problems.join(" "), /assigned `frame\.override/, "a line reassigned from the frame trips");
       assert.match(spawnWriteProblems("function other() {}").problems.join(" "), /could not locate/, "a renamed spawn path is not found, never vacuously clean");
+    },
+  },
+  {
+    name: "arch/191 FF-19103 (acd-launched-session-from-discord): ui-serve.mjs and commands/session.mjs both import planSessionStart from session-start.mjs, and neither builds the session-spawn frame or envelope itself",
+    async run() {
+      const problems = [];
+      for (const name of START_FACES) {
+        const source = await readFile(path.join(MESH_SRC, ...name.split("/")), "utf8");
+        problems.push(...startCoreProblems(name, source));
+      }
+      assert.deepEqual(problems, [], problems.join("\n"));
+      const core = lf(stripComments(await readFile(path.join(MESH_SRC, "session-start.mjs"), "utf8")));
+      assert.match(core, /\bexport\s+function\s+planSessionStart\s*\(/, "the core exports planSessionStart");
+      assert.match(core, /\bbuildSessionSpawnEnvelope\s*\(/, "…and is where the envelope is built (non-vacuous: the detector's builder names are real)");
+    },
+  },
+  {
+    name: "arch/191 FF-19103 (acd-launched-session-from-discord) self-check: a face that builds its own frame, one that never imports the core, and one that imports a lookalike each trip — and the shipped shape, with the builder named only in a comment, does not",
+    run() {
+      assert.deepEqual(startCoreProblems("ui-serve.mjs", CORE_ROUTE), [], "the clean plant passes");
+      const own = startCoreProblems("ui-serve.mjs", ROUTE_BUILDS_ITS_OWN);
+      assert.ok(own.some((p) => p.includes("names buildSessionSpawnFrame")), `building the frame trips: ${own.join(" | ")}`);
+      assert.ok(own.some((p) => p.includes("names buildSessionSpawnEnvelope")), "…and building the envelope trips");
+      assert.ok(!own.some((p) => p.includes("does not import")), "…on the builders alone");
+      const without = startCoreProblems("commands/session.mjs", VERB_WITHOUT_THE_CORE);
+      assert.ok(without.some((p) => p.includes("does not import planSessionStart")), `a verb with its own checks trips: ${without.join(" | ")}`);
+      assert.deepEqual(startCoreProblems("commands/session.mjs", DEFERRED_CORE), [], "the deferred import of the core passes");
+      assert.ok(startCoreProblems("commands/session.mjs", DEFERRED_LOOKALIKE).some((p) => p.includes("does not import planSessionStart")), "a deferred lookalike trips");
+      const lookalike = startCoreProblems("commands/session.mjs", CORE_FROM_ELSEWHERE);
+      assert.ok(lookalike.some((p) => p.includes("does not import planSessionStart")), `a planSessionStart from another module trips: ${lookalike.join(" | ")}`);
     },
   },
   {

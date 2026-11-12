@@ -7,7 +7,7 @@ import { createMeshSessionCommands } from '@aof/mesh/commands/session';
 import { createMeshIdentityCommands } from '@aof/mesh/commands/identity';
 import { guardMeshPositionals, refuseReadMiss } from '@aof/mesh/commands/face-shared';
 
-test('mesh assembles its seventeen real command definitions without invoking configured services', async () => {
+test('mesh assembles its nineteen real command definitions without invoking configured services', async () => {
   const definitions = {};
   const services = new Proxy({}, { get: () => () => { throw Error('service invoked while registering'); } });
   for (const name of ['identity', 'heartbeat', 'relay', 'invite', 'join', 'revoke', 'serve', 'logs', 'terminal-resume', 'assign', 'recover-push', 'repo', 'ui', 'desktop']) {
@@ -15,12 +15,15 @@ test('mesh assembles its seventeen real command definitions without invoking con
     const factory = 'createMesh' + name.split('-').map(n => n[0].toUpperCase() + n.slice(1)).join('') + 'Commands';
     Object.assign(definitions, api[factory](services));
   }
+  // 191/02 — the registered session verbs share commands/session.mjs with the hook seam, through
+  // their own factory.
+  Object.assign(definitions, (await import('@aof/mesh/commands/session')).createMeshSessionVerbs(services));
   const { meshContribution } = createMeshContribution(definitions);
   assert.equal(meshContribution.name, '@aof/mesh');
-  assert.deepEqual(meshContribution.commands.map(c => c.id), ['mesh:identity', 'mesh:status', 'mesh:heartbeat', 'mesh:relay', 'mesh:invite', 'mesh:join', 'mesh:revoke', 'mesh:serve', 'mesh:logs', 'mesh:terminal-resume', 'mesh:assign', 'mesh:recover-push', 'mesh:repo-publish', 'mesh:ui', 'mesh:desktop-install', 'mesh:desktop-run', 'mesh:desktop-stop']);
+  assert.deepEqual(meshContribution.commands.map(c => c.id), ['mesh:identity', 'mesh:status', 'mesh:heartbeat', 'mesh:relay', 'mesh:invite', 'mesh:join', 'mesh:revoke', 'mesh:serve', 'mesh:logs', 'mesh:terminal-resume', 'mesh:session-start', 'mesh:session-list', 'mesh:assign', 'mesh:recover-push', 'mesh:repo-publish', 'mesh:ui', 'mesh:desktop-install', 'mesh:desktop-run', 'mesh:desktop-stop']);
   assert.ok(Object.isFrozen(meshContribution));
   assert.ok(Object.isFrozen(meshContribution.commands));
-  assert.equal(new Set(meshContribution.commands.map(c => c.cli.route.join(' '))).size, 17);
+  assert.equal(new Set(meshContribution.commands.map(c => c.cli.route.join(' '))).size, 19);
 });
 
 test('assignment command preserves structured refusals and dispatches withdrawal through its own service', async () => {
