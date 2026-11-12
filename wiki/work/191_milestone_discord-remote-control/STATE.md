@@ -57,3 +57,54 @@ doc: state
   id because the live store did not answer, so the doctor could not anchor the two answers to it.
   It was completed, and 20261112T103644390Z-0001 was minted with `--session` naming this session.
   The doctor then anchored 191/03 Q1 and 191/06 Q1 to their recorded answers.
+
+## Feedback (for retro)
+
+- 2026-11-12 — 191/04 build (solo). **Declared read/write set incomplete.** `files:` omitted five
+  modules the build had to touch: the four core adapters that hand the new exports across
+  (`packages/core/src/application/bindings/{loop/stop-request,loop/stop,commands/loop,mesh/declarations}.mjs`)
+  and `packages/work-loop/src/engine.mjs`, where the compute-budget gate lives. The PLAN's "add start
+  rows before the gate" can only be honoured inside `decideSupervisedDeclarations`, so the start
+  requests enter it as an additive `startRequested` list and come back as `starts`, beside `rows`
+  (whose six keys are a declaration's, and stay so).
+- 2026-11-12 — 191/04: **the clear sits at the walk's head, the resume clear's own point** (ADR-005 §4
+  reads "once its declaration is written, at the same point where `--resume` clears"). Those two
+  phrases disagree for a fresh loop, whose declaration is first persisted at its first drive. The
+  build took the stated point: clearing later would leave a window, from spawn to first drive, in
+  which the request stands and no run is live, so a poll could start the scope twice.
+- 2026-11-12 — 191/04: **a start the loop refuses at its door is spent too.** An L3 start whose
+  computed gate fails throws in `resolveInvocation`, before the walk, and would leave its request
+  standing, so the supervisor would respawn the refusal every poll. The launch now clears the request
+  on a door refusal and narrates why. Not in the contract; covered by its own case in
+  `loop-command-resume.test.mjs`.
+- 2026-11-12 — 191/04: **two refusal codes beyond ADR-005 §2's three**, both before any write:
+  `loop-start-level` (a level the loop would refuse) and `loop-start-no-workspace` (no
+  `mesh.workspaceId` to name the request by). "The compute budget allows no further loop" is
+  exercised as a ceiling that admits no launch: a fresh start has spent nothing, so elapsed is 0 and
+  only an unresolved ceiling bars it.
+- 2026-11-12 — 191/04 (recorded finding): a scope whose halted supervised declaration last ran on
+  ANOTHER node is not refused `loop-start-resumable` (the hand-off would refuse it `not-local`, so
+  per §2 nothing would relaunch it here), so a fresh start on this node is allowed. Whether that
+  should be refused toward the other node is open for 06's `/loop start`.
+- 2026-11-12 — 191/04: **`loop.mjs` grew 2223 → 2250**, and the bound in `loop-command-wave.test.mjs`
+  ("the shell is measured smaller") was raised with its reason. Most of the first pass (+65) was
+  extracted at build: the companion-flag refusals moved into `handOffStart` (`stop.mjs`), and the
+  clear's guard moved into `spendStartRequest` (`stop-request.mjs`). What stays is the flag's three
+  homes, the dispatch, the render line, the face and the two clear sites. The shell split is
+  TECH_DEBT item 92. Three schema pins counted `work:loop`'s properties and flags and moved with it
+  (`loop-command-probe`, `acd-loop-narrates-in-flight`, `acd-loop-level-l3-gated`).
+- 2026-11-12 — 191/04 (recorded finding, pre-existing): `lane-is-local-slot.test.mjs` "69/04 task 02"
+  fails the same way on an untouched HEAD checkout of this worktree: the dispatch child dies on
+  `process.cwd` ENOENT and the case times out on `.first-lane-opened`. It is not this story's.
+  `autonomous-shell-out-prompt` failed once under the sharded load and passed alone on a deliberate
+  `--fresh` repeat run to chase that flake.
+- 2026-11-12 — 191/04 review close (solo: structural, behavioural and craft lenses inline; no UI):
+  no Blockers. Routed:
+  - **fixed:** `loop-start-no-workspace` was mapped to 400; it is a state conflict, so now 409.
+  - **story (operator):** a fresh start on a scope whose halted supervised loop last ran on another
+    node is allowed today. Should it be refused toward that node? That needs a criterion, which
+    belongs to 06's `/loop start`.
+  - **recorded:** the declared `files:` set was incomplete (five modules, above); the FF-19105 row in
+    ARCHITECTURE.md still reads `pending`, for verify to flip; and the by-hand check in the PLAN
+    (`--hand-off-start`, then `mesh status --declarations` lists the row, then the desktop app
+    starts it) is left to `aof:verify`. It writes to the real `~/.aof` and starts a real loop.

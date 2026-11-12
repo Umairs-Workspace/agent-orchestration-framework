@@ -14,7 +14,14 @@
 // and cleared by the `--resume` launch. It is its own record: the stop's ten keys are 130's frozen
 // contract, and a resume is not a stop state.
 //
-// The segment literals `loop-stops` and `loop-resumes`, the state words and the level-to-word map
+// 191/04 (ADR-005 §1) — THE START REQUEST lives here too, beside the resume: a scope that has never
+// run has no declaration for `--hand-off` to relaunch, so `work:loop --hand-off-start` writes
+// `<meshRoot>/loop-starts/<workspaceId>--<scope>.json`, five keys `{ scope, workspaceId, by,
+// requestedAt, level }`, read by the declarations producer (one fresh supervised start row each) and
+// cleared by the fresh `--supervised` launch it starts. Keyed by workspace and scope, never by a loop
+// id: no loop exists yet to name one, and a second request for the scope overwrites the first.
+//
+// The segment literals `loop-stops`, `loop-resumes` and `loop-starts`, the state words and the level-to-word map
 // are spelled HERE and nowhere else in runtime source (FF-13001): the shell, the verb, the presence read and the
 // declarations producer read one record through these exports and spell no path of their own.
 //
@@ -23,7 +30,7 @@
 // wins, each write whole, so a torn file is impossible and a lost update is not. Every read is
 // absence-tolerant (`null`), and a file that does not parse AS A RECORD reads `null` after one
 // `reportDegrade("loop-stop-request", …)` — never a throw into the loop that polls it.
-import { readFile, unlink } from "node:fs/promises";
+import { readdir, readFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { normalizeId, writeText } from "@aof/foundation/fs";
 
@@ -37,8 +44,13 @@ export const STOP_STATES = Object.freeze({ requested: "requested", honoured: "ho
 
 const STOPS_SEGMENT = "loop-stops";
 const RESUMES_SEGMENT = "loop-resumes";
+const STARTS_SEGMENT = "loop-starts";
 const DEGRADE_CODE = "loop-stop-request";
 const RESUME_DEGRADE_CODE = "loop-resume-request";
+const START_DEGRADE_CODE = "loop-start-request";
+// `<workspaceId>--<scope>`: neither part may carry `--` of its own for the name to split back
+// unambiguously, which `normalizeId` alone does not refuse, so the start's segment check adds it.
+const START_SEPARATOR = "--";
 // DEFAULT DECISION (ADR-001 §5): a cancel is seen within two seconds of the write, and 2 s of
 // file stats per loop is noise beside a PTY.
 const DEFAULT_POLL_MS = 2000;
@@ -60,6 +72,10 @@ export function createStopRequests({ getRuntimeRoot, reportDegrade }) {
 
   function loopResumesDir(env = process.env) {
     return path.join(getRuntimeRoot(env), RESUMES_SEGMENT);
+  }
+
+  function loopStartsDir(env = process.env) {
+    return path.join(getRuntimeRoot(env), STARTS_SEGMENT);
   }
 
   // A `loopRunId` is ONE filename segment — `normalizeId`'s alphabet (a `randomUUID()` fits) — and
@@ -251,6 +267,118 @@ export function createStopRequests({ getRuntimeRoot, reportDegrade }) {
     return { cleared: true, record };
   }
 
+  // ── the start request (191/04, ADR-005 §1) ──────────────────────────────────────────────────────
+
+  // The record's FIVE keys, in their one order. `level` is `null` unless the request named one.
+  const START_KEYS = Object.freeze(["scope", "workspaceId", "by", "requestedAt", "level"]);
+
+  // Each part of the name is one filename segment by `segmentOf`'s rule, and carries no `--` of its
+  // own; a refusal names the argument that was wrong and throws BEFORE any filesystem access.
+  function startSegmentOf(value, name) {
+    let segment;
+    try {
+      segment = normalizeId(value);
+    } catch (error) {
+      throw new TypeError(`${name} must be one filename segment: ${error.message}`);
+    }
+    if (segment.includes(START_SEPARATOR)) throw new TypeError(`${name} must not contain "${START_SEPARATOR}": ${JSON.stringify(segment)}`);
+    return segment;
+  }
+
+  function startRequestPath(dir, { workspaceId, scope } = {}) {
+    return path.join(dir, `${startSegmentOf(workspaceId, "workspaceId")}${START_SEPARATOR}${startSegmentOf(scope, "scope")}.json`);
+  }
+
+  const isStartRecord = (value) => value != null && typeof value === "object" && !Array.isArray(value)
+    && typeof value.scope === "string" && value.scope.length > 0
+    && typeof value.workspaceId === "string" && value.workspaceId.length > 0;
+
+  async function readStartFile(filePath) {
+    let text;
+    try {
+      text = await readFile(filePath, "utf8");
+    } catch (error) {
+      if (error?.code === "ENOENT") return null;
+      reportDegrade(START_DEGRADE_CODE, error, { path: filePath });
+      return null;
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch (error) {
+      reportDegrade(START_DEGRADE_CODE, error, { path: filePath });
+      return null;
+    }
+    if (!isStartRecord(parsed)) {
+      reportDegrade(START_DEGRADE_CODE, new Error("not a start request: \"scope\" and \"workspaceId\" must be non-empty strings"), { path: filePath });
+      return null;
+    }
+    return parsed;
+  }
+
+  // readStartRequests(dir, { workspaceId }) → every start request standing in `dir`, sorted by file
+  // name, or only `workspaceId`'s when one is named. An absent directory is `[]`; a file that is not
+  // a record is skipped after one degrade event carrying its path. Never throws past the id refusal.
+  async function readStartRequests(dir, { workspaceId } = {}) {
+    const prefix = workspaceId == null ? null : `${startSegmentOf(workspaceId, "workspaceId")}${START_SEPARATOR}`;
+    let names;
+    try {
+      names = await readdir(dir);
+    } catch (error) {
+      if (error?.code === "ENOENT") return [];
+      reportDegrade(START_DEGRADE_CODE, error, { path: dir });
+      return [];
+    }
+    const records = [];
+    for (const name of names.filter((entry) => entry.endsWith(".json")).sort()) {
+      if (prefix != null && !name.startsWith(prefix)) continue;
+      const record = await readStartFile(path.join(dir, name));
+      // The name is a cheap pre-filter; the record's own `workspaceId` is the answer.
+      if (record != null && (workspaceId == null || record.workspaceId === workspaceId)) records.push(record);
+    }
+    return records;
+  }
+
+  // requestLoopStart(dir, { scope, workspaceId, by, level, now }) — the ONE writer: the five keys,
+  // written whole over whatever stood there, so a second request before the start is idempotent and
+  // the later `requestedAt` stands.
+  async function requestLoopStart(dir, { scope, workspaceId, by, level = null, now = () => new Date() } = {}) {
+    const filePath = startRequestPath(dir, { workspaceId, scope });
+    const fields = { scope, workspaceId, by, requestedAt: instant(now), level };
+    const record = {};
+    for (const key of START_KEYS) record[key] = fields[key] ?? null;
+    await writeRecord(filePath, record);
+    return record;
+  }
+
+  // clearStartRequest(dir, { workspaceId, scope }) → `{ cleared, record }`, the fresh supervised
+  // launch's: deletes the file whatever it holds; `cleared: false` only when there was no file.
+  async function clearStartRequest(dir, { workspaceId, scope } = {}) {
+    const filePath = startRequestPath(dir, { workspaceId, scope });
+    const record = await readStartFile(filePath);
+    try {
+      await unlink(filePath);
+    } catch (error) {
+      if (error?.code === "ENOENT") return { cleared: false, record: null };
+      throw error;
+    }
+    return { cleared: true, record };
+  }
+
+  // spendStartRequest(dir, { workspaceId, scope }) → `{ cleared, scope }`, the fresh supervised launch's
+  // (ADR-005 §4): `clearStartRequest` for a well-named request, and `cleared: false` without a throw
+  // when the workspace has no id or the scope is not a segment — no request could carry that name.
+  async function spendStartRequest(dir, { workspaceId, scope } = {}) {
+    const name = typeof scope === "string" ? scope.trim() : "";
+    try {
+      startRequestPath(dir, { workspaceId, scope: name });
+    } catch (error) {
+      if (error instanceof TypeError) return { cleared: false, scope: name };
+      throw error;
+    }
+    return { cleared: (await clearStartRequest(dir, { workspaceId, scope: name })).cleared, scope: name };
+  }
+
   // createStopSource({ loopRunId, dir, process, pollMs, now, timers }) → { level, producer, request,
   // signal, poll, start, stop } — the seam 129/04's task 06 injects as `ctx.stopSource` (ADR-001 §5).
   //
@@ -350,5 +478,5 @@ export function createStopRequests({ getRuntimeRoot, reportDegrade }) {
     };
   }
 
-  return Object.freeze({ loopStopsDir, loopResumesDir, stopRequestPath, readStopRequest, requestLoopStop, markStopHonoured, clearStopRequest, resumeRequestPath, readResumeRequest, requestLoopResume, clearResumeRequest, createStopSource });
+  return Object.freeze({ loopStopsDir, loopResumesDir, stopRequestPath, readStopRequest, requestLoopStop, markStopHonoured, clearStopRequest, resumeRequestPath, readResumeRequest, requestLoopResume, clearResumeRequest, loopStartsDir, startRequestPath, readStartRequests, requestLoopStart, clearStartRequest, spendStartRequest, createStopSource });
 }

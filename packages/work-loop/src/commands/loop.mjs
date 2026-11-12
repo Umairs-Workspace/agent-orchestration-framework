@@ -132,8 +132,8 @@ export function createLoopShell({
   const { askBlockLines, askContext, askEnvFor, awaitAnswer, isParkedHalt, parkedHalt } = asks;
   const { installLoopDiagnostics, loopDiagLogDir, loopDiagScopeTag, readLastLoopDiagEvent } = loopDiagnostics;
   const { buildNotifyEnvelope, notify } = notifications;
-  const { handOffLoop, stopLoop } = stops;
-  const { clearResumeRequest, clearStopRequest, createStopSource, loopResumesDir, loopStopsDir, markStopHonoured, readStopRequest, stopRequestPath } = stopRequests;
+  const { handOffLoop, handOffStart, stopLoop } = stops;
+  const { clearResumeRequest, clearStopRequest, createStopSource, loopResumesDir, loopStartsDir, loopStopsDir, markStopHonoured, readStopRequest, spendStartRequest, stopRequestPath } = stopRequests;
   if (typeof invoke !== "function") throw new TypeError("createLoopShell: invoke is required");
 
   const DEFAULT_LEVEL = "L2";
@@ -710,6 +710,20 @@ export function createLoopShell({
     return answer;
   }
 
+  // 191/04 (ADR-005 §2) — the start's face: the core refuses a companion flag, the scope and the level
+  // (the caller's input, 400) or a running, resumable or unnamed-workspace scope (409), before any write.
+  async function handOffStartCommand(input, ctx) {
+    const answer = await handOffStart(ctx.workspace, input);
+    if (answer.ok === false) throw commandError(answer.message, answer.code, /-(?:running|resumable|no-workspace)$/u.test(answer.code) ? 409 : 400);
+    return answer;
+  }
+  // 191/04 (ADR-005 §4) — a fresh `--supervised` launch, never a resume, spends its scope's start request.
+  async function spendStart(input, ctx, scope, narrate, why) {
+    if (input?.resume === true || input?.supervised !== true) return;
+    const spent = await spendStartRequest(loopStartsDir(), { workspaceId: ctx.workspace?.config?.mesh?.workspaceId, scope });
+    if (spent.cleared) await narrate(`Cleared the start request for ${spent.scope} — ${why}.`);
+  }
+
   // 102/01 — THE LOOP THIS SHELL *IS*, as one exported literal with one home.
   //
   // DISCOVERED, not chosen. Three facts measured at this repository's HEAD put the shell on
@@ -1125,7 +1139,11 @@ export function createLoopShell({
     // invocation's ENTIRE output, so silencing them would make `--level L1 --quiet` print zero
     // bytes — the precise opposite of what `--quiet` promises.
     const narrate = input.quiet === true ? NO_PRINT : report;
-    const resolved = await resolveInvocation(input, ctx, { promote: true });
+    // 191/04 — a start refused at the door is spent too, or the supervisor would relaunch the refusal every poll.
+    const resolved = await resolveInvocation(input, ctx, { promote: true }).catch(async (error) => {
+      await spendStart(input, ctx, input.scope, narrate, "the loop refused to start, so the supervisor will not start it again");
+      throw error;
+    });
     end.resolved = resolved; // 147 — the launch repairs a lane halt with this invocation's resolution and loop id
     // 143/00 — an L1 report is read-only, so a backlog slug is answered as the probe answers it. The
     // launch face never renders a launcher's return, so the answer is printed here as an ACCOUNT line:
@@ -1274,6 +1292,9 @@ export function createLoopShell({
         await report(`Nothing to resume in ${resolved.scope} — no run carries a loop declaration.`);
         return state;
       }
+
+      // 191/04 (ADR-005 §4) — spent where `--resume` clears its request, so no poll starts the scope twice.
+      if (resolved.supervised === true) await spendStart(input, ctx, resolved.scope, narrate, "started by the supervisor");
 
       if (input.resume === true) {
         // 130/02 (ADR-003 §6; ADR-001 §4) — `--resume` CLEARS A STANDING REQUEST, and says so once.
@@ -2043,6 +2064,8 @@ export function createLoopShell({
     if (typeof state?.wouldPromote === "string") {
       return `${state.wouldPromote} — a backlog item: \`aof work loop ${state.wouldPromote}\` would promote it to the stream's tail, then loop at its number. Nothing was written.`;
     }
+    // 191/04 (ADR-005 §2) — the start's one line, read by the key only it carries.
+    if (state?.requested === true) return `${state.scope} — start requested: the supervisor starts a new supervised loop on its next poll. ${state.path}`;
     // 131/11 (ADR-009 §6) — the hand-off's one line, read by the key only it carries.
     if (state?.handedOff === true) {
       return `${state.scope} — handed to the supervisor: it relaunches loop ${state.loopRunId} with --resume on its next poll. ${state.path}`;
@@ -2098,6 +2121,7 @@ export function createLoopShell({
         stop: { type: "boolean" },
         // 131/11 ADR-009 §6 — the hand-off to the supervisor, in the same three homes.
         handOff: { type: "boolean" },
+        startHandOff: { type: "boolean" }, // 191/04 ADR-005 §2 — the start request, in the same three homes.
         // 141 — the effort every driven session thinks at, in the same three homes. 143/03 — repeatable,
         // so a list; a string from an older caller is still read as one value.
         thinking: { type: ["array", "string"] },
@@ -2116,13 +2140,14 @@ export function createLoopShell({
     // read-only probe (FF-5304's ten keys). Nothing else on the input selects the stop.
     // 129 gate (2026-09-22): `async`, because the command-core contract pins every `run` as an AsyncFunction.
     run: async (input, ctx) => {
+      if (input?.startHandOff === true) return handOffStartCommand(input, ctx);
       if (input?.handOff === true) return handOffLoopCommand(input, ctx);
       return input?.stop === true ? stopLoopCommand(input, ctx) : probeLoop(input, ctx);
     },
     cli: {
       route: ["work", "loop"],
       spec: {
-        usage: "aof work loop <driver|NN-MM|backlog-slug|backlog-path> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
+        usage: "aof work loop <driver|NN-MM|backlog-slug|backlog-path> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--hand-off-start] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
         flags: {
           level: { type: "string", description: "loop level (L1 report-only, L2 assisted, or L3 unattended when its computed gate passes)" },
           cap: { type: "string", description: "override the per-(ref, phase) drive ceiling" },
@@ -2130,6 +2155,7 @@ export function createLoopShell({
           resume: { type: "boolean", description: "settle stranded runs and resume the last declaration" },
           stop: { type: "boolean", description: "ask the scope's running loop to stop: the first request drains, a second cancels the in-flight session; --resume clears it" },
           handOff: { type: "boolean", description: "hand a halted supervised loop back to its supervisor, which relaunches it with --resume on its next poll; starts nothing here" },
+          handOffStart: { type: "boolean", description: "ask the supervisor to start this scope as a new supervised loop on its next poll; starts nothing here, and refuses a scope that is running or has a halted supervised loop to resume" },
           dryRun: { type: "boolean", description: "render the read-only probe instead of entering the loop" },
           quiet: { type: "boolean", description: "silence the in-flight progress lines; the terminal account is printed unchanged" },
           supervised: { type: "boolean", description: "declare this loop supervised, so a restarted node relaunches it; off by default" },
@@ -2147,6 +2173,7 @@ export function createLoopShell({
         ...(options.resume === true ? { resume: true } : {}),
         ...(options.stop === true ? { stop: true } : {}),
         ...(options.handOff === true ? { handOff: true } : {}),
+        ...(options.handOffStart === true ? { startHandOff: true } : {}),
         ...(options.dryRun === true ? { dryRun: true } : {}),
         ...(options.quiet === true ? { quiet: true } : {}),
         ...(options.supervised === true ? { supervised: true } : {}),
@@ -2158,7 +2185,7 @@ export function createLoopShell({
       // 130/02 (ADR-002 §1) — a `--stop` stays on the probe side exactly as `--dry-run` does: it
       // never enters the foreground body, never installs the diag recorder, never reaches a PTY.
       // It prints through `render`.
-      launch: (options) => options.dryRun === true || options.stop === true || options.handOff === true
+      launch: (options) => options.dryRun === true || options.stop === true || options.handOff === true || options.handOffStart === true
         ? null
         : (input, faceCtx) => {
           // The EXIT-REASON recorder (2026-09-11, `src/loop-diag.mjs`) — installed HERE, at the

@@ -69,6 +69,10 @@ const SEGMENT = "loop-stops";
 // 131/11 — the second segment the home owns: the resume request lives beside the stop it undoes
 // (131/ADR-009 §6).
 const RESUME_SEGMENT = "loop-resumes";
+// 191/04 — the third segment the home owns: the start request lives beside the resume (191/ADR-005 §1,
+// FF-19105).
+const START_SEGMENT = "loop-starts";
+const PRODUCER = "packages/mesh/src/declarations.mjs";
 const READERS = Object.freeze(["packages/core/src/application/bindings/loop/stop.mjs", "packages/core/src/application/bindings/commands/loop.mjs", "packages/core/src/application/bindings/mesh/declarations.mjs", "packages/core/src/application/bindings/mesh/presence.mjs"]);
 const CONFIGURED_READERS = Object.freeze(["packages/mesh/src/declarations.mjs", "packages/mesh/src/presence.mjs"]);
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
@@ -322,7 +326,8 @@ export const archTests = [
       // 129 gate (2026-09-22): `async` admitted — command-core/00 pins every registered `run` as an AsyncFunction.
       // As amended at 131/11 (ADR-009 §6): the hand-off is a second verb, dispatched first on its own
       // flag; the stop's branch and the probe after it are unchanged.
-      assert.match(shell, /run:\s*async\s*\(input,\s*ctx\)\s*=>\s*\{\s*if \(input\?\.handOff === true\) return handOffLoopCommand\(input, ctx\);\s*return input\?\.stop === true \? stopLoopCommand\(input, ctx\) : probeLoop\(input, ctx\);\s*\}/u, "run dispatches: handOff: true is the hand-off, stop: true is the verb, otherwise the byte-identical probe");
+      // As amended at 191/04 (ADR-005 §2): the start request is a third verb, dispatched before the hand-off.
+      assert.match(shell, /run:\s*async\s*\(input,\s*ctx\)\s*=>\s*\{\s*if \(input\?\.startHandOff === true\) return handOffStartCommand\(input, ctx\);\s*if \(input\?\.handOff === true\) return handOffLoopCommand\(input, ctx\);\s*return input\?\.stop === true \? stopLoopCommand\(input, ctx\) : probeLoop\(input, ctx\);\s*\}/u, "run dispatches: startHandOff: true is the start, handOff: true is the hand-off, stop: true is the verb, otherwise the byte-identical probe");
     },
   },
   {
@@ -343,6 +348,47 @@ export const archTests = [
       // Neither face reaches the request's writer directly: the route composes no request.
       const route = units.find(({ rel }) => rel === "packages/core/src/application/bindings/mesh/ui-serve.mjs");
       assert.doesNotMatch(route.code, /\b(?:requestLoopStop|readLoopDeclaration)\s*\(/u, "the fleet route calls stopLoop and never requestLoopStop( or readLoopDeclaration( itself");
+    },
+  },
+  {
+    name: "arch/191 FF-19105 (acd-loop-stop-request-single-home): the start request has ONE home — the segment \"loop-starts\" is spelled only in packages/work-loop/src/stop-request.mjs — and a start row never resumes: its argv carries --supervised and never --resume",
+    run: async () => {
+      const units = await srcUnits();
+      assertRead("the src/** sweep", units.length, 150);
+      const home = units.find(({ rel }) => rel === HOME);
+      assert.ok(home != null && home.code.includes(START_SEGMENT), `NOT FOUND: ${HOME} does not spell ${JSON.stringify(START_SEGMENT)} — the sweep must find the home before it can claim it is the only one`);
+      const spellers = units.filter(({ code }) => code.includes(START_SEGMENT)).map(({ rel }) => rel);
+      assert.deepEqual(spellers, [HOME], `the literal ${JSON.stringify(START_SEGMENT)} appears only in ${HOME} — spelled by: ${spellers.join(", ")}. The start request lives beside the resume (191/ADR-005 §1); read its path through loopStartsDir()/startRequestPath()`);
+
+      // THE START ROW — read off the producer's own composition, cut on the language's structure:
+      // the `argvFor(` call inside the `starts.map(` body names `supervised: true` and never `resume`.
+      const producer = units.find(({ rel }) => rel === PRODUCER);
+      assert.ok(producer != null, `NOT FOUND: ${PRODUCER}`);
+      const startsAt = producer.code.indexOf("starts.map(");
+      assert.ok(startsAt >= 0, `NOT FOUND: ${PRODUCER} composes no start rows (starts.map()`);
+      const startsSpan = matchedParenSpan(producer.code, producer.code.indexOf("(", startsAt));
+      assert.ok(startsSpan != null, "the start rows' map was cut structurally");
+      const argvAt = startsSpan.body.indexOf("argvFor(");
+      assert.ok(argvAt >= 0, "a start row's argv is composed by argvFor( — the one composer");
+      const argvCall = matchedParenSpan(startsSpan.body, startsSpan.body.indexOf("(", argvAt));
+      const options = topLevelArguments(argvCall.body)[2] ?? "";
+      assert.match(options, /\bsupervised\s*:\s*true\b/u, `a start row's argv asks for --supervised: argvFor(${argvCall.body})`);
+      assert.doesNotMatch(options, /\bresume\b/u, `a start row's argv never asks for --resume: argvFor(${argvCall.body})`);
+
+      // And the composer behaves so: the start's options emit --supervised and no --resume, the
+      // resume's emit --resume and no --supervised — the two kinds of row, never both.
+      const { argvFor, RESUME_FLAG, SUPERVISED_FLAG } = await import("../../../packages/work-loop/src/argv.mjs");
+      const start = argvFor(["work", "loop"], { scope: "191", level: "L3" }, { supervised: true });
+      assert.deepEqual(start, ["work", "loop", "191", "--level", "L3", SUPERVISED_FLAG]);
+      assert.equal(start.includes(RESUME_FLAG), false, "a start row never carries --resume");
+      const resume = argvFor(["work", "loop"], { scope: "191" }, { resume: true });
+      assert.equal(resume.at(-1), RESUME_FLAG, "a resume row always does");
+      assert.equal(resume.includes(SUPERVISED_FLAG), false);
+      assert.equal(argvFor(["work", "loop"], { scope: "191" }, { resume: true, supervised: true }).includes(SUPERVISED_FLAG), false, "never both");
+
+      // SELF-CHECK — the option probe reds on the planted defect the register names.
+      assert.match("{ resume: true }", /\bresume\b/u, "self-check: a planted resume option is seen");
+      assert.doesNotMatch("{ resume: true }", /\bsupervised\s*:\s*true\b/u, "self-check: a planted start row lacking --supervised is seen");
     },
   },
 ];

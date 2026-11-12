@@ -4,7 +4,7 @@ number: 04
 slug: a-loop-starts-through-the-supervisor
 title: "A loop starts through the supervisor — `aof work loop <scope> --hand-off-start` writes a start request, and the desktop app starts a fresh supervised loop on its next poll"
 parent: 191
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-11-11
 updated: 2026-11-12
@@ -45,9 +45,9 @@ refusals. `SUPERVISED_FLAG` in the argv leaf. One start row per request from
 
 ## Tasks
 
-- [ ] 00 [a start request is written, or refused by name](tasks/00_a-start-request-is-written-or-refused-by-name.feature)
-- [ ] 01 [the supervisor is handed a fresh supervised start](tasks/01_the-supervisor-is-handed-a-fresh-supervised-start.feature)
-- [ ] 02 [the started loop spends the request](tasks/02_the-started-loop-spends-the-request.feature)
+- [x] 00 [a start request is written, or refused by name](tasks/00_a-start-request-is-written-or-refused-by-name.feature)
+- [x] 01 [the supervisor is handed a fresh supervised start](tasks/01_the-supervisor-is-handed-a-fresh-supervised-start.feature)
+- [x] 02 [the started loop spends the request](tasks/02_the-started-loop-spends-the-request.feature)
 
 ## Notes
 

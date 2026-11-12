@@ -415,7 +415,12 @@ export const loopCommandWaveTests = [
       // loop with its account lines — the launch is the one door that may resume, so it cannot move.
       // 181/ADR-003: four lines reject an unusable declared rubric at the invocation door,
       // before promotion or runtime startup. The predicate remains in the grade leaf.
-      assert.ok(lines <= 2223, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2223 it was at 181 — extract, or raise this bound with a reason`);
+      // 2223 -> 2250 is 191/04 (ADR-005): `--hand-off-start` in its three homes, its dispatch and its
+      // one render line, its command face, and the two points a fresh supervised launch spends its
+      // start request (the walk's head, and a refusal at the door). The verb itself, the companion
+      // refusals and the clear's guard were extracted to stop.mjs and stop-request.mjs at build;
+      // what stays is the face and the launch, which only the shell owns.
+      assert.ok(lines <= 2250, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2250 it was at 191/04 — extract, or raise this bound with a reason`);
     },
   },
 

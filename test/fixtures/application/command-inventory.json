@@ -4698,6 +4698,9 @@
         "handOff": {
           "type": "boolean"
         },
+        "startHandOff": {
+          "type": "boolean"
+        },
         "thinking": {
           "type": [
             "array",
@@ -4734,7 +4737,7 @@
         "loop"
       ],
       "spec": {
-        "usage": "aof work loop <driver|NN-MM|backlog-slug|backlog-path> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
+        "usage": "aof work loop <driver|NN-MM|backlog-slug|backlog-path> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--hand-off-start] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
         "flags": {
           "level": {
             "type": "string",
@@ -4759,6 +4762,10 @@
           "handOff": {
             "type": "boolean",
             "description": "hand a halted supervised loop back to its supervisor, which relaunches it with --resume on its next poll; starts nothing here"
+          },
+          "handOffStart": {
+            "type": "boolean",
+            "description": "ask the supervisor to start this scope as a new supervised loop on its next poll; starts nothing here, and refuses a scope that is running or has a halted supervised loop to resume"
           },
           "dryRun": {
             "type": "boolean",

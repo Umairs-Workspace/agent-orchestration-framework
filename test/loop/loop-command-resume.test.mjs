@@ -1,7 +1,7 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 const completeRun = _aofApplication.execution.runs.completeRun;
 const heartbeat = _aofApplication.execution.runs.heartbeat;
@@ -23,6 +23,9 @@ const readStopRequest = _aofApplication.loop.stopRequest.readStopRequest;
 const requestLoopResume = _aofApplication.loop.stopRequest.requestLoopResume;
 const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
 const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
+const loopStartsDir = _aofApplication.loop.stopRequest.loopStartsDir;
+const requestLoopStart = _aofApplication.loop.stopRequest.requestLoopStart;
+const startRequestPath = _aofApplication.loop.stopRequest.startRequestPath;
 import {
   DECLARATION_L1,
   cancellableDriver,
@@ -872,3 +875,100 @@ export const loopCommandResumeTests = [
     },
   },
 ];
+
+// 191/04 task 02 (ADR-005 §4) — THE STARTED LOOP SPENDS THE REQUEST. Each case writes a start request
+// under the harness's isolated home through the module's one writer, launches the real shell over
+// the loop fixture (whose workspace carries a mesh workspace id), and reads the request back.
+const START_WORKSPACE = "ws-a";
+const startOf = (scope) => ({ workspaceId: START_WORKSPACE, scope });
+async function resetLoopStarts() {
+  await rm(loopStartsDir(), { recursive: true, force: true });
+}
+async function writeStart(scope) {
+  await requestLoopStart(loopStartsDir(), { ...startOf(scope), by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-11-12T10:00:00.000Z") });
+  return readFile(startRequestPath(loopStartsDir(), startOf(scope)), "utf8");
+}
+const START_CLEARED = (scope) => `Cleared the start request for ${scope} — started by the supervisor.`;
+
+loopCommandResumeTests.push(
+  {
+    name: "191/04 task02 — a fresh supervised launch clears its scope's start request, and narrates the clear once",
+    async run() {
+      await resetLoopStarts();
+      const fx = await loopFixture({ mesh: { workspaceId: START_WORKSPACE } });
+      try {
+        await writeStart("03");
+        const driver = completingDriver(fx, { onCommand: closing(fx) });
+        const { lines } = await runCollected({ scope: "03", supervised: true }, { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: fakeStopSource() });
+        assert.equal(existsSync(startRequestPath(loopStartsDir(), startOf("03"))), false, "the start request for 03 is deleted");
+        assert.equal(lines.filter((line) => line === START_CLEARED("03")).length, 1, lines.join("\n"));
+        const cleared = lines.indexOf(START_CLEARED("03"));
+        const driving = lines.findIndex((line) => line.startsWith("Driving "));
+        assert.ok(cleared > -1 && (driving === -1 || cleared < driving), `the clear precedes the first drive: ${lines.join("\n")}`);
+      } finally {
+        await fx.cleanup();
+        await resetLoopStarts();
+      }
+    },
+  },
+  {
+    name: "191/04 task02 — a launch without --supervised leaves the start request alone, byte-identical",
+    async run() {
+      await resetLoopStarts();
+      const fx = await loopFixture({ mesh: { workspaceId: START_WORKSPACE } });
+      try {
+        const bytes = await writeStart("03");
+        const driver = completingDriver(fx, { onCommand: closing(fx) });
+        const { lines } = await runCollected({ scope: "03" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: fakeStopSource() });
+        assert.equal(await readFile(startRequestPath(loopStartsDir(), startOf("03")), "utf8"), bytes, "the start request for 03 still exists, unchanged");
+        assert.equal(lines.some((line) => line.startsWith("Cleared the start request")), false, lines.join("\n"));
+      } finally {
+        await fx.cleanup();
+        await resetLoopStarts();
+      }
+    },
+  },
+  {
+    name: "191/04 task02 — a resume, and a fresh supervised launch of another scope, leave another scope's start request alone",
+    async run() {
+      await resetLoopStarts();
+      const fx = await loopFixture({ mesh: { workspaceId: START_WORKSPACE } });
+      try {
+        const bytes = await writeStart("04");
+        await writeDeclarationRun(fx, { declaration: { ...DECLARATION_L1, phase: "verify", supervised: true }, state: "done", at: "2026-09-13T11:00:00.000Z" });
+        const resumed = await runCollected({ scope: "03", resume: true, now: "2026-09-13T12:00:00.000Z" }, { ...fx.ctx, agentSessionDriverOptions: completingDriver(fx, { onCommand: closing(fx) }).options, stopSource: fakeStopSource() });
+        assert.equal(await readFile(startRequestPath(loopStartsDir(), startOf("04")), "utf8"), bytes, "the start request for 04 still exists after the resume of 03");
+        assert.equal(resumed.lines.some((line) => line.startsWith("Cleared the start request")), false, resumed.lines.join("\n"));
+      } finally {
+        await fx.cleanup();
+      }
+      const fresh = await loopFixture({ mesh: { workspaceId: START_WORKSPACE } });
+      try {
+        const bytes = await readFile(startRequestPath(loopStartsDir(), startOf("04")), "utf8");
+        await runCollected({ scope: "03", supervised: true }, { ...fresh.ctx, agentSessionDriverOptions: completingDriver(fresh, { onCommand: closing(fresh) }).options, stopSource: fakeStopSource() });
+        assert.equal(await readFile(startRequestPath(loopStartsDir(), startOf("04")), "utf8"), bytes, "a fresh supervised launch of 03 clears only 03's request");
+      } finally {
+        await fresh.cleanup();
+        await resetLoopStarts();
+      }
+    },
+  },
+  {
+    name: "191/04 task02 — a fresh supervised launch the loop refuses at its door spends the start request too, so the supervisor never relaunches the refusal",
+    async run() {
+      await resetLoopStarts();
+      const fx = await loopFixture({ mesh: { workspaceId: START_WORKSPACE } });
+      try {
+        await writeStart("03");
+        const lines = [];
+        // An L3 start over a fixture whose computed L3 gate does not pass: refused before the walk.
+        await assert.rejects(runLoopBody({ scope: "03", level: "L3", supervised: true }, { ...fx.ctx, agentSessionDriverOptions: completingDriver(fx).options, stopSource: fakeStopSource(), report: (line) => lines.push(line) }));
+        assert.equal(existsSync(startRequestPath(loopStartsDir(), startOf("03"))), false, "the refused start's request is spent");
+        assert.deepEqual(lines, ["Cleared the start request for 03 — the loop refused to start, so the supervisor will not start it again."]);
+      } finally {
+        await fx.cleanup();
+        await resetLoopStarts();
+      }
+    },
+  },
+);

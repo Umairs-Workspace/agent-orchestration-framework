@@ -17,8 +17,10 @@ export function assembleMeshDeclarations({ meshPresenceServices, runStoreService
   const { loopStopsDir } = loopStopRequestServices;
   const { readResumeRequest } = loopStopRequestServices;
   const { readStopRequest } = loopStopRequestServices;
+  const { loopStartsDir } = loopStopRequestServices;
+  const { readStartRequests } = loopStopRequestServices;
 
-  const { supervisedDeclarations } = createSupervisedDeclarations({ resolveNodeWorkspaces, isRunning, isStale, readRuns, retryReadiness, resolveAttemptCeiling, listItems, loadWorkspace, STOP_STATES, loopResumesDir, loopStopsDir, readResumeRequest, readStopRequest, loadCommandRegistry: () => provideCommandCore() });
+  const { supervisedDeclarations } = createSupervisedDeclarations({ resolveNodeWorkspaces, isRunning, isStale, readRuns, retryReadiness, resolveAttemptCeiling, listItems, loadWorkspace, STOP_STATES, loopResumesDir, loopStopsDir, readResumeRequest, readStopRequest, loopStartsDir, readStartRequests, loadCommandRegistry: () => provideCommandCore() });
 
   return { supervisedDeclarations };
 }
