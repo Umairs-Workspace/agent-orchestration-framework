@@ -104,6 +104,23 @@ doc: state
   imports statically), so its pinned ceiling goes 753 -> 754 with that reason. Neither
   `test/arch/command/acd-cli-entry-executes.test.mjs` nor the extractor rule was in the story's
   derived read/write set; any new core module on the bundle path owes that ceiling row.
+- 2026-11-13 — 192/01 build (solo, run `20261113T023017542Z-0000`). `aof test --scope impacted
+  --story 192/01` widens to all 1280 suites here (every declared path `no-graph`), so the run was
+  taken by file: the 56 suites that import `work/bundle.mjs`, `bundle-compose.mjs` or the compose
+  suite, then all 547 under `test/arch`. Every 192/01 case is green (136 across the two suites).
+  The reds that remain are outside this story's diff and were left alone: FF-7106 names 192/02's
+  and 193/04's `files:` (tracked renders undeclared); FF-9603/96/02-00 names 193/00's `PLAN.md`
+  (`path-list` at line 49); m42-item-3 names `packages/execution/src/pty.mjs` (2 silent catches,
+  baseline 0); FF-12602 leg 2 (15 in-flight lines, ceiling 14) and FF-5301 (worker facade reach
+  186, ceiling 185) are loop/session counts this diff adds no import to; 87/00 needs an unbuilt
+  `apps/ui/dist`; work/archive-is-a-move compares `/var` with macOS's `/private/var`. The build's
+  own silent catch (a variant file read) was caught by m42-item-3 and rewritten to answer null.
+- 2026-11-13 — 192/01 grade round: `work:grade` reported FF-7706 ("a governed project that is not
+  an aof checkout gets an audit of its own instruments") as `timed-out` — its fixture control
+  `test/arch/green.test.mjs`, started through `audit-drive.mjs`, hit the 60000ms deadline and was
+  killed. It did not reproduce: three `--fresh` runs of `test/arch/audit/acd-audit-travels-two-roots.test.mjs`
+  passed every case in ~4s each, with the load average at 9–11 during the grade. Neither the audit
+  family nor `audit-drive.mjs` is in the story's diff. Recorded as a load flake, not a defect.
 
 ## Verification
 
