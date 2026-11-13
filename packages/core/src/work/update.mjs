@@ -54,8 +54,9 @@ export function workLockPath(targetDir) {
 // When no install manifest exists, returns `notInitialized: true` having written
 // NOTHING — the CLI maps that to a non-zero exit and points the user to init.
 //
-// A `bundleOverride` (a `{ resources, templates, descriptor }` object) is a
-// TEST-ONLY seam: it lets a test synthesize a modified bundle (a changed / added /
+// A `bundleOverride` (a `{ resources, templates, descriptor }` object, or — 192/00 —
+// a function of the project's config returning one) is a TEST-ONLY seam: it lets a
+// test synthesize a modified bundle (a changed / added /
 // dropped member) without mutating the real shipped `src/bundle/`. It is NOT a
 // drift hook — the override only chooses WHICH bundle is loaded; all
 // classification still flows through planApplyActions unchanged.
@@ -95,11 +96,17 @@ export async function updateWork(options = {}) {
   // claude only if a legacy manifest omitted them.
   const runtimes = normalizeRuntimes(previousLock.runtimes);
 
-  const bundle = options.bundleOverride ?? loadBundle();
+  // 192/ADR-003 — what the render includes is decided by the project's own config file: read it
+  // once, load the bundle composed for it, and hand the same read to the synthesis. A function
+  // `bundleOverride` is the test seam for a fixture bundle that must be loaded with that config.
+  const project = await readConfig(targetDir);
+  const bundle = typeof options.bundleOverride === "function"
+    ? options.bundleOverride(project.config)
+    : options.bundleOverride ?? loadBundle({ config: project.config });
 
   // The IDENTICAL synthesis init uses (shared helper, ADR-003). This is the only
   // structural surface update adds; classification is the engine's.
-  const { desiredOutputs, notInstallable } = await synthesizeBundleConfig(bundle, { runtimes, targetDir });
+  const { desiredOutputs, notInstallable } = await synthesizeBundleConfig(bundle, { runtimes, targetDir, project });
 
   // Update semantics: previousLock IS the install manifest (ADR-004). The engine
   // classifies create/update/skip/drift-warning/delete by comparing the desired

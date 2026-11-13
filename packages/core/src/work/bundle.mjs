@@ -26,6 +26,7 @@ import { assetBase, readAssetText, listAssetMembers, packageAssetClass } from ".
 import { INTEGRATIONS } from "../integrations.mjs";
 import { PRACTICES } from "../practices.mjs";
 import { applyFrozenAgentScopes, bundledFrozenSet, compileFrozenSet } from "../frozen-set.mjs";
+import { COMMON, composeText, contributionFaults, fragmentSection, practiceStates, selectFragments } from "./bundle-compose.mjs";
 
 // ADR-005 comment-form stamp: every template-rendered file declares itself
 // aof-managed in-band (the comment family, since templates carry no resource
@@ -55,6 +56,21 @@ const readPackageFragment = (assetClass) => JSON.parse(readAssetText(assetClass,
 export function readDescriptor({ integrations = INTEGRATIONS, practices = PRACTICES, readFragment = readPackageFragment } = {}) {
   const descriptor = JSON.parse(readAssetText("bundle", "bundle.json"));
   const declared = new Map(descriptor.members.map((member) => [member.id, "core"]));
+  // 192/ADR-002 §1 — a bundle fragment may declare practices: an id unique across every
+  // contributor, and the keys that turn it on. Each carries the package that declared it.
+  const declaredPractices = new Map();
+  const corePractices = descriptor.practices;
+  descriptor.practices = [];
+  const declarePractices = (list, contributor) => {
+    for (const practice of list ?? []) {
+      if (declaredPractices.has(practice.id)) {
+        throw new Error(`Practice "${practice.id}" contributed by ${contributor} is already declared by ${declaredPractices.get(practice.id)}.`);
+      }
+      declaredPractices.set(practice.id, contributor);
+      descriptor.practices.push({ ...practice, contributor });
+    }
+  };
+  declarePractices(corePractices, "core");
   const contributors = [
     ...integrations.map((contribution) => ({ contribution, integration: contribution.id })),
     ...practices.map((contribution) => ({ contribution, integration: null })),
@@ -63,6 +79,7 @@ export function readDescriptor({ integrations = INTEGRATIONS, practices = PRACTI
     if (!contribution.assets?.package) continue;
     const assetClass = packageAssetClass(contribution.assets.package);
     const fragment = readFragment(assetClass);
+    declarePractices(fragment.practices, contribution.name);
     for (const member of fragment.members ?? []) {
       if (declared.has(member.id)) {
         throw new Error(`Bundle member "${member.id}" contributed by ${contribution.name} is already declared by ${declared.get(member.id)}.`);
@@ -79,11 +96,11 @@ function memberClass(member) {
   return member.assetClass ?? "bundle";
 }
 
-function variantText(member, runtime, { file, section }, cache) {
+function variantText(member, runtime, { file, section }, cache, readText = readAssetText) {
   let body;
   const key = `${memberClass(member)}:${file}`;
   try {
-    if (!cache.has(key)) cache.set(key, readAssetText(memberClass(member), file));
+    if (!cache.has(key)) cache.set(key, readText(memberClass(member), file));
     body = cache.get(key);
   }
   catch (error) { throw new Error(`Missing variant for ${member.kind}:${member.id} (${runtime}): ${file}`, { cause: error }); }
@@ -140,8 +157,15 @@ function splitFrontmatter(raw) {
 // Returns a config-shaped object: `resources[]` are the agent + command members
 // (consumed by renderConfigOutputs unchanged); `templates[]` are the template
 // members (rendered by renderBundleTemplateOutputs to a fixed bundle location).
-export function loadBundle({ descriptor = readDescriptor() } = {}) {
+//
+// 192/ADR-001 §4 — every text a member carries (its common body, each authored variant's body and
+// each associated file) is composed for `config` before it is returned, so no reader of the bundle
+// ever sees a slot marker. The default config is empty: every practice off, the canonical render the
+// shipped manifest catalogues. `readText` is the asset seam, a parameter so a test can hand in the
+// texts of a fixture package no installed package ships.
+export function loadBundle({ descriptor = readDescriptor(), config = {}, readText = readAssetText } = {}) {
   const variantCache = new Map();
+  const authored = new Map();
   const frozenSet = compileFrozenSet(bundledFrozenSet());
   const resources = [];
   const templates = [];
@@ -152,7 +176,7 @@ export function loadBundle({ descriptor = readDescriptor() } = {}) {
     if (member.kind === "agent" || member.kind === "command" || member.kind === "skill") {
       // The SEA-safe asset seam (28/ADR — `acd-sea-safe-asset-base`), never a
       // path.join off an install root: the bundle rides the binary's asset base.
-      const raw = readAssetText(memberClass(member), member.file);
+      const raw = readText(memberClass(member), member.file);
       const { frontmatter, body } = splitFrontmatter(raw);
       const resource = {
         id: member.id,
@@ -169,10 +193,11 @@ export function loadBundle({ descriptor = readDescriptor() } = {}) {
       if (member.variants) {
         resource.runtimeVariants = Object.fromEntries(Object.entries(member.variants).map(([runtime, variant]) => {
           if (variant === null) return [runtime, {}];
+          authored.set(resource, [...(authored.get(resource) ?? []), runtime]);
           const { file, section, associatedFiles, ...settings } = variant;
-          return [runtime, { ...settings, body: variantText(member, runtime, variant, variantCache),
+          return [runtime, { ...settings, body: variantText(member, runtime, variant, variantCache, readText),
             ...(associatedFiles ? { associatedFiles: associatedFiles.map(attachment => ({
-              path: attachment.path, content: variantText(member, runtime, attachment, variantCache), resolveReferences: true
+              path: attachment.path, content: variantText(member, runtime, attachment, variantCache, readText), resolveReferences: true
             })) } : {}) }];
         }));
       }
@@ -226,12 +251,82 @@ export function loadBundle({ descriptor = readDescriptor() } = {}) {
       });
       continue;
     }
+    // 192/ADR-002 §2 — a fragment is read and placed below, once every member's texts are known.
+    if (member.kind === "fragment") continue;
     throw new Error(`Unknown bundle member kind "${member.kind}" for "${member.id}".`);
   }
 
+  composeResources(resources, authored, descriptor, { config, readText });
   applyFrozenAgentScopes(resources, frozenSet);
   const workflows = (descriptor.references ?? []).map(reference => ({ ...reference, body: readAssetText("bundle", reference.file) }));
-  return { resources, hooks, templates, assets, workflows, descriptor, frozenSet };
+  return { resources, hooks, templates, assets, workflows, descriptor, frozenSet, practices: descriptor.practices ?? [] };
+}
+
+// The package a member or fragment came from, as the load refusals name it.
+function contributorOf(member) {
+  const assetClass = memberClass(member);
+  return assetClass.startsWith("package:") ? assetClass.slice("package:".length) : "core";
+}
+
+// Each text a resource carries, by runtime key (192/ADR-001 §2): its common body, and for each
+// runtime it renders from an authored variant, that variant's body and its associated files.
+function resourceTexts(resource, authoredRuntimes) {
+  const texts = new Map([[COMMON, [resource.body]]]);
+  for (const runtime of authoredRuntimes ?? []) {
+    const variant = resource.runtimeVariants[runtime];
+    texts.set(runtime, [variant.body, ...(variant.associatedFiles ?? []).map((attachment) => attachment.content)]);
+  }
+  return texts;
+}
+
+// A fragment's body for each runtime key it names (192/ADR-002 §3), read through the asset seam
+// from its contributor's asset class. A file that cannot be read, or that holds no section for the
+// slot, answers null with the reason, and the load refuses it.
+function fragmentBodies(fragment, readText, cache) {
+  const bodies = new Map();
+  const problems = new Map();
+  const sources = [
+    ...(fragment.file ? [[COMMON, fragment.file, fragment.section]] : []),
+    ...Object.entries(fragment.variants ?? {}).filter(([, variant]) => variant?.file).map(([runtime, variant]) => [runtime, variant.file, variant.section]),
+  ];
+  for (const [runtime, file, section] of sources) {
+    const key = `${memberClass(fragment)}:${file}`;
+    let text;
+    try {
+      if (!cache.has(key)) cache.set(key, readText(memberClass(fragment), file));
+      text = cache.get(key);
+    } catch {
+      bodies.set(runtime, null);
+      problems.set(runtime, `its ${runtime} body file "${file}" is missing`);
+      continue;
+    }
+    const body = fragmentSection(text, section ?? fragment.slot);
+    if (body == null) problems.set(runtime, `its ${runtime} body file "${file}" holds no section "${section ?? fragment.slot}"`);
+    bodies.set(runtime, body);
+  }
+  return { bodies, problems };
+}
+
+// 192/ADR-001 §3, §4 + ADR-002 §6 — refuse a contribution that cannot land, then fill every slot of
+// every text with the bodies of the fragments that are on for `config`, in declared order.
+function composeResources(resources, authored, descriptor, { config, readText }) {
+  const cache = new Map();
+  const members = new Map(resources.map((resource) => [`${resource.kind}:${resource.id}`, { resource, contributor: contributorOf(descriptor.members.find((member) => member.id === resource.id) ?? {}), texts: resourceTexts(resource, authored.get(resource)) }]));
+  const fragments = descriptor.members.filter((member) => member.kind === "fragment").map((member) => ({
+    ...member, contributor: contributorOf(member), ...fragmentBodies(member, readText, cache),
+  }));
+  const faults = contributionFaults({ practices: descriptor.practices ?? [], members, fragments });
+  if (faults.length > 0) throw new Error(faults.join("\n"));
+  const states = practiceStates(descriptor.practices ?? [], config);
+  for (const [target, { resource }] of members) {
+    const fill = (runtime) => (text) => composeText(text, (slot) => selectFragments(fragments, states, { target, slot }).map((fragment) => fragment.bodies.get(runtime)));
+    resource.body = fill(COMMON)(resource.body);
+    for (const runtime of authored.get(resource) ?? []) {
+      const variant = resource.runtimeVariants[runtime];
+      variant.body = fill(runtime)(variant.body);
+      if (variant.associatedFiles) variant.associatedFiles = variant.associatedFiles.map((attachment) => ({ ...attachment, content: fill(runtime)(attachment.content) }));
+    }
+  }
 }
 
 // renderBundleAssetOutputs(bundle, { runtimes }) — the asset kind's renderer, the

@@ -1,0 +1,137 @@
+{
+  "runId": "20261113T020644723Z-0001",
+  "itemRef": "192/00",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "6de36893-9c04-4471-86ac-31ad661c6307",
+  "brief": {
+    "loop": {
+      "loopRunId": "632ce08e-288c-4315-8720-1ad3d1f40298",
+      "scope": "192",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-11-13T01:01:47.243Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        }
+      }
+    },
+    "grade": {
+      "ref": "192/00",
+      "verdict": "fail",
+      "codes": [
+        "case-failed"
+      ],
+      "runner": {
+        "command": [
+          "node",
+          "scripts/test-rubric.mjs"
+        ],
+        "cwd": "/Users/umairbutt/Source/umair/agent-orchestration-framework/.aof/mesh/dispatch-worktrees/dispatch-192-00",
+        "exit": 1,
+        "durationMs": 580143
+      },
+      "report": {
+        "format": "tap",
+        "path": null,
+        "floor": 500
+      },
+      "cases": {
+        "total": 398,
+        "failed": 2,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "case": "arch/119 FF-11901 · 121: NO control under test/arch/ spells an import-specifier extractor of its own — the one home is test/support/module-family.mjs, and the remainder is a named, shrink-only baseline",
+          "message": "  error: \"a control that spells its own `from \\\"…\\\"` extractor is the twenty-first home of a function that has one (test/support/module-family.mjs), and the copies disagree about multi-line clauses, `export … from`, the bare form, `require(` and `import(`. Import `importSpecifiers` from the one home and read `.specifier` off each entry; a file that needs the CLAUSE or the CALL FORM is a decision about the home and belongs in EXTRACTOR_BASELINE with its reason, never absorbed silently:\\n  - test/arch/practices/acd-render-reads-project-config-only.test.mjs:26 — /import\\\\s[^;]*?from\\\\s*[\\\"']([^\\\"']+)/\\n  - test/arch/practices/acd-render-reads-project-config-only.test.mjs:26 — /import\\\\s*[\\\"']([^\\\"']+)/\\n  - test/arch/practices/acd-render-reads-project-config-only.test.mjs:26 — /\\\\bimport\\\\(\\\\s*[\\\"']([^\\\"']+)/\\n+ actual - expected\\n\\n+ [\\n+   `test/arch/practices/acd-render-reads-project-config-only.test.mjs:26 — /import\\\\\\\\s[^;]*?from\\\\\\\\s*[\\\"']([^\\\"']+)/`,\\n+   `test/arch/practices/acd-render-reads-project-config-only.test.mjs:26 — /import\\\\\\\\s*[\\\"']([^\\\"']+)/`,\\n+   `test/arch/practices/acd-render-reads-project-config-only.test.mjs:26 — /\\\\\\\\bimport\\\\\\\\(\\\\\\\\s*[\\\"']([^\\\"']+)/`\\n+ ]\\n- []\\n\"",
+          "scenario": null
+        },
+        {
+          "case": "FF-16004 160/03 task01: a child's module count stays within its pinned ceiling, and --version loads no command surface",
+          "message": "  error: \"aof work find 160 — 754 modules\\n+ actual - expected\\n\\n+ [\\n+   \\\"aof work find 160 evaluates 754 modules, above its ceiling of 753 — defer what this verb's path does not use\\\"\\n+ ]\\n- []\\n\"",
+          "scenario": null
+        }
+      ],
+      "gradedAt": "2026-11-13T01:57:04.204Z",
+      "provenance": {
+        "node": "node-6eb3",
+        "run": "20261113T011254493Z-0000",
+        "commit": "3034150771092afa3d11d1064fefd9c11c349fc3",
+        "at": "2026-11-13T01:57:04.204Z"
+      }
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-11-13T01:02:15.998Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/m42-item-3: no NEW silent catch — every src file is at or below its shrink-only baseline, and unlisted files have none",
+        "arch/71 FF-7106: every OPEN story declaring a bundle member also declares the manifest and every git-tracked render of that member",
+        "arch/FF-5405 the registered run() spawns nothing unless run === true",
+        "arch/FF-5405 the spawn sets the re-entrancy stamp, and an already-stamped environment is refused",
+        "arch/54 FF-5409 (acd-loop-probe-contract, extended): grade-indeterminate is a closed-set member whose producer is DRAWN FROM a GRADE_CODES member, never from a message match"
+      ],
+      "baseCommit": "3034150771092afa3d11d1064fefd9c11c349fc3"
+    },
+    "progress": {
+      "resets": 0,
+      "attemptRunId": "20261113T011254493Z-0000",
+      "summary": null,
+      "continuation": true
+    },
+    "lane": {
+      "worktree": "/Users/umairbutt/Source/umair/agent-orchestration-framework/.aof/mesh/dispatch-worktrees/dispatch-192-00",
+      "branch": "aof/mesh/192-00",
+      "baseCommit": "3034150771092afa3d11d1064fefd9c11c349fc3"
+    }
+  },
+  "createdAt": "2026-11-13T02:06:44.723Z",
+  "updatedAt": "2026-11-13T02:09:23.254Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 32,
+      "output": 11407,
+      "cacheRead": 4552093,
+      "cacheCreate": 30112
+    },
+    "costUsd": 1.6497488999999999,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 16,
+    "toolCalls": 6,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

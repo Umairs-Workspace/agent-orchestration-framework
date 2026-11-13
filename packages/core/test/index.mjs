@@ -2,6 +2,7 @@ import { buildInfoTests } from "./build-info.suite.mjs";
 import { bundleModelMapTests } from "./bundle-model-map.suite.mjs";
 import { bundleSpikeChoreMembershipTests } from "./bundle-spike-chore-membership.suite.mjs";
 import { bundleTests } from "./bundle.suite.mjs";
+import { bundleComposeTests } from "./bundle-compose.suite.mjs";
 import { cleanTests } from "./clean.suite.mjs";
 import { frozenSetCompiledTests } from "./frozen-set-compiled.suite.mjs";
 import { opencodeHookTests } from "./opencode-hooks.suite.mjs";
@@ -46,6 +47,7 @@ export const tests = [
   ...bundleModelMapTests,
   ...bundleSpikeChoreMembershipTests,
   ...bundleTests,
+  ...bundleComposeTests,
   ...cleanTests,
   ...frozenSetCompiledTests,
   ...opencodeHookTests,
