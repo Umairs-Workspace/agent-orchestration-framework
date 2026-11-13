@@ -10,7 +10,7 @@ import { readJson } from "@aof/foundation/fs";
 import { commandError } from "@aof/contracts/error";
 
 // Application composition supplies shared runtime services and transition policy.
-export function createDoctorCommand({ buildSnapshot, doctorWork, staleWindowFromConfig, CONVENTION_DOCS, claudeProjectsDir, readCachedWorkFacts, isMeshWorktree, meshNodeIdOf, probeFabric, remediationForReason, effectsFor, knownEvents, openEffectsJournal, effectsJournalPath, readEvents, readEventSteps, readUnsettledSteps, meshGlobalPropagationDecision, pendingSteps, drainEffects, reachableLoci, reconcileRunRecords, execFileAsync, loadNodeIdentity, loadCommandCore, readCostSnapshots }) {
+export function createDoctorCommand({ buildSnapshot, doctorWork, staleWindowFromConfig, CONVENTION_DOCS, claudeProjectsDir, readCachedWorkFacts, isMeshWorktree, meshNodeIdOf, probeFabric, remediationForReason, effectsFor, knownEvents, openEffectsJournal, effectsJournalPath, readEvents, readEventSteps, readUnsettledSteps, meshGlobalPropagationDecision, pendingSteps, drainEffects, reachableLoci, reconcileRunRecords, execFileAsync, loadNodeIdentity, loadCommandCore, readCostSnapshots, readExtensionFacts = null }) {
 // work:doctor — the deterministic, cross-item HEALTH lane of the work stream
 // (milestone 15 / ADR-001). The SIBLING of work:validate on the SAME command
 // core: same `{ id, input, run, cli }` contract, same getCommand/invoke door, the
@@ -230,6 +230,10 @@ const doctorCommand = {
     // 167/00 — this node's daemon cost snapshots, read HERE through the one writer's reader and
     // handed to the daemon-cost lane as data. No reader, or no node id, is no facts: the lane is silent.
     const daemonCost = await readDaemonCostFacts(ctx, cache);
+    // 192/03 (192/ADR-006 §2) — the facts core's extension groups judge, read HERE by core's own reader
+    // and handed to the engine as data. A reader that fails is no facts: its lanes stay silent rather
+    // than the doctor failing.
+    const extensions = readExtensionFacts == null ? {} : await readExtensionFacts(ctx.workspace).catch(() => ({}));
     // milestone 135 / ADR-001 §3 — the config, and the transcript directory a live answer is read
     // from, resolved at THIS edge as the settle seam resolves it, so the engine never reads the
     // environment. Both are data for the story probe, whose own gate decides whether it reads.
@@ -272,6 +276,7 @@ const doctorCommand = {
       legacyIdentitySidecarPresent,
       legacyIdentitySidecarPath: ctx.workspace.aofDir ? `${ctx.workspace.aofDir}/mesh/identity.json` : null,
       daemonCost,
+      extensions,
     });
 
     // 161/ADR-001 — the direct wiki surface's source citations, ADDITIVE and workspace-level like the

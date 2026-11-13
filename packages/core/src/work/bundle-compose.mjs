@@ -236,3 +236,106 @@ export function memberSlotGaps(target, member) {
   }
   return gaps;
 }
+
+// ── what a render was built with, and what it is now (192/03, ADR-006, ADR-007) ─────────────────
+// Each of these takes the answer `practiceStates` gave, so the list, the record and the doctor's
+// comparison can never decide "on" a second way (ADR-003 §3).
+
+// ADR-007 §1 — the declared practices, in declared order, each with whether it is on.
+export function practiceList(practices, states) {
+  return (practices ?? []).map(({ id, title, summary, keys }) => ({
+    id, title: title ?? id, summary: summary ?? "", keys: [...(keys ?? [])], on: states.get(id) === true,
+  }));
+}
+
+// ADR-006 §1 — the record a render writes into the lock's `work` section: one boolean per id.
+export function practiceRecord(practices, states) {
+  return Object.fromEntries((practices ?? []).map(({ id }) => [id, states.get(id) === true]));
+}
+
+// The members each practice's prose lands in, as `<kind>:<id>` in declared order: the target of each
+// of its fragments, and `template:<template>/<file>` for each of its template variants.
+export function practiceTargets(members) {
+  const targets = new Map();
+  for (const member of members ?? []) {
+    let target = null;
+    if (member.kind === "fragment") target = member.target;
+    else if (member.kind === "template-variant") target = `template:${member.template}/${member.name}`;
+    if (target == null || member.practice == null) continue;
+    const list = targets.get(member.practice) ?? [];
+    if (!list.includes(target)) list.push(target);
+    targets.set(member.practice, list);
+  }
+  return targets;
+}
+
+export const PRACTICE_RENDER_STALE = "practice-render-stale";
+export const PRACTICE_RENDER_UNRECORDED = "practice-render-unrecorded";
+const RUN_UPDATE = "Run `aof work update`.";
+
+// "a", "a and b", "a, b and c".
+function joinAnd(items) {
+  return items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
+}
+
+const TARGET_NOUN = Object.freeze({ command: ["command", "commands"], agent: ["brief", "briefs"], skill: ["skill", "skills"] });
+
+// "the refine command and the aof-product-owner, aof-architect and aof-qa briefs": the targets grouped
+// by kind, in the order each kind first appears.
+export function targetPhrase(targets) {
+  const groups = new Map();
+  for (const target of targets ?? []) {
+    const at = String(target).indexOf(":");
+    const kind = at === -1 ? "member" : String(target).slice(0, at);
+    const id = at === -1 ? String(target) : String(target).slice(at + 1);
+    groups.set(kind, [...(groups.get(kind) ?? []), id]);
+  }
+  const phrases = [...groups].map(([kind, ids]) => {
+    if (kind === "template") return joinAnd(ids.map((id) => `the template file ${id}`));
+    const [one, many] = TARGET_NOUN[kind] ?? [kind, `${kind}s`];
+    return `the ${joinAnd(ids)} ${ids.length === 1 ? one : many}`;
+  });
+  return phrases.length === 0 ? "the rendered commands" : joinAnd(phrases);
+}
+
+// ADR-006 §2, §3 — the lane's judgement, a pure function of the facts core read at the doctor's edge:
+//   { installed, recorded, practices: [{ id, keys, on, targets }] }
+// `installed` false (no `work` section) is no install to judge; `recorded` null is an install that
+// predates the record, told once; otherwise each DECLARED practice is compared with the record, a
+// practice the record does not name counting as rendered off. Every finding is anchored at `anchor`
+// (the work directory), so a scoped doctor run reports it once.
+export function practiceRenderFindings(facts, anchor) {
+  if (facts == null || facts.installed !== true) return [];
+  const findings = [];
+  if (facts.recorded == null || typeof facts.recorded !== "object" || Array.isArray(facts.recorded)) {
+    findings.push({
+      code: PRACTICE_RENDER_UNRECORDED,
+      severity: "warn",
+      path: anchor,
+      message: "this install does not record which practices its commands were rendered with (it was rendered before aof recorded them), so the doctor cannot tell whether a practice key has changed since. " + RUN_UPDATE,
+    });
+    return findings;
+  }
+  for (const practice of facts.practices ?? []) {
+    const rendered = facts.recorded[practice.id] === true;
+    const on = practice.on === true;
+    if (rendered === on) continue;
+    const keys = (practice.keys ?? []).join(" + ");
+    const plural = (practice.keys ?? []).length > 1;
+    const where = targetPhrase(practice.targets);
+    findings.push(on
+      ? {
+        code: PRACTICE_RENDER_STALE,
+        severity: "error",
+        path: anchor,
+        message: `practice "${practice.id}" is on (${keys} ${plural ? "are" : "is"} true in .aof/aof.config.json), but the commands were rendered without it: ${where} lack its prose. ${RUN_UPDATE}`,
+      }
+      : {
+        code: PRACTICE_RENDER_STALE,
+        severity: "warn",
+        path: anchor,
+        message: `practice "${practice.id}" is off (${keys} ${plural ? "are not all" : "is not"} true in .aof/aof.config.json), but the commands still hold its prose: ${where} were rendered with it on. ${RUN_UPDATE}`,
+      });
+  }
+  return findings;
+}

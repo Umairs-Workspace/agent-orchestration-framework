@@ -119,14 +119,14 @@ A key is on only when it holds the boolean `true` in the project's own config fi
 machine-wide config is never asked, because rendered commands are committed and two clones of one
 commit must render the same commands. A practice with several keys is on only when every one is.
 
-After changing a key, the project runs:
-
-```
-aof work update
-```
-
-The update re-renders the commands that the change touches and reports each one `updated`; a
-command a person has edited is reported as a drift warning and left as they wrote it.
+After changing a key, the project runs `aof work update`. It re-renders the commands the change
+touches and reports each `updated`; a command a person has edited is a drift warning, left as is.
+`aof work update` lists each optional practice, whether it is on, and its keys (`practices` in
+`--json`); `aof work init` does not. Each render records which practices it was built with in the
+lock's `work` section, and `aof work doctor` compares that record with the project's config and
+reports a key changed since the last update, naming the key and the commands: `practice-render-stale`
+is an error for a practice on but rendered off and a warning the other way round, and an install
+with no record gets one `practice-render-unrecorded` warning. The update clears each.
 
 ## 7. Ship a template variant
 

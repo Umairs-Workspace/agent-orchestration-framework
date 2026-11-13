@@ -41,6 +41,7 @@ import { workDelegationTests } from "./work-delegation.suite.mjs";
 import { agentModelSoloInertTests } from "./agent-model-solo-inert.suite.mjs";
 import { headroomToggleCliTests } from "./headroom-toggle-cli.suite.mjs";
 import { workInitTests } from "./work-init.suite.mjs";
+import { practiceRenderLaneTests } from "./practice-render-lane.suite.mjs";
 
 export const tests = [
   ...buildInfoTests,
@@ -86,4 +87,5 @@ export const tests = [
   ...agentModelSoloInertTests,
   ...headroomToggleCliTests,
   ...workInitTests,
+  ...practiceRenderLaneTests,
 ];
