@@ -1,0 +1,54 @@
+{
+  "runId": "20261113T050927825Z-0005",
+  "itemRef": "192",
+  "state": "running",
+  "attempt": 1,
+  "outcome": null,
+  "sessionId": "e12c54f4-81d4-49f9-b787-14487a9137ff",
+  "brief": {
+    "loop": {
+      "loopRunId": "632ce08e-288c-4315-8720-1ad3d1f40298",
+      "scope": "192",
+      "level": "L2",
+      "cap": 3,
+      "phase": "verify",
+      "cycle": 1,
+      "startedAt": "2026-11-13T01:01:47.243Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        }
+      }
+    }
+  },
+  "createdAt": "2026-11-13T05:09:27.825Z",
+  "updatedAt": "2026-11-13T05:09:27.825Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": null,
+  "asks": []
+}

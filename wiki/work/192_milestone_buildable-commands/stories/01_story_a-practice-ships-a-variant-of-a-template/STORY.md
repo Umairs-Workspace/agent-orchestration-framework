@@ -5,7 +5,7 @@ slug: a-practice-ships-a-variant-of-a-template
 title: "A practice ships a variant of a template — installed in place of the default when the project has turned the practice on, and the default otherwise"
 parent: 192
 depends: [00]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-11-13
 updated: 2026-11-13

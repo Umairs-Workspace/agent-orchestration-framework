@@ -5,7 +5,7 @@ slug: the-gated-prose-leaves-core
 title: "The gated prose leaves core — discovery's beat and the build brief become fragments, so a project with a practice off holds none of its prose and a project with it on reads what it reads today"
 parent: 192
 depends: [00]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-11-13
 updated: 2026-11-13

@@ -5,7 +5,7 @@ slug: a-project-sees-its-practices-and-hears-of-a-stale-render
 title: "A project sees its practices and hears of a stale render — `aof work update` lists each optional practice and the key that turns it on, and `aof work doctor` says when a key has changed since the commands were rendered"
 parent: 192
 depends: [00, 02]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-11-13
 updated: 2026-11-13

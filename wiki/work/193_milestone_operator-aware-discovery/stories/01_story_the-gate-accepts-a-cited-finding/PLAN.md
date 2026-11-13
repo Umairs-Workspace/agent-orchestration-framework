@@ -39,7 +39,7 @@ as a finding on a delivered `business` map whose message changed.
 
 ## Known traps
 
-- `test/examples/doctor-examples-lane.test.mjs` builds its snapshots by hand in places. A row
+- The doctor examples-lane suite builds its snapshots by hand in places. A row
   without the new field must judge exactly as today, so treat an absent research text as "no
   document", not as an error.
 - The probe runs once per story row. A milestone with ten stories reads its `RESEARCH.md` ten

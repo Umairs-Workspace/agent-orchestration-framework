@@ -50,7 +50,7 @@ repeated per story (anchored at an item, not the work directory), or as `--globa
 
 ## Known traps
 
-- `test/fixtures/application/command-inventory.json` records `work:init-config`'s usage string. A
+- The command-inventory fixture records `work:init-config`'s usage string. A
   new flag changes it, and the census fails until the fixture moves.
 - `init-config` already has `--domains`, and it means tag domains (`@board`). The profile's flag
   is `--expertise`, so the two never read alike.

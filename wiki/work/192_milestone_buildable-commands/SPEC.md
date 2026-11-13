@@ -76,10 +76,10 @@ Out of scope:
 
 Four stories (ARCHITECTURE ADR-008). Waves: 00; then 01 and 02 together; then 03.
 
-- [ ] `00_story_a-command-is-composed-from-slots-and-fragments` — a source marks where a practice may add prose, a practice declares what it adds and the keys that turn it on, and the loader fills each slot from the project's own config.
-- [ ] `01_story_a-practice-ships-a-variant-of-a-template` — a practice's version of a template is installed in place of the default when the project has turned the practice on.
-- [ ] `02_story_the-gated-prose-leaves-core` — the first move: discovery's beat and the build brief become fragments, so a project with a practice off holds none of its prose and a project with it on reads what it reads today.
-- [ ] `03_story_a-project-sees-its-practices-and-hears-of-a-stale-render` — `aof work update` lists each optional practice and the key that turns it on, and `aof work doctor` says when a key has changed since the commands were rendered.
+- [x] `00_story_a-command-is-composed-from-slots-and-fragments` — a source marks where a practice may add prose, a practice declares what it adds and the keys that turn it on, and the loader fills each slot from the project's own config.
+- [x] `01_story_a-practice-ships-a-variant-of-a-template` — a practice's version of a template is installed in place of the default when the project has turned the practice on.
+- [x] `02_story_the-gated-prose-leaves-core` — the first move: discovery's beat and the build brief become fragments, so a project with a practice off holds none of its prose and a project with it on reads what it reads today.
+- [x] `03_story_a-project-sees-its-practices-and-hears-of-a-stale-render` — `aof work update` lists each optional practice and the key that turns it on, and `aof work doctor` says when a key has changed since the commands were rendered.
 
 ## Dependencies
 

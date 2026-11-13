@@ -46,7 +46,7 @@ A wrong build shows as a new `example-map-malformed` on a story nobody touched, 
 
 ## Known traps
 
-- `test/examples/refine-discovery-beat.test.mjs` parses the default template through the real
+- The discovery-beat example suite parses the default template through the real
   parser and counts its ten forms. Those cases must stay green untouched: if one goes red, an
   old form changed its reading.
 - 134/FF-13402's sweep matches bracketed provenance labels and literal runs of the vocabularies in

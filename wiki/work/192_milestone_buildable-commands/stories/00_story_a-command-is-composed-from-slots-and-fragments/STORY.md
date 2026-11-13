@@ -5,7 +5,7 @@ slug: a-command-is-composed-from-slots-and-fragments
 title: "A command is composed from slots and fragments — a source marks where a practice may add prose, a practice declares what it adds and the keys that turn it on, and the loader fills each slot from the project's own config"
 parent: 192
 depends: []
-status: in-review
+status: done
 owner: product-owner
 created: 2026-11-13
 updated: 2026-11-13
