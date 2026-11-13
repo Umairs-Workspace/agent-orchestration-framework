@@ -17,6 +17,8 @@
 // fragments in the same target and slot.
 // ADR-003 §1, §3 — a practice is on when every key it names holds the boolean `true` in the
 // config handed in; `practiceStates` is the one resolver.
+// ADR-004 — a template variant stands in for one file of a template while its practice is on; two
+// on for one file are a conflict, and a variant of a file no template holds is a load fault.
 
 const SLOT_LINE = /^ *<!-- slot:([a-z][a-z0-9]*(?:[.-][a-z][a-z0-9]*)*) -->$/u;
 const FRAGMENT_LINE = /^<!-- fragment:([^\s>]+) -->$/u;
@@ -173,6 +175,46 @@ export function contributionFaults({ practices = [], members = new Map(), fragme
     }
   }
   return faults;
+}
+
+// 192/ADR-004 §1, §3 — the faults that stop a load for a template variant. `templates` map a template
+// id to the file names it holds; `variants` carry `contributor` and `text` (null: their own file
+// cannot be read). Every fault names the variant and the package it came from.
+export function templateVariantFaults({ practices = [], templates = new Map(), variants = [] }) {
+  const practiceIds = new Set(practices.map((practice) => practice.id));
+  const faults = [];
+  for (const variant of variants) {
+    const label = `Template variant "${variant.id}" contributed by ${variant.contributor}`;
+    if (!practiceIds.has(variant.practice)) faults.push(`${label} names the practice "${variant.practice}", which no bundle declares.`);
+    const name = String(variant.name ?? "");
+    if (name === "" || /[\\/]/u.test(name)) {
+      faults.push(`${label} names the file "${name}", which is not a single file name: a variant stands in for one file of its template, named without a path.`);
+    } else if (!templates.has(variant.template)) {
+      faults.push(`${label} names the template "${variant.template}", which no bundle declares.`);
+    } else if (!templates.get(variant.template).includes(name)) {
+      faults.push(`${label} stands in for "${name}", which the template "${variant.template}" does not hold.`);
+    }
+    if (variant.text == null) faults.push(`${label}: its own file "${variant.file}" is missing.`);
+  }
+  return faults;
+}
+
+// 192/ADR-004 §2, §3 — the variants whose practice is on, by `<template>/<name>`, and every file
+// that more than one of them stands in for (refused at render by the loader, naming them all).
+export function templateVariantsOn(variants, states) {
+  const byFile = new Map();
+  for (const variant of variants) {
+    if (states.get(variant.practice) !== true) continue;
+    const key = `${variant.template}/${variant.name}`;
+    byFile.set(key, [...(byFile.get(key) ?? []), variant]);
+  }
+  const chosen = new Map();
+  const conflicts = [];
+  for (const [key, on] of byFile) {
+    if (on.length === 1) chosen.set(key, on[0]);
+    else conflicts.push(on);
+  }
+  return { chosen, conflicts };
 }
 
 // The runtime keys whose texts carry a slot.

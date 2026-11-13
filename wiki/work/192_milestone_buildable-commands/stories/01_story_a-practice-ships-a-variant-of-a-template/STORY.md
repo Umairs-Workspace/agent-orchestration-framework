@@ -5,7 +5,7 @@ slug: a-practice-ships-a-variant-of-a-template
 title: "A practice ships a variant of a template — installed in place of the default when the project has turned the practice on, and the default otherwise"
 parent: 192
 depends: [00]
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-11-13
 updated: 2026-11-13
@@ -51,9 +51,9 @@ so the mechanism is proved here on a fixture practice.
 
 ## Tasks
 
-- [ ] 00 [a practice that is on installs its variant](tasks/00_a-practice-that-is-on-installs-its-variant.feature)
-- [ ] 01 [a variant that cannot be installed is refused](tasks/01_a-variant-that-cannot-be-installed-is-refused.feature)
-- [ ] 02 [the reference says how to ship a variant](tasks/02_the-reference-says-how-to-ship-a-variant.feature)
+- [x] 00 [a practice that is on installs its variant](tasks/00_a-practice-that-is-on-installs-its-variant.feature)
+- [x] 01 [a variant that cannot be installed is refused](tasks/01_a-variant-that-cannot-be-installed-is-refused.feature)
+- [x] 02 [the reference says how to ship a variant](tasks/02_the-reference-says-how-to-ship-a-variant.feature)
 
 ## Notes
 

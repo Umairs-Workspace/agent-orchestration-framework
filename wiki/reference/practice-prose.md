@@ -7,7 +7,7 @@ project that has not turned it on never loads a sentence of it.
 
 Why it works this way is recorded in
 [`wiki/work/192_milestone_buildable-commands/ARCHITECTURE.md`](../work/192_milestone_buildable-commands/ARCHITECTURE.md)
-(ADR-001 to ADR-003). This page only says how.
+(ADR-001 to ADR-004). This page only says how.
 
 ## 1. Mark a slot in the command
 
@@ -127,3 +127,22 @@ aof work update
 
 The update re-renders the commands that the change touches and reports each one `updated`; a
 command a person has edited is reported as a drift warning and left as they wrote it.
+
+## 7. Ship a template variant
+
+A practice that changes a document's form ships its own version of one template file: a member of
+kind `template-variant` naming its `practice`, the `template`, the file's `name` and its own `file`:
+
+```json
+{
+  "practices": [{ "id": "notes", "title": "Notes", "summary": "Adds a notes map.", "keys": ["work.notes.enabled"] }],
+  "members": [{ "id": "notes-examples", "kind": "template-variant", "practice": "notes",
+    "template": "story", "name": "EXAMPLES.md", "file": "templates/notes/EXAMPLES.md" }]
+}
+```
+
+When the practice is on, `.aof/templates/work/<template>/<name>` holds the variant, stamped as every
+template is; when it is off, the default is installed there, unchanged. A variant of a file the
+template does not hold is refused at load. Two variants of one file cannot both be on: the update
+is refused, naming both, and writes nothing. A person's edit to an installed template is a drift
+warning, as for any managed file, and is kept as they wrote it.

@@ -26,7 +26,7 @@ import { assetBase, readAssetText, listAssetMembers, packageAssetClass } from ".
 import { INTEGRATIONS } from "../integrations.mjs";
 import { PRACTICES } from "../practices.mjs";
 import { applyFrozenAgentScopes, bundledFrozenSet, compileFrozenSet } from "../frozen-set.mjs";
-import { COMMON, composeText, contributionFaults, fragmentSection, practiceStates, selectFragments } from "./bundle-compose.mjs";
+import { COMMON, composeText, contributionFaults, fragmentSection, practiceStates, selectFragments, templateVariantFaults, templateVariantsOn } from "./bundle-compose.mjs";
 
 // ADR-005 comment-form stamp: every template-rendered file declares itself
 // aof-managed in-band (the comment family, since templates carry no resource
@@ -48,9 +48,10 @@ export function bundleRoot() {
 // contributed id that is already declared is refused here, at load, naming the member and package.
 //
 // 179/ADR-004 §4 — each practice's members are appended after the integrations', with an
-// `assetClass` and NO `integration` key: a practice is opted into per invocation, never gated by a
-// project switch. `readFragment` reads one contributor's fragment; it is a parameter so a test can
-// hand in a fragment no installed package ships.
+// `assetClass` and NO `integration` key: a practice's whole members are opted into per invocation,
+// never gated by a project switch. Its fragments and template variants ARE gated, by its keys
+// (192/ADR-002 §8, ADR-004). `readFragment` reads one contributor's fragment; it is a parameter so
+// a test can hand in a fragment no installed package ships.
 const readPackageFragment = (assetClass) => JSON.parse(readAssetText(assetClass, "bundle.json"));
 
 export function readDescriptor({ integrations = INTEGRATIONS, practices = PRACTICES, readFragment = readPackageFragment } = {}) {
@@ -251,12 +252,14 @@ export function loadBundle({ descriptor = readDescriptor(), config = {}, readTex
       });
       continue;
     }
-    // 192/ADR-002 §2 — a fragment is read and placed below, once every member's texts are known.
-    if (member.kind === "fragment") continue;
+    // 192/ADR-002 §2 — a fragment is read and placed below, once every member's texts are known;
+    // 192/ADR-004 — so is a template variant, once every template's files are listed.
+    if (member.kind === "fragment" || member.kind === "template-variant") continue;
     throw new Error(`Unknown bundle member kind "${member.kind}" for "${member.id}".`);
   }
 
   composeResources(resources, authored, descriptor, { config, readText });
+  applyTemplateVariants(templates, descriptor, { config, readText });
   applyFrozenAgentScopes(resources, frozenSet);
   const workflows = (descriptor.references ?? []).map(reference => ({ ...reference, body: readAssetText("bundle", reference.file) }));
   return { resources, hooks, templates, assets, workflows, descriptor, frozenSet, practices: descriptor.practices ?? [] };
@@ -329,6 +332,42 @@ function composeResources(resources, authored, descriptor, { config, readText })
   }
 }
 
+// 192/ADR-004 — refuse a template variant that cannot land, then give each template the text of
+// every variant of its files whose practice is on (`variantTexts`, by file name). The text is read
+// here, through the asset seam, from the variant's own contributor's asset class, so the renderer
+// stays a plain loop and its output path, stamp and manifest entry stay the default's. Two variants
+// of one file that are both on are refused here too, so a dry run meets the refusal and nothing
+// has been written when it fires.
+function applyTemplateVariants(templates, descriptor, { config, readText }) {
+  const variants = descriptor.members.filter((member) => member.kind === "template-variant")
+    .map((member) => ({ ...member, contributor: contributorOf(member), text: variantFileText(member, readText) }));
+  if (variants.length === 0) return;
+  const faults = templateVariantFaults({ practices: descriptor.practices ?? [], templates: new Map(templates.map((template) => [template.id, template.files])), variants });
+  if (faults.length > 0) throw new Error(faults.join("\n"));
+  const { chosen, conflicts } = templateVariantsOn(variants, practiceStates(descriptor.practices ?? [], config));
+  if (conflicts.length > 0) {
+    throw new Error(conflicts.map((on) => {
+      const [{ template, name }] = on;
+      const named = on.map((variant) => `"${variant.id}" contributed by ${variant.contributor} (practice "${variant.practice}")`).join(" and ");
+      return `Template variant conflict at ${templateOutputPath({ id: template }, name)}: ${named} are both on, and one file can hold one text. Turn one of the practices off.`;
+    }).join("\n"));
+  }
+  for (const template of templates) {
+    const texts = Object.fromEntries(template.files.filter((file) => chosen.has(`${template.id}/${file}`)).map((file) => [file, chosen.get(`${template.id}/${file}`).text]));
+    if (Object.keys(texts).length > 0) template.variantTexts = texts;
+  }
+}
+
+// A variant's own file, or null when it cannot be read. Null is not swallowed: it is the load fault
+// `templateVariantFaults` names, with the variant, the file and the package.
+function variantFileText(member, readText) {
+  try {
+    return readText(memberClass(member), member.file);
+  } catch {
+    return null;
+  }
+}
+
 // renderBundleAssetOutputs(bundle, { runtimes }) — the asset kind's renderer, the
 // structural twin of renderBundleTemplateOutputs: one output per asset member whose
 // declared runtimes intersect the selected ones, at its declared target path, with
@@ -376,7 +415,9 @@ export function renderBundleTemplateOutputs(bundle, options = {}) {
   const outputs = [];
   for (const member of bundle.templates) {
     for (const file of member.files) {
-      const rawBody = readAssetText(member.assetClass ?? "bundle", path.join(member.dir, file)).replace(/^﻿/, "");
+      // 192/ADR-004 §2 — a variant that is on stands in for the file, at the default's own path.
+      const source = member.variantTexts?.[file] ?? readAssetText(member.assetClass ?? "bundle", path.join(member.dir, file));
+      const rawBody = source.replace(/^﻿/, "");
       const content = `${TEMPLATE_STAMP}\n\n${rawBody}`;
       const relativePath = templateOutputPath(member, file);
       outputs.push({

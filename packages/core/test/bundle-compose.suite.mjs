@@ -6,6 +6,12 @@
 //   tasks/02_each-runtime-gets-the-body-written-for-it.feature           (R3, E7–E8)
 //   tasks/04_a-contribution-that-cannot-land-is-refused-at-load.feature
 //   tasks/05_the-reference-says-how-to-write-a-slot-and-a-fragment.feature
+// and, for milestone 192 / story 01 — a practice ships a variant of a template —
+//   tasks/00_a-practice-that-is-on-installs-its-variant.feature (the shipped-bundle case; the rest
+//     runs through `aof work update` in `work-update.suite.mjs`, on the fixture exported below)
+//   tasks/01_a-variant-that-cannot-be-installed-is-refused.feature (the load refusals; E4 and the
+//     dry run are wired in `work-update.suite.mjs`)
+//   tasks/02_the-reference-says-how-to-ship-a-variant.feature
 // Task 03 (the project's own config) is wired in `work-update.suite.mjs`; the FF-19205/06/07
 // controls live in `test/arch/practices/` and import the fixture below.
 //
@@ -16,7 +22,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readAssetText } from "../src/asset-base.mjs";
-import { loadBundle, readDescriptor, renderBundleOutputs } from "../src/work/bundle.mjs";
+import { loadBundle, readDescriptor, renderBundleOutputs, renderBundleTemplateOutputs } from "../src/work/bundle.mjs";
 import { generateBundleManifest, readShippedManifest, serializeBundleManifest } from "../src/work/bundle-manifest.mjs";
 import { composeText, practiceStates, slotOnLine } from "../src/work/bundle-compose.mjs";
 
@@ -504,6 +510,7 @@ const referenceTests = [
         const files = {};
         const twins = new Map();
         const members = (specimen.members ?? []).map((member) => {
+          if (member.kind === "template-variant") files[member.file] = "Specimen variant.\n";
           if (member.kind !== "fragment") return member;
           const [kind, id] = member.target.split(":");
           const twin = `specimen-${id}`;
@@ -532,4 +539,144 @@ const referenceTests = [
   },
 ];
 
-export const bundleComposeTests = [...slotTests, ...orderTests, ...runtimeTests, ...refusalTests, ...referenceTests];
+// --- 192/01 — a practice ships a variant of a template ------------------------------------------
+
+// The fixture of 192/01: the shipped story template, and the practice "notes" (keyed on
+// "work.notes.enabled") with a variant of its "EXAMPLES.md" whose text is "# Variant map". With
+// `memos`, a second package adds the practice "memos" (keyed on "work.memos.enabled") with its own
+// variant of the same file. `plant` may change the notes package before it is loaded.
+export const VARIANT_TEXT = "# Variant map\n";
+export const MEMO_TEXT = "# Memo map\n";
+export const EXAMPLES_REL = ".aof/templates/work/story/EXAMPLES.md";
+export const variantMember = (practice = "notes", extra = {}) => ({
+  id: `${practice}-examples`, kind: "template-variant", practice, template: "story", name: "EXAMPLES.md", file: `templates/${practice}/EXAMPLES.md`, ...extra,
+});
+export function variantFixture({ memos = false, plant = () => {}, name = FIRST } = {}) {
+  const doc = { practices: [notesPractice()], members: [variantMember()] };
+  const files = { "templates/notes/EXAMPLES.md": VARIANT_TEXT };
+  const others = [];
+  plant({ fragment: doc, files, others, variant: doc.members[0] });
+  const packages = [...others, { name, fragment: doc, files }];
+  if (memos) packages.push({ name: SECOND, fragment: { practices: [notesPractice(["work.memos.enabled"], "memos")], members: [variantMember("memos")] }, files: { "templates/memos/EXAMPLES.md": MEMO_TEXT } });
+  return fixtureLoad(packages);
+}
+// The bundle cut down to its templates, so an install plans only what a template case is about.
+export const templatesOnly = (bundle) => ({ ...bundle, resources: [], assets: [], hooks: [], workflows: [] });
+const installedTemplate = (bundle, rel = EXAMPLES_REL) => renderBundleTemplateOutputs(bundle).find((output) => output.path === rel)?.content;
+
+const VARIANT_FAULTS = [
+  ["a variant names a template no bundle declares", ({ variant }) => { variant.template = "ghost"; }, ["notes-examples", "\"ghost\""]],
+  ["a variant names a practice no bundle declares", ({ variant }) => { variant.practice = "ghost"; }, ["notes-examples", "\"ghost\""]],
+  ["a variant's own file is missing", ({ variant }) => { variant.file = "templates/notes/gone.md"; }, ["notes-examples", "templates/notes/gone.md"]],
+  ["a variant's id is already declared by another member", ({ others }) => {
+    others.push({ name: FIRST, files: { "x.md": "X.\n" }, fragment: { members: [{ id: "notes-examples", kind: "command", file: "x.md", runtimes: ["claude"] }] } });
+  }, ["notes-examples", FIRST]],
+  ["a variant's file name holds a path separator", ({ variant }) => { variant.name = "nested/EXAMPLES.md"; }, ["notes-examples", "nested/EXAMPLES.md"]],
+];
+
+const variantTests = [
+  {
+    name: "192/01 the shipped bundle installs the templates it installs today",
+    run: () => {
+      const shipped = new Map(readShippedManifest().entries.filter((entry) => entry.resource?.kind === "template").map((entry) => [entry.path, entry.hash]));
+      const rendered = renderBundleOutputs(loadBundle({ config: {} })).filter((output) => output.resource.kind === "template");
+      assert.ok(rendered.length > 0 && rendered.length === shipped.size, `the shipped manifest records every template file (${rendered.length} rendered, ${shipped.size} recorded)`);
+      for (const output of rendered) assert.equal(output.hash, shipped.get(output.path), `${output.path} has the hash the shipped manifest records`);
+    },
+  },
+  {
+    name: "192/01 a variant that is on stands in for the file at its own path, and the others are the default",
+    run: () => {
+      const on = renderBundleTemplateOutputs(templatesOnly(variantFixture().load(ON)));
+      const off = renderBundleTemplateOutputs(templatesOnly(loadBundle()));
+      assert.deepEqual(on.map((output) => output.path), off.map((output) => output.path), "the same paths, the variant at the default's");
+      for (const [index, output] of on.entries()) {
+        if (output.path === EXAMPLES_REL) assert.equal(output.content, `<!-- aof-generated: bundle -->\n\n${VARIANT_TEXT}`);
+        else assert.equal(output.content, off[index].content, `${output.path} is the default`);
+      }
+    },
+  },
+  {
+    name: "192/01 E5 · a variant of a file the template does not hold is refused at load",
+    run: () => {
+      const load = () => variantFixture({ name: PLANTED, plant: ({ variant }) => { variant.name = "NOTES.md"; } }).load();
+      assert.throws(load, (error) => {
+        for (const name of ["notes-examples", "NOTES.md", PLANTED]) assert.ok(error.message.includes(name), `the refusal names ${name}: ${error.message}`);
+        return true;
+      });
+    },
+  },
+  ...VARIANT_FAULTS.map(([fault, plant, named]) => ({
+    name: `192/01 a faulty variant is refused at load — ${fault}`,
+    run: () => {
+      const load = () => variantFixture({ name: PLANTED, plant }).load();
+      assert.throws(load, (error) => {
+        for (const name of [...named, PLANTED]) assert.ok(error.message.includes(name), `the refusal names ${name}: ${error.message}`);
+        return true;
+      });
+    },
+  })),
+  {
+    name: "192/01 two variants of one file that are both on are refused when the bundle is loaded for that config",
+    run: () => {
+      const fixture = variantFixture({ memos: true });
+      assert.throws(() => fixture.load({ work: { notes: { enabled: true }, memos: { enabled: true } } }), (error) => {
+        for (const name of ["notes-examples", "memos-examples", FIRST, SECOND, EXAMPLES_REL]) assert.ok(error.message.includes(name), `the refusal names ${name}: ${error.message}`);
+        return true;
+      });
+      assert.equal(installedTemplate(fixture.load({ work: { memos: { enabled: true } } })), `<!-- aof-generated: bundle -->\n\n${MEMO_TEXT}`, "with one on, its variant is installed");
+    },
+  },
+];
+
+// --- 192/01 task 02 — the reference says how to ship a variant ---------------------------------
+
+const variantSection = () => {
+  const text = page();
+  const start = text.search(/^## .*template variant/imu);
+  assert.ok(start !== -1, "the page has a section on template variants");
+  const rest = text.slice(start + 3);
+  const end = rest.search(/^## /mu);
+  return end === -1 ? rest : rest.slice(0, end);
+};
+const VARIANT_QUESTIONS = [
+  ["how a variant member names its practice, the template and the file, with one written out", /"kind"\s*:\s*"template-variant"[\s\S]*"practice"[\s\S]*"template"[\s\S]*"name"[\s\S]*"file"/u],
+  ["that the variant is installed at the default's own path when the practice is on", /\.aof\/templates\/work\/<template>\/<name>[\s\S]*on|on[\s\S]*\.aof\/templates\/work\/<template>\/<name>/u],
+  ["that the default is installed when the practice is off", /off[^\n]*\n?[^\n]*default|default[^\n]*\n?[^\n]*off/iu],
+  ["that two variants of one file cannot both be on", /two\s+variants\s+of\s+(?:one|the\s+same)\s+file[\s\S]*(?:refused|cannot)/iu],
+  ["that a person's edit to an installed template is kept, as for any managed file", /edit[\s\S]*drift\s+warning[\s\S]*(?:kept|left)/iu],
+];
+
+const variantReferenceTests = [
+  ...VARIANT_QUESTIONS.map(([answer, pattern]) => ({
+    name: `192/01 the page answers each question about a template variant — ${answer}`,
+    run: () => assert.match(variantSection(), pattern),
+  })),
+  {
+    name: "192/01 the specimen on the page is one the loader accepts",
+    run: () => {
+      const found = specimens(variantSection()).filter((doc) => (doc.members ?? []).some((member) => member.kind === "template-variant"));
+      assert.ok(found.length > 0, "the section holds a template variant specimen");
+      for (const specimen of found) {
+        const variants = specimen.members.filter((member) => member.kind === "template-variant");
+        const practices = specimen.practices ?? [...new Set(variants.map((member) => member.practice))].map((id) => notesPractice([`work.${id}.enabled`], id));
+        const files = Object.fromEntries(variants.map((member) => [member.file, `Specimen ${member.id}.\n`]));
+        const bundle = fixtureLoad([{ name: PLANTED, fragment: { practices, members: specimen.members }, files }]).load(practiceOn(practices));
+        for (const member of variants) {
+          const template = bundle.templates.find((entry) => entry.id === member.template);
+          assert.ok(template, `the specimen names the shipped template "${member.template}"`);
+          assert.equal(template.variantTexts?.[member.name], `Specimen ${member.id}.\n`, `the specimen stands in for ${member.template}/${member.name}`);
+        }
+      }
+    },
+  },
+  {
+    name: "192/01 the page stays one page",
+    run: () => {
+      const count = page().split("\n").length;
+      assert.ok(count <= 150, `at most 150 lines (has ${count})`);
+    },
+  },
+];
+
+export const bundleComposeTests = [...slotTests, ...orderTests, ...runtimeTests, ...refusalTests, ...referenceTests, ...variantTests, ...variantReferenceTests];

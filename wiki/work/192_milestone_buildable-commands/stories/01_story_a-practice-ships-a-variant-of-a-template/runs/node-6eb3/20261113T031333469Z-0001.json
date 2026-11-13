@@ -1,0 +1,129 @@
+{
+  "runId": "20261113T031333469Z-0001",
+  "itemRef": "192/01",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "092a7370-6e17-4d9f-b091-604373cbc267",
+  "brief": {
+    "loop": {
+      "loopRunId": "632ce08e-288c-4315-8720-1ad3d1f40298",
+      "scope": "192",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-11-13T01:01:47.243Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        }
+      }
+    },
+    "grade": {
+      "ref": "192/01",
+      "verdict": "fail",
+      "codes": [
+        "case-failed"
+      ],
+      "runner": {
+        "command": [
+          "node",
+          "scripts/test-rubric.mjs"
+        ],
+        "cwd": "/Users/umairbutt/Source/umair/agent-orchestration-framework/.aof/mesh/dispatch-worktrees/dispatch-192-01",
+        "exit": 1,
+        "durationMs": 750191
+      },
+      "report": {
+        "format": "tap",
+        "path": null,
+        "floor": 500
+      },
+      "cases": {
+        "total": 390,
+        "failed": 1,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "case": "arch/77 FF-7706: a governed project that is not an aof checkout gets an audit of its own instruments",
+          "message": "  error: \"the row it read carries a verdict produced by an execution: {\\\"id\\\":\\\"FF-9901\\\",\\\"item\\\":\\\"99\\\",\\\"register\\\":\\\"/var/folders/g5/r_t3h2yx71jglz63w_s5s6lm0000gn/T/aof-evidence-HSVSbJ/wiki/work/99_milestone_fixture/ARCHITECTURE.md\\\",\\\"control\\\":\\\"test/arch/green.test.mjs\\\",\\\"verdict\\\":\\\"timed-out\\\",\\\"basis\\\":\\\"not-executed\\\",\\\"registrationChecked\\\":false,\\\"attempted\\\":\\\"/Users/umairbutt/.nvm/versions/node/v24.14.1/bin/node /Users/umairbutt/Source/umair/agent-orchestration-framework/.aof/mesh/dispatch-worktrees/dispatch-192-01/packages/core/src/work/audit-drive.mjs /var/folders/g5/r_t3h2yx71jglz63w_s5s6lm0000gn/T/aof-evidence-HSVSbJ/test/arch/green.test.mjs\\\",\\\"deadlineMs\\\":60000,\\\"recorded\\\":{\\\"id\\\":\\\"FF-9901\\\",\\\"item\\\":\\\"99\\\",\\\"register\\\":\\\"/var/folders/g5/r_t3h2yx71jglz63w_s5s6lm0000gn/T/aof-evidence-HSVSbJ/wiki/work/99_milestone_fixture/ARCHITECTURE.md\\\",\\\"verification\\\":\\\"/var/folders/g5/r_t3h2yx71jglz63w_s5s6lm0000gn/T/aof-evidence-HSVSbJ/wiki/work/99_milestone_fixture/VERIFICATION.md\\\",\\\"line\\\":7,\\\"entry\\\":\\\"| **FF-9901** | an invariant | `test/arch/green.test.mjs` | ADR-001 |\\\",\\\"controls\\\":[\\\"test/arch/green.test.mjs\\\"],\\\"pending\\\":false,\\\"result\\\":\\\"green\\\",\\\"message\\\":\\\"-\\\",\\\"cases\\\":null},\\\"observed\\\":{\\\"control\\\":\\\"test/arch/green.test.mjs\\\",\\\"status\\\":\\\"deadline-expired\\\",\\\"attempted\\\":\\\"/Users/umairbutt/.nvm/versions/node/v24.14.1/bin/node /Users/umairbutt/Source/umair/agent-orchestration-framework/.aof/mesh/dispatch-worktrees/dispatch-192-01/packages/core/src/work/audit-drive.mjs /var/folders/g5/r_t3h2yx71jglz63w_s5s6lm0000gn/T/aof-evidence-HSVSbJ/test/arch/green.test.mjs\\\",\\\"deadlineMs\\\":60000,\\\"message\\\":null,\\\"cases\\\":null,\\\"caseReports\\\":null,\\\"detail\\\":\\\"/Users/umairbutt/.nvm/versions/node/v24.14.1/bin/node /Users/umairbutt/Source/umair/agent-orchestration-framework/.aof/mesh/dispatch-worktrees/dispatch-192-01/packages/core/src/work/audit-drive.mjs /var/folders/g5/r_t3h2yx71jglz63w_s5s6lm0000gn/T/aof-evidence-HSVSbJ/test/arch/green.test.mjs did not finish within its 60000ms deadline and was killed\\\"},\\\"size\\\":{\\\"kind\\\":\\\"no-size\\\",\\\"recorded\\\":null,\\\"observed\\\":null,\\\"direction\\\":null},\\\"comparedRecordedForm\\\":\\\"-\\\",\\\"comparedObservedForm\\\":null,\\\"evidence\\\":\\\"test/arch/green.test.mjs was not executed — /Users/umairbutt/.nvm/versions/node/v24.14.1/bin/node /Users/umairbutt/Source/umair/agent-orchestration-framework/.aof/mesh/dispatch-worktrees/dispatch-192-01/packages/core/src/work/audit-drive.mjs /var/folders/g5/r_t3h2yx71jglz63w_s5s6lm0000gn/T/aof-evidence-HSVSbJ/test/arch/green.test.mjs did not finish within its 60000ms deadline and was killed\\\"}\\n+ actual - expected\\n\\n+ 'timed-out'\\n- 'confirmed'\\n\"",
+          "scenario": null
+        }
+      ],
+      "gradedAt": "2026-11-13T03:01:02.929Z",
+      "provenance": {
+        "node": "node-6eb3",
+        "run": "20261113T023017542Z-0000",
+        "commit": "d86f2151ca2c3197dcc2226a50be8a66fc1f4eb8",
+        "at": "2026-11-13T03:01:02.929Z"
+      }
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-11-13T02:20:41.123Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/m42-item-3: no NEW silent catch — every src file is at or below its shrink-only baseline, and unlisted files have none",
+        "arch/71 FF-7106: every OPEN story declaring a bundle member also declares the manifest and every git-tracked render of that member"
+      ],
+      "baseCommit": "d86f2151ca2c3197dcc2226a50be8a66fc1f4eb8"
+    },
+    "progress": {
+      "resets": 0,
+      "attemptRunId": "20261113T023017542Z-0000",
+      "summary": null,
+      "continuation": true
+    },
+    "lane": {
+      "worktree": "/Users/umairbutt/Source/umair/agent-orchestration-framework/.aof/mesh/dispatch-worktrees/dispatch-192-01",
+      "branch": "aof/mesh/192-01",
+      "baseCommit": "d86f2151ca2c3197dcc2226a50be8a66fc1f4eb8"
+    }
+  },
+  "createdAt": "2026-11-13T03:13:33.469Z",
+  "updatedAt": "2026-11-13T03:15:34.128Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 26,
+      "output": 6321,
+      "cacheRead": 2641177,
+      "cacheCreate": 17787
+    },
+    "costUsd": 0.95394735,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 13,
+    "toolCalls": 5,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}
