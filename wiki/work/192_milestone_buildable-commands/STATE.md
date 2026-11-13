@@ -171,6 +171,37 @@ doc: state
     planted literally: the loader refuses a fragment with no declared practice (ADR-002 §6). The
     case re-declares the fragment under a practice that is on for every project instead, which
     is the failure the row describes, a fragment no gate holds back.
+- 2026-11-13 — 192/03 build (solo): this checkout's `aof work update` refused with
+  `codex-output-conflict` on `.agents/skills/aof-refine/{SKILL.md,procedure.md}`: 192/02 committed
+  those re-rendered files without re-recording their hashes, and a Codex-owned file whose disk
+  differs from its lock entry is never replaced. Both files were byte-identical to the render, so
+  the two lock hashes were brought up to date by hand and the update then ran clean (236
+  up-to-date) and wrote the practice record. The update also rewrote `.aof/aof.apply-journal.json`'s
+  two matching entries, a file outside the story's `files:`. A lane that hand-renders committed
+  outputs owes the lock in the same commit.
+- 2026-11-13 — 192/03: the declared set missed four reds the new lane causes by existing, all
+  fixed in the build: `packages/core/test`'s budget row (45 -> 46 for the new suite), FF-16004's
+  `work find` module ceiling (755 -> 756, the binding is the one module more), and the lane-order
+  pins in FF-5905 (`acd-controls-never-execute`), 134/04 (`doctor-examples-lane`) and 133/03
+  (`doctor-diagrams-lane`). `wiki/reference/practice-prose.md` also has a 150-line page budget
+  (192/00, 192/01 cases); the new reference is folded into §6 rather than a section of its own.
+  Any story that adds a doctor lane owes the three pins and the ceiling.
+- 2026-11-13 — 192/03: `aof test --scope impacted --story 192/03` widens to all 1283 suites here
+  (no graph), so the evidence is a by-file run of the 97 suites that drive init, update or the
+  work doctor, plus the practice controls. Reds left, none caused by this diff (each red on a clean
+  HEAD checkout, or already recorded by 192/02): 156 ×2 (codex-ownership, "is a main working
+  tree"), chore 103 (doctor-cwd-independence), 96/02-00, `work/archive-is-a-move`, three files the
+  runner reads as exporting no case array, and 167/00 "a daemon warn never fails validate", which
+  fails only under the bulk run's load and passes alone three times (deliberate fresh reruns to
+  chase it). The milestone regression gate is owed.
+- 2026-11-13 — 192/03 review close (solo; structural, behavioural and craft lenses inline, no UI
+  so no design lane). No Blocker; one round. Routed:
+  - **fixed** — the 134/04 edit first compared two arrays with `assert.equal`; it is a deep
+    comparison of plain arrays now (`CHECK_GROUPS` is an Array subclass, so its slices keep the
+    species).
+  - **recorded** (Nit) — with the shipped summaries a list row is about 150 columns wide, so it
+    wraps in a 120-column terminal: ADR-007 §2 puts the summary before the key. Shortening the two
+    summaries in the practices' `bundle.json`, or amending §2's column order, would fix it.
 
 ## Verification
 

@@ -5,6 +5,7 @@ import { readLock, writeLock } from "../../../lock.mjs";
 import { createLockManifest, executeApplyActions, planApplyActions } from "../../../render-plan.mjs";
 import { RUNTIMES } from "../../../model.mjs";
 import { loadBundle } from "../../../work/bundle.mjs";
+import { practiceRecord, practiceStates } from "../../../work/bundle-compose.mjs";
 import { bundleVersion, summarizeActions, synthesizeBundleConfig } from "../../../work/bundle-synthesis.mjs";
 import { ensureAofGitignore, ensureWorkDirGitFiles, workDirFor } from "../../../aof-gitignore.mjs";
 import { setHeadroomEnabled, readConfig, writeConfig } from "../../../work/headroom.mjs";
@@ -103,6 +104,8 @@ export function assembleWorkInit({ workspaceServices, workMemoryServices }) {
     // bundle by the capability matrix and build the desired-output set. init and
     // update share this ONE implementation so their desired sets cannot drift.
     const { desiredOutputs, notInstallable } = await synthesizeBundleConfig(bundle, { runtimes, targetDir, project });
+    // 192/ADR-006 §1 — the practices this render holds, from the same read of the config.
+    const states = practiceStates(bundle.practices ?? [], project.config);
 
     // Claude retains first-install/force semantics. Codex force uses its recorded
     // ownership so re-init cannot adopt an unowned file or erase operator edits.
@@ -159,7 +162,9 @@ export function assembleWorkInit({ workspaceServices, workMemoryServices }) {
       files: baseManifest.files.map((entry) => ({ ...entry, path: String(entry.path).replaceAll("\\", "/") })),
       packages: baseManifest.packages,
       frameworks: baseManifest.frameworks,
-      frameworkInstallAttempts: baseManifest.frameworkInstallAttempts
+      frameworkInstallAttempts: baseManifest.frameworkInstallAttempts,
+      // 192/ADR-006 §1 — the practices this render was built with, for the work doctor to compare.
+      practices: practiceRecord(bundle.practices ?? [], states)
     };
     // Read-merge-write (ADR-009): preserve the flat asset fields and the `planning`
     // section; replace ONLY the `work` key. --force re-renders and re-pins `work`

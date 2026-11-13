@@ -5,7 +5,7 @@ slug: a-project-sees-its-practices-and-hears-of-a-stale-render
 title: "A project sees its practices and hears of a stale render — `aof work update` lists each optional practice and the key that turns it on, and `aof work doctor` says when a key has changed since the commands were rendered"
 parent: 192
 depends: [00, 02]
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-11-13
 updated: 2026-11-13
@@ -68,9 +68,9 @@ warning the other way round, and one warning for an install that has no record y
 
 ## Tasks
 
-- [ ] 00 [update lists the optional practices](tasks/00_update-lists-the-optional-practices.feature)
-- [ ] 01 [the doctor reports a key changed since the render](tasks/01_the-doctor-reports-a-key-changed-since-the-render.feature)
-- [ ] 02 [an install with no record is told once to update](tasks/02_an-install-with-no-record-is-told-once-to-update.feature)
+- [x] 00 [update lists the optional practices](tasks/00_update-lists-the-optional-practices.feature)
+- [x] 01 [the doctor reports a key changed since the render](tasks/01_the-doctor-reports-a-key-changed-since-the-render.feature)
+- [x] 02 [an install with no record is told once to update](tasks/02_an-install-with-no-record-is-told-once-to-update.feature)
 
 ## Notes
 

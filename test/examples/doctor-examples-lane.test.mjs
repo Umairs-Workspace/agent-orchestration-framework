@@ -158,11 +158,14 @@ export const doctorExamplesLaneTests = [
     run: async () => {
       assert.deepEqual([...EXAMPLE_LANE_CODES], ["example-question-open", "example-provenance-unanchored", "example-map-malformed", "example-rule-no-example", "example-map-too-many-rules", "example-untraced"]);
       assert.ok(Object.isFrozen(EXAMPLE_LANE_CODES));
-      assert.equal(CHECK_GROUPS.at(-1), examplesGroup, "examplesGroup is the last entry of CHECK_GROUPS");
+      // 192/03 appended core's practice-render lane after it, through the same extension seam
+      // (192/ADR-006 §2), so the examples lane is the first extension group rather than the last group.
+      const at = CHECK_GROUPS.indexOf(examplesGroup);
+      assert.deepEqual([...CHECK_GROUPS.slice(at + 1)].map((group) => group.name), ["practiceRenderGroup"], "examplesGroup is followed only by 192/03's practice-render lane");
       // 181 appended the rubric configuration lane after diagramsGroup, as the last built-in lane;
       // the examples lane still follows every built-in lane, so it is the eleventh.
-      assert.equal(CHECK_GROUPS.at(-2).name, "rubricConfigurationGroup", "…directly after the last built-in lane, 181's rubric configuration lane");
-      assert.equal(CHECK_GROUPS.at(-3), diagramsGroup, "…which follows diagramsGroup");
+      assert.equal(CHECK_GROUPS[at - 1].name, "rubricConfigurationGroup", "…directly after the last built-in lane, 181's rubric configuration lane");
+      assert.equal(CHECK_GROUPS[at - 2], diagramsGroup, "…which follows diagramsGroup");
       const module = await import("@aof/specification-by-example/doctor-lane");
       const exported = [...Object.keys(module), ...Object.keys(_aofApplication.work.doctorExamples)];
       assert.deepEqual(exported.filter((name) => name.endsWith("_FINDING_CODES")), []);

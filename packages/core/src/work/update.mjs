@@ -30,6 +30,7 @@ import { createLockManifest, executeApplyActions, planApplyActions } from "../re
 import { RUNTIMES } from "../model.mjs";
 import { loadBundle } from "./bundle.mjs";
 import { bundleVersion, summarizeActions, synthesizeBundleConfig } from "./bundle-synthesis.mjs";
+import { practiceList, practiceRecord, practiceStates } from "./bundle-compose.mjs";
 import { workspacePaths } from "../workspace.mjs";
 import { readConfig, writeConfig } from "./headroom.mjs";
 import { ensureAofGitignore, ensureWorkDirGitFiles, workDirFor } from "../aof-gitignore.mjs";
@@ -107,6 +108,11 @@ export async function updateWork(options = {}) {
   // The IDENTICAL synthesis init uses (shared helper, ADR-003). This is the only
   // structural surface update adds; classification is the engine's.
   const { desiredOutputs, notInstallable } = await synthesizeBundleConfig(bundle, { runtimes, targetDir, project });
+  // 192/03 (ADR-006 §1, ADR-007 §1) — which practices THIS render holds, from the same read of the
+  // config the bundle was composed for. Never asked again after the memory migration below, which
+  // may rewrite the file: the list and the record are the answer the render used.
+  const states = practiceStates(bundle.practices ?? [], project.config);
+  const practices = practiceList(bundle.practices ?? [], states);
 
   // Update semantics: previousLock IS the install manifest (ADR-004). The engine
   // classifies create/update/skip/drift-warning/delete by comparing the desired
@@ -130,6 +136,7 @@ export async function updateWork(options = {}) {
       manifestPath: lockPath,
       manifestWritten: false,
       ...(memoryConfig ? { memoryConfig } : {}),
+      practices,
       summary: summarizeActions(actions)
     };
   }
@@ -181,7 +188,9 @@ export async function updateWork(options = {}) {
     files: baseManifest.files.map((entry) => ({ ...entry, path: String(entry.path).replaceAll("\\", "/") })),
     packages: baseManifest.packages,
     frameworks: baseManifest.frameworks,
-    frameworkInstallAttempts: baseManifest.frameworkInstallAttempts
+    frameworkInstallAttempts: baseManifest.frameworkInstallAttempts,
+    // 192/ADR-006 §1 — the practices this render was built with, for the work doctor to compare.
+    practices: practiceRecord(bundle.practices ?? [], states)
   };
   // Read-merge-write (ADR-009): preserve the flat asset fields and the `planning`
   // section; replace ONLY the `work` key. Never reconstruct from a fixed field set.
@@ -201,6 +210,7 @@ export async function updateWork(options = {}) {
     manifestWritten: true,
     ...(memoryConfig ? { memoryConfig } : {}),
     claudeSettings,
+    practices,
     summary: summarizeActions(actions)
   };
 }

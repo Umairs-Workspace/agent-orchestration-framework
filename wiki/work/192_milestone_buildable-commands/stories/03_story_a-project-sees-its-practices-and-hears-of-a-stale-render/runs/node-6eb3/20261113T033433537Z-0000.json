@@ -1,0 +1,83 @@
+{
+  "runId": "20261113T033433537Z-0000",
+  "itemRef": "192/03",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "896706db-503b-4dd3-9e0c-58a8246f5ee2",
+  "brief": {
+    "loop": {
+      "loopRunId": "632ce08e-288c-4315-8720-1ad3d1f40298",
+      "scope": "192",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-11-13T01:01:47.243Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        }
+      }
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-11-13T03:25:14.751Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/m42-item-3: no NEW silent catch — every src file is at or below its shrink-only baseline, and unlisted files have none",
+        "arch/71 FF-7106: every OPEN story declaring a bundle member also declares the manifest and every git-tracked render of that member"
+      ],
+      "baseCommit": "50d3714f3b46d55a19630af420e7b4e7be361e4f"
+    },
+    "lane": {
+      "worktree": "/Users/umairbutt/Source/umair/agent-orchestration-framework/.aof/mesh/dispatch-worktrees/dispatch-192-03",
+      "branch": "aof/mesh/192-03",
+      "baseCommit": "50d3714f3b46d55a19630af420e7b4e7be361e4f"
+    }
+  },
+  "createdAt": "2026-11-13T03:34:33.537Z",
+  "updatedAt": "2026-11-13T04:23:29.098Z",
+  "failureReason": null,
+  "heartbeatAt": "2026-11-13T04:09:16.017Z",
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 514,
+      "output": 188012,
+      "cacheRead": 49044739,
+      "cacheCreate": 533383
+    },
+    "costUsd": 19.535329949999998,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 255,
+    "toolCalls": 120,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}
