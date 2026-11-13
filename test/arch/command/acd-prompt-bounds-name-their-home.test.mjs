@@ -42,6 +42,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as loopBounds from "@aof/contracts/loop-bounds";
+import { PRACTICES } from "aof/practices";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BUNDLE = path.join(root, "packages", "core", "assets");
@@ -207,6 +208,15 @@ async function bundleAssets() {
     }
   };
   await walk(BUNDLE, "");
+  // 192/ADR-005 §7 — a practice's prose is bundle prose an agent reads once its key is on, so every
+  // registered practice's own assets are swept beside core's (its fragment files included), each
+  // named by its package so a problem says whose file it is. Core's `fragments/` is already in the
+  // walk above.
+  for (const practice of PRACTICES) {
+    if (!practice.assets?.package) continue;
+    const name = practice.assets.package;
+    await walk(path.join(root, "packages", name.split("/").pop(), "assets"), name);
+  }
   return assets;
 }
 
@@ -223,6 +233,42 @@ export const archTests = [
 
       assert.deepEqual(boundStatementProblems(assets), [], "legs (a) and (b) over the shipped bundle");
       assert.deepEqual(boundFactProblems(assets), [], "leg (c) — the bound facts the bundle states each name their home");
+    },
+  },
+  {
+    name: "arch/192/02 FF-7101: a control that sweeps the bundle's prose sweeps the fragments — core's and every registered practice's",
+    run: async () => {
+      const assets = await bundleAssets();
+      const swept = new Set(assets.map((asset) => asset.rel));
+      const expected = [];
+      const list = async (dir, prefix) => {
+        for (const entry of await readdir(dir, { withFileTypes: true })) {
+          if (entry.isDirectory()) await list(path.join(dir, entry.name), `${prefix}/${entry.name}`);
+          else expected.push(`${prefix}/${entry.name}`);
+        }
+      };
+      await list(path.join(BUNDLE, "fragments"), "fragments");
+      for (const practice of PRACTICES.filter((candidate) => candidate.assets?.package)) {
+        const name = practice.assets.package;
+        const fragments = path.join(root, "packages", name.split("/").pop(), "assets", "fragments");
+        try { await list(fragments, `${name}/fragments`); } catch (error) { if (error.code !== "ENOENT") throw error; }
+      }
+      for (const rel of ["fragments/build-brief/refine.md", "@aof/specification-by-example/fragments/discovery/refine.codex.md"]) assert.ok(expected.includes(rel), `${rel} exists to be swept`);
+      assert.deepEqual(expected.filter((rel) => !swept.has(rel)), [], "every fragment file is in the swept set");
+    },
+  },
+  {
+    name: "arch/192/02 FF-7101: a number in a fragment is still held to its home in code",
+    run: async () => {
+      const assets = await bundleAssets();
+      const FRAGMENT = "@aof/specification-by-example/fragments/discovery/refine.md";
+      const stated = loopBounds.LOOP_BOUND_VALUE_RESOLVERS["work.loop.reviewRounds"](undefined) + 1;
+      const mutated = planted(assets, FRAGMENT, (text) => `${text}\nReview runs ${stated} rounds by default, per \`work.loop.reviewRounds\`.\n`);
+      const problems = boundStatementProblems(mutated);
+      assert.ok(
+        problems.some((problem) => problem.startsWith(`${FRAGMENT}:`) && problem.includes(`states ${stated}`)),
+        `a fragment's unheld number is reported naming the fragment file\n${problems.join("\n")}`,
+      );
     },
   },
   {

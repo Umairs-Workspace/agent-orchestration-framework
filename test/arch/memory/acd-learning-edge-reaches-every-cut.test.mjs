@@ -703,9 +703,17 @@ export const archTests = [
       assert.ok(lockHashes.size > 0, "guard: the lock carries hashed paths");
       const shared = manifest.entries.filter((entry) => lockHashes.has(slash(entry.path)));
       assert.ok(shared.length > 0, `guard: the two records overlap (${shared.length} shared paths)`);
+      // 192/ADR-001 §4, ADR-005 — the manifest catalogues the CANONICAL render (every practice off) and
+      // the lock records what THIS checkout rendered, with its own practices on. Where a member's text
+      // holds a slot the two renders legitimately differ, so the lock is held to the render of this
+      // checkout's own config, and agrees with the manifest wherever that render does.
+      const own = new Map(renderBundleOutputs(await loadBundle({ config: JSON.parse(read(".aof/aof.config.json")) }), { runtimes: manifest.runtimes })
+        .map((output) => [slash(output.path), hashContent(String(output.content))]));
       for (const entry of shared) {
-        assert.equal(lockHashes.get(slash(entry.path)), entry.hash, `${entry.path} carries the same hash in both records`);
+        const expected = own.get(slash(entry.path)) ?? entry.hash;
+        assert.equal(lockHashes.get(slash(entry.path)), expected, `${entry.path} carries the hash of this checkout's render in the lock`);
       }
+      assert.ok(shared.filter((entry) => own.get(slash(entry.path)) === entry.hash).length > shared.length / 2, "guard: most shared paths are untouched by any practice, and those still agree with the manifest");
       assert.ok(
         shared.some((entry) => slash(entry.path) === ".claude/commands/aof/shatter.md"),
         "…and the edited member's claude render is one of them",

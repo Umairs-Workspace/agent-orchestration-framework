@@ -8,10 +8,12 @@
     "./answers": "./src/answers.mjs",
     "./doctor-lane": "./src/doctor-lane.mjs",
     "./build-door": "./src/build-door.mjs",
-    "./story-probe": "./src/story-probe.mjs"
+    "./story-probe": "./src/story-probe.mjs",
+    "./contribution": "./src/contribution.mjs"
   },
   "files": [
-    "src"
+    "src",
+    "assets"
   ],
   "scripts": {
     "test": "node ../../scripts/test-workspace.mjs @aof/specification-by-example"

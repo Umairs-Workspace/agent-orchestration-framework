@@ -45,6 +45,22 @@ async function workModules() {
 
 export const archTests = [
   {
+    name: "arch/192/02 FF-13501: the practices registry is core's one importer of the package's contribution, and the contribution imports nothing",
+    run: async () => {
+      // 192/ADR-005 §1 — the package became a registered practice. Its contribution reaches core through
+      // `packages/core/src/practices.mjs` alone, the admitted importer, and the leaf it reads imports
+      // nothing, so the one-way edge from the package to @aof/work gains no path back.
+      const importers = [];
+      for (const file of (await readRuntimeFiles(repoRoot)).filter((candidate) => candidate.rel.startsWith("packages/core/src/"))) {
+        const text = await readFile(file.path, "utf8");
+        if (moduleReferences(text, file.rel).references.some((reference) => reference.specifier === `${PACKAGE}/contribution`)) importers.push(file.rel);
+      }
+      assert.deepEqual(importers, ["packages/core/src/practices.mjs"]);
+      const leaf = await readFile(path.join(repoRoot, "packages/specification-by-example/src/contribution.mjs"), "utf8");
+      assert.deepEqual(moduleReferences(leaf, "packages/specification-by-example/src/contribution.mjs").references, [], "the contribution is a data leaf");
+    },
+  },
+  {
     name: "arch/135 FF-13501: no @aof/work source imports @aof/specification-by-example or spells EXAMPLES.md",
     run: async () => {
       const offenders = [];

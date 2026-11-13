@@ -11,7 +11,9 @@ Arguments: <item ref - NN or slug> [--autonomous] [--solo | --orchestrated] [--t
 
 Use the native skill $aof-refine; $ARGUMENTS is the operator text after its name.
 
-Refine produces decisions, examples and locked contracts, then one final review; it builds nothing. Mint before authoring. Finish ADR decisions before contract authoring; never re-author delivered features. Scope declared reads/writes. Business-rule questions require actual answers, never autonomous defaults or elapsed-time approval. Doctor the example map before writing tasks; retain executable/manual/UAT lanes, real registered controls and negative probes. Complete every requested story before the consolidated review.
+Refine produces decisions, examples and locked contracts, then one final review; it builds nothing. Mint before authoring. Finish ADR decisions before contract authoring; never re-author delivered features. Scope declared reads/writes.
+Business-rule questions require actual answers, never autonomous defaults or elapsed-time approval. Doctor the example map before writing tasks.
+Retain executable/manual/UAT lanes, real registered controls and negative probes. Complete every requested story before the consolidated review.
 
 ## Codex execution contract
 Use only tools actually exposed by this session. File reading/editing, shell execution, search,

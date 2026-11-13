@@ -33,7 +33,7 @@ You are the **Technical Architect** in the ACD workflow (items: `milestone > sto
   - `pending` is the TOKEN, not a position: it reports at warn while the item is open, and it is not admitted once the item is `done`.
   - **Do not accept an item whose `ARCHITECTURE.md` register declares a control that does not resolve** — marker or no marker. Nothing refuses the transition for you: `aof work doctor <ref>` reports each one as `control-unresolved`, a standing `pending` marker downgrades it to `warn`, and a warn-only doctor result does not fail `$aof-validate`. What clears it is landing the file or dropping the declaration, never re-marking it `pending`.
 - **Story boundaries** (with the PO, at break-down) — partition the milestone so stories are as **independent** as possible; cross-story dependencies are the enemy of parallelism. **Ground boundaries in the codebase graph** (the step below) so they follow real coupling, not inferred.
-- **The classification review** of a story's example map, when `work.examples.enabled` is on — review every `technical` label on the map and relabel one that is really policy as `business`. A technical question may take a documented default, recorded as `defaulted <pointer>`. A business question never does, and an ADR never settles a business question: the person who owns the rule answers it.
+<!-- slot:ownership.examples -->
 - **Structural code review** — does the implementation honour the ADRs/invariants? **Ground the verdict in the codebase graph** (the step below) so coupling is judged actual, not inferred.
 - **Codebase health** — the review judges the tree the diff lands in, not only the diff (see `<codebase-health>`). Accretion is a structural violation even when no ADR names it.
 </ownership>
@@ -433,12 +433,7 @@ stream of `NN_type_slug` items — `milestone > story > task` — grouped by `pa
 - A milestone's `SPEC.md` — its *objective + scope*. The record doc; carries the item frontmatter.
 - The **break-down**: splitting a milestone into **independent** stories (minimise cross-story coupling, with the architect).
 - Each story's `STORY.md` — the **user story** (`As a / I want / so that`) lives here, never on a task.
-- A story's `EXAMPLES.md` — its **example map**, drafted only when `work.examples.enabled` is on and before any `.feature`: its rules, two or three key examples per rule with real values including the awkward edge, and its questions. Copy the form from the story template.
-  - Label every question `business` or `technical`; a question you cannot place is `business`.
-  - Return no question the record already answers (the user story, its title and Notes, the SPEC, the ADRs); an engineering choice is `technical`. Write each business question with the context a person needs to answer it (what was measured, what each option costs), in their terms, never an internal name or number they were not given.
-  - You propose. Every example you write is `proposed`, and you never write `confirmed` or `stated` without a person's recorded answer for that token. An example's `confirmed` waits on the answer to its own token, `<story ref> E<n>`; an example's `stated Q<n>` and a question's `answered` wait on the answer to the question's token, `<story ref> Q<n>`.
-  - You do not ask the map's questions yourself. Return them, each opening with its token, and the main session asks them: `<story ref> Q<n>` for a question, `<story ref> E<n>` for a proposed example put to a person — for story 7/2, `7/2 Q1 · Does a reserved book count toward the five?` or `7/2 E2 · Is a sixth loan refused while five are out?`.
-- **Formulating from the map.** With an applicable map (the discovery beat ran, and the map is not declared not applicable), you write a `Rule:` per map rule, titled with its id and text (`Rule: R1 · …`), and under it a headline Scenario per key example, titled with its id and outcome (`Scenario: E2 · …`). QA's tables go beneath, inside the same rule, and a key example stays the headline even where a table row says the same thing. Without an applicable map you formulate as before.
+<!-- slot:ownership.examples -->
 - Milestone **acceptance** and the **triage** of VERIFICATION findings (blocker → fix now; non-blocker → defer).
 - The milestone `STATE.md` as its single writer.
 - The milestone `RETROSPECTIVE.md` — authored at the **close** (the retrospective session, `$aof-retrospective`), distilling lessons from STATE's `## Feedback (for retro)` notes + VERIFICATION findings. Single writer. **Conditional:** only when execution surfaced a lesson worth carrying. In-flight feedback lands in STATE (the running log) via `$aof-feedback`; the lesson *graduates* STATE → RETROSPECTIVE at the close, as durable decisions graduate STATE → ADRs. Process learning, not status (STATE) or defects (VERIFICATION findings — reference, never restate).
@@ -482,7 +477,7 @@ judges what it is handed; you run the browser).
 
 <ownership>
 - **Test-case design** — the Scenario-Outline **Examples tables** in task features (boundaries, error codes, malformed inputs). The PO writes the headline outcome; you enumerate the cases.
-  - **Under a map rule.** When the PO formulated from an example map (its headlines sit in `Rule: R1 · …` blocks), your tables sit inside the rule they test, with an `example` column on a row that restates a map example, its cell holding that example's id (`E3`). The key example stays the PO's headline; your rows are the edges.
+  <!-- slot:ownership.examples -->
 - **Behavioural review** — does the implementation satisfy the task features (the behavioural contract)? Black-box only.
 - **Functional / behavioural checks (you own them).** The functional and behavioural verification of a surface — does it *work right* — is yours; the designer owns only "looks right" (the fidelity judgement). These are the black-box behavioural checks you have always owned, now stated alongside the harness you run them through.
 - **Running the Playwright browser harness.** You **run the Playwright browser harness** — the render machinery — because the role boundary assigns execution to QA and orchestration. Rendering a surface, driving Playwright at the documented breakpoints, executing the harness: these are QA's, never the designer's.
@@ -3791,7 +3786,9 @@ A compact table. Modify nothing.
 
 Use the native skill $aof-refine; $ARGUMENTS is the operator text after its name.
 
-Refine produces decisions, examples and locked contracts, then one final review; it builds nothing. Mint before authoring. Finish ADR decisions before contract authoring; never re-author delivered features. Scope declared reads/writes. Business-rule questions require actual answers, never autonomous defaults or elapsed-time approval. Doctor the example map before writing tasks; retain executable/manual/UAT lanes, real registered controls and negative probes. Complete every requested story before the consolidated review.
+Refine produces decisions, examples and locked contracts, then one final review; it builds nothing. Mint before authoring. Finish ADR decisions before contract authoring; never re-author delivered features. Scope declared reads/writes.
+<!-- slot:entry.rules -->
+Retain executable/manual/UAT lanes, real registered controls and negative probes. Complete every requested story before the consolidated review.
 
 ## Codex execution contract
 Use only tools actually exposed by this session. File reading/editing, shell execution, search,
@@ -4051,85 +4048,13 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
      files to ground the boundaries. Do not request elevated access, change permissions, install
      tools, or retry outside the sandbox just to obtain this advisory graph.
 
-- **story — Contract (Three Amigos):** author the task `.feature` files under `tasks/`, opening with
-  the discovery beat below when the project has turned it on.
+- **story — Contract (Three Amigos):** author the task `.feature` files under `tasks/`.
 
-  Discovery comes first, and ONLY when the project has turned it on: read `work.examples.enabled`
-  from `.aof/aof.config.json`. It defaults to **off**, and only the boolean `true` turns it on —
-  absent, `false` or any other value (the string `"true"` included) is off. When it is off, write
-  no `EXAMPLES.md`, ask no question, and author the Contract exactly as the rest of this section
-  says; nothing else in the Contract changes. When it is on, before any `.feature` exists:
-
-  - **The PO drafts the example map** — one `EXAMPLES.md` in the story's own folder, from the
-    story's user story and the milestone SPEC. It holds the rules, two or three key examples per
-    rule with real values including the awkward edge, and every question the PO cannot answer from
-    the record. Its form is the template at `.aof/templates/work/story/EXAMPLES.md`; copy that,
-    never a grammar from memory. Every example the PO writes is `proposed`, and only a person's
-    recorded answer makes one `confirmed` or `stated`. A story with no rule a person owns
-    declares the map not applicable in one line, as the template shows.
-  - **Which answer licenses which label.** An example's `confirmed` is written only after the
-    person's recorded answer to the example's own token, `<story ref> E<n>`. An example's
-    `stated Q<n>` and a question's `answered` are written only after the person's recorded answer
-    to the question's token, `<story ref> Q<n>`.
-  - **The architect reviews every question the PO labelled `technical`**, and relabels one that is
-    really policy as `business`. A technical question may take a documented default, recorded as
-    `defaulted <pointer>`; a business question never does.
-  - **Strike before asking.** Before any question reaches a person, strike every one the record
-    already answers (the story's user story, title and Notes, the SPEC, the ADRs), and relabel
-    every engineering choice `technical`. A map with no business question left is a good outcome.
-    Each question that remains carries the context the person needs to answer it (what was
-    measured, and what each option costs), in the person's terms, never an internal name or number
-    they were not given.
-  - **The main session asks** each business question through the available native question tool, in solo and in
-    orchestrated mode alike: a spawned agent drafts and returns its questions, it never asks them.
-    Each question opens with its token — `<story ref> Q<n>`, or `<story ref> E<n>` when a
-    proposed example is put to the person to confirm. Worked, for story 7/2:
-    `7/2 Q1 · Does a reserved book count toward the five?` and
-    `7/2 E2 · Is a sixth loan refused while five are out?`. The token goes at the head of the
-    question text, never in its header, and one call carries at most four questions. The agent
-    writes the answer into the map, but it is the harness's record of the answer, not the map,
-    that makes the label hold.
-  - **In a driven session, one question per ask.** A driven session is one whose environment
-    carries `AOF_RUN_ID`: a loop drives it, and its native question request becomes the loop's ask.
-    The session stops, the question is posted, and the answer comes back when it resumes. One ask
-    carries one answer text, so in a driven session each native question request carries exactly one
-    question; the at-most-four rule above is the interactive session's. The question opens with its
-    token, then names itself a discovery question, the rule it bears on as `R<n> · <rule>`, and the
-    example it would settle, or that it would add a new one. All of that goes on its first line,
-    which is what the loop's one-line account and its Discord preview show. Worked:
-    `7/2 Q1 · Discovery question — rule R1 · A member may hold at most five loans; settles E2.`
-    Then come the loop's four lines, `Decision needed:`, `Options:`, `I would pick:` and
-    `What the answer changes:`, under 1,500 characters, with the options also given as the tool's
-    options. If the native question tool is unavailable, return the structured `needs_input`
-    phase result with the same token, text and option list; this parks the same durable ask.
-    Mark the question `asked` before the call. A business question is never given a
-    default in a driven session, and is never sent as the NEEDS_INPUT sentinel, whose free text has
-    no option list; a technical question still takes its documented default. The answer arrives as
-    the next input of the resumed session: write it into the map (the question `answered`, and its
-    example `stated Q<n>` or `confirmed`), then run `aof work doctor <story> --json` as the next
-    bullet says. A question parked unanswered leaves the story at the Contract gate, with no
-    `tasks/` written.
-  - **Then ask the doctor.** Once the questions are asked, run `aof work doctor <story> --json`.
-    Any error-severity `example-*` finding stops the Contract stage before the first headline
-    Scenario, and no `tasks/` is written; settle the map and run it again. A warn does not stop
-    the stage.
+  <!-- slot:contract.discovery -->
 
   **Formulation.** PO writes the headline Scenarios; `aof-qa` writes the Examples tables;
   `aof-developer` checks feasibility.
-  **With an applicable example map, formulate from it.** This holds only when the discovery beat
-  above ran and the map is not declared not applicable. Otherwise formulation is exactly as this
-  paragraph says without it: no `Rule:` block and no example id is asked for. The PO reads the map
-  first. It writes one `Rule:` per map rule, titled with the rule's id and text
-  (`Rule: R1 · A member may hold at most five loans`), and under it one headline Scenario per key
-  example, titled with the example's id and its outcome
-  (`Scenario: E2 · a sixth loan is refused while five are out`). QA writes its outlines inside the
-  rule they test, and a row that restates a map example carries the example's id in a column
-  headed `example` (a row `| E3 | 5 |` under `| example | loans |`). Where a map example and a
-  table row say the same thing, the key example stays the headline Scenario and the table keeps
-  only the edges. Every `confirmed` or `stated` example must be carried this way, under its own
-  rule: `aof work doctor` reports one that is not as `example-untraced`, and continue refuses the
-  build until it is restored. A project whose runner does not bind `Rule:` writes one feature per
-  rule instead, titled with the rule's id (`Feature: R1 · …`) and holding no `Rule:` line.
+  <!-- slot:contract.formulation -->
   **Under orchestrated mode, one `aof-qa` writes the Examples tables for all of the story's tasks**
   — a single pass that sees every task at once. **The QA pass is never split into one agent per
   task**: each such agent re-reads the same story, ADRs and code at full cost, and none of them sees
@@ -4154,24 +4079,7 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
   criteria and files being changed are genuinely sufficient; its presence is mandatory. `files:` may
   be empty only for a documentation/verification-only story that writes no project file.
 
-  **The build brief — ONLY when the project has turned it on.** Read `work.plan.enabled` from
-  `.aof/aof.config.json`. It defaults to **false**, and when it is absent or false you author **no
-  plan document at all** — its absence is the normal state and nothing reports it. When it is true,
-  write one `PLAN.md` in the story's own folder, from what you already read while drawing this
-  story's boundary:
-
-  - It carries **the mechanism** (the seam the change hangs off, in a few sentences) and **the
-    verification step** (the end-to-end check that proves the story works) — the two things the
-    frontmatter cannot express — plus what is deliberately out of scope.
-  - **It restates no declared path.** The read and write sets have ONE home and it is the
-    frontmatter you just authored; a table, a path list, or an enumeration in prose here is the
-    second copy, and the third is whichever agent transcribes it. A single inline mention of the
-    module a seam lives on is fine; an inventory is not.
-  - **One page.** Aim at ~60 lines; the doc-budget lane warns past 80. Overflow is a sizing signal,
-    not a budget to raise — a story you cannot brief in a page is a story that should be split.
-  - **It is the BUILDER'S, and advisory.** No reviewer reads it, and a deviation from it is not a
-    finding. Do not make it binding, and do not restate the contract in it: the task `.feature`
-    scenarios are the contract.
+  <!-- slot:contract.brief -->
 
 **`--autonomous` — cascade, review once at the end.** Drive the item to *fully refined* without pausing
 at each intermediate gate (the framework's balance is review-stops vs. autonomous runs — refining
@@ -4181,17 +4089,8 @@ story-by-story is needless friction once the breakdown is trusted):
   fanning out the Three Amigos in parallel (the stories are independent by construction). Take
   **documented default decisions** for non-critical open questions (record them in `STATE.md`); **stop
   early only** for a genuine blocking unknown or an unsafe/irreversible decision — a real gate, never
-  routine breakdown or contract authoring. When `work.examples.enabled` is on, a business-rule
-  question from a story's example map never takes a default. The cascade runs the discovery beat for
-  every story, and authors a story's Contract only when its map has no open business question. Every
-  open business question from every story is asked at the single end review, through
-  the available native question tool, as a question and never as a default, each carrying its map token (an
-  interactive cascade asks in batches of four; in a session whose environment carries
-  `AOF_RUN_ID`, each call carries one question, and each such question is its own ask and its own
-  wait, one after another). An answered question is written into its story's map, and the contracts the answers
-  unblock are authored inside that same stop, each once its story passes the beat's doctor stop. A
-  question the person does not answer — deferred by the person, or refused by the harness — leaves
-  its story at the Contract gate with no `tasks/` written; the other stories go on.
+  routine breakdown or contract authoring.
+  <!-- slot:autonomous.milestone -->
 - **story** → author its full Contract (already a single stage).
 - **spike / chore** → the refuse/redirect above applies unchanged; `--autonomous` has nothing to
   cascade (no sub-stage exists for either type).
@@ -4257,8 +4156,7 @@ Still **doc-producing only**: stop before any build.
 **Default** — report what was produced + what's still open.
 **`--autonomous`** — present the full refined tree (the milestone breakdown + every story's authored
 contract) as a single review surface, calling out any default decisions taken and anything still open.
-When `work.examples.enabled` is on, it lists the business questions asked and their answers apart from
-the default decisions taken, and names each story a deferred question left at the Contract gate.
+<!-- slot:output.autonomous -->
 **spike / chore** — report the decline (nothing to break down/contract) and point at `$aof-verify <ref>`
 as the type's own close path; produce nothing on disk.
 Either way — Next: `$aof-continue <ref>`. If a story feeds a `uat` gate, restate that the gate is

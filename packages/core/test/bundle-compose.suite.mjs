@@ -434,8 +434,12 @@ const refusalTests = [
     run: () => {
       const bundle = plantedLoad(() => {})();
       assert.ok(resource(bundle, "demo"), "the fixture loads");
-      assert.deepEqual(bundle.practices.map((practice) => [practice.id, practice.contributor]), [["notes", PLANTED]]);
-      assert.ok(loadBundle().resources.length > 40, "the shipped bundle loads");
+      // Core's own bundle.json declares `build-brief` (192/ADR-005 §1), so it stands first in every load.
+      assert.deepEqual(bundle.practices.map((practice) => [practice.id, practice.contributor]), [["build-brief", "core"], ["notes", PLANTED]]);
+      const shipped = loadBundle();
+      assert.ok(shipped.resources.length > 40, "the shipped bundle loads");
+      // 192/02 — the shipped bundle declares its two practices: core's build brief, then discovery.
+      assert.deepEqual(shipped.practices.map((practice) => [practice.id, practice.contributor]), [["build-brief", "core"], ["discovery", "@aof/specification-by-example"]]);
     },
   },
 ];
