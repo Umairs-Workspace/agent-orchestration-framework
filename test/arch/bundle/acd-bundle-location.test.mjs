@@ -36,7 +36,8 @@ export const archTests = [
       const originalCwd = process.cwd();
       try {
         process.chdir(tmp);
-        const descriptorCount = readDescriptor().members.length;
+        // A `fragment` (192/ADR-002 §2) is composed into a member's text, never returned as a member.
+        const descriptorCount = readDescriptor().members.filter((member) => member.kind !== "fragment").length;
         const bundle = loadBundle();
         // m43 — `assets` is the fourth member kind (an aof-EXCLUSIVE file installed
         // verbatim; the artifact-sync enqueue script is the first). Counted here so the

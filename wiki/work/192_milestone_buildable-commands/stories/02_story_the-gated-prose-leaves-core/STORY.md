@@ -5,7 +5,7 @@ slug: the-gated-prose-leaves-core
 title: "The gated prose leaves core — discovery's beat and the build brief become fragments, so a project with a practice off holds none of its prose and a project with it on reads what it reads today"
 parent: 192
 depends: [00]
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-11-13
 updated: 2026-11-13
@@ -63,6 +63,8 @@ files:
   - .claude/agents/aof-qa.md
   - .agents/skills/aof-refine/SKILL.md
   - .agents/skills/aof-refine/procedure.md
+  - .agents/skills/aof-refine/agents/openai.yaml
+  - .codex/aof/workflows/workflow-contract.md
   - .codex/agents/aof-product-owner.toml
   - .codex/agents/aof-architect.toml
   - .codex/agents/aof-qa.toml
@@ -104,10 +106,10 @@ at the two seams ADR-005 §4 names.
 
 ## Tasks
 
-- [ ] 00 [with a practice off the commands hold none of its prose](tasks/00_with-a-practice-off-the-commands-hold-none-of-its-prose.feature)
-- [ ] 01 [with a practice on the command says what it says today](tasks/01_with-a-practice-on-the-command-says-what-it-says-today.feature)
-- [ ] 02 [a practice's prose lives with the practice](tasks/02_a-practices-prose-lives-with-the-practice.feature)
-- [ ] 03 [a check that read the moved prose still reads it](tasks/03_a-check-that-read-the-moved-prose-still-reads-it.feature)
+- [x] 00 [with a practice off the commands hold none of its prose](tasks/00_with-a-practice-off-the-commands-hold-none-of-its-prose.feature)
+- [x] 01 [with a practice on the command says what it says today](tasks/01_with-a-practice-on-the-command-says-what-it-says-today.feature)
+- [x] 02 [a practice's prose lives with the practice](tasks/02_a-practices-prose-lives-with-the-practice.feature)
+- [x] 03 [a check that read the moved prose still reads it](tasks/03_a-check-that-read-the-moved-prose-still-reads-it.feature)
 
 ## Notes
 

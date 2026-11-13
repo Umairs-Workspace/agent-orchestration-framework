@@ -7,9 +7,13 @@
 import { archTests as acdSlotLeavesNothingBehindTests } from "./acd-slot-leaves-nothing-behind.test.mjs";
 import { archTests as acdFragmentLandsOnEveryRuntimeTests } from "./acd-fragment-lands-on-every-runtime.test.mjs";
 import { archTests as acdRenderReadsProjectConfigOnlyTests } from "./acd-render-reads-project-config-only.test.mjs";
+// milestone 192 / story 02 — FF-19208 (off renders no practice prose, and core holds none), with the
+// story's render-level cases.
+import { archTests as acdOffRendersNoPracticeProseTests } from "./acd-off-renders-no-practice-prose.test.mjs";
 
 export const tests = [
   ...acdSlotLeavesNothingBehindTests,
   ...acdFragmentLandsOnEveryRuntimeTests,
   ...acdRenderReadsProjectConfigOnlyTests,
+  ...acdOffRendersNoPracticeProseTests,
 ];

@@ -70,6 +70,17 @@ doc: state
   asked for. The shipped manifest regenerates byte for byte. The near-miss recall ran after the
   build had started rather than before it (empty either way), and is recorded as such.
 
+- 2026-11-13 — **192/02 built** (solo, attempt 1, driven run `20261113T022041571Z-0000`). Nine
+  slots cut from refine and the three briefs, in the Claude sources and their Codex texts, by a
+  script that asserted each passage's first and last line before cutting; the bodies were pasted
+  unretyped into `assets/fragments/discovery/` of `@aof/specification-by-example` and
+  `assets/fragments/build-brief/` of core. The package is the second entry of `PRACTICES`, with a
+  `./contribution` export and `assets` in `files`. This checkout's update (with this tree's CLI)
+  rewrote four files, and the collapsed comparison found only the two seam edits; the briefs are
+  byte-identical (VERIFICATION.md, `@manual`). The shipped manifest moved for refine, its Codex
+  skill and the three briefs, as ADR-005 says. The near-miss recall ran after the cut, not before
+  it (empty), and is recorded as such.
+
 ## Feedback (for retro)
 
 - 2026-11-13 — 192/00: the story's declared budget moves named two directories, and the build
@@ -104,6 +115,45 @@ doc: state
   imports statically), so its pinned ceiling goes 753 -> 754 with that reason. Neither
   `test/arch/command/acd-cli-entry-executes.test.mjs` nor the extractor rule was in the story's
   derived read/write set; any new core module on the bundle path owes that ceiling row.
+
+- 2026-11-13 — 192/02: **contract gaps** — suites outside the story's `files:` that turned red for
+  this story's reasons, fixed in the build and named here as the Notes ask. Three are the new
+  member kind and the second practice: `packages/core/test/bundle.suite.mjs` cases outside the
+  search (the valid-kind list, the loaded member set, the registry's one entry),
+  `test/arch/bundle/acd-bundle-location.test.mjs` and `acd-bundle-membership.test.mjs` (a
+  `fragment` is composed, not returned, and may have a Codex body alone),
+  `packages/core/test/hyperagent-runtime.suite.mjs` (the fake sidecar now carries the second
+  practice's assets) and `bundle-compose.suite.mjs` (core's own `build-brief` stands in every
+  load). One is the module ceiling, as at 192/00: `aof work find` 754 -> 755 in
+  `test/arch/command/acd-cli-entry-executes.test.mjs` for the contribution leaf. One is a real
+  consequence of ADR-005 nobody listed: FF-12405 leg 9
+  (`test/arch/memory/acd-learning-edge-reaches-every-cut.test.mjs`) held the lock to the
+  CANONICAL manifest, and this checkout renders with both keys on, so it now holds the lock to
+  this checkout's own render and to the manifest wherever the two agree. And FF-7106 asked this
+  story's own `files:` for two tracked renders refine never derived
+  (`.agents/skills/aof-refine/agents/openai.yaml`, `.codex/aof/workflows/workflow-contract.md`);
+  both are now declared. A suite search by phrase finds the prose readers, not the readers of
+  the member set; any story that adds a member kind owes those rows.
+- 2026-11-13 — 192/02: `aof test --scope impacted` was not run (it widens to the full suite on
+  this MacBook). The by-file run over the 136 suites that read the bundle's commands, agents,
+  Codex texts or loader is the story's evidence; the milestone regression gate is owed. Reds left
+  in that run, none caused by this diff: FF-7106 (193/04's record only), FF-9603 (2) and
+  96/02-00 (193/00's `PLAN.md`, committed in `ad19ec78`), `yarn-installation` ×3 and
+  `work/this-tree-holds-what-is-live` and `work/archive-is-a-move` (`/var` vs `/private/var`),
+  `87/00` (`apps/ui/dist` not built in this worktree), and 160/07 ×2 (red on a clean HEAD
+  checkout too). `bundle-asset-manifest-complete` cannot run here without `apps/ui/dist`; the
+  payload case it would make is FF-19208's file's own.
+- 2026-11-13 — 192/02 review close (solo; structural, behavioural and craft lenses inline, no UI
+  so no design lane). No Blocker; one round. Routed:
+  - **fixed** — the FF-12405 change first asserted the same equality twice; the redundant
+    assertion is gone.
+  - **recorded** (Nit) — FF-19208's "milestones 134, 135 and 136 still hold" runs the discovery
+    prose suite and the package's suites in process, so those cases run twice in a full run.
+    The scenario asks for exactly that run; the cost is seconds.
+  - **recorded** (Nit) — the planted "discovery fragment declared with no practice" cannot be
+    planted literally: the loader refuses a fragment with no declared practice (ADR-002 §6). The
+    case re-declares the fragment under a practice that is on for every project instead, which
+    is the failure the row describes, a fragment no gate holds back.
 
 ## Verification
 

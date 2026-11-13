@@ -1,0 +1,117 @@
+{
+  "practices": [
+    {
+      "id": "discovery",
+      "title": "Discovery",
+      "summary": "Refine drafts a story's example map and asks its business questions before any task is written.",
+      "keys": [
+        "work.examples.enabled"
+      ]
+    }
+  ],
+  "members": [
+    {
+      "id": "discovery-refine-entry",
+      "kind": "fragment",
+      "practice": "discovery",
+      "target": "command:refine",
+      "slot": "entry.rules",
+      "variants": {
+        "codex": {
+          "file": "fragments/discovery/refine.codex.md"
+        }
+      }
+    },
+    {
+      "id": "discovery-refine-beat",
+      "kind": "fragment",
+      "practice": "discovery",
+      "target": "command:refine",
+      "slot": "contract.discovery",
+      "file": "fragments/discovery/refine.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/discovery/refine.codex.md"
+        }
+      }
+    },
+    {
+      "id": "discovery-refine-formulation",
+      "kind": "fragment",
+      "practice": "discovery",
+      "target": "command:refine",
+      "slot": "contract.formulation",
+      "file": "fragments/discovery/refine.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/discovery/refine.codex.md"
+        }
+      }
+    },
+    {
+      "id": "discovery-refine-autonomous",
+      "kind": "fragment",
+      "practice": "discovery",
+      "target": "command:refine",
+      "slot": "autonomous.milestone",
+      "file": "fragments/discovery/refine.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/discovery/refine.codex.md"
+        }
+      }
+    },
+    {
+      "id": "discovery-refine-output",
+      "kind": "fragment",
+      "practice": "discovery",
+      "target": "command:refine",
+      "slot": "output.autonomous",
+      "file": "fragments/discovery/refine.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/discovery/refine.codex.md"
+        }
+      }
+    },
+    {
+      "id": "discovery-product-owner",
+      "kind": "fragment",
+      "practice": "discovery",
+      "target": "agent:aof-product-owner",
+      "slot": "ownership.examples",
+      "file": "fragments/discovery/aof-product-owner.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/discovery/aof-product-owner.codex.md"
+        }
+      }
+    },
+    {
+      "id": "discovery-architect",
+      "kind": "fragment",
+      "practice": "discovery",
+      "target": "agent:aof-architect",
+      "slot": "ownership.examples",
+      "file": "fragments/discovery/aof-architect.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/discovery/aof-architect.codex.md"
+        }
+      }
+    },
+    {
+      "id": "discovery-qa",
+      "kind": "fragment",
+      "practice": "discovery",
+      "target": "agent:aof-qa",
+      "slot": "ownership.examples",
+      "file": "fragments/discovery/aof-qa.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/discovery/aof-qa.codex.md"
+        }
+      }
+    }
+  ]
+}

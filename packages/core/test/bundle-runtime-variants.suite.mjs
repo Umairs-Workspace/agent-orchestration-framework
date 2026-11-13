@@ -114,7 +114,11 @@ export const bundleRuntimeVariantTests = [
     assert.match(entry.content, /Arguments:.*--solo \| --orchestrated/u);
     assert.match(entry.content, /native question tool/u);
     assert.match(entry.content, /Required answers remain pending/u);
-    assert.match(procedure.content, /example map|example-map/u);
+    // 192/ADR-005 — the map is discovery's prose: the canonical render (every practice off) holds none
+    // of it, and a render with `work.examples.enabled` on holds it where it stood.
+    assert.doesNotMatch(procedure.content, /example map|example-map/u, 'the canonical render holds no example map');
+    const discovery = output(renderBundleOutputs(loadBundle({ config: { work: { examples: { enabled: true } } } }), { runtimes: ['codex'] }), '.agents/skills/aof-refine/procedure.md');
+    assert.match(discovery.content, /example map|example-map/u, 'a render with discovery on holds the example map');
     assert.match(entry.content + procedure.content + contract.content, /scope[\s\S]*ownership[\s\S]*review/is);
   }),
   ...Object.entries(highRisk).map(([id, obligations]) => caseOf(`01 high-risk row: ${id}`, () => {
