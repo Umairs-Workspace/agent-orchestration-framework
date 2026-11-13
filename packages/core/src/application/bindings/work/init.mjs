@@ -94,12 +94,15 @@ export function assembleWorkInit({ workspaceServices, workMemoryServices }) {
       };
     }
 
-    const bundle = loadBundle();
+    // 192/ADR-003 — the project's own config file decides which practices the render holds:
+    // read once, the bundle loaded composed for it, the same read handed to the synthesis.
+    const project = await readConfig(targetDir);
+    const bundle = loadBundle({ config: project.config });
 
     // The IDENTICAL synthesis update uses (shared helper, ADR-003): partition the
     // bundle by the capability matrix and build the desired-output set. init and
     // update share this ONE implementation so their desired sets cannot drift.
-    const { desiredOutputs, notInstallable } = await synthesizeBundleConfig(bundle, { runtimes, targetDir });
+    const { desiredOutputs, notInstallable } = await synthesizeBundleConfig(bundle, { runtimes, targetDir, project });
 
     // Claude retains first-install/force semantics. Codex force uses its recorded
     // ownership so re-init cannot adopt an unowned file or erase operator edits.

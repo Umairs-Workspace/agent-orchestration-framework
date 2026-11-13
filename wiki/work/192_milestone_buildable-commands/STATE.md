@@ -62,6 +62,49 @@ doc: state
   differ in wording), and fragments supplied from outside the aof packages (a packaging and trust
   question of its own).
 
+- 2026-11-13 — **192/00 built** (solo, attempt 1). `bundle-compose.mjs` is the pure module;
+  `loadBundle({ config, readText })` validates every contribution and composes every text before
+  it returns; init and update read the project's config once, load with it and hand the same read
+  to the synthesis; the role launcher loads with the config it is handed. `updateWork`'s
+  `bundleOverride` may now be a function of the project's config, the seam the plan's known trap
+  asked for. The shipped manifest regenerates byte for byte. The near-miss recall ran after the
+  build had started rather than before it (empty either way), and is recorded as such.
+
+## Feedback (for retro)
+
+- 2026-11-13 — 192/00: the story's declared budget moves named two directories, and the build
+  moved a third: `packages/core/test` goes 44 -> 45 for `bundle-compose.suite.mjs`, whose fixture
+  the three `test/arch/practices` controls import. Refine derived the write set by hand; the
+  suite convention it followed puts a new suite in that directory, so the row was owed too.
+- 2026-11-13 — 192/00: `aof test --scope impacted --story 192/00` widened to all 1,280 suites
+  (`no-graph`), as on every story of 191. The by-file run over the 179 suites that import a
+  changed module or sweep source is the story's evidence; the milestone regression gate is owed.
+
+- 2026-11-13 — 192/00 review close (solo; structural, behavioural and craft lenses inline, no
+  UI so no design lane). No Blocker; one round. Routed:
+  - **fixed** — `slotsOf` scanned every text line by line on every load; it now returns early when
+    a text holds no marker. **fixed** — a `readProjectConfig` wrapper duplicated the `readConfig`
+    init and update already import; removed, and the read is handed to the synthesis as before.
+  - **recorded** (Nit) — a fragment contributed by an INTEGRATION package is gated by its
+    practice's keys only, not by `work.integrations.<id>`. No integration ships a fragment, and
+    the milestone serves practices; the question belongs with the first integration that does.
+  - **recorded** (Nit) — task 03's update scenarios drive `updateWork` in-process through its
+    `bundleOverride` seam rather than a spawned `aof work update`: a fixture package cannot reach
+    a spawned CLI. The init scenario does spawn the CLI.
+  - Pre-existing reds seen in the by-file run and not caused by this diff: `arch/m42-item-3`
+    (pty.mjs), FF-7106 and FF-9603 (records of 192/02 and 193/00/04), `87/00` (`apps/ui/dist`
+    not built in this worktree), `work/archive-is-a-move` (`/var` vs `/private/var`) and the two
+    `156 — retained … lane` cases (same two red on a clean HEAD checkout). `154/07 task00` timed
+    out under load and is green alone.
+
+- 2026-11-13 — 192/00 grade round: two cases the by-file run did not select went red.
+  FF-11901 (121): the FF-19207 control spelled its own import extractor; it now reads
+  `importSpecifiers`/`computedDynamicImports` from `test/support/module-family.mjs`. FF-16004:
+  `aof work find` loads one module more (`bundle-compose.mjs`, which the synchronous loader
+  imports statically), so its pinned ceiling goes 753 -> 754 with that reason. Neither
+  `test/arch/command/acd-cli-entry-executes.test.mjs` nor the extractor rule was in the story's
+  derived read/write set; any new core module on the bundle path owes that ceiling row.
+
 ## Verification
 
 - [ ] `@executable` suite green

@@ -5,7 +5,7 @@ slug: a-command-is-composed-from-slots-and-fragments
 title: "A command is composed from slots and fragments — a source marks where a practice may add prose, a practice declares what it adds and the keys that turn it on, and the loader fills each slot from the project's own config"
 parent: 192
 depends: []
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-11-13
 updated: 2026-11-13
@@ -74,12 +74,12 @@ mechanism is proved on fixture practices handed in through the loader's existing
 
 ## Tasks
 
-- [ ] 00 [a slot holds what is on and leaves nothing behind](tasks/00_a-slot-holds-what-is-on-and-leaves-nothing-behind.feature)
-- [ ] 01 [fragments keep a declared order and one can replace another](tasks/01_fragments-keep-a-declared-order-and-one-can-replace-another.feature)
-- [ ] 02 [each runtime gets the body written for it](tasks/02_each-runtime-gets-the-body-written-for-it.feature)
-- [ ] 03 [a render reads the project's own config](tasks/03_a-render-reads-the-projects-own-config.feature)
-- [ ] 04 [a contribution that cannot land is refused at load](tasks/04_a-contribution-that-cannot-land-is-refused-at-load.feature)
-- [ ] 05 [the reference says how to write a slot and a fragment](tasks/05_the-reference-says-how-to-write-a-slot-and-a-fragment.feature)
+- [x] 00 [a slot holds what is on and leaves nothing behind](tasks/00_a-slot-holds-what-is-on-and-leaves-nothing-behind.feature)
+- [x] 01 [fragments keep a declared order and one can replace another](tasks/01_fragments-keep-a-declared-order-and-one-can-replace-another.feature)
+- [x] 02 [each runtime gets the body written for it](tasks/02_each-runtime-gets-the-body-written-for-it.feature)
+- [x] 03 [a render reads the project's own config](tasks/03_a-render-reads-the-projects-own-config.feature)
+- [x] 04 [a contribution that cannot land is refused at load](tasks/04_a-contribution-that-cannot-land-is-refused-at-load.feature)
+- [x] 05 [the reference says how to write a slot and a fragment](tasks/05_the-reference-says-how-to-write-a-slot-and-a-fragment.feature)
 
 ## Notes
 
