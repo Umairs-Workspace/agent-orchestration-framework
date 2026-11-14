@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import { access } from "node:fs/promises";
 import { commandError } from "@aof/contracts/error";
 import { MESH_WORKSPACE_FLAG, guardMeshPositionals } from "./face-shared.mjs";
-import { SESSION_SPAWN_ACK_KIND, buildSessionEndFrame, buildSessionEndEnvelope } from "../session-spawn-directive.mjs";
+import { CLAUDE_HOOK_ASSISTANT, SESSION_SPAWN_ACK_KIND, buildSessionEndFrame, buildSessionEndEnvelope } from "../session-spawn-directive.mjs";
 import { launchSessionName } from "../session-spawn-handler.mjs";
 
 
@@ -233,7 +233,9 @@ async function meshSessionCommand(args, ctx = {}) {
 
   let workspaceId = options.workspace ?? payload?.workspace ?? null;
   let repo = options.repo ?? payload?.repo ?? null;
-  const assistant = options.assistant ?? payload?.assistant ?? (identity.source != null ? "claude-code" : null);
+  // A hook that names no assistant is Claude's own: its label has one home (191/ADR-002 amendment
+  // §4), the same one a `claude-remote-control` launch registers under, so the two upsert one record.
+  const assistant = options.assistant ?? payload?.assistant ?? (identity.source != null ? CLAUDE_HOOK_ASSISTANT : null);
 
   // 48/ADR-001's ORDERED id ladder, evaluated in this order and stopping at the first
   // NON-BLANK value: (1) the `--session` flag, (2) the hook payload's `session_id`,
@@ -801,7 +803,8 @@ export function createMeshSessionVerbs({
       const push = createTerminalRelayPushTransport(ctx?.workspace?.config);
       if (push == null) {
         throw commandError(
-          "No mesh relay is configured on this control node, so a session cannot be ended from here (set config.mesh.relay.url).",
+          // 191/ADR-001 amendment 2026-11-14 §6 — the nomination first (see session-start.mjs).
+          "No mesh relay is available on this node, so a session cannot be ended from here: a relay runs only on the nominated control — set `mesh.relay.controlNode` to this node's id in `~/.aof/aof.config.json`, which derives its relay, or set `mesh.relay.url`.",
           "session-dispatch-unavailable",
           503,
         );

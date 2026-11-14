@@ -361,7 +361,14 @@ export const archTests = [
       // imports and the facade already reached through notify (185 -> 186). It imports nothing and
       // does no I/O; no driver or lifecycle module is entered.
       assert.ok(sinkGraph.seen.has(path.join(root, "packages/messaging/src/discord-buttons.mjs")), "the Discord buttons leaf");
-      assert.equal(sinkGraph.seen.size, 186, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, and the integration registry's contributions");
+      // 191/08 (191/ADR-001 amendment 2026-11-14 §2) — a nominated control with no `mesh.relay.url`
+      // derives its loopback relay, so `loopbackRelayUrl` asks the registry's nomination predicate,
+      // `isControlNode`, injected by the bridge's binding. The facade reaches the bridge through the
+      // drive's loop-session ports (162), so its configured closure gains the registry binding and
+      // its implementation (186 -> 188). The predicate is a pure config read; neither module is a
+      // driver or a lifecycle module, and the driver fences above are unchanged.
+      for (const owner of ["packages/core/src/application/bindings/mesh/registry.mjs", "packages/mesh/src/registry.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
+      assert.equal(sinkGraph.seen.size, 188, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, and the integration registry's contributions");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

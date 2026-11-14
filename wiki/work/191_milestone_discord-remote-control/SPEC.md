@@ -6,7 +6,7 @@ title: "Discord drives the work from a phone — start a Claude session in any p
 status: in-progress
 owner: product-owner
 created: 2026-11-10
-updated: 2026-11-12
+updated: 2026-11-14
 schema: 1
 aofVersion: 0.1.0
 depends: [50, 131]
@@ -86,6 +86,7 @@ lane; 04 and 05 run beside them; 06 waits for 02–05; 07 waits for 02.
 - [ ] [05 · The project is picked, not typed](stories/05_story_the-project-is-picked-not-typed/STORY.md)
 - [ ] [06 · Discord starts sessions and loops](stories/06_story_discord-starts-sessions-and-loops/STORY.md)
 - [ ] [07 · Buttons on the notifications](stories/07_story_buttons-on-the-notifications/STORY.md)
+- [ ] [08 · A single-node control opens its own sessions](stories/08_story_a-single-node-control-opens-its-own-sessions/STORY.md)
 
 ## Dependencies
 

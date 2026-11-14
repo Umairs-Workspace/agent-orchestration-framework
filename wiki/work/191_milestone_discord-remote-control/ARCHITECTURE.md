@@ -102,6 +102,93 @@ mesh (175/ADR-005), no start could ever land.
 One handler factory serves both roles. A frame for the control's own node never reaches
 `dispatchDirective`, and a frame for any other node never reaches the local handler.
 
+### Amendment — 2026-11-14: §1 and §3 (F-03, ratified by the operator)
+
+Read at source and probed on 2026-11-14. Two causes stop a start for the control's own node on a
+single-node mesh.
+
+- **The checkout.** §1 gave the control's handler the worker's `workerHasRepo` and
+  `meshCheckoutPath` (`launcher.mjs:1199`). Those answer only for a `mesh.repo.published` marker or
+  a managed checkout under `checkouts/<id>` (`worker-repo-admission.mjs:183`, `:260`). A served
+  project is checked out at its descriptor `project_root`, so every start refuses
+  `session-repo-unavailable`.
+- **The relay.** With no `mesh.relay.url`, the launcher builds no `ingressForward`
+  (`launcher.mjs:1164`), so §3 builds no handler. Setting the URL does not fix it. The stream
+  server takes its port from the same URL (`configuredServicePort`, `:830`, default 4182 at `:122`)
+  and binds the fabric self-address, which `mesh.address: 127.0.0.1` makes loopback. The broker
+  binds `127.0.0.1` on that same port (`relay.mjs:626`). `relayMode` probed against a held loopback
+  port answers `EADDRINUSE`. The launcher catches it (`:1306`) and `relayBroker` stays null. No
+  input router is then built (`:1322`), so no frame reaches the handler. The push transport still
+  dials the port, which is the stream server's.
+
+**§1 is amended.**
+
+1. **The control binds its own checkout seams to the same two keys.** `createControlCheckoutSeams`
+   in `launcher.mjs`, beside its precedent `createResolveWorkspaceCloneUrl` (`:158`), builds both
+   from the injected `resolveWorkspaceProjectRoot`.
+   - `workerHasRepo` answers true when the workspace's descriptor `project_root` resolves and
+     exists on disk. That is the fact `planSessionStart`'s `workspace-not-local` reads
+     (`session-start.mjs:64`).
+   - `meshCheckoutPath` answers that root.
+   - The handler awaits `meshCheckoutPath` (`session-spawn-handler.mjs:433`). The worker's seam is
+     synchronous, so a worker's value is unchanged.
+   - The worker branch keeps the worker's seams (`launcher.mjs:1641`). FF-19101 holds as written.
+     FF-19108 pins which seams each branch binds.
+
+**§3 is superseded.**
+
+2. **A nominated control always has a relay.** `loopbackRelayUrl(config)`
+   (`terminal-relay-bridge.mjs:101`) stays the one derivation.
+   - With `mesh.relay.url` set, it answers exactly what it answers today.
+   - With no `mesh.relay.url`, on the nominated control, it answers `ws://127.0.0.1:4183/ws/relay`.
+     The predicate is `isControlNode` (`registry.mjs:67`), injected through the module's core
+     binding. `DEFAULT_LOOPBACK_RELAY_PORT = 4183` is declared in this module only.
+   - Otherwise it answers null, as today.
+3. **The launcher follows the derivation.**
+   - The relay gate (`launcher.mjs:1164`) reads `loopbackRelayUrl`, not `configuredRelayUrl`.
+   - The broker binds the port `loopbackRelayUrl` names, or `servicePort` when it names none.
+   - The stream server's port is unchanged: the URL's port, else 4182.
+   - `meshUiProbe`'s `relayConfigured` (`ui-serve.mjs:204`) reads the same derivation.
+   - The push and subscribe transports already dial `loopbackRelayUrl`. So do
+     `mesh:session-start`, `mesh:session-end`, `mesh:terminal-resume` and `mesh ui`, through them.
+     They need no edit.
+4. **Readers that keep the raw key.**
+   - `mesh:invite` (`commands/invite.mjs:128`) and `mesh:join` (`commands/join.mjs:97`): a worker
+     can never dial a loopback URL.
+   - `relayStatus` (`relay.mjs:681`).
+   - `createRelayClient` (`relay-client.mjs:109`), which has no production caller.
+5. **The doctor check: `control-relay-loopback`.** The desktop preflight gains it on every
+   platform.
+   - `skip` when this node is not the nominated control.
+   - `pass` when the relay is configured or derived, naming its URL. A derived relay reads "derived:
+     no `mesh.relay.url` is set".
+   - `fail` when `mesh.relay.url` is set and the stream binds a loopback address, so both bind one
+     port. The fix line: "remove `mesh.relay.url` from `~/.aof/aof.config.json`, and the relay is
+     derived at `ws://127.0.0.1:4183/ws/relay`. Changing the URL's port does not help: the stream
+     port moves with it."
+6. **The refusal sentences.** `session-dispatch-unavailable` at `session-start.mjs:84` and
+   `commands/session.mjs:804`, and terminal-resume's refusal at `commands/terminal-resume.mjs:90`,
+   say "set config.mesh.relay.url". On a loopback-bound control that advice collides. Each sentence
+   now names the nomination (`mesh.relay.controlNode`) first. Codes and statuses are unchanged.
+7. **Adoption.** No key is added, so nothing needs adopting. An existing single-node control gets
+   its relay at the next `install-local` and restart. The preflight row is the discovery, with the
+   "This MacBook" section of `.claude/rules/build-deploy-restart.md`. That section states that no
+   `mesh.relay.url` is set and that the relay listens on 4183.
+8. **The Windows control.** It sets `mesh.relay.url`, so every relay leg there is byte-identical:
+   - the stream server on its LAN address and the URL's port;
+   - the broker on `127.0.0.1` and the same port;
+   - the transports on the same URL.
+   Two things change there. The preflight prints one more row, `control-relay-loopback: pass`. A
+   start addressed to the Windows control opens in the project's registered root, where it refused
+   `session-repo-unavailable` before. That is the behaviour §1 meant.
+9. **Consequence.** A nominated control with no URL, on any fabric, now hosts the broker. Its
+   fleet mirrors terminal frames, and a loop drive child's output reaches the fleet. It loses
+   nothing.
+
+**Invariant, amended.** A nominated control always has a loopback relay. The relay's endpoint
+has one derivation. The control opens a served project at its descriptor root, and a worker opens
+it at its managed checkout.
+
 ---
 
 ## ADR-002 — A session started from Discord is `claude --remote-control`, typed by the node
@@ -156,6 +243,41 @@ itself into the shell it opened. No other text from the frame ever reaches the P
 
 The bytes a spawn writes into a PTY come only from `launchCommandLine`, which accepts one closed
 `launch` value, a UUID and a name from a closed character class.
+
+### Amendment — 2026-11-14: §2, §3 and §4 (F-07 and F-05, ratified by the operator)
+
+- **§2 (F-07).** `launchCommandLine` also refuses a name that starts with `-`
+  (`session-spawn-handler.mjs:34`). `--remote-control [name]` takes an optional value, so `claude`
+  would read such a name as a flag.
+- **§3 (F-07).** `launchSessionName` drops leading dashes from the folder part
+  (`session-spawn-handler.mjs:47`). A folder with nothing left names the session by its 8-character
+  id alone.
+- **§4 (F-05) is superseded.** Claude's hooks key a record `claude-code`
+  (`commands/session.mjs:236`), and the handler keyed the launch `claude`
+  (`session-spawn-handler.mjs:391`). Verify measured two records and two presence entries for one
+  id. For up to 30 s after each hook ping, the index entry was the hook's, with `relaying: false`.
+  1. A `claude-remote-control` launch registers under the hook's key,
+     `(nodeId, workspaceId, "claude-code", sessionId)`. The handler and the hook upsert one record.
+     `relaying` and `loopRunId` are sticky in `startSession` and `pingSession` (`session.mjs:357`,
+     `:395`), so a hook's `relaying: false` never demotes the pane.
+  2. The label has one home: `CLAUDE_HOOK_ASSISTANT = "claude-code"`, exported from
+     `session-spawn-directive.mjs`. Three readers take it:
+     - the hook default (`commands/session.mjs:236`);
+     - the handler (`session-spawn-handler.mjs:391`);
+     - the loop drive's stream (`packages/work-loop/src/loop-session-stream.mjs:94`), which spells
+       the same label as a literal today. It reads the label from its `loopSession` port
+       (`packages/core/src/application/bindings/commands/drive.mjs:59`).
+  3. The home is not `commands/session.mjs`, which F-05 proposed. That module imports
+     `session-spawn-handler.mjs` (`commands/session.mjs:8`), so the handler reading it would close a
+     cycle. `session-spawn-directive.mjs` is a zero-import leaf that both already import. The graph
+     built 2026-11-14 gives it 8 source dependents, both of them among those 8.
+  4. A bare-shell launch keeps the frame's label, `claude` by default (50/ADR-007). Nothing reads
+     the label to choose a binary.
+  5. **Deferred: an unpinned workspace.** In an item launch, Claude's hook runs in a session
+     worktree. It derives the workspace id from that worktree, and where `mesh.workspaceId` is not
+     pinned the id differs, so the hook writes a second record. 191 adds nothing for it. The
+     preflight's `workspace-identity-pinned` (`desktop-preflight.mjs:292`) already fails such a
+     workspace, and its cause is TECH_DEBT item 4.
 
 ---
 
@@ -367,6 +489,17 @@ covers them all. FF-13113's verb set grows by exactly the three session verbs.**
 - **Choices instead of autocomplete.** Rejected: static choices are frozen at registration, and a
   project enabled after READY would be missing for up to an hour.
 
+### Amendment — 2026-11-14: §4 (191/06 shipped two refusals this ADR did not name)
+
+`/session end` reads only the live sessions of the projects the user is listed on, so
+`mesh:session-list` is never asked about another project (STATE, 191/06). §4 gains its two misses:
+
+- `discord-session-not-found`: no live session of those projects carries the typed id or name, and
+  every project the channel serves lists the user. Where the channel also serves a project the
+  user is not on, the same miss is `discord-command-not-allowed`, because the session may be
+  there.
+- `discord-session-ambiguous`: the typed name matches two live sessions.
+
 ---
 
 ## ADR-007 — Buttons on the notifications
@@ -442,6 +575,20 @@ Stage 1 is 00, 04 and 05. The registry files a new verb touches (`assemble.mjs`,
 contribution, the command-inventory golden) are declared by every story that touches them, so
 `aof work next` serialises 02, 03 and 04 on them rather than letting two lanes edit them at once.
 
+### Amendment — 2026-11-14: F-03 and F-05
+
+| Story | Lands | Depends |
+|---|---|---|
+| 08 · the control opens a session in its own projects | ADR-001 amendment | 00 |
+
+- F-05 lands as a `@bug` task in 01. It and 08 both write `session-spawn-handler.mjs` (`:391` and
+  `:433`), so each declares it and `aof work next` serialises them.
+- 08 is accepted before `aof:verify 191/06`, whose outsider check needs a start on this laptop.
+- Graph: `aof graph build .`, built 2026-11-14T16:48Z, 21,794 nodes and 48,011 edges, egress none.
+  - `terminal-relay-bridge.mjs` and `desktop-preflight.mjs` each have one source dependent, their
+    core binding.
+  - 08 touches nothing in the messaging family, so it runs beside 06 and 07.
+
 ---
 
 ## Fitness functions
@@ -455,8 +602,11 @@ contribution, the command-inventory golden) are declared by every story that tou
 | FF-19105 | **The start request has one home, and a start row never resumes.** The `loop-starts` segment is spelled only in `stop-request.mjs`. A start row's argv carries `--supervised` and never `--resume`. | `test/arch/loop/acd-loop-stop-request-single-home.test.mjs` (a leg beside FF-13001) — pending (191/04) | ADR-005 §1, §3 |
 | FF-19106 | **The commands still start no process.** FF-13113 as amended: every `invoke(` in `discord-commands.mjs` names one of the six verbs in ADR-006 §5, and the family imports no `child_process`. | `test/arch/loop/acd-loop-ask-answered-from-discord.test.mjs` (FF-13113's `ALLOWED_VERBS`) — pending (191/06) | ADR-006 §5 |
 | FF-19107 | **A button reaches only what a reply or a command reaches.** `discord-buttons.mjs` invokes only `work:answer`, `work:loop` and `mesh:session-start`. `custom_id` is spelled only by `buttonId` and `parseButtonId`, and nothing the press dispatches is read from it. | `test/arch/loop/acd-loop-ask-answered-from-discord.test.mjs` (a leg beside FF-13113) — pending (191/07) | ADR-007 §4–§5 |
+| FF-19108 | **The control opens its own checkouts.** In the launcher's control branch, the factory call binds `workerHasRepo` and `meshCheckoutPath` to the seams `createControlCheckoutSeams` returns, never to the worker's functions of those names. The worker branch binds the worker's. | `test/arch/session/acd-launched-session-from-discord.test.mjs` (fourth leg) — pending (191/08) | ADR-001 amendment 2026-11-14 §1 |
+| FF-19109 | **One loopback relay endpoint.** `loopbackRelayUrl` in `terminal-relay-bridge.mjs` is the only derivation of the relay's loopback endpoint, and the only declaration of `DEFAULT_LOOPBACK_RELAY_PORT`. The launcher's relay gate and broker port, and `meshUiProbe`'s `relayConfigured`, are computed from it, never from `configuredRelayUrl` or the raw key. | `test/arch/session/acd-terminal-stream-transport-wired.test.mjs` (a leg beside F-38.06b FIX 2) — pending (191/08) | ADR-001 amendment 2026-11-14 §2–§3 |
+| FF-19110 | **The hook's label has one home.** The literal `"claude-code"` appears in the code of `packages/mesh/src` and `packages/work-loop/src` only in `session-spawn-directive.mjs`, as `CLAUDE_HOOK_ASSISTANT`. | `test/arch/session/acd-launched-session-from-discord.test.mjs` (fifth leg) — pending (191/01) | ADR-002 amendment 2026-11-14 §4 |
 
 FF-19101–19103 share one new file in `test/arch/session`, so that directory's budget row in
 `test/arch/testing/acd-source-directory-budget.test.mjs` moves by one, once, in 00, with its reason.
-FF-19104–19107 are legs in existing files, so no other row moves. Every control owes a red probe in
+FF-19104–19110 are legs in existing files, so no other row moves. Every control owes a red probe in
 `VERIFICATION.md` when it lands.

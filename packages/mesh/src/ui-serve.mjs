@@ -12,7 +12,7 @@ export const DEFAULT_MESH_UI_PORT = 4181;
 export const MAX_TERMINAL_INPUT_BYTES = 32 * 1024;
 
 // Configured runtime services are supplied by core. Construction starts no I/O or timers.
-export function createMeshUiServer({ assetPath, serveBoard, queryGlobalMeshStatus, resolveCacheStalenessSeconds, loadWorkspace, assignWork, STOP_REFUSALS, stopLoop, createTerminalMirror, buildTerminalInputEnvelope, PROVIDER_IDS, reportDegrade, costMeter = processCostMeter }) {
+export function createMeshUiServer({ assetPath, serveBoard, queryGlobalMeshStatus, resolveCacheStalenessSeconds, loadWorkspace, assignWork, STOP_REFUSALS, stopLoop, createTerminalMirror, buildTerminalInputEnvelope, loopbackRelayUrl, PROVIDER_IDS, reportDegrade, costMeter = processCostMeter }) {
 // The `aof mesh ui` fleet serve-face — the "fleet mission-control" web surface
 // (milestone 25 / story 02; ARCHITECTURE ADR-003/ADR-004). A SIBLING to
 // `board-serve.mjs`, NOT an extension of the work UI: it stands up its OWN single
@@ -201,7 +201,9 @@ async function meshUiProbe({ projectDir = process.cwd(), port = DEFAULT_MESH_UI_
   let relayConfigured = false;
   try {
     const { config } = await loadWorkspace(resolvedProjectDir, configPath);
-    relayConfigured = typeof config?.mesh?.relay?.url === "string" && config.mesh.relay.url.length > 0;
+    // 191/ADR-001 amendment 2026-11-14 §3 — the ONE derivation (FF-19109): a nominated control
+    // with no `mesh.relay.url` has a derived relay, so it is configured.
+    relayConfigured = loopbackRelayUrl(config) != null;
   } catch {
     relayConfigured = false;
   }

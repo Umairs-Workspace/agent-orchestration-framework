@@ -81,7 +81,9 @@ export function planSessionStart({
     return refusal(
       "session-dispatch-unavailable",
       503,
-      "No mesh relay is configured on this control node, so a session cannot be dispatched (set config.mesh.relay.url).",
+      // 191/ADR-001 amendment 2026-11-14 §6 — the nomination first: on a loopback-bound control a
+      // set `mesh.relay.url` collides with the stream server, and the nomination derives the relay.
+      "No mesh relay is available on this node, so a session cannot be dispatched: a relay runs only on the nominated control — set `mesh.relay.controlNode` to this node's id in `~/.aof/aof.config.json`, which derives its relay, or set `mesh.relay.url`.",
     );
   }
   // MINTED CONTROL-SIDE (50/ADR-002 §2): the session has a routable address before any worker

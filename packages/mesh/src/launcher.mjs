@@ -2,6 +2,7 @@ import os from "node:os";
 import path from "node:path";
 import { readFileSync } from "node:fs";
 import { stat } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { probeFabric, selfAddress, resolvePeers, fabricGuidance } from "./fabric.mjs";
 import { meshRole, resolveWorkerStreamTarget } from "./role.mjs";
 import { syncCadenceFromConfig } from "./sync-cadence.mjs";
@@ -14,7 +15,7 @@ import { createWorkTreeWatches, workTreeStatDigest } from "@aof/work/discovery";
 
 
 // Configured runtime services are supplied by core. Construction starts no I/O or timers.
-export function createMeshLauncher({ globalMeshPaths, readNodeRecords, forgetNodeWorkspace, deriveNodeId, sidecarPathFor, readSidecar, packageVersionString, assemblePresenceRecord, readActiveLoops, readActiveRuns, readStoreActivity, readLiveSessions, publishPresenceRecord, publishCostSnapshot, resolveNodeWorkspaces, resolveWorkspaceProjectRoot, listItems, loadWorkspace, listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, readCachedActiveRunIds, sharedProjectionStore, syncWorkspace, MESH_WORKSPACE_UNCONFIGURED_CODE, readWorkspaceProjectionItems, readWorkspaceContentRecords, restoreRefusedResumeReservation, confirmArtifactSyncBatch, createArtifactSyncState, forgetArtifactSyncAssignment, prepareArtifactSyncBatch, resolveWorkspaceId, readBuildInfo, buildInfoString, createWorkerStreamClient, createWorkerWsTransport, startControlStreamServer, buildDirectiveFrame, DEFAULT_HEARTBEAT_WINDOW_SECONDS, createMeshWorkerExecutionHandler, createMeshRecoveryPushHandler, createMeshWorkerWithdrawHandler, createMeshWorkerTerminalInputHandler, createMeshWorkerTerminalResumeHandler, settleStrandedRunRecords, listActiveWorktrees, listStrandedWorktreeAssignments, checkoutRootForWorktree, meshCheckoutPath, workerHasRepo, resolveCloneUrl, ensureWorktreeTrusted, INTERACTIVE_COMMAND_READY_DELAY_MS, createMeshWorkerSessionSpawnHandler, runRecoveryPushDispatchTick, runResyncDispatchTick, createEnrollmentHttpHandler, relayMode, readRegistry, verifyCredential, readMeshLauncherLockStatus, createTerminalRelayPushTransport, startTerminalIngress, publishTerminalIngress, withdrawTerminalIngress, buildTerminalFrameEnvelope, buildTerminalEndEnvelope, createTerminalMirrorSubscriberTransport, startTerminalMirrorSubscriber, createTerminalInputRouter, runControlDispatchReclaimTick, resolveCloneCredentialProvider, resolveWriteCredentialProvider, reportDegrade, openEffectsJournal, drainOutbox, applyEffectAck, reportAssignmentSettled, loadNotifications, loadMessagingBot }) {
+export function createMeshLauncher({ globalMeshPaths, readNodeRecords, forgetNodeWorkspace, deriveNodeId, sidecarPathFor, readSidecar, packageVersionString, assemblePresenceRecord, readActiveLoops, readActiveRuns, readStoreActivity, readLiveSessions, publishPresenceRecord, publishCostSnapshot, resolveNodeWorkspaces, resolveWorkspaceProjectRoot, listItems, loadWorkspace, listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, readCachedActiveRunIds, sharedProjectionStore, syncWorkspace, MESH_WORKSPACE_UNCONFIGURED_CODE, readWorkspaceProjectionItems, readWorkspaceContentRecords, restoreRefusedResumeReservation, confirmArtifactSyncBatch, createArtifactSyncState, forgetArtifactSyncAssignment, prepareArtifactSyncBatch, resolveWorkspaceId, readBuildInfo, buildInfoString, createWorkerStreamClient, createWorkerWsTransport, startControlStreamServer, buildDirectiveFrame, DEFAULT_HEARTBEAT_WINDOW_SECONDS, createMeshWorkerExecutionHandler, createMeshRecoveryPushHandler, createMeshWorkerWithdrawHandler, createMeshWorkerTerminalInputHandler, createMeshWorkerTerminalResumeHandler, settleStrandedRunRecords, listActiveWorktrees, listStrandedWorktreeAssignments, checkoutRootForWorktree, meshCheckoutPath, workerHasRepo, resolveCloneUrl, ensureWorktreeTrusted, INTERACTIVE_COMMAND_READY_DELAY_MS, createMeshWorkerSessionSpawnHandler, runRecoveryPushDispatchTick, runResyncDispatchTick, createEnrollmentHttpHandler, relayMode, readRegistry, verifyCredential, readMeshLauncherLockStatus, createTerminalRelayPushTransport, loopbackRelayUrl, startTerminalIngress, publishTerminalIngress, withdrawTerminalIngress, buildTerminalFrameEnvelope, buildTerminalEndEnvelope, createTerminalMirrorSubscriberTransport, startTerminalMirrorSubscriber, createTerminalInputRouter, runControlDispatchReclaimTick, resolveCloneCredentialProvider, resolveWriteCredentialProvider, reportDegrade, openEffectsJournal, drainOutbox, applyEffectAck, reportAssignmentSettled, loadNotifications, loadMessagingBot }) {
 // src/mesh/launcher.mjs — the per-node presence and global propagation daemon (milestone 33 / story 01,
 // ADR-003). The coordination launcher (F-3201): with the ws@8 broker eliminated
 // (ADR-002), this is the per-node process the fabric-native model needs — it publishes
@@ -170,6 +171,57 @@ function createResolveWorkspaceCloneUrl(ws, options = {}) {
       return null;
     }
   };
+}
+
+// createControlCheckoutSeams(ws, options) → { workerHasRepo, meshCheckoutPath } — 191/ADR-001
+// amendment 2026-11-14 §1 (F-03). THE CONTROL'S OWN checkout seams, under the two keys the
+// session-spawn handler takes, built beside their precedent above from the same descriptor seam.
+//
+// A project a channel serves is checked out ON THE CONTROL, at the folder it was registered from
+// (its descriptor `project_root`) — never in a managed checkout under `checkouts/<id>` and never
+// behind a `mesh.repo.published` marker, which are the only two things the WORKER'S seams answer
+// for. Handing the control the worker's seams refused every start for its own node
+// `session-repo-unavailable`. So:
+//   - `workerHasRepo` answers true when the workspace's root resolves and is on disk — the fact
+//     `planSessionStart`'s `workspace-not-local` reads (session-start.mjs);
+//   - `meshCheckoutPath` answers that root (async: the handler awaits it), or null.
+// The control's OWN launch workspace is its own root, exactly as `resolveWorkspaceCloneUrl` short-
+// circuits it. A store fault, a missing descriptor or a folder that is gone all answer
+// false / null, never a throw (the failure-isolation every launcher collaborator keeps). The
+// worker branch keeps the worker's seams (FF-19108 pins which seams each branch binds).
+function createControlCheckoutSeams(ws, options = {}) {
+  const ownWorkspaceId = resolveWorkspaceId(ws);
+  const onDisk = (root) => (typeof root === "string" && root.length > 0 && existsSync(root) ? root : null);
+  const rootFor = async (workspaceId, storeOptions) => {
+    if (typeof workspaceId !== "string" || workspaceId.length === 0) return null;
+    if (workspaceId === ownWorkspaceId && onDisk(ws?.projectRoot) != null) return ws.projectRoot;
+    try {
+      return onDisk(await resolveWorkspaceProjectRoot(workspaceId, {
+        ...(options?.openStore ? { openStore: options.openStore } : {}),
+        globalWorkStoreOptions: storeOptions ?? options?.globalWorkStoreOptions ?? {},
+      }));
+    } catch {
+      return null;
+    }
+  };
+  return {
+    // (ws, workspaceId, nodeId, { openStore, globalWorkStoreOptions }) — the handler's call shape.
+    workerHasRepo: async (_ws, workspaceId, _nodeId, handlerOptions = {}) =>
+      (await rootFor(workspaceId, handlerOptions?.globalWorkStoreOptions)) != null,
+    // (workspaceId, globalWorkStoreOptions) — the handler's call shape.
+    meshCheckoutPath: (workspaceId, storeOptions) => rootFor(workspaceId, storeOptions),
+  };
+}
+
+// relayPortOf(url) → the port a relay URL names, or null when it names none.
+function relayPortOf(url) {
+  if (typeof url !== "string" || url.length === 0) return null;
+  try {
+    const port = Number.parseInt(new URL(url).port, 10);
+    return Number.isInteger(port) && port > 0 ? port : null;
+  } catch {
+    return null;
+  }
 }
 
 // githubAppPrivateKeyFilename(appId) — milestone 38 / story 03 (ADR-011 decision /
@@ -1161,7 +1213,12 @@ async function startLauncher(ws, options = {}) {
     // createTerminalMirrorSubscriberTransport returns null, so a broker would have no
     // subscriber — a clean no-start, which also keeps every fixture that sets no
     // relay.url byte-identical).
-    const relayEnabled = options?.relay !== false && configuredRelayUrl(config) != null;
+    //
+    // 191/ADR-001 amendment 2026-11-14 §3 — the gate reads `loopbackRelayUrl`, the ONE derivation
+    // (FF-19109), never the raw key: a NOMINATED control with no `mesh.relay.url` derives its relay
+    // on 4183, so it always has one. A control that sets the URL answers exactly as before.
+    const relayUrl = loopbackRelayUrl(config);
+    const relayEnabled = options?.relay !== false && relayUrl != null;
     if (relayEnabled) {
       // `options.createTerminalRelayPushTransport` is the test seam (the `startTerminalIngress`
       // idiom): a fixture records what the control pushes instead of dialling a real broker.
@@ -1189,15 +1246,20 @@ async function startLauncher(ws, options = {}) {
     // so no handler is built and a frame for this node refuses as it always did.
     // §4 — assigned to the hoisted `sessionSpawnHandler`, which stop() already halts: a control
     // daemon with a launched shell still exits on SIGTERM.
+    //
+    // 191/ADR-001 amendment 2026-11-14 §1 — the two checkout keys are the CONTROL'S OWN seams: a
+    // served project opens at its registered root, never at a worker's managed checkout (F-03,
+    // FF-19108). The keys and the factory are the worker branch's (FF-19101).
     if (ingressForward != null) {
       const localLegs = ingressForward;
       const localPush = controlTerminalPush;
+      const controlCheckout = createControlCheckoutSeams(ws, options);
       const createSessionSpawnHandler = options?.createMeshWorkerSessionSpawnHandler ?? createMeshWorkerSessionSpawnHandler;
       sessionSpawnHandler = createSessionSpawnHandler({
         loadWs: options?.workerExecutionLoadWs ?? (() => Promise.resolve(ws)),
         nodeId,
-        workerHasRepo,
-        meshCheckoutPath,
+        workerHasRepo: controlCheckout.workerHasRepo,
+        meshCheckoutPath: controlCheckout.meshCheckoutPath,
         globalWorkStoreOptions: options?.globalWorkStoreOptions,
         sendTerminalFrame: (sessionId, bytes) => localLegs.frame(sessionId, bytes),
         sendTerminalEnd: (sessionId) => localLegs.end(sessionId),
@@ -1286,16 +1348,18 @@ async function startLauncher(ws, options = {}) {
       ...(options?.controlStreamServerOptions ?? {}),
     });
 
-    // Start the loopback relay BROKER on the KNOWN port named in config.mesh.relay.url
-    // (`servicePort`, parsed via configuredRelayUrl) — NEVER an ephemeral `?? 0`, so
-    // the fleet subscriber's FIXED dial (createTerminalMirrorSubscriberTransport, the
-    // same url) matches. `relayMode` SELF-GATES on
+    // Start the loopback relay BROKER on the KNOWN port `loopbackRelayUrl` names — the URL's
+    // port when `mesh.relay.url` sets one, else `servicePort`; 4183 when the relay is derived
+    // (191/ADR-001 amendment §3), so it never shares the stream server's port — NEVER an
+    // ephemeral port, so the fleet subscriber's FIXED dial (createTerminalMirrorSubscriberTransport,
+    // the same derivation) matches. `relayMode` SELF-GATES on
     // config.mesh.relay.controlNode === config.mesh.nodeId (mesh-relay.mjs:656-666) —
     // no new nomination logic; a non-nominated node gets a clean null. Started AFTER
     // startServer so the fabric-addressed control-stream server claims its
     // (fabric-ip, port) bind FIRST; the relay then binds (127.0.0.1, port) — distinct
-    // addresses coexist, and in the degraded (loopback-only) case the relay's own bind
-    // simply faults into the catch below rather than pre-empting the stream server.
+    // addresses coexist. On a loopback-bound control with a set URL the two addresses are
+    // one, and the relay's bind faults into the catch below (EADDRINUSE) — the collision
+    // the derived 4183 exists to avoid, which the preflight's `control-relay-loopback` names.
     // Test isolation is `options.relay === false` (skip) or an injected
     // `options.relayMode` seam — the production code never binds a random port to
     // protect a fixture. Wrapped so a bind fault never crashes the daemon; disposed in
@@ -1303,7 +1367,7 @@ async function startLauncher(ws, options = {}) {
     if (relayEnabled) {
       const startRelayMode = options?.relayMode ?? relayMode;
       try {
-        relayBroker = await startRelayMode(config, { port: servicePort });
+        relayBroker = await startRelayMode(config, { port: relayPortOf(relayUrl) ?? servicePort });
       } catch (error) {
         emitWarning(launcherWarnings, { code: error?.code ?? "relay-broker-start-failed", message: error?.message ?? "The mesh-relay broker failed to start.", path: null }, options);
         relayBroker = null;

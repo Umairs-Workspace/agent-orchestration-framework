@@ -8,6 +8,9 @@ export const PREFLIGHT_CHECKS = Object.freeze([
   "payload-build",
   "workspace-identity-pinned",
   "heartbeat-hook-installed",
+  // 191/ADR-001 amendment 2026-11-14 §5 — on every platform: the control's relay, derived or
+  // configured, and the one configuration that makes it collide with the stream server.
+  "control-relay-loopback",
 ]);
 // What a Mac adds, appended after the four when the platform is `darwin` (175/ADR-004 §4). Its
 // own list, so `PREFLIGHT_CHECKS` and Windows' answer stay exactly what they were.
@@ -38,10 +41,13 @@ export const PREFLIGHT_SEAMS = Object.freeze([
   "installDir",
   // 175/F-09 — the account the daemons run as: `claude` finds its keychain sign-in under USER.
   "user",
+  // 191/ADR-001 amendment §5 — the machine-wide config the daemons run under (the verbs are
+  // cwd-less), read for `control-relay-loopback`.
+  "meshConfigFn",
 ]);
 
 // Core supplies configured services; constructing command definitions performs no I/O.
-export function createMeshDesktopPreflightCommands({ readBuildInfo, resolveNodeWorkspaces, readSidecar, globalMeshPaths, workspacePaths, AOF_HOOK_MARKER, CLAUDE_SETTINGS_RELPATH, claudeHookDeclarations, claudeSettingsPath }) {
+export function createMeshDesktopPreflightCommands({ readBuildInfo, resolveNodeWorkspaces, readSidecar, globalMeshPaths, workspacePaths, AOF_HOOK_MARKER, CLAUDE_SETTINGS_RELPATH, claudeHookDeclarations, claudeSettingsPath, loopbackRelayUrl, isControlNode }) {
 // The `mesh desktop` PREFLIGHT — the FOUR checks `install` and `run` REPORT and never
 // repair (ADR-007 §4, AMENDED twice: 126/06 appended the fourth, and 126/06's post-hoc
 // review moved the whole preflight out of `desktop.mjs` into this module).
@@ -332,6 +338,64 @@ async function defaultWorkspaceConfigFn(projectRoot) {
   if (typeof projectRoot !== "string" || projectRoot.length === 0) return null;
   const { configPath } = workspacePaths(projectRoot);
   return JSON.parse(await readFile(configPath, "utf8"));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// control-relay-loopback
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 191/ADR-001 amendment 2026-11-14 §5. A relay that is DERIVED rather than configured is
+// invisible unless something names it, and a `mesh.relay.url` set on a loopback-bound control
+// collides with the stream server — which shows up only as sessions that never open (F-03). Both
+// answers come from the ONE derivation, `loopbackRelayUrl`, and the ONE nomination predicate,
+// `isControlNode`, both injected by this module's core binding.
+//   · skip — this node is not the nominated control: it hosts no relay.
+//   · pass — the relay is configured or derived, naming its URL.
+//   · fail — `mesh.relay.url` is set and the stream binds a loopback address: the stream server
+//     takes its port from that same URL, and the relay binds 127.0.0.1 on it, so both bind one.
+const CONTROL_RELAY_CODE = "control-relay-loopback";
+// The fabric self-address the stream server binds, when it is a loopback one. `direct` binds
+// `mesh.address` when set (else the first LAN address, which is never loopback).
+const LOOPBACK_ADDRESS = /^(?:127(?:\.\d{1,3}){3}|::1|\[::1\]|localhost)$/i;
+
+async function checkControlRelayLoopback({ meshConfigFn, nodeId }) {
+  const config = (await meshConfigFn()) ?? {};
+  const mesh = config?.mesh ?? {};
+  // The id this preflight READ stands in for one the machine-wide file does not pin.
+  const asRun = { ...config, mesh: { ...mesh, nodeId: mesh.nodeId ?? nodeId ?? undefined } };
+  if (!isControlNode(asRun)) {
+    return check(CONTROL_RELAY_CODE, "skip", "This node is not the control (`mesh.relay.controlNode` names another node, or none), so it hosts no relay.");
+  }
+  const url = loopbackRelayUrl(asRun);
+  const configured = typeof mesh?.relay?.url === "string" && mesh.relay.url.length > 0;
+  if (!configured) {
+    return check(CONTROL_RELAY_CODE, "pass", `The relay listens at ${url} — derived: no \`mesh.relay.url\` is set.`);
+  }
+  if (LOOPBACK_ADDRESS.test(String(mesh.address ?? ""))) {
+    // The relay it WOULD derive, asked of the one derivation rather than spelled here.
+    const derived = loopbackRelayUrl({ ...asRun, mesh: { ...asRun.mesh, relay: { ...mesh.relay, url: undefined } } });
+    return check(
+      CONTROL_RELAY_CODE,
+      "fail",
+      `\`mesh.relay.url\` is set and the stream server binds the loopback address ${mesh.address}, so the relay and the stream server bind one port and the relay cannot start — remove \`mesh.relay.url\` from \`~/.aof/aof.config.json\`, and the relay is derived at \`${derived}\`. Changing the URL's port does not help: the stream port moves with it.`,
+    );
+  }
+  if (url == null) {
+    return check(CONTROL_RELAY_CODE, "fail", `\`mesh.relay.url\` is set but is not a URL (${mesh.relay.url}), so no relay is built.`);
+  }
+  return check(CONTROL_RELAY_CODE, "pass", `The relay listens at ${url}, from \`mesh.relay.url\`.`);
+}
+
+// The MACHINE-WIDE config, `<aof home>/aof.config.json` — the file the supervisor's cwd-less
+// daemons run under. Read directly; an absent file is an empty config, never a fault.
+async function defaultMeshConfigFn(env) {
+  const configPath = path.join(path.dirname(globalMeshPaths({ env }).meshRoot), "aof.config.json");
+  try {
+    return JSON.parse(await readFile(configPath, "utf8"));
+  } catch (error) {
+    if (error?.code === "ENOENT") return {};
+    throw error;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -681,8 +745,8 @@ function preflightSeams(ctx = {}) {
   return seams;
 }
 
-// runPreflight(options) -> an ORDERED list of `{ code, status, message }`: the FOUR in
-// `PREFLIGHT_CHECKS`' order, then — on darwin only — the four in `PREFLIGHT_CHECKS_DARWIN`'.
+// runPreflight(options) -> an ORDERED list of `{ code, status, message }`: the FIVE in
+// `PREFLIGHT_CHECKS`' order (191/08 appended `control-relay-loopback`), then — on darwin only — the four in `PREFLIGHT_CHECKS_DARWIN`'.
 // It rides the SUCCESS answer of a verb only, so a verb that refuses carries its
 // `{ ok, error, code }` envelope unchanged and no probe is spawned behind a refusal.
 async function runPreflight(options = {}) {
@@ -695,6 +759,7 @@ async function runPreflight(options = {}) {
   const settingsFn = typeof options.settingsFn === "function" ? options.settingsFn : defaultSettingsFn;
   const hookFileFn = typeof options.hookFileFn === "function" ? options.hookFileFn : defaultHookFileFn;
   const bundleHookFn = typeof options.bundleHookFn === "function" ? options.bundleHookFn : defaultBundleHookFn;
+  const meshConfigFn = typeof options.meshConfigFn === "function" ? options.meshConfigFn : () => defaultMeshConfigFn(env);
   // The platform is an input, as in the autostart act; the host's is only its default.
   const platform = options.platform ?? process.platform;
 
@@ -716,6 +781,7 @@ async function runPreflight(options = {}) {
     await guarded("payload-build", () => checkPayloadBuild(buildInfoFn, env)),
     await guarded("workspace-identity-pinned", () => checkWorkspaceIdentityPinned({ roster, workspaceConfigFn })),
     await guarded("heartbeat-hook-installed", () => checkHeartbeatHookInstalled({ roster, settingsFn, hookFileFn, bundleHookFn })),
+    await guarded("control-relay-loopback", () => checkControlRelayLoopback({ meshConfigFn, nodeId })),
   ];
   if (platform !== "darwin") return checks;
 

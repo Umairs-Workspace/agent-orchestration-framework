@@ -30,10 +30,12 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // AOF_GLOBAL_HOME is a disposable temp dir — real session records are written here.
 import assert from "node:assert/strict";
 import { existsSync, realpathSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
+import { spawnSyncHardened } from "../../support/cli-spawn.mjs";
+import { withMeshDesktopFixture } from "../../support/mesh-desktop-fixture.mjs";
 
 const createMeshWorkerSessionSpawnHandler = _aofApplication.mesh.sessionSpawnHandler.createMeshWorkerSessionSpawnHandler;
 const resolveDefaultShell = _aofApplication.mesh.sessionSpawnHandler.resolveDefaultShell;
@@ -55,7 +57,7 @@ const sessionRecordPath = _aofHooks.meshSession.sessionRecordPath;
 const DEFAULT_SESSION_TTL_SECONDS = _aofHooks.meshSession.DEFAULT_SESSION_TTL_SECONDS;
 const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
 const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
-import { buildSessionSpawnFrame, buildSessionSpawnEnvelope, SESSION_SPAWN_ACK_KIND } from "@aof/mesh/session-spawn-directive";
+import { buildSessionSpawnFrame, buildSessionSpawnEnvelope, SESSION_SPAWN_ACK_KIND, CLAUDE_HOOK_ASSISTANT } from "@aof/mesh/session-spawn-directive";
 const TERMINAL_FRAME_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_FRAME_KIND;
 const TERMINAL_INPUT_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_INPUT_KIND;
 const buildTerminalInputEnvelope = _aofApplication.mesh.terminalRelayBridge.buildTerminalInputEnvelope;
@@ -1363,6 +1365,10 @@ export const meshSessionSpawnHandlerTests = [
   ...launchedClaudeSessionTests(),
   // 191/03 task 01 (and task 02's E5) — a node ends only a session it launched. Hoisted below.
   ...endLaunchedSessionTests(),
+  // 191/01 task 04 (@bug, F-05) — a Claude launch keeps one record under Claude's own label. Hoisted below.
+  ...claudeLabelLaunchTests(),
+  // 191/08 — a single-node control opens its own sessions (191/ADR-001 amendment 2026-11-14). Hoisted below.
+  ...singleNodeControlTests(),
 ];
 
 // ═══ 191/00 task 00: the control node hosts a launched session (191/ADR-001) ══════════════════
@@ -1404,11 +1410,16 @@ async function withControlFixture(fn, { relay = true } = {}) {
   }, { milestoneNumber: "191", storySlug: "ctl", storyNumber: "00" });
 }
 
-// startControl(fixture, overrides) — the control launcher, with a recorder on every edge.
-async function startControl(fixture, { pty = createFakePty(), factory } = {}) {
+// startControl(fixture, overrides) — the control launcher, with a recorder on every edge. The two
+// seams that would bind a socket record what they were ASKED to bind (191/08: a test never binds
+// 4181, 4182 or 4183 — the live daemons on this laptop hold them).
+async function startControl(fixture, { pty = createFakePty(), factory, launch = {} } = {}) {
   const pushes = [];
   const dispatched = [];
   const routers = [];
+  const streamServerArgs = [];
+  const relayModeCalls = [];
+  const pushConfigs = [];
   const ptySpawn = createRecordingPtySpawn({ pty });
   const intervals = createManualIntervals();
   const handle = await startLauncher(fixture.workspace, {
@@ -1420,13 +1431,16 @@ async function startControl(fixture, { pty = createFakePty(), factory } = {}) {
     terminalIngress: false,
     globalWorkStoreOptions: { env: fixture.env },
     now: () => NOW,
-    startControlStreamServer: async () => ({
-      stop() {},
-      updatePeers() {},
-      dispatchDirective: (directive) => { dispatched.push(directive); return { sent: false, code: "target-not-connected" }; },
-    }),
-    relayMode: async () => ({ stop() {} }),
-    createTerminalRelayPushTransport: () => ({ push: (envelope) => { pushes.push(envelope); }, close() {} }),
+    startControlStreamServer: async (args) => {
+      streamServerArgs.push(args);
+      return {
+        stop() {},
+        updatePeers() {},
+        dispatchDirective: (directive) => { dispatched.push(directive); return { sent: false, code: "target-not-connected" }; },
+      };
+    },
+    relayMode: async (config, args) => { relayModeCalls.push({ config, args }); return { stop() {} }; },
+    createTerminalRelayPushTransport: (config) => { pushConfigs.push(config); return { push: (envelope) => { pushes.push(envelope); }, close() {} }; },
     startTerminalInputSubscriber: async (router) => { routers.push(router); return { stop() {} }; },
     ...(factory ? { createMeshWorkerSessionSpawnHandler: factory } : {}),
     sessionSpawnHandlerOptions: {
@@ -1434,8 +1448,9 @@ async function startControl(fixture, { pty = createFakePty(), factory } = {}) {
       setIntervalImpl: intervals.setIntervalImpl,
       clearIntervalImpl: intervals.clearIntervalImpl,
     },
+    ...launch,
   });
-  return { handle, pushes, dispatched, routers, ptySpawn, intervals, pty };
+  return { handle, pushes, dispatched, routers, ptySpawn, intervals, pty, streamServerArgs, relayModeCalls, pushConfigs };
 }
 
 const CTL_KEY = { nodeId: CTL_ID, workspaceId: CTL_WS, assistant: "claude", sessionId: CTL_SESSION };
@@ -1523,11 +1538,16 @@ function controlHostsLaunchedSessionTests() {
       }),
     },
     {
-      name: "191/00 task00 — a control with no mesh.relay.url hosts nothing locally: no handler, no PTY, and a spawn for its own node is refused as before",
+      // SUPERSEDED IN PART by 191/ADR-001 amendment 2026-11-14 §2–§3 (191/08): a NOMINATED control
+      // with no `mesh.relay.url` now derives a loopback relay, so "no URL" no longer means "no relay"
+      // (191/08 task 01 proves that). What still holds is the rule this scenario pins — no relay
+      // leg, no local session, and the spawn refused as before — which is now reached only by a
+      // control whose relay leg is off (`relay: false`).
+      name: "191/00 task00 (as amended by 191/ADR-001 2026-11-14 §3) — a control with no relay leg hosts nothing locally: no handler, no PTY, and a spawn for its own node is refused as before",
       run: async () => withControlFixture(async (fixture) => {
         let built = 0;
         const factory = (...args) => { built += 1; return createMeshWorkerSessionSpawnHandler(...args); };
-        const control = await startControl(fixture, { factory });
+        const control = await startControl(fixture, { factory, launch: { relay: false } });
         try {
           assert.equal(control.handle.role, "control");
           assert.equal(built, 0, "no local session-spawn handler is built without a relay");
@@ -1578,7 +1598,9 @@ const LAUNCH_NODE = "wsl-2";
 const LAUNCH_WS = "ws-a";
 const LAUNCH_ID = "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10";
 const CLAUDE_RC = "claude-remote-control";
-const LAUNCH_KEY = { nodeId: LAUNCH_NODE, workspaceId: LAUNCH_WS, assistant: "claude", sessionId: LAUNCH_ID };
+// A Claude launch registers under the label Claude's own hooks key it by (191/ADR-002 amendment
+// 2026-11-14 §4, F-05) — the contract's literal, asserted as a literal.
+const LAUNCH_KEY = { nodeId: LAUNCH_NODE, workspaceId: LAUNCH_WS, assistant: "claude-code", sessionId: LAUNCH_ID };
 const E1_LINE = `exec claude --remote-control aof-0b9e6c1e --session-id ${LAUNCH_ID}\n`;
 const E2_LINE = `claude --remote-control aof-0b9e6c1e --session-id ${LAUNCH_ID} & exit\r\n`;
 
@@ -1795,11 +1817,11 @@ function launchedClaudeSessionTests() {
 
     // ── task 02 ──
     {
-      name: "191/01 task02 — Claude's hook ping lands on the launcher's record: a launched session registered as (wsl-2, ws-a, claude, id), then the REAL `aof session ping` hook path from that session's cwd → the session index holds exactly one record for ws-a on wsl-2",
+      name: "191/01 task02 — Claude's hook ping lands on the launcher's record: a launched session registered as (wsl-2, ws-a, claude-code, id), then the REAL `aof session ping` hook path from that session's cwd → the session index holds exactly one record for ws-a on wsl-2",
       run: async () => withLaunchFixture(async (fixture) => {
         const { handler, ptySpawn } = orderedLaunchHandler(fixture);
         await handler(launchFrame());
-        assert.ok(await readSessionRecord(fixture.workspace, LAUNCH_KEY), "the launcher registered (wsl-2, ws-a, claude, id)");
+        assert.ok(await readSessionRecord(fixture.workspace, LAUNCH_KEY), "the launcher registered (wsl-2, ws-a, claude-code, id)");
 
         // Claude's UserPromptSubmit hook: the payload Claude Code sends — its session id (the one
         // the launcher handed it with --session-id) and its cwd — and nothing else. The node id
@@ -1816,6 +1838,7 @@ function launchedClaudeSessionTests() {
         assert.equal(envelope.nodeId, LAUNCH_NODE, "the hook resolved this node");
         assert.equal(envelope.workspaceId, LAUNCH_WS, "…and the launcher's workspace id from the session's cwd");
         assert.equal(envelope.sessionId, LAUNCH_ID, "…under the control-minted id");
+        assert.equal(envelope.assistant, "claude-code", "…and the hook's own label, the one the launcher registered");
 
         const sessions = await readLiveSessions(fixture.workspace, LAUNCH_NODE, { now: plusSeconds(NOW, 6), config: fixture.workspace.config });
         const index = buildSessionIndex({ nodes: [{ nodeId: LAUNCH_NODE, freshness: "live", presence: { sessions } }] });
@@ -1855,7 +1878,7 @@ const END_WS = "ws-a";
 const END_A = "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10";
 const END_B = "5d2a7f40-1c3e-4b6a-9e8d-0f1a2b3c4d5e";
 const END_STRANGER = "9f8e7d6c-5b4a-4321-8fed-cba987654321";
-const endKey = (sessionId) => ({ nodeId: END_NODE, workspaceId: END_WS, assistant: "claude", sessionId });
+const endKey = (sessionId) => ({ nodeId: END_NODE, workspaceId: END_WS, assistant: "claude-code", sessionId });
 
 // endHandler(fixture, { now, ptys }) — a handler whose `endSession` calls are recorded. `clock.at`
 // overrides the handler's clock from the moment a lane sets it.
@@ -2150,5 +2173,518 @@ function endLaunchedSessionTests() {
         assert.deepEqual(endCalls, [END_A]);
       }),
     },
+  ];
+}
+
+// ═══ 191/01 task 04 (@bug, F-05): a Claude launch keeps one record under Claude's own label ══════
+//
+// Verify measured two records and two presence entries for ONE launched id: the launcher's
+// (`claude`, relaying) and Claude's own hook's (`claude-code`, not relaying), and the index reading
+// the hook's for up to 30 s after each ping. The Background is the SHIPPED handler launching
+// "claude-remote-control" for ws-a on wsl-2; the hooks are the REAL `aof session start|ping` face,
+// from that session's cwd; what is counted is what is on disk and in the node's own presence.
+const HOOK_LABEL = "claude-code";
+
+// recordsOnDisk(workspace, sessionId) → every session record file under this node's partition whose
+// record names `sessionId` — counted off the directory, never looked up by a key the test chose.
+async function recordsOnDisk(workspace, sessionId) {
+  const dir = path.dirname(sessionRecordPath(workspace, LAUNCH_KEY));
+  const out = [];
+  for (const name of await readdir(dir).catch(() => [])) {
+    if (!name.endsWith(".json")) continue;
+    const record = JSON.parse(await readFile(path.join(dir, name), "utf8"));
+    if (record.sessionId === sessionId) out.push(record);
+  }
+  return out;
+}
+
+const presenceFor = async (fixture, sessionId, at) =>
+  (await readLiveSessions(fixture.workspace, LAUNCH_NODE, { now: at, config: fixture.workspace.config }))
+    .filter((entry) => entry.sessionId === sessionId);
+
+// The two hooks Claude Code fires for the session the launcher handed `--session-id`: its payload
+// carries the id and the cwd and nothing else.
+async function hookPing(fixture, cwd, { verb = "ping", event = "UserPromptSubmit", at = plusSeconds(NOW, 5) } = {}) {
+  const envelope = await runHook([verb, "--json"], {
+    cwd,
+    env: fixture.env,
+    stdinText: JSON.stringify({ session_id: LAUNCH_ID, cwd, hook_event_name: event }),
+    now: () => at,
+    loadWorkspace: (dir, config) => loadWorkspace(dir, config, { env: fixture.env }),
+  });
+  assert.equal(envelope.ok, true, `the ${event} hook succeeded: ${JSON.stringify(envelope)}`);
+  return envelope;
+}
+
+// Background: a launched session LAUNCH_ID with launch "claude-remote-control" for ws-a on wsl-2.
+async function withClaudeLaunch(fn, fixtureOptions) {
+  return withLaunchFixture(async (fixture) => {
+    const built = orderedLaunchHandler(fixture);
+    await built.handler(launchFrame());
+    assert.deepEqual(built.wire.acks.map((ack) => [ack.sessionId, ack.ok]), [[LAUNCH_ID, true]], "Background: the session is launched");
+    try {
+      return await fn({ fixture, ...built, cwd: built.ptySpawn.calls[0].options.cwd });
+    } finally {
+      await built.handler.stopAll();
+    }
+  }, fixtureOptions);
+}
+
+function claudeLabelLaunchTests() {
+  return [
+    {
+      name: "191/01 task04 — the launch and the hook upsert one record: after Claude's SessionStart and prompt hooks ping the launched id from its cwd, exactly one session record exists on disk for that id, keyed (wsl-2, ws-a, claude-code, id), and exactly one presence entry",
+      run: async () => withClaudeLaunch(async ({ fixture, cwd }) => {
+        assert.equal(CLAUDE_HOOK_ASSISTANT, HOOK_LABEL, "the label's one home spells the hook's label");
+        const started = await hookPing(fixture, cwd, { verb: "start", event: "SessionStart", at: plusSeconds(NOW, 2) });
+        const pinged = await hookPing(fixture, cwd, { at: plusSeconds(NOW, 5) });
+        assert.equal(started.assistant, HOOK_LABEL, "the SessionStart hook keys the session claude-code");
+        assert.equal(pinged.assistant, HOOK_LABEL, "…and so does the prompt hook");
+
+        // Every record on disk for the id, each by its key: exactly one, keyed by the hook's label.
+        const records = await recordsOnDisk(fixture.workspace, LAUNCH_ID);
+        assert.deepEqual(
+          records.map((record) => [record.nodeId, record.workspaceId, record.assistant, record.sessionId]),
+          [[LAUNCH_NODE, LAUNCH_WS, "claude-code", LAUNCH_ID]],
+          `exactly one session record on disk for the id, keyed (wsl-2, ws-a, claude-code, id): ${JSON.stringify(records)}`,
+        );
+        assert.ok(existsSync(sessionRecordPath(fixture.workspace, LAUNCH_KEY)), "…at that key's own leaf");
+        const presence = await presenceFor(fixture, LAUNCH_ID, plusSeconds(NOW, 6));
+        assert.deepEqual(presence.map((entry) => entry.assistant), ["claude-code"], `exactly one presence entry for the id: ${JSON.stringify(presence)}`);
+      }),
+    },
+    {
+      name: "191/01 task04 — a hook ping never demotes the launched pane: the launched record reads relaying true, the hook pings (the real hook path, and a ping stating relaying false) for that id, and the record still reads relaying true",
+      run: async () => withClaudeLaunch(async ({ fixture, cwd }) => {
+        assert.equal((await readSessionRecord(fixture.workspace, LAUNCH_KEY))?.relaying, true, "Given: the launched record reads relaying: true");
+        // The real hook path states nothing about relaying, which is `false`…
+        await hookPing(fixture, cwd, { at: plusSeconds(NOW, 5) });
+        // …and a ping that SAYS false, under the hook's own key.
+        await _aofHooks.meshSession.pingSession(fixture.workspace, { ...LAUNCH_KEY, assistant: CLAUDE_HOOK_ASSISTANT, repo: "aof", relaying: false, now: plusSeconds(NOW, 7) });
+        const records = await recordsOnDisk(fixture.workspace, LAUNCH_ID);
+        assert.deepEqual(
+          records.map((record) => [record.assistant, record.relaying, record.lastPingAt]),
+          [["claude-code", true, plusSeconds(NOW, 7)]],
+          "still one record, and it still reads relaying: true after the hook's ping landed on it",
+        );
+        const presence = await presenceFor(fixture, LAUNCH_ID, plusSeconds(NOW, 8));
+        assert.deepEqual(presence.map((entry) => entry.relaying), [true], "and the node's presence reads the pane as relaying");
+      }),
+    },
+    {
+      name: "191/01 task04 — the session is still found by id and by name: `aof mesh session list` lists it once, as \"ws-a-0b9e6c1e\", and `aof mesh session end ws-a-0b9e6c1e` ends that one record",
+      run: async () => withClaudeLaunch(async ({ fixture, cwd, handler }) => {
+        await hookPing(fixture, cwd, { verb: "start", event: "SessionStart", at: plusSeconds(NOW, 2) });
+        await hookPing(fixture, cwd, { at: plusSeconds(NOW, 5) });
+        const at = plusSeconds(NOW, 6);
+        // The mesh status payload as the control projects it: the node's own presence and the index.
+        const status = async () => {
+          const sessions = (await readLiveSessions(fixture.workspace, LAUNCH_NODE, { now: at, config: fixture.workspace.config }))
+            .map((entry) => ({ ...entry, nodeId: LAUNCH_NODE }));
+          const nodes = [{ nodeId: LAUNCH_NODE, freshness: "live", presence: { sessions } }];
+          return { workspaces: [{ workspaceId: LAUNCH_WS, projectRoot: fixture.root, name: "ws-a" }], nodes, sessions: buildSessionIndex({ nodes }).sessions };
+        };
+        // The end lane as the node runs it: the pushed envelope reaches the handler's end.
+        const pushed = [];
+        const push = {
+          push: async (envelope) => { pushed.push(envelope); await handler.end(envelope.signal.sessionId); },
+          close() {},
+        };
+        let clockMs = Date.parse(at);
+        const realNow = Date.now;
+        Date.now = () => Date.parse(at);
+        try {
+          const { meshSessionListCommand, meshSessionEndCommand } = createMeshSessionVerbs({
+            queryGlobalMeshStatus: status,
+            createTerminalRelayPushTransport: () => push,
+            isSessionLive: _aofHooks.meshSession.isSessionLive,
+            resolveSessionTtlSeconds: _aofHooks.meshSession.resolveSessionTtlSeconds,
+            reportDegrade: () => {},
+          });
+          const ctx = { workspace: { config: {} }, sessionEndClock: { now: () => clockMs, sleep: async (ms) => { clockMs += ms; } } };
+          const listed = await meshSessionListCommand.run({}, ctx);
+          assert.deepEqual(listed.sessions.map((entry) => [entry.sessionId, entry.name]), [[LAUNCH_ID, "ws-a-0b9e6c1e"]], "listed once, under its name");
+
+          const ended = await meshSessionEndCommand.run({ session: "ws-a-0b9e6c1e" }, ctx);
+          assert.equal(pushed.length, 1, "one end was sent");
+          assert.equal(ended.ended, true, `the end is confirmed from the node's presence: ${JSON.stringify(ended)}`);
+          assert.equal(ended.sessionId, LAUNCH_ID);
+        } finally {
+          Date.now = realNow;
+        }
+        assert.deepEqual(await recordsOnDisk(fixture.workspace, LAUNCH_ID), [], "that one record is ended, and none is left beside it");
+      }, { name: "ws-a" }),
+    },
+    {
+      name: "191/01 task04 — Rule: the other launches keep their labels (Examples: a bare-shell launch from the fleet registers its record as \"claude\")",
+      run: async () => withLaunchFixture(async (fixture) => {
+        // The fleet route's frame: no launch, and no assistant of its own, so the builder's default.
+        const fleetFrame = buildSessionSpawnFrame(LAUNCH_NODE, { sessionId: LAUNCH_ID, workspaceId: LAUNCH_WS, itemRef: null, at: NOW });
+        assert.ok(!Object.hasOwn(fleetFrame, "launch"), "a fleet frame names no launch");
+        const { handler, pty } = orderedLaunchHandler(fixture);
+        await handler(fleetFrame);
+        assert.deepEqual(pty.writes, [], "a bare shell: nothing typed");
+        const records = await recordsOnDisk(fixture.workspace, LAUNCH_ID);
+        assert.deepEqual(records.map((record) => record.assistant), ["claude"], "its record's assistant label is \"claude\"");
+        await handler.stopAll();
+      }),
+    },
+  ];
+}
+
+// ═══ 191/08: a single-node control opens its own sessions (191/ADR-001 amendment 2026-11-14) ═════
+//
+// The control "ctl-1" is launched from a workspace of its OWN ("ctl-home"), as the desktop app's
+// cwd-less daemon is; the project a channel serves, "ws-a", is a SEPARATE git checkout, registered
+// by its descriptor `project_root` and carrying neither a `mesh.repo.published` marker nor a managed
+// checkout — the shape F-03 measured on this laptop. Only the edges that would bind or dial a socket
+// are injected (the stream server, the broker, the loopback push, the self-subscription, the PTY),
+// and each records what it was ASKED for: a test never binds 4181, 4182 or 4183.
+const CTL_HOME_WS = "ctl-home";
+const WORKER_08 = "wsl-2";
+const SERVED_WS = "ws-a";
+const DERIVED_RELAY = "ws://127.0.0.1:4183/ws/relay";
+const SET_RELAY = "ws://127.0.0.1:4182/ws/relay";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const loopbackRelayUrl = _aofApplication.mesh.terminalRelayBridge.loopbackRelayUrl;
+
+// seedDescriptor(home, { workspaceId, projectRoot }) — a workspace REGISTERED on this machine: the
+// descriptor row `resolveWorkspaceProjectRoot` reads, and nothing else.
+async function seedDescriptor(home, { workspaceId, projectRoot }) {
+  const store = await openGlobalWorkProjectionStore({ env: { AOF_GLOBAL_HOME: home } });
+  try {
+    store.db.prepare(`
+      INSERT OR REPLACE INTO global_workspace_descriptors (workspace_id, project_root, work_dir, name, mesh_enabled, control_node, member_node_ids_json, published_at, descriptor_path)
+      VALUES (?, ?, ?, ?, 1, ?, '[]', ?, ?)
+    `).run(workspaceId, projectRoot, path.join(projectRoot, "wiki", "work"), path.basename(projectRoot), CTL_ID, NOW, path.join(projectRoot, ".aof", "descriptor.json"));
+  } finally {
+    store.close();
+  }
+}
+
+// withSingleNodeControl(fn, { url, address, nominated }) — the control's launch workspace, the
+// served project "ws-a" at its own folder, and a registered "ws-c" whose folder is gone.
+async function withSingleNodeControl(fn, { url = null, address = "127.0.0.1", nominated = true } = {}) {
+  return withMeshWorkerExecFixture(async (served) => {
+    const servedConfigPath = path.join(served.root, ".aof", "aof.config.json");
+    const servedConfig = JSON.parse(await readFile(servedConfigPath, "utf8"));
+    servedConfig.name = "served";
+    servedConfig.mesh = { workspaceId: SERVED_WS };
+    await writeFile(servedConfigPath, `${JSON.stringify(servedConfig, null, 2)}\n`, "utf8");
+
+    return withMeshWorkerExecFixture(async (fixture) => {
+      const configPath = path.join(fixture.root, ".aof", "aof.config.json");
+      const onDisk = JSON.parse(await readFile(configPath, "utf8"));
+      onDisk.mesh = {
+        ...onDisk.mesh,
+        nodeId: CTL_ID,
+        workspaceId: CTL_HOME_WS,
+        fabric: "direct",
+        address,
+        relay: { controlNode: nominated ? CTL_ID : "ctl-9", ...(url != null ? { url } : {}) },
+      };
+      await writeFile(configPath, `${JSON.stringify(onDisk, null, 2)}\n`, "utf8");
+      await seedDescriptor(fixture.home, { workspaceId: SERVED_WS, projectRoot: served.root });
+      await seedDescriptor(fixture.home, { workspaceId: "ws-c", projectRoot: path.join(fixture.tmp, "gone") });
+      const workspace = await loadWorkspace(fixture.root, undefined, { env: fixture.env });
+      await publishNodeRecord(workspace, CTL_ID, { nodeId: CTL_ID, host: CTL_ID, os: "darwin", runtimes: [], skills: [], aofVersion: "1.0.0", publishedAt: NOW });
+      const prior = process.env.AOF_GLOBAL_HOME;
+      process.env.AOF_GLOBAL_HOME = fixture.home;
+      try {
+        return await fn({ ...fixture, workspace, served });
+      } finally {
+        if (prior === undefined) delete process.env.AOF_GLOBAL_HOME; else process.env.AOF_GLOBAL_HOME = prior;
+      }
+    }, { milestoneNumber: "191", storySlug: "ctl", storyNumber: "08" });
+  }, { milestoneNumber: "07", storySlug: "served", storyNumber: "01" });
+}
+
+const servedEnvelope = ({ workspaceId = SERVED_WS, itemRef = null, sessionId = CTL_SESSION } = {}) =>
+  buildSessionSpawnEnvelope(CTL_ID, { sessionId, workspaceId, assistant: "claude", itemRef, at: NOW });
+const spawnAcks = (control) => control.pushes.filter((envelope) => envelope.kind === SESSION_SPAWN_ACK_KIND);
+
+// The session records on disk for an id, counted off the directory (never looked up by a key).
+async function controlRecords(workspace, sessionId) {
+  const dir = path.dirname(sessionRecordPath(workspace, { nodeId: CTL_ID, workspaceId: SERVED_WS, assistant: "claude", sessionId }));
+  const out = [];
+  for (const name of await readdir(dir).catch(() => [])) {
+    if (!name.endsWith(".json")) continue;
+    const record = JSON.parse(await readFile(path.join(dir, name), "utf8"));
+    if (record.sessionId === sessionId) out.push(record);
+  }
+  return out;
+}
+
+// deliverSpawn(control, envelope) — the relay hands the frame to the router the launcher built;
+// resolves once the handler has acked it, either way.
+async function deliverSpawn(control, envelope) {
+  assert.equal(control.routers.length, 1, "the control subscribed ONE input router to its own broker");
+  control.routers[0].apply(envelope);
+  await waitFor(() => spawnAcks(control).some((ack) => ack.signal?.sessionId === envelope.signal.sessionId), { label: "the spawn's ack on the loopback push" });
+  return spawnAcks(control).find((ack) => ack.signal?.sessionId === envelope.signal.sessionId);
+}
+
+function singleNodeControlTests() {
+  return [
+    // ══ task 00 · the control opens a served project at its registered folder ══
+    {
+      name: "191/08 task00 — a spawn for the control's own node opens the PTY in the registered folder: ws-a (no marker, no managed checkout) opens at its descriptor root, exactly one session record is written for ws-a on ctl-1, and an ok session-spawn-ack is pushed",
+      run: async () => withSingleNodeControl(async (fixture) => {
+        assert.equal(fixture.served.workspace.config?.mesh?.repo, undefined, "Background: ws-a carries no mesh.repo.published marker");
+        assert.equal(existsSync(meshCheckoutPath(SERVED_WS, { env: fixture.env })), false, "…and has no managed checkout");
+        const control = await startControl(fixture);
+        try {
+          assert.equal(control.handle.role, "control");
+          const ack = await deliverSpawn(control, servedEnvelope());
+          assert.deepEqual(ack, { kind: SESSION_SPAWN_ACK_KIND, nodeId: CTL_ID, signal: { sessionId: CTL_SESSION, ok: true, code: null } }, "an ok session-spawn-ack for the session is pushed");
+          assert.equal(control.ptySpawn.calls.length, 1, "one PTY is spawned");
+          const cwd = control.ptySpawn.calls[0].options.cwd;
+          assert.ok(existsSync(cwd), `…in a folder that exists (a worker's managed checkout does not): ${cwd}`);
+          assert.equal(realpathSync(cwd), realpathSync(fixture.served.root), "…with its cwd at the registered project folder of ws-a");
+          const records = await controlRecords(fixture.workspace, CTL_SESSION);
+          assert.deepEqual(records.map((record) => [record.nodeId, record.workspaceId]), [[CTL_ID, SERVED_WS]], `exactly one session record, for workspace ws-a on ctl-1: ${JSON.stringify(records)}`);
+          assert.equal(control.dispatched.length, 0, "never dispatchDirective");
+        } finally {
+          control.handle.stop();
+        }
+      }),
+    },
+    {
+      name: "191/08 task00 — an item start opens in that item's worktree under the registered folder: item 07's live worktree in ws-a is where the PTY opens",
+      run: async () => withSingleNodeControl(async (fixture) => {
+        const itemTree = await addWorktree(fixture.served.root, "asg-live-07", "HEAD", { branch: meshItemBranchName("07") });
+        const control = await startControl(fixture);
+        try {
+          const ack = await deliverSpawn(control, servedEnvelope({ itemRef: "07" }));
+          assert.equal(ack.signal.ok, true, `the spawn succeeded: ${JSON.stringify(ack)}`);
+          const cwd = realpathSync(control.ptySpawn.calls[0].options.cwd);
+          assert.equal(cwd, realpathSync(itemTree), "the PTY opens in item 07's worktree");
+          assert.ok(cwd.startsWith(`${realpathSync(fixture.served.root)}${path.sep}`), "…which is under the registered project folder of ws-a");
+        } finally {
+          control.handle.stop();
+        }
+      }),
+    },
+    ...[
+      { workspace: "ws-b", state: "is not registered on ctl-1" },
+      { workspace: "ws-c", state: "is registered on ctl-1 with a folder that is gone" },
+    ].map(({ workspace, state }) => ({
+      name: `191/08 task00 — Rule: a workspace the control cannot open is refused and nothing is left behind (Examples: ${workspace} ${state}) → a failed session-spawn-ack with code session-repo-unavailable, no PTY, no session record`,
+      run: async () => withSingleNodeControl(async (fixture) => {
+        const control = await startControl(fixture);
+        try {
+          const ack = await deliverSpawn(control, servedEnvelope({ workspaceId: workspace }));
+          assert.deepEqual(ack.signal, { sessionId: CTL_SESSION, ok: false, code: "session-repo-unavailable" }, "a failed ack, session-repo-unavailable");
+          assert.equal(control.ptySpawn.calls.length, 0, "no PTY is spawned");
+          assert.deepEqual(await controlRecords(fixture.workspace, CTL_SESSION), [], "no session record is written");
+        } finally {
+          control.handle.stop();
+        }
+      }),
+    })),
+    {
+      name: "191/08 task00 — Rule: a worker is unchanged — a worker launcher on wsl-2 opens a session for ws-a in its managed checkout",
+      run: async () => withMeshWorkerExecFixture(async (served) => {
+        await withSpawnFixture(async (fixture) => {
+          // The worker node "wsl-2", whose control is "ctl-1".
+          const configPath = path.join(fixture.root, ".aof", "aof.config.json");
+          const onDisk = JSON.parse(await readFile(configPath, "utf8"));
+          onDisk.mesh = { ...onDisk.mesh, nodeId: WORKER_08 };
+          await writeFile(configPath, `${JSON.stringify(onDisk, null, 2)}\n`, "utf8");
+          const workspace = await withControlNode(fixture, "ctl-1");
+          // The managed checkout a clone-on-miss leaves: a git checkout of ws-a pinning its own id.
+          const checkout = meshCheckoutPath(SERVED_WS, { env: fixture.env });
+          const cloned = spawnSyncHardened("git", ["clone", "-q", served.root, checkout], { encoding: "utf8" });
+          assert.equal(cloned.status, 0, `the managed checkout is cloned: ${cloned.stderr}`);
+          // `.aof/` is git-ignored, so the clone carries none: the clone-time pin is written here.
+          await mkdir(path.join(checkout, ".aof"), { recursive: true });
+          await writeFile(path.join(checkout, ".aof", "aof.config.json"), `${JSON.stringify({ name: "served", work: { dir: "./wiki/work" }, mesh: { workspaceId: SERVED_WS } }, null, 2)}\n`, "utf8");
+          await seedNodeWorkspaceMembership({ home: fixture.home }, { nodeId: WORKER_08, workspaceId: SERVED_WS });
+          await publishNodeRecord(workspace, WORKER_08, { nodeId: WORKER_08, host: WORKER_08, os: "linux", runtimes: [], skills: [], aofVersion: "1.0.0", publishedAt: NOW });
+          const transport = createFakeTransport();
+          const ptySpawn = createRecordingPtySpawn({ pty: createFakePty() });
+          const intervals = createManualIntervals();
+          const handle = await startLauncher(workspace, {
+            ticker: manualTicker(),
+            peerPollTicker: manualTicker(),
+            globalWorkStoreOptions: { env: fixture.env },
+            resolveWorkerStreamTarget: async () => ({ target: "127.0.0.1" }),
+            createWorkerWsTransport: () => transport,
+            terminalIngress: false,
+            now: () => NOW,
+            sessionSpawnHandlerOptions: { ptySpawn, setIntervalImpl: intervals.setIntervalImpl, clearIntervalImpl: intervals.clearIntervalImpl },
+          });
+          try {
+            assert.equal(handle.role, "worker", "the node resolves as a worker");
+            transport.deliver(buildSessionSpawnFrame(WORKER_08, { sessionId: "s-worker-08", workspaceId: SERVED_WS, assistant: "claude", itemRef: null, at: NOW }));
+            await waitFor(() => transport.frames.some((frame) => frame.kind === SESSION_SPAWN_ACK_KIND), { label: "the worker's spawn ack" });
+            const ack = transport.frames.find((frame) => frame.kind === SESSION_SPAWN_ACK_KIND);
+            assert.equal(ack.ok, true, `the worker opened the session: ${JSON.stringify(ack)}`);
+            assert.equal(ptySpawn.calls.length, 1, "one PTY is spawned");
+            assert.equal(realpathSync(ptySpawn.calls[0].options.cwd), realpathSync(checkout), "…with its cwd at the managed checkout of ws-a");
+          } finally {
+            handle.stop();
+          }
+        });
+      }, { milestoneNumber: "07", storySlug: "served", storyNumber: "01" }),
+    },
+
+    // ══ task 01 · a nominated control always has a loopback relay ══
+    {
+      name: "191/08 task01 — Rule: the derivation — loopbackRelayUrl answers by nomination and configuration (Examples: unset + nominated → ws://127.0.0.1:4183/ws/relay; unset + not nominated → null; ws://127.0.0.1:4182/ws/relay + nominated → itself; + not nominated → itself)",
+      run() {
+        const config = (url, nominated) => ({ mesh: { nodeId: CTL_ID, relay: { controlNode: nominated ? CTL_ID : "ctl-9", ...(url != null ? { url } : {}) } } });
+        const rows = [
+          [null, true, DERIVED_RELAY],
+          [null, false, null],
+          [SET_RELAY, true, SET_RELAY],
+          [SET_RELAY, false, SET_RELAY],
+        ];
+        for (const [url, nominated, answer] of rows) {
+          assert.equal(loopbackRelayUrl(config(url, nominated)), answer, `url ${url ?? "unset"}, ${nominated ? "nominated" : "not nominated"} → ${answer}`);
+        }
+        assert.equal(loopbackRelayUrl({ mesh: { nodeId: CTL_ID, relay: { controlNode: CTL_ID, url: "" } } }), DERIVED_RELAY, "a blank URL is an unset one");
+        assert.equal(new URL(DERIVED_RELAY).pathname, _aofApplication.mesh.relay.RELAY_PATH, "the derived URL names the path the broker serves");
+      },
+    },
+    {
+      name: "191/08 task01 — a loopback control with no relay URL asks for 4182 and 4183: the stream server is asked to bind 127.0.0.1:4182, the relay port 4183, no EADDRINUSE warning is emitted, and a session-spawn handler is built for ctl-1",
+      run: async () => withSingleNodeControl(async (fixture) => {
+        const built = [];
+        const factory = (handlerOptions) => { built.push(handlerOptions.nodeId); return createMeshWorkerSessionSpawnHandler(handlerOptions); };
+        const control = await startControl(fixture, { factory });
+        try {
+          assert.equal(control.handle.role, "control");
+          assert.equal(control.streamServerArgs.length, 1, "one stream server is started");
+          assert.equal(control.streamServerArgs[0].bindAddress, "127.0.0.1", "…asked to bind 127.0.0.1");
+          assert.equal(control.streamServerArgs[0].port, 4182, "…port 4182");
+          assert.equal(control.relayModeCalls.length, 1, "one relay is started");
+          assert.equal(control.relayModeCalls[0].args.port, 4183, "the relay is asked to bind port 4183");
+          assert.deepEqual(control.handle.warnings.filter((warning) => /EADDRINUSE|relay-broker-start-failed/.test(String(warning.code))), [], "no EADDRINUSE warning is emitted");
+          assert.deepEqual(built, [CTL_ID], "a session-spawn handler is built for the control's own node");
+          assert.equal(control.routers.length, 1, "…and its router is subscribed, so a frame can reach it");
+        } finally {
+          control.handle.stop();
+        }
+      }),
+    },
+    {
+      name: "191/08 task01 — every reader on the control dials the derived relay: the push transport, the fleet subscriber transport and the mesh ui probe all resolve ws://127.0.0.1:4183/ws/relay, and the probe reports the relay as configured",
+      run: async () => withSingleNodeControl(async (fixture) => {
+        const config = fixture.workspace.config;
+        assert.equal(config.mesh.relay.url, undefined, "Given: no mesh.relay.url");
+        // Both factories dial `loopbackRelayUrl(config)` and nothing else (F-38.06b FIX 2, FF-19109
+        // read it at source); constructing either opens nothing, and neither is dialled here.
+        assert.equal(loopbackRelayUrl(config), DERIVED_RELAY, "the one derivation the readers dial answers the derived relay");
+        const push = _aofApplication.mesh.terminalRelayBridge.createTerminalRelayPushTransport(config);
+        const subscriber = _aofApplication.mesh.terminalMirror.createTerminalMirrorSubscriberTransport(config);
+        assert.ok(push != null, "the terminal push transport is built");
+        assert.ok(subscriber != null, "the fleet subscriber transport is built");
+        push.close();
+        const probe = await _aofApplication.mesh.uiServe.meshUiProbe({ projectDir: fixture.root, port: 0 });
+        assert.equal(probe.relayConfigured, true, "the mesh ui probe reports the relay as configured");
+        // …and a node that is not the control resolves none of them, as before.
+        const notControl = { ...config, mesh: { ...config.mesh, relay: { controlNode: "ctl-9" } } };
+        assert.equal(_aofApplication.mesh.terminalRelayBridge.createTerminalRelayPushTransport(notControl), null);
+        assert.equal(_aofApplication.mesh.terminalMirror.createTerminalMirrorSubscriberTransport(notControl), null);
+      }),
+    },
+    {
+      name: "191/08 task01 — Rule: a configured relay is unchanged — a control with mesh.relay.url ws://127.0.0.1:4182/ws/relay and address 192.168.1.20 asks the stream server for 192.168.1.20:4182, the relay for 4182, and its push transport dials ws://127.0.0.1:4182/ws/relay",
+      run: async () => withSingleNodeControl(async (fixture) => {
+        const control = await startControl(fixture);
+        try {
+          assert.equal(control.streamServerArgs[0].bindAddress, "192.168.1.20", "the stream server is asked to bind 192.168.1.20");
+          assert.equal(control.streamServerArgs[0].port, 4182, "…port 4182");
+          assert.equal(control.relayModeCalls[0].args.port, 4182, "the relay is asked to bind port 4182");
+          assert.equal(control.pushConfigs.length, 1, "one push transport is built");
+          assert.equal(loopbackRelayUrl(control.pushConfigs[0]), SET_RELAY, "it dials ws://127.0.0.1:4182/ws/relay");
+        } finally {
+          control.handle.stop();
+        }
+      }, { url: SET_RELAY, address: "192.168.1.20" }),
+    },
+    {
+      name: "191/08 task01 — Rule: invite and join still read the configured key — on a nominated control with no mesh.relay.url, `aof mesh invite` tells a worker no relay URL, as before",
+      run: async () => withSingleNodeControl(async (fixture) => {
+        const result = await _aofApplication.invoke("mesh:invite", { issuedAt: NOW }, { workspace: fixture.workspace, env: fixture.env });
+        assert.ok(typeof result.code === "string" && result.code.length > 0, "the invite is minted on the control");
+        assert.equal(result.relayUrl, null, "it reads no relay URL: a worker can never dial a loopback address");
+        assert.equal(result.control, CTL_ID);
+      }),
+    },
+    ...[
+      { verb: "`aof mesh session start`", code: "session-dispatch-unavailable" },
+      { verb: "`aof mesh session end`", code: "session-dispatch-unavailable" },
+    ].map(({ verb, code }) => ({
+      name: `191/08 task01 — Rule: the refusals name the nomination first (Examples: ${verb} on a node that is not the nominated control, with no mesh.relay.url → ${code}, the message naming mesh.relay.controlNode before mesh.relay.url)`,
+      run: async () => {
+        const projectRoot = repoRoot;
+        const config = { mesh: { nodeId: "wsl-2", relay: { controlNode: "ctl-1" } } };
+        const realNow = Date.now();
+        const verbs = createMeshSessionVerbs({
+          queryGlobalMeshStatus: async () => ({
+            workspaces: [{ workspaceId: SERVED_WS, projectRoot, name: "aof" }],
+            nodes: [{ nodeId: "wsl-2", freshness: "live", presence: { sessions: [] } }],
+            sessions: [{ sessionId: CTL_SESSION, nodeId: "wsl-2", workspaceId: SERVED_WS, repo: "aof", assistant: "claude", lastPingAt: new Date(realNow).toISOString() }],
+          }),
+          createTerminalRelayPushTransport: _aofApplication.mesh.terminalRelayBridge.createTerminalRelayPushTransport,
+          createTerminalMirrorSubscriberTransport: _aofApplication.mesh.terminalMirror.createTerminalMirrorSubscriberTransport,
+          isSessionLive: _aofHooks.meshSession.isSessionLive,
+          resolveSessionTtlSeconds: _aofHooks.meshSession.resolveSessionTtlSeconds,
+          reportDegrade: () => {},
+        });
+        const run = verb.includes("start")
+          ? () => verbs.meshSessionStartCommand.run({ project: path.basename(projectRoot) }, { workspace: { config } })
+          : () => verbs.meshSessionEndCommand.run({ session: CTL_SESSION }, { workspace: { config } });
+        await assert.rejects(run, (error) => {
+          assert.equal(error.code, code, `refused with ${code}: ${error.message}`);
+          const nomination = error.message.indexOf("mesh.relay.controlNode");
+          const url = error.message.indexOf("mesh.relay.url");
+          assert.ok(nomination >= 0 && url > nomination, `the message names mesh.relay.controlNode before mesh.relay.url: ${error.message}`);
+          return true;
+        });
+      },
+    })),
+
+    // ══ task 02 · the preflight names the control's relay ══
+    ...[
+      { nomination: "is the nominated control", nominated: true, address: "127.0.0.1", url: null, result: "pass", says: (message) => message.includes(DERIVED_RELAY) && /derived: no `mesh\.relay\.url` is set/.test(message), saysWhat: "names ws://127.0.0.1:4183/ws/relay and says it is derived because no mesh.relay.url is set" },
+      { nomination: "is the nominated control", nominated: true, address: "192.168.1.20", url: "ws://127.0.0.1:4182/ws/relay", result: "pass", says: (message) => message.includes(SET_RELAY), saysWhat: "names ws://127.0.0.1:4182/ws/relay" },
+      { nomination: "is the nominated control", nominated: true, address: "127.0.0.1", url: "ws://127.0.0.1:4182/ws/relay", result: "fail", says: (message) => /remove `mesh\.relay\.url` from `~\/\.aof\/aof\.config\.json`/.test(message) && /Changing the URL's port does not help/.test(message) && message.includes(DERIVED_RELAY), saysWhat: "says to remove mesh.relay.url from ~/.aof/aof.config.json, and that changing its port does not help" },
+      { nomination: "is not the nominated control", nominated: false, address: "127.0.0.1", url: null, result: "skip", says: (message) => /not the control/.test(message), saysWhat: "says this node is not the control" },
+    ].map((row) => ({
+      name: `191/08 task02 — control-relay-loopback reports the relay (Examples: a node that ${row.nomination}, address ${row.address}, mesh.relay.url ${row.url ?? "unset"} → ${row.result}; its line ${row.saysWhat})`,
+      run: async () => withMeshDesktopFixture(async ({ installDir, appArtifactPath, bootstrapperArtifactPath }) => {
+        // The machine-wide config the daemons run under, as `~/.aof/aof.config.json` holds it.
+        const meshConfig = { mesh: { fabric: "direct", address: row.address, relay: { controlNode: row.nominated ? CTL_ID : "ctl-9", ...(row.url != null ? { url: row.url } : {}) } } };
+        const seams = {
+          env: {},
+          nodeId: CTL_ID,
+          claudeFn: async () => ({ stdout: JSON.stringify({ loggedIn: true }), stderr: "", code: 0 }),
+          buildInfoFn: () => ({ mode: "payload", buildId: "fixture.20261114T000000", installedAt: null }),
+          workspacesFn: async () => ({ ok: true, workspaces: [], skipped: [] }),
+          workspaceConfigFn: async () => ({ mesh: { workspaceId: "fixture-ws" } }),
+          settingsFn: async () => ({}),
+          hookFileFn: async () => true,
+          bundleHookFn: () => null,
+          meshConfigFn: async () => meshConfig,
+          platform: "win32",
+        };
+        const result = await _aofApplication.invoke(
+          "mesh:desktop-install",
+          { installDir, appArtifact: appArtifactPath, bootstrapperArtifact: bootstrapperArtifactPath, dryRun: true },
+          seams,
+        );
+        assert.equal(result.dryRun, true, "a dry run");
+        const rows = result.preflight.filter((entry) => entry.code === "control-relay-loopback");
+        assert.equal(rows.length, 1, "the preflight prints one control-relay-loopback row");
+        assert.equal(rows[0].status, row.result, `the row reads ${row.result}: ${rows[0].message}`);
+        assert.ok(row.says(rows[0].message), `its line ${row.saysWhat}: ${rows[0].message}`);
+        const printed = _aofApplication.getCommand("mesh:desktop-install").cli.render(result);
+        const text = Array.isArray(printed) ? printed.join("\n") : String(printed);
+        assert.ok(text.includes(`control-relay-loopback — ${rows[0].message}`), "…and it is the line the verb prints");
+      }),
+    })),
   ];
 }

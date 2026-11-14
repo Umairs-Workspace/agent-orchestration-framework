@@ -252,6 +252,9 @@ export const archTests = [
         const controlTicker = manualTicker();
         const server = fakeStreamServer({ connectedNodeIds: ["worker-a"] });
         const handle = await startLauncher(ws, {
+          // 191/08: a nominated control with no mesh.relay.url now derives a loopback relay on 4183
+          // (191/ADR-001 amendment 2026-11-14 §2); `relay: false` keeps this test off that real port.
+          relay: false,
           exec: async () => ({ stdout: JSON.stringify({ BackendState: "Running", Self: { HostName: "control-a", DNSName: "control-a.tail1a2b.ts.net.", TailscaleIPs: ["100.1.1.1"], Online: true }, Peer: {} }), status: 0 }),
           platform: "linux",
           peerPollTicker: manualTicker(),

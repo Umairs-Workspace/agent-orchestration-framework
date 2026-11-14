@@ -6,7 +6,7 @@ Feature: one session, one record, ended with Claude
   Claude that ends leaves no bare shell behind (§2).
 
   Scenario: Claude's hook ping lands on the launcher's record
-    Given a launched session "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10" registered as `(wsl-2, ws-a, claude, 0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10)`
+    Given a launched session "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10" registered as `(wsl-2, ws-a, claude-code, 0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10)`
     When the session hook path pings with session id "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10" from that session's cwd
     Then the session index holds exactly one record for workspace "ws-a" on "wsl-2"
 

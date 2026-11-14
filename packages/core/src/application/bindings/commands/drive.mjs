@@ -11,6 +11,7 @@ import { buildRunAttribution } from "@aof/execution/otel-attribution";
 
 import { resolveExecution, resolveExecutionResume, validateExecutionEnvelope, resolvePhaseRuntimes } from "@aof/execution/runtime-selection";
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
+import { CLAUDE_HOOK_ASSISTANT } from "@aof/mesh/session-spawn-directive";
 
 export function assembleCommandsDrive({ runtimeSessionServices, loopAskServices, agentSessionDriverServices, claudeTrustServices, degradeServices, runStoreServices, loopAskRequestServices, runHeartbeatConsumptionServices, effectsRunTransitionsServices, runSessionCaptureServices, commandsResolveServices, workObserveServices, runSpendIngestServices, meshStoreServices, meshTerminalRelayBridgeServices, meshSessionServices, commandsMeshSessionServices }) {
   // Core composition; @aof/work-loop owns the implementation.
@@ -64,6 +65,8 @@ export function assembleCommandsDrive({ runtimeSessionServices, loopAskServices,
       pingSession: meshSessionServices.pingSession,
       resolveNodeId: commandsMeshSessionServices.resolveNodeId,
       resolveWorkspaceId,
+      // The label Claude's own hooks key the record by (191/ADR-002 amendment §4): one home.
+      assistant: CLAUDE_HOOK_ASSISTANT,
     },
   });
 

@@ -15,6 +15,16 @@ export const SESSION_SPAWN_ACK_KIND = "session-spawn-ack";
 // Widening this set is an ADR, never an edit: FF-19102 pins it to exactly this one value.
 export const SESSION_LAUNCHES = Object.freeze(["claude-remote-control"]);
 
+// CLAUDE_HOOK_ASSISTANT — 191/ADR-002 amendment 2026-11-14 §4, the ONE home of the label Claude's
+// own hooks key a session record under (the third part of the m48 session key). Three readers take
+// it: the hook's default (`commands/session.mjs`), the handler for a `claude-remote-control` launch
+// (`session-spawn-handler.mjs`), and a loop drive's session stream (`loop-session-stream.mjs`,
+// through its `loopSession` port). Each upserts the record the others write, so one session is one
+// record and one presence entry. It lives here because this is a zero-import leaf both mesh readers
+// already import; `commands/session.mjs` imports the handler, so the handler reading the label from
+// there would close a cycle. FF-19110 holds the literal to this line.
+export const CLAUDE_HOOK_ASSISTANT = "claude-code";
+
 // knownSessionLaunch(value) → the value when it is a member of SESSION_LAUNCHES, else null. Exact
 // match: no trimming, no case folding — a value that is not byte-for-byte a member is dropped. The
 // ONE membership test: the builders below and the worker's handler (which receives the RAW wire

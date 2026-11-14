@@ -29,8 +29,10 @@ Feature: a spawn for the control's own node opens a local session
     When a `terminal-input` envelope for node "ctl-1", session "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10" with bytes "ls\r" arrives on the relay
     Then the PTY of session "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10" receives "ls\r"
 
-  Scenario: a control with no relay hosts nothing locally and refuses as before
-    Given a launcher started as the control node "ctl-1" with no `mesh.relay.url`
+  # Amended 2026-11-14 (ADR-001 amendment §3, F-08): a NOMINATED control with no `mesh.relay.url`
+  # now derives a relay (191/08), so "no relay" is a control whose relay is switched off.
+  Scenario: a control with no relay hosts nothing locally and refuses as before (as amended)
+    Given a launcher started as the control node "ctl-1" with its relay switched off
     When a `session-spawn` frame for node "ctl-1" reaches the router
     Then no PTY is spawned
     And the spawn is reported refused for that session, as it was before this story

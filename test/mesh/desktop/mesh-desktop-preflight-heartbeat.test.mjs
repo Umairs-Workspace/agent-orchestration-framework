@@ -70,6 +70,9 @@ function probes(overrides = {}) {
     settingsFn: overrides.settingsFn ?? (async () => REGISTERED),
     hookFileFn: overrides.hookFileFn ?? (async () => true),
     bundleHookFn: overrides.bundleHookFn ?? (() => DECLARATION),
+    // 191/08 — `control-relay-loopback`'s machine-wide config, injected and healthy, so this suite
+    // reads no real `~/.aof/aof.config.json`.
+    meshConfigFn: async () => ({ mesh: { relay: { controlNode: "fixture-node" } } }),
     // 175/03 — pinned to Windows' four, so a Mac host answers the same and reaches no darwin probe.
     platform: "win32",
   };
@@ -83,14 +86,17 @@ export const meshDesktopPreflightHeartbeatTests = [
   {
     name: "126/06 task00 the preflight reports FOUR checks in one order — the count that supersedes 126/04 task03's three",
     async run() {
+      // 191/08 (191/ADR-001 amendment 2026-11-14 §5) appended a FIFTH, `control-relay-loopback`,
+      // LAST again, so the four 126/06 shipped keep their order. 126/06's own count stays its
+      // feature's record; the list it pinned is now this one.
       assert.deepEqual(
         [...PREFLIGHT_CHECKS],
-        ["claude-authenticated", "payload-build", "workspace-identity-pinned", "heartbeat-hook-installed"],
-        "four codes, the new one LAST so the three that shipped keep their order",
+        ["claude-authenticated", "payload-build", "workspace-identity-pinned", "heartbeat-hook-installed", "control-relay-loopback"],
+        "four codes, the new one LAST so the three that shipped keep their order — then 191/08's fifth",
       );
 
       const preflight = await runPreflight(probes({ workspaces: { ok: true, workspaces: [{ projectRoot: "/ws/a" }], skipped: [] } }));
-      assert.equal(preflight.length, 4, "exactly four checks are reported");
+      assert.equal(preflight.length, PREFLIGHT_CHECKS.length, "exactly the PREFLIGHT_CHECKS are reported (four, and 191/08's fifth)");
       assert.deepEqual(preflight.map((item) => item.code), [...PREFLIGHT_CHECKS], "in PREFLIGHT_CHECKS' order");
 
       const lines = renderPreflight(preflight);
@@ -124,7 +130,7 @@ export const meshDesktopPreflightHeartbeatTests = [
           const envelope = getCommand(face).cli.json(result);
           assert.equal(envelope.ok, true, `${face}: the envelope reports success`);
           assert.ok(Array.isArray(envelope.preflight), `${face}: the envelope carries preflight as a LIST`);
-          assert.equal(envelope.preflight.length, 4, `${face}: an ordered list of FOUR`);
+          assert.equal(envelope.preflight.length, PREFLIGHT_CHECKS.length, `${face}: an ordered list of FOUR, and 191/08's fifth`);
           assert.deepEqual(
             envelope.preflight.map((item) => item.code),
             [...PREFLIGHT_CHECKS],
@@ -488,7 +494,7 @@ export const meshDesktopPreflightHeartbeatTests = [
       // never a TypeError out of the verb.
       const degraded = await runPreflight(probes({ workspaces: { ok: true, workspaces: null, skipped: "many" } }));
       assert.equal(only(degraded).status, "pass", "no workspaces and no skips readable ⇒ nothing registered");
-      assert.equal(degraded.length, 4, "and all four checks still answered");
+      assert.equal(degraded.length, PREFLIGHT_CHECKS.length, "and all four checks (and 191/08's fifth) still answered");
     },
   },
 
@@ -538,7 +544,7 @@ export const meshDesktopPreflightHeartbeatTests = [
       ];
       for (const thrower of throwers) {
         const preflight = await runPreflight(probes({ workspaces: oneWorkspace, ...thrower.overrides }));
-        assert.equal(preflight.length, 4, `${thrower.why}: all four checks still answered`);
+        assert.equal(preflight.length, PREFLIGHT_CHECKS.length, `${thrower.why}: all four checks (and 191/08's fifth) still answered`);
         assert.equal(only(preflight).status, "fail", `${thrower.why}: reported, not thrown`);
       }
 

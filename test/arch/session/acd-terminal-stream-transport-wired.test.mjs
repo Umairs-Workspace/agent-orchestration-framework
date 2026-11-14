@@ -55,9 +55,12 @@
 // explicit "\n" joins (the tree is CRLF), and each asserts it LANDED
 // (`assert.notEqual(planted, clean)`) before asserting the detector trips.
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+// FF-19109 reads string literals (`ws://…:4183`), so it strips comments with the string-aware
+// stripper; this file's own `stripComments` below cuts a `//` inside a string.
+import { stripComments as stripCommentsKeepingStrings } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const LAUNCHER = path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs");
@@ -69,6 +72,8 @@ const CONTROL = path.join(repoRoot, "packages", "mesh", "src", "control-stream-s
 const WSCLIENT = path.join(repoRoot, "packages", "mesh", "src", "worker-stream-client.mjs");
 const BRIDGE = path.join(repoRoot, "packages", "mesh", "src", "terminal-relay-bridge.mjs");
 const MIRROR = path.join(repoRoot, "packages", "mesh", "src", "terminal-mirror.mjs");
+const MESH_SRC = path.join(repoRoot, "packages", "mesh", "src");
+const UI_SERVE = path.join(MESH_SRC, "ui-serve.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -315,6 +320,136 @@ function relayDialLoopbackProblems(bridgeSource, mirrorSource) {
   return problems;
 }
 
+// --- detector: FF-19109 — one loopback relay endpoint (191/ADR-001 amendment 2026-11-14 §2–§3) ---
+// A nominated control with no `mesh.relay.url` derives its relay on 4183. That derivation must
+// have ONE home, `loopbackRelayUrl` in terminal-relay-bridge.mjs, or the launcher's broker, the
+// transports and the `mesh ui` probe drift onto different endpoints — sessions that never open
+// (F-03). So:
+//   a. `DEFAULT_LOOPBACK_RELAY_PORT` is declared only in terminal-relay-bridge.mjs, once, and the
+//      port's literal `4183` appears in no other mesh module's code (strings included);
+//   b. the launcher's relay gate (`relayEnabled`) and its broker's `port` read `loopbackRelayUrl`
+//      (directly, or through the name its answer is assigned to), never `configuredRelayUrl` or
+//      the raw `mesh.relay.url` key;
+//   c. `meshUiProbe`'s `relayConfigured` reads `loopbackRelayUrl`, never the raw key.
+const LOOPBACK_HOME = "terminal-relay-bridge.mjs";
+const RELAY_PORT_DECLARED = /\b(?:const|let|var)\s+DEFAULT_LOOPBACK_RELAY_PORT\s*=/g;
+const RELAY_PORT_LITERAL = /(?<![\w.])4183(?![\w.])/g;
+const NOT_THE_DERIVATION = /\bconfiguredRelayUrl\b|relay\s*\??\.\s*url/;
+const codeOf = (source) => lf(stripCommentsKeepingStrings(lf(source)));
+
+// relayEndpointHomeProblems(files) — leg (a), over `[{ name, source }]` named relative to mesh/src.
+function relayEndpointHomeProblems(files) {
+  const problems = [];
+  let homeDeclarations = 0;
+  for (const { name, source } of files) {
+    const code = codeOf(source);
+    const declared = [...code.matchAll(RELAY_PORT_DECLARED)].length;
+    if (name === LOOPBACK_HOME) {
+      homeDeclarations = declared;
+      continue;
+    }
+    if (declared > 0) problems.push(`FF-19109: ${name} declares DEFAULT_LOOPBACK_RELAY_PORT — the relay's loopback port is declared only in ${LOOPBACK_HOME}`);
+    const literals = [...code.matchAll(RELAY_PORT_LITERAL)].length;
+    if (literals > 0) problems.push(`FF-19109: ${name} spells the relay port 4183 (${literals}×) — a second derivation of the relay's loopback endpoint; read loopbackRelayUrl(config) instead`);
+  }
+  if (homeDeclarations !== 1) problems.push(`FF-19109: ${LOOPBACK_HOME} declares DEFAULT_LOOPBACK_RELAY_PORT ${homeDeclarations} time(s) — it is its one home, declared once`);
+  return problems;
+}
+
+// statementOf(code, anchor) — the text of the statement that starts at the first match of
+// `anchor`, up to its terminating `;` at depth 0.
+function statementOf(code, anchor) {
+  const match = anchor.exec(code);
+  if (match == null) return null;
+  let depth = 0;
+  for (let i = match.index; i < code.length; i += 1) {
+    const ch = code[i];
+    if (ch === "(" || ch === "{" || ch === "[") depth += 1;
+    else if (ch === ")" || ch === "}" || ch === "]") depth -= 1;
+    else if (ch === ";" && depth === 0) return code.slice(match.index, i + 1);
+  }
+  return code.slice(match.index);
+}
+
+// relayDecisionProblems(launcherSource, uiServeSource) — legs (b) and (c).
+function relayDecisionProblems(launcherSource, uiServeSource) {
+  const code = codeOf(launcherSource);
+  const ui = codeOf(uiServeSource);
+  const problems = [];
+  const derivedName = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*loopbackRelayUrl\s*\(/.exec(code)?.[1] ?? null;
+  const readsDerivation = (text) => /\bloopbackRelayUrl\s*\(/.test(text) || (derivedName != null && new RegExp(`(?<![\\w$.])${derivedName}(?![\\w$])`).test(text));
+
+  const gate = statementOf(code, /\bconst\s+relayEnabled\s*=/);
+  if (gate == null) problems.push("FF-19109: launcher.mjs: could not locate the relay gate `const relayEnabled = …;`");
+  else {
+    if (!readsDerivation(gate)) problems.push(`FF-19109: launcher.mjs: the relay gate does not read loopbackRelayUrl — \`${gate.trim().slice(0, 120)}\``);
+    if (NOT_THE_DERIVATION.test(gate)) problems.push(`FF-19109: launcher.mjs: the relay gate reads configuredRelayUrl or the raw mesh.relay.url key — \`${gate.trim().slice(0, 120)}\``);
+  }
+
+  const broker = /\b(?:startRelayMode|relayMode)\s*\(\s*config\s*,\s*\{/.exec(code);
+  const brokerArgs = broker == null ? null : sliceBalanced(code, broker.index + broker[0].length - 1);
+  if (brokerArgs == null) problems.push("FF-19109: launcher.mjs: could not locate the broker start `relayMode(config, { port: … })`");
+  else {
+    const port = /\bport\s*:\s*([^,}]+)/.exec(brokerArgs)?.[1] ?? "";
+    if (!readsDerivation(port)) problems.push(`FF-19109: launcher.mjs: the broker's port \`${port.trim()}\` is not computed from loopbackRelayUrl`);
+    if (NOT_THE_DERIVATION.test(port)) problems.push(`FF-19109: launcher.mjs: the broker's port \`${port.trim()}\` reads configuredRelayUrl or the raw key`);
+  }
+
+  const probe = functionBody(ui, "meshUiProbe");
+  const configured = probe == null ? null : statementOf(probe, /\brelayConfigured\s*=\s*(?!=)(?!\s)(?!false\b)/);
+  if (configured == null) problems.push("FF-19109: ui-serve.mjs: could not locate meshUiProbe's `relayConfigured = …` read");
+  else {
+    if (!/\bloopbackRelayUrl\s*\(/.test(configured)) problems.push(`FF-19109: ui-serve.mjs: meshUiProbe's relayConfigured does not read loopbackRelayUrl — \`${configured.trim().slice(0, 120)}\``);
+    if (NOT_THE_DERIVATION.test(configured)) problems.push("FF-19109: ui-serve.mjs: meshUiProbe's relayConfigured reads the raw mesh.relay.url key");
+  }
+  return problems;
+}
+
+async function meshSources(dir = MESH_SRC, prefix = "") {
+  const out = [];
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) out.push(...await meshSources(path.join(dir, entry.name), rel));
+    else if (entry.name.endsWith(".mjs")) out.push({ name: rel, source: await readFile(path.join(dir, entry.name), "utf8") });
+  }
+  return out;
+}
+
+// FF-19109 plants — the shipped shapes, and the drifts the leg exists to catch.
+const SYNTH_BRIDGE = [
+  "const DEFAULT_LOOPBACK_RELAY_PORT = 4183;",
+  "function loopbackRelayUrl(config) {",
+  "  const raw = config?.mesh?.relay?.url;",
+  "  if (raw == null) return isControlNode(config) ? `ws://127.0.0.1:${DEFAULT_LOOPBACK_RELAY_PORT}/ws/relay` : null;",
+  "  return raw;",
+  "}",
+].join("\n");
+function synthRelayLauncher({ gate = "loopback", port = "loopback", ownPort = false } = {}) {
+  const lines = ["async function startLauncher(ws, options) {"];
+  if (ownPort) lines.push("  const OWN_RELAY_PORT = 4183;");
+  lines.push("  const relayUrl = loopbackRelayUrl(config);");
+  lines.push(gate === "loopback"
+    ? "  const relayEnabled = options?.relay !== false && relayUrl != null;"
+    : "  const relayEnabled = options?.relay !== false && configuredRelayUrl(config) != null;");
+  lines.push(port === "loopback"
+    ? "  relayBroker = await startRelayMode(config, { port: relayPortOf(relayUrl) ?? servicePort });"
+    : "  relayBroker = await startRelayMode(config, { port: servicePort });");
+  lines.push("}");
+  return lines.join("\n");
+}
+function synthUiServe({ raw = false } = {}) {
+  return [
+    "async function meshUiProbe({ projectDir } = {}) {",
+    "  let relayConfigured = false;",
+    "  try {",
+    "    const { config } = await loadWorkspace(projectDir);",
+    raw ? "    relayConfigured = typeof config?.mesh?.relay?.url === \"string\";" : "    relayConfigured = loopbackRelayUrl(config) != null;",
+    "  } catch { relayConfigured = false; }",
+    "  return { relayConfigured };",
+    "}",
+  ].join("\n");
+}
+
 // ---------------------------------------------------------------------------------
 // SELF-CHECK PLANT PLUMBING — SYNTHESIZED sources, never a string-replace on the REAL
 // files. Each snippet carries only the anchor text a detector keys on, built with
@@ -467,6 +602,41 @@ export const archTests = [
       const [bridgeSource, mirrorSource] = await Promise.all([readFile(BRIDGE, "utf8"), readFile(MIRROR, "utf8")]);
       const problems = relayDialLoopbackProblems(bridgeSource, mirrorSource);
       assert.deepEqual(problems, [], `both relay dial factories must FORCE loopback per Finding F-38.06b — a revert to dialing the raw config.mesh.relay.url host reintroduces the silent-inertness footgun:\n${JSON.stringify(problems, null, 2)}`);
+    },
+  },
+
+  // ══ FF-19109 — one loopback relay endpoint (191/ADR-001 amendment 2026-11-14 §2–§3), beside
+  //    FIX 2: the dial factories read the derivation, and so do the decisions the relay rests on ══
+  {
+    name: "arch/191 FF-19109 (acd-terminal-stream-transport-wired): DEFAULT_LOOPBACK_RELAY_PORT is declared only in terminal-relay-bridge.mjs and 4183 is spelled in no other mesh module; the launcher's relay gate and broker port, and meshUiProbe's relayConfigured, read loopbackRelayUrl — never configuredRelayUrl or the raw mesh.relay.url key",
+    run: async () => {
+      const files = await meshSources();
+      assert.ok(files.some((file) => file.name === LOOPBACK_HOME), "the walk reached the derivation's home (non-vacuous)");
+      assert.ok(files.length > 20, `the walk covered the mesh source tree (${files.length} files)`);
+      const [launcherSource, uiServeSource] = await Promise.all([readFile(LAUNCHER, "utf8"), readFile(UI_SERVE, "utf8")]);
+      const problems = [...relayEndpointHomeProblems(files), ...relayDecisionProblems(launcherSource, uiServeSource)];
+      assert.deepEqual(problems, [], `the relay's loopback endpoint has one derivation (FF-19109):\n${problems.join("\n")}`);
+    },
+  },
+  {
+    name: "arch/191 FF-19109 (acd-terminal-stream-transport-wired) self-check: a launcher that declares its own 4183, a gate on configuredRelayUrl, a broker on the bare service port and a probe on the raw key each trip — and the shipped shapes do not",
+    run: async () => {
+      const clean = [{ name: LOOPBACK_HOME, source: SYNTH_BRIDGE }, { name: "launcher.mjs", source: synthRelayLauncher() }];
+      assert.deepEqual(relayEndpointHomeProblems(clean), [], "sanity: the derivation's home alone declares the port");
+      assert.deepEqual(relayDecisionProblems(synthRelayLauncher(), synthUiServe()), [], "sanity: the shipped decision shapes are clean");
+
+      const ownPort = relayEndpointHomeProblems([{ name: LOOPBACK_HOME, source: SYNTH_BRIDGE }, { name: "launcher.mjs", source: synthRelayLauncher({ ownPort: true }) }]);
+      assert.ok(ownPort.some((p) => p.startsWith("FF-19109: launcher.mjs spells the relay port 4183")), `the red probe's shape (launcher.mjs declares its own 4183) trips, naming launcher.mjs: ${ownPort.join(" | ")}`);
+      const stringPort = relayEndpointHomeProblems([{ name: LOOPBACK_HOME, source: SYNTH_BRIDGE }, { name: "ui-serve.mjs", source: "const url = \"ws://127.0.0.1:4183/ws/relay\";" }]);
+      assert.ok(stringPort.some((p) => p.includes("ui-serve.mjs spells the relay port 4183")), "a URL string carrying the port trips too (a `//` inside a string is not a comment)");
+      const homeless = relayEndpointHomeProblems([{ name: LOOPBACK_HOME, source: "function loopbackRelayUrl() { return null; }" }]);
+      assert.ok(homeless.some((p) => p.includes("0 time(s)")), "a home that lost the declaration trips");
+      const commentOnly = relayEndpointHomeProblems([...clean, { name: "ui-serve.mjs", source: "// the derived relay listens on 4183\nconst x = 1;" }]);
+      assert.deepEqual(commentOnly, [], "a comment naming the port does not trip");
+
+      assert.ok(relayDecisionProblems(synthRelayLauncher({ gate: "raw" }), synthUiServe()).some((p) => p.includes("the relay gate")), "a gate on configuredRelayUrl trips");
+      assert.ok(relayDecisionProblems(synthRelayLauncher({ port: "service" }), synthUiServe()).some((p) => p.includes("broker's port")), "a broker on the bare service port trips");
+      assert.ok(relayDecisionProblems(synthRelayLauncher(), synthUiServe({ raw: true })).some((p) => p.includes("meshUiProbe")), "a probe on the raw key trips");
     },
   },
 

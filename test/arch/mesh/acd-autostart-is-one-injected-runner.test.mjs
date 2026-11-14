@@ -200,8 +200,9 @@ export const archTests = [
         // 126/06 appended a FOURTH code and superseded 126/04 task03's count of three. The
         // literal is matched loosely on whitespace because the frozen list is now spread
         // over several lines; what is pinned is the ORDER and that there is ONE such site.
-        /PREFLIGHT_CHECKS = Object\.freeze\(\[\s*"claude-authenticated",\s*"payload-build",\s*"workspace-identity-pinned",\s*"heartbeat-hook-installed",?\s*\]\)/,
-        "the four checks are named by code, in one order, in one place",
+        // 191/08 (191/ADR-001 amendment 2026-11-14 §5) appended a FIFTH, `control-relay-loopback`, last.
+        /PREFLIGHT_CHECKS = Object\.freeze\(\[\s*"claude-authenticated",\s*"payload-build",\s*"workspace-identity-pinned",\s*"heartbeat-hook-installed",(?:\s*\/\/[^\n]*)*\s*"control-relay-loopback",?\s*\]\)/,
+        "the five checks are named by code, in one order, in one place",
       );
 
       // THE TRAP: `claude auth status` exits 0 whether or not the account is logged in, so
@@ -304,7 +305,7 @@ export const archTests = [
       const guardedCalls = [...runBody.matchAll(/await guarded\("([a-z-]+)"/g)].map((match) => match[1]);
       assert.deepEqual(
         guardedCalls,
-        ["claude-authenticated", "payload-build", "workspace-identity-pinned", "heartbeat-hook-installed"],
+        ["claude-authenticated", "payload-build", "workspace-identity-pinned", "heartbeat-hook-installed", "control-relay-loopback"],
         "every check runs inside the guard, in PREFLIGHT_CHECKS' order",
       );
     },

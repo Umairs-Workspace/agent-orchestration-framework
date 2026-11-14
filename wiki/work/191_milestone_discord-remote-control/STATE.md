@@ -26,6 +26,33 @@ doc: state
   node, and nobody looked at the Claude app. The operator was asked whether it is carried to the
   outsider check. F-05 (ADR-002 §4: two records for one launched session) waits for the operator's
   ratification.
+- 2026-11-14 — **`aof:verify 191` begun (milestone UAT).** No scenario carries `@uat`, so the
+  human acceptance is the SPEC's outsider check from a phone. Discord set up on this laptop for it:
+  the existing bot's token is stored (`aof messaging init discord`), the bot was added to a new
+  private channel `1571198918107078736` (`discord-2`, the operator on its `allow` list), and
+  `aof messaging test discord` posted to it. The old `discord` entry (`1553365880904089651`,
+  the Windows control's channel) is taken out of `.aof/aof.config.json` for the UAT and is not
+  committed. Payload `832bd07e+dirty.20261114T162908` installed, and the desktop app restarted by
+  the operator. Both daemons logged `daemon-started` on that build, with no `discord-bot-off`,
+  and the operator confirmed the slash commands answer in the channel. Operator rulings: F-03's
+  ADR-001 §1/§3 amendment and F-05's ADR-002 §4 amendment are **ratified**, and F-06 is **carried to
+  the outsider check**. F-01 and F-02 were discharged by `2792403a` (192's whole-tree fix), and
+  that suite is green on this Mac. The architect was handed the two amendments. F-03 lands as story
+  191/08, and F-05 as a `@bug` task in 191/01.
+- 2026-11-14 — **191/01 task 04 built, 191/01 back to `in-review`** (`aof:continue`, F-05). A
+  Claude launch registers under `CLAUDE_HOOK_ASSISTANT` (`"claude-code"`), the label's one home in
+  `session-spawn-directive.mjs`, read by the hook default, the handler and the loop drive's stream
+  (through its `loopSession` port). Task 04's scenarios and rows and task 02's amended first scenario
+  are green; FF-19110 is green with its red probe. With the old label the new tests reproduce F-05's
+  two records exactly. Task 03's first scenario stays carried to the outsider check (F-06).
+- 2026-11-14 — **191/08 built, `in-review`** (`aof:continue`, F-03). The control binds its own
+  checkout seams (`createControlCheckoutSeams`, the descriptor root on disk), and a nominated control
+  with no `mesh.relay.url` derives its relay at `ws://127.0.0.1:4183/ws/relay`; the launcher's gate
+  and broker port and `meshUiProbe` read `loopbackRelayUrl`. The preflight gains
+  `control-relay-loopback`, and the three refusals name `mesh.relay.controlNode` first. Tasks 00–03
+  green; FF-19108 and FF-19109 green with red probes. Six launcher suites outside the story would
+  have bound 4183 under the amendment and now pass `relay: false`. The start through the real
+  daemons needs `install-local` and the operator's restart; it is the outsider check.
 
 ## Notes & decisions
 

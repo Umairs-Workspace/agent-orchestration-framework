@@ -138,6 +138,9 @@ async function withMesh(body, { testRepoPropagates = true } = {}) {
       ws.config = { ...ws.config, mesh: { ...(ws.config?.mesh ?? {}), ...(meshEnabled ? { enabled: true } : {}), nodeId: NODE, fabric: "tailscale", relay: { controlNode: NODE } } };
       const ticker = manualTicker();
       const handle = await startLauncher(ws, {
+        // 191/08: a nominated control with no mesh.relay.url now derives a loopback relay on 4183
+        // (191/ADR-001 amendment 2026-11-14 §2); `relay: false` keeps this test off that real port.
+        relay: false,
         exec: async () => ({ stdout: JSON.stringify(STATUS_FIXTURE), status: 0 }),
         platform: "linux",
         peerPollTicker: manualTicker(),

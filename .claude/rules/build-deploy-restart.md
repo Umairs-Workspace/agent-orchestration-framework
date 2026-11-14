@@ -189,6 +189,14 @@ tile. Only x86_64 is verified; arm64 builds the same way but is unmeasured (175 
      not `mesh serve`, and not its heartbeats. Without it the fleet is empty, and the board
      refuses to start a session or dispatch work ("no mesh identity yet", 175/F-10). It reads
      `mesh.address`, so the record advertises `127.0.0.1`.
+   - **No `mesh.relay.url` is set here, and none must be.** The nominated control derives its
+     loopback relay at `ws://127.0.0.1:4183/ws/relay` (191/ADR-001 amendment 2026-11-14), so the
+     relay listens on 4183 beside the stream server on 4182, and the fleet and the CLI's session
+     verbs dial it with no key to set. Setting `mesh.relay.url` here BREAKS it: with
+     `address: "127.0.0.1"` the stream server takes its port from that URL and the relay binds
+     `127.0.0.1` on the same port, so the relay never starts and a `/session start` never opens.
+     Changing the URL's port does not help, because the stream port moves with it. The Windows
+     control's LAN address is why it can keep its `mesh.relay.url`.
 4. **Install the app and register login autostart**, from a shell whose PATH resolves `claude`.
    The LaunchAgent captures THIS shell's PATH, and the daemons spawn `claude` by name:
    ```
@@ -199,7 +207,10 @@ tile. Only x86_64 is verified; arm64 builds the same way but is unmeasured (175 
 5. **Start it:** `aof mesh desktop run`. With the LaunchAgent registered, launchd starts it, in
    the login session.
 
-Read the preflight both verbs print. On a Mac it adds `macos-command-line-tools`,
+Read the preflight both verbs print. On every platform it includes `control-relay-loopback`,
+which should read `ok` and name `ws://127.0.0.1:4183/ws/relay` as "derived: no `mesh.relay.url`
+is set". `FAIL` there means a `mesh.relay.url` is set on this loopback-bound control: remove it
+from `~/.aof/aof.config.json`. On a Mac the preflight adds `macos-command-line-tools`,
 `rust-toolchain`, `app-not-quarantined` and `daemon-claude-authenticated`. The last one asks
 `claude` in the LaunchAgent's own environment. `--` means no LaunchAgent is registered, so there
 was nothing to probe.
@@ -236,6 +247,9 @@ aof mesh desktop stop && aof mesh desktop run
 - Both daemons print `Build: payload <buildId>` at startup.
 - `aof mesh status --json` answers `isControlNode: true`. `http://127.0.0.1:4181/?mode=fleet`
   lists one node, this one.
+- The relay is derived and listens on `127.0.0.1:4183` (`lsof -nP -iTCP:4183 -sTCP:LISTEN`
+  names the serve daemon), and the preflight's `control-relay-loopback` reads `ok`. A start for
+  a project on this laptop opens in that project's registered folder.
 - **Verify auth in the DAEMONS' environment, not the terminal's.** launchd hands the app the
   plist's PATH, plus the per-user variables it always sets (`HOME`, `USER`, `LOGNAME`), and
   nothing of your shell. Run `claude` with exactly those, from a terminal at the laptop:

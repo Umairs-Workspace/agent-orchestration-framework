@@ -40,6 +40,23 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //      imported, not called. The frame and its envelope are the plan's, built in `session-start.mjs`,
 //      and a face pushes the envelope the plan hands it.
 //
+// ── FF-19108 · The control opens its own checkouts (191/ADR-001 amendment 2026-11-14 §1, F-03) ──
+// A served project is checked out on the control at its registered root, never in a managed
+// checkout or behind a `mesh.repo.published` marker, which are all the worker's seams answer for.
+// The control handed the worker's seams refused every start for its own node. So:
+//
+//   9. in the launcher's control branch, the handler factory call binds `workerHasRepo` and
+//      `meshCheckoutPath` to the members of what `createControlCheckoutSeams(…)` returns, never to
+//      the worker's functions of those names; the worker branch binds the worker's (shorthand).
+//
+// ── FF-19110 · The hook's label has one home (191/ADR-002 amendment 2026-11-14 §4, F-05) ──────────
+// A Claude launch, Claude's own hooks and a loop drive's stream each key ONE session's record, so a
+// label spelled twice drifts into two records for one id — which is exactly F-05. So:
+//
+//   8. in the code (comments never count) of `packages/mesh/src` and `packages/work-loop/src`, the
+//      string `claude-code` is spelled only in `session-spawn-directive.mjs`, and there only as the
+//      value of `export const CLAUDE_HOOK_ASSISTANT`.
+//
 // Every plant below is HAND-WRITTEN (never a string-replace on the real file) and asserts the
 // detector trips on it, so a detector that can no longer see is red rather than vacuously green.
 import assert from "node:assert/strict";
@@ -63,6 +80,7 @@ const FACTORY = "createMeshWorkerSessionSpawnHandler";
 const REQUIRED_KEYS = Object.freeze(["loadWs", "nodeId", "workerHasRepo", "meshCheckoutPath", "sendTerminalFrame", "sendTerminalEnd", "sendSessionSpawnAck"]);
 
 const lf = (source) => String(source ?? "").replace(/\r\n/g, "\n");
+const WORK_LOOP_SRC = path.join(repoRoot, "packages", "work-loop", "src");
 
 // ── leg 1 ──────────────────────────────────────────────────────────────────────────────────────────
 
@@ -279,6 +297,103 @@ export function startCoreProblems(name, source) {
   return problems;
 }
 
+// ── leg 9 (FF-19108) ───────────────────────────────────────────────────────────────────────────────
+
+const CHECKOUT_KEYS = Object.freeze(["workerHasRepo", "meshCheckoutPath"]);
+const CONTROL_SEAMS = "createControlCheckoutSeams";
+
+// factoryCallSpan(body) → the argument object text of the FIRST call in `body` that builds a
+// handler from the worker's factory (directly or through a local alias), or null.
+function factoryCallSpan(body) {
+  if (body == null) return null;
+  const callees = new Set([FACTORY]);
+  const alias = new RegExp(`\\bconst\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*[^;]*\\b${FACTORY}\\b[^;]*;`, "g");
+  let match;
+  while ((match = alias.exec(body)) !== null) callees.add(match[1]);
+  for (const callee of callees) {
+    const call = new RegExp(`(?<![\\w$.])${callee.replace(/\$/g, "\\$")}\\s*\\(\\s*\\{`, "g");
+    while ((match = call.exec(body)) !== null) {
+      const span = matchedParenSpan(body, match.index);
+      if (span != null) return span.body;
+    }
+  }
+  return null;
+}
+
+// keyValue(callBody, key) → what the call binds `key` to: the key itself for a shorthand, the
+// value expression for `key: value`, or null when the key is absent.
+function keyValue(callBody, key) {
+  const pair = new RegExp(`(?:^|[{,\\s])${key}\\s*:\\s*([^,\\n}]+)`).exec(callBody);
+  if (pair != null) return pair[1].trim();
+  return new RegExp(`(?:^|[{,\\s])${key}\\s*[,}\\n]`).test(callBody) ? key : null;
+}
+
+// checkoutSeamProblems(launcherSource) → why a branch binds the wrong checkout seams.
+export function checkoutSeamProblems(launcherSource) {
+  const code = lf(stripComments(launcherSource));
+  const problems = [];
+  if (!new RegExp(`\\bfunction\\s+${CONTROL_SEAMS}\\s*\\(`).test(code)) {
+    problems.push(`launcher.mjs declares no \`function ${CONTROL_SEAMS}(\` — the control has no checkout seams of its own (FF-19108)`);
+  }
+  const { control, worker } = roleBranches(code);
+  const controlCall = factoryCallSpan(control);
+  const workerCall = factoryCallSpan(worker);
+  if (controlCall == null) problems.push("FF-19108: could not locate the control branch's handler factory call");
+  if (workerCall == null) problems.push("FF-19108: could not locate the worker branch's handler factory call");
+  if (controlCall != null) {
+    const seams = new RegExp(`\\bconst\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*${CONTROL_SEAMS}\\s*\\(`).exec(control)?.[1] ?? null;
+    if (seams == null) problems.push(`FF-19108: the control branch never calls \`const <seams> = ${CONTROL_SEAMS}(…)\` — its handler cannot be bound to the control's own seams`);
+    for (const key of CHECKOUT_KEYS) {
+      const value = keyValue(controlCall, key);
+      if (seams == null || value !== `${seams}.${key}`) {
+        problems.push(`FF-19108: the launcher's control branch binds \`${key}\` to \`${value ?? "(nothing)"}\`, not to the seam ${CONTROL_SEAMS} returns — the control would open a served project at a worker's managed checkout (F-03)`);
+      }
+    }
+  }
+  if (workerCall != null) {
+    for (const key of CHECKOUT_KEYS) {
+      const value = keyValue(workerCall, key);
+      if (value !== key) {
+        problems.push(`FF-19108: the launcher's worker branch binds \`${key}\` to \`${value ?? "(nothing)"}\`, not to the worker's own ${key} — a worker opens a workspace at its managed checkout`);
+      }
+    }
+  }
+  return problems;
+}
+
+// ── leg 8 (FF-19110) ───────────────────────────────────────────────────────────────────────────────
+
+const HOOK_LABEL = "claude-code";
+const LABEL_HOME = "session-spawn-directive.mjs";
+// A quoted spelling of the label in code: "…", '…' or `…` (a template's text counts too).
+const LABEL_SPELLED = /(["'`])claude-code\1|`[^`]*\bclaude-code\b[^`]*`/g;
+const LABEL_DECLARED = /\bexport\s+const\s+CLAUDE_HOOK_ASSISTANT\s*=\s*(["'])claude-code\1\s*;/;
+
+// hookLabelProblems(name, source) → why `name` spells the hook's label outside its one home, or why
+// the home no longer declares it. `name` is relative to its package's src (the home is the mesh's).
+export function hookLabelProblems(name, source) {
+  const code = lf(stripComments(source));
+  const spelled = [...code.matchAll(LABEL_SPELLED)].length;
+  if (name === LABEL_HOME) {
+    if (!LABEL_DECLARED.test(code)) return [`${LABEL_HOME} no longer declares \`export const CLAUDE_HOOK_ASSISTANT = "${HOOK_LABEL}"\` — the hook's label has lost its one home (FF-19110)`];
+    return spelled === 1 ? [] : [`${LABEL_HOME} spells "${HOOK_LABEL}" ${spelled} times — once, as CLAUDE_HOOK_ASSISTANT, is its one home (FF-19110)`];
+  }
+  return spelled === 0 ? [] : [`${name} spells "${HOOK_LABEL}" in code (${spelled}×) — read CLAUDE_HOOK_ASSISTANT from ${LABEL_HOME} instead, or one session gets two records (FF-19110)`];
+}
+
+async function sourceFiles(root, label) {
+  const out = [];
+  const walk = async (dir, prefix) => {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) await walk(path.join(dir, entry.name), rel);
+      else if (entry.name.endsWith(".mjs")) out.push({ name: rel, shown: `${label}/${rel}`, file: path.join(dir, entry.name) });
+    }
+  };
+  await walk(root, "");
+  return out;
+}
+
 // ── plants ─────────────────────────────────────────────────────────────────────────────────────────
 
 const CLEAN_LAUNCHER = `
@@ -474,6 +589,66 @@ import { planSessionStart } from "./my-own-start.mjs";
 async function run() { const plan = planSessionStart({}); await push.push(plan.envelope); }
 `;
 
+// FF-19108 plants: the shipped shape, the red probe's shape (the control handed the worker's
+// `meshCheckoutPath`), a worker handed the control's seams, and seams built by something else.
+const SEAMS_LAUNCHER = (controlKeys, workerKeys = "workerHasRepo,\n        meshCheckoutPath,", seamsFrom = "createControlCheckoutSeams") => `
+function createControlCheckoutSeams(ws, options) { return { workerHasRepo: async () => true, meshCheckoutPath: async () => ws.projectRoot }; }
+async function startLauncher(ws, options) {
+  if (role === "control" && options?.streamServer !== false) {
+    if (ingressForward != null) {
+      const controlCheckout = ${seamsFrom}(ws, options);
+      const createSessionSpawnHandler = options?.createMeshWorkerSessionSpawnHandler ?? createMeshWorkerSessionSpawnHandler;
+      sessionSpawnHandler = createSessionSpawnHandler({
+        loadWs: () => Promise.resolve(ws),
+        nodeId,
+        ${controlKeys}
+        sendTerminalFrame: (s, b) => legs.frame(s, b),
+      });
+    }
+  } else if (role === "worker" && options?.streamClient !== false) {
+    sessionSpawnHandler = createMeshWorkerSessionSpawnHandler({
+        loadWs: () => Promise.resolve(ws),
+        nodeId,
+        ${workerKeys}
+        sendTerminalFrame: (s, b) => client.sendTerminalFrame(s, b),
+    });
+  }
+}
+`;
+const SEAMS_CLEAN = SEAMS_LAUNCHER("workerHasRepo: controlCheckout.workerHasRepo,\n        meshCheckoutPath: controlCheckout.meshCheckoutPath,");
+const SEAMS_CONTROL_WORKER_CHECKOUT = SEAMS_LAUNCHER("workerHasRepo: controlCheckout.workerHasRepo,\n        meshCheckoutPath,");
+const SEAMS_WORKER_GETS_CONTROL = SEAMS_LAUNCHER(
+  "workerHasRepo: controlCheckout.workerHasRepo,\n        meshCheckoutPath: controlCheckout.meshCheckoutPath,",
+  "workerHasRepo: controlCheckout.workerHasRepo,\n        meshCheckoutPath,",
+);
+const SEAMS_FROM_ELSEWHERE = SEAMS_LAUNCHER(
+  "workerHasRepo: controlCheckout.workerHasRepo,\n        meshCheckoutPath: controlCheckout.meshCheckoutPath,",
+  undefined,
+  "workerSeamsFor",
+);
+
+// FF-19110 plants: the home as shipped, the readers as shipped, and three ways a label drifts back.
+const LABEL_HOME_CLEAN = `
+// A comment may say "claude-code" freely.
+export const CLAUDE_HOOK_ASSISTANT = "claude-code";
+export const SESSION_SPAWN_KIND = "session-spawn";
+`;
+const LABEL_READER_CLEAN = `
+import { CLAUDE_HOOK_ASSISTANT } from "./session-spawn-directive.mjs";
+// the hook's label is "claude-code" — named only in this comment
+const assistant = launch === "claude-remote-control" ? CLAUDE_HOOK_ASSISTANT : "claude";
+`;
+const LABEL_READER_LITERAL = `
+const assistant = launch === "claude-remote-control" ? "claude-code" : "claude";
+`;
+const LABEL_STREAM_TEMPLATE = `
+return loopSession.pingSession(workspace, { assistant: \`claude-code\`, sessionId, relaying: true });
+`;
+const LABEL_HOME_UNDECLARED = `
+export const SESSION_SPAWN_KIND = "session-spawn";
+const label = 'claude-code';
+`;
+
 export const archTests = [
   {
     name: "arch/191 FF-19101 (acd-launched-session-from-discord): the launcher builds its session-spawn handler from createMeshWorkerSessionSpawnHandler in BOTH its control and its worker branch, with the same literal keys",
@@ -561,6 +736,55 @@ export const archTests = [
       assert.ok(startCoreProblems("commands/session.mjs", DEFERRED_LOOKALIKE).some((p) => p.includes("does not import planSessionStart")), "a deferred lookalike trips");
       const lookalike = startCoreProblems("commands/session.mjs", CORE_FROM_ELSEWHERE);
       assert.ok(lookalike.some((p) => p.includes("does not import planSessionStart")), `a planSessionStart from another module trips: ${lookalike.join(" | ")}`);
+    },
+  },
+  {
+    name: "arch/191 FF-19108 (acd-launched-session-from-discord): in the launcher's control branch the handler factory binds workerHasRepo and meshCheckoutPath to the seams createControlCheckoutSeams returns, and the worker branch binds the worker's",
+    async run() {
+      const problems = checkoutSeamProblems(await readFile(LAUNCHER, "utf8"));
+      assert.deepEqual(problems, [], problems.join("\n"));
+    },
+  },
+  {
+    name: "arch/191 FF-19108 (acd-launched-session-from-discord) self-check: a control branch handed the worker's meshCheckoutPath, a worker branch handed the control's seams and seams built by another function each trip — and the shipped shape does not",
+    run() {
+      assert.deepEqual(checkoutSeamProblems(SEAMS_CLEAN), [], "the shipped shape passes");
+      const probe = checkoutSeamProblems(SEAMS_CONTROL_WORKER_CHECKOUT);
+      assert.ok(probe.some((p) => p.startsWith("FF-19108: the launcher's control branch binds `meshCheckoutPath` to `meshCheckoutPath`")), `the control handed the worker's meshCheckoutPath trips, naming the control branch: ${probe.join(" | ")}`);
+      assert.equal(probe.length, 1, "…and only that key");
+      const worker = checkoutSeamProblems(SEAMS_WORKER_GETS_CONTROL);
+      assert.ok(worker.some((p) => p.includes("worker branch binds `workerHasRepo`")), `a worker handed the control's seam trips: ${worker.join(" | ")}`);
+      const elsewhere = checkoutSeamProblems(SEAMS_FROM_ELSEWHERE);
+      assert.ok(elsewhere.some((p) => p.includes("never calls")), `seams from another function trip: ${elsewhere.join(" | ")}`);
+      assert.ok(checkoutSeamProblems("function other() {}").some((p) => p.includes("declares no")), "a launcher without the seam builder trips, never vacuously clean");
+    },
+  },
+  {
+    name: "arch/191 FF-19110 (acd-launched-session-from-discord): the string \"claude-code\" is spelled in the code of packages/mesh/src and packages/work-loop/src only in session-spawn-directive.mjs, as CLAUDE_HOOK_ASSISTANT",
+    async run() {
+      const files = [...await sourceFiles(MESH_SRC, "packages/mesh/src"), ...await sourceFiles(WORK_LOOP_SRC, "packages/work-loop/src")];
+      assert.ok(files.some((entry) => entry.shown === `packages/mesh/src/${LABEL_HOME}`), "the walk reached the label's home (non-vacuous)");
+      assert.ok(files.some((entry) => entry.shown === "packages/work-loop/src/loop-session-stream.mjs"), "…and the loop drive's stream, the work-loop reader");
+      const problems = [];
+      for (const { shown, file } of files) {
+        // Only the mesh's own directive is the home; a same-named file elsewhere is a reader.
+        const judgedAs = shown === `packages/mesh/src/${LABEL_HOME}` ? LABEL_HOME : shown;
+        problems.push(...hookLabelProblems(judgedAs, await readFile(file, "utf8")));
+      }
+      assert.deepEqual(problems, [], problems.join("\n"));
+      const { CLAUDE_HOOK_ASSISTANT } = await import("@aof/mesh/session-spawn-directive");
+      assert.equal(CLAUDE_HOOK_ASSISTANT, HOOK_LABEL, "the home's export is the hook's label");
+    },
+  },
+  {
+    name: "arch/191 FF-19110 (acd-launched-session-from-discord) self-check: a reader that spells the label, a template-literal spelling and a home that no longer declares it each trip — and the shipped shapes, with the label named in comments, do not",
+    run() {
+      assert.deepEqual(hookLabelProblems(LABEL_HOME, LABEL_HOME_CLEAN), [], "the home as shipped passes");
+      assert.deepEqual(hookLabelProblems("session-spawn-handler.mjs", LABEL_READER_CLEAN), [], "a reader of the export passes, a comment naming the label included");
+      assert.match(hookLabelProblems("session-spawn-handler.mjs", LABEL_READER_LITERAL).join(" "), /session-spawn-handler\.mjs spells "claude-code" in code/, "a reader spelling the label trips");
+      assert.match(hookLabelProblems("loop-session-stream.mjs", LABEL_STREAM_TEMPLATE).join(" "), /loop-session-stream\.mjs spells "claude-code"/, "a template-literal spelling trips");
+      assert.match(hookLabelProblems(LABEL_HOME, LABEL_HOME_UNDECLARED).join(" "), /no longer declares/, "a home that lost the declaration trips");
+      assert.match(hookLabelProblems(LABEL_HOME, `${LABEL_HOME_CLEAN}\nconst again = "claude-code";\n`).join(" "), /spells "claude-code" 2 times/, "a second spelling in the home itself trips");
     },
   },
   {

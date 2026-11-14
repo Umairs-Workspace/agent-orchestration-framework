@@ -1,6 +1,6 @@
 import path from "node:path";
 import { existsSync } from "node:fs";
-import { knownSessionLaunch } from "./session-spawn-directive.mjs";
+import { CLAUDE_HOOK_ASSISTANT, knownSessionLaunch } from "./session-spawn-directive.mjs";
 export const SESSION_PING_INTERVAL_MS = 30_000;
 
 // ─────────────────────────────── 191/ADR-002 — the one command line a spawn types ────
@@ -386,9 +386,12 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
     // SESSION_LAUNCHES is a bare shell with nothing typed (191/01 E3), never a refusal.
     const launch = knownSessionLaunch(frame?.launch);
     // ADR-007 decision 3 — a LABEL. It selects the session key's third component (and
-    // therefore which lane of the grid this renders in); it selects no binary. A Claude
-    // launch IS claude, so its label is the truth (191/ADR-002 §4) whatever the frame said.
-    const assistant = launch === "claude-remote-control" ? "claude" : (nonEmptyString(frame?.assistant) ?? "claude");
+    // therefore which lane of the grid this renders in); it selects no binary. A Claude launch
+    // registers under the label Claude's OWN hooks key it by (191/ADR-002 amendment 2026-11-14
+    // §4, F-05), whatever the frame said: the launcher and the hook then upsert ONE record and
+    // ONE presence entry, and the sticky `relaying` means a hook's ping never demotes the pane.
+    // A bare shell keeps the frame's label, `claude` by default (50/ADR-007).
+    const assistant = launch === "claude-remote-control" ? CLAUDE_HOOK_ASSISTANT : (nonEmptyString(frame?.assistant) ?? "claude");
     const itemRef = nonEmptyString(frame?.itemRef);
 
     if (workspaceId == null) {
@@ -430,7 +433,14 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
         await refuse(sessionId, "session-repo-unavailable", `workspace ${workspaceId} is not this node's own workspace and no scoped-checkout seam is wired`);
         return;
       }
-      const checkoutPath = meshCheckoutPath(workspaceId, globalWorkStoreOptions ?? {});
+      // AWAITED (191/ADR-001 amendment 2026-11-14 §1): the control's seam resolves a served
+      // project's registered root from the descriptor store, asynchronously; the worker's seam
+      // is synchronous, so a worker's value is unchanged. A seam with no root to give refuses.
+      const checkoutPath = await meshCheckoutPath(workspaceId, globalWorkStoreOptions ?? {});
+      if (typeof checkoutPath !== "string" || checkoutPath.length === 0) {
+        await refuse(sessionId, "session-repo-unavailable", `workspace ${workspaceId} has no checkout on node ${nodeId}`);
+        return;
+      }
       try {
         ws = await loadWorkspaceImpl(checkoutPath, undefined, { env: globalWorkStoreOptions?.env });
       } catch (error) {

@@ -308,8 +308,8 @@
     "kind": "child-process",
     "expression": "spawn(file, args, { windowsHide: true, ...(spawnOptions?.env ? { env: spawnOptions.env } : {}) })",
     "digest": "5d30e9e3a26063a12637d6a2691dc9a2146bf2d0681763f22b946fab3cc9cddf",
-    "sourceDigest": "683a271dd61de5d9493431e4288c97fa61cdab0489eba02a427c364dba14ce82",
-    "reason": "Preflight process port probes the desktop executable selected by the desktop resolver. Native app paths remain Plan 04 current layout. 175/03 re-reviewed: still the one injected runner, spawning only the file and argv it is handed with no shell; an optional env is passed through so the darwin daemon probe runs `claude auth status` with exactly the LaunchAgent PATH and HOME. 175/F-09 re-reviewed at PR #22: the probe's env gained USER and LOGNAME (launchd's per-user set); the call is the same injected runner over the file and argv it is handed, with no shell."
+    "sourceDigest": "b7d8db594b4a8ca2e1f496f7a0e6f3eb02843f06b8cd8c0edfd81f16955ffe91",
+    "reason": "Preflight process port probes the desktop executable selected by the desktop resolver. Native app paths remain Plan 04 current layout. 175/03 re-reviewed: still the one injected runner, spawning only the file and argv it is handed with no shell; an optional env is passed through so the darwin daemon probe runs `claude auth status` with exactly the LaunchAgent PATH and HOME. 175/F-09 re-reviewed at PR #22: the probe's env gained USER and LOGNAME (launchd's per-user set); the call is the same injected runner over the file and argv it is handed, with no shell. 191/08 re-reviewed: the module gained the `control-relay-loopback` check, a pure config read that spawns nothing; the audited call is byte-identical (same digest)."
   },
   {
     "file": "packages/mesh/src/fabric.mjs",
