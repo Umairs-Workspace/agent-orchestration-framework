@@ -19,7 +19,7 @@ export function assembleAgentSessionDriver({ claudeTrustServices, workObserveSer
 
   const implementation = createSessionDriver({
     transcripts: { claudeProjectsDir, readLastAssistantTurn, readPendingAsk, NEEDS_INPUT_SENTINEL: inputSentinel, HUMAN_INPUT_TOOL_NAMES: inputToolNames },
-    launch: { resolveProvider, loadNodePty: createNodePtyLoader({ isPackaged }), openSessionScreen, ensureWorktreeTrusted: trustWorktree, buildOtelResourceAttributes, OTEL_RESOURCE_ATTRIBUTES_ENV_KEY, OTEL_TELEMETRY_ENV_KEY, composePhaseBriefInput },
+    launch: { resolveProvider, loadNodePty: createNodePtyLoader({ isPackaged, reportDegrade }), openSessionScreen, ensureWorktreeTrusted: trustWorktree, buildOtelResourceAttributes, OTEL_RESOURCE_ATTRIBUTES_ENV_KEY, OTEL_TELEMETRY_ENV_KEY, composePhaseBriefInput },
     reportDegrade,
   });
 

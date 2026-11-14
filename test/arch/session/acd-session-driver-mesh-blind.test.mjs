@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -357,14 +357,20 @@ export const archTests = [
       // fences above are unchanged.
       for (const leaf of ["packages/mesh/src/session-spawn-directive.mjs", "packages/mesh/src/session-spawn-handler.mjs", "packages/mesh/src/commands/face-shared.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, leaf)), leaf);
       assert.ok(!sinkGraph.seen.has(path.join(root, "packages/mesh/src/session-start.mjs")), "the start core is deferred, not in the static closure");
-      assert.equal(sinkGraph.seen.size, 185, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, and the integration registry's contributions");
+      // 191/07 — Discord's notification buttons live in their own module, which `messaging/discord.mjs`
+      // imports and the facade already reached through notify (185 -> 186). It imports nothing and
+      // does no I/O; no driver or lifecycle module is entered.
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/messaging/src/discord-buttons.mjs")), "the Discord buttons leaf");
+      assert.equal(sinkGraph.seen.size, 186, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, and the integration registry's contributions");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },
   {
     name: "arch/53 FF-5301 (acd-session-driver-mesh-blind): a two-hop laundering module is detected with its complete chain",
     run: async () => {
-      const temp = await mkdtemp(path.join(os.tmpdir(), "aof-ff5301-"));
+      // Real path: the walker resolves through `createRequire`, which answers `/private/var/...` for
+      // macOS's `/var/...` temp dir, so an unresolved temp path never matches the walked one.
+      const temp = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-ff5301-")));
       try {
         await mkdir(path.join(temp, "effects"));
         await writeFile(path.join(temp, "driver.mjs"), 'import "./launder.mjs";\n');

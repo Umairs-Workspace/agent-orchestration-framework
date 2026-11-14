@@ -8,7 +8,7 @@ depends: [00, 01, 02, 03]
 status: not-started
 owner: product-owner
 created: 2026-11-12
-updated: 2026-11-12
+updated: 2026-11-14
 adrs: [ADR-004, ADR-005, ADR-006]
 reads:
   - wiki/work/193_milestone_operator-aware-discovery/SPEC.md
@@ -52,6 +52,15 @@ files:
   - packages/core/assets/agents/aof-researcher.md
   - packages/core/assets/variants/codex/workflow.md
   - packages/core/assets/manifest.json
+  - .claude/commands/aof/refine.md
+  - .opencode/commands/aof/refine.md
+  - .agents/skills/aof-refine/SKILL.md
+  - .agents/skills/aof-refine/procedure.md
+  - .agents/skills/aof-refine/agents/openai.yaml
+  - .claude/agents/aof-researcher.md
+  - .opencode/agents/aof-researcher.md
+  - .codex/agents/aof-researcher.toml
+  - .codex/aof/workflows/workflow-contract.md
   - test/arch/examples/acd-examples-off-is-today.test.mjs
   - test/arch/testing/acd-source-directory-budget.test.mjs
   - wiki/acceptance-criteria.md

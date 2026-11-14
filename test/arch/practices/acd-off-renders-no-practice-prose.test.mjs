@@ -15,6 +15,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { practiceFixtureRoot } from "../../support/cli-spawn.mjs";
+import { markedRegion } from "../../support/source-slice.mjs";
 import { readAssetText } from "../../../packages/core/src/asset-base.mjs";
 import { loadBundle, readDescriptor, renderBundleOutputs } from "../../../packages/core/src/work/bundle.mjs";
 import { slotsOf } from "../../../packages/core/src/work/bundle-compose.mjs";
@@ -102,7 +103,15 @@ export function coreSourceTexts(read = (file, section) => (section ? sectionOf(f
 // ── helpers over the projects ───────────────────────────────────────────────────────────────────
 const count = (text, needle) => text.split(needle).length - 1;
 const flat = (text) => text.replace(/\s+/gu, " ");
-const contractOf = (refine) => refine.slice(refine.indexOf("- **story — Contract (Three Amigos):**"), refine.indexOf("**`--autonomous` — cascade"));
+// A region of a rendered document between two markers, cut by `markedRegion` (the one home for that
+// cut, F-47-04-ARCH-2): a missing or misordered marker fails here, loudly, rather than handing the
+// assertion the wrong text. The closing marker is dropped from the region it ends.
+const regionOf = (text, open, close) => {
+  const region = markedRegion(text, open, close);
+  assert.ok(region != null, `the region from ${JSON.stringify(open)} to ${JSON.stringify(close)} is found, in that order`);
+  return region.slice(0, region.length - close.length);
+};
+const contractOf = (refine) => regionOf(refine, "- **story — Contract (Three Amigos):**", "**`--autonomous` — cascade");
 const lineCount = (text) => text.split("\n").length;
 
 export const archTests = [
@@ -245,10 +254,10 @@ export const archTests = [
     run: () => {
       const refine = readIn(project("BOTH"), ".claude/commands/aof/refine.md");
       const contract = contractOf(refine);
-      const beat = contract.slice(contract.indexOf("Discovery comes first") - 2, contract.indexOf("**Formulation.**"));
+      const beat = regionOf(contract, "  Discovery comes first", "**Formulation.**");
       for (const line of beat.split("\n").filter((candidate) => candidate.trim() !== "")) assert.match(line, /^ {2}/u, `indented under the Contract's bullet: ${line}`);
       const po = readIn(project("BOTH"), ".claude/agents/aof-product-owner.md");
-      const ownership = po.slice(po.indexOf("<ownership>"), po.indexOf("</ownership>")).split("\n");
+      const ownership = regionOf(po, "<ownership>", "</ownership>").split("\n");
       const bullet = ownership.findIndex((line) => line.startsWith("- A story's `EXAMPLES.md` — its **example map**"));
       assert.ok(bullet > 0 && ownership[bullet - 1].startsWith("- Each story's `STORY.md`"), "the map bullet is a bullet of the ownership list, where it stood");
       assert.deepEqual(ownership.slice(bullet + 1, bullet + 5).map((line) => line.startsWith("  - ")), [true, true, true, true], "its four sub-bullets sit beneath it");

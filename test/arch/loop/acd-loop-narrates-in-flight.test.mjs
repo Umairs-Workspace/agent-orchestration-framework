@@ -148,9 +148,11 @@ export const archTests = [
       // twelve: the resume's `Cleared the resume request` line beside it. 141 — thirteen: the
       // `Thinking:` line that says what effort the loop drives at, before its first drive. 143/00 —
       // fourteen: the `Promoted` line a backlog slug's launch prints before anything is driven.
+      // 191/04 — fifteen: the supervised launch's `Cleared the start request` line (191/ADR-005).
       const inFlight = calls.filter((call) => call.seam === "narrate");
       assert.equal(calls.filter((call) => call.seam === "report" && /^`(?:Gate |Driving |Retrying |Resumed |Reclaimed |Lane |Wave |Baseline |Cleared )/u.test(call.text)).length, 0, "no in-flight line is on report anywhere in the family");
-      assert.equal(printCalls(shell).filter((call) => call.seam === "narrate").length, 14, "fourteen in-flight lines in the shell: the two ladder rungs, the fresh gate's three grade lines, Reclaimed, the refine-phase line, the sequential baseline, Resumed, Driving, the cleared stop request, the cleared resume request, the Thinking line and the Promoted line");
+      assert.equal(printCalls(shell).filter((call) => call.seam === "narrate").length, 15, "fifteen in-flight lines in the shell: the two ladder rungs, the fresh gate's three grade lines, Reclaimed, the refine-phase line, the sequential baseline, Resumed, Driving, the cleared stop request, the cleared resume request, the cleared start request, the Thinking line and the Promoted line");
+      assert.equal(seamOf("Cleared the start request for ${spent.scope}"), "narrate", "the cleared start request is in flight (191/04)");
       assert.equal(seamOf("Promoted ${resolved.promotedFrom}"), "narrate", "the Promoted line is in flight (143/00)");
       // 143/03 — the Sessions line replaced the Thinking line, on the same seam.
       assert.equal(seamOf("sessionTableLine(resolved.sessions"), "narrate", "the Sessions line is in flight (141, 143/03)");

@@ -396,7 +396,7 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, {\n      cwd: projectRoot,\n      encoding: \"utf8\",\n      timeout: 15_000,\n      maxBuffer: 16 * 1024 * 1024,\n      windowsHide: true,\n    })",
     "digest": "db8bfc9168ea05342d42883e266871b0d09482c06a6abd2901b7409da0371584",
-    "sourceDigest": "be94004a5262ce582cdd73eb3bffbdf4b99d9cda43c4c7717988cc14a8968a84",
+    "sourceDigest": "f7aeecd39876944fe087c7ef5e4a6dce4d12117cccefcec1c5703d506f8bdd9a",
     "reason": "Bounded Git history reader supplies rename and deleted-forward source as data; it never imports project code."
   },
   {
@@ -724,7 +724,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"--version\"], { stdio: \"ignore\", shell: process.platform === \"win32\" })",
     "digest": "d24dbb7656f802bd2d307ddc79e71edc513cfbabc2388c3db65e0f860f4525c8",
-    "sourceDigest": "e32e49016c2c8688e3a266fdeb3d35633a1f5cf88218719c8a6221590447241d",
+    "sourceDigest": "d9749fd0554be7aa6069509db7532b9ed6b89111dae683c3909a039621c2adbe",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -732,7 +732,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"test\", \"--manifest-path\", cargoManifest], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "e16b72f5c0ed2aab32ae0a49f168e880902c66716f0ab48530871dac2f2ec631",
-    "sourceDigest": "e32e49016c2c8688e3a266fdeb3d35633a1f5cf88218719c8a6221590447241d",
+    "sourceDigest": "d9749fd0554be7aa6069509db7532b9ed6b89111dae683c3909a039621c2adbe",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -740,7 +740,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"check\", \"--manifest-path\", appManifest, \"--quiet\"], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "851b474db0e12fef1c1b6aa885d41db022ee9f2fc6fa548b9e64b6ff28e0f3dc",
-    "sourceDigest": "e32e49016c2c8688e3a266fdeb3d35633a1f5cf88218719c8a6221590447241d",
+    "sourceDigest": "d9749fd0554be7aa6069509db7532b9ed6b89111dae683c3909a039621c2adbe",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -980,7 +980,7 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, { cwd, env, timeout: 10_000, windowsHide: true, encoding: \"utf8\" })",
     "digest": "a71c6610e4891eb53258a408a9c0a696c644478047edea1f55e8f5c65809de8d",
-    "sourceDigest": "adce4fa614faaab26f3049332ac63158f5b3caa25d5d8a33da80673ca6105359",
+    "sourceDigest": "86459536e39c8809808c5521bf19d59cdcdabde581830bd88bed7ad202868848",
     "reason": "Git-only process wrapper for loop repository operations, with bounded execution. 181 re-reviewed at the main merge: the loop now refuses an unusable work.rubric.command (rubric-command-unusable) before it starts anything; the audited git call is unchanged."
   },
   {
