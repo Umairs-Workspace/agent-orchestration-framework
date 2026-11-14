@@ -3,7 +3,7 @@ type: milestone
 number: 192
 slug: buildable-commands
 title: "Commands are built at render from a core body and the fragments of the practices a project has turned on"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-11-12
 updated: 2026-11-14

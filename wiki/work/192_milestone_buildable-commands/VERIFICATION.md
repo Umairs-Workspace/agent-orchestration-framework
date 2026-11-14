@@ -177,6 +177,7 @@ verifies → `stories/03_story_a-project-sees-its-practices-and-hears-of-a-stale
 | F-02 | `192/03 task 02 · this checkout has a record and nothing to report` (`practice-render-lane.suite.mjs`) is red: "this checkout's lock records its practices". The committed `.aof/aof.lock.json` carries no `work.practices`, and `aof work doctor` warns `practice-render-unrecorded`. No 192 lane commit touched the lock, so the practices record 192/03's update writes never reached the branch. Same cause and evidence as `F-01` and `m127/F-13`, cited as the prior occurrence. It is a distinct incident because it reaches a different case, of a different story. | defect | medium | non-blocker for `192/01`: not in its write set, and its own suites are green. **Blocker for `192/03`'s accept and the milestone's regression gate**: one re-stamp of the lock (`aof work update` on the branch, committed) answers both this and `F-01`. Then re-run both cases. | `192/03` (verify), with `F-01`; loop lane reconcile (`m127/F-13`) | fixed, confirmed at 192/03's verify: the lock records `work.practices` (`build-brief`, `discovery`), `practice-render-lane.suite.mjs` is 39/39 green, and the doctor holds no `practice-render-*` finding. The re-stamped lock is in the working tree and not yet committed. It must be committed before `aof work regression-gate 192`, which refuses a dirty checkout |
 | F-03 | FF-9603 (2) and `96/02-00` were red: three of 193's PLAN.md files restated a path their story declares, each as the opening path of a "Known traps" bullet. They were 193/00 @49 (`test/examples/refine-discovery-beat.test.mjs`), 193/01 @42 (`test/examples/doctor-examples-lane.test.mjs`) and 193/03 @53 (`test/fixtures/application/command-inventory.json`). The case was already red at `d86f2151`, before 192/02. The files came from `ad19ec78`, the 192↔193 swap. This is the same class as `m172/F-172-07`, `m144/F-02`, `m130/F-22` and `m124/F-04`, cited as prior occurrences. It is a distinct incident, with different documents. | defect | low | non-blocker for `192/02`: outside its write set, and pre-existing. It would have reddened 192's regression gate, so it was fixed at verify by m172's precedent: each bullet names the file by role ("the discovery-beat example suite", "the doctor examples-lane suite", "the command-inventory fixture"). Both cases are green. | 193/00, 193/01, 193/03 (PLAN.md) | fixed |
 | F-04 | `aof work update`'s practice list is wider than a 120-column terminal. With this checkout's two practices the rows are 133 and 137 columns, and ADR-007 §2 puts the summary before the key, so the key is what wraps. It is the part the operator copies into the config. The review at build saw this and recorded it as a Nit. A recall over the stream's findings returned only web-UI width findings (`m127/F-32`, `m175/F-13`, `m27/F-2702`, `m47/F-47-V-6`) and `m55/F-55-M-8`. None has this cause, so this is a distinct incident. | defect | low | non-blocker: every word is printed and the JSON is unaffected. Each row still reads correctly once wrapped. Defer. The fix is to shorten the two summaries in the practices' `bundle.json`, or to amend ADR-007 §2 so the key comes before the summary (or the summary is cut to fit the terminal). | backlog (ADR-007 §2 owner): `backlog/chore_practice-list-fits-the-terminal` | open (deferred) |
+| F-05 | The first milestone gate (`gate/192` at `b0ea033c`, run `43608519554`) was red on six cases. One was 192's own: FF-19208's control cut rendered markdown with `indexOf` sentinels (F-47-04-ARCH-2). Five were not: `m42-item-3` (`pty.mjs`'s two silent catches, from main's #26); the workspace-boundary runtime audit (five entries made stale by 191/04's, 192/00's and 192/03's edits around unchanged calls); FF-7106 (193/04's `files:` missing nine tracked renders); FF-12602 leg 2 (191/04's `Cleared the start request` line); FF-5301 (191/07's `discord-buttons.mjs` in the worker facade's closure). Four of the five had been named "pre-existing" in each story's notes and carried. This is the class of `m190/R1`, cited as the prior occurrence. | defect | high | **Blocker for the milestone accept**: the door refuses a red newest row. Each case was fixed at its cause in `2792403a` (its message lists them); none was relabelled. | 192 (verify), with 191 and 193/04 for their lines | fixed in `2792403a`; confirmed by the second gate run below |
 
 ## Accept decision
 
@@ -215,3 +216,30 @@ verifies → `stories/03_story_a-project-sees-its-practices-and-hears-of-a-stale
   `OUTCOME.md` were written beside `STORY.md`. Every story of 192 is now accepted. Before the
   milestone can be accepted, the re-stamped `.aof/aof.lock.json` must be committed and
   `aof work regression-gate 192` must run.
+
+## Regression gate (the milestone, 2026-11-14)
+
+`aof work regression-gate 192` ran unchanged on a clean `ubuntu-latest` checkout through
+`.github/workflows/gate.yml` (160/ADR-014 §6), started by pushing `gate/192`. This Mac cannot host
+the whole tree while the live control daemon holds `:4182`. Both rows were brought home unchanged
+from the runs' artifacts into `REGRESSION.md`:
+
+- **Run `43608519554`, at `b0ea033c`: red on six cases** (14.8 min). They are `F-05`, each fixed
+  at its cause in `2792403a`.
+- **Run `43610853753`, at `2792403a`: green** (sharded, 15.0 min, scope `all`).
+
+Locally, the six cases and the suites nearest the fixes were re-run isolated before the second
+push: all green. That includes the `@aof/execution` workspace suite (345 cases plus the new
+degrade case) and the session-driver and native-addon controls. Three `yarn-installation` cases
+and three `core-workspace` cases stay red on this Mac only: the packaging closure (recorded as
+failing on main at #26), and `/var` against `/private/var`. The runner passes all six.
+
+## Milestone accept decision (2026-11-14)
+
+**Accepted.** All four stories are `done`. The newest regression gate row is green at
+`2792403a`. FF-19205 to FF-19208 are green, each with a recorded red probe. The `@manual` E4/E5
+comparison holds. There are no `@uat` scenarios and no UI. `aof work validate 192` passes, and
+`aof work doctor 192` reports no error and no `control-unresolved` at either severity. No blocker
+finding is open: F-01, F-02, F-03 and F-05 are fixed, and F-04 is a non-blocker deferred to
+`backlog/chore_practice-list-fits-the-terminal` and listed as an open Gap in `OUTCOME.md`.
+`RETROSPECTIVE.md` (R1–R5) and `OUTCOME.md` were written at the milestone.
