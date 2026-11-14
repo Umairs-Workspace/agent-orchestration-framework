@@ -8,7 +8,7 @@ depends: []
 status: done
 owner: product-owner
 created: 2026-11-13
-updated: 2026-11-13
+updated: 2026-11-14
 adrs: [ADR-001, ADR-002, ADR-003]
 reads:
   - wiki/work/192_milestone_buildable-commands/SPEC.md

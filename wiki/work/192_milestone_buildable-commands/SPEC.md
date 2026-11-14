@@ -6,7 +6,7 @@ title: "Commands are built at render from a core body and the fragments of the p
 status: in-progress
 owner: product-owner
 created: 2026-11-12
-updated: 2026-11-13
+updated: 2026-11-14
 schema: 1
 aofVersion: 0.1.0
 ---

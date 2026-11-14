@@ -14,6 +14,19 @@ doc: state
   `pending`, four stories with their example maps, build plans and 16 task features.
   `aof work validate` passes; `aof work doctor 192` reports no error. Nothing is built.
 - Waves: 00; then 01 and 02 together; then 03. `aof work next 192` answers 192/00.
+- 2026-11-13 — Refine re-dispatched by the loop (`aof:refine 192 --solo`, driven run
+  `20261113T065020379Z-0008`) after verify's three cycles. Nothing to do: the four stories hold
+  their contracts and are all accepted, `aof work validate 192` passes, `aof work doctor 192`
+  reports no error and no `pending` control, and the lock re-stamp (F-01/F-02) is committed. No
+  ADR, story or contract was touched. What remains is verify's: `aof work regression-gate 192`
+  and the milestone accept.
+- 2026-11-14 — Post-loop cleanup (operator-asked, interactive). The loop ended after refine cycle
+  1 without the gate or the accept. Removed the two leftover dispatch worktrees
+  (`dispatch-192-02`, `dispatch-192-03`) and their branches, both merged into HEAD; their only
+  uncommitted content was lane lock writes that the committed re-stamp replaces (`aof work update
+  --dry-run` at HEAD: 236 up to date, `work.practices` recorded). F-04's deferral now has its
+  backlog item, `backlog/chore_practice-list-fits-the-terminal`. 192/00 and 192/01 gained the
+  `RETROSPECTIVE.md` the doctor asks of a delivered story (`story-record-missing`).
 
 ## Notes & decisions in flight
 
