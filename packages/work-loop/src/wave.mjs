@@ -732,8 +732,12 @@ export function createWaveOrchestration({
         // hides a live loop from the supervisor and the milestone never holds two non-terminal runs.
         // A dispatch that admits more members while this epoch runs settles it and mints the next,
         // so every epoch's brief names exactly the lanes it carried.
-        await settleWaveRun(halted != null || stopping() ? "failed" : "done");
-        if (lanes.size > 0 && halted == null && !stopping()) {
+        // ONE reading of the stop decides both: a stop that lands during the settle's await must not
+        // skip the re-mint of an epoch already settled `done`, or the open lanes run with no wave
+        // run and the halt that follows has no epoch left to fail. That epoch is failed at its close.
+        const ending = halted != null || stopping();
+        await settleWaveRun(ending ? "failed" : "done");
+        if (lanes.size > 0 && !ending) {
           const minted = await mintWaveRun([...lanes.keys()], lastBound, stepExec());
           if (minted?.halt != null && halted == null) halted = minted.halt;
         }
