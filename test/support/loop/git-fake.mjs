@@ -19,7 +19,7 @@
 // a linked worktree gets the `.git` FILE git writes, pointing at a directory that is not there, so any
 // git reached outside this port fails at once rather than answering for another repository.
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync, unlinkSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const ZERO = { stdout: "", stderr: "", status: 0 };
@@ -176,7 +176,7 @@ export function createGitModel({ root, branch = "main" } = {}) {
   }
 
   // Every non-ignored file under the worktree, skipping `.git` and any other registered worktree.
-  function diskFiles(tree, { ignored = false } = {}) {
+  function diskFiles(tree) {
     const rules = rulesFor(tree);
     const nested = worktrees.filter((other) => other !== tree && other.path.startsWith(tree.path + path.sep)).map((other) => other.path);
     const files = new Map();
@@ -187,10 +187,10 @@ export function createGitModel({ root, branch = "main" } = {}) {
         if (entry.name === ".git" && rel === "") continue;
         if (entry.isDirectory()) {
           if (nested.includes(full)) continue;
-          if (!ignored && isIgnored(rules, childRel, { isDir: true })) continue;
+          if (isIgnored(rules, childRel, { isDir: true })) continue;
           walk(full, childRel);
         } else if (entry.isFile()) {
-          if (!ignored && isIgnored(rules, childRel)) continue;
+          if (isIgnored(rules, childRel)) continue;
           files.set(childRel, readFileSync(full));
         }
       }
@@ -471,16 +471,6 @@ export function createGitModel({ root, branch = "main" } = {}) {
       if (at < 0 || flags.join(" ") !== "-r --cached -q --ignore-unmatch") throw new GitModelRefusal(args);
       const match = pathspecMatcher(rest.slice(at + 1), args);
       for (const rel of [...tree.index.keys()]) if (match(rel)) tree.index.delete(rel);
-      return ZERO;
-    },
-    clean: (tree, rest, args) => {
-      const at = rest.indexOf("--");
-      if (at < 0 || rest.slice(0, at).join(" ") !== "-f -x -q") throw new GitModelRefusal(args);
-      const match = pathspecMatcher(rest.slice(at + 1), args);
-      for (const rel of diskFiles(tree, { ignored: true }).keys()) {
-        if (tree.index.has(rel) || !match(rel)) continue;
-        unlinkSync(path.join(tree.path, ...rel.split("/")));
-      }
       return ZERO;
     },
     "check-ignore": (tree, rest, args) => {

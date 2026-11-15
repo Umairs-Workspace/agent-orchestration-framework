@@ -314,4 +314,37 @@ export const tests = [
       }
     },
   },
+  {
+    // A guessed edge is no import. graphify marks a call it matched by function name alone as
+    // INFERRED, and test selection asks with `skipInferred`, so such an edge selects nothing.
+    name: "relations with skipInferred follows no INFERRED edge, directly or through the closure",
+    async run() {
+      // a.test imports a (extracted). b.test reaches a only through a guessed call, and c.test
+      // reaches b.test by a real import, so one guessed edge would otherwise select both.
+      const graph = {
+        directed: true, multigraph: false, graph: {},
+        nodes: [["a", "src/a.mjs"], ["at", "test/a.test.mjs"], ["bt", "test/b.test.mjs"], ["ct", "test/c.test.mjs"]].map(([id, file]) => ({ id, label: file, file_type: "code", source_file: file })),
+        links: [
+          { source: "at", target: "a", relation: "imports", confidence: "EXTRACTED" },
+          { source: "bt", target: "a", relation: "calls", confidence: "INFERRED", confidence_score: 0.8 },
+          { source: "ct", target: "bt", relation: "imports", confidence: "EXTRACTED" },
+          { source: "a", target: "bt", relation: "indirect_call", confidence: "INFERRED", confidence_score: 0.8 },
+        ],
+      };
+      const root = fixtureProject(JSON.stringify(graph));
+      try {
+        const { relations } = createCodeGraphReader({ readGraph, normalizeGraph, graphJsonPath, graphArtifactBuiltAt });
+        const [selecting] = (await relations(["src/a.mjs"], { projectRoot: root, transitive: true, skipInferred: true })).files;
+        assert.deepEqual(selecting.dependents, ["test/a.test.mjs"], "only the suite that imports a");
+        assert.deepEqual(selecting.dependencies, [], "a guessed call out of a is no dependency either");
+        const [every] = (await relations(["src/a.mjs"], { projectRoot: root, transitive: true })).files;
+        assert.deepEqual(every.dependents, ["test/a.test.mjs", "test/b.test.mjs", "test/c.test.mjs"], "without the option every edge is followed, as before");
+        const normalized = normalizeGraph(graph);
+        assert.deepEqual(computeImpact(normalized, ["src/a.mjs"], { skipInferred: true })[0].dependents, ["test/a.test.mjs"], "the pure core skips them too");
+        assert.deepEqual(computeImpact(normalized, ["src/a.mjs"])[0].dependents, ["test/a.test.mjs", "test/b.test.mjs"]);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  },
 ];

@@ -1762,6 +1762,41 @@ function repairGradeTests() {
         assert.equal(posts.length, 0, "a repaired halt and a finished loop notify nobody");
       }, { git: "fake", stories: ["01"], commit: { "src/x.mjs": "// base\n" } }),
     },
+    {
+      // A green report beside a non-zero exit is `report-vacuous`, and the cause is only in the
+      // runner's output. Its tail rides the repair run's `brief.halt`, so the halt is diagnosable from
+      // the run record without running the rubric again.
+      name: "a grade halted by the runner's exit keeps the tail of the runner's output on the repair run's record",
+      run: () => withLaneRepo(async (fx) => {
+        const repairs = [];
+        const completeVerify = verifyCompleter(fx);
+        const phase = async (input) => {
+          if (input.phase === "repair") repairs.push({ ...input });
+          if (input.phase === "verify") await completeVerify(`/aof:verify ${input.ref}`);
+          return { outcome: "document", document: { outcome: "done", sessionId: `child-${input.phase}-${input.ref}`, settlementContext: {} }, exitCode: 0, stderrTail: [] };
+        };
+        const crashed = { ...emits(passingTap(), 1), stderr: "Error: an unhandled rejection outside any case\n" };
+        const report = collector();
+        const ctx = {
+          ...laneCtx(fx, { child: fakeLaneChild(fx), rubric: stubRubric([emits(passingTap()), crashed]), report, driver: primaryDriver(fx), timers: fakeTimers(), signals: fakeSignals() }),
+          spawnPhaseDrive: phase,
+        };
+        const state = await runLoopLaunch({ scope: fx.milestone }, ctx);
+        const ref = `${fx.milestone}/01`;
+        assert.equal(state.state, "done", report.lines.join("\n"));
+        assert.equal(repairs.length, 1, "the grade halt is handed to ONE repair session");
+        const halted = report.lines.find((line) => line.includes("halted on grade-indeterminate"));
+        assert.ok(halted?.includes("exit=1") && halted.includes("an unhandled rejection outside any case"), `the halt line names the exit and the output: ${halted}`);
+        const record = (await readRuns(await resolveItemExact({ workspace: fx.workspace }, ref))).find((run) => run.runId === repairs[0].runId);
+        assert.ok(record, "the repair is a run on the halted ref");
+        assert.deepEqual(Object.keys(record.brief.halt), ["stop", "producer", "runner"]);
+        assert.equal(record.brief.halt.stop, "grade-indeterminate");
+        assert.equal(record.brief.halt.producer, "work:grade:report-vacuous");
+        assert.ok(record.brief.halt.runner.startsWith("the runner exited 1 although its report shows no failing case"), record.brief.halt.runner);
+        assert.ok(record.brief.halt.runner.includes("an unhandled rejection outside any case"), "the runner's stderr is in the kept tail");
+        assert.ok(record.brief.halt.runner.length < 4200, "the tail is bounded where work:grade builds it");
+      }, { git: "fake", stories: ["01"], commit: { "src/x.mjs": "// base\n" } }),
+    },
   ];
 }
 

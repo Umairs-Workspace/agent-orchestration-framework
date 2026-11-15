@@ -17,7 +17,7 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // asserting the fixture's opinion of git rather than git's behaviour.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { readFile, writeFile, mkdir, stat, unlink } from "node:fs/promises";
+import { readFile, writeFile, mkdir, stat, unlink, utimes } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 const resolveDispatchLane = _aofApplication.loop.work.dispatch.resolveDispatchLane;
@@ -182,6 +182,26 @@ export const workDispatchLaneTests = [
       await cleanupDispatchLane(root, "53/00", { removeBranch: true });
       assert.equal(existsSync(lane.worktree), false, "cleanupDispatchLane removes the lane");
     }),
+  },
+  {
+    // A downstream loop on Windows (2026-11-15): the cleanup ran `git clean -x` over the queue globs,
+    // which walks every ignored directory. A lane's node_modules took about 75 s, past the git
+    // timeout, so every merged lane reported "cleanup refused (error)". The cleanup now reads the
+    // untracked queues off `git status`, which skips ignored directories, and deletes them by path.
+    name: "a finished lane's cleanup runs no `git clean`: an ignored queue and an ignored directory go with the tree",
+    run: () => withEnsuredRepo(async ({ root }) => {
+      const lane = await resolveDispatchLane(root, "53/00");
+      await writeRel(lane.worktree, STORY_QUEUE, BEAT);
+      await writeRel(lane.worktree, "node_modules/pkg/index.js", "// an ignored dependency tree\n");
+      assert.deepEqual(await porcelain(lane.worktree), [], "guard: git ignores the queue and node_modules");
+      const sent = [];
+      const exec = async (args, options) => { sent.push(args.filter((arg) => !arg.startsWith("-") && !arg.includes("="))[0]); return git(args, options.cwd); };
+      const cleaned = await cleanupDispatchLane(root, "53/00", { removeBranch: false, exec });
+      assert.equal(cleaned.outcome, "removed", JSON.stringify(cleaned));
+      assert.equal(existsSync(lane.worktree), false, "the tree is gone, ignored files and all");
+      assert.equal(sent.includes("clean"), false, `no git clean was sent: ${sent.join(" ")}`);
+      assert.ok(sent.includes("status") && sent.includes("worktree"), `guard: the cleanup's git went through this exec: ${sent.join(" ")}`);
+    }, { extra: { ".gitignore": ".aof/mesh/\nnode_modules/\n" } }),
   },
   {
     name: "147/03 — a heartbeat queue an earlier commit tracked is removed from the index by the next lane commit; the file stays on disk and the lane's status is clean",
@@ -538,6 +558,61 @@ export const workDispatchLaneTests = [
         } finally {
           await unlink(path.join(root, "..", escape)).catch(() => {});
         }
+      });
+    },
+  },
+  {
+    // The graph is derived and git-ignored, so a lane cut from the primary had none, and every
+    // `aof test --scope impacted` in it widened as `no-graph` (a downstream loop, 2026-11-15).
+    name: "dispatch 2026-11-15 a lane starts with the primary's git-ignored code graph, its build time kept — never one git would commit, never over the lane's own, and nothing when the primary has none",
+    run: async () => {
+      const GRAPH = "graphify-out/graph.json";
+      const NESTED = "graphify-out/.gitignore";
+      const BUILT = new Date("2026-10-28T18:26:00.000Z");
+      const graphIn = (tree) => path.join(tree, ...GRAPH.split("/"));
+      const buildGraph = async (root, body = "{\"nodes\":[],\"links\":[]}\n") => {
+        await writeRel(root, GRAPH, body);
+        await utimes(graphIn(root), BUILT, BUILT);
+      };
+      const laneStatus = async (tree) => (await git(["status", "--porcelain", "--untracked-files=all"], tree)).stdout.trim();
+
+      // The root ignore file names the directory.
+      await withDispatchRepo(async ({ root }) => {
+        await writeFile(path.join(root, ".gitignore"), ".aof/mesh/\ngraphify-out/\n", "utf8");
+        await git(["add", ".gitignore"], root);
+        await git(["commit", "-m", "fixture: the graph directory is ignored"], root);
+        await buildGraph(root);
+        const lane = await resolveDispatchLane(root, "53/00");
+        assert.equal(await readFile(graphIn(lane.worktree), "utf8"), await readFile(graphIn(root), "utf8"), "the lane holds the primary's graph");
+        assert.equal((await stat(graphIn(lane.worktree))).mtime.toISOString(), BUILT.toISOString(), "its build time is the primary graph's, not the copy's");
+        assert.equal(await laneStatus(lane.worktree), "", "the graph is ignored: the lane's tree is clean");
+
+        await writeFile(graphIn(lane.worktree), "{\"the lane\":\"built its own\"}\n", "utf8");
+        const reused = await resolveDispatchLane(root, "53/00");
+        assert.equal(await readFile(graphIn(reused.worktree), "utf8"), "{\"the lane\":\"built its own\"}\n", "a graph the lane holds is never overwritten");
+      });
+
+      // Only the `.gitignore` `aof graph build` writes beside the graph ignores it.
+      await withDispatchRepo(async ({ root }) => {
+        await writeRel(root, NESTED, "*\n");
+        await buildGraph(root);
+        const lane = await resolveDispatchLane(root, "53/00");
+        assert.ok(existsSync(graphIn(lane.worktree)), "the lane holds the graph");
+        assert.equal(await readFile(path.join(lane.worktree, ...NESTED.split("/")), "utf8"), "*\n", "…and the ignore file that hides it");
+        assert.equal(await laneStatus(lane.worktree), "", "both are ignored: the lane's tree is clean");
+      });
+
+      // A graph git does not ignore would land in the lane's commit.
+      await withDispatchRepo(async ({ root }) => {
+        await buildGraph(root);
+        const lane = await resolveDispatchLane(root, "53/00");
+        assert.equal(existsSync(graphIn(lane.worktree)), false, "a graph git does not ignore is left alone");
+        assert.equal(await laneStatus(lane.worktree), "", "the lane's tree is clean");
+      });
+
+      await withDispatchRepo(async ({ root }) => {
+        const lane = await resolveDispatchLane(root, "53/00");
+        assert.equal(existsSync(path.join(lane.worktree, "graphify-out")), false, "a primary with no graph copies nothing");
       });
     },
   },

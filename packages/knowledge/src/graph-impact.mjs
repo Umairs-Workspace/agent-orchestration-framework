@@ -34,7 +34,15 @@
 // once rather than pay one walk of all ~46,000 edges per path, the O(paths × edges) cost this
 // comment used to price. Nothing is cached across calls: a cached graph is how two calls in one
 // process stop being two answers (72/ADR-002).
-export function computeImpact(graph, paths) {
+//
+// `skipInferred` leaves out every edge graphify GUESSED. An INFERRED edge is a call matched by
+// function name alone, so two files that each declare a local `world()` are joined by one. Test
+// selection asks with it set: followed transitively, those guesses selected 195 of 226 suites for
+// one changed file in a downstream repository, and 2 without them. A real call between two files
+// also has an EXTRACTED import edge, which stays. `graph impact` and seam liveness ask without it.
+export const isInferredEdge = (edge) => edge.confidence === "INFERRED";
+
+export function computeImpact(graph, paths, { skipInferred = false } = {}) {
   const byId = new Map(graph.nodes.map((node) => [node.id, node]));
   const fileOf = (node) => node.sourceFile?.replace(/\\/g, "/");
   // Normalize requested paths to the graph's separator convention (graphify writes POSIX-style
@@ -68,6 +76,7 @@ export function computeImpact(graph, paths) {
   }
 
   for (const edge of graph.edges) {
+    if (skipInferred && isInferredEdge(edge)) continue;
     const src = byId.get(edge.source);
     const tgt = byId.get(edge.target);
     if (!src || !tgt) continue;

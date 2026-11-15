@@ -693,7 +693,13 @@ export function createStoryCycle({
     const declaration = declare();
     let record;
     try {
-      const brief = { ...runBrief(declaration), halt: { stop: act.stop, producer: act.producer ?? null }, ...(declaration.execution == null ? {} : { nativeAskContext: askContext({ ctx, scope, loopRunId }).site }) };
+      // THE RUNNER'S OWN WORDS RIDE THE RECORD. A grade halt whose runner exited non-zero carries the
+      // tail of its output (`gradeExitFacts`, bounded where `work:grade` builds it). The halt line and
+      // the hand-over file hold it too, but neither is the run store: kept on `brief.halt`, the halt is
+      // still diagnosable from the run record alone, with no second run of the rubric. No other halt
+      // carries `runner`, so every other repair's `brief.halt` is the two keys it was.
+      const runnerWords = typeof halt.details?.runner === "string" && halt.details.runner.length > 0 ? halt.details.runner : null;
+      const brief = { ...runBrief(declaration), halt: { stop: act.stop, producer: act.producer ?? null, ...(runnerWords == null ? {} : { runner: runnerWords }) }, ...(declaration.execution == null ? {} : { nativeAskContext: askContext({ ctx, scope, loopRunId }).site }) };
       ({ record } = await transitionRunStart(item, { brief, node: meshNodeIdOf(ctx.workspace.config), now, ...(declaration.execution == null ? {} : { execution: executionForPhase(declaration.execution, declaration.phase) }) }, transitionOptionsFor(ctx)));
     } catch (error) {
       return { decision: "stop", facts: { repair: `refused:${error?.code ?? "run-start-error"}` } };

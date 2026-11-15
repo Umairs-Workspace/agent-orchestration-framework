@@ -242,7 +242,9 @@ async function selectSuites({ projectRoot, changed = [], allSuites = [], roots =
   // vocabulary for the two artifact cases, so the reasons below are today's, unchanged.
   // The TRANSITIVE form (190/ADR-003 §2): every file that reaches each changed file through import
   // edges, from the same one read of the artifact. Direct importers alone miss a suite two hops away.
-  const answer = await relations(changed, { projectRoot, transitive: true });
+  // `skipInferred`: an edge the graph guessed from a shared function name is no import, and a walk
+  // that follows one reaches most of the tree, so the selection never does.
+  const answer = await relations(changed, { projectRoot, transitive: true, skipInferred: true });
   const graphPath = answer.artifact ?? null;
   const widenAll = (widened, builtAt) => selection({ scope: "all", selected: whole, widened, builtAt, graphPath, changed });
 
@@ -287,7 +289,7 @@ async function selectSuites({ projectRoot, changed = [], allSuites = [], roots =
   const viaPaths = [...new Set(couplings.flatMap((entry) => entry.via ?? []))];
   const viaSuites = new Map();
   if (viaPaths.length > 0) {
-    const through = await relations(viaPaths, { projectRoot, transitive: true });
+    const through = await relations(viaPaths, { projectRoot, transitive: true, skipInferred: true });
     if (through.served !== false && through.available === true) {
       viaPaths.forEach((helper, index) => {
         const entry = through.files[index];
