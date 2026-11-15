@@ -430,3 +430,23 @@ are green, and each has a recorded red probe. The operator signed off the outsid
 - **Open, non-blocking, routed:** F-04, F-10, F-11 and F-12 to the backlog. F-13 to m65/F-65-C's owner,
   and F-15 to m129/F-61's owner.
 - **Still owed at the milestone:** the regression gate (`aof work regression-gate 191`).
+
+## Milestone accept decision (aof:verify 191, 2026-11-15)
+
+- **Regression gate:** green at `e4ad00fe`, scope all, sharded, 15.4 min, on a runner through
+  `gate.yml` (run 43738846534). `REGRESSION.md` holds three rows:
+  - `e10c8f5f`, red, run on the MacBook. Its failures are this machine's: they all passed on the
+    runner.
+  - `49fc1e41`, red on the runner for one case. F-14's fix had taken the loop shell past its
+    2250-line bound, and `e4ad00fe` brought it back.
+  - `e4ad00fe`, green.
+- **Stories:** 00–08 are done, and every box in SPEC is ticked.
+- **Findings:** no blocker is open. Open and routed:
+  - F-04, F-10, F-11 and F-12 to the backlog.
+  - F-13 to m65/F-65-C's owner.
+  - F-15 to m129/F-61's owner.
+
+  These are also the gaps in OUTCOME.
+- **Records:** `OUTCOME.md` and `RETROSPECTIVE.md` (R1–R4) are written, STATE is compacted, and
+  the lessons are ingested into memory.
+- **191: accepted.**

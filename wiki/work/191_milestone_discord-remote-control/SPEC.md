@@ -3,7 +3,7 @@ type: milestone
 number: 191
 slug: discord-remote-control
 title: "Discord drives the work from a phone — start a Claude session in any project, start a loop, and act on a notification with one tap"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-11-10
 updated: 2026-11-15
