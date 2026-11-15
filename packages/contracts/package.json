@@ -7,6 +7,7 @@
     "./commands": "./src/commands.mjs",
     "./loop-bounds": "./src/loop-bounds.mjs",
     "./agent-mode": "./src/agent-mode.mjs",
+    "./operator-profile": "./src/operator-profile.mjs",
     "./error": "./src/error.mjs",
     "./claim-provenance": "./src/claim-provenance.mjs",
     "./freshness": "./src/freshness.mjs",

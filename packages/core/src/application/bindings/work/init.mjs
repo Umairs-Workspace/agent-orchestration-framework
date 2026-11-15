@@ -11,8 +11,11 @@ import { ensureAofGitignore, ensureWorkDirGitFiles, workDirFor } from "../../../
 import { setHeadroomEnabled, readConfig, writeConfig } from "../../../work/headroom.mjs";
 import { applyClaudeSettingsMerge } from "../../../claude-settings.mjs";
 import { codexOwnershipBaseline } from "../../../codex-settings.mjs";
+import { readJson } from "@aof/foundation/fs";
+import { commandError } from "@aof/contracts/error";
+import { correctOperatorProfile, operatorProfileDiagnostics } from "@aof/contracts/operator-profile";
 
-export function assembleWorkInit({ workspaceServices, workMemoryServices }) {
+export function assembleWorkInit({ workspaceServices, workMemoryServices, configInspectServices }) {
   // `aof work init` — render the shipped ACD bundle into a consumer repo
   // (milestone 01 / story 01). A THIN orchestrator over the existing engine:
   //
@@ -42,6 +45,9 @@ export function assembleWorkInit({ workspaceServices, workMemoryServices }) {
   //     general namespace rule renders them under `commands/aof/<id>.md`.
 
   const { workspacePaths } = workspaceServices;
+  const { globalWorkspacePaths } = workspaceServices;
+  // 193/ADR-006 §1 — the discovery gate's and the switch's resolvers, asked before and after the write.
+  const { examplesEnabledFromConfig, operatorAwareFromConfig } = configInspectServices;
 
   // ADR-002 — the memory seam owns BOTH halves of the backend selection: the read
   // (selectBackendName) and this default-write. The scaffold names the key nowhere.
@@ -311,12 +317,85 @@ export function assembleWorkInit({ workspaceServices, workMemoryServices }) {
     return TAG_GROUPS.some((group) => Array.isArray(tags[group]) && tags[group].length > 0);
   }
 
-  // `aof work init-config [dir] [--layers …] [--refinements …] [--domains …]`.
-  // opts: { targetDir, tags: { layers, refinements, domains } }.
+  // ------------------------------------------- the operator half (193/03) ----
+  //
+  // 193/ADR-006 §4 — `--operator-aware <on|off>` writes the project's switch, and `--operator-role` and
+  // `--expertise <domain>=<level>[,…]` the operator profile; `--global` points the profile at the
+  // machine-wide `~/.aof/aof.config.json` and refuses everything else, because the switch has no
+  // machine-wide form (§1) and the rest of this verb is a project's. Unlike the tag vocabulary, which
+  // fills a hole, a profile flag REPLACES what it names: the operator is correcting a statement about
+  // themselves. Every value is validated before any file is written, by the profile's own validator,
+  // so a refusal leaves both files as they were. The profile is written whether or not the switch is
+  // on: it is the operator's statement, and a project may turn the switch on later.
+  const BAD_PROFILE = "operator-profile-bad-value";
+  const GLOBAL_PROFILE_ONLY = "init-config-global-profile-only";
+
+  // "fraud=expert,tenancy-law=new" → { fraud: "expert", "tenancy-law": "new" }. A pair with no `=`, an
+  // empty side or a domain named twice is refused here; the slug and the level are the validator's.
+  function parseExpertise(text) {
+    const expertise = {};
+    const pairs = String(text).split(",").map((pair) => pair.trim()).filter(Boolean);
+    if (pairs.length === 0) throw commandError("--expertise names no domain; give it as <domain>=<level>[,…], such as fraud=working.", BAD_PROFILE, 400);
+    for (const pair of pairs) {
+      const [domain, level, ...rest] = pair.split("=").map((side) => side.trim());
+      if (level === undefined || rest.length > 0 || domain === "" || level === "") {
+        throw commandError(`--expertise "${pair}" is not <domain>=<level>, such as fraud=working.`, BAD_PROFILE, 400);
+      }
+      if (Object.hasOwn(expertise, domain)) throw commandError(`--expertise names the domain "${domain}" twice; give each domain one level.`, BAD_PROFILE, 400);
+      expertise[domain] = level;
+    }
+    return expertise;
+  }
+
+  // The operator's words the flags carry, validated, or null when no profile flag was given.
+  function operatorWords(options) {
+    const words = {};
+    if (options.operatorRole !== undefined) words.role = options.operatorRole;
+    if (options.expertise !== undefined) words.expertise = parseExpertise(options.expertise);
+    if (Object.keys(words).length === 0) return null;
+    const [problem] = operatorProfileDiagnostics({ work: { operator: words } });
+    if (problem) throw commandError(problem.message, problem.code, 400);
+    return words;
+  }
+
+  function switchRequest(value) {
+    if (value === undefined || value === null) return null;
+    if (value === "on" || value === "off") return value === "on";
+    throw commandError(`--operator-aware takes "on" or "off", not "${value}".`, "init-config-bad-switch", 400);
+  }
+
+  // `--global`: the profile into the machine-wide config, read-merge-write, and nothing else.
+  async function initGlobalProfile(targetDir, options, words) {
+    if (options.operatorAware != null) {
+      throw commandError("--global writes the operator profile only: work.examples.operatorAware is set per project, in the project's own config, because rendered commands are committed. Run `aof work init-config --operator-aware on` in the project.", GLOBAL_PROFILE_ONLY, 400);
+    }
+    if (TAG_GROUPS.some((group) => normalizeTagGroup(options.tags?.[group]).length > 0) || words == null) {
+      throw commandError("--global writes the operator profile only: give it --operator-role and/or --expertise, and run the rest of init-config in the project.", GLOBAL_PROFILE_ONLY, 400);
+    }
+    const { configPath } = globalWorkspacePaths({ env: options.env });
+    const created = !existsSync(configPath);
+    const read = created ? {} : await readJson(configPath);
+    const config = read != null && typeof read === "object" && !Array.isArray(read) ? read : {};
+    const operator = correctOperatorProfile(config, words);
+    await writeConfig(configPath, config);
+    return { targetDir, global: true, configPath, created, profileWritten: "global", operator };
+  }
+
+  // `aof work init-config [dir] [--layers …] [--refinements …] [--domains …]
+  //   [--operator-aware on|off] [--operator-role <text>] [--expertise <domain>=<level>,…] [--global]`.
+  // opts: { targetDir, tags: { layers, refinements, domains }, operatorAware, operatorRole, expertise, global, env }
+  // (`env` names the global home for `--global`, as the config-inspect bindings take it; default process.env).
   async function initConfig(options = {}) {
     const targetDir = path.resolve(options.targetDir ?? process.cwd());
+    // Every refusal comes before any write.
+    const words = operatorWords(options);
+    if (options.global) return initGlobalProfile(targetDir, options, words);
+    const operatorAware = switchRequest(options.operatorAware);
     const { configPath, config } = await readConfig(targetDir);
     const created = !existsSync(configPath);
+    if (operatorAware === true && !examplesEnabledFromConfig(config)) {
+      throw commandError("operator-aware discovery means nothing without discovery: work.examples.enabled is not true in this project. Turn discovery on first (work.examples.enabled: true), then the switch.", "examples-operator-aware-without-discovery", 400);
+    }
 
     if (created) {
       // The schema's required root keys (`name` + `resources`) so a config born here
@@ -355,6 +434,20 @@ export function assembleWorkInit({ workspaceServices, workMemoryServices }) {
       tagsWritten = true;
     }
 
+    // work.examples.operatorAware — the project's switch (193/ADR-006 §1). Turning it off where there
+    // is no `work.examples` block writes nothing: the switch is already off.
+    let operatorAwareWritten = false;
+    if (operatorAware != null) {
+      const examples = config.work?.examples;
+      if (examples != null && typeof examples === "object" && !Array.isArray(examples)) {
+        examples.operatorAware = operatorAware;
+        operatorAwareWritten = true;
+      }
+    }
+
+    // work.operator — the operator's own words, replacing what they name.
+    const operator = words == null ? null : correctOperatorProfile(config, words);
+
     await writeConfig(configPath, config);
 
     return {
@@ -362,6 +455,11 @@ export function assembleWorkInit({ workspaceServices, workMemoryServices }) {
       configPath,
       config,
       created,
+      // The switch as its one resolver reads it, after the write.
+      operatorAware: operatorAwareFromConfig(config),
+      operatorAwareWritten,
+      profileWritten: operator == null ? null : "project",
+      operator,
       memoryBackend,
       backendWritten,
       // The write-side default, in the same `<value> + <written>` shape the backend and the

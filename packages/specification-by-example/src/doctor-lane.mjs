@@ -3,14 +3,19 @@ import { parseFeature } from "@aof/work/feature-parse";
 import { severityFor } from "@aof/work/lifecycle";
 import {
   EXAMPLES_DOC,
+  RESEARCH_DOC,
+  findingNamed,
   malformedLines,
-  openBusinessQuestions,
+  openQuestions,
   parseExampleMap,
   provenanceClaims,
+  readFindings,
+  researchClaims,
   ruleCount,
   rulesWithoutExample,
   untracedExamples,
 } from "./map.mjs";
+import { researchDocOf } from "./story-probe.mjs";
 
 // Application policy is supplied by core: the gate's one resolver.
 export function createDoctorExamples({ examplesEnabledFromConfig }) {
@@ -23,21 +28,25 @@ export function createDoctorExamples({ examplesEnabledFromConfig }) {
 // agent's word. The lane checks both against code — the map through story 02's one parser and its
 // queries, and the claims against the answers story 03's `collectAnswers` read from the harness:
 //
-//   example-question-open          a `business` question that is not `answered`
+//   example-question-open          a `policy` or `business` question that is not `answered`, or a
+//                                  `domain` question neither `answered` nor `researched` (193/ADR-002 §1)
 //   example-provenance-unanchored  a claim (`confirmed`, `stated Q<n>`, `answered`) whose token
 //                                  no answer record carries
+//   example-research-unanchored    a `researched F<n>` example or question whose finding the research
+//                                  document does not hold once, with a source (193/ADR-002 §2)
 //   example-map-malformed          a line the grammar does not admit
 //   example-rule-no-example        a rule with no example — ALWAYS `warn`
 //   example-map-too-many-rules     more than four rules, once per map — ALWAYS `warn`
-//   example-untraced               a `confirmed` or `stated` example no scenario or Examples row
-//                                  carries, by its id, inside its own rule's group (135 / ADR-004)
+//   example-untraced               a `confirmed`, `stated` or `researched` example no scenario or
+//                                  Examples row carries, by its id, inside its own rule's group
+//                                  (135 / ADR-004; 193/ADR-001 §8)
 //
 // THE TRACE (135 / ADR-004 §4) judges only a contract formulated from the map: the story has a task
 // feature and at least one of its groups names a rule id. It reads the row's `featureTexts` (on
 // every story row of the snapshot) through the one feature parser, and resolves an example only
 // through `./map.mjs`'s id readers — never by comparing an example's text with a scenario's.
 //
-// THIS LANE GATES. Its four error codes take the acceptance horizon (`severityFor`): `error` while
+// THIS LANE GATES. Its error codes take the acceptance horizon (`severityFor`): `error` while
 // the story is open, `warn` once it is `done`, because a delivered map may no longer be edited (the
 // diagrams lane's precedent, 133/ADR-006). Its codes are therefore NOT exported as a
 // `*_FINDING_CODES` array — that suffix is the advisory class's marker (FF-12402).
@@ -46,10 +55,11 @@ export function createDoctorExamples({ examplesEnabledFromConfig }) {
 // and the continue door's before-build check (`./build-door.mjs`) calls it for the one story it
 // opens, so the doctor and the door cannot disagree about a story (ADR-005 §4).
 //
-// THE LANE READS NO DISK. The map's text and its answers ride the snapshot row as
-// `extensions.examples`, read by this package's story probe (`./story-probe.mjs`) at the engine's
-// impure edge only when the gate is on and the file is there (ADR-005 §2). Every map pattern and
-// label is read through `./map.mjs` (FF-13402).
+// THE LANE READS NO DISK. The map's text, its answers and the research document's text ride the
+// snapshot row as `extensions.examples`, read by this package's story probe (`./story-probe.mjs`) at
+// the engine's impure edge only when the gate is on and the file is there (ADR-005 §2). A row with
+// no research text judges as a story with no research document. Every map pattern, label and
+// finding is read through `./map.mjs` (FF-13402, FF-19201).
 
 const EXAMPLE_LANE_CODES = Object.freeze([
   "example-question-open",
@@ -58,6 +68,7 @@ const EXAMPLE_LANE_CODES = Object.freeze([
   "example-rule-no-example",
   "example-map-too-many-rules",
   "example-untraced",
+  "example-research-unanchored",
 ]);
 
 // The split signal is a constant, not config: at discovery there are no tasks to measure a story's
@@ -70,7 +81,30 @@ function parsedFeatures(featureTexts) {
     .map((key) => ({ path: key, feature: parseFeature(featureTexts[key]) }));
 }
 
-function examplesFindings({ ref, status, dir, text, answers, featureTexts = {} }) {
+// A question's state as the map writes it: the pointer a default or a finding carries, included.
+const writtenState = (question) => (question.pointer ? `${question.state} ${question.pointer}` : question.state);
+
+// Why an open question is open, by who owns it. A `business` question keeps 134's message to the
+// byte; a question that parsed malformed reads `business` too, its fail-closed class.
+function openMessage(question) {
+  const at = `${question.id} (${EXAMPLES_DOC} line ${question.line})`;
+  if (question.class === "domain") {
+    return `${at} is a domain question still ${writtenState(question)} — research must settle it with a cited finding, or the operator must answer it, before the build.`;
+  }
+  if (question.class === "policy") return `${at} is a policy question still ${writtenState(question)} — a person must answer it before the build.`;
+  return `${at} is a business question still ${question.state} — a person must answer it before the build.`;
+}
+
+// Why a cited finding does not resolve, or null when it does: one heading for the id, with a source.
+function unresolvedFinding(read, id, document) {
+  if (read == null) return `there is no research document: ${document} does not exist`;
+  const finding = findingNamed(read, id);
+  if (finding) return finding.sourced ? null : `${id} in ${document} names no source`;
+  if (read.duplicates.some((entry) => entry.id === id)) return `${document} holds the "## ${id} · " heading more than once, so it resolves to neither`;
+  return `${document} holds no "## ${id} · " heading`;
+}
+
+function examplesFindings({ ref, status, dir, text, answers, featureTexts = {}, research = null }) {
   const map = parseExampleMap(text);
   const severity = severityFor(status);
   const target = path.join(dir, EXAMPLES_DOC);
@@ -81,9 +115,7 @@ function examplesFindings({ ref, status, dir, text, answers, featureTexts = {} }
   for (const entry of malformedLines(map)) {
     push("example-map-malformed", severity, `${EXAMPLES_DOC} line ${entry.line} is malformed (${entry.reason}): ${entry.text ?? ""}`);
   }
-  for (const question of openBusinessQuestions(map)) {
-    push("example-question-open", severity, `${question.id} (${EXAMPLES_DOC} line ${question.line}) is a business question still ${question.state} — a person must answer it before the build.`);
-  }
+  for (const question of openQuestions(map)) push("example-question-open", severity, openMessage(question));
   for (const claim of provenanceClaims(map, ref)) {
     if (anchored.has(claim.token)) continue;
     const claimed = claim.state ?? claim.provenance;
@@ -97,13 +129,23 @@ function examplesFindings({ ref, status, dir, text, answers, featureTexts = {} }
     push("example-map-too-many-rules", "warn", `the map holds ${rules} rules, over the limit of ${RULE_LIMIT} — the story is likely too big.`);
   }
   for (const example of untracedExamples(map, parsedFeatures(featureTexts))) {
-    const claimed = example.provenance === "stated" ? `stated ${example.question}` : example.provenance;
+    const claimed = example.provenance === "stated" ? `stated ${example.question}`
+      : example.provenance === "researched" ? `researched ${example.finding}` : example.provenance;
     const where = example.foundAt == null
       ? ""
       : example.foundAt.rule
         ? ` It was found under rule ${example.foundAt.rule} (${example.foundAt.path} line ${example.foundAt.line}).`
         : ` It was found outside rule ${example.rule} (${example.foundAt.path} line ${example.foundAt.line}).`;
     push("example-untraced", severity, `${example.id} (${EXAMPLES_DOC} line ${example.line}) is ${claimed} under ${example.rule}, but no scenario or Examples row in the story's task features carries it inside a group naming ${example.rule}.${where}`);
+  }
+  const claims = researchClaims(map);
+  if (claims.length > 0) {
+    const read = typeof research === "string" ? readFindings(research) : null;
+    const document = `${researchDocOf({ ref, dir }).whose} ${RESEARCH_DOC}`;
+    for (const claim of claims) {
+      const why = unresolvedFinding(read, claim.finding, document);
+      if (why) push("example-research-unanchored", severity, `${claim.id} (${EXAMPLES_DOC} line ${claim.line}) is researched ${claim.finding}, but ${why}.`);
+    }
   }
   return findings;
 }
@@ -124,6 +166,7 @@ function examplesGroup(snapshot, ctx = {}) {
       text: map.text,
       answers: map.answers,
       featureTexts: item.featureTexts,
+      research: map.research,
     }));
   }
   return findings;

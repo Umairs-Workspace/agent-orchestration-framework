@@ -9,6 +9,8 @@ export function assembleWorkDoctor({ runStoreServices, workDoctorDiagramsService
   const { readRuns } = runStoreServices;
   const { diagramsGroup, diagramListing } = workDoctorDiagramsServices;
   const { examplesGroup } = workDoctorExamplesServices;
+  // 193/ADR-006 §5 — the operator lane, its own check group, right after the examples lane.
+  const { operatorGroup } = workDoctorExamplesServices;
   // 192/ADR-006 §2 — the practice-render lane, appended beside the examples lane; silent without its facts.
   const practiceRenderGroup = workDoctorPracticesServices?.practiceRenderGroup ?? null;
   const { examplesEnabledFromConfig } = configInspectServices;
@@ -30,7 +32,7 @@ export function assembleWorkDoctor({ runStoreServices, workDoctorDiagramsService
     orphanFolderGroup,
     siblingDependencyNumber,
     staleWindowFromConfig,
-  } = createWorkDoctor({ projectExecution, readRuns, diagramsGroup, diagramListing, storyProbe, budgetRows: EXAMPLES_BUDGET_ROWS, extensionGroups: [examplesGroup, ...(practiceRenderGroup ? [practiceRenderGroup] : [])] });
+  } = createWorkDoctor({ projectExecution, readRuns, diagramsGroup, diagramListing, storyProbe, budgetRows: EXAMPLES_BUDGET_ROWS, extensionGroups: [examplesGroup, operatorGroup, ...(practiceRenderGroup ? [practiceRenderGroup] : [])] });
 
   return { CHECK_GROUPS, CONVENTION_DOCS, budgetsFromConfig, buildSnapshot, doctorWork, duplicateDriverNumberGroup, inScope, isDependTarget, isDriver, orphanFolderGroup, siblingDependencyNumber, staleWindowFromConfig };
 }

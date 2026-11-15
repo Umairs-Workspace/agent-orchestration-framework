@@ -15,6 +15,10 @@ import { assets } from "./support/assets-services.mjs";
 //        reported not-installable per the capability matrix
 //   03_init-guard-and-force.feature    — first-install guard + --force re-render
 //
+// Milestone 193 / story 03 / task 01 (193/ADR-006 §4) — `aof work init-config` writes the operator's
+// own words: tests/`operatorWordsTests` below, driven through the CLI over a scratch project and
+// its own global home, named through `AOF_GLOBAL_HOME`.
+//
 // Story 02 / task 01 (ADR-009, unified lock) @executable scenarios are folded in
 // here too: the work manifest is the `work` section of aof.lock.json, no separate
 // aof.work.lock.json is written, and writing the `work` section preserves the
@@ -24,6 +28,9 @@ import { mkdtemp, rm, readFile, writeFile, mkdir, readdir } from "node:fs/promis
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { assembleCommandsInitUpdate } from "../src/application/bindings/commands/init-update.mjs";
 const initWork = assets.work.init.initWork;
 const workLockPath = assets.work.init.workLockPath;
 import { loadBundle } from "../src/work/bundle.mjs";
@@ -100,6 +107,168 @@ async function listFilesRecursive(dir) {
 
 const FRONTMATTER_STAMP = "aof-generated: true";
 const TEMPLATE_MARKER = "<!-- aof-generated: bundle -->";
+
+// ══ 193/03 · 01_init-config-writes-the-operators-own-words.feature ══
+const CLI_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "bin", "aof.mjs");
+const ABSENT = Symbol("absent");
+const BAD = "operator-profile-bad-value";
+
+// A scratch project whose `work.operator` is `operator` (or none), and its own global home, empty.
+async function withWords({ operator = ABSENT } = {}, body) {
+  const root = await mkdtemp(path.join(os.tmpdir(), "aof-operator-words-"));
+  const project = path.join(root, "P");
+  const home = path.join(root, "home");
+  try {
+    await mkdir(path.join(project, ".aof"), { recursive: true });
+    await mkdir(home, { recursive: true });
+    const configPath = path.join(project, ".aof", "aof.config.json");
+    const globalPath = path.join(home, "aof.config.json");
+    const work = { dir: "./wiki/work", examples: { enabled: true }, tags: { layers: ["@cli"] }, ...(operator === ABSENT ? {} : { operator }) };
+    await writeFile(configPath, JSON.stringify({ name: "fixture", resources: [], memory: { backend: "local" }, work }, null, 2), "utf8");
+    const env = { ...process.env, AOF_GLOBAL_HOME: home, NODE_NO_WARNINGS: "1" };
+    const cli = (...args) => {
+      const result = spawnSync(process.execPath, [CLI_PATH, ...args], { cwd: project, encoding: "utf8", env });
+      let json = null;
+      try { json = JSON.parse(result.stdout); } catch { json = null; }
+      return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? "", json };
+    };
+    const read = async (file) => (existsSync(file) ? readFile(file, "utf8") : null);
+    await body({
+      project, home, configPath, globalPath, cli,
+      bytes: async () => [await read(configPath), await read(globalPath)],
+      config: async () => JSON.parse(await readFile(configPath, "utf8")),
+      global: async () => JSON.parse(await readFile(globalPath, "utf8")),
+    });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+const ROLE_501 = "r".repeat(501);
+const FLAG_ROWS = [
+  ["--expertise fraud=expert,tenancy-law=new", ["--expertise", "fraud=expert,tenancy-law=new"], { expertise: { fraud: "expert", "tenancy-law": "new" } }],
+  ["--expertise fraud=expert --operator-role \"B\"", ["--expertise", "fraud=expert", "--operator-role", "B"], { role: "B", expertise: { fraud: "expert" } }],
+  ["--expertise fraud", ["--expertise", "fraud"], BAD],
+  ["--expertise Fraud=expert", ["--expertise", "Fraud=expert"], BAD],
+  ["--expertise fraud=expert,fraud=new", ["--expertise", "fraud=expert,fraud=new"], BAD],
+  ["--operator-role \"\"", ["--operator-role", ""], BAD],
+  ["--operator-role with 501 characters", ["--operator-role", ROLE_501], BAD],
+  ["--global --layers @cli", ["--global", "--layers", "@cli"], "global-only"],
+  ["--operator-aware on --operator-role \"B\", with discovery on", ["--operator-aware", "on", "--operator-role", "B"], { role: "B", switchOn: true }],
+  ["--global with no profile flag", ["--global"], "global-only"],
+];
+
+const operatorWordsTests = [
+  {
+    name: "193/03 01 E4 · one level is corrected and the rest is left alone",
+    run: () => withWords({ operator: { role: "B", expertise: { fraud: "new", "tenancy-law": "expert" } } }, async (fx) => {
+      const before = await fx.config();
+      const written = fx.cli("work", "init-config", "--expertise", "fraud=working", "--json");
+      assert.equal(written.status, 0, written.stdout || written.stderr);
+      const after = await fx.config();
+      assert.deepEqual(after.work.operator, { role: "B", expertise: { fraud: "working", "tenancy-law": "expert" } });
+      delete after.work.operator;
+      delete before.work.operator;
+      assert.deepEqual(after, before, "every other key of the config is unchanged");
+    }),
+  },
+  {
+    name: "193/03 01 E5 · the machine-wide default is written to the global file only",
+    run: () => withWords({}, async (fx) => {
+      const projectBefore = await readFile(fx.configPath);
+      const written = fx.cli("work", "init-config", "--global", "--operator-role", "A", "--json");
+      assert.equal(written.status, 0, written.stdout || written.stderr);
+      assert.equal((await fx.global()).work.operator.role, "A");
+      assert.ok((await readFile(fx.configPath)).equals(projectBefore), "the project's config file is byte-for-byte what it was");
+      const validated = fx.cli("assets", "validate", "--global", "--json");
+      assert.equal(validated.json?.valid, true, validated.stdout || validated.stderr);
+    }),
+  },
+  {
+    name: "193/03 01 E6 · a level outside the three is refused before anything is written",
+    run: () => withWords({}, async (fx) => {
+      const before = await fx.bytes();
+      const refused = fx.cli("work", "init-config", "--expertise", "fraud=guru", "--json");
+      assert.notEqual(refused.status, 0);
+      assert.equal(refused.json?.code, BAD, refused.stdout || refused.stderr);
+      for (const level of ["expert", "working", "new"]) assert.ok(refused.json.error.includes(`"${level}"`), refused.json.error);
+      assert.deepEqual(await fx.bytes(), before, "neither config file has changed");
+    }),
+  },
+  {
+    name: "193/03 01 a role is stored exactly as it was given",
+    run: () => withWords({}, async (fx) => {
+      const role = "I build the software for a fraud team. I am not a fraud analyst.";
+      const written = fx.cli("work", "init-config", "--operator-role", role, "--json");
+      assert.equal(written.status, 0, written.stdout || written.stderr);
+      assert.equal((await fx.config()).work.operator.role, role);
+      assert.equal(written.json?.profileWritten, "project");
+    }),
+  },
+  {
+    name: "193/03 01 a run with no profile flag leaves the profile alone",
+    run: () => withWords({ operator: { role: "B" } }, async (fx) => {
+      const written = fx.cli("work", "init-config", "--layers", "@cli", "--json");
+      assert.equal(written.status, 0, written.stdout || written.stderr);
+      assert.deepEqual((await fx.config()).work.operator, { role: "B" });
+      assert.equal(written.json?.profileWritten, null);
+    }),
+  },
+  {
+    name: "193/03 01 what the profile flags accept (outline: 10 flag sets)",
+    run: async () => {
+      for (const [label, flags, outcome] of FLAG_ROWS) {
+        await withWords({}, async (fx) => {
+          const before = await fx.bytes();
+          const ran = fx.cli("work", "init-config", ...flags, "--json");
+          if (outcome === BAD || outcome === "global-only") {
+            assert.notEqual(ran.status, 0, `${label}: refused`);
+            if (outcome === BAD) assert.equal(ran.json?.code, BAD, `${label}: ${ran.stdout || ran.stderr}`);
+            else assert.match(ran.json?.error ?? "", /--global writes the operator profile only/, `${label}: ${ran.stdout || ran.stderr}`);
+            assert.deepEqual(await fx.bytes(), before, `${label}: writes nothing`);
+            return;
+          }
+          assert.equal(ran.status, 0, `${label}: ${ran.stdout || ran.stderr}`);
+          const { work } = await fx.config();
+          const { switchOn, ...profile } = outcome;
+          assert.deepEqual(work.operator, profile, `${label}: the profile written`);
+          if (switchOn) assert.equal(work.examples.operatorAware, true, `${label}: the switch is on`);
+        });
+      }
+    },
+  },
+  {
+    name: "193/03 01 the global flag creates a valid file where there is none",
+    run: () => withWords({}, async (fx) => {
+      assert.equal(existsSync(fx.globalPath), false);
+      const written = fx.cli("work", "init-config", "--global", "--expertise", "fraud=expert", "--json");
+      assert.equal(written.status, 0, written.stdout || written.stderr);
+      assert.deepEqual((await fx.global()).work.operator.expertise, { fraud: "expert" });
+      const validated = fx.cli("assets", "validate", "--global", "--json");
+      assert.equal(validated.json?.valid, true, validated.stdout || validated.stderr);
+      assert.equal(validated.json?.errors, 0);
+    }),
+  },
+  {
+    name: "193/03 01 what the verb wrote is what the resolver reads",
+    run: () => withWords({}, async (fx) => {
+      const written = fx.cli("work", "init-config", "--operator-role", "B", "--expertise", "fraud=working");
+      assert.equal(written.status, 0, written.stdout || written.stderr);
+      const operator = fx.cli("project", "show", "--json").json?.operator;
+      assert.deepEqual([operator?.role, operator?.roleSource], ["B", "project"]);
+      assert.deepEqual(operator.expertise, [{ domain: "fraud", level: "working", source: "project" }]);
+    }),
+  },
+  {
+    name: "193/03 01 the verb's usage names the four flags",
+    run: () => {
+      const { workInitConfigCommand } = assembleCommandsInitUpdate({ workInitServices: assets.work.init, workMemoryServices: { MEMORY_BACKEND_CONFIG_PATH: "memory.backend" } });
+      const { usage, flags } = workInitConfigCommand.cli.spec;
+      for (const flag of ["--operator-aware", "--operator-role", "--expertise", "--global"]) assert.ok(usage.includes(flag), `the usage names ${flag}: ${usage}`);
+      for (const key of ["operatorAware", "operatorRole", "expertise", "global"]) assert.ok(flags[key], `the spec declares ${key}`);
+    },
+  },
+];
 
 export const workInitTests = [
   // ====================================================================
@@ -701,5 +870,6 @@ export const workInitTests = [
         }
       }
     }
-  }
+  },
+  ...operatorWordsTests,
 ];

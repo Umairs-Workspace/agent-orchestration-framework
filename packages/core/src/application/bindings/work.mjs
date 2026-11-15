@@ -3,6 +3,7 @@ import path from "node:path";
 import os from "node:os";
 import { sidecarPathFor, readSidecar, healIdentitySidecar } from "@aof/mesh/node-identity";
 import { validateWork as validateRecords } from "@aof/work/validation";
+import { layerOperatorProfile } from "@aof/contracts/operator-profile";
 import * as api0 from "@aof/work/records";
 import * as api1 from "@aof/work/identity";
 import * as api2 from "@aof/work/discovery";
@@ -189,6 +190,9 @@ export function assembleWork({ workspaceServices, fsServices, workDigestTemplate
     }
     const layeredNotify = layerNotifyChannels(config, configPath, globalConfig);
     config = layeredNotify.config;
+    // 193/ADR-003 §5 — the machine-wide operator profile laid under the project's, key by key, through
+    // the profile's one merge. In memory only: neither file is written.
+    config = layerOperatorProfile(globalConfig.config, config);
     // The per-install identity (34/story 00) — read from the MACHINE-WIDE GLOBAL home
     // (globalMeshPaths().identityPath, honoring AOF_GLOBAL_HOME) so one identity is shared
     // by every workspace on this machine and the global work store keyed on nodeId is

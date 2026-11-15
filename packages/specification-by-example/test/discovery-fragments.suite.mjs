@@ -13,6 +13,8 @@ import { fileURLToPath } from "node:url";
 const at = (rel) => fileURLToPath(new URL(`../${rel}`, import.meta.url));
 const read = (rel) => readFileSync(at(rel), "utf8").replace(/\r\n/gu, "\n");
 const descriptor = () => JSON.parse(read("assets/bundle.json"));
+// 193/04 declared a second practice in the same descriptor; this file holds discovery's own members.
+const discoveryMembers = () => descriptor().members.filter((member) => member.practice === "discovery");
 const sections = (text) => [...text.matchAll(/^<!-- fragment:([^\s>]+) -->$/gmu)].map((match) => match[1]);
 const bodyOf = (text, slot) => {
   const pieces = text.split(`<!-- fragment:${slot} -->\n`);
@@ -24,8 +26,11 @@ export const discoveryFragmentTests = [
   {
     name: "192/02 02 the package declares the practice discovery, keyed on work.examples.enabled, and nothing else turns it on",
     run: () => {
-      const { practices, members } = descriptor();
-      assert.deepEqual(practices.map(({ id, keys }) => ({ id, keys })), [{ id: "discovery", keys: ["work.examples.enabled"] }]);
+      const { practices } = descriptor();
+      // 193/04 (193/ADR-006 §8) — operator-aware discovery is the package's second practice, on both keys.
+      assert.deepEqual(practices.map(({ id, keys }) => ({ id, keys })), [{ id: "discovery", keys: ["work.examples.enabled"] }, { id: "operator-aware", keys: ["work.examples.enabled", "work.examples.operatorAware"] }]);
+      const members = discoveryMembers();
+      assert.ok(members.length > 0, "discovery declares its members");
       for (const member of members) {
         assert.equal(member.kind, "fragment", `${member.id} is a fragment`);
         assert.equal(member.practice, "discovery", `${member.id} names its practice`);
@@ -36,7 +41,7 @@ export const discoveryFragmentTests = [
   {
     name: "192/02 02 every discovery fragment has a body for Claude and a body for Codex",
     run: () => {
-      for (const member of descriptor().members) {
+      for (const member of discoveryMembers()) {
         const codex = member.variants?.codex?.file;
         assert.ok(codex && existsSync(at(`assets/${codex}`)), `${member.id} has a Codex body file`);
         assert.ok(bodyOf(read(`assets/${codex}`), member.slot).length > 0, `${member.id}: its Codex body is not empty`);
@@ -50,7 +55,7 @@ export const discoveryFragmentTests = [
         assert.equal(codex, member.file.replace(/\.md$/u, ".codex.md"), `${member.id}: <target>.md beside <target>.codex.md`);
       }
       // Every section a body file holds is a declared fragment's: no prose ships that nothing renders.
-      const declared = new Set(descriptor().members.flatMap((member) => [member.file, member.variants?.codex?.file].filter(Boolean).map((file) => `${file}#${member.slot}`)));
+      const declared = new Set(discoveryMembers().flatMap((member) => [member.file, member.variants?.codex?.file].filter(Boolean).map((file) => `${file}#${member.slot}`)));
       for (const file of new Set([...declared].map((key) => key.split("#")[0]))) {
         for (const slot of sections(read(`assets/${file}`))) assert.ok(declared.has(`${file}#${slot}`), `${file} section ${slot} is declared`);
       }

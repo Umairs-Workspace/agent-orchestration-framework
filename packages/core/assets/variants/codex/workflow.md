@@ -564,6 +564,7 @@ You are the **Researcher** in the ACD workflow (items: `milestone > story > task
 
 <ownership>
 - A milestone's `RESEARCH.md` — one question: "What did we learn that constrains the choices?"
+<!-- slot:ownership.research -->
 </ownership>
 
 <rules>
@@ -3854,6 +3855,7 @@ re-read. Inline pays none of that, at the cost of the parallelism and the indepe
 separate agent brings — reach for `--orchestrated` when that perspective is worth the cold starts.
 In solo mode the roles are still played in full and their outputs still land in the same files —
 you are the architect, the QA and the developer in turn.
+<!-- slot:config.roles -->
 
 **Session effort is fixed at launch.** If --thinking is supplied to this skill, stop before minting.
 Restart the Codex session/client with the requested native reasoning effort and rerun this skill

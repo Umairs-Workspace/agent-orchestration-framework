@@ -5,10 +5,10 @@ slug: the-gate-accepts-a-cited-finding
 title: "The gate accepts a cited finding, and nothing less — a fact is closed by research or by the operator, a decision only by a person, and a citation that leads nowhere stops the build"
 parent: 193
 depends: [00]
-status: not-started
+status: done
 owner: product-owner
 created: 2026-11-12
-updated: 2026-11-12
+updated: 2026-11-15
 adrs: [ADR-002]
 reads:
   - wiki/work/193_milestone_operator-aware-discovery/SPEC.md
@@ -55,10 +55,10 @@ off-is-today control.
 
 ## Tasks
 
-- [ ] 00 [a fact is closed by a cited finding or by the operator's own answer](tasks/00_a-fact-is-closed-by-a-finding-or-the-operators-answer.feature)
-- [ ] 01 [a decision is closed only by a person's answer](tasks/01_a-decision-is-closed-only-by-a-person.feature)
-- [ ] 02 [a cited finding must exist and name its source](tasks/02_a-cited-finding-must-exist-and-name-its-source.feature)
-- [ ] 03 [a story is not built on a fact nobody cited](tasks/03_a-story-is-not-built-on-a-fact-nobody-cited.feature)
+- [x] 00 [a fact is closed by a cited finding or by the operator's own answer](tasks/00_a-fact-is-closed-by-a-finding-or-the-operators-answer.feature)
+- [x] 01 [a decision is closed only by a person's answer](tasks/01_a-decision-is-closed-only-by-a-person.feature)
+- [x] 02 [a cited finding must exist and name its source](tasks/02_a-cited-finding-must-exist-and-name-its-source.feature)
+- [x] 03 [a story is not built on a fact nobody cited](tasks/03_a-story-is-not-built-on-a-fact-nobody-cited.feature)
 
 ## Notes
 

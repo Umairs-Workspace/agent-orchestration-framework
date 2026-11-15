@@ -13,6 +13,9 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //   tasks/01_the-trace-waits-for-a-contract-formulated-from-the-map.feature
 // (task 00 is covered case by case at the lane's own function in the package's
 // `example-trace.suite.mjs`, whose fixture builders this file imports).
+// …and, for milestone 193 / story 01 (the gate accepts a cited finding), every @executable scenario
+// of its tasks 00–02 and task 03's E10, through `aof work doctor` over the same fixture project
+// renumbered to milestone 193 and story 01 (the `193/01` block below).
 //
 // The lane is asked over LITERAL snapshots whose story dirs name a directory that does not exist,
 // so a lane that reached the disk would see nothing. The probe, the budget row and the doctor's
@@ -77,7 +80,7 @@ const shape = (findings) => findings.map((finding) => [finding.code, finding.sev
 const named = (findings, code) => findings.filter((finding) => finding.code === code);
 
 // ── the fixture project ──────────────────────────────────────────────────────────────────────────
-const ABSENT = Symbol("absent");
+export const ABSENT = Symbol("absent");
 const storyDoc = (number, slug, status, parent = "134") => `---\ntype: story\nnumber: ${number}\nslug: ${slug}\ntitle: ${slug}\nparent: ${parent}\ndepends: []\nstatus: ${status}\ncreated: 2026-09-23\nupdated: 2026-09-24\nschema: 1\n---\n# ${number} · ${slug}\n`;
 
 // A project `P` holding milestone `134` and its stories `134/02` and `134/04`, all `in-progress`,
@@ -153,15 +156,17 @@ const exampleFindingsOf = (json, ref = "134/04") => (json?.findings ?? []).filte
 export const doctorExamplesLaneTests = [
   // ══ 00_the-examples-lane-reports-the-map-a-person-has-not-answered.feature ══
   {
-    // 135/04 (ADR-004 §3) appends the sixth code, `example-untraced`, to the five 134/ADR-005 named.
+    // 135/04 (ADR-004 §3) appends the sixth code, `example-untraced`, to the five 134/ADR-005 named,
+    // and 193/01 (ADR-002 §2) the seventh, `example-research-unanchored`.
     name: "examples/134-04 00 the lane's codes are exactly ADR-005's five, frozen, and it is the tenth lane",
     run: async () => {
-      assert.deepEqual([...EXAMPLE_LANE_CODES], ["example-question-open", "example-provenance-unanchored", "example-map-malformed", "example-rule-no-example", "example-map-too-many-rules", "example-untraced"]);
+      assert.deepEqual([...EXAMPLE_LANE_CODES], ["example-question-open", "example-provenance-unanchored", "example-map-malformed", "example-rule-no-example", "example-map-too-many-rules", "example-untraced", "example-research-unanchored"]);
       assert.ok(Object.isFrozen(EXAMPLE_LANE_CODES));
       // 192/03 appended core's practice-render lane after it, through the same extension seam
-      // (192/ADR-006 §2), so the examples lane is the first extension group rather than the last group.
+      // (192/ADR-006 §2), so the examples lane is the first extension group rather than the last group;
+      // 193/03 put the practice's operator lane directly after it (193/ADR-006 §5).
       const at = CHECK_GROUPS.indexOf(examplesGroup);
-      assert.deepEqual([...CHECK_GROUPS.slice(at + 1)].map((group) => group.name), ["practiceRenderGroup"], "examplesGroup is followed only by 192/03's practice-render lane");
+      assert.deepEqual([...CHECK_GROUPS.slice(at + 1)].map((group) => group.name), ["operatorGroup", "practiceRenderGroup"], "examplesGroup is followed by 193/03's operator lane, then 192/03's practice-render lane");
       // 181 appended the rubric configuration lane after diagramsGroup, as the last built-in lane;
       // the examples lane still follows every built-in lane, so it is the eleventh.
       assert.equal(CHECK_GROUPS[at - 1].name, "rubricConfigurationGroup", "…directly after the last built-in lane, 181's rubric configuration lane");
@@ -181,9 +186,9 @@ export const doctorExamplesLaneTests = [
         ["a defaulted business question", mapOf(R(1, E(1)), QUESTIONS(Q(1, "business", "defaulted ADR-004"))), [], [["example-question-open", "Q1"]]],
         ["a technical open question", mapOf(R(1, E(1)), QUESTIONS(Q(1, "technical", "open"))), [], []],
         ["a misspelt provenance", mapOf(R(1, E(1), E(2, "[confirmd]"))), [], [["example-map-malformed", "line 4", "bad-provenance"]]],
-        ["a bad class, open", mapOf(R(1, E(1)), QUESTIONS(Q(1, "policy", "open"))), [], [["example-map-malformed", "bad-class"], ["example-question-open", "Q1"]]],
-        ["a bad class, answered, no answer", mapOf(R(1, E(1)), QUESTIONS(Q(1, "policy", "answered"))), [], [["example-map-malformed", "bad-class"], ["example-provenance-unanchored", "Q1"]]],
-        ["a bad class, answered and anchored", mapOf(R(1, E(1)), QUESTIONS(Q(1, "policy", "answered"))), answersFor("134/04 Q1"), [["example-map-malformed", "bad-class"]]],
+        ["a bad class, open", mapOf(R(1, E(1)), QUESTIONS(Q(1, "regulatory", "open"))), [], [["example-map-malformed", "bad-class"], ["example-question-open", "Q1"]]],
+        ["a bad class, answered, no answer", mapOf(R(1, E(1)), QUESTIONS(Q(1, "regulatory", "answered"))), [], [["example-map-malformed", "bad-class"], ["example-provenance-unanchored", "Q1"]]],
+        ["a bad class, answered and anchored", mapOf(R(1, E(1)), QUESTIONS(Q(1, "regulatory", "answered"))), answersFor("134/04 Q1"), [["example-map-malformed", "bad-class"]]],
         ["a bad state", mapOf(R(1, E(1)), QUESTIONS(Q(1, "business", "Answered"))), answersFor("134/04 Q1"), [["example-map-malformed", "bad-state"], ["example-question-open", "Q1"]]],
         ["a stated example naming no question", mapOf(R(1, E(1, "[stated Q9]"))), [], [["example-map-malformed", "stated-names-no-question"], ["example-provenance-unanchored", "E1", "134/04 Q9"]]],
       ];
@@ -206,7 +211,7 @@ export const doctorExamplesLaneTests = [
         "duplicate-id": [R(1, E(1), E(1))],
         "bad-provenance": [R(1, E(1), E(2, "[confirmd]"))],
         "stated-names-no-question": [R(1, E(1), E(2, "[stated Q9]"))],
-        "bad-class": [R(1, E(1)), QUESTIONS(Q(1, "policy", "open"))],
+        "bad-class": [R(1, E(1)), QUESTIONS(Q(1, "regulatory", "open"))],
         "bad-state": [R(1, E(1)), QUESTIONS(Q(1, "business", "Answered"))],
         "misplaced-example": [E(1), R(1, E(2))],
         "misplaced-question": [R(1, E(1), Q(1, "business", "open"))],
@@ -346,7 +351,8 @@ export const doctorExamplesLaneTests = [
       const MAP = mapOf(R(1, E(1)));
       const cases = [
         ["on, story, present", { enabled: true }, async (fx) => fx.writeMap(fx.s04, MAP), (rows) => {
-          assert.deepEqual(rows["134/04"].extensions?.examples ?? null, { text: MAP, answers: [] });
+          // 193/01 (ADR-002 §3): the row also carries the research document's text — none here.
+          assert.deepEqual(rows["134/04"].extensions?.examples ?? null, { text: MAP, answers: [], research: null });
           assert.deepEqual(rows["134/04"].docSizes[EXAMPLES_DOC], { lines: 3 });
         }],
         ["on, story, absent", { enabled: true }, async () => {}, (rows) => {
@@ -364,7 +370,7 @@ export const doctorExamplesLaneTests = [
           assert.equal(rows["134/02"].extensions?.examples ?? null, null);
         }],
         ["on, empty file", { enabled: true }, async (fx) => fx.writeMap(fx.s04, ""), (rows) => {
-          assert.deepEqual(rows["134/04"].extensions?.examples ?? null, { text: "", answers: [] });
+          assert.deepEqual(rows["134/04"].extensions?.examples ?? null, { text: "", answers: [], research: null });
           assert.deepEqual(rows["134/04"].docSizes[EXAMPLES_DOC], { lines: 0 });
         }],
         ["on, a file in tasks/", { enabled: true }, async (fx) => {
@@ -709,6 +715,267 @@ export const doctorExamplesLaneTests = [
     },
   },
 ];
+
+// ── 193/01 — the gate accepts a cited finding (193/ADR-002) ─────────────────────────────────────
+// Story 04's fixture renumbered to `193/01` (the gate on unless `examples` says otherwise), its map
+// written, and the research document written into the milestone's folder (`research`) and/or the
+// story's own (`storyResearch`) — neither when null.
+export const F = (n, { source = "https://example.org/act#s11", heading = "##" } = {}) => [
+  `${heading} F${n} · what does finding ${n} settle?`,
+  `- **Finding:** finding ${n}.`,
+  ...(source == null ? [] : [`- **Source:** ${source}`]),
+  "",
+];
+export const researchDoc = (...blocks) => ["---", "doc: research", "---", "# 193 · Research", "", ...blocks.flat()].join("\n") + "\n";
+export async function withCited({ examples = { enabled: true }, status = "in-progress", map, research = null, storyResearch = null, answers = null } = {}, body) {
+  return withExamplesProject({ ...(examples === ABSENT ? {} : { examples }), milestone: "193", story: "01", status04: status }, async (fx) => {
+    assert.equal(fx.s04.ref, "193/01");
+    if (map != null) await fx.writeMap(fx.s04, map);
+    if (research != null) await writeFile(path.join(fx.milestone.dir, "RESEARCH.md"), research, "utf8");
+    if (storyResearch != null) await writeFile(path.join(fx.s04.dir, "RESEARCH.md"), storyResearch, "utf8");
+    if (answers) await fx.settled(fx.s04, answersFor(...answers));
+    return body(fx);
+  });
+}
+// The story's `example-*` findings as `aof work doctor` reports them: through the CLI, or through
+// the engine the CLI drives (`doctorWork`), for the outlines whose rows would each pay a spawn.
+export const citedOf = (findings, ref = "193/01") => (findings ?? []).filter((finding) => finding.code.startsWith("example-") && finding.message.startsWith(`${ref}:`));
+const doctorCli = (fx, ref = "193/01") => citedOf(fx.cli("work", "doctor", ref, "--json").json?.findings, ref);
+const doctorEngine = async (fx, ref = "193/01") => citedOf(await doctorWork(fx.workDir, fx.config, undefined, { projectRoot: fx.project, projectsDir: fx.projectsDir }), ref);
+const codesFor = (findings, id) => findings.filter((finding) => finding.message.includes(` ${id} (`)).map((finding) => finding.code);
+const DOMAIN_Q1 = "- Q1 · domain · open · What notice must a landlord give before entry?";
+const SOURCED_F2 = researchDoc(F(2));
+
+const citedFindingTests = [
+  // ══ 193/01 · 00_a-fact-is-closed-by-a-finding-or-the-operators-answer.feature ══
+  {
+    name: "examples/193-01 00 E1 · a sourced finding closes the question",
+    run: () => withCited({
+      map: mapOf(R(1, E(1)), QUESTIONS("- Q1 · domain · researched F2 · What notice must a landlord give before entry?")),
+      research: researchDoc(["## F2 · What notice must a landlord give before entry?", "- **Source:** https://www.legislation.gov.uk/ukpga/1985/70/section/11"]),
+    }, async (fx) => {
+      const found = doctorCli(fx);
+      assert.deepEqual(found.filter((finding) => ["example-question-open", "example-research-unanchored"].includes(finding.code)), []);
+    }),
+  },
+  {
+    name: "examples/193-01 00 E2 · an open fact says it is waiting on research",
+    run: () => withCited({ map: mapOf(R(1, E(1)), QUESTIONS(DOMAIN_Q1)) }, async (fx) => {
+      const [open] = named(doctorCli(fx), "example-question-open");
+      assert.equal(open.severity, "error");
+      assert.ok(open.path.endsWith(path.join("01_story_the-gate", EXAMPLES_DOC)), open.path);
+      assert.equal(open.message, "193/01: Q1 (EXAMPLES.md line 5) is a domain question still open — research must settle it with a cited finding, or the operator must answer it, before the build.");
+    }),
+  },
+  {
+    name: "examples/193-01 00 E3 · the operator's own answer closes the question",
+    run: () => withCited({ map: mapOf(R(1, E(1)), QUESTIONS("- Q1 · domain · answered · What notice must a landlord give before entry?")), answers: ["193/01 Q1"] }, async (fx) => {
+      assert.deepEqual(codesFor(doctorCli(fx), "Q1"), []);
+    }),
+  },
+  {
+    name: "examples/193-01 00 an answered fact with no answer record is unanchored, as any answered question is",
+    run: () => withCited({ map: mapOf(R(1, E(1)), QUESTIONS("- Q1 · domain · answered · What notice must a landlord give before entry?")) }, async (fx) => {
+      assert.deepEqual(codesFor(await doctorEngine(fx), "Q1"), ["example-provenance-unanchored"]);
+    }),
+  },
+  {
+    name: "examples/193-01 00 a fact in any other state is still open (outline: 3 states)",
+    run: async () => {
+      for (const state of ["open", "asked", "defaulted ADR-004"]) {
+        await withCited({ map: mapOf(R(1, E(1)), QUESTIONS(`- Q1 · domain · ${state} · x`)) }, async (fx) => {
+          const open = named(await doctorEngine(fx), "example-question-open");
+          assert.equal(open.length, 1, state);
+          assert.ok(open[0].message.includes(`Q1 (EXAMPLES.md line 5) is a domain question still ${state} —`), `${state}: ${open[0].message}`);
+        });
+      }
+    },
+  },
+  {
+    name: "examples/193-01 00 the finding takes the acceptance horizon (outline: 4 statuses)",
+    run: async () => {
+      for (const [status, severity] of [["not-started", "error"], ["in-progress", "error"], ["in-review", "error"], ["done", "warn"]]) {
+        await withCited({ status, map: mapOf(R(1, E(1)), QUESTIONS("- Q1 · domain · open · x")) }, async (fx) => {
+          assert.deepEqual(named(await doctorEngine(fx), "example-question-open").map((finding) => finding.severity), [severity], status);
+        });
+      }
+    },
+  },
+
+  // ══ 193/01 · 01_a-decision-is-closed-only-by-a-person.feature ══
+  {
+    name: "examples/193-01 01 E4 · a finding does not close a decision",
+    run: () => withCited({ map: mapOf(R(1, E(1)), QUESTIONS("- Q2 · policy · researched F2 · How many days of arrears before we chase?")), research: SOURCED_F2 }, async (fx) => {
+      const open = named(doctorCli(fx), "example-question-open");
+      assert.deepEqual(open.map((finding) => [finding.severity, finding.message]), [[
+        "error", "193/01: Q2 (EXAMPLES.md line 5) is a policy question still researched F2 — a person must answer it before the build.",
+      ]]);
+    }),
+  },
+  {
+    name: "examples/193-01 01 E5 · a business question reports exactly what it reported before",
+    run: () => withCited({ map: mapOf(R(1, E(1)), QUESTIONS("- Q3 · business · open · Does a reserved book count toward the five?")), research: SOURCED_F2 }, async (fx) => {
+      const open = named(doctorCli(fx), "example-question-open");
+      // 134/ADR-005's message, its code, severity and path, to the byte.
+      assert.deepEqual(open, [{
+        code: "example-question-open",
+        severity: "error",
+        path: path.relative(fx.project, path.join(fx.s04.dir, EXAMPLES_DOC)),
+        message: "193/01: Q3 (EXAMPLES.md line 5) is a business question still open — a person must answer it before the build.",
+      }]);
+    }),
+  },
+  {
+    name: "examples/193-01 01 only an answer closes a question a person owns (outline: 7 rows)",
+    run: async () => {
+      const rows = [
+        ["policy", "open", true], ["policy", "asked", true], ["policy", "defaulted ADR-004", true], ["policy", "researched F2", true],
+        ["policy", "answered", false], ["business", "researched F2", true], ["business", "answered", false],
+      ];
+      for (const [klass, state, reported] of rows) {
+        await withCited({ map: mapOf(R(1, E(1)), QUESTIONS(`- Q1 · ${klass} · ${state} · x`)), research: SOURCED_F2, answers: ["193/01 Q1"] }, async (fx) => {
+          assert.equal(codesFor(await doctorEngine(fx), "Q1").includes("example-question-open"), reported, `${klass} · ${state}`);
+        });
+      }
+    },
+  },
+  {
+    name: "examples/193-01 01 an answered decision still needs its answer record",
+    run: () => withCited({ map: mapOf(R(1, E(1)), QUESTIONS("- Q1 · policy · answered · x")), research: SOURCED_F2 }, async (fx) => {
+      assert.deepEqual(codesFor(await doctorEngine(fx), "Q1"), ["example-provenance-unanchored"]);
+    }),
+  },
+  {
+    name: "examples/193-01 01 a technical question is still not gated",
+    run: () => withCited({ map: mapOf(R(1, E(1)), QUESTIONS("- Q4 · technical · open · Is the limit read from config?")), research: SOURCED_F2 }, async (fx) => {
+      assert.deepEqual(codesFor(await doctorEngine(fx), "Q4"), []);
+    }),
+  },
+
+  // ══ 193/01 · 02_a-cited-finding-must-exist-and-name-its-source.feature ══
+  {
+    name: "examples/193-01 02 E6 · a citation with no finding behind it is reported",
+    run: () => withCited({ map: mapOf(R(1, E(1), E(4, "[researched F3]"))), research: researchDoc(F(1), F(2)) }, async (fx) => {
+      const unanchored = named(doctorCli(fx), "example-research-unanchored");
+      assert.deepEqual(unanchored.map((finding) => finding.severity), ["error"]);
+      assert.ok(unanchored[0].path.endsWith(path.join("01_story_the-gate", EXAMPLES_DOC)), unanchored[0].path);
+      assert.equal(unanchored[0].message, "193/01: E4 (EXAMPLES.md line 4) is researched F3, but the milestone's RESEARCH.md holds no \"## F3 · \" heading.");
+    }),
+  },
+  {
+    name: "examples/193-01 02 E7 · a finding that names no source is reported",
+    run: () => withCited({ map: mapOf(R(1, E(1), E(4, "[researched F3]"))), research: researchDoc(F(3, { source: null })) }, async (fx) => {
+      const unanchored = named(doctorCli(fx), "example-research-unanchored");
+      assert.equal(unanchored.length, 1);
+      assert.ok(unanchored[0].message.includes("E4 (EXAMPLES.md line 4)"), unanchored[0].message);
+      assert.ok(unanchored[0].message.includes("F3 in the milestone's RESEARCH.md names no source"), unanchored[0].message);
+    }),
+  },
+  {
+    name: "examples/193-01 02 E8 · with no research document, every citation is reported",
+    run: () => withCited({ map: mapOf(R(1, E(1, "[researched F1]")), QUESTIONS("- Q1 · domain · researched F1 · x")) }, async (fx) => {
+      const unanchored = named(doctorCli(fx), "example-research-unanchored");
+      assert.deepEqual(unanchored.map((finding) => /^193\/01: ([EQ]\d+) /.exec(finding.message)[1]), ["E1", "Q1"]);
+      for (const finding of unanchored) assert.ok(finding.message.includes("the milestone's RESEARCH.md does not exist"), finding.message);
+    }),
+  },
+  {
+    name: "examples/193-01 02 a citation resolves only to one sourced finding (outline: 6 documents)",
+    run: async () => {
+      const rows = [
+        ["\"## F2 · \" with a Source line", researchDoc(F(2)), false],
+        ["\"## F2 · \" twice, each with a Source line", researchDoc(F(2), F(2)), true],
+        ["\"### F2 · \" with a Source line", researchDoc(F(2, { heading: "###" })), true],
+        ["\"## F2 · \" whose Source line is empty", researchDoc(F(2, { source: "" })), true],
+        ["\"## F2 · \" inside an HTML comment only", researchDoc("<!--", F(2), "-->"), true],
+        ["\"## F1 · \" with a Source line, and no \"F2\"", researchDoc(F(1)), true],
+      ];
+      for (const [document, research, reported] of rows) {
+        await withCited({ map: mapOf(R(1, E(1, "[researched F2]"))), research }, async (fx) => {
+          assert.equal(codesFor(await doctorEngine(fx), "E1").includes("example-research-unanchored"), reported, document);
+        });
+      }
+    },
+  },
+  {
+    name: "examples/193-01 02 the document a story cites is its milestone's, or its own when it has none (outline: 3 rows)",
+    run: async () => {
+      const cites = mapOf(R(1, E(1, "[researched F1]")));
+      await withCited({ map: cites, research: researchDoc(F(1)) }, async (fx) => {
+        assert.deepEqual(named(await doctorEngine(fx), "example-research-unanchored"), [], "193/01 · the milestone folder's");
+      });
+      await withCited({ map: cites, storyResearch: researchDoc(F(1)) }, async (fx) => {
+        assert.equal(named(await doctorEngine(fx), "example-research-unanchored").length, 1, "193/01 · the story folder's");
+      });
+      // A standalone story 181 beside the milestone, citing the RESEARCH.md in its own folder.
+      await withCited({ map: cites, research: researchDoc(F(2)) }, async (fx) => {
+        const dir = path.join(fx.workDir, "181_story_standalone");
+        await mkdir(dir, { recursive: true });
+        await writeFile(path.join(dir, "STORY.md"), "---\ntype: story\nnumber: 181\nslug: standalone\ntitle: standalone\ndepends: []\nstatus: in-progress\ncreated: 2026-09-23\nupdated: 2026-09-24\nschema: 1\n---\n# 181 · standalone\n", "utf8");
+        await writeFile(path.join(dir, EXAMPLES_DOC), mapOf(R(1, E(1, "[researched F1]"))), "utf8");
+        await writeFile(path.join(dir, "RESEARCH.md"), researchDoc(F(1)), "utf8");
+        assert.deepEqual(named(await doctorEngine(fx, "181"), "example-research-unanchored"), [], "181 · the story folder's");
+        const nested = named(await doctorEngine(fx), "example-research-unanchored");
+        assert.equal(nested.length, 1, "non-vacuity: 193/01 still cites its milestone's document, which holds no F1");
+      });
+    },
+  },
+  {
+    name: "examples/193-01 02 a map that cites nothing needs no research document",
+    run: () => withCited({ map: mapOf(R(1, E(1), E(2)), QUESTIONS(Q(1, "technical", "open"))) }, async (fx) => {
+      assert.deepEqual(named(await doctorEngine(fx), "example-research-unanchored"), []);
+    }),
+  },
+  {
+    name: "examples/193-01 02 the finding takes the acceptance horizon (outline: 3 statuses)",
+    run: async () => {
+      for (const [status, severity] of [["in-progress", "error"], ["in-review", "error"], ["done", "warn"]]) {
+        await withCited({ status, map: mapOf(R(1, E(1, "[researched F9]"))), research: SOURCED_F2 }, async (fx) => {
+          assert.deepEqual(named(await doctorEngine(fx), "example-research-unanchored").map((finding) => finding.severity), [severity], status);
+        });
+      }
+    },
+  },
+  {
+    name: "examples/193-01 02 the gate does not ask which beat wrote the map",
+    run: async () => {
+      const messages = [];
+      for (const examples of [{ enabled: true }, { enabled: true, operatorAware: true }]) {
+        await withCited({ examples, map: mapOf(R(1, E(1, "[researched F1]"))), research: researchDoc(F(2)) }, async (fx) => {
+          messages.push(named(await doctorEngine(fx), "example-research-unanchored").map((finding) => finding.message));
+        });
+      }
+      assert.equal(messages[0].length, 1, "reported with `operatorAware` absent");
+      assert.deepEqual(messages[0], messages[1], "exactly as with the switch on");
+    },
+  },
+  {
+    name: "examples/193-01 02 the lane itself reads no file",
+    run: () => withCited({ map: mapOf(R(1, E(1, "[researched F1]"), E(2, "[researched F2]")), QUESTIONS(DOMAIN_Q1)), research: researchDoc(F(1, { source: null })) }, async (fx) => {
+      const row = rowOf(await snapshotOf(fx), "193/01");
+      assert.equal(typeof row.extensions.examples.research, "string", "the row carries the research text");
+      const fromDoctor = await doctorEngine(fx);
+      // Take the documents away: a lane that reached the disk would now see neither.
+      await rm(path.join(fx.milestone.dir, "RESEARCH.md"));
+      await rm(path.join(fx.s04.dir, EXAMPLES_DOC));
+      const fromLane = lane(row, fx.config);
+      assert.deepEqual(fromLane.map((finding) => [finding.code, finding.message]), fromDoctor.map((finding) => [finding.code, finding.message]));
+      assert.deepEqual(fromLane.map((finding) => finding.code).sort(), ["example-question-open", "example-research-unanchored", "example-research-unanchored"]);
+    }),
+  },
+
+  // ══ 193/01 · 03_a-story-is-not-built-on-a-fact-nobody-cited.feature ══
+  {
+    name: "examples/193-01 03 E10 · a researched example the contract dropped is named",
+    run: () => withCited({ map: mapOf(R(1, E(1)), R(2, E(5, "[researched F2]"))), research: SOURCED_F2 }, async (fx) => {
+      await writeTasks(fx, contract(rule("R2 · rule 2", scenario("a scenario carrying no example"))));
+      const untraced = named(doctorCli(fx), "example-untraced");
+      assert.equal(untraced.length, 1);
+      assert.ok(untraced[0].message.startsWith("193/01: E5 (EXAMPLES.md line 5) is researched F2 under R2,"), untraced[0].message);
+    }),
+  },
+];
+doctorExamplesLaneTests.push(...citedFindingTests);
 
 // 135/04's fixture: story 7/2 with the gate on, its map's rule R1 holding E1 [proposed], E2
 // [confirmed] and E3 [stated Q1] (Q1 answered), every claim anchored by a settled run's stamp, and

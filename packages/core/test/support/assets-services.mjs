@@ -16,6 +16,6 @@ const configEditor = assembleConfigEditor({ configInspectServices: configInspect
 // `work.init` takes the memory service only to seed a backend choice; no suite here runs a recall, so both backend loaders refuse.
 const refuseBackend = (name) => async () => { throw new Error(`work.init must not load the ${name} memory backend`); };
 const workMemory = assembleWorkMemory({ provideMemoryLocalBackend: refuseBackend("local"), provideMemoryGraphifyBackend: refuseBackend("graphify") });
-const workInit = assembleWorkInit({ workspaceServices: base.workspace, workMemoryServices: workMemory });
+const workInit = assembleWorkInit({ workspaceServices: base.workspace, workMemoryServices: workMemory, configInspectServices: configInspect });
 
 export const assets = Object.freeze({ dsl, configInspect, configEditor, work: Object.freeze({ init: workInit }) });

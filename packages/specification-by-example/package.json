@@ -9,7 +9,8 @@
     "./doctor-lane": "./src/doctor-lane.mjs",
     "./build-door": "./src/build-door.mjs",
     "./story-probe": "./src/story-probe.mjs",
-    "./contribution": "./src/contribution.mjs"
+    "./contribution": "./src/contribution.mjs",
+    "./operator-lane": "./src/operator-lane.mjs"
   },
   "files": [
     "src",

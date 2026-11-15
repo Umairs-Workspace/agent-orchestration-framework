@@ -14,6 +14,8 @@ import { archTests as acdExamplesOffIsTodayTests } from "./acd-examples-off-is-t
 import { archTests as acdSbePackageOneWayTests } from "./acd-sbe-package-one-way.test.mjs";
 // milestone 135 / story 04 — FF-13502 (the trace is declared, never inferred).
 import { archTests as acdExampleTraceDeclaredTests } from "./acd-example-trace-declared.test.mjs";
+// milestone 193 / story 02 — FF-19203 (the operator profile has one resolver).
+import { archTests as acdOperatorProfileOneResolverTests } from "./acd-operator-profile-one-resolver.test.mjs";
 
 export const tests = [
   ...acdExampleMapSingleHomeTests,
@@ -22,4 +24,5 @@ export const tests = [
   ...acdExamplesOffIsTodayTests,
   ...acdSbePackageOneWayTests,
   ...acdExampleTraceDeclaredTests,
+  ...acdOperatorProfileOneResolverTests,
 ];

@@ -2,6 +2,7 @@ import path from "node:path";
 import { readdir, readFile } from "node:fs/promises";
 import { commandError } from "@aof/contracts/error";
 import { EXAMPLES_DOC } from "./map.mjs";
+import { researchDocOf } from "./story-probe.mjs";
 
 // THE BUILD DOOR'S HALF OF THE READINESS GATE (milestone 134 / story 04, ADR-005 §4; moved here by
 // 135 / ADR-001 §3). The doctor reports a story's open business question; this is where a story
@@ -17,7 +18,8 @@ import { EXAMPLES_DOC } from "./map.mjs";
 //
 // It reads the story's `tasks/*.feature` itself, keyed `tasks/<name>` exactly as the doctor
 // snapshot keys its `featureTexts`, so the trace (135 / ADR-004) reaches the door with the same
-// input and the same messages: a story whose contract lost an agreed example is not built.
+// input and the same messages: a story whose contract lost an agreed example is not built. It reads
+// the research document the same way, so a citation that leads nowhere is refused here too (193/01).
 async function taskFeatureTexts(dir) {
   let entries;
   try {
@@ -49,7 +51,9 @@ export function createExamplesBuildDoor({ examplesEnabledFromConfig, examplesFin
     }
     const answers = await collectAnswers({ ...row, dir }, { workspace: ctx.workspace });
     const featureTexts = await taskFeatureTexts(dir);
-    const errors = examplesFindings({ ref: row.ref, status: row.status ?? null, dir, text, answers, featureTexts })
+    // The research document through the probe's own path function (193/ADR-002 §3): absent is none.
+    const research = await readFile(researchDocOf({ ref: row.ref, dir }).path, "utf8").catch(() => null);
+    const errors = examplesFindings({ ref: row.ref, status: row.status ?? null, dir, text, answers, featureTexts, research })
       .filter((finding) => finding.severity === "error");
     if (errors.length === 0) return;
     const error = commandError(

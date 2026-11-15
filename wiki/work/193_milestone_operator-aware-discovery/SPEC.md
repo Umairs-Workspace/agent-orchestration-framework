@@ -3,10 +3,10 @@ type: milestone
 number: 193
 slug: operator-aware-discovery
 title: "Discovery researches the domain before it asks — the operator is asked only what is theirs to decide, at their level"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-11-12
-updated: 2026-11-14
+updated: 2026-11-15
 schema: 1
 aofVersion: 0.1.0
 depends: [192]
@@ -96,11 +96,11 @@ each optional practice and the key that turns it on.
 
 ## Stories
 
-- [ ] `00_story_the-map-tells-a-fact-from-a-decision` — the map's grammar gains `domain`, `policy` and a cited `researched F<n>`, and every existing map and the default template read as they did
-- [ ] `01_story_the-gate-accepts-a-cited-finding` — the doctor and the build door accept a fact a named source settles, and refuse a citation that leads nowhere
-- [ ] `02_story_the-operator-says-who-they-are` — `work.operator` holds a role and a level per domain, with a machine-wide default a project overrides
-- [ ] `03_story_a-project-turns-it-on-and-is-told-what-it-needs` — `work.examples.operatorAware` is off by default; `init-config` turns it on and writes the profile, and the doctor and the update say once when it is on with no profile
-- [ ] `04_story_discovery-researches-before-it-asks` — as fragments of the practice, rendered only where the switch is on: refine researches a fact before it asks, returns what it settled as one batch, and every question explains itself
+- [x] `00_story_the-map-tells-a-fact-from-a-decision` — the map's grammar gains `domain`, `policy` and a cited `researched F<n>`, and every existing map and the default template read as they did
+- [x] `01_story_the-gate-accepts-a-cited-finding` — the doctor and the build door accept a fact a named source settles, and refuse a citation that leads nowhere
+- [x] `02_story_the-operator-says-who-they-are` — `work.operator` holds a role and a level per domain, with a machine-wide default a project overrides
+- [x] `03_story_a-project-turns-it-on-and-is-told-what-it-needs` — `work.examples.operatorAware` is off by default; `init-config` turns it on and writes the profile, and the doctor and the update say once when it is on with no profile
+- [x] `04_story_discovery-researches-before-it-asks` — as fragments of the practice, rendered only where the switch is on: refine researches a fact before it asks, returns what it settled as one batch, and every question explains itself
 
 ## Dependencies
 

@@ -5,10 +5,10 @@ slug: a-project-turns-it-on-and-is-told-what-it-needs
 title: "A project turns it on and is told what it needs — `work.examples.operatorAware` is off by default, `init-config` turns it on and writes the profile, and the doctor and the update say once when it is on with no profile"
 parent: 193
 depends: [02]
-status: not-started
+status: done
 owner: product-owner
 created: 2026-11-12
-updated: 2026-11-12
+updated: 2026-11-15
 adrs: [ADR-006]
 reads:
   - wiki/work/193_milestone_operator-aware-discovery/SPEC.md
@@ -62,10 +62,10 @@ profile; `aof work update` and the turn-on itself printing the same sentence.
 
 ## Tasks
 
-- [ ] 00 [operator-aware discovery is off unless a project turns it on](tasks/00_operator-aware-discovery-is-off-unless-a-project-turns-it-on.feature)
-- [ ] 01 [init-config writes the operator's own words](tasks/01_init-config-writes-the-operators-own-words.feature)
-- [ ] 02 [the doctor says once that no profile is declared](tasks/02_the-doctor-says-once-that-no-profile-is-declared.feature)
-- [ ] 03 [the update says it too](tasks/03_the-update-says-it-too.feature)
+- [x] 00 [operator-aware discovery is off unless a project turns it on](tasks/00_operator-aware-discovery-is-off-unless-a-project-turns-it-on.feature)
+- [x] 01 [init-config writes the operator's own words](tasks/01_init-config-writes-the-operators-own-words.feature)
+- [x] 02 [the doctor says once that no profile is declared](tasks/02_the-doctor-says-once-that-no-profile-is-declared.feature)
+- [x] 03 [the update says it too](tasks/03_the-update-says-it-too.feature)
 
 ## Notes
 

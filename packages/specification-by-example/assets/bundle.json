@@ -7,6 +7,15 @@
       "keys": [
         "work.examples.enabled"
       ]
+    },
+    {
+      "id": "operator-aware",
+      "title": "Operator-aware discovery",
+      "summary": "Refine researches a fact before it asks, and every question says what it would pick.",
+      "keys": [
+        "work.examples.enabled",
+        "work.examples.operatorAware"
+      ]
     }
   ],
   "members": [
@@ -112,6 +121,145 @@
           "file": "fragments/discovery/aof-qa.codex.md"
         }
       }
+    },
+    {
+      "id": "operator-aware-refine-entry",
+      "kind": "fragment",
+      "practice": "operator-aware",
+      "target": "command:refine",
+      "slot": "entry.rules",
+      "replaces": "discovery-refine-entry",
+      "variants": {
+        "codex": {
+          "file": "fragments/operator-aware/refine.codex.md"
+        }
+      }
+    },
+    {
+      "id": "operator-aware-refine-roles",
+      "kind": "fragment",
+      "practice": "operator-aware",
+      "target": "command:refine",
+      "slot": "config.roles",
+      "file": "fragments/operator-aware/refine.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/operator-aware/refine.codex.md"
+        }
+      }
+    },
+    {
+      "id": "operator-aware-refine-beat",
+      "kind": "fragment",
+      "practice": "operator-aware",
+      "target": "command:refine",
+      "slot": "contract.discovery",
+      "replaces": "discovery-refine-beat",
+      "file": "fragments/operator-aware/refine.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/operator-aware/refine.codex.md"
+        }
+      }
+    },
+    {
+      "id": "operator-aware-refine-formulation",
+      "kind": "fragment",
+      "practice": "operator-aware",
+      "target": "command:refine",
+      "slot": "contract.formulation",
+      "replaces": "discovery-refine-formulation",
+      "file": "fragments/operator-aware/refine.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/operator-aware/refine.codex.md"
+        }
+      }
+    },
+    {
+      "id": "operator-aware-refine-autonomous",
+      "kind": "fragment",
+      "practice": "operator-aware",
+      "target": "command:refine",
+      "slot": "autonomous.milestone",
+      "replaces": "discovery-refine-autonomous",
+      "file": "fragments/operator-aware/refine.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/operator-aware/refine.codex.md"
+        }
+      }
+    },
+    {
+      "id": "operator-aware-refine-output",
+      "kind": "fragment",
+      "practice": "operator-aware",
+      "target": "command:refine",
+      "slot": "output.autonomous",
+      "replaces": "discovery-refine-output",
+      "file": "fragments/operator-aware/refine.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/operator-aware/refine.codex.md"
+        }
+      }
+    },
+    {
+      "id": "operator-aware-product-owner",
+      "kind": "fragment",
+      "practice": "operator-aware",
+      "target": "agent:aof-product-owner",
+      "slot": "ownership.examples",
+      "replaces": "discovery-product-owner",
+      "file": "fragments/operator-aware/aof-product-owner.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/operator-aware/aof-product-owner.codex.md"
+        }
+      }
+    },
+    {
+      "id": "operator-aware-architect",
+      "kind": "fragment",
+      "practice": "operator-aware",
+      "target": "agent:aof-architect",
+      "slot": "ownership.examples",
+      "replaces": "discovery-architect",
+      "file": "fragments/operator-aware/aof-architect.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/operator-aware/aof-architect.codex.md"
+        }
+      }
+    },
+    {
+      "id": "operator-aware-researcher",
+      "kind": "fragment",
+      "practice": "operator-aware",
+      "target": "agent:aof-researcher",
+      "slot": "ownership.research",
+      "file": "fragments/operator-aware/aof-researcher.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/operator-aware/aof-researcher.codex.md"
+        }
+      }
+    },
+    {
+      "id": "operator-aware-examples",
+      "kind": "template-variant",
+      "practice": "operator-aware",
+      "template": "story",
+      "name": "EXAMPLES.md",
+      "file": "templates/operator-aware/EXAMPLES.md"
+    },
+    {
+      "id": "operator-aware-research",
+      "kind": "template-variant",
+      "practice": "operator-aware",
+      "template": "milestone",
+      "name": "RESEARCH.md",
+      "file": "templates/operator-aware/RESEARCH.md"
     }
   ]
 }

@@ -444,8 +444,8 @@ const refusalTests = [
       assert.deepEqual(bundle.practices.map((practice) => [practice.id, practice.contributor]), [["build-brief", "core"], ["notes", PLANTED]]);
       const shipped = loadBundle();
       assert.ok(shipped.resources.length > 40, "the shipped bundle loads");
-      // 192/02 — the shipped bundle declares its two practices: core's build brief, then discovery.
-      assert.deepEqual(shipped.practices.map((practice) => [practice.id, practice.contributor]), [["build-brief", "core"], ["discovery", "@aof/specification-by-example"]]);
+      // 192/02 — the shipped bundle declares core's build brief, then discovery; 193/04 adds operator-aware discovery.
+      assert.deepEqual(shipped.practices.map((practice) => [practice.id, practice.contributor]), [["build-brief", "core"], ["discovery", "@aof/specification-by-example"], ["operator-aware", "@aof/specification-by-example"]]);
     },
   },
 ];

@@ -76,6 +76,16 @@ person's recorded answer makes it `confirmed` or `stated`, and the gate checks t
 against the harness's own record, never against the map's word for it. The map's grammar lives in
 its template and in `aof work doctor`'s examples lane, not here.
 
+Operator-aware discovery is a choice, and it is off unless a project turns on
+`work.examples.operatorAware` beside `work.examples.enabled`. It is for the project whose operator
+steers the build but is not the specialist in its subject. With it on, a question is a fact or a
+decision. A fact about the world is researched first, and closed by a finding that names its
+source, so the operator is not asked to be the domain expert. A decision goes to a person, and the
+build waits for the answer, as it always did. The operator's profile, `work.operator`, decides how a
+fact is handled: one the operator knows as an expert is asked of them directly, and the rest are
+researched and come back together, to skim and object to. Every question that does reach them says
+what the agent would pick and why.
+
 ### Above the matrix: the key examples are the headlines
 
 When a story has an applicable map, formulation starts from it. The map's key examples are the

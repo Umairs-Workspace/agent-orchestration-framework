@@ -58,6 +58,11 @@ export function assembleCommandsProjectShow({ configInspectServices }) {
         for (const pkg of result.packages) {
           lines.push(`- ${pkg.id} source=${pkg.source} runtimes=${(pkg.runtimes ?? []).join(",")}`);
         }
+        // 193/ADR-003 §6 — whether an operator profile is declared, and how many domains it lists.
+        if (result.operator) {
+          const domains = result.operator.expertise.length;
+          lines.push(`operator: ${result.operator.declared ? `declared, ${domains} domain${domains === 1 ? "" : "s"}` : "not declared"}`);
+        }
         if (result.legacyConfigIsStale) {
           lines.push(`warning: root aof.config.json is legacy; ${result.configPath} is authoritative`);
         }

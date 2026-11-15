@@ -3698,6 +3698,22 @@
             }
           },
           "additionalProperties": false
+        },
+        "operatorAware": {
+          "type": "string",
+          "enum": [
+            "on",
+            "off"
+          ]
+        },
+        "operatorRole": {
+          "type": "string"
+        },
+        "expertise": {
+          "type": "string"
+        },
+        "global": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -3711,7 +3727,7 @@
         "init-config"
       ],
       "spec": {
-        "usage": "aof work init-config [dir] [--layers @cli,@ui] [--refinements @work] [--domains @board] [--json]",
+        "usage": "aof work init-config [dir] [--layers @cli,@ui] [--refinements @work] [--domains @board] [--operator-aware on|off] [--operator-role <text>] [--expertise <domain>=<level>,…] [--global] [--json]",
         "workspace": false,
         "flags": {
           "target": {
@@ -3729,6 +3745,22 @@
           "domains": {
             "type": "string",
             "description": "comma-separated domain tags (the repo's feature areas)"
+          },
+          "operatorAware": {
+            "type": "string",
+            "description": "on|off — operator-aware discovery for this project (work.examples.operatorAware; needs discovery on)"
+          },
+          "operatorRole": {
+            "type": "string",
+            "description": "who you are in this project, a sentence or two (work.operator.role; replaces the role)"
+          },
+          "expertise": {
+            "type": "string",
+            "description": "comma-separated <domain>=expert|working|new (work.operator.expertise; replaces each domain named)"
+          },
+          "global": {
+            "type": "boolean",
+            "description": "write the operator profile to the machine-wide ~/.aof/aof.config.json, and nothing else"
           }
         }
       }

@@ -557,7 +557,22 @@
           "type": "object",
           "description": "OPTIONAL discovery gate (milestone 134, ADR-006). Absent means off, and off means today: refine runs no discovery beat, and the doctor lane and the continue door read no EXAMPLES.md. Only the boolean true turns it on. Authoritative validation is `aof project validate`. Closed (additionalProperties:false).",
           "properties": {
-            "enabled": { "type": "boolean", "description": "OPTIONAL. true turns the example-map discovery gate on; false or absent leaves it off." }
+            "enabled": { "type": "boolean", "description": "OPTIONAL. true turns the example-map discovery gate on; false or absent leaves it off." },
+            "operatorAware": { "type": "boolean", "description": "OPTIONAL operator-aware discovery switch (milestone 193, ADR-006). Off by default: false or absent leaves it off, and only the boolean true turns it on. It needs enabled: true beside it, and is diagnosed examples-operator-aware-without-discovery without it. Read from the project's config only, never the global config, because rendered commands are committed. `aof work init-config --operator-aware on` turns it on." }
+          },
+          "additionalProperties": false
+        },
+        "operator": {
+          "type": "object",
+          "description": "OPTIONAL operator profile (milestone 193, ADR-003): who the operator is in this project and how well they know each of its domains, so discovery pitches a question at what they actually know. A machine-wide default may sit in the global config (~/.aof/aof.config.json); a project overrides it key by key: its role wins when it has one, and expertise merges per domain, the project's entry winning. A domain the profile does not list is new. Authoritative validation is `aof project validate`. Closed (additionalProperties:false).",
+          "properties": {
+            "role": { "type": "string", "minLength": 1, "maxLength": 500, "description": "OPTIONAL. A sentence or two on who the operator is in this project, at most 500 characters." },
+            "expertise": {
+              "type": "object",
+              "description": "OPTIONAL. Maps a domain, a lowercase kebab slug such as tenancy-law, to the operator's level in it.",
+              "propertyNames": { "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+              "additionalProperties": { "enum": ["expert", "working", "new"] }
+            }
           },
           "additionalProperties": false
         },

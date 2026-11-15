@@ -2,6 +2,8 @@
 //
 // Covers, at the lane's own function, EVERY @executable scenario in
 //   tasks/00_an-agreed-example-resolves-by-its-id-inside-its-rule.feature
+// and, for milestone 193 / story 01, the map-level scenario of its task 03 that a researched example
+// carried under its rule is traced (193/ADR-001 §8).
 // and the id readers `map.mjs` exports for it (ADR-004 §1). The same cases are driven through the
 // real CLI (`aof work doctor`, `aof work continue`) in `test/examples/doctor-examples-lane.test.mjs`
 // and `test/examples/continue-door-examples.test.mjs`, which import this file's fixture builders so
@@ -15,12 +17,14 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { createDoctorExamples } from "@aof/specification-by-example/doctor-lane";
+import { parseFeature } from "@aof/work/feature-parse";
 import {
   EXAMPLE_COLUMN,
   groupRuleId,
   parseExampleMap,
   rowExampleId,
   scenarioExampleId,
+  untracedExamples,
 } from "@aof/specification-by-example/map";
 
 const ON = Object.freeze({ work: { examples: { enabled: true } } });
@@ -76,6 +80,18 @@ const untraced = (findings) => findings.filter((finding) => finding.code === "ex
 const idsOf = (findings) => untraced(findings).map((finding) => /^7\/2: (E\d+) /.exec(finding.message)?.[1]);
 
 export const exampleTraceTests = [
+  {
+    name: "sbe/193-01 03 a researched example carried under its rule is traced",
+    run: () => {
+      const text = ["## R2 · An overdue loan blocks a new one", "- E5 · an overdue loan blocks a new loan [researched F2]"].join("\n") + "\n";
+      const under = (title) => ({ "tasks/00_lending.feature": featureText("lending", rule(title, scenario("E5 · an overdue loan blocks a new loan"))) });
+      const parsed = (features) => Object.entries(features).map(([key, feature]) => ({ path: key, feature: parseFeature(feature) }));
+      assert.deepEqual(untracedExamples(parseExampleMap(text), parsed(under("R2 · An overdue loan blocks a new one"))), []);
+      // Non-vacuity: under another rule it is not carried, and the lane names the finding it cites.
+      const findings = examplesFindings({ ref: "7/2", status: "in-progress", dir: GHOST, text, answers: [], featureTexts: under("R1 · another rule") });
+      assert.deepEqual(untraced(findings).map((finding) => finding.message.split(",")[0]), ["7/2: E5 (EXAMPLES.md line 2) is researched F2 under R2"]);
+    },
+  },
   {
     name: "sbe/135-04 00 the id readers read the declared head form exactly (outline: 13 rows)",
     run: () => {

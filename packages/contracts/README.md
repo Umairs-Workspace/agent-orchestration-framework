@@ -33,4 +33,11 @@ requires a separate explicit contract; this initial API does not silently merge 
 
 Run `yarn workspace @aof/contracts test`. The root command contract suite also runs these tests.
 
+`operator-profile` is the one home of `work.operator` (193/ADR-003): the three expertise levels
+(`expert`, `working`, `new`), the validator's diagnostics, the merge that lays the machine-wide block
+from `~/.aof/aof.config.json` under a project's, the resolver, and the level lookup that reads an
+unlisted domain as `new`, and the correction `aof work init-config` writes, in which a flag replaces
+the role or the domain it names and leaves the rest (193/ADR-006 §4). Core's config inspection,
+`loadWorkspace` and `init-config` compose it; it reads no file of its own.
+
 `cache-provenance` supplies the storage-to-wire fact mapping and freshness verdict, including explicit unknowns. `freshness` supplies the shared strict threshold predicate used by execution, presence and cache readers. Configured mesh thresholds remain in `@aof/mesh/cache-policy`.

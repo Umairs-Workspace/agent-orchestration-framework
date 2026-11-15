@@ -6,6 +6,10 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //   tasks/02_continue-refuses-a-story-while-a-business-question-stands.feature
 // and, for milestone 135 / story 04 (the build is refused while an agreed example is missing), in
 //   tasks/02_the-build-is-refused-while-an-agreed-example-is-missing.feature
+// and, for milestone 193 / story 01, the door's scenarios of
+//   tasks/03_a-story-is-not-built-on-a-fact-nobody-cited.feature
+// (E9, E11, the build going ahead, and the door agreeing with the doctor), on the lane suite's
+// `193/01` fixture.
 //
 // Driven through the real CLI over story 04's fixture project (`doctor-examples-lane.test.mjs`):
 // its global home, its Claude config directory (the fixture transcript store, handed in as
@@ -19,7 +23,7 @@ import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { countAssignments } from "../support/item-lock-fixture.mjs";
 import { withCacheReadFixture, plantCacheRow, runCommand, WORKER_NODE } from "../support/cache-read-fixture.mjs";
-import { E, Q, QUESTIONS, R, NOT_APPLICABLE, answersFor, mapOf, untracedOf, withExamplesProject, withTraced, writeTasks } from "./doctor-examples-lane.test.mjs";
+import { E, F, Q, QUESTIONS, R, NOT_APPLICABLE, answersFor, citedOf, mapOf, researchDoc, untracedOf, withCited, withExamplesProject, withTraced, writeTasks } from "./doctor-examples-lane.test.mjs";
 import { E2_NAME, E3_NAME, RULE_1, contract, outline, rule, scenario } from "../../packages/specification-by-example/test/example-trace.suite.mjs";
 
 const invoke = _aofApplication.invoke;
@@ -62,6 +66,52 @@ const WITH_E2 = contract(rule(RULE_1, scenario(E2_NAME), outline("a member at th
 const pairsOf = (findings) => findings.map((finding) => [finding.code, finding.message]).sort();
 
 export const continueDoorExamplesTests = [
+  // ══ 193/01 · 03_a-story-is-not-built-on-a-fact-nobody-cited.feature ══
+  {
+    name: "examples/193-01 03 E9 · the build is refused while a citation leads nowhere",
+    run: () => withCited({ map: mapOf(R(1, E(1), E(2, "[researched F3]"))), research: researchDoc(F(1)) }, async (fx) => {
+      const storyPath = path.join(fx.s04.dir, "STORY.md");
+      const before = await readFile(storyPath);
+      const answer = fx.cli("work", "continue", "193/01", "--json");
+      refusedWith(answer, "193/01", "E2", "example-research-unanchored");
+      const { error } = await inProcess(fx, "193/01");
+      assert.equal(error?.code, CODE);
+      assert.equal(error?.status, 409);
+      assert.deepEqual(error.detail.findings.map((finding) => finding.code), ["example-research-unanchored"]);
+      assert.ok((await readFile(storyPath)).equals(before), "no status moved: STORY.md is byte-identical");
+      assert.equal(existsSync(path.join(fx.s04.dir, "runs")), false, "no run minted");
+      assert.equal(await countAssignments({ env: fx.env }), 0, "nothing dispatched");
+    }),
+  },
+  {
+    name: "examples/193-01 03 E11 · with the gate off, nothing is read and nothing is refused",
+    run: () => withCited({ examples: { enabled: false }, map: mapOf(R(1, E(1, "[researched F3]"))) }, async (fx) => {
+      assert.deepEqual(citedOf(fx.cli("work", "doctor", "193/01", "--json").json?.findings), []);
+      notRefused(fx.cli("work", "continue", "193/01", "--json"), "gate off");
+    }),
+  },
+  {
+    name: "examples/193-01 03 the build goes ahead once the finding is there",
+    run: () => withCited({ map: mapOf(R(1, E(3, "[researched F3]"))), research: researchDoc(F(3)) }, async (fx) => {
+      await writeTasks(fx, contract(rule("R1 · rule 1", scenario("E3 · example 3"))));
+      const answer = fx.cli("work", "continue", "193/01", "--json");
+      notRefused(answer, "the finding is there");
+      assert.equal(answer.json?.ok, true, answer.stdout || answer.stderr);
+    }),
+  },
+  {
+    name: "examples/193-01 03 the door and the doctor say the same thing",
+    run: () => withCited({
+      map: mapOf(R(1, E(1), E(2, "[researched F7]")), QUESTIONS(Q(1, "policy", "open"), Q(2, "domain", "open"))),
+      research: researchDoc(F(1)),
+    }, async (fx) => {
+      const errors = citedOf(fx.cli("work", "doctor", "193/01", "--json").json?.findings).filter((finding) => finding.severity === "error");
+      assert.deepEqual(errors.map((finding) => finding.code).sort(), ["example-question-open", "example-question-open", "example-research-unanchored"], "non-vacuity");
+      const door = fx.cli("work", "continue", "193/01", "--json");
+      refusedWith(door);
+      assert.deepEqual(pairsOf(door.json.findings), pairsOf(errors));
+    }),
+  },
   // ══ 135/04 · 02_the-build-is-refused-while-an-agreed-example-is-missing.feature ══
   {
     name: "examples/135-04 02 E8 · continue refuses a story whose contract lost a confirmed example",
@@ -139,7 +189,7 @@ export const continueDoorExamplesTests = [
         }, ["not-refused"]],
         ["an answer for another story's token", mapOf(R(1, E(1)), QUESTIONS(Q(1, "business", "answered"))), (fx) => fx.settled(fx.s04, answersFor("134/02 Q1")), ["refused", "134/04", "Q1", "example-provenance-unanchored"]],
         ["a misspelt label", mapOf(R(1, E(1), E(2, "[confirmd]"))), null, ["refused", "134/04", "line 4", "example-map-malformed"]],
-        ["a bad class, answered and anchored", mapOf(R(1, E(1)), QUESTIONS(Q(1, "policy", "answered"))), (fx) => fx.settled(fx.s04, answersFor("134/04 Q1")), ["refused", "134/04", "line 5", "example-map-malformed"]],
+        ["a bad class, answered and anchored", mapOf(R(1, E(1)), QUESTIONS(Q(1, "regulatory", "answered"))), (fx) => fx.settled(fx.s04, answersFor("134/04 Q1")), ["refused", "134/04", "line 5", "example-map-malformed"]],
         ["an empty map", "", null, ["refused", "134/04", "example-map-malformed"]],
         ["warnings only", mapOf(R(1, E(1)), R(2, E(2)), R(3, E(3)), R(4, E(4)), R(5)), null, ["local"]],
         ["not applicable", mapOf(NOT_APPLICABLE), null, ["local"]],

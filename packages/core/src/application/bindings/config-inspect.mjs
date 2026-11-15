@@ -37,6 +37,7 @@ import { generatorIds } from "@aof/diagrams/generators";
 import { inspectMemoryConfiguration } from "@aof/knowledge/memory";
 import { legacyMessage } from "@aof/knowledge/memory-config";
 import { agentModeFromConfig } from "@aof/contracts/agent-mode";
+import { describeOperatorProfile, operatorProfileDiagnostics, operatorProfileFromConfig } from "@aof/contracts/operator-profile";
 import { workDirFor } from "../../aof-gitignore.mjs";
 export function assembleConfigInspect({ dslServices, fsServices, workspaceServices, degradeServices, workToolchainServices = null }) {
   const { loadConfig } = dslServices;
@@ -137,7 +138,16 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
       executionByRuntime: executionConfig ? Object.fromEntries(["claude", "codex"].map(runtime => [runtime, inspectExecution(executionConfig, { ...options, runtime, roles: [...acdRoleSet()] })])) : {},
       assetRuntimes,
       delegation: executionConfig ? { enabled: readDelegation(executionConfig), model: readDelegationModel(executionConfig) } : null,
+      operator: await inspectOperatorProfile(configPath, options),
     };
+  }
+
+  // 193/ADR-003 §6 — the resolved operator profile and where each value came from. Read from the two
+  // raw files rather than `executionConfig`, so a profile the validator refuses still answers (a bad
+  // level reads `new`), and an unreadable file of either is read as holding no block.
+  async function inspectOperatorProfile(configPath, options) {
+    const readOrEmpty = (target) => readJsonWithDiagnostic(target).catch(() => ({}));
+    return describeOperatorProfile(await readOrEmpty(globalWorkspacePaths(options).configPath), await readOrEmpty(configPath));
   }
 
   async function inspectGlobalConfig(options = {}) {
@@ -1305,6 +1315,8 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     validateWorkPlan(work.plan, diagnostics);
     validateWorkExamples(work.examples, diagnostics);
     validateWorkDiagrams(work.diagrams, diagnostics);
+    // 193/ADR-003 §2 — the operator profile, for the project file and the global one alike.
+    for (const entry of operatorProfileDiagnostics({ work })) diagnostics.push(diagnostic("error", entry.path, entry.message, entry.code));
   }
 
   // --- work.diagrams — the diagram generator (milestone 133 / ADR-001) ------------
@@ -1442,10 +1454,18 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
   // continue door (134/04) — and each asks this one resolver. It reads `enabled` alone and never
   // throws, so a config that fails validation still resolves; the diagnostic is the validator's.
   // The object is closed: a misspelt `enable` is diagnosed rather than passing silently as off.
-  const EXAMPLES_KEYS = new Set(["enabled"]);
+  const EXAMPLES_KEYS = new Set(["enabled", "operatorAware"]);
 
   function examplesEnabledFromConfig(config) {
     return config?.work?.examples?.enabled === true;
+  }
+
+  // 193/ADR-006 §1 — the operator-aware switch, the block's second key and its one resolver. The same
+  // rule as the gate: only the boolean `true` turns it on, and it means nothing without discovery, so
+  // it is on only when both keys hold `true`. Callers hand it the PROJECT's config: `loadWorkspace`
+  // layers no global `work.examples`, because a render must not depend on the machine it runs on.
+  function operatorAwareFromConfig(config) {
+    return examplesEnabledFromConfig(config) && config.work.examples.operatorAware === true;
   }
 
   function validateWorkExamples(examples, diagnostics) {
@@ -1464,16 +1484,26 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
       diagnostics.push(diagnostic(
         "error",
         `work.examples.${key}`,
-        `work.examples.${key} is not a known key; work.examples takes only "enabled".`,
+        `work.examples.${key} is not a known key; work.examples takes only "enabled" and "operatorAware".`,
         "examples-gate-unknown-key"
       ));
     }
-    if (examples.enabled !== undefined && typeof examples.enabled !== "boolean") {
+    for (const key of EXAMPLES_KEYS) {
+      if (examples[key] !== undefined && typeof examples[key] !== "boolean") {
+        diagnostics.push(diagnostic(
+          "error",
+          `work.examples.${key}`,
+          `work.examples.${key} must be a boolean when provided.`,
+          "examples-gate-bad-value"
+        ));
+      }
+    }
+    if (examples.operatorAware === true && examples.enabled !== true) {
       diagnostics.push(diagnostic(
         "error",
-        "work.examples.enabled",
-        "work.examples.enabled must be a boolean when provided.",
-        "examples-gate-bad-value"
+        "work.examples.operatorAware",
+        "work.examples.operatorAware is true, but operator-aware discovery means nothing without discovery: set work.examples.enabled to true beside it, or turn the switch off.",
+        "examples-operator-aware-without-discovery"
       ));
     }
   }
@@ -2133,5 +2163,5 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     };
   }
 
-  return { inspectConfig, inspectExecutionSettings, inspectGlobalConfig, adapterWarningsForConfig, validateConfig, validateGlobalConfig, doctorConfig, notionAuthCheck, testLayoutChecks, managedToolChecks, providerPrereqCheck, toolPlatformCheckFor, toolPlatformChecks, resolveWorkDiagrams, planEnabledFromConfig, examplesEnabledFromConfig };
+  return { inspectConfig, inspectExecutionSettings, inspectGlobalConfig, adapterWarningsForConfig, validateConfig, validateGlobalConfig, doctorConfig, notionAuthCheck, testLayoutChecks, managedToolChecks, providerPrereqCheck, toolPlatformCheckFor, toolPlatformChecks, resolveWorkDiagrams, planEnabledFromConfig, examplesEnabledFromConfig, operatorAwareFromConfig, operatorProfileFromConfig };
 }

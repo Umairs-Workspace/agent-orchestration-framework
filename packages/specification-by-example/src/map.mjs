@@ -14,15 +14,20 @@
 //
 // Every `R<n>` / `E<n>` / `Q<n>` map pattern in `src/` lives in this file and nowhere else, and so
 // does the map's file name. FF-13402 (`test/arch/examples/acd-example-map-single-home.test.mjs`)
-// holds both.
+// holds both. Since 193/00 so does the `F<n>` finding id, its `researched` label and state, and the
+// research document's name (FF-19201): the finding a map cites is read beside the label citing it.
 
 export const EXAMPLES_DOC = "EXAMPLES.md";
+export const RESEARCH_DOC = "RESEARCH.md";
 
 // The one spelling of each vocabulary. `ruled` joins none of them (ADR-001 §3): a business rule
 // decided by an ADR is the smuggled default this milestone exists to stop.
-export const PROVENANCE = Object.freeze(["proposed", "confirmed", "stated"]);
-export const QUESTION_STATES = Object.freeze(["open", "asked", "answered", "defaulted"]);
-export const QUESTION_CLASSES = Object.freeze(["business", "technical"]);
+// 193/ADR-001 §1–§3: `domain` is a fact about the world, `policy` a decision only a person makes,
+// and `business` the old spelling of `policy`, kept for good because a delivered map is never
+// rewritten. A fact may be closed by a cited finding, `researched F<n>`, and an example may cite one.
+export const PROVENANCE = Object.freeze(["proposed", "confirmed", "stated", "researched"]);
+export const QUESTION_STATES = Object.freeze(["open", "asked", "answered", "defaulted", "researched"]);
+export const QUESTION_CLASSES = Object.freeze(["domain", "policy", "technical", "business"]);
 
 // The reasons a line is reported for — closed, and in the order the contract names them.
 export const MALFORMED_REASONS = Object.freeze([
@@ -53,16 +58,21 @@ const PREFIX_BY_KIND = { rule: "R", example: "E", question: "Q" };
 const POSITIVE = /^[1-9]\d*$/;
 const PROVENANCE_GROUP = /^(.*)\[([^[\]]*)\]$/;
 const STATED = /^stated Q([1-9]\d*)$/;
+// A finding's id, the one spelling `[researched F<n>]`, the state and the research heading share.
+const FINDING_ID = String.raw`F[1-9]\d*`;
 // A bracket earlier in an example's text is text — unless it holds a provenance label, when the
 // line is `bad-provenance`: two labels are never read as one.
-const EARLIER_LABEL = /\[\s*(?:proposed|confirmed|stated\b[^\]]*)\s*\]/;
+const EARLIER_LABEL = /\[\s*(?:proposed|confirmed|(?:stated|researched)\b[^\]]*)\s*\]/;
+// The two states that carry a pointer: a default's citation, and the finding a fact was settled by.
+// `researched` reads the same `F<n>` as the example label it shares the pattern with.
 const DEFAULTED = /^defaulted (\S+)$/;
+const RESEARCHED = new RegExp(`^researched (${FINDING_ID})$`);
 
 /**
  * Parse an example map's text. Total over strings: every string returns, and a value that is not a
  * string throws `TypeError`. The value is deeply frozen:
  *
- *   { rules: [{ id, line, text, examples: [{ id, line, text, provenance, question }] }],
+ *   { rules: [{ id, line, text, examples: [{ id, line, text, provenance, question, finding }] }],
  *     questions: [{ id, line, class, state, pointer, text }],
  *     notApplicable: <reason> | null,
  *     malformed: [{ line, text, reason }] }
@@ -71,9 +81,7 @@ const DEFAULTED = /^defaulted (\S+)$/;
  */
 export function parseExampleMap(text) {
   if (typeof text !== "string") throw new TypeError("parseExampleMap: the map text must be a string");
-  const lines = text.replace(/\r\n/g, "\n").split("\n");
-  // A final newline adds no line.
-  if (lines.length > 1 && lines.at(-1) === "") lines.pop();
+  const lines = textLines(text);
 
   const rules = [];
   const questions = [];
@@ -106,17 +114,9 @@ export function parseExampleMap(text) {
 
     // Whole-line comments and multi-line `<!-- -->` blocks; their contents are not read.
     if (line.startsWith("<!--")) {
-      if (line.includes("-->", 4)) {
-        if (!line.trimEnd().endsWith("-->")) report(index, "unknown-line");
-        continue;
-      }
-      let close = index + 1;
-      while (close < lines.length && !lines[close].includes("-->")) close += 1;
-      if (close === lines.length) {
-        report(index, "unknown-line");
-      } else {
-        index = close;
-      }
+      const close = commentClose(lines, index);
+      if (close === -1 || (close === index && !line.trimEnd().endsWith("-->"))) report(index, "unknown-line");
+      if (close !== -1) index = close;
       continue;
     }
 
@@ -186,14 +186,14 @@ export function parseExampleMap(text) {
     // A question, read by position: id, class, state, then the text (which may hold ` · `).
     const [rawClass = "", rawState = "", ...words] = rest.split(SEP);
     const admittedClass = QUESTION_CLASSES.includes(rawClass);
-    const defaulted = DEFAULTED.exec(rawState);
-    const admittedState = defaulted !== null || (rawState !== "defaulted" && QUESTION_STATES.includes(rawState));
+    const state = readState(rawState);
+    const admittedState = state !== null;
     questions.push({
       id,
       line: index + 1,
       class: admittedClass ? rawClass : "business",
-      state: admittedState ? (defaulted ? "defaulted" : rawState) : "open",
-      pointer: admittedState && defaulted ? defaulted[1] : null,
+      state: admittedState ? state.state : "open",
+      pointer: admittedState ? state.pointer : null,
       text: words.join(SEP),
     });
     if (!admittedClass) report(index, "bad-class");
@@ -227,6 +227,17 @@ export function parseExampleMap(text) {
   return deepFreeze({ rules, questions, notApplicable, malformed });
 }
 
+// A question's state field: `{ state, pointer }`, or null when the grammar does not admit it. The
+// bare words `defaulted` and `researched` name no pointer, and are not admitted.
+function readState(raw) {
+  const defaulted = DEFAULTED.exec(raw);
+  if (defaulted) return { state: "defaulted", pointer: defaulted[1] };
+  const researched = RESEARCHED.exec(raw);
+  if (researched) return { state: "researched", pointer: researched[1] };
+  if (raw === "defaulted" || raw === "researched" || !QUESTION_STATES.includes(raw)) return null;
+  return { state: raw, pointer: null };
+}
+
 // An example's text after its id: the text, then exactly one bracketed provenance at the end.
 // Answers the fields, or the reason the line is malformed.
 function readExample(rest) {
@@ -235,10 +246,29 @@ function readExample(rest) {
   if (text === "") return "unknown-line";
   if (!group || EARLIER_LABEL.test(group[1])) return "bad-provenance";
   const label = group[2];
-  if (label === "proposed" || label === "confirmed") return { text, provenance: label, question: null };
+  if (label === "proposed" || label === "confirmed") return { text, provenance: label, question: null, finding: null };
   const stated = STATED.exec(label);
-  if (stated) return { text, provenance: "stated", question: `Q${stated[1]}` };
+  if (stated) return { text, provenance: "stated", question: `Q${stated[1]}`, finding: null };
+  const researched = RESEARCHED.exec(label);
+  if (researched) return { text, provenance: "researched", question: null, finding: researched[1] };
   return "bad-provenance";
+}
+
+// The lines of a document: CRLF reads as LF, and a final newline adds no line.
+function textLines(text) {
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  if (lines.length > 1 && lines.at(-1) === "") lines.pop();
+  return lines;
+}
+
+// The index of the line that closes a `<!--` opened on line `index` (that line itself for a
+// whole-line comment), or -1 when nothing closes it.
+function commentClose(lines, index) {
+  if (lines[index].includes("-->", 4)) return index;
+  for (let close = index + 1; close < lines.length; close += 1) {
+    if (lines[close].includes("-->")) return close;
+  }
+  return -1;
 }
 
 function deepFreeze(value) {
@@ -249,13 +279,102 @@ function deepFreeze(value) {
   return value;
 }
 
+// ── THE FINDINGS — what a cited `F<n>` points at (193/ADR-001 §6, §9) ──────────────────────────
+// A finding is a level-2 heading `## F<n> · <the question>` in the research document. Its block runs
+// to the next level-1 or level-2 heading, and it is SOURCED when the block holds a line starting
+// `- **Source:**` with text after it. That proves a source is named, never that it says what the
+// finding says: the reviewer judges that. An id used twice resolves to neither.
+const FINDING_HEADING = new RegExp(`^## (${FINDING_ID}) · (.*)$`);
+const SOURCE_LINE = "- **Source:**";
+
+/**
+ * Read a research document's findings. Total over strings: every string returns, and a value that
+ * is not a string throws `TypeError`. The value is deeply frozen:
+ *
+ *   { findings: [{ id, line, text, sourced }], duplicates: [{ id, lines }] }
+ *
+ * `findings` holds each id used exactly once, in document order; an id used more than once is in
+ * `duplicates` and nowhere else. Comment blocks are not read; CRLF reads as LF.
+ */
+export function readFindings(text) {
+  if (typeof text !== "string") throw new TypeError("readFindings: the research text must be a string");
+  const lines = textLines(text);
+  const headings = [];
+  let current = null;
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line.startsWith("<!--")) {
+      const close = commentClose(lines, index);
+      if (close !== -1) index = close;
+      continue;
+    }
+    if (line.startsWith("# ") || line.startsWith("## ")) {
+      const heading = FINDING_HEADING.exec(line);
+      const question = heading ? heading[2].trim() : "";
+      current = question === "" ? null : { id: heading[1], line: index + 1, text: question, sourced: false };
+      if (current) headings.push(current);
+      continue;
+    }
+    if (current && line.startsWith(SOURCE_LINE) && line.slice(SOURCE_LINE.length).trim() !== "") current.sourced = true;
+  }
+  const linesById = new Map();
+  for (const heading of headings) linesById.set(heading.id, [...(linesById.get(heading.id) ?? []), heading.line]);
+  return deepFreeze({
+    findings: headings.filter((heading) => linesById.get(heading.id).length === 1),
+    duplicates: [...linesById].filter(([, at]) => at.length > 1).map(([id, at]) => ({ id, lines: at })),
+  });
+}
+
+// The finding `readFindings` answered under `id`, or null — for an id never written, and for one
+// written twice.
+export function findingNamed(read, id) {
+  return read.findings.find((finding) => finding.id === id) ?? null;
+}
+
 // ── THE QUERIES — what the lane and the door ask of a parsed map (ADR-004 §2, ADR-005 §4) ─────
 // Pure functions over `parseExampleMap`'s value, so the door and the lane cannot disagree. A
 // question that parsed malformed counts by its fail-closed reading (class `business`, state `open`).
 
+// What closes a question, by who owns it (193/ADR-001 §4). A decision — `policy`, or its old
+// spelling `business` — is closed only by a person's `answered`. A fact — `domain` — is closed by
+// `answered` or by a cited finding, and never by a default. A `technical` question is never gated.
+const CLOSED_BY = Object.freeze({
+  policy: Object.freeze(["answered"]),
+  business: Object.freeze(["answered"]),
+  domain: Object.freeze(["answered", "researched"]),
+});
+
+function isOpenQuestion(question) {
+  const closedBy = CLOSED_BY[question.class];
+  return closedBy !== undefined && !closedBy.includes(question.state);
+}
+
+// Every gated question still open, in map order: a decision not yet answered, and a fact neither
+// answered nor settled by a cited finding.
+export function openQuestions(map) {
+  return map.questions.filter(isOpenQuestion);
+}
+
 // A business question is closed only by `answered`: `defaulted` on a business question is open.
+// `policy` is the same class newly spelt, so it is read alike (193/ADR-001 §1).
 export function openBusinessQuestions(map) {
-  return map.questions.filter((question) => question.class === "business" && question.state !== "answered");
+  return map.questions.filter((question) => (question.class === "business" || question.class === "policy") && isOpenQuestion(question));
+}
+
+// Every line that cites a finding, in line order: an example labelled `[researched F<n>]` and a
+// question in state `researched F<n>`, as `{ id, line, finding }`. A citation is not a person's
+// claim, so it carries no token (193/ADR-001 §6, §9).
+export function researchClaims(map) {
+  const claims = [];
+  for (const rule of map.rules) {
+    for (const example of rule.examples) {
+      if (example.provenance === "researched") claims.push({ id: example.id, line: example.line, finding: example.finding });
+    }
+  }
+  for (const question of map.questions) {
+    if (question.state === "researched") claims.push({ id: question.id, line: question.line, finding: question.pointer });
+  }
+  return claims.sort((a, b) => a.line - b.line);
 }
 
 // Every claim a person must stand behind, in line order, with the token it is anchored by: a
@@ -376,7 +495,7 @@ export function contractNamesRules(features) {
 
 /**
  * The agreed examples a contract formulated from the map does not carry inside their own rule, in
- * map order: `{ id, line, rule, provenance, question, foundAt }`, where `foundAt` is the first
+ * map order: `{ id, line, rule, provenance, question, finding, foundAt }`, where `foundAt` is the first
  * carrier of the id in a group that does not name its rule (`{ rule, path, line }`, `rule` null for
  * a group naming no rule id), or null when nothing carries it. A `proposed` example is never
  * required. Answers `[]` for a map declared not applicable and for a contract that names no rule.
@@ -397,6 +516,7 @@ export function untracedExamples(map, features) {
         rule: rule.id,
         provenance: example.provenance,
         question: example.question,
+        finding: example.finding,
         foundAt: elsewhere ? { rule: elsewhere.rule, path: elsewhere.path, line: elsewhere.line } : null,
       });
     }

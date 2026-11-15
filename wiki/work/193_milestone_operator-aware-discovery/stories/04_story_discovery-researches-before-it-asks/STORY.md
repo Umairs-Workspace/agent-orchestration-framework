@@ -5,10 +5,10 @@ slug: discovery-researches-before-it-asks
 title: "Discovery researches before it asks — as fragments of the practice, rendered only where a project turned the switch on: refine sorts a fact from a decision, researches the fact at the operator's level, returns what it settled as one batch, and every question it asks explains itself"
 parent: 193
 depends: [00, 01, 02, 03]
-status: not-started
+status: done
 owner: product-owner
 created: 2026-11-12
-updated: 2026-11-14
+updated: 2026-11-15
 adrs: [ADR-004, ADR-005, ADR-006]
 reads:
   - wiki/work/193_milestone_operator-aware-discovery/SPEC.md
@@ -110,11 +110,11 @@ the switch off renders none of it.
 
 ## Tasks
 
-- [ ] 00 [the beat tells a fact from a decision](tasks/00_the-beat-tells-a-fact-from-a-decision.feature)
-- [ ] 01 [a fact is researched before anyone is asked](tasks/01_a-fact-is-researched-before-anyone-is-asked.feature)
-- [ ] 02 [what research settles comes back as one batch](tasks/02_what-research-settles-comes-back-as-one-batch.feature)
-- [ ] 03 [every question comes with a recommendation](tasks/03_every-question-comes-with-a-recommendation.feature)
-- [ ] 04 [on renders it, and off renders none of it](tasks/04_on-renders-it-and-off-renders-none-of-it.feature)
+- [x] 00 [the beat tells a fact from a decision](tasks/00_the-beat-tells-a-fact-from-a-decision.feature)
+- [x] 01 [a fact is researched before anyone is asked](tasks/01_a-fact-is-researched-before-anyone-is-asked.feature)
+- [x] 02 [what research settles comes back as one batch](tasks/02_what-research-settles-comes-back-as-one-batch.feature)
+- [x] 03 [every question comes with a recommendation](tasks/03_every-question-comes-with-a-recommendation.feature)
+- [x] 04 [on renders it, and off renders none of it](tasks/04_on-renders-it-and-off-renders-none-of-it.feature)
 
 ## Notes
 

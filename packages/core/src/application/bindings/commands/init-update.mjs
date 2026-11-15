@@ -5,7 +5,7 @@ import { updateWork } from "../../../work/update.mjs";
 import { formatFriendlyApplyAction, relativeDisplayPath } from "../../../render-plan.mjs";
 import { RUNTIME_FLAGS, hasRuntimeOptions, parseRuntimes } from "../../../spine/flags.mjs";
 
-export function assembleCommandsInitUpdate({ workInitServices, workMemoryServices, configInspectServices = null }) {
+export function assembleCommandsInitUpdate({ workInitServices, workMemoryServices, configInspectServices = null, workDoctorExamplesServices = null, workServices = null }) {
   // work:init / work:update — render the ACD bundle into a repo, and re-render it
   // drift-checked against the install manifest (m42 wave (d) leg d1, wave-3 tail;
   // formerly cli.mjs's CLI-only workInitCommand / workUpdateCommand). Both ride
@@ -33,6 +33,19 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
   // 190/ADR-008 §5 — the project doctor's test-layout family, called here so a project taking a new
   // bundle hears what its test declaration leaves out without remembering to ask.
   const testLayoutChecks = configInspectServices?.testLayoutChecks ?? (async () => []);
+  // 193/ADR-006 §5 — the doctor's operator lane, asked over the target's loaded workspace, so a project
+  // that turned operator-aware discovery on hears that no profile is declared from the update and from
+  // the turn-on itself, in the doctor's own words. Silent when either collaborator is absent.
+  const operatorProfileWarnings = workDoctorExamplesServices?.operatorProfileWarnings ?? null;
+  const loadWorkspace = workServices?.loadWorkspace ?? null;
+  async function operatorProfileFor(targetDir) {
+    if (operatorProfileWarnings == null || loadWorkspace == null) return [];
+    try {
+      return operatorProfileWarnings((await loadWorkspace(targetDir)).config);
+    } catch {
+      return [];
+    }
+  }
   // m43 / ADR-002 — the co-authored settings merge reports on the SAME envelope the
   // plan does, so a refusal (`claude-settings-unparseable`) or a restored drift is
   // visible on both faces rather than only in a log line.
@@ -177,34 +190,62 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
           },
           additionalProperties: false,
         },
+        operatorAware: { type: "string", enum: ["on", "off"] },
+        operatorRole: { type: "string" },
+        expertise: { type: "string" },
+        global: { type: "boolean" },
       },
       required: ["targetDir"],
       additionalProperties: false,
     },
 
     async run(input) {
-      return initConfig({ targetDir: input.targetDir, tags: input.tags });
+      const result = await initConfig({
+        targetDir: input.targetDir,
+        tags: input.tags,
+        operatorAware: input.operatorAware,
+        operatorRole: input.operatorRole,
+        expertise: input.expertise,
+        global: Boolean(input.global),
+      });
+      // The turn-on says at once what is still missing: the doctor's sentence, from the same function.
+      const turnedOn = result.operatorAwareWritten && result.operatorAware === true;
+      return { ...result, operatorProfile: turnedOn ? await operatorProfileFor(result.targetDir) : [] };
     },
 
     cli: {
       route: ["work", "init-config"],
       spec: {
-        usage: "aof work init-config [dir] [--layers @cli,@ui] [--refinements @work] [--domains @board] [--json]",
+        usage: "aof work init-config [dir] [--layers @cli,@ui] [--refinements @work] [--domains @board] [--operator-aware on|off] [--operator-role <text>] [--expertise <domain>=<level>,…] [--global] [--json]",
         workspace: false,
         flags: {
           target: { type: "string", description: "project directory (default: cwd; a bare positional dir also works)" },
           layers: { type: "string", description: "comma-separated layer tags (the delivery surfaces, e.g. @cli,@ui)" },
           refinements: { type: "string", description: "comma-separated refinement tags (the cross-cutting qualifiers)" },
           domains: { type: "string", description: "comma-separated domain tags (the repo's feature areas)" },
+          operatorAware: { type: "string", description: "on|off — operator-aware discovery for this project (work.examples.operatorAware; needs discovery on)" },
+          operatorRole: { type: "string", description: "who you are in this project, a sentence or two (work.operator.role; replaces the role)" },
+          expertise: { type: "string", description: "comma-separated <domain>=expert|working|new (work.operator.expertise; replaces each domain named)" },
+          global: { type: "boolean", description: "write the operator profile to the machine-wide ~/.aof/aof.config.json, and nothing else" },
         },
       },
 
       argv: (positionals, options) => ({
         targetDir: path.resolve(options.target ?? positionals[0] ?? process.cwd()),
         tags: Object.fromEntries(TAG_GROUPS.map((group) => [group, splitTagList(options[group])])),
+        ...(options.operatorAware !== undefined ? { operatorAware: String(options.operatorAware) } : {}),
+        ...(options.operatorRole !== undefined ? { operatorRole: String(options.operatorRole) } : {}),
+        ...(options.expertise !== undefined ? { expertise: String(options.expertise) } : {}),
+        ...(options.global ? { global: true } : {}),
       }),
 
       render(result) {
+        if (result.global) {
+          return [
+            `${result.created ? "Created" : "Updated"} ${result.configPath}`,
+            `work.operator written (global) — ${operatorSummary(result.operator)}; every project on this machine reads it under its own.`,
+          ].join("\n");
+        }
         const lines = [
           `${result.created ? "Created" : "Updated"} ${relativeDisplayPath(result.configPath, result.targetDir)}`,
           // The key is named from the seam, not spelled again here: a face that prints the
@@ -228,10 +269,22 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
         } else {
           lines.push("work.tags: no vocabulary given — pass --layers/--refinements/--domains to fill it in.");
         }
+        if (result.operatorAwareWritten) {
+          lines.push(`work.examples.operatorAware: ${result.operatorAware ? "on" : "off"} (set) — run "aof work update" to render it.`);
+        }
+        if (result.profileWritten) lines.push(`work.operator written (project) — ${operatorSummary(result.operator)}`);
+        lines.push(...warningLines(result.operatorProfile));
         return lines.join("\n");
       },
 
-      json: (result) => ({
+      json: (result) => (result.global ? {
+        targetDir: path.relative(process.cwd(), result.targetDir) || ".",
+        global: true,
+        configPath: result.configPath,
+        created: result.created,
+        profileWritten: result.profileWritten,
+        operator: result.operator,
+      } : {
         targetDir: path.relative(process.cwd(), result.targetDir) || ".",
         configPath: relativeDisplayPath(result.configPath, result.targetDir),
         created: result.created,
@@ -242,6 +295,11 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
         tagsWritten: result.tagsWritten,
         tagsKept: result.tagsKept,
         tags: result.tags,
+        operatorAware: result.operatorAware,
+        operatorAwareWritten: result.operatorAwareWritten,
+        profileWritten: result.profileWritten,
+        operator: result.operator,
+        operatorProfile: result.operatorProfile ?? [],
       }),
     },
   };
@@ -270,7 +328,8 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
       const testLayout = (await testLayoutChecks(input.targetDir))
         .filter((check) => check.severity === "warning")
         .map(({ id, severity, message }) => ({ id, severity, message }));
-      return { ...result, targetDir: input.targetDir, testLayout };
+      const operatorProfile = await operatorProfileFor(input.targetDir);
+      return { ...result, targetDir: input.targetDir, testLayout, operatorProfile };
     },
 
     cli: {
@@ -307,6 +366,7 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
         }
         lines.push(...practiceLines(result.practices));
         lines.push(...testLayoutLines(result.testLayout));
+        lines.push(...warningLines(result.operatorProfile));
         return lines.join("\n");
       },
 
@@ -325,6 +385,7 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
           ...(result.memoryConfig ? { memoryConfig: result.memoryConfig } : {}),
           claudeSettings: result.claudeSettings ?? null,
           testLayout: result.testLayout ?? [],
+          operatorProfile: result.operatorProfile ?? [],
           practices: result.practices ?? [],
         };
       },
@@ -363,4 +424,18 @@ export function practiceLines(practices = []) {
 // family is all ok, so a project whose declaration covers its tree sees no change.
 function testLayoutLines(testLayout = []) {
   return testLayout.map(({ id, message }) => `warning: ${id} - ${message}`);
+}
+
+// 193/ADR-006 §5 — the operator lane's warning, in the test layout's line form.
+function warningLines(warnings = []) {
+  return warnings.map(({ code, message }) => `warning: ${code} - ${message}`);
+}
+
+// What a profile write said, for the face: the role (quoted) and each domain's level it holds.
+function operatorSummary(operator) {
+  const parts = [];
+  if (typeof operator?.role === "string") parts.push(`role "${operator.role}"`);
+  const expertise = operator?.expertise != null && typeof operator.expertise === "object" ? Object.entries(operator.expertise) : [];
+  if (expertise.length > 0) parts.push(`expertise ${expertise.map(([domain, level]) => `${domain}: ${level}`).join(", ")}`);
+  return parts.join("; ") || "nothing";
 }

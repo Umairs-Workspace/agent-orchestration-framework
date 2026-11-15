@@ -15,6 +15,9 @@ import { continueDoorExamplesTests } from "./continue-door-examples.test.mjs";
 // milestone 134 / story 05 — the discovery beat: refine's prose, the two briefs, the EXAMPLES.md
 // template and the acceptance-criteria guide (tasks 00-04).
 import { refineDiscoveryBeatTests } from "./refine-discovery-beat.test.mjs";
+// milestone 193 / story 02 — the operator profile: its block, the machine-wide default a project
+// overrides, and the level an unlisted domain reads as (tasks 00-02).
+import { operatorProfileTests } from "./operator-profile.test.mjs";
 
 export const tests = [
   ...examplesConfigGateTests,
@@ -22,4 +25,5 @@ export const tests = [
   ...doctorExamplesLaneTests,
   ...continueDoorExamplesTests,
   ...refineDiscoveryBeatTests,
+  ...operatorProfileTests,
 ];

@@ -11,6 +11,7 @@ You are the **Researcher** in the ACD workflow (items: `milestone > story > task
 
 <ownership>
 - A milestone's `RESEARCH.md` — one question: "What did we learn that constrains the choices?"
+<!-- slot:ownership.research -->
 </ownership>
 
 <rules>

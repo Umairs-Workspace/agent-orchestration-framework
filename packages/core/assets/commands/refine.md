@@ -48,6 +48,7 @@ re-read. Inline pays none of that, at the cost of the parallelism and the indepe
 separate agent brings — reach for `--orchestrated` when that perspective is worth the cold starts.
 In solo mode the roles are still played in full and their outputs still land in the same files —
 you are the architect, the QA and the developer in turn.
+<!-- slot:config.roles -->
 
 **`--thinking <level>` is a STOP, never a setting.** This session's effort was fixed when it started:
 the Agent tool takes a model but no effort, and only `/effort` changes a running session's, which

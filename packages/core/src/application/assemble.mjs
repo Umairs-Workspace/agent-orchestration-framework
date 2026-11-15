@@ -428,8 +428,8 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const meshDeclarations = assembleMeshDeclarations({ meshPresenceServices: meshPresence, runStoreServices: runStore, commandsRunRetryServices: commandsRunRetry, workServices: work, loopStopRequestServices: loopStopRequest, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
   const storyContractDerive = assembleStoryContractDerive({ codeRelationsServices: codeRelations });
   const workExamplesAnswers = assembleWorkExamplesAnswers({ agentSessionDriverServices: agentSessionDriver, degradeServices: degrade, runStoreServices: runStore, runSpendIngestServices: runSpendIngest, workObserveServices: workObserve });
-  const workInit = assembleWorkInit({ workspaceServices: workspace, workMemoryServices: workMemory });
-  const commandsInitUpdate = assembleCommandsInitUpdate({ workInitServices: workInit, workMemoryServices: workMemory, configInspectServices: configInspect });
+  const workInit = assembleWorkInit({ workspaceServices: workspace, workMemoryServices: workMemory, configInspectServices: configInspect });
+  const commandsInitUpdate = assembleCommandsInitUpdate({ workInitServices: workInit, workMemoryServices: workMemory, configInspectServices: configInspect, workDoctorExamplesServices: workDoctorExamples, workServices: work });
   const commandsAssetsUi = assembleCommandsAssetsUi({ provideSetupUi: async () => { lifetime.assertReady(); return setupUi; } });
   const spineFace = assembleSpineFace({ commandCoreServices: commandPort, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, degradeServices: degrade, provideGlobalWorkStore: async () => { lifetime.assertReady(); return globalWorkStore; }, provideGlobalWorkPublisher: async () => { lifetime.assertReady(); return globalWorkPublisher; }, applicationEnv: env });
   const scaffold = assembleScaffold({ fsServices: fs, workspaceServices: workspace });

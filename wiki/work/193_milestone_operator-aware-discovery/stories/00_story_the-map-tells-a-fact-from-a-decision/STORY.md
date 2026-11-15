@@ -5,10 +5,10 @@ slug: the-map-tells-a-fact-from-a-decision
 title: "The map tells a fact from a decision — `domain`, `policy` and a cited `researched F<n>` join the grammar, and every map already written reads as it did"
 parent: 193
 depends: []
-status: not-started
+status: done
 owner: product-owner
 created: 2026-11-12
-updated: 2026-11-12
+updated: 2026-11-15
 adrs: [ADR-001]
 reads:
   - wiki/work/193_milestone_operator-aware-discovery/SPEC.md
@@ -57,11 +57,11 @@ teaches the new forms is a variant the practice ships with its beat (04).
 
 ## Tasks
 
-- [ ] 00 [a question is a fact, a decision or an engineering choice](tasks/00_a-question-is-a-fact-a-decision-or-an-engineering-choice.feature)
-- [ ] 01 [a fact is closed by a cited finding, a decision only by a person](tasks/01_a-fact-is-closed-by-a-cited-finding.feature)
-- [ ] 02 [a finding counts only when it names its source](tasks/02_a-finding-counts-only-when-it-names-its-source.feature)
-- [ ] 03 [a map written before this change reads as it did](tasks/03_a-map-written-before-this-change-reads-as-it-did.feature)
-- [ ] 04 [the grammar keeps one home](tasks/04_the-grammar-keeps-one-home.feature)
+- [x] 00 [a question is a fact, a decision or an engineering choice](tasks/00_a-question-is-a-fact-a-decision-or-an-engineering-choice.feature)
+- [x] 01 [a fact is closed by a cited finding, a decision only by a person](tasks/01_a-fact-is-closed-by-a-cited-finding.feature)
+- [x] 02 [a finding counts only when it names its source](tasks/02_a-finding-counts-only-when-it-names-its-source.feature)
+- [x] 03 [a map written before this change reads as it did](tasks/03_a-map-written-before-this-change-reads-as-it-did.feature)
+- [x] 04 [the grammar keeps one home](tasks/04_the-grammar-keeps-one-home.feature)
 
 ## Notes
 

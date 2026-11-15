@@ -5,10 +5,10 @@ slug: the-operator-says-who-they-are
 title: "The operator says who they are — a role and a level per domain in `work.operator`, with a machine-wide default a project overrides, resolved one way"
 parent: 193
 depends: []
-status: not-started
+status: done
 owner: product-owner
 created: 2026-11-12
-updated: 2026-11-12
+updated: 2026-11-15
 adrs: [ADR-003]
 reads:
   - wiki/work/193_milestone_operator-aware-discovery/SPEC.md
@@ -60,9 +60,9 @@ the project file and the global one; `loadWorkspace` laying the global block und
 
 ## Tasks
 
-- [ ] 00 [the operator states a role and a level per domain](tasks/00_the-operator-states-a-role-and-a-level-per-domain.feature)
-- [ ] 01 [a project overrides the machine-wide default, key by key](tasks/01_a-project-overrides-the-machine-wide-default.feature)
-- [ ] 02 [a domain nobody listed is new](tasks/02_a-domain-nobody-listed-is-new.feature)
+- [x] 00 [the operator states a role and a level per domain](tasks/00_the-operator-states-a-role-and-a-level-per-domain.feature)
+- [x] 01 [a project overrides the machine-wide default, key by key](tasks/01_a-project-overrides-the-machine-wide-default.feature)
+- [x] 02 [a domain nobody listed is new](tasks/02_a-domain-nobody-listed-is-new.feature)
 
 ## Notes
 
