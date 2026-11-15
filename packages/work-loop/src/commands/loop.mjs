@@ -720,8 +720,6 @@ export function createLoopShell({
   // 191/04 (ADR-005 §4) — a fresh `--supervised` launch, never a resume, spends its scope's start request.
   async function spendStart(input, ctx, scope, narrate, why) {
     if (input?.resume === true || input?.supervised !== true) return;
-    // The id the start request was written under — the mesh's one precedence, as `handOffStart` names
-    // it (191/F-14) — so an unpinned project's request is spent, not left to start the scope again.
     const spent = await spendStartRequest(loopStartsDir(), { workspaceId: resolveWorkspaceId(ctx.workspace), scope });
     if (spent.cleared) await narrate(`Cleared the start request for ${spent.scope} — ${why}.`);
   }
