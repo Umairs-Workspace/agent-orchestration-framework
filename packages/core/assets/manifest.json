@@ -624,7 +624,7 @@
         "id": "aof-repair",
         "kind": "skill"
       },
-      "hash": "sha256:9a080c46d6a54cc8793a27bb68c8700f0d19d1b0ac2f3510164e005ee0a568cb"
+      "hash": "sha256:d3bd17a5d6e36ef8eca31c9b3cb34e4b03f4e15888fcaf6d6e2acda118d40c5b"
     },
     {
       "path": ".agents/skills/aof-repair/agents/openai.yaml",
@@ -642,7 +642,7 @@
         "id": "aof-repair",
         "kind": "skill"
       },
-      "hash": "sha256:8d4cb1ebb953dd4853c1297e31247d50bb7dc440532e62c5769b300d0eef699a"
+      "hash": "sha256:4a04d954bf066e2a33350e0e5fb4af5d942b713cea0339d098e45f938d941be9"
     },
     {
       "path": ".agents/skills/aof-retrospective/SKILL.md",
@@ -1488,7 +1488,7 @@
         "id": "repair",
         "kind": "command"
       },
-      "hash": "sha256:acf259a91ed7d75c1784f0353c39e1ecd40af31250a71a7b59edbc49f1aabc3c"
+      "hash": "sha256:1d1a678579e524c36656548eaf3475d35f3deb5bb2d9698dfbfe95f33f7b618f"
     },
     {
       "path": ".claude/commands/aof/retrospective.md",

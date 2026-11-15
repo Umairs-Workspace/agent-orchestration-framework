@@ -29,7 +29,7 @@ import {
   isWholeItemCascade,
   lineageElapsedMs,
   sessionLendFor,
-  // 147 — the hand-over decision over a lane halt, asked by `repairLaneHalt` below.
+  // 147 — the hand-over decision over a halt, asked by `repairLaneHalt` below.
   decideHaltRepair,
   loopScopeIncludes,
   mapStoreRefusal,
@@ -332,6 +332,16 @@ export function createStoryCycle({
     const summary = gradeSummary(answer);
     if (summary == null || summary.verdict !== "indeterminate") return null;
     return summary.codes.find((code) => code !== "rubric-unconfigured" && !ADVISORY_CODES.includes(code)) ?? null;
+  }
+
+  // The runner's exit, and its own words, when they explain an `indeterminate` the counts cannot:
+  // a non-zero exit beside a report with no failing case reads "0 of N failing — indeterminate"
+  // otherwise. Empty on a clean exit, so the common halt's Details are unchanged. `answer` is a
+  // `work:grade --run` answer or `{ grade }` alone (a recorded grade carries no `detail`).
+  function gradeExitFacts(answer) {
+    const exit = answer?.grade?.runner?.exit;
+    if (!Number.isInteger(exit) || exit === 0) return {};
+    return typeof answer?.detail === "string" && answer.detail.length > 0 ? { exit, runner: answer.detail } : { exit };
   }
 
   // The `grade-indeterminate` stop's producer — the grade command, and the code it returned. A
@@ -707,9 +717,26 @@ export function createStoryCycle({
     };
     await narrate(`Driving ${ref} — repair of ${act.stop}, run ${record.runId}.`);
     let driven = await drivePhase({ ref, phase: "repair", cycle: 1, declaration, retryRecord: record, halt: handOver, now }, ctx);
-    if (driven.outcome.outcome === "needs-input" && driven.record.execution == null) driven = { ...driven, outcome: { ...driven.outcome, outcome: "failed", failureReason: "needs-input" } };
+    // A REPAIR MAY ASK (2026-11-14). A decision or a permission only the operator can give — "may I
+    // change the rubric?", "this dirty file is yours: commit it or leave it?" — is asked like any
+    // driven session's question: the loop WAITS for the answer in this process (notified, answered
+    // with `aof work answer <ref> "…"`) and types it into the same repair session. Only a question
+    // that goes unanswered past the loop's bound, or a stop, parks it and ends the loop.
+    if (driven.outcome.outcome === "needs-input") {
+      const bounds = loopBoundsFromConfig(ctx.workspace);
+      const ask = askContext({ ctx, narrate, bounds: { scheduleToCloseMs: bounds.scheduleToCloseMs, heartbeatMs: bounds.heartbeatMs }, invokedAt: now, scope, loopRunId });
+      const waited = await awaitAnswer(driven, {
+        ...ask.site,
+        drive: (answer) => drivePhase({ ref, phase: "repair", cycle: 1, declaration, retryRecord: driven.record, halt: handOver, answer, now }, ctx),
+        ref,
+        phase: "repair",
+        item: driven.item,
+        cwd: ctx.workspace.projectRoot,
+      }, ask.deps);
+      if (waited.parked != null) return { decision: "stop", facts: { repair: record.runId, repairOutcome: "needs-input" } };
+      driven = waited.phaseRun;
+    }
     driven = await settleDriven(driven, ctx, { now, narrate });
-    if (driven.outcome.outcome === "needs-input") return { decision: "stop", facts: { repair: record.runId, repairOutcome: "needs-input" } };
     const terminal = driven.record?.state ?? driven.outcome.outcome;
     return terminal === "done"
       ? { decision: "resume", runId: record.runId }
@@ -1174,7 +1201,7 @@ export function createStoryCycle({
       return {
         ...halt(haltDecision("grade-indeterminate", ref, gradeStopProducer(gradeStopCode(gradeResult))), gradedSummary == null
           ? { unavailable: String(gradeFault?.message ?? gradeFault ?? "the grade could not be taken") }
-          : { verdict: gradedSummary.verdict, codes: gradedSummary.codes, cases: gradedSummary.cases }),
+          : { verdict: gradedSummary.verdict, codes: gradedSummary.codes, cases: gradedSummary.cases, ...gradeExitFacts(gradeResult) }),
         gradedSummary,
       };
     }

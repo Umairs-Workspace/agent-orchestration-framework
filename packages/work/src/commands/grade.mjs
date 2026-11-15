@@ -455,7 +455,7 @@ const gradeCommand = {
       grade,
       // The runner's own words, kept beside the record so a refusal explains itself without
       // a second look. `detail` never enters `GradeRecord` — its key set is exact (FF-5403).
-      detail: observed.runner.detail ?? null,
+      detail: observed.runner.detail ?? exitVetoDetail(grade, observed),
       reportSource: observed.report.source,
       recorded: last?.grade ?? null,
       recordedAt: last?.at ?? null,
@@ -515,6 +515,21 @@ const gradeCommand = {
     json: (result) => result,
   },
 };
+
+// THE EXIT VETO EXPLAINS ITSELF. `report-vacuous` beside a clean report (no failing case, every
+// case statused, the floor cleared) has exactly one cause: the runner exited non-zero. Said
+// bare, "0 of 2128 failing — indeterminate" reads as nonsense to whoever the halt reaches, and
+// the reason (an unhandled error, a module that failed to load) lives only in the runner's
+// output. So the exit is named and the output's TAIL is kept — bounded, the runner's own words.
+const EXIT_VETO_TAIL_CHARS = 4000;
+function exitVetoDetail(grade, observed) {
+  const exit = observed?.runner?.exit;
+  if (grade?.verdict !== "indeterminate" || !grade.codes.includes("report-vacuous")) return null;
+  if (exit == null || exit === 0 || grade.cases.failed > 0) return null;
+  const capture = typeof observed.capture === "string" ? observed.capture.trimEnd() : "";
+  const tail = capture.length > EXIT_VETO_TAIL_CHARS ? `…${capture.slice(-EXIT_VETO_TAIL_CHARS)}` : capture;
+  return `the runner exited ${exit} although its report shows no failing case — the cause is in its output, not in a case${tail ? `; its output ends:\n${tail}` : ""}`;
+}
 
 // A launch failure and a runner that ran and failed are DIFFERENT ANSWERS, and the message
 // says which — the distinction the two indeterminate codes exist to carry.

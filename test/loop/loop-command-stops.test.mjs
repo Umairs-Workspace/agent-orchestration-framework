@@ -1900,8 +1900,10 @@ function primaryAskTests() {
           assert.equal(retried.attempt, 2, "the attempt that asked is the retried one");
           assert.equal(retried.state, "done", "settled done once");
           assert.equal(runs.filter((run) => run.brief?.loop?.phase === "continue").length, 2, "no attempt 3 was minted");
+          // Chore 206 (2026-11-12): a continue retry after a `timeout` RESUMES the prior session, so the
+          // retried attempt runs in session-1 and the answer re-drives that session under attempt 2's run.
           const third = driver.spawnCalls[2].args;
-          assert.deepEqual(third.slice(third.indexOf("--resume"), third.indexOf("--resume") + 2), ["--resume", "session-2"]);
+          assert.deepEqual(third.slice(third.indexOf("--resume"), third.indexOf("--resume") + 2), ["--resume", "session-1"]);
           assert.equal(driver.typed[2], "go");
         });
       },

@@ -91,6 +91,8 @@ const WAIT_SITES = Object.freeze([
   { file: "packages/work-loop/src/cycle.mjs", fn: "retryUntilTerminal", what: "cycle.mjs's retry ladder" },
   { file: "packages/work-loop/src/cycle.mjs", fn: "settleStoryCycle", what: "cycle.mjs's verify branch" },
   { file: "packages/work-loop/src/wave.mjs", fn: "runLane", what: "wave.mjs's lane branch" },
+  // 2026-11-14 — a repair session may ask the operator a decision or permission; it waits in place too.
+  { file: "packages/work-loop/src/cycle.mjs", fn: "repairLaneHalt", what: "cycle.mjs's repair of a halt" },
 ]);
 const REENTRY_SITE = Object.freeze({ file: "packages/work-loop/src/cycle.mjs", fn: "reenterPrimaryAsks", what: "the --resume re-entry" });
 const HALT_SPELLING = 'haltDecision("session-needs-input"';

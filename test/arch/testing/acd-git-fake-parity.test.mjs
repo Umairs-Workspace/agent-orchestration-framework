@@ -265,7 +265,7 @@ const MOVED = Object.freeze([
   ["test/loop/loop-command-wave.test.mjs", "129/04 task05 a wave of one still gets a lane, read off the open answer; a throwing single open halts lane-open-failed naming the error"],
   ["test/loop/loop-command-wave.test.mjs", "129/04 task05 an empty dispatch with held members is dependency-blocked with nothing in flight, and waits for the merge with a lane in flight"],
   ["test/loop/loop-command-wave.test.mjs", "129/04 task05 the bound is narrated from dispatch's answer, never read from config, and wave.mjs holds no concurrency literal"],
-  ["test/loop/loop-command-wave.test.mjs", "147/00 E6 — a red grade stops the loop with no repair session, as before"],
+  ["test/loop/loop-command-wave.test.mjs", "147/00 E6 (widened) — a grade the loop cannot read is handed to a repair session, and the loop resumes and finishes once it ends done"],
   ["test/loop/loop-command-wave.test.mjs", "131/03 task02 — one lane asks, the other merges while it waits, and the answer re-spawns the first lane's own child with --answer and the same run"],
   ["test/loop/loop-command-wave.test.mjs", "131/03 task02 — with no open lane and a parked one, the question is the halt: a story blocked behind the parked lane never halts dependency-blocked"],
   ["test/loop/loop-command-wave.test.mjs", "131/03 task02 — a halt in another lane drains the wave, and the waiting lane parks without a notice and rides the drained list"],

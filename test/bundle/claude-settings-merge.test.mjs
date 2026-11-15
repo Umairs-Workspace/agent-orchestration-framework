@@ -157,9 +157,12 @@ const REPAIR_SOURCE = path.join(repoRoot, "packages", "core", "assets", "command
 // against the command's prose (a line break inside a rule is whitespace).
 const REPAIR_RULES = [
   ["it reads the hand-over file named in its arguments, and the loop-diag log the file names", /reads the hand-over file named in its arguments, and the loop-diag log the file names/u],
-  ["it works in the primary checkout, and in the lane worktree only when the file names one", /works in the primary checkout, and in the lane worktree only when the file names one/u],
+  // 2026-11-14 — widened with the repairable stops: a story's fix is made in its lane worktree.
+  ["it works in the primary checkout, and in the story's lane worktree when the cause is there", /works in the primary checkout, and in the story's lane worktree when the cause is there/u],
   ["it never discards a commit: no reset --hard, rebase, push --force, branch -f, checkout -B", /never discards a commit: no `reset --hard`, `rebase`, `push --force`, `branch -f`,\s+`checkout -B`/u],
-  ["it never commits, stashes or discards the operator's uncommitted changes in the primary; a cause that is the operator's own work ends the repair failed, naming the paths", /never commits, stashes or discards the operator's uncommitted changes in the primary; a\s+cause that is the operator's own work ends the repair failed, naming the paths/u],
+  // 2026-11-14 — a repair may now ask: the operator's paths are asked about, and only an unanswered
+  // question ends the repair failed naming them.
+  ["it never commits, stashes or discards the operator's uncommitted changes in the primary without asking; an unanswered question ends the repair failed, naming the paths", /never commits, stashes or discards the operator's uncommitted changes in the primary without\s+asking[\s\S]*?an unanswered question ends the repair failed,\s+naming the paths/u],
   ["it never edits a delivered .feature", /never edits a delivered `\.feature`/u],
   ["it never runs aof work loop; the loop resumes itself", /never runs `aof work loop`; the loop resumes itself/u],
   ["it ends by stating the cause it found and what it changed, or why it could not repair", /ends by stating the cause it found and what it changed, or why it could not repair/u],
@@ -239,7 +242,9 @@ export const claudeSettingsMergeTests = [
     run: async () => {
       const text = await readFile(REPAIR_SOURCE, "utf8");
       assert.match(text, pattern);
-      assert.match(text, /^allowed-tools: \[Read, Grep, Glob, Bash, Edit, Write\]$/mu, "the session may read, run git and edit — the tools a repair needs, and no Task");
+      // 2026-11-14 — AskUserQuestion: a repair asks the operator for a decision or permission, and the
+      // loop waits for the answer.
+      assert.match(text, /^allowed-tools: \[Read, Grep, Glob, Bash, Edit, Write, AskUserQuestion\]$/mu, "the session may read, run git, edit and ask the operator — the tools a repair needs, and no Task");
     },
   })),
   {

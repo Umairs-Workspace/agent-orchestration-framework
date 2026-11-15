@@ -171,7 +171,7 @@ export function loopRefineFromConfig(workspace) {
   return resolveLoopRefine(loopConfig(workspace)?.refine);
 }
 
-// 147/00 (R1) — `work.loop.repair`: whether a LANE halt (the engine's `REPAIRABLE_STOPS`) is
+// 147/00 (R1) — `work.loop.repair`: whether a halt (the engine's `REPAIRABLE_STOPS`) is
 // handed to a fresh repair session before the loop stops for the operator. A BOOLEAN with the
 // mode keys' discipline — on unless turned off: unset is `true`, `true`/`false` answer
 // themselves, and anything else (`"false"`, `0`, `null`) answers `null`, which the launch

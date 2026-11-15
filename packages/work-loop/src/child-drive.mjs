@@ -171,10 +171,12 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     const withFix = typeof fixFile === "string" && fixFile.length > 0;
     const withAnswer = typeof answerFile === "string" && answerFile.length > 0;
     if (withFix && withAnswer) throw new TypeError("spawnLaneDrive: \"answerFile\" and \"fixFile\" cannot ride one drive.");
-    // 147/00 — a REPAIR drive names its hand-over file and nothing else: the hand-over is the whole
-    // brief of the session, so a fix or an answer beside it is a caller error too.
+    // 147/00 — a REPAIR drive names its hand-over file: the hand-over is the whole brief of the
+    // session, so a fix beside it is a caller error. An ANSWER may ride with it (2026-11-14): a repair
+    // that asked the operator is re-driven with the answer, and `drive repair` needs its hand-over
+    // on every drive, the answering one included.
     const withHalt = typeof haltFile === "string" && haltFile.length > 0;
-    if (withHalt && (withFix || withAnswer)) throw new TypeError("spawnLaneDrive: \"haltFile\" rides a repair drive alone, never with \"fixFile\" or \"answerFile\".");
+    if (withHalt && withFix) throw new TypeError("spawnLaneDrive: \"haltFile\" rides a repair drive without \"fixFile\".");
     const verb = [
       "work", "drive", phase, ref,
       "--run", runId,

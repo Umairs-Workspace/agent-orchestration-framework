@@ -1720,23 +1720,29 @@ export const loopCommandWaveTests = [
   ...repairGradeTests(),
 ];
 
-// ── 147 / task 00, E6 — A RED GRADE STILL STOPS THE LOOP, AND NO REPAIR SESSION IS HANDED IT. The red-grade
-// half of 147's rule R2 ("any other halt still stops for the operator"). It lives here rather than beside
-// E5 in `loop-command-stops` because grade/01 holds that suite to naming the grade nowhere, and this one
-// already drives the grade's halts over the same lane fixture. Hoisted like `waitingLaneTests`.
+// ── 147 / task 00, E6 (WIDENED 2026-11-14) — A GRADE THE LOOP CANNOT READ IS HANDED TO A REPAIR SESSION.
+// 147's rule R2 kept every non-lane halt for the operator; the loop now tries its best first, so the
+// grade halt goes to a repair session too. A repair that ends done resumes the loop in this process:
+// the reconcile brings the lane home and verify accepts the story, with no halt left to notify. It
+// lives here rather than beside E5 in `loop-command-stops` because grade/01 holds that suite to naming
+// the grade nowhere, and this one already drives the grade's halts over the same lane fixture.
+// Hoisted like `waitingLaneTests`.
 function repairGradeTests() {
   const HOOK = "MTIzNDU2Nzg5MDEyMzQ1Njc4.AbCdEf.repair"; // a synthetic bot token (131/09)
   return [
     {
-      name: "147/00 E6 — a red grade stops the loop with no repair session, as before",
+      name: "147/00 E6 (widened) — a grade the loop cannot read is handed to a repair session, and the loop resumes and finishes once it ends done",
       run: () => withLaneRepo(async (fx) => {
         fx.workspace.config.work.notify = { channels: { ops: { type: "discord", channelId: "123456789012345678", tokenEnv: "HOOK" } } };
         const posts = [];
         const fetch = async (url, init) => { posts.push(JSON.parse(init.body)); return { status: 204, headers: { get: () => null }, json: async () => ({}) }; };
-        // The phase child: it records each repair it is asked for and answers every phase done.
+        // The phase child: it records each repair it is asked for, completes a verify, and answers
+        // every phase done.
         const repairs = [];
+        const completeVerify = verifyCompleter(fx);
         const phase = async (input) => {
           if (input.phase === "repair") repairs.push({ ...input });
+          if (input.phase === "verify") await completeVerify(`/aof:verify ${input.ref}`);
           return { outcome: "document", document: { outcome: "done", sessionId: `child-${input.phase}-${input.ref}`, settlementContext: {} }, exitCode: 0, stderrTail: [] };
         };
         const report = collector();
@@ -1746,10 +1752,14 @@ function repairGradeTests() {
           notifyOptions: { env: { HOOK }, fetch },
         };
         const state = await runLoopLaunch({ scope: fx.milestone }, ctx);
-        assert.equal(state.act.stop, "grade-indeterminate");
-        assert.equal(repairs.length, 0, "no repair drive is spawned");
-        assert.equal(posts.length, 1, "the account and the notification are as before");
-        assert.equal(report.lines.some((line) => /Repair/u.test(line)), false);
+        const ref = `${fx.milestone}/01`;
+        assert.equal(state.state, "done", report.lines.join("\n"));
+        assert.equal(repairs.length, 1, "the grade halt is handed to ONE repair session");
+        const handOver = JSON.parse(await readFile(repairs[0].haltFile, "utf8"));
+        assert.equal(handOver.stop, "grade-indeterminate");
+        assert.equal(handOver.ref, ref);
+        assert.ok(report.lines.includes(`Repaired grade-indeterminate at ${ref} (run ${repairs[0].runId}) — resuming ${fx.milestone}.`), report.lines.join("\n"));
+        assert.equal(posts.length, 0, "a repaired halt and a finished loop notify nobody");
       }, { git: "fake", stories: ["01"], commit: { "src/x.mjs": "// base\n" } }),
     },
   ];

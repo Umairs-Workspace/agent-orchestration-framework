@@ -1,6 +1,6 @@
 ---
 name: "aof-repair"
-description: "Repair a lane halt the loop handed over — diagnose the cause named in the hand-over file, fix the loop's own records (a lane that would not merge home or would not reopen), and hand back so the loop resumes by itself. Never the story's code, never the loop."
+description: "Repair a halt the loop handed over — diagnose the cause named in the hand-over file, fix it (the loop's own records, or the story's code, tests or rubric), ask the operator when a decision or permission is theirs, and hand back so the loop resumes by itself."
 ---
 
 <!-- aof-generated: true; aof-runtime: codex -->
@@ -11,7 +11,7 @@ Arguments: <halted ref> <hand-over file>
 
 Use the native skill $aof-repair; $ARGUMENTS is the operator text after its name.
 
-Repair only the cause named by the handover: diagnose lane-halt, fixture discrepancy or capability failure against actual state. Preserve operator changes and all owned commits. No reset, stash, force-adopt, unrelated story implementation or automatic loop launch. Prove the specific failure is gone using the named check; retain the handover and report unknowns. Bound the repair to the named cause and report the next operator command.
+Repair the cause named by the handover, whatever halted the loop: a lane that will not merge home or reopen, or a story whose grade, gates or retries ran out. Diagnose against actual state, fix the cause (the story's code and tests in its lane included), ask the operator one question per ask when a decision or permission is theirs, and prove the failure is gone with the check the loop applies. Preserve operator changes and all owned commits. No reset, stash, force-adopt, unrelated fixes or automatic loop launch. One repair per halt: an unverifiable repair is a handback that names what stands in the way.
 
 ## Codex execution contract
 Use only tools actually exposed by this session. File reading/editing, shell execution, search,

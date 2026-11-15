@@ -922,7 +922,7 @@ export function createLoopShell({
       return { act: { act: "drive", ref, phase: "continue", cycle: cycle + 1 } };
     }
     if (route === "halt") {
-      return { halt: { act: haltDecision("grade-indeterminate", ref, gradeStopProducer(stopCode)), details: { verdict: summary?.verdict, codes: summary?.codes, cases: summary?.cases } } };
+      return { halt: { act: haltDecision("grade-indeterminate", ref, gradeStopProducer(stopCode)), details: { verdict: summary?.verdict, codes: summary?.codes, cases: summary?.cases, ...(Number.isInteger(recordedGrade?.runner?.exit) && recordedGrade.runner.exit !== 0 ? { exit: recordedGrade.runner.exit } : {}) } } };
     }
     if (recordedGrade != null) pendingGrades.set(ref, recordedGrade);
     return { act: { act: "drive", ref, phase: "verify", cycle: 1 } };
@@ -1055,7 +1055,7 @@ export function createLoopShell({
   // hand-off, an L1 report or a `Nothing to resume`. It is awaited, and it changes neither the state
   // nor the exit code; a body that throws announces nothing.
   //
-  // 147 — a LANE halt is first handed to a repair session (`repairLaneHalt`, cycle.mjs). A repair that
+  // 147 — a halt is first handed to a repair session (`repairLaneHalt`, cycle.mjs). A repair that
   // ends done RE-ENTERS the body with `resume: true` in this process, on the input it started with (the
   // number a backlog slug was promoted to); anything else re-prints the halt line with the repair's
   // facts and announces the halt once. A repaired halt is announced to nobody.
@@ -2136,7 +2136,7 @@ export function createLoopShell({
           thinking: { type: "string", repeatable: true, description: "repeatable: [PHASE=]LEVEL — the effort a phase's sessions think at (low, medium, high, xhigh, max; extra-high is xhigh); with no PHASE= it overrides every phase for this run, and a resume inherits it" },
           model: { type: "string", repeatable: true, description: "repeatable: [PHASE=][MODEL][:EFFORT] — the model (and effort) a phase's sessions run on, every phase when no PHASE= is given (refine, continue, verify); overrides the configured per-phase session model and effort for this run, and a resume inherits it" },
           refine: { type: "string", description: "per-story (one story's contract per refine drive) or whole-item (a milestone's break-down drive authors every contract in one session); overrides work.loop.refine, and a resume inherits it" },
-          noRepair: { type: "boolean", description: "do not hand a lane halt (lane-open-failed, lane-merge-refused, lane-merge-conflict) to a repair session; stop for the operator as before. work.loop.repair: false is the standing form" },
+          noRepair: { type: "boolean", description: "do not hand a halt to a repair session (every stop but uat-gate, session-needs-input, operator-interrupt, retry-parked and deadline-exhausted is handed over by default); stop for the operator instead. work.loop.repair: false is the standing form" },
         },
       },
       argv: (positionals, options) => ({

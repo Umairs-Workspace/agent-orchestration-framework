@@ -49,12 +49,32 @@ export const LOOP_STOPS = Object.freeze([
   "lane-merge-conflict",
 ]);
 
-// 147 (R1, R2) — THE REPAIRABLE STOPS: the three lane stops and nothing else, as a frozen export
-// of their own beside `LOOP_STOPS`, which is unchanged. A lane halt is about the loop's OWN
-// records — a lane that will not merge home or will not reopen — never about the code a story
-// built, so it is the one class a fresh session can be handed to repair without judging the story.
-// Every other stop still ends the loop for the operator exactly as before this story.
-export const REPAIRABLE_STOPS = Object.freeze([
+// THE OPERATOR'S STOPS — the halts that ARE the operator's answer, or wait on it, and so are
+// never handed to a repair session: a UAT sign-off only a human gives, a session already asking
+// the operator a question, the operator's own Stop, a retry parked until a session limit lifts,
+// and the time budget the operator set. A repair could only bypass any of them.
+export const OPERATOR_STOPS = Object.freeze([
+  "uat-gate",
+  "session-needs-input",
+  "operator-interrupt",
+  "retry-parked",
+  "deadline-exhausted",
+]);
+
+// THE REPAIRABLE STOPS — every stop that is not the operator's (2026-11-14, widening 147's three
+// lane stops). 147 handed a fresh session only the loop's own bookkeeping halts; every other halt
+// ended the loop, so a grade the runner contradicted, a retry ladder that ran out, a gate that
+// stopped making progress all waited on a human to read a diag log and type `--resume`. The loop
+// now tries its best first: a repair session diagnoses the halt, fixes the cause — the story's
+// code and tests included — asks the operator when it needs a decision or a permission (the
+// question waits in the loop like any session's), and the loop resumes when it ends `done`. One
+// repair per halt still bounds it. Derived from `LOOP_STOPS`, so a stop added later is repairable
+// unless it is named the operator's above.
+export const REPAIRABLE_STOPS = Object.freeze(LOOP_STOPS.filter((stop) => !OPERATOR_STOPS.includes(stop)));
+
+// The lane stops — 147's original class, about the loop's own records. The repair brief reads it to
+// say which remit a halt falls under.
+export const LANE_STOPS = Object.freeze([
   "lane-open-failed",
   "lane-merge-refused",
   "lane-merge-conflict",

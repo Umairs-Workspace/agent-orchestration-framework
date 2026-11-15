@@ -172,11 +172,23 @@ export function createWaveOrchestration({
     }
   }
 
+  // The remembered refusals that belong to `ctx`'s workspace. The map lives as long as the process,
+  // which may drive more than one checkout (a suite does, in sequence); a lane of another checkout is
+  // never retried through this one's ctx, and never counts as this loop's leftover.
+  function refusedCleanupsOf(ctx) {
+    const root = ctx?.workspace?.projectRoot;
+    if (typeof root !== "string" || root.length === 0) return [...refusedCleanups];
+    return [...refusedCleanups].filter(([worktree]) => {
+      const rel = path.relative(root, worktree);
+      return rel.length > 0 && !rel.startsWith("..") && !path.isAbsolute(rel);
+    });
+  }
+
   // retryRefusedCleanups(ctx, narrate) → how many lanes it freed. Quiet on a repeat refusal (the
   // first one was narrated); a lane freed on retry is named.
   async function retryRefusedCleanups(ctx, narrate) {
     let freed = 0;
-    for (const [worktree, { ref, lane }] of [...refusedCleanups]) {
+    for (const [worktree, { ref, lane }] of refusedCleanupsOf(ctx)) {
       try {
         const answer = await invokeRegistered("work:dispatch", { cleanup: true, ref, remove: true }, ctx);
         if (answer?.outcome === "refused") continue;
@@ -896,7 +908,7 @@ export function createWaveOrchestration({
           : (member) => openLane(member.ref, baseCommit, exec),
       };
       // A slot a refused cleanup still holds is retried before admission counts it (see cleanupLane).
-      if (refusedCleanups.size > 0) await retryRefusedCleanups({ ...ctx, exec }, narrate);
+      if (refusedCleanupsOf(ctx).length > 0) await retryRefusedCleanups({ ...ctx, exec }, narrate);
       let dispatched;
       try {
         dispatched = await invokeRegistered("work:dispatch", { refs: wave.dispatch, ...laneBoundAsk }, dispatchCtx);
@@ -943,9 +955,12 @@ export function createWaveOrchestration({
           }
         }
         const retryDelayMs = Number.isSafeInteger(ctx.cleanupRetryDelayMs) && ctx.cleanupRetryDelayMs >= 0 ? ctx.cleanupRetryDelayMs : 15_000;
-        for (let attempt = 0; attempt < 3 && refusedCleanups.size > 0; attempt += 1) {
+        // The spacing timer is REF'D: it is the one thing the loop is waiting on, and an unref'd wait
+        // lets the process drain and exit mid-halt on `beforeExit` (129's silent death; measured
+        // again here 2026-11-14, where it ended a suite with no summary and exit 0).
+        for (let attempt = 0; attempt < 3 && refusedCleanupsOf(ctx).length > 0; attempt += 1) {
           if (await retryRefusedCleanups({ ...ctx, exec: stepExec() }, narrate) > 0) return await tick();
-          if (retryDelayMs > 0) await new Promise((resolve) => { const handle = setTimeout(resolve, retryDelayMs); handle?.unref?.(); });
+          if (retryDelayMs > 0) await new Promise((resolve) => { setTimeout(resolve, retryDelayMs); });
         }
         const holders = refused[0].value?.holders ?? [];
         return {
