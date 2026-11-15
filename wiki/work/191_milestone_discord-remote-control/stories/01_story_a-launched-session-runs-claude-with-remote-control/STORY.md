@@ -5,10 +5,10 @@ slug: a-launched-session-runs-claude-with-remote-control
 title: "A launched session runs Claude with Remote Control on — the node types `claude --remote-control` from a closed launch value, and the session ends when Claude ends"
 parent: 191
 depends: [00]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-11-11
-updated: 2026-11-14
+updated: 2026-11-15
 adrs: [ADR-002]
 schema: 1
 aofVersion: 0.1.0
@@ -54,7 +54,7 @@ shows one slot. FF-19102 is the second leg of `acd-launched-session-from-discord
 - [x] 00 [the launch field is a closed set on the wire](tasks/00_the-launch-field-is-a-closed-set-on-the-wire.feature)
 - [x] 01 [the node types one command line it builds itself](tasks/01_the-node-types-one-command-line-it-builds-itself.feature)
 - [x] 02 [one session, one record, ended with Claude](tasks/02_one-session-one-record-ended-with-claude.feature)
-- [ ] 03 [a real launch shows up in the Claude app](tasks/03_a-real-launch-shows-up-in-the-claude-app.feature)
+- [x] 03 [a real launch shows up in the Claude app](tasks/03_a-real-launch-shows-up-in-the-claude-app.feature)
 - [x] 04 [a Claude launch keeps one record under Claude's own label](tasks/04_a-claude-launch-keeps-one-record-under-claudes-own-label.feature) — `@bug`, F-05
 
 ## Notes

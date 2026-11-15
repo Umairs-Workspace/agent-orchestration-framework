@@ -6,7 +6,7 @@ title: "Discord drives the work from a phone — start a Claude session in any p
 status: in-progress
 owner: product-owner
 created: 2026-11-10
-updated: 2026-11-14
+updated: 2026-11-15
 schema: 1
 aofVersion: 0.1.0
 depends: [50, 131]
@@ -79,14 +79,14 @@ Cut at refine, 2026-11-11 (ARCHITECTURE ADR-008). 00 → 01 → 02 → 03 in seq
 lane; 04 and 05 run beside them; 06 waits for 02–05; 07 waits for 02.
 
 - [x] [00 · The control node hosts a launched session](stories/00_story_the-control-node-hosts-a-launched-session/STORY.md)
-- [ ] [01 · A launched session runs Claude with Remote Control on](stories/01_story_a-launched-session-runs-claude-with-remote-control/STORY.md)
-- [ ] [02 · Sessions start and list from the CLI](stories/02_story_sessions-start-and-list-from-the-cli/STORY.md)
-- [ ] [03 · A launched session can be ended](stories/03_story_a-launched-session-can-be-ended/STORY.md)
-- [ ] [04 · A loop starts through the supervisor](stories/04_story_a-loop-starts-through-the-supervisor/STORY.md)
-- [ ] [05 · The project is picked, not typed](stories/05_story_the-project-is-picked-not-typed/STORY.md)
-- [ ] [06 · Discord starts sessions and loops](stories/06_story_discord-starts-sessions-and-loops/STORY.md)
-- [ ] [07 · Buttons on the notifications](stories/07_story_buttons-on-the-notifications/STORY.md)
-- [ ] [08 · A single-node control opens its own sessions](stories/08_story_a-single-node-control-opens-its-own-sessions/STORY.md)
+- [x] [01 · A launched session runs Claude with Remote Control on](stories/01_story_a-launched-session-runs-claude-with-remote-control/STORY.md)
+- [x] [02 · Sessions start and list from the CLI](stories/02_story_sessions-start-and-list-from-the-cli/STORY.md)
+- [x] [03 · A launched session can be ended](stories/03_story_a-launched-session-can-be-ended/STORY.md)
+- [x] [04 · A loop starts through the supervisor](stories/04_story_a-loop-starts-through-the-supervisor/STORY.md)
+- [x] [05 · The project is picked, not typed](stories/05_story_the-project-is-picked-not-typed/STORY.md)
+- [x] [06 · Discord starts sessions and loops](stories/06_story_discord-starts-sessions-and-loops/STORY.md)
+- [x] [07 · Buttons on the notifications](stories/07_story_buttons-on-the-notifications/STORY.md)
+- [x] [08 · A single-node control opens its own sessions](stories/08_story_a-single-node-control-opens-its-own-sessions/STORY.md)
 
 ## Dependencies
 

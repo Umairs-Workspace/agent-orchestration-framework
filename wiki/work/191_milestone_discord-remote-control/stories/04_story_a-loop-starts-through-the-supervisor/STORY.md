@@ -4,7 +4,7 @@ number: 04
 slug: a-loop-starts-through-the-supervisor
 title: "A loop starts through the supervisor — `aof work loop <scope> --hand-off-start` writes a start request, and the desktop app starts a fresh supervised loop on its next poll"
 parent: 191
-status: in-review
+status: done
 owner: product-owner
 created: 2026-11-11
 updated: 2026-11-15

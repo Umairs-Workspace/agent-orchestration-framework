@@ -354,6 +354,9 @@ list Discord offers as you type `project:`. The list offers only the projects wh
 list holds you, the same ones the command would reach. Someone on no `allow` list is offered nothing. A typed folder
 name or workspace id still works, and a name no project here has is refused with
 `(discord-scope-ambiguous)`, naming the projects there are.
+A project is offered only once it is registered with this machine's mesh. If one is missing from the
+list, run `aof mesh repo publish` in it (or `aof mesh repo publish --workspace <path>` from
+anywhere), and it is offered from the next command on, with no restart.
 
 **What the loop commands say.** `/loop stop` answers in the channel with who asked:
 

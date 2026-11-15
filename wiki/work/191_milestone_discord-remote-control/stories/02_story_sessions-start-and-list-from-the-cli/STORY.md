@@ -5,10 +5,10 @@ slug: sessions-start-and-list-from-the-cli
 title: "Sessions start and list from the CLI — `aof mesh session start` starts Claude with Remote Control and answers its link, through the one start core the fleet route also uses"
 parent: 191
 depends: [01]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-11-11
-updated: 2026-11-12
+updated: 2026-11-15
 adrs: [ADR-003]
 schema: 1
 aofVersion: 0.1.0

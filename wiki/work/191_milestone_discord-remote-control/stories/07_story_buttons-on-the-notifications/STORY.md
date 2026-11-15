@@ -5,10 +5,10 @@ slug: buttons-on-the-notifications
 title: "Buttons on the notifications — a halt carries Resume and Open a session here, a fixed-choice question carries one button per choice, and a tap is checked and dispatched like a reply"
 parent: 191
 depends: [02]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-11-11
-updated: 2026-11-12
+updated: 2026-11-15
 adrs: [ADR-007]
 schema: 1
 aofVersion: 0.1.0
@@ -65,7 +65,7 @@ FF-13113.
 - [x] 01 [the right notifications carry buttons](tasks/01_the-right-notifications-carry-buttons.feature)
 - [x] 02 [a tap is checked and dispatched like a reply](tasks/02_a-tap-is-checked-and-dispatched-like-a-reply.feature)
 - [x] 03 [FF-19107 holds a button to what a reply reaches](tasks/03_ff-19107-holds-a-button-to-what-a-reply-reaches.feature)
-- [ ] 04 [the guide shows the buttons](tasks/04_the-guide-shows-the-buttons.feature)
+- [x] 04 [the guide shows the buttons](tasks/04_the-guide-shows-the-buttons.feature)
 
 ## Notes
 

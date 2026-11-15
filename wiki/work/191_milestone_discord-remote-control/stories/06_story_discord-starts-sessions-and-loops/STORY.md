@@ -5,10 +5,10 @@ slug: discord-starts-sessions-and-loops
 title: "Discord starts sessions and loops — `/session start|list|end` and `/loop start` dispatch the registered verbs, behind the channel's allowlist"
 parent: 191
 depends: [02, 03, 04, 05]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-11-11
-updated: 2026-11-12
+updated: 2026-11-15
 adrs: [ADR-006]
 schema: 1
 aofVersion: 0.1.0

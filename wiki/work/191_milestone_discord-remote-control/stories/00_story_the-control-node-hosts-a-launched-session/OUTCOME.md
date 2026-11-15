@@ -25,12 +25,12 @@ A control launcher with a relay builds a session-spawn handler from `createMeshW
 ## Gaps
 
 ### A served project's checkout is not resolved from its descriptor
-- **Status:** open
+- **Status:** discharged (191/08, `5ee44d8a`)
 - **Discharge condition:** the control resolves a served workspace's checkout from its registered descriptor `projectRoot`, so a start for a project the channel serves opens a session with no published marker (191/F-03, an amendment to ADR-001 §1).
 A project the control serves from a registered checkout has neither a published marker nor a managed checkout, so a start for it refuses `session-repo-unavailable`.
 
 ### A single-node control has no stated way to get a relay
-- **Status:** open
+- **Status:** discharged (191/08, `5ee44d8a`: a nominated control derives its relay on 4183)
 - **Discharge condition:** a single-node control has a documented way to set `mesh.relay.url`, and a doctor check names its absence (191/F-03, an amendment to ADR-001 §3).
 This laptop's global config has no `mesh.relay.url`, so its control builds no local handler and every start for its own node refuses.
 

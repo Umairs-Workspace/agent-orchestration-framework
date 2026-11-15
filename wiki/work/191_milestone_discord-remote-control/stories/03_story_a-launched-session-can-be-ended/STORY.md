@@ -5,10 +5,10 @@ slug: a-launched-session-can-be-ended
 title: "A launched session can be ended — `aof mesh session end` sends a `session-end` directive, the node halts only a session it launched, and presence confirms it"
 parent: 191
 depends: [02]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-11-11
-updated: 2026-11-12
+updated: 2026-11-15
 adrs: [ADR-004]
 schema: 1
 aofVersion: 0.1.0

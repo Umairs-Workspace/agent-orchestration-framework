@@ -4,10 +4,10 @@ number: 05
 slug: the-project-is-picked-not-typed
 title: "The project is picked, not typed — every command's `workspace` option becomes `project`, offered by autocomplete from the projects the user may address"
 parent: 191
-status: in-review
+status: done
 owner: product-owner
 created: 2026-11-11
-updated: 2026-11-12
+updated: 2026-11-15
 adrs: [ADR-006]
 schema: 1
 aofVersion: 0.1.0

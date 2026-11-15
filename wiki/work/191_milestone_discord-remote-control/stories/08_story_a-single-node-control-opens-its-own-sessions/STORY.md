@@ -5,10 +5,10 @@ slug: a-single-node-control-opens-its-own-sessions
 title: "A single-node control opens its own sessions — it finds a served project at its registered folder, and always has a loopback relay"
 parent: 191
 depends: [00]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-11-14
-updated: 2026-11-14
+updated: 2026-11-15
 adrs: [ADR-001]
 schema: 1
 aofVersion: 0.1.0
