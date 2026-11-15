@@ -1225,12 +1225,14 @@ export const regressionGateTests = [
       try {
         const list = path.join(dir, "files.txt");
         await writeFile(list, "test/testing/test-run-record.test.mjs\ntest/testing/test-sharded-report.test.mjs\n", "utf8");
+        // The plan is asserted over WHICH files, one unit each, so packing and splitting are pinned off: a fast
+        // timing restored on CI packed the two files into one unit and reddened this case on main (#27).
         const env = { ...process.env, AOF_GLOBAL_HOME: path.join(dir, "home") };
-        const planned = await execFileAsync(process.execPath, [path.join(repoRoot, "scripts", "test-sharded.mjs"), "--plan", "--no-lanes", "--files", list], { cwd: repoRoot, env, maxBuffer: 1 << 24 });
+        const planned = await execFileAsync(process.execPath, [path.join(repoRoot, "scripts", "test-sharded.mjs"), "--plan", "--no-lanes", "--split-seconds", "100000", "--pack-seconds", "1e-9", "--files", list], { cwd: repoRoot, env, maxBuffer: 1 << 24 });
         assert.match(planned.stdout, /# plan: 2 units/u, "units over those two files only");
         assert.doesNotMatch(planned.stdout, /test\/work\//u);
         await writeFile(list, "test/testing/index.mjs\n", "utf8");
-        const refused = await execFileAsync(process.execPath, [path.join(repoRoot, "scripts", "test-sharded.mjs"), "--plan", "--no-lanes", "--files", list], { cwd: repoRoot, env, maxBuffer: 1 << 24 }).catch((error) => error);
+        const refused = await execFileAsync(process.execPath, [path.join(repoRoot, "scripts", "test-sharded.mjs"), "--plan", "--no-lanes", "--split-seconds", "100000", "--pack-seconds", "1e-9", "--files", list], { cwd: repoRoot, env, maxBuffer: 1 << 24 }).catch((error) => error);
         assert.notEqual(refused.code ?? 0, 0);
         assert.match(refused.stderr, /register no case: test\/testing\/index\.mjs/u, "a named file that registers no case is refused by path");
       } finally {

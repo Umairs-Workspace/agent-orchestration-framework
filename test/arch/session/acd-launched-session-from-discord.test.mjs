@@ -67,6 +67,8 @@ import { stripComments, matchedParenSpan } from "../../support/source-slice.mjs"
 import { buildSessionSpawnEnvelope, SESSION_LAUNCHES } from "@aof/mesh/session-spawn-directive";
 import { SOURCE_DIRECTORY_BUDGETS } from "../testing/acd-source-directory-budget.test.mjs";
 
+const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const createTerminalInputRouter = _aofApplication.mesh.terminalInput.createTerminalInputRouter;
 const buildTerminalInputEnvelope = _aofApplication.mesh.terminalRelayBridge.buildTerminalInputEnvelope;
 
@@ -126,7 +128,7 @@ export function factoryCallKeys(body) {
   let match;
   while ((match = alias.exec(body)) !== null) callees.add(match[1]);
   for (const callee of callees) {
-    const call = new RegExp(`(?<![\\w$.])${callee.replace(/\$/g, "\\$")}\\s*\\(\\s*\\{`, "g");
+    const call = new RegExp(`(?<![\\w$.])${escapeRegExp(callee)}\\s*\\(\\s*\\{`, "g");
     while ((match = call.exec(body)) !== null) {
       const span = matchedParenSpan(body, match.index);
       if (span == null) continue;
@@ -258,7 +260,7 @@ export function spawnWriteProblems(handlerSource) {
       problems.push(`spawnSession writes \`${argument}\` into a PTY — the only spawn-time bytes are ${BUILDER}'s answer (FF-19102)`);
       continue;
     }
-    const assigned = [...body.matchAll(new RegExp(`(?<![\\w$.])${argument.replace(/\$/g, "\\$")}\\s*=(?!=)\\s*([^;]*)`, "g"))].map((m) => m[1].trim());
+    const assigned = [...body.matchAll(new RegExp(`(?<![\\w$.])${escapeRegExp(argument)}\\s*=(?!=)\\s*([^;]*)`, "g"))].map((m) => m[1].trim());
     if (assigned.length === 0) {
       problems.push(`spawnSession writes \`${argument}\`, which is never assigned in spawnSession — its bytes are not ${BUILDER}'s answer (FF-19102)`);
       continue;
@@ -311,7 +313,7 @@ function factoryCallSpan(body) {
   let match;
   while ((match = alias.exec(body)) !== null) callees.add(match[1]);
   for (const callee of callees) {
-    const call = new RegExp(`(?<![\\w$.])${callee.replace(/\$/g, "\\$")}\\s*\\(\\s*\\{`, "g");
+    const call = new RegExp(`(?<![\\w$.])${escapeRegExp(callee)}\\s*\\(\\s*\\{`, "g");
     while ((match = call.exec(body)) !== null) {
       const span = matchedParenSpan(body, match.index);
       if (span != null) return span.body;
