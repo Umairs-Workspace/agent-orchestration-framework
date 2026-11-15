@@ -1,6 +1,52 @@
 import path from "node:path";
 import { existsSync } from "node:fs";
+import { CLAUDE_HOOK_ASSISTANT, knownSessionLaunch } from "./session-spawn-directive.mjs";
 export const SESSION_PING_INTERVAL_MS = 30_000;
+
+// ─────────────────────────────── 191/ADR-002 — the one command line a spawn types ────
+//
+// A `session-spawn` frame may name a `launch` from the closed set SESSION_LAUNCHES. The frame
+// never carries the bytes: the node BUILDS the one line it types, here, from that name, the
+// control-minted session id and a session name — and refuses (null) unless every value is
+// one that needs no quoting in any shell. FF-19102 holds the handler to it: the only bytes it
+// writes into a PTY at spawn are this function's answer.
+
+// The width a Claude launch opens at (ADR-002 §6): Remote Control's `/rc active` link sits
+// in a footer Claude hides on a narrow terminal. A bare shell keeps 80×24.
+export const LAUNCH_COLUMNS = 200;
+
+const CANONICAL_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SESSION_NAME = /^[A-Za-z0-9._-]{1,64}$/;
+const OUTSIDE_NAME_CLASS = /[^A-Za-z0-9._-]/g;
+
+// launchCommandLine(launch, { sessionId, name, platform }) → the bytes to type, or null.
+//
+// POSIX: `exec` replaces the shell, so when `claude` ends the PTY ends and no bare shell is
+// left behind (ADR-002 §2). win32: `ComSpec` is cmd.exe, which has no `exec`, so `& exit`
+// closes the shell when `claude` returns, and the line ends CR LF.
+//
+// A name that starts with `-` is refused as well as one outside the class: `--remote-control`
+// takes an OPTIONAL value, so `claude` would read such a name as a flag of its own.
+// `launchSessionName` never produces one.
+export function launchCommandLine(launch, { sessionId, name, platform } = {}) {
+  if (launch !== "claude-remote-control") return null;
+  if (typeof sessionId !== "string" || !CANONICAL_UUID.test(sessionId)) return null;
+  if (typeof name !== "string" || !SESSION_NAME.test(name) || name.startsWith("-")) return null;
+  const command = `claude --remote-control ${name} --session-id ${sessionId}`;
+  return platform === "win32" ? `${command} & exit\r\n` : `exec ${command}\n`;
+}
+
+// launchSessionName(folder, sessionId) → `<project folder>-<first 8 of the session id>`
+// (ADR-002 §3), every character outside `[A-Za-z0-9._-]` mapped to `-`, clipped to 64 with the
+// id kept whole. `folder` is the session record's `repo`, so the name is derivable from a
+// record alone (`/session list`, ADR-003 §5). Leading dashes are dropped from the folder part
+// (see launchCommandLine); a folder with nothing left names the session by its id alone.
+export function launchSessionName(folder, sessionId) {
+  const id = String(sessionId ?? "").slice(0, 8).replace(OUTSIDE_NAME_CLASS, "-");
+  const room = Math.max(0, 64 - id.length - 1);
+  const head = String(folder ?? "").replace(OUTSIDE_NAME_CLASS, "-").replace(/^-+/, "").slice(0, room);
+  return head.length > 0 ? `${head}-${id}` : id;
+}
 
 // Configured runtime services are supplied by core. Construction starts no I/O or timers.
 export function createSessionSpawnServices({ createTerminalSpawn, loadNodePty, addSessionWorktree, meshSessionWorktreePath, sessionWorktreeSlug, findItemWorktree, startSession, pingSession, endSession, loadWorkspace, resolveWorkspaceId, reportDegrade }) {
@@ -182,13 +228,15 @@ async function resolveSessionWorktree(projectRoot, itemRef, options = {}) {
 //                              and the platform whose default shell is resolved.
 //
 // The returned handler NEVER throws (the never-crash receive-lane discipline every
-// frame handler on this client keeps) and carries TWO properties:
+// frame handler on this client keeps) and carries THREE properties:
 //   handler.handleTerminalInput(frame) → boolean
 // the input lane for the PTYs THIS handler owns. It returns `true` when it wrote (so
 // the launcher can fall through to the assignment input handler otherwise);
+//   handler.end(sessionId) → Promise<boolean>
+// the end lane (191/ADR-004 §2): halts the ONE session it owns under that id, `true` when it did;
 //   handler.stopAll() → Promise
 // the GRACEFUL-SHUTDOWN door the launcher's own stop() calls (see below).
-// Both are properties rather than a module-level registry on purpose: the live-PTY map
+// All are properties rather than a module-level registry on purpose: the live-PTY map
 // stays per-handler, so nothing leaks between two handlers (or two tests) and there is no
 // module-global mutable state to reset.
 function createMeshWorkerSessionSpawnHandler(options = {}) {
@@ -277,9 +325,9 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
 
   const resolveNow = () => (typeof now === "function" ? now() : now);
 
-  const log = (level, message) => {
+  const log = (level, message, code = "session-spawn") => {
     try {
-      onLog?.({ code: "session-spawn", level, message });
+      onLog?.({ code, level, message });
     } catch (error) {
       reportDegrade("mesh-session-spawn-handler", error);
     }
@@ -333,9 +381,17 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
 
   async function spawnSession(sessionId, frame) {
     const workspaceId = nonEmptyString(frame?.workspaceId);
+    // 191/ADR-002 §1 — a NAME from the closed set, or null for a bare shell. The worker's receive
+    // lane hands the RAW wire frame on, so the builder's drop is re-applied here: anything outside
+    // SESSION_LAUNCHES is a bare shell with nothing typed (191/01 E3), never a refusal.
+    const launch = knownSessionLaunch(frame?.launch);
     // ADR-007 decision 3 — a LABEL. It selects the session key's third component (and
-    // therefore which lane of the grid this renders in); it selects no binary.
-    const assistant = nonEmptyString(frame?.assistant) ?? "claude";
+    // therefore which lane of the grid this renders in); it selects no binary. A Claude launch
+    // registers under the label Claude's OWN hooks key it by (191/ADR-002 amendment 2026-11-14
+    // §4, F-05), whatever the frame said: the launcher and the hook then upsert ONE record and
+    // ONE presence entry, and the sticky `relaying` means a hook's ping never demotes the pane.
+    // A bare shell keeps the frame's label, `claude` by default (50/ADR-007).
+    const assistant = launch === "claude-remote-control" ? CLAUDE_HOOK_ASSISTANT : (nonEmptyString(frame?.assistant) ?? "claude");
     const itemRef = nonEmptyString(frame?.itemRef);
 
     if (workspaceId == null) {
@@ -377,12 +433,35 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
         await refuse(sessionId, "session-repo-unavailable", `workspace ${workspaceId} is not this node's own workspace and no scoped-checkout seam is wired`);
         return;
       }
-      const checkoutPath = meshCheckoutPath(workspaceId, globalWorkStoreOptions ?? {});
+      // AWAITED (191/ADR-001 amendment 2026-11-14 §1): the control's seam resolves a served
+      // project's registered root from the descriptor store, asynchronously; the worker's seam
+      // is synchronous, so a worker's value is unchanged. A seam with no root to give refuses.
+      const checkoutPath = await meshCheckoutPath(workspaceId, globalWorkStoreOptions ?? {});
+      if (typeof checkoutPath !== "string" || checkoutPath.length === 0) {
+        await refuse(sessionId, "session-repo-unavailable", `workspace ${workspaceId} has no checkout on node ${nodeId}`);
+        return;
+      }
       try {
         ws = await loadWorkspaceImpl(checkoutPath, undefined, { env: globalWorkStoreOptions?.env });
       } catch (error) {
         reportDegrade("mesh-session-spawn-handler", error);
         await refuse(sessionId, "session-repo-unavailable", `the scoped checkout for workspace ${workspaceId} at ${checkoutPath} could not be loaded: ${String(error?.message ?? error)}`);
+        return;
+      }
+    }
+
+    // `repo` uses the canonical `config.name` the workspace registry/descriptor themselves
+    // store, falling back to the checkout's directory name so the field is never empty. It is
+    // also the folder the launched session is named after (191/ADR-002 §3).
+    const repo = nonEmptyString(ws?.config?.name) ?? (ws?.projectRoot != null ? path.basename(ws.projectRoot) : null);
+
+    // 191/ADR-002 §2 — the launch line is BUILT before anything is created, so a launch whose
+    // line cannot be built refuses with no worktree, no PTY and no record behind it.
+    let launchLine = null;
+    if (launch != null) {
+      launchLine = launchCommandLine(launch, { sessionId, name: launchSessionName(repo, sessionId), platform });
+      if (launchLine == null) {
+        await refuse(sessionId, "session-spawn-failed", `the ${launch} launch line could not be built: the session id must be a canonical UUID and the name must match [A-Za-z0-9._-]{1,64}`);
         return;
       }
     }
@@ -408,7 +487,7 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
     try {
       term = await ptySpawn(shell, [], {
         name: "xterm-256color",
-        cols: 80,
+        cols: launchLine != null ? LAUNCH_COLUMNS : 80,
         rows: 24,
         cwd,
         env,
@@ -431,12 +510,23 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
       }
     };
 
+    // TYPED ONCE, straight after the spawn and before anything is registered (191/ADR-002 §5).
+    // The bytes are `launchCommandLine`'s answer and nothing else (FF-19102). A failed write
+    // kills the PTY and refuses, and no record was ever written.
+    if (launchLine != null) {
+      try {
+        term.write(launchLine);
+      } catch (error) {
+        reportDegrade("mesh-session-spawn-handler", error);
+        killTerm();
+        await refuse(sessionId, "session-spawn-failed", `the ${launch} launch line could not be typed: ${String(error?.message ?? error)}`);
+        return;
+      }
+    }
+
     // REGISTER IMMEDIATELY on a successful spawn (ADR-004 decision 1). The record is
-    // byte-identical in schema to a hook-registered one; `repo` uses the canonical
-    // `config.name` the workspace registry/descriptor themselves store, falling back to
-    // the checkout's directory name so the field is never empty.
+    // byte-identical in schema to a hook-registered one; `repo` is resolved above.
     const sessionKey = { nodeId, workspaceId, assistant, sessionId };
-    const repo = nonEmptyString(ws?.config?.name) ?? (ws?.projectRoot != null ? path.basename(ws.projectRoot) : null);
     try {
       // `relaying: true` — 50/ADR-008 decision 8. THE WORKER STATES IT, AND ONLY THE
       // WORKER: this handler bridges the PTY's output up this node's stream (the
@@ -585,7 +675,7 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
       settle().catch((error) => reportDegrade("mesh-session-spawn-handler", error));
     });
 
-    log("info", `session ${sessionId}: ${shell} opened in ${cwd} (workspace ${workspaceId}, assistant label "${assistant}")`);
+    log("info", `session ${sessionId}: ${shell} opened in ${cwd} (workspace ${workspaceId}, assistant label "${assistant}"${launch != null ? `, launched as ${launch}` : ""})`);
     await ack(sessionId, true);
   }
 
@@ -627,8 +717,10 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
   // is synchronous by contract) still gets a free event loop and a control that was told
   // each stream ended, inside its own call. Only the record-removal tail is deferred; it
   // runs for every session in parallel, and a fault in one never blocks another.
-  handleSessionSpawn.stopAll = function stopAll() {
-    const entries = [...liveSessions.values()];
+  //
+  // haltEntries(entries) is that door's body, and `end` below goes through it for ONE entry, so a
+  // session ended on request is halted by exactly the steps a shutdown halts it by.
+  const haltEntries = (entries) => {
     const halted = [];
     for (const entry of entries) {
       try {
@@ -649,6 +741,37 @@ function createMeshWorkerSessionSpawnHandler(options = {}) {
         Promise.resolve(pending).catch((error) => reportDegrade("mesh-session-spawn-handler", error)),
       ),
     );
+  };
+
+  handleSessionSpawn.stopAll = function stopAll() {
+    return haltEntries([...liveSessions.values()]);
+  };
+
+  // end(sessionId) → Promise<boolean> — THE END LANE (191/ADR-004 §2), called by the launcher for
+  // a `session-end` frame. It halts the ONE session this handler owns under that id: the PTY
+  // killed, its ping interval cleared and its end marker sent before this function yields, then
+  // its record ended — `haltEntries`, the shutdown's own steps, for one entry. Resolves `true`.
+  //
+  // AN ID THIS HANDLER DOES NOT OWN IS LOGGED AND NOTHING ELSE HAPPENS (`session-end-not-launched`,
+  // resolves `false`). "Own" is `liveSessions`, the map of PTYs this handler opened, so three
+  // cases land here by construction rather than by a check each:
+  //   - a `claude` someone started in a terminal: it has a session record and no PTY here, so
+  //     nothing is killed and `endSession` is never called for a record this handler did not write;
+  //   - a session already ended (a second end, or one that raced the PTY's own exit);
+  //   - a session whose spawn is still in flight (`pendingSessions`). The end is NOT queued: an
+  //     end that waited for a spawn to finish would kill a session its sender had not yet seen
+  //     start. The verb reports it unconfirmed and the operator ends it again.
+  //
+  // Never throws, and never touches another session: every step it runs is that entry's own closure.
+  handleSessionSpawn.end = function end(sessionId) {
+    const id = nonEmptyString(sessionId);
+    const entry = id == null ? null : liveSessions.get(id);
+    if (entry == null) {
+      log("warn", `session ${id ?? "<no id>"}: session-end-not-launched — this node holds no launched PTY for that id, so nothing was ended`, "session-end-not-launched");
+      return Promise.resolve(false);
+    }
+    log("info", `session ${id}: ended on request`, "session-end");
+    return haltEntries([entry]).then(() => true);
   };
 
   return handleSessionSpawn;

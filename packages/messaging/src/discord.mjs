@@ -17,6 +17,7 @@
 // holding an odd number of code fences is closed BEFORE the suffix, so an open block can never
 // swallow the answer command.
 import { cost, headline, oneLineAsk } from "./form.mjs";
+import { renderButtons } from "./discord-buttons.mjs";
 
 const DISCORD_CONTENT_MAX = 2000;
 const CUT_WINDOW = 20;
@@ -42,7 +43,7 @@ function bodyAndAction(e, replyable) {
 
 // Line 1: `**<headline>**` (a halt gains ` at <stop.ref>` inside the bold), then ` <cost>`, then
 // ` · <project>` and ` · <node>`, each only when present. Built from `form.mjs`'s headline and cost,
-// never re-spelled. The project is the render's option, not an envelope key (the eleven stay frozen):
+// never re-spelled. The project is the render's option, not an envelope key:
 // one bot and one channel can serve several projects, and a bare `03/00` names none of them.
 function firstLine(e, project = null) {
   const halt = e.event === "loop-halted" && nonBlank(e.stop?.ref) ? ` at ${e.stop.ref}` : "";
@@ -80,7 +81,9 @@ function clipBody(body, room, suffix) {
   return `${fenced.keep}${closing}${suffix}`;
 }
 
-// renderDiscord(envelope, { replyable, project }) → `{ content, allowed_mentions: { parse: [] } }`. A bot
+// renderDiscord(envelope, { replyable, project }) → `{ content, allowed_mentions: { parse: [] } }`, plus
+// `components` when the channel takes answers (`replyable`) and the event carries buttons (191/07,
+// ADR-007 §1: a halt's two, or one per fixed choice; `./discord-buttons.mjs` builds them). A bot
 // cannot set a `username` (ADR-007 §5), so the message is the bot's own; every line, cap and clip is
 // DESIGN §3's.
 export function renderDiscord(envelope, { replyable = false, project = null } = {}) {
@@ -97,7 +100,8 @@ export function renderDiscord(envelope, { replyable = false, project = null } = 
     }
   }
   const content = [...fixedBefore, ...(bodyLine == null ? [] : [bodyLine]), ...fixedAfter].join("\n");
-  return { content, allowed_mentions: { parse: [] } };
+  const components = replyable === true ? renderButtons(envelope) : null;
+  return { content, allowed_mentions: { parse: [] }, ...(components == null ? {} : { components }) };
 }
 
 // renderDiscordTest({ project }) → the one message `aof messaging test discord` posts: line 1 names the

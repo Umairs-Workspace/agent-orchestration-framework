@@ -12,7 +12,8 @@ import path from "node:path";
 // that mode onward, so the bit is restored here, at the one seam every spawn loads through.
 // Best-effort: a read-only install keeps its mode, and the spawn's own error names the fault.
 // Answers the helpers it made executable. The dirs are node-pty's own `loadNativeModule` order.
-export function ensureSpawnHelperExecutable(moduleEntry, { platform = process.platform, arch = process.arch } = {}) {
+// A dir that holds no build is expected; any other fault is reported as a `pty-spawn-helper` degrade.
+export function ensureSpawnHelperExecutable(moduleEntry, { platform = process.platform, arch = process.arch, reportDegrade = () => {} } = {}) {
   if (platform === "win32") return [];
   const root = path.resolve(path.dirname(moduleEntry), "..");
   const fixed = [];
@@ -23,8 +24,8 @@ export function ensureSpawnHelperExecutable(moduleEntry, { platform = process.pl
       if ((mode & 0o100) !== 0) continue;
       chmodSync(helper, mode | 0o111);
       fixed.push(helper);
-    } catch {
-      // Absent (this dir holds no build) or not ours to change — the spawn reports the rest.
+    } catch (error) {
+      if (error?.code !== "ENOENT") reportDegrade("pty-spawn-helper", error);
     }
   }
   return fixed;
@@ -32,22 +33,24 @@ export function ensureSpawnHelperExecutable(moduleEntry, { platform = process.pl
 
 // Both loader anchors are tried, so the distribution sentinel is still asked exactly once, by the
 // load itself. Whichever one does not apply cannot resolve and is skipped: a CJS bundle has no
-// `import.meta.url`, and a dev checkout has no node-pty beside its node binary.
-function ensureLoadableSpawnHelpers() {
+// `import.meta.url`, and a dev checkout has no node-pty beside its node binary. Those two misses
+// are expected; any other fault is reported, and an unloadable module stays the load's own error.
+const ANCHOR_MISSES = new Set(["MODULE_NOT_FOUND", "ERR_INVALID_ARG_TYPE", "ERR_INVALID_ARG_VALUE"]);
+function ensureLoadableSpawnHelpers(reportDegrade) {
   for (const anchor of [() => import.meta.url, () => process.execPath]) {
     try {
-      ensureSpawnHelperExecutable(createRequire(anchor()).resolve("node-pty"));
-    } catch {
-      // Not this distribution's anchor — an unloadable module is the load's own error to raise.
+      ensureSpawnHelperExecutable(createRequire(anchor()).resolve("node-pty"), { reportDegrade });
+    } catch (error) {
+      if (!ANCHOR_MISSES.has(error?.code)) reportDegrade("pty-spawn-helper", error);
     }
   }
 }
 
-export function createNodePtyLoader({ isPackaged }) {
+export function createNodePtyLoader({ isPackaged, reportDegrade = () => {} }) {
   if (typeof isPackaged !== "function") throw new TypeError("createNodePtyLoader: isPackaged is required");
   let helperChecked = false;
   return function loadNodePty() {
-    if (!helperChecked) { helperChecked = true; ensureLoadableSpawnHelpers(); }
+    if (!helperChecked) { helperChecked = true; ensureLoadableSpawnHelpers(reportDegrade); }
     return isPackaged() ? createRequire(process.execPath)("node-pty") : import("node-pty");
   };
 }

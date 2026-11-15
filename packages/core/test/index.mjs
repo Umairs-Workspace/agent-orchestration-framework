@@ -2,6 +2,7 @@ import { buildInfoTests } from "./build-info.suite.mjs";
 import { bundleModelMapTests } from "./bundle-model-map.suite.mjs";
 import { bundleSpikeChoreMembershipTests } from "./bundle-spike-chore-membership.suite.mjs";
 import { bundleTests } from "./bundle.suite.mjs";
+import { bundleComposeTests } from "./bundle-compose.suite.mjs";
 import { cleanTests } from "./clean.suite.mjs";
 import { frozenSetCompiledTests } from "./frozen-set-compiled.suite.mjs";
 import { opencodeHookTests } from "./opencode-hooks.suite.mjs";
@@ -40,12 +41,14 @@ import { workDelegationTests } from "./work-delegation.suite.mjs";
 import { agentModelSoloInertTests } from "./agent-model-solo-inert.suite.mjs";
 import { headroomToggleCliTests } from "./headroom-toggle-cli.suite.mjs";
 import { workInitTests } from "./work-init.suite.mjs";
+import { practiceRenderLaneTests } from "./practice-render-lane.suite.mjs";
 
 export const tests = [
   ...buildInfoTests,
   ...bundleModelMapTests,
   ...bundleSpikeChoreMembershipTests,
   ...bundleTests,
+  ...bundleComposeTests,
   ...cleanTests,
   ...frozenSetCompiledTests,
   ...opencodeHookTests,
@@ -84,4 +87,5 @@ export const tests = [
   ...agentModelSoloInertTests,
   ...headroomToggleCliTests,
   ...workInitTests,
+  ...practiceRenderLaneTests,
 ];

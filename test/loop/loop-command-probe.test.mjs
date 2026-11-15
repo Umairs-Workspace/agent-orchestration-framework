@@ -363,8 +363,9 @@ export const loopCommandProbeTests = [
       assert.match(command.cli.spec.usage, /\[--stop\]/u);
       // 131/11 (ADR-009 §6) adds `handOff` by the same three-homes rule: the tenth property, the ninth flag.
       // 141 adds `thinking` by the same rule: the eleventh property, the tenth flag.
-      assert.deepEqual(Object.keys(command.input.properties).sort(), ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised", "thinking", "refine", "model", "noRepair", "runtime"].sort(), "fifteen properties (154/06 adds runtime selection to the closed schema)");
-      assert.equal(Object.keys(command.cli.spec.flags).length, 13, "assistant inferred from --model; no runtime flag");
+      // 191/04 (ADR-005 §2) adds `startHandOff` by the same rule: the sixteenth property, the fourteenth flag.
+      assert.deepEqual(Object.keys(command.input.properties).sort(), ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "startHandOff", "supervised", "thinking", "refine", "model", "noRepair", "runtime"].sort(), "sixteen properties (154/06 adds runtime selection to the closed schema; 191/04 the start request)");
+      assert.equal(Object.keys(command.cli.spec.flags).length, 14, "assistant inferred from --model; no runtime flag");
       assert.equal(command.cli.launch({ dryRun: true }), null);
       assert.equal(command.cli.launch({ stop: true }), null);
     },

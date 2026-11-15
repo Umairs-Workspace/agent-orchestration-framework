@@ -8,14 +8,19 @@
 //
 // milestone 131 / story 08 — `aof messaging` (ADR-005 §1, as amended at 131/08): the verbs, the
 // machine-wide webhook store and the notifier reading it at the point of send.
+//
+// story 194 — the global Discord channel: layered under a project with none of its own, posted to,
+// switched off per project, and set and shown by `aof messaging --global`.
 import { notifyFormTests } from "./notify-form.test.mjs";
 import { notifyDiscordTests } from "./notify-discord.test.mjs";
 import { notifyChannelsTests } from "./notify-channels.test.mjs";
 import { notifyMessagingTests } from "./notify-messaging.test.mjs";
+import { notifyGlobalChannelTests } from "./notify-global-channel.test.mjs";
 
 export const tests = [
   ...notifyFormTests,
   ...notifyDiscordTests,
   ...notifyChannelsTests,
   ...notifyMessagingTests,
+  ...notifyGlobalChannelTests,
 ];

@@ -17,8 +17,20 @@ const TERMINAL_INGRESS_HOST = "127.0.0.1";
 // door that never answers must not grow a drive's memory; past it, chunks are dropped.
 const TERMINAL_INGRESS_PENDING_LIMIT = 512;
 
+// 191/ADR-001 amendment 2026-11-14 §2 — the port a NOMINATED control's loopback relay listens on
+// when no `mesh.relay.url` is set. It is not the stream server's port (4182, the URL's port when
+// one is set): on a loopback-bound control the stream server and the relay would otherwise bind
+// one port, and the relay lost (F-03). Declared here and nowhere else (FF-19109); every reader
+// takes it through `loopbackRelayUrl`.
+const DEFAULT_LOOPBACK_RELAY_PORT = 4183;
+// The broker's own path (relay.mjs's RELAY_PATH): a derived URL names the endpoint it serves.
+const DERIVED_RELAY_PATH = "/ws/relay";
+
 // Application services enter through explicit ports; construction starts no network or timer.
-export function createTerminalRelayBridge({ reportDegrade }) {
+//
+// `isControlNode(config)` is the registry's nomination predicate (registry.mjs), injected by this
+// module's core binding: it decides whether a node with no `mesh.relay.url` derives a relay.
+export function createTerminalRelayBridge({ reportDegrade, isControlNode }) {
 // src/mesh/terminal-relay-bridge.mjs — the WORKER-SIDE half of the milestone 38 /
 // story 06 cross-machine terminal BRIDGE (ADR-014). The net-new work: relay a
 // worker's live PTY byte stream (the SAME `term.onData` shape terminal-ws.mjs's
@@ -96,11 +108,22 @@ export function createTerminalRelayBridge({ reportDegrade }) {
 // dial that clean-degrades to NO frames with NO error. The relay legs are SAME-MACHINE
 // only (serveRelay binds LOOPBACK — mesh-relay.mjs:622), so this derives ONLY the port
 // + path from relay.url and FORCES the host to 127.0.0.1, making the loopback leg
-// immune to that overload. UNCONFIGURED (`relay.url` absent/blank/malformed) → null,
-// the SAME null-degrade the factories already keep (caller returns a null transport).
+// immune to that overload. A malformed `relay.url` → null, the SAME null-degrade the
+// factories already keep (caller returns a null transport).
+//
+// 191/ADR-001 amendment 2026-11-14 §2 — A NOMINATED CONTROL ALWAYS HAS A RELAY. With no
+// `relay.url` (absent or blank), the nominated control derives its relay at
+// `ws://127.0.0.1:4183/ws/relay`, on a port of its own; any other node answers null, as before.
+// With `relay.url` set the answer is exactly what it always was, so a control that sets it (the
+// Windows control) is byte-identical. This is the ONE derivation of the relay's loopback endpoint
+// (FF-19109): the launcher's relay gate and broker port, the transports and the `mesh ui` probe
+// all read it, never the raw key.
 function loopbackRelayUrl(config) {
   const raw = config?.mesh?.relay?.url;
-  if (typeof raw !== "string" || raw.length === 0) return null;
+  if (typeof raw !== "string" || raw.length === 0) {
+    const nominated = typeof isControlNode === "function" && isControlNode(config) === true;
+    return nominated ? `ws://127.0.0.1:${DEFAULT_LOOPBACK_RELAY_PORT}${DERIVED_RELAY_PATH}` : null;
+  }
   let parsed;
   try {
     parsed = new URL(raw);

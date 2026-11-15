@@ -305,6 +305,7 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
           lines.push(`Updated ACD: ${created} created, ${updated} updated, ${skipped} up-to-date, ${deleted} deleted, ${drift} drift-warning.`);
           lines.push(`Manifest: ${relativeDisplayPath(result.manifestPath, result.targetDir)}`);
         }
+        lines.push(...practiceLines(result.practices));
         lines.push(...testLayoutLines(result.testLayout));
         return lines.join("\n");
       },
@@ -324,6 +325,7 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
           ...(result.memoryConfig ? { memoryConfig: result.memoryConfig } : {}),
           claudeSettings: result.claudeSettings ?? null,
           testLayout: result.testLayout ?? [],
+          practices: result.practices ?? [],
         };
       },
 
@@ -341,6 +343,19 @@ function memoryConfigLines(memoryConfig) {
   return [
     ...memoryConfig.moves.map(({ from, to }) => `memory: ${from} → ${to}`),
     ...memoryConfig.conflicts.map(({ path: from, replacement }) => `memory: ${from} and ${replacement} both set — left as written; choose one`),
+  ];
+}
+
+// 192/ADR-007 §2 — the optional practices, one aligned row each: whether it is on, its id, its
+// summary and the keys that turn it on (several joined by ` + `). After the summary and before any
+// warning; a bundle that declares no practice prints nothing.
+export function practiceLines(practices = []) {
+  if (!Array.isArray(practices) || practices.length === 0) return [];
+  const rows = practices.map((practice) => [practice.on ? "on" : "off", practice.id, practice.summary ?? "", (practice.keys ?? []).join(" + ")]);
+  const widths = [0, 1, 2].map((column) => Math.max(...rows.map((row) => row[column].length)));
+  return [
+    "Optional practices (set every key to true in .aof/aof.config.json, then run `aof work update`):",
+    ...rows.map((row) => `  ${row.slice(0, 3).map((cell, column) => cell.padEnd(widths[column])).join("  ")}  ${row[3]}`),
   ];
 }
 

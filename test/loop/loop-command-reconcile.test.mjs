@@ -720,6 +720,38 @@ export const loopCommandReconcileTests = [
     },
   },
   ...reentryTests(),
+  // #27 — a stop that lands while a merged lane's epoch settles: one reading of the stop decides the
+  // settle and the re-mint, so the open lane still has a wave run and the halt fails it.
+  {
+    name: "129/04 task06 a stop that lands while a merged lane's epoch settles still fails the wave run",
+    run: async () => {
+      await withLaneRepo(async (fx) => {
+        const signals = fakeSignals();
+        const report = collector();
+        let armed = false;
+        const reportHook = (line) => { report(line); if (/^Lane 07\/03 — merge: /u.test(String(line))) armed = true; };
+        reportHook.lines = report.lines;
+        // The clock is read inside the epoch's settle, after it decided `done`: the stop lands there.
+        const now = () => { if (armed) { armed = false; signals.raise("SIGINT"); } return new Date().toISOString(); };
+        const release = deferred();
+        const child = fakeLaneChild(fx, { answers: { "07/01": async (input) => {
+          await release.promise; // 07/01 stays open until 07/03 has merged and its epoch settled
+          const file = await laneStoryFile(fx, input.lane, "07/01");
+          await replaceStatus(file, "in-review");
+          return { outcome: "document", document: { outcome: "done", sessionId: "s-07/01", settlementContext: {} } };
+        } } });
+        const watcher = setInterval(() => { if (report.lines.some((l) => /^Lane 07\/03 — cleanup/u.test(l))) { clearInterval(watcher); release.resolve(); } }, 5);
+        try {
+          const { state } = await runLoop(fx, { child, signals, report: reportHook, now });
+          assert.equal(state.act.stop, "operator-interrupt", report.lines.join("\n"));
+        } finally {
+          clearInterval(watcher);
+        }
+        const waves = (await laneRunsOf(fx, "07")).filter((r) => r.brief?.wave != null);
+        assert.equal(waves.at(-1).state, "failed", JSON.stringify(waves.map((w) => [w.runId, w.state])));
+      }, { git: "fake" });
+    },
+  },
 ];
 
 // ── milestone 131 / story 03, task 04 — --RESUME RE-ENTERS A RUN THAT IS WAITING ON A HUMAN, NEVER

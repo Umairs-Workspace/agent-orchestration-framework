@@ -1627,17 +1627,26 @@ const EMPTY_STOPPED = Object.freeze(new Set());
 // as `stopped` is: a member yields a row even when it is neither stale nor resumable, and even over an
 // honoured stop mark, because the operator asked — and the compute budget still gates it.
 const EMPTY_RESUMES = Object.freeze(new Set());
+// THE START REQUESTS (191/ADR-005 §3) — `{ workspaceId, scope, level }` per request an operator wrote
+// with `work:loop --hand-off-start`, read by the producer and never here. ADDITIVE and default-absent:
+// an absent or ill-typed list starts nothing, so every existing caller answers byte-identically. A
+// request yields one entry in `starts` (never in `rows`, whose six keys are a declaration's) when its
+// scope has no live run and no row of its own this pass, and the compute budget admits a launch —
+// the same gate every relaunch passes, at an elapsed of zero because a new loop has spent nothing.
+const EMPTY_STARTS = Object.freeze([]);
 
 export function decideSupervisedDeclarations(input = {}) {
   const workspaces = Array.isArray(input.workspaces) ? input.workspaces : [];
   // `ceilingMs` is resolved PER WORKSPACE below (each declaration against its own workspace's
   // `scheduleToClose`), so it is deliberately not destructured from `input` here — `input.ceilingMs`
   // is the fallback a member with no readable config lands on.
-  const { maxAttempts, stalenessMs, now, isRunning, isStale, retryReadiness, stopped, resumeRequested } = input;
+  const { maxAttempts, stalenessMs, now, isRunning, isStale, retryReadiness, stopped, resumeRequested, startRequested } = input;
   const stoppedSet = stopped instanceof Set ? stopped : EMPTY_STOPPED;
   const resumeSet = resumeRequested instanceof Set ? resumeRequested : EMPTY_RESUMES;
+  const startList = Array.isArray(startRequested) ? startRequested : EMPTY_STARTS;
   const nowMs = Date.parse(now);
   const rows = [];
+  const starts = [];
 
   for (const workspace of workspaces) {
     const items = Array.isArray(workspace?.items) ? workspace.items : [];
@@ -1706,9 +1715,35 @@ export function decideSupervisedDeclarations(input = {}) {
       if (decideScheduleToClose({ elapsedMs, ceilingMs }).admitted !== true) continue;
       rows.push(declarationRow(workspace, declaration));
     }
+
+    // THE STARTS (191/ADR-005 §3), after this workspace's declarations so a scope that already has
+    // a row of its own — a live loop, or a relaunch — is never started a second time beside it.
+    const listedScopes = new Set(rows.filter((row) => row.workspaceId === (workspace?.workspaceId ?? null)).map((row) => row.scope));
+    const startedScopes = new Set();
+    for (const request of startList) {
+      if (request == null || typeof request !== "object") continue;
+      const scope = request.scope;
+      if (typeof scope !== "string" || scope.length === 0) continue;
+      if (request.workspaceId !== workspace?.workspaceId) continue;
+      if (listedScopes.has(scope) || startedScopes.has(scope)) continue;
+      const scopeRuns = byScope.get(scope) ?? [];
+      const latest = scopeRuns.length > 0 ? [...scopeRuns].sort(compareRuns).at(-1) : null;
+      const live = latest != null
+        && typeof isRunning === "function" && isRunning(latest) === true
+        && !(positiveInteger(stalenessMs) && typeof isStale === "function" && Number.isFinite(nowMs) && isStale(latest, nowMs, stalenessMs) === true);
+      if (live) continue;
+      if (decideScheduleToClose({ elapsedMs: 0, ceilingMs }).admitted !== true) continue;
+      startedScopes.add(scope);
+      starts.push(Object.freeze({
+        workspaceId: copyPlain(workspace?.workspaceId ?? null),
+        projectRoot: copyPlain(workspace?.projectRoot ?? null),
+        scope: copyPlain(scope),
+        level: copyPlain(request.level ?? null),
+      }));
+    }
   }
 
-  return Object.freeze({ rows: Object.freeze(rows) });
+  return Object.freeze({ rows: Object.freeze(rows), starts: Object.freeze(starts) });
 }
 
 // SIX KEYS, NO SEVENTH. The display label, the argv and the `cwd` are the producer's, not the

@@ -99,6 +99,9 @@ export const meshCloneCredentialProviderConfigTests = [
     name: "task00/38 provider-config-driven: no `mesh.repo.credential` configured -> the PRODUCTION wiring's mintCloneCredential is the EXACT `defaultMintCloneCredential` reference (byte-identical to today), reads AOF_MESH_CLONE_TOKEN unchanged",
     run: async () => withProdWiring({}, async ({ ws, startControlStreamServer, getStartServerArgs }) => {
       const handle = await startLauncher(ws, {
+        // 191/08: a nominated control with no mesh.relay.url now derives a loopback relay on 4183
+        // (191/ADR-001 amendment 2026-11-14 §2); `relay: false` keeps this test off that real port.
+        relay: false,
         exec: fixturedExec(),
         platform: "linux",
         ticker: manualTicker(),
@@ -132,7 +135,8 @@ export const meshCloneCredentialProviderConfigTests = [
   {
     name: "task00/38 provider-config-driven: `mesh.repo.credential.provider` explicitly \"env-token\" resolves to the SAME default reference (an explicit, not merely absent, selection)",
     run: async () => withProdWiring({ credential: { provider: "env-token" } }, async ({ ws, startControlStreamServer, getStartServerArgs }) => {
-      const handle = await startLauncher(ws, { exec: fixturedExec(), platform: "linux", ticker: manualTicker(), peerPollTicker: manualTicker(), startControlStreamServer });
+      // 191/08: `relay: false` keeps this nominated, URL-less control off the derived relay port 4183.
+      const handle = await startLauncher(ws, { exec: fixturedExec(), platform: "linux", ticker: manualTicker(), peerPollTicker: manualTicker(), startControlStreamServer, relay: false });
       try {
         const args = getStartServerArgs();
         assert.equal(args.mintCloneCredential, defaultMintCloneCredential);
@@ -151,6 +155,9 @@ export const meshCloneCredentialProviderConfigTests = [
       { credential: { provider: "github-app", githubApp: { appId: "app-1" } } },
       async ({ ws, startControlStreamServer, getStartServerArgs }) => {
         const handle = await startLauncher(ws, {
+          // 191/08: a nominated control with no mesh.relay.url now derives a loopback relay on 4183
+          // (191/ADR-001 amendment 2026-11-14 §2); `relay: false` keeps this test off that real port.
+          relay: false,
           exec: fixturedExec(),
           platform: "linux",
           ticker: manualTicker(),
@@ -187,6 +194,9 @@ export const meshCloneCredentialProviderConfigTests = [
           let serverStarted = false;
           await assert.rejects(
             () => startLauncher(ws, {
+              // 191/08: a nominated control with no mesh.relay.url now derives a loopback relay on 4183
+              // (191/ADR-001 amendment 2026-11-14 §2); `relay: false` keeps this test off that real port.
+              relay: false,
               exec: fixturedExec(),
               platform: "linux",
               ticker: manualTicker(),

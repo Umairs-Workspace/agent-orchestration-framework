@@ -15,10 +15,12 @@ export function assembleMeshUiServe({ boardServeServices, globalMeshQueryService
   const { stopLoop } = loopStopServices;
   const { createTerminalMirror } = meshTerminalMirrorServices;
   const { buildTerminalInputEnvelope } = meshTerminalRelayBridgeServices;
+  // 191/ADR-001 amendment 2026-11-14 §3 — the probe's relay check reads the one derivation.
+  const { loopbackRelayUrl } = meshTerminalRelayBridgeServices;
   const { PROVIDER_IDS } = terminalProvidersServices;
   const { reportDegrade } = degradeServices;
 
-  const { DEFAULT_MESH_UI_PORT, meshUiDist, meshUiProbe, MAX_TERMINAL_INPUT_BYTES, serveMeshUi } = createMeshUiServer({ assetPath, serveBoard, queryGlobalMeshStatus, resolveCacheStalenessSeconds, loadWorkspace, assignWork, STOP_REFUSALS, stopLoop, createTerminalMirror, buildTerminalInputEnvelope, PROVIDER_IDS, reportDegrade });
+  const { DEFAULT_MESH_UI_PORT, meshUiDist, meshUiProbe, MAX_TERMINAL_INPUT_BYTES, serveMeshUi } = createMeshUiServer({ assetPath, serveBoard, queryGlobalMeshStatus, resolveCacheStalenessSeconds, loadWorkspace, assignWork, STOP_REFUSALS, stopLoop, createTerminalMirror, buildTerminalInputEnvelope, loopbackRelayUrl, PROVIDER_IDS, reportDegrade });
 
   return { DEFAULT_MESH_UI_PORT, meshUiDist, meshUiProbe, MAX_TERMINAL_INPUT_BYTES, serveMeshUi };
 }

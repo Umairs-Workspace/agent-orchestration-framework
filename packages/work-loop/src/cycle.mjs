@@ -1011,9 +1011,12 @@ export function createStoryCycle({
     const gradedSummary = gradeSummary(gradeResult);
     const gradedRecord = gradedSummary == null ? null : gradeResult.grade;
     const gradedFindings = gradeFindings(gradeResult);
-    // THE ROW OF THE DRIVE THAT WAS GRADED, found by the RUN ID it carries and never by position.
+    // THE ROW OF THE DRIVE THAT WAS GRADED, found by the RUN ID it carries and never by position —
+    // and by its REF with it: a run id is unique only within its item (19/ADR-003 — the seq counts
+    // that item's runs/), so two wave lanes minting their first run in the same millisecond carry
+    // the same id, and an id-only match wrote one lane's grade over the other lane's row.
     if (gradedSummary != null) {
-      const index = driven.findIndex((row) => row.runId === phaseRun.record.runId);
+      const index = driven.findIndex((row) => row.ref === ref && row.runId === phaseRun.record.runId);
       if (index >= 0) driven[index] = drivenRow({ ...phaseRun, grade: gradedSummary });
     }
     const priorProgress = progressStates.get(ref) ?? { resets: 0, attemptRun: null, summary: null };

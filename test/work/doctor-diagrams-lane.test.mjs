@@ -185,11 +185,12 @@ export const doctorDiagramsLaneTests = [
   {
     name: "133/03 task 01: the lane is registered where the roster says lanes are registered, and its codes are its own",
     run: async () => {
-      // Appended after every lane before it. Two entries came after it: 181's rubric configuration
-      // lane, the last built-in lane, and 134/04's examples lane, which rides the extension groups.
-      assert.equal(CHECK_GROUPS.at(-3), diagramsGroup, "diagramsGroup is appended after every earlier lane, with only the rubric configuration and examples lanes after it");
-      assert.equal(CHECK_GROUPS.at(-2).name, "rubricConfigurationGroup", "the built-in lane after it is 181's rubric configuration lane");
-      assert.equal(CHECK_GROUPS.at(-1).name, "examplesGroup", "the last entry is 134/04's examples lane");
+      // Appended after every lane before it. Three entries came after it: 181's rubric configuration
+      // lane, the last built-in lane, then the extension groups — 134/04's examples lane and 192/03's
+      // practice-render lane.
+      assert.equal(CHECK_GROUPS.at(-4), diagramsGroup, "diagramsGroup is appended after every earlier lane, with only the rubric configuration lane and the extension lanes after it");
+      assert.equal(CHECK_GROUPS.at(-3).name, "rubricConfigurationGroup", "the built-in lane after it is 181's rubric configuration lane");
+      assert.deepEqual([...CHECK_GROUPS.slice(-2)].map((group) => group.name), ["examplesGroup", "practiceRenderGroup"], "the last entries are 134/04's examples lane and 192/03's practice-render lane");
       const spine = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work/doctor.mjs"), "utf8");
       assert.ok(dependencySpecifiers(spine).some(edge => edge.parameter === "workDoctorDiagramsServices" && edge.specifier === "./doctor-diagrams.mjs"), "the doctor receives its configured diagrams lane");
       const roster = await readFile(path.join(repoRoot, "test", "arch", "audit", "acd-controls-never-execute.test.mjs"), "utf8");

@@ -42,7 +42,8 @@ import { resolveBundleVariant } from "./bundle-runtime.mjs";
 // Host integration seam: native providers supply the actual role launch operation
 // and advertised model catalog. The caller lends the dispatch envelope's resolved
 // bound; this does not choose another concurrency setting or shell out to a CLI.
-export function createWorkflowRoleLauncher(config, { profiles, bound, bundle = loadBundle() }) {
+// 192/ADR-001 §5 — the role briefs it launches are composed for the config it is handed.
+export function createWorkflowRoleLauncher(config, { profiles, bound, bundle = loadBundle({ config }) }) {
   const refuse = (code, message) => { throw Object.assign(new Error(message), { code }); };
   if (!Number.isSafeInteger(bound) || bound < 1) refuse("invalid-role-bound", "A native role launcher requires the resolved dispatch bound.");
   let active = 0;

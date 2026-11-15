@@ -61,14 +61,31 @@ export function assembleWork({ workspaceServices, fsServices, workDigestTemplate
     return merged;
   }
 
-  async function readGlobalMeshConfig(env) {
-    const paths = globalWorkspacePaths({ env });
+  // The machine-wide `<aof home>/aof.config.json`, read once per load: an absent, unreadable or
+  // non-object file reads as `{}`, so loadWorkspace never fails on it.
+  async function readGlobalConfig(env) {
+    const { configPath } = globalWorkspacePaths({ env });
     try {
-      const globalConfig = await readJson(paths.configPath);
-      return isPlainObject(globalConfig?.mesh) ? globalConfig.mesh : {};
+      const globalConfig = await readJson(configPath);
+      return { configPath, config: isPlainObject(globalConfig) ? globalConfig : {} };
     } catch {
-      return {};
+      return { configPath, config: {} };
     }
+  }
+
+  // 194 — the global Discord channels (`work.notify.channels`), layered by REPLACEMENT, never merged
+  // (194 Q1/Q5): a project whose `work.notify` holds a `channels` key at all — `{}` included, which
+  // is how a project switches the global channel off (194 Q2) — keeps exactly its own; only a
+  // project with no such key inherits the global ones. `link` is never inherited: it names one
+  // repo. Answers the layered config and where its channels came from (null when nowhere).
+  function layerNotifyChannels(config, configPath, global) {
+    const notify = isPlainObject(config.work) && isPlainObject(config.work.notify) ? config.work.notify : null;
+    if (notify != null && Object.hasOwn(notify, "channels")) return { config, notifyChannelsFrom: { layer: "project", configPath } };
+    const channels = isPlainObject(global.config.work) && isPlainObject(global.config.work.notify) ? global.config.work.notify.channels : undefined;
+    if (!isPlainObject(channels) || Object.keys(channels).length === 0) return { config, notifyChannelsFrom: null };
+    const work = isPlainObject(config.work) ? config.work : {};
+    const layered = { ...config, work: { ...work, notify: { ...(notify ?? {}), channels: structuredClone(channels) } } };
+    return { config: layered, notifyChannelsFrom: { layer: "global", configPath: global.configPath } };
   }
 
   // milestone 33 / story 00 (ADR-004.5, F-3203) — the self-heal STEP, factored out of
@@ -164,11 +181,14 @@ export function assembleWork({ workspaceServices, fsServices, workDigestTemplate
     // decision superseding 22/ADR-002+003's work-stream-co-location).
     const aofDir = path.basename(configDir) === ".aof" ? configDir : path.join(projectRoot, ".aof");
 
-    const globalMeshConfig = await readGlobalMeshConfig(env);
+    const globalConfig = await readGlobalConfig(env);
+    const globalMeshConfig = isPlainObject(globalConfig.config.mesh) ? globalConfig.config.mesh : {};
     if (Object.keys(globalMeshConfig).length > 0) {
       const localMeshConfig = isPlainObject(config.mesh) ? config.mesh : {};
       config = { ...config, mesh: mergePlainObjects(globalMeshConfig, localMeshConfig) };
     }
+    const layeredNotify = layerNotifyChannels(config, configPath, globalConfig);
+    config = layeredNotify.config;
     // The per-install identity (34/story 00) — read from the MACHINE-WIDE GLOBAL home
     // (globalMeshPaths().identityPath, honoring AOF_GLOBAL_HOME) so one identity is shared
     // by every workspace on this machine and the global work store keyed on nodeId is
@@ -237,7 +257,7 @@ export function assembleWork({ workspaceServices, fsServices, workDigestTemplate
     // injects AOF_GLOBAL_HOME through loadWorkspace gets a hermetic, machine-shared identity
     // for free. It is ALWAYS the global path (never the legacy sidecar); the legacy sidecar
     // is a read-only fallback here and is migrated up by `work doctor`, not by a mint.
-    return { configPath, config, configFault, projectRoot, workDir, aofDir, identityPath: globalIdentityPath, globalMeshRoot: globalMesh.meshRoot };
+    return { configPath, config, configFault, projectRoot, workDir, aofDir, identityPath: globalIdentityPath, globalMeshRoot: globalMesh.meshRoot, notifyChannelsFrom: layeredNotify.notifyChannelsFrom };
   }
 
   return { "recordDoc": api0.recordDoc, "typeHasRecordDoc": api0.typeHasRecordDoc, "parseFrontmatter": api0.parseFrontmatter, "WORK_ITEM_SCHEMA_VERSION": api0.WORK_ITEM_SCHEMA_VERSION, "readItemSchema": api0.readItemSchema, "readItemVersion": api0.readItemVersion, "rollbackItemStatus": api0.rollbackItemStatus, "setItemStatus": api0.setItemStatus, "applyItemFrontmatter": api0.applyItemFrontmatter, "ITEM_RE": api1.ITEM_RE, "BACKLOG_ITEM_RE": api1.BACKLOG_ITEM_RE, "BACKLOG_ROOT": api1.BACKLOG_ROOT, "ARCHIVE_ROOT": api1.ARCHIVE_ROOT, "parseStorySpan": api1.parseStorySpan, "listItems": api2.listItems, "isLiveStreamRow": api2.isLiveStreamRow, "findWork": api2.findWork, "listStream": api2.listStream, "isDependTarget": api3.isDependTarget, "siblingDependencyNumber": api3.siblingDependencyNumber, "siblingGate": api3.siblingGate, "isDependNumber": api3.isDependNumber, "rewriteRefEntry": api3.rewriteRefEntry, "rewriteDependsEntries": api3.rewriteDependsEntries, "nextWork": api4.nextWork, validateWork, loadWorkspace, "healIdentitySidecar": api5.healIdentitySidecar };

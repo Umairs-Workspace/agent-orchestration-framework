@@ -287,10 +287,15 @@ export const archTests = [
       // tree this story started from, `reading` was EMPTY — the two files below are exactly
       // what this lane added. If a future diff removes either, this gate goes red on the
       // same fact it was written for.
+      //
+      // A THIRD reader joined at 191/02 (191/ADR-003 §3): `mesh:session-start`'s bounded watch
+      // reads a worker's refusal off the relay, in `commands/session.mjs`. It is pinned here by
+      // name like the two before it — the list says exactly who branches on the ack, so a reader
+      // that appears or disappears is a decision someone made rather than drift.
       assert.deepEqual(
         reading.sort(),
-        ["packages/mesh/src/control-stream-server.mjs", "packages/mesh/src/session-spawn-outcome.mjs"],
-        "the ack is branched by the control stream server (before applyStreamFrame) and filtered by the spawn-outcome registry — the two ends the milestone shipped without",
+        ["packages/mesh/src/commands/session.mjs", "packages/mesh/src/control-stream-server.mjs", "packages/mesh/src/session-spawn-outcome.mjs"],
+        "the ack is branched by the control stream server (before applyStreamFrame) and filtered by the spawn-outcome registry — the two ends the milestone shipped without — and read by the session-start watch (191/ADR-003 §3)",
       );
       assert.deepEqual(
         producing.sort(),
@@ -311,6 +316,16 @@ export const archTests = [
         beforeThisTask.get("packages/mesh/src/control-stream-server.mjs"),
         sources.get("packages/mesh/src/control-stream-server.mjs"),
         "the reconstruction actually removed the control's branch",
+      );
+      // …and the 191/02 watch, which did not exist on that tree either.
+      beforeThisTask.set(
+        "packages/mesh/src/commands/session.mjs",
+        sources.get("packages/mesh/src/commands/session.mjs").replace(/envelope\.kind === SESSION_SPAWN_ACK_KIND/g, 'envelope.kind === "__removed__"'),
+      );
+      assert.notEqual(
+        beforeThisTask.get("packages/mesh/src/commands/session.mjs"),
+        sources.get("packages/mesh/src/commands/session.mjs"),
+        "the reconstruction actually removed the session-start watch's branch",
       );
       const beforeProblems = wireKindProblems(beforeThisTask);
       assert.ok(
@@ -424,6 +439,43 @@ export const archTests = [
         readingEnds(sources, "PRESENCE_SIGNAL_KIND"),
         ["packages/mesh/src/control-stream-server.mjs"],
         "…and the fix is REAL over the live tree: the control's kind table branches the imported constant, so the exemption has nothing left to be about",
+      );
+    },
+  },
+
+  // ═══ FF-19104 (191/ADR-004 §1) — the session-end kind is swept, with both ends ═════════════
+  //
+  // `wireKindProblems` is NOT edited for it: the new kind is reached by the sweep's own shape, and
+  // this entry only pins WHERE its ends live, as the SESSION_SPAWN_ACK_KIND entry above does for
+  // the kind this gate was written about.
+  {
+    name: "arch/191 FF-19104 (acd-wire-kind-has-both-ends): SESSION_END_KIND is in the swept set, declared in session-spawn-directive.mjs, built there, and read by worker-stream-client.mjs and terminal-input.mjs — remove both readers and the gate reds on it",
+    async run() {
+      const sources = await readSrcSources();
+      const HOME = "packages/mesh/src/session-spawn-directive.mjs";
+      const declarations = [...sources].flatMap(([file, source]) => [...source.matchAll(KIND_DECLARATION)].map((match) => ({ name: match[1], value: match[2], home: file })));
+      const declared = declarations.filter((declaration) => declaration.name === "SESSION_END_KIND");
+      assert.deepEqual(declared, [{ name: "SESSION_END_KIND", value: "session-end", home: HOME }], "the sweep reaches SESSION_END_KIND, declared once, in the session lane's one home");
+
+      const reading = readingEnds(sources, "SESSION_END_KIND");
+      for (const reader of ["packages/mesh/src/worker-stream-client.mjs", "packages/mesh/src/terminal-input.mjs"]) {
+        assert.ok(reading.includes(reader), `${reader} reads SESSION_END_KIND with the constant. Reading ends: ${reading.join(", ") || "(none)"}`);
+      }
+      assert.ok(!reading.includes(HOME), "the declaring home supplies the builder, never a reader (N3)");
+      assert.deepEqual(producingEnds(sources, "SESSION_END_KIND"), [HOME], "it is built in the lane's one contract home");
+      assert.deepEqual(respeltEnds(sources, "session-end"), { producing: [], reading: [] }, "no end re-spells the literal");
+      assert.deepEqual(wireKindProblems(sources).filter((problem) => problem.startsWith("SESSION_END_KIND")), [], "the unedited predicate is quiet about it");
+
+      // RED WITHOUT ITS READERS — the tree as it would be had the constant landed alone.
+      const withoutReaders = new Map(sources);
+      for (const reader of reading) {
+        withoutReaders.set(reader, sources.get(reader).replace(/([=!]==\s*)SESSION_END_KIND\b/g, '$1"__removed__"'));
+        assert.notEqual(withoutReaders.get(reader), sources.get(reader), `the reconstruction removed ${reader}'s branch`);
+      }
+      const problems = wireKindProblems(withoutReaders);
+      assert.ok(
+        problems.some((problem) => /^SESSION_END_KIND/.test(problem) && /NO reading end anywhere/.test(problem)),
+        `self-check: a session-end kind with no reader is RED. Got: ${JSON.stringify(problems)}`,
       );
     },
   },

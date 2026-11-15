@@ -240,6 +240,10 @@ export function createAskOrchestration({
         const runId = current.record.runId;
         let sessionId = current.outcome?.sessionId ?? current.record.sessionId ?? null;
         let question;
+        // The ask's fixed answers (191/07, ADR-007 §2): a pending call's option labels, a codex
+        // ask's own choices, or none. They ride the ask file and both ask envelopes, so a channel
+        // that takes taps can offer one button per choice.
+        let choices = [];
         let askedAt;
         let lost = false;
         const opened = askWait.now();
@@ -250,6 +254,7 @@ export function createAskOrchestration({
           const entry = standingAsk(stored) ?? lastAsk(stored);
           if (entry?.runtime !== "codex" || entry.sessionId !== sessionId) throw new Error("native ask is not durable on this run");
           question = entry.question;
+          choices = Array.isArray(entry.choices) ? entry.choices : [];
           askedAt = entry.askedAt;
           const file = await askWait.read(runId);
           if (file == null) await openAsk(dir, { runId, ref, workspaceId: entry.workspaceId ?? workspaceId, loopRunId, scope, sessionId, phase: entry.phase, node, question, questionToken: entry.questionToken, choices: entry.choices, runtime: "codex", askedAt });
@@ -259,13 +264,14 @@ export function createAskOrchestration({
           const pending = await pendingAt(answeredSince(current.record?.asks));
           lost = pending != null;
           question = pending?.question ?? (await readAskQuestion({ cwd, env, sessionId, sinceOffset: 0 }));
+          choices = Array.isArray(pending?.choices) ? pending.choices : [];
           // THE RECORD IS THE FIRST WRITE: a refusal here is thrown unchanged, before any file,
           // notice or row (QA ruling 6).
           const record = await openRunAsk(item, runId, { question, phase: word, now: iso(opened) });
           askedAt = lastAsk(record).askedAt;
-          await openAsk(dir, { runId, ref, workspaceId, loopRunId, scope, sessionId, phase: word, node, question, runtime: ptyRuntime(current.record), now: () => new Date(opened) });
+          await openAsk(dir, { runId, ref, workspaceId, loopRunId, scope, sessionId, phase: word, node, question, ...(choices.length > 0 ? { choices } : {}), runtime: ptyRuntime(current.record), now: () => new Date(opened) });
           }
-          const envelope = envelopeAt("session-needs-input", opened, { question });
+          const envelope = envelopeAt("session-needs-input", opened, { question, choices });
           // A re-ask while the loop is stopping still records the question, and tells nobody.
           if (!stopping()) await notify(notifyWorkspace, envelope, notifyOptions);
           await narrate(accountLine(envelope));
@@ -278,11 +284,12 @@ export function createAskOrchestration({
           question = entry?.question ?? null;
           askedAt = entry?.askedAt ?? iso(opened);
           const file = await askWait.read(runId);
+          choices = Array.isArray(file?.choices) ? file.choices : [];
           // The run record names its session; a record that never learned it falls back to the file's.
           sessionId = sessionId ?? file?.sessionId ?? null;
           lost = (await pendingAt(answeredSince((Array.isArray(stored?.asks) ? stored.asks : []).slice(0, -1)))) != null;
           if (file == null || file.state === parked) {
-            await openAsk(dir, { runId, ref, workspaceId, loopRunId, scope, sessionId, phase: entry?.phase ?? word, node, question, runtime: ptyRuntime(stored), now: () => new Date(opened) });
+            await openAsk(dir, { runId, ref, workspaceId, loopRunId, scope, sessionId, phase: entry?.phase ?? word, node, question, ...(choices.length > 0 ? { choices } : {}), runtime: ptyRuntime(stored), now: () => new Date(opened) });
           }
           }
           await narrate(accountLine(envelopeAt("session-needs-input", opened, { question })));
@@ -330,7 +337,7 @@ export function createAskOrchestration({
           await parkAsk(dir, runId, { now: () => new Date(at) });
           const record = await parkRunAsk(item, runId, { now: iso(at) });
           const entry = standingAsk(record) ?? lastAsk(record);
-          const parkedEnvelope = envelopeAt("session-parked-unanswered", at, { question, outcome: { askedAt: entry?.askedAt ?? askedAt, parkedAt: entry?.parkedAt ?? iso(at) } });
+          const parkedEnvelope = envelopeAt("session-parked-unanswered", at, { question, choices, outcome: { askedAt: entry?.askedAt ?? askedAt, parkedAt: entry?.parkedAt ?? iso(at) } });
           await narrate(accountLine(parkedEnvelope));
           if (bound) await notify(notifyWorkspace, parkedEnvelope, notifyOptions);
           return { parked: { ref, runId, sessionId, askedAt: entry?.askedAt ?? askedAt, question } };

@@ -7,7 +7,8 @@ create the bot once in the Discord Developer Portal, store its token once per ma
 on per project with the id of the channel to post to.
 
 This guide covers the setup. The design is in milestone 131's `ARCHITECTURE.md`: ADR-007 (the bot
-posts, and replaces the webhook), ADR-005 (the notifier) and ADR-006 (the answer path).
+posts, and replaces the webhook), ADR-005 (the notifier) and ADR-006 (the answer path). The buttons
+on the notifications are milestone 191's ADR-007.
 
 > **Coming from the webhook?** aof no longer posts through an incoming webhook, and there is no
 > fallback to one. `aof messaging init discord` now refuses a webhook URL. Create the bot below,
@@ -22,6 +23,7 @@ posts, and replaces the webhook), ADR-005 (the notifier) and ADR-006 (the answer
 | The bot token (the secret) | `<aof home>/messaging/discord.secret`, written by `aof messaging init discord` | No. It is machine-wide, outside every checkout, and owner-only (`0600` on POSIX) |
 | The channel id | `work.notify.channels.discord.channelId` in the project's `.aof/aof.config.json`, written by `aof messaging enable discord --channel <channel-id>` | Yes. An id is not a secret |
 | The per-project switch | the `work.notify` block itself | Yes. It never holds a URL, webhook or token |
+| A channel for every project (optional) | `work.notify.channels` in the global `<aof home>/aof.config.json`, written by `aof messaging enable discord --channel <channel-id> --global` | No. It is machine-wide, outside every checkout |
 | An optional override | the env var `AOF_DISCORD_BOT_TOKEN` (or the name a channel's `tokenEnv` gives) | No |
 
 **The token is the credential.** It never enters argv, config, logs or command output. aof reads it
@@ -137,6 +139,22 @@ an admin.
 To turn it off: `aof messaging disable discord`. To stop sending from a machine entirely, delete
 `<aof home>/messaging/discord.secret`. No verb removes it.
 
+**One channel for every project.** Instead of step 3 in each project, declare the channel once on
+this machine, anywhere:
+
+```
+aof messaging enable discord --channel <channel-id> --allow <user-id>,<user-id> --global
+```
+
+This writes the same `channels` block into `<aof home>/aof.config.json`, and every project whose
+`work.notify` has no `channels` key of its own posts there and answers there, with the global
+`allow` list. A project with channels of its own uses only its own, its own `allow` list included:
+the two are never mixed. `aof messaging disable discord` in a project that uses the global channel
+switches it off for that project only, by leaving `"channels": {}` in the project's config.
+`aof messaging disable discord --global` removes the global channel and leaves every project's own
+channels alone. The global channel serves the projects on THIS machine; a worker node reads its
+own `<aof home>`.
+
 ## 4. Check it
 
 ```
@@ -147,8 +165,13 @@ aof messaging status
 discord
   this machine: set (<aof home>/messaging/discord.secret)
   env override AOF_DISCORD_BOT_TOKEN: not set
+  global: not set — run `aof messaging enable discord --channel <id> --global` to serve every project
   this project: enabled (discord → <channel-id>)
 ```
+
+A project using the global channel says so: `this project: enabled (discord → <channel-id>, from
+the global config)`, and `project.from` is `"global"` in `--json`. A project that switched it off
+reads `disabled here (the global channel is switched off)`.
 
 `status` reports only whether a token is present, never its value. `--json` returns the same
 facts, with the channel ids in `project.channelIds`. Once a channel has an `allow` list (see
@@ -258,9 +281,47 @@ The bot's replies ping nobody. The answer is recorded as `@<username>`, never as
 because run records can be committed to a public repository. A question can be answered by reply
 for 30 days after it was posted.
 
+## Buttons on the notifications
+
+Some of the bot's messages carry buttons, so the common answers take one tap on a phone.
+
+| Message | Buttons |
+|---|---|
+| the loop halted, or the loop died | **Resume** and **Open a session here** |
+| a question with two to five fixed choices, waiting or parked | one button per choice, labelled with the choice |
+
+**Buttons appear only when the channel has an `allow` list** (see "Answering by reply" above), and
+**the `allow` list decides who can tap them.** A channel with no `allow` list gets the same
+messages with no buttons. A tap from someone not on the list is refused, ending
+`(discord-button-not-allowed)`, and names the list's key. Nothing runs.
+
+What each tap does:
+
+- **Resume** hands the loop back to the desktop app, which relaunches it with `--resume` on its next
+  poll. This is the same hand-off as `/loop resume` (see "Slash commands" below), with the same
+  needs and refusals: the loop must have been started with `--supervised`, and the desktop app must
+  be running.
+- **Open a session here** starts Claude at the item the loop halted on, on the node it ran on. The
+  reply carries the session's link when it posts one within 45 seconds. Otherwise the reply gives
+  the session's name, and you can find it under that name in the Claude app.
+- **A choice button** answers the question with that choice's text, at once, with no confirmation.
+  It goes through the same path as a reply: the same checks, the first answer wins, and
+  `answered by @<name>` is posted. The record says the answer came via Discord. After an answer, the
+  message's buttons are disabled. A second tap is refused: the reply names who answered first and
+  when, and the buttons are disabled.
+
+**Some questions are answered by reply.** A question with more than five choices, a choice longer
+than 80 characters, a single choice, a question that asks two things at once, or a free-text
+question with no choices gets no buttons. Answer it by reply, or with `aof work answer`, as before.
+A question asked from a worker node carries buttons only when the worker recorded its choices.
+
+The answer to a tap is shown only to you. A tap on a message older than 30 days is refused, ending
+`(discord-button-expired)`, because aof no longer keeps what that message was for. A tap in a direct
+message is refused too.
+
 ## Slash commands
 
-The bot answers four commands in an aof channel. They use the `applications.commands` scope and
+The bot answers eight commands in an aof channel. They use the `applications.commands` scope and
 the USE_APPLICATION_COMMANDS permission, which the invite URL already grants, so the bot needs no
 second invite. The commands appear in a server once the bot is connected: the control node
 registers them in every server an aof channel lives in when it connects, and checks again every
@@ -268,10 +329,14 @@ hour.
 
 | Command | Options | What it does | Reply |
 |---|---|---|---|
-| `/status` | `workspace` (optional) | lists what is in progress in each project, with its execution and node and any question waiting | only you see it |
-| `/asks` | `workspace` (optional) | lists the questions waiting or parked, each with a link to the bot's question message | only you see it |
-| `/loop stop` | `scope`, `workspace` (optional) | asks the loop for that scope to stop. The first request drains, and a second cancels the session in flight | the channel sees it |
-| `/loop resume` | `scope`, `workspace` (optional) | hands a halted supervised loop back to the desktop app, which relaunches it with `--resume` on its next poll | the channel sees it |
+| `/status` | `project` (optional) | lists what is in progress in each project, with its execution and node and any question waiting | only you see it |
+| `/asks` | `project` (optional) | lists the questions waiting or parked, each with a link to the bot's question message | only you see it |
+| `/loop stop` | `scope`, `project` (optional) | asks the loop for that scope to stop. The first request drains, and a second cancels the session in flight | the channel sees it |
+| `/loop resume` | `scope`, `project` (optional) | hands a halted supervised loop back to the desktop app, which relaunches it with `--resume` on its next poll | the channel sees it |
+| `/loop start` | `scope`, `project` (optional) | asks the desktop app to start a new supervised loop on that scope, on its next poll | the channel sees it |
+| `/session start` | `project`, `node` (optional), `item` (optional) | starts Claude in that project and answers with the link that opens it, or with the session's name | only you see it |
+| `/session list` | `project` (optional) | lists the live sessions in each project, each with its name, its node and how long it has run or when it was last seen | only you see it |
+| `/session end` | `session` | ends that session, and says so once the node confirms it has gone | the channel sees it |
 
 **Who can run them.** A command reaches only the projects whose Discord channel is the one it is
 run in, and only for people on that channel's `allow` list (see "Answering by reply" above). A
@@ -279,10 +344,19 @@ command in a channel no project uses answers *This channel is not an aof project
 not on any `allow` list gets a refusal ending `(discord-command-not-allowed)`, and nothing runs. A
 command sent in a direct message is refused, because a direct message names no project.
 
-**Several projects in one channel.** `/status` and `/asks` show one section per project. `/loop`
-acts on exactly one project, so name it with `workspace:` (its folder name or its workspace id).
-Without it, a channel that reaches several projects refuses with `(discord-scope-ambiguous)` and
-names each one.
+**Several projects in one channel.** `/status`, `/asks` and `/session list` show one section per
+project, and `project:` narrows them to one. `/loop` acts on exactly one project. Without `project:`,
+`/loop stop` and `/loop resume` take the one project that has a loop on the scope, and refuse with
+`(discord-scope-ambiguous)`, naming each one, when several have. `/loop start` has no loop to go by
+yet, so in a channel with several projects it asks you to pick one with `project:`.
+`/session start` always takes its `project`. You don't have to type the project: pick it from the
+list Discord offers as you type `project:`. The list offers only the projects whose channel `allow`
+list holds you, the same ones the command would reach. Someone on no `allow` list is offered nothing. A typed folder
+name or workspace id still works, and a name no project here has is refused with
+`(discord-scope-ambiguous)`, naming the projects there are.
+A project is offered only once it is registered with this machine's mesh. If one is missing from the
+list, run `aof mesh repo publish` in it (or `aof mesh repo publish --workspace <path>` from
+anywhere), and it is offered from the next command on, with no restart.
 
 **What the loop commands say.** `/loop stop` answers in the channel with who asked:
 
@@ -305,6 +379,67 @@ to run in a terminal instead: `aof work loop <scope> --resume`. A loop that is s
 refused, `loop-hand-off-running`, and one that last ran on another node is refused,
 `loop-hand-off-not-local`: hand it back on that node. From a terminal, the same hand-off is
 `aof work loop <scope> --hand-off`.
+
+**`/loop start` starts nothing itself either.** It writes a start request, and the desktop app
+starts the scope as a new supervised loop on its next poll. It answers `@<name> asked the supervisor
+to start <scope> — it starts on its next poll`. It needs the desktop app running on the control
+node. Two refusals are worth knowing:
+
+- `loop-start-running`: a loop on that scope is already running, so there is nothing to start.
+- `loop-start-resumable`: the scope has a halted supervised loop. Starting again would reset its
+  budget, so the reply points you at `/loop resume scope:<scope>` instead.
+
+From a terminal, the same request is `aof work loop <scope> --hand-off-start`.
+
+### Starting a session from Discord
+
+`/session start project:<project>` starts Claude in that project so you can open it from your
+phone. Pick the project from the list Discord offers. `node:` and `item:` are optional, and each
+has its own list:
+
+- `node:` offers the nodes that are online now. Leave it out to start on the control node, which
+  has every project a channel serves.
+- `item:` offers the project's work items that are in progress. With an item, the session starts
+  in that item's worktree.
+
+**Only you see the reply**, because it carries the link that opens the session. It is one of:
+
+- `Claude started on <node> in **<project>**: <link>`. Tap the link to open the session in the
+  Claude app.
+- `Claude started on <node> in **<project>**, with no link yet. Open the Claude app, tap **Code**,
+  and find **<name>** there.` The bot watches for the link for 45 seconds. With no link in that
+  time the session is still started, and the Claude app lists it under that name.
+- `The session in **<project>** was not started (<code>): …`, with the reason. For example,
+  `session-target-not-connected` means the node you picked is not online, and
+  `session-item-unknown` means the project has no such work item.
+
+**What a start needs on the machine.** The session is Claude with Remote Control: the node runs
+`claude --remote-control` itself, signed in as that machine's own `claude`. It is never a shell,
+and nothing typed in Discord reaches a command line. So the node needs `claude` installed and
+signed in, and the desktop app running, as for the loop commands. The session opens in the Claude
+app of the account that machine's `claude` is signed in to. If that `claude` is signed out, the
+session still starts but Remote Control fails, so no link arrives: sign in on the machine, end the
+session with `/session end`, and start again.
+
+**A session runs until you end it.** There is no idle limit. A session ends when you run
+`/session end`, when `claude` itself exits, or when the desktop app on that node is quit or
+restarted.
+
+**Seeing and ending sessions.** `/session list` shows the live sessions in the channel's projects,
+only to you, one line each: `<name> — <node> · <how long it has run>`. When a node has not reported
+when a session started, the line ends `· last seen <how long> ago` instead.
+`/session end session:<name>` ends one. Pick the session from the list Discord offers, which shows the same names. The list holds
+only the sessions of projects whose `allow` list holds you, and a session in any other project is
+refused, ending `(discord-command-not-allowed)`. The channel sees the result:
+
+- `@<name> ended <session> on <node>`, once the node confirms the session has gone.
+- `@<name> asked <node> to end <session> — the request was sent, but <session> is still listed
+  (session-end-unconfirmed)`, when the node did not confirm within 15 seconds. Run `/session list`
+  to see whether it went. A `claude` you started yourself in a terminal was not started by aof, and
+  cannot be ended from Discord.
+
+From a terminal, the same three are `aof mesh session start <project>`, `aof mesh session list` and
+`aof mesh session end <session>`.
 
 ## Options
 

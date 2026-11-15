@@ -224,11 +224,13 @@ const BUILDER_ROWS = [
 // takes the deleted export.
 const DEPENDENT_ROWS = [
   { module: "packages/mesh/src/worker-stream-client.mjs", adapter: "packages/core/src/application/bindings/worker-stream-client.mjs", factory: "createWorkerStreamServices", bindings: ["buildTerminalFrameEnvelope", "buildTerminalEndEnvelope", "TERMINAL_INPUT_KIND", "TERMINAL_RESUME_KIND"] },
-  { module: "packages/mesh/src/ui-serve.mjs", adapter: "packages/core/src/application/bindings/mesh/ui-serve.mjs", factory: "createMeshUiServer", bindings: ["buildTerminalInputEnvelope"] },
+  // 191/08 (191/ADR-001 amendment 2026-11-14 §3): `meshUiProbe`'s relay check and the launcher's
+  // relay gate and broker port read the one derivation, so both now take `loopbackRelayUrl`.
+  { module: "packages/mesh/src/ui-serve.mjs", adapter: "packages/core/src/application/bindings/mesh/ui-serve.mjs", factory: "createMeshUiServer", bindings: ["buildTerminalInputEnvelope", "loopbackRelayUrl"] },
   { module: "packages/mesh/src/terminal-mirror.mjs", adapter: "packages/core/src/application/bindings/mesh/terminal-mirror.mjs", factory: "createTerminalMirroring", bindings: ["TERMINAL_FRAME_KIND", "loopbackRelayUrl"] },
   { module: "packages/mesh/src/terminal-input.mjs", adapter: "packages/core/src/application/bindings/mesh/terminal-input.mjs", factory: "createTerminalInput", bindings: ["TERMINAL_INPUT_KIND", "TERMINAL_RESUME_KIND"] },
   { module: "packages/mesh/src/control-stream-server.mjs", adapter: "packages/core/src/application/bindings/control-stream-server.mjs", factory: "createControlStreamServices", bindings: ["TERMINAL_FRAME_KIND"] },
-  { module: "packages/mesh/src/launcher.mjs", adapter: "packages/core/src/application/bindings/mesh/launcher.mjs", factory: "createMeshLauncher", bindings: ["createTerminalRelayPushTransport", "startTerminalIngress", "buildTerminalFrameEnvelope", "buildTerminalEndEnvelope"] },
+  { module: "packages/mesh/src/launcher.mjs", adapter: "packages/core/src/application/bindings/mesh/launcher.mjs", factory: "createMeshLauncher", bindings: ["createTerminalRelayPushTransport", "loopbackRelayUrl", "startTerminalIngress", "buildTerminalFrameEnvelope", "buildTerminalEndEnvelope"] },
   { module: "packages/mesh/src/commands/terminal-resume.mjs", adapter: "packages/core/src/application/bindings/commands/mesh/terminal-resume.mjs", factory: "createMeshTerminalResumeCommands", bindings: ["buildTerminalResumeEnvelope", "createTerminalRelayPushTransport"] },
   { module: "packages/mesh/src/commands/ui.mjs", adapter: "packages/core/src/application/bindings/commands/mesh/ui.mjs", factory: "createMeshUiCommands", bindings: ["createTerminalRelayPushTransport"] },
 ];

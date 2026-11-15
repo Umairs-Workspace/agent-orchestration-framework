@@ -20,11 +20,17 @@ export function assembleLoopStopRequest({ workspaceServices, degradeServices }) 
     readResumeRequest,
     requestLoopResume,
     clearResumeRequest,
+    loopStartsDir,
+    startRequestPath,
+    readStartRequests,
+    requestLoopStart,
+    clearStartRequest,
+    spendStartRequest,
     createStopSource
   } = createStopRequests({
     getRuntimeRoot: (env) => globalMeshPaths({ env }).meshRoot,
     reportDegrade,
   });
 
-  return { "STOP_LEVELS": api0.STOP_LEVELS, "STOP_STATES": api0.STOP_STATES, loopStopsDir, loopResumesDir, stopRequestPath, readStopRequest, requestLoopStop, markStopHonoured, clearStopRequest, resumeRequestPath, readResumeRequest, requestLoopResume, clearResumeRequest, createStopSource };
+  return { "STOP_LEVELS": api0.STOP_LEVELS, "STOP_STATES": api0.STOP_STATES, loopStopsDir, loopResumesDir, stopRequestPath, readStopRequest, requestLoopStop, markStopHonoured, clearStopRequest, resumeRequestPath, readResumeRequest, requestLoopResume, clearResumeRequest, loopStartsDir, startRequestPath, readStartRequests, requestLoopStart, clearStartRequest, spendStartRequest, createStopSource };
 }

@@ -36,6 +36,10 @@ import { meshSessionIndexAttributionTests } from "./mesh-session-index-attributi
 // item's worktree, registered through the SAME m48 session API, bridged onto the SAME
 // terminal-frame wire, with four coded refusals. Tasks 00–03.
 import { meshSessionSpawnHandlerTests } from "./mesh-session-spawn-handler.test.mjs";
+// milestone 191 / story 02 (ADR-003) — the registered session verbs: `mesh:session-start` through
+// the one start core, with its bounded watch of the relay for the link or the refusal, and
+// `mesh:session-list`. Tasks 00–03; the route's own scenarios stay in test/mesh/ui.
+import { meshSessionVerbsTests } from "./mesh-session-verbs.test.mjs";
 
 export const tests = [
   ...meshSessionCliRecordTests,
@@ -49,4 +53,6 @@ export const tests = [
   // lifecycle + output bridging + coded failure/cleanup (tasks 00–03), plus the two
   // source-shape gates that hold the lane boundaries independently of it
   ...meshSessionSpawnHandlerTests,
+  // milestone 191 / story 02 — the session verbs (tasks 00–03)
+  ...meshSessionVerbsTests,
 ];

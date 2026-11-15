@@ -1,5 +1,6 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import { createSupervisedDeclarations } from "@aof/mesh/declarations";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
 export function assembleMeshDeclarations({ meshPresenceServices, runStoreServices, commandsRunRetryServices, workServices, loopStopRequestServices, provideCommandCore }) {
   // Core composition for mesh-owned coordination.
@@ -17,8 +18,10 @@ export function assembleMeshDeclarations({ meshPresenceServices, runStoreService
   const { loopStopsDir } = loopStopRequestServices;
   const { readResumeRequest } = loopStopRequestServices;
   const { readStopRequest } = loopStopRequestServices;
+  const { loopStartsDir } = loopStopRequestServices;
+  const { readStartRequests } = loopStopRequestServices;
 
-  const { supervisedDeclarations } = createSupervisedDeclarations({ resolveNodeWorkspaces, isRunning, isStale, readRuns, retryReadiness, resolveAttemptCeiling, listItems, loadWorkspace, STOP_STATES, loopResumesDir, loopStopsDir, readResumeRequest, readStopRequest, loadCommandRegistry: () => provideCommandCore() });
+  const { supervisedDeclarations } = createSupervisedDeclarations({ resolveNodeWorkspaces, isRunning, isStale, readRuns, retryReadiness, resolveAttemptCeiling, listItems, loadWorkspace, STOP_STATES, loopResumesDir, loopStopsDir, readResumeRequest, readStopRequest, loopStartsDir, readStartRequests, resolveWorkspaceId, loadCommandRegistry: () => provideCommandCore() });
 
   return { supervisedDeclarations };
 }

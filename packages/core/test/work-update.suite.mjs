@@ -41,6 +41,12 @@ import { stat, utimes, mkdir } from "node:fs/promises";
 import { assets } from "./support/assets-services.mjs";
 import { assembleCommandsInitUpdate } from "../src/application/bindings/commands/init-update.mjs";
 import { assembleWorkMemory } from "../src/application/bindings/work/memory.mjs";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { hashContent } from "../src/lock.mjs";
+import { readShippedManifest } from "../src/work/bundle-manifest.mjs";
+import { EXAMPLES_REL, MEMO_TEXT, VARIANT_TEXT, baseFixture, only, templatesOnly, variantFixture } from "./bundle-compose.suite.mjs";
+import { renderBundleTemplateOutputs } from "../src/work/bundle.mjs";
 
 async function tempRepo(prefix = "aof-update-test-") {
   return mkdtemp(path.join(os.tmpdir(), prefix));
@@ -685,6 +691,12 @@ export const workUpdateTests = [
 
   // ════════════════ milestone 180 / story 02 task 00 — the memory node migration ════════════════
   ...memoryMigrationTests(),
+
+  // ════════════════ milestone 192 / story 00 task 03 — a render reads the project's own config ════════════════
+  ...projectConfigRenderTests(),
+
+  // ════════════════ milestone 192 / story 01 tasks 00, 01 — a practice ships a variant of a template ════════════════
+  ...templateVariantUpdateTests(),
 ];
 
 // 180/02 task 00 — `aof work update` moves every old memory key into the node (180/ADR-006). THE
@@ -804,5 +816,329 @@ function memoryMigrationTests() {
       const report = await assets.configInspect.doctorConfig(repo);
       assert.deepEqual(report.diagnostics.filter((item) => item.code === "memory-config-legacy"), []);
     })),
+  ];
+}
+
+// 192/00 task 03 — what a render includes is decided by the project's own config file (192/ADR-003).
+// The fixture is 192/00's: the command "demo" with the slot "demo.notes" and the practice "notes",
+// keyed on "work.notes.enabled". The update's test seam hands in a FUNCTION of the project's config,
+// so the fixture is loaded with exactly the config the update read. Each case runs under its own
+// AOF_GLOBAL_HOME, so the machine-wide config is the test's own file.
+const DEMO_REL = ".claude/commands/aof/demo.md";
+const NOTE = "Note one.";
+const fixtureBundle = (config) => only(baseFixture().load(config), "demo");
+
+async function withPracticeProject(run) {
+  const home = await mkdtemp(path.join(os.tmpdir(), "aof-192-home-"));
+  const repo = await tempRepo("aof-192-project-");
+  const prior = process.env.AOF_GLOBAL_HOME;
+  process.env.AOF_GLOBAL_HOME = home;
+  try {
+    await mkdir(p(repo, ".aof"), { recursive: true });
+    await run({ repo, home });
+  } finally {
+    if (prior === undefined) delete process.env.AOF_GLOBAL_HOME;
+    else process.env.AOF_GLOBAL_HOME = prior;
+    await rm(repo, { recursive: true, force: true });
+    await rm(home, { recursive: true, force: true });
+  }
+}
+
+const writeJson = (file, value) => writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
+const setProject = (repo, notes) => writeJson(p(repo, ".aof", "aof.config.json"), { name: "p", resources: [], ...(notes === undefined ? {} : { work: { notes } }) });
+const setMachine = (home, notes) => writeJson(p(home, "aof.config.json"), { work: { notes } });
+// The project rendered once, from the fixture loaded with its config as it stands.
+async function renderProject(repo) {
+  const project = JSON.parse(await readFile(p(repo, ".aof", "aof.config.json"), "utf8"));
+  await installBase(repo, fixtureBundle(project));
+}
+const update = (repo, extra = {}) => updateWork({ targetDir: repo, bundleOverride: fixtureBundle, ...extra });
+const demoOnDisk = (repo) => readFile(p(repo, DEMO_REL), "utf8");
+
+// The control's behavioural check (FF-19207): with the machine-wide config turning the practice on
+// and the project's file silent, an update must render the demo command without the fragment.
+// `updater` is the update under test, a parameter so the control can plant a merging one.
+export async function machineConfigDoesNotReachRender(updater = update) {
+  let holds;
+  await withPracticeProject(async ({ repo, home }) => {
+    await setMachine(home, { enabled: true });
+    await setProject(repo);
+    await renderProject(repo);
+    await updater(repo);
+    holds = (await demoOnDisk(repo)).includes(NOTE);
+  });
+  if (holds) throw new Error("A render read the machine-wide config: work.notes.enabled from the global aof.config.json reached the rendered demo command.");
+}
+
+const CLI = path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."), "bin", "aof.mjs");
+
+function projectConfigRenderTests() {
+  return [
+    {
+      name: "192/00 E9 · a key set for the whole machine does not reach a render",
+      run: () => machineConfigDoesNotReachRender(),
+    },
+    {
+      name: "192/00 a key set in the project is honoured whatever the machine says",
+      run: () => withPracticeProject(async ({ repo, home }) => {
+        await setMachine(home, { enabled: false });
+        await setProject(repo);
+        await renderProject(repo);
+        await setProject(repo, { enabled: true });
+        await update(repo);
+        assert.ok((await demoOnDisk(repo)).includes(NOTE), "the rendered demo command holds the fragment");
+      }),
+    },
+    {
+      name: "192/00 E10 · turning a key on is one update away, and turning it off restores the render",
+      run: () => withPracticeProject(async ({ repo }) => {
+        await setProject(repo);
+        await renderProject(repo);
+        const first = await demoOnDisk(repo);
+        assert.ok(!first.includes(NOTE));
+        await setProject(repo, { enabled: true });
+        const on = await update(repo);
+        assert.equal(classOf(on, DEMO_REL), "update", "the demo command is reported updated");
+        assert.ok((await demoOnDisk(repo)).includes(NOTE), "and holds the fragment");
+        await setProject(repo);
+        const off = await update(repo);
+        assert.equal(classOf(off, DEMO_REL), "update", "the demo command is reported updated again");
+        assert.equal(await demoOnDisk(repo), first, "byte for byte what the first render wrote");
+      }),
+    },
+    {
+      name: "192/00 a dry run shows the change and writes nothing",
+      run: () => withPracticeProject(async ({ repo }) => {
+        await setProject(repo);
+        await renderProject(repo);
+        const before = await demoOnDisk(repo);
+        await setProject(repo, { enabled: true });
+        const result = await update(repo, { dryRun: true });
+        assert.equal(classOf(result, DEMO_REL), "update", "the demo command is reported as an update");
+        assert.equal(result.manifestWritten, false);
+        assert.equal(await demoOnDisk(repo), before, "the file on disk is unchanged");
+      }),
+    },
+    {
+      name: "192/00 an update with nothing to change says so",
+      run: () => withPracticeProject(async ({ repo }) => {
+        await setProject(repo, { enabled: true });
+        await renderProject(repo);
+        const result = await update(repo);
+        assert.ok(result.actions.length > 0);
+        assert.deepEqual(result.actions.filter((item) => item.action !== "skip").map((item) => fwd(item.path)), [], "every file is up to date");
+      }),
+    },
+    {
+      name: "192/00 a command a person edited is not overwritten when a key changes",
+      run: () => withPracticeProject(async ({ repo }) => {
+        await setProject(repo);
+        await renderProject(repo);
+        const edited = `${await demoOnDisk(repo)}\nA person's own line.\n`;
+        await writeFile(p(repo, DEMO_REL), edited);
+        await setProject(repo, { enabled: true });
+        const result = await update(repo);
+        assert.equal(classOf(result, DEMO_REL), "drift-warning");
+        assert.equal(await demoOnDisk(repo), edited, "left as the person wrote it");
+      }),
+    },
+    {
+      name: "192/00 a new project renders with every practice off",
+      run: async () => {
+        const home = await mkdtemp(path.join(os.tmpdir(), "aof-192-init-"));
+        try {
+          const repo = p(home, "project");
+          await mkdir(repo);
+          const manifest = readShippedManifest();
+          execFileSync(process.execPath, [CLI, "work", "init", "--runtime", manifest.runtimes.join(","), "--json"], {
+            cwd: repo, encoding: "utf8", env: { ...process.env, AOF_GLOBAL_HOME: home, NODE_NO_WARNINGS: "1" },
+          });
+          // An integration's members render only for a project that enables it (169/ADR-005), so
+          // the files init leaves out are exactly theirs; every file it does render is the manifest's.
+          const gated = new Set(loadBundle().resources.filter((entry) => entry.integration).map((entry) => entry.id));
+          let rendered = 0;
+          for (const entry of manifest.entries) {
+            if (!existsSync(p(repo, entry.path))) {
+              assert.ok(gated.has(entry.resource.id.replace(/^aof-/u, "")) || gated.has(entry.resource.id), `${entry.path} is left out only because its integration is off`);
+              continue;
+            }
+            rendered += 1;
+            assert.equal(hashContent(await readFile(p(repo, entry.path), "utf8")), entry.hash, `${entry.path} has the hash the shipped manifest records`);
+          }
+          assert.ok(rendered > 100, `init rendered the bundle (${rendered} files)`);
+        } finally {
+          await rm(home, { recursive: true, force: true });
+        }
+      },
+    },
+    {
+      name: "192/00 a bundle loaded with no config is every practice off",
+      run: () => {
+        const body = baseFixture().load().resources.find((entry) => entry.id === "demo").body;
+        assert.ok(!body.includes(NOTE), "it holds no fragment");
+        assert.doesNotMatch(body, /<!-- slot:/u, "and no slot marker");
+      },
+    },
+  ];
+}
+
+// 192/01 tasks 00 and 01 — a practice that is on installs its variant of a template, and a variant
+// that cannot be installed is refused (192/ADR-004). The fixture is the compose suite's: the shipped
+// story template and the practice "notes" (keyed on "work.notes.enabled") with a variant of its
+// "EXAMPLES.md" whose text is "# Variant map"; with `memos`, a second practice with its own variant
+// of the same file. INSTALLED is ".aof/templates/work/story/EXAMPLES.md". The update's test seam
+// hands in a FUNCTION of the project's config, cut down to the templates.
+const variantBundle = (options) => (config) => templatesOnly(variantFixture(options).load(config));
+const STAMPED = (text) => `<!-- aof-generated: bundle -->\n\n${text}`;
+const installedOnDisk = (repo) => readFile(p(repo, EXAMPLES_REL), "utf8");
+const setWork = (repo, work) => writeJson(p(repo, ".aof", "aof.config.json"), { name: "p", resources: [], ...(work === undefined ? {} : { work }) });
+// What a bundle with no variant installs at a template path.
+const defaultInstalled = (rel = EXAMPLES_REL) => renderBundleTemplateOutputs(templatesOnly(loadBundle())).find((output) => output.path === rel).content;
+async function renderVariantProject(repo, { runtimes = ["claude"], ...options } = {}) {
+  const project = JSON.parse(await readFile(p(repo, ".aof", "aof.config.json"), "utf8"));
+  await installBase(repo, variantBundle(options)(project), runtimes);
+}
+const updateVariant = (repo, extra = {}, options = {}) => updateWork({ targetDir: repo, bundleOverride: variantBundle(options), ...extra });
+// Every file under the project, by repo-relative path, with its bytes.
+async function snapshot(dir, root = dir, files = new Map()) {
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const full = p(dir, entry.name);
+    if (entry.isDirectory()) await snapshot(full, root, files);
+    else files.set(fwd(path.relative(root, full)), await readFile(full, "utf8"));
+  }
+  return files;
+}
+const BOTH_ON = { notes: { enabled: true }, memos: { enabled: true } };
+
+function templateVariantUpdateTests() {
+  return [
+    {
+      name: "192/01 E1 · the variant is installed where the default would be",
+      run: () => withPracticeProject(async ({ repo }) => {
+        await setWork(repo);
+        await renderVariantProject(repo);
+        await setWork(repo, { notes: { enabled: true } });
+        await updateVariant(repo);
+        const installed = await installedOnDisk(repo);
+        assert.equal(installed, STAMPED(VARIANT_TEXT), "INSTALLED opens with the bundle's stamp and holds the variant");
+        const variantLines = new Set(installed.split("\n"));
+        const shared = defaultInstalled().split("\n").slice(1).filter((line) => line.trim() !== "" && variantLines.has(line));
+        assert.deepEqual(shared, [], "it holds no line of the default template");
+      }),
+    },
+    {
+      name: "192/01 E2 · with the practice off, the default is installed, unchanged",
+      run: () => withPracticeProject(async ({ repo }) => {
+        await setWork(repo);
+        await renderVariantProject(repo);
+        await updateVariant(repo);
+        assert.equal(await installedOnDisk(repo), defaultInstalled(), "byte for byte what a bundle with no variant installs");
+      }),
+    },
+    {
+      name: "192/01 E3 · turning the practice on and off moves between the two",
+      run: () => withPracticeProject(async ({ repo }) => {
+        await setWork(repo);
+        await renderVariantProject(repo);
+        await setWork(repo, { notes: { enabled: true } });
+        const on = await updateVariant(repo);
+        assert.equal(classOf(on, EXAMPLES_REL), "update", "INSTALLED is reported updated");
+        assert.equal(await installedOnDisk(repo), STAMPED(VARIANT_TEXT), "and holds the variant");
+        await setWork(repo);
+        const off = await updateVariant(repo);
+        assert.equal(classOf(off, EXAMPLES_REL), "update", "INSTALLED is reported updated again");
+        assert.equal(await installedOnDisk(repo), defaultInstalled(), "byte for byte the default again");
+      }),
+    },
+    {
+      name: "192/01 the other files of the template are untouched",
+      run: () => withPracticeProject(async ({ repo }) => {
+        await setWork(repo);
+        await renderVariantProject(repo);
+        await setWork(repo, { notes: { enabled: true } });
+        await updateVariant(repo);
+        const others = (await readdir(p(repo, ".aof", "templates", "work", "story"))).filter((file) => file !== "EXAMPLES.md");
+        assert.ok(others.length > 0, "the story template holds other files");
+        for (const file of others) {
+          const rel = `.aof/templates/work/story/${file}`;
+          assert.equal(await readFile(p(repo, rel), "utf8"), defaultInstalled(rel), `${rel} is byte for byte the default`);
+        }
+      }),
+    },
+    {
+      name: "192/01 a variant is rendered once, whatever the runtimes",
+      run: () => withPracticeProject(async ({ repo }) => {
+        await setWork(repo, { notes: { enabled: true } });
+        await renderVariantProject(repo, { runtimes: ["claude", "codex", "opencode"] });
+        const result = await updateVariant(repo);
+        const listed = result.manifest.files.filter((entry) => entry.path === EXAMPLES_REL);
+        assert.equal(listed.length, 1, "the install manifest lists INSTALLED once");
+        assert.equal(await installedOnDisk(repo), STAMPED(VARIANT_TEXT));
+      }),
+    },
+    ...[
+      ["true", true, "variant"], ["false", false, "default"], ["\"true\"", "true", "default"], ["absent", undefined, "default"],
+    ].map(([label, value, installed]) => ({
+      name: `192/01 only the boolean true installs the variant — ${label} installs the ${installed}`,
+      run: () => withPracticeProject(async ({ repo }) => {
+        await setWork(repo);
+        await renderVariantProject(repo);
+        await setWork(repo, value === undefined ? undefined : { notes: { enabled: value } });
+        await updateVariant(repo);
+        assert.equal(await installedOnDisk(repo), installed === "variant" ? STAMPED(VARIANT_TEXT) : defaultInstalled());
+      }),
+    })),
+    {
+      name: "192/01 a template a person edited is kept when the practice is turned on",
+      run: () => withPracticeProject(async ({ repo }) => {
+        await setWork(repo);
+        await renderVariantProject(repo);
+        const edited = `${await installedOnDisk(repo)}\nA person's own line.\n`;
+        await writeFile(p(repo, EXAMPLES_REL), edited);
+        await setWork(repo, { notes: { enabled: true } });
+        const result = await updateVariant(repo);
+        assert.equal(classOf(result, EXAMPLES_REL), "drift-warning");
+        assert.equal(await installedOnDisk(repo), edited, "left as the person wrote it");
+      }),
+    },
+    {
+      name: "192/01 E4 · two variants of one file that are both on are refused, and nothing is written",
+      run: () => withPracticeProject(async ({ repo }) => {
+        await setWork(repo);
+        await renderVariantProject(repo, { memos: true });
+        await setWork(repo, BOTH_ON);
+        const before = await snapshot(repo);
+        await assert.rejects(updateVariant(repo, {}, { memos: true }), (error) => {
+          for (const name of ["notes-examples", "memos-examples", EXAMPLES_REL]) assert.ok(error.message.includes(name), `the refusal names ${name}: ${error.message}`);
+          return true;
+        });
+        assert.deepEqual(await snapshot(repo), before, "no file in the project has changed, the install manifest included");
+      }),
+    },
+    {
+      name: "192/01 the same two variants are fine while only one is on",
+      run: () => withPracticeProject(async ({ repo }) => {
+        await setWork(repo);
+        await renderVariantProject(repo, { memos: true });
+        await setWork(repo, { notes: { enabled: true }, memos: { enabled: false } });
+        await updateVariant(repo, {}, { memos: true });
+        const installed = await installedOnDisk(repo);
+        assert.equal(installed, STAMPED(VARIANT_TEXT), "the installed EXAMPLES.md holds the variant of notes");
+        assert.ok(!installed.includes(MEMO_TEXT.trim()));
+      }),
+    },
+    {
+      name: "192/01 a dry run of a refused update is refused too",
+      run: () => withPracticeProject(async ({ repo }) => {
+        await setWork(repo);
+        await renderVariantProject(repo, { memos: true });
+        await setWork(repo, BOTH_ON);
+        const message = await updateVariant(repo, {}, { memos: true }).then(() => null, (error) => error.message);
+        assert.ok(message, "the update is refused");
+        const before = await snapshot(repo);
+        await assert.rejects(updateVariant(repo, { dryRun: true }, { memos: true }), (error) => error.message === message);
+        assert.deepEqual(await snapshot(repo), before, "the dry run writes nothing");
+      }),
+    },
   ];
 }

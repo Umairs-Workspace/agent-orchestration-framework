@@ -186,6 +186,9 @@ export const meshLauncherStreamRoleTests = [
         }));
         let startServerArgs = null;
         const handle = await startLauncher(ws, {
+          // 191/08: a nominated control with no mesh.relay.url now derives a loopback relay on 4183
+          // (191/ADR-001 amendment 2026-11-14 §2); `relay: false` keeps this test off that real port.
+          relay: false,
           exec,
           platform: "linux",
           ticker: manualTicker(),

@@ -1,0 +1,69 @@
+{
+  "runId": "20261113T054153284Z-0006",
+  "itemRef": "192",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "34168176-5693-4b48-9a47-4142757eccf4",
+  "brief": {
+    "loop": {
+      "loopRunId": "632ce08e-288c-4315-8720-1ad3d1f40298",
+      "scope": "192",
+      "level": "L2",
+      "cap": 3,
+      "phase": "verify",
+      "cycle": 2,
+      "startedAt": "2026-11-13T01:01:47.243Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        }
+      }
+    }
+  },
+  "createdAt": "2026-11-13T05:41:53.284Z",
+  "updatedAt": "2026-11-13T06:17:11.944Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 92,
+      "output": 19054,
+      "cacheRead": 3663680,
+      "cacheCreate": 181209
+    },
+    "costUsd": 2.0647237499999997,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 43,
+    "toolCalls": 21,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

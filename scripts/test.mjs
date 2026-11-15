@@ -47,6 +47,7 @@ import { tests as archMemoryTests } from "../test/arch/memory/index.mjs";
 import { tests as archMeshTests } from "../test/arch/mesh/index.mjs";
 import { tests as archNotionTests } from "../test/arch/notion/index.mjs";
 import { tests as archPlanningTests } from "../test/arch/planning/index.mjs";
+import { tests as archPracticesTests } from "../test/arch/practices/index.mjs";
 import { tests as archRunTests } from "../test/arch/run/index.mjs";
 import { tests as archSessionTests } from "../test/arch/session/index.mjs";
 import { tests as archStoreTests } from "../test/arch/store/index.mjs";
@@ -126,6 +127,7 @@ export const tests = [
   ...archMeshTests,
   ...archNotionTests,
   ...archPlanningTests,
+  ...archPracticesTests,
   ...archRunTests,
   ...archSessionTests,
   ...archStoreTests,

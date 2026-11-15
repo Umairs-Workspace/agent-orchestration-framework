@@ -113,6 +113,9 @@ function launcherOptions(repo, options = {}) {
     propagationTicker: manualTicker(),
     globalWorkStoreOptions: { env },
     now: "2026-07-09T09:05:00.000Z",
+    // 191/08: a nominated control with no mesh.relay.url now derives a loopback relay on 4183
+    // (191/ADR-001 amendment 2026-11-14 §2); `relay: false` keeps these tests off that real port.
+    relay: false,
     ...options,
   };
 }

@@ -1,0 +1,82 @@
+{
+  "runId": "20261112T112500688Z-0000",
+  "itemRef": "191/00",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "f5e3dc18-0613-4dcb-bed1-1fbbe6afe6cf",
+  "brief": {
+    "loop": {
+      "loopRunId": "3e5ed9bd-583b-4467-9531-f2972feb5e6a",
+      "scope": "191",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-11-12T11:02:07.586Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        }
+      }
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-11-12T11:02:57.437Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/m42-item-3: no NEW silent catch — every src file is at or below its shrink-only baseline, and unlisted files have none"
+      ],
+      "baseCommit": "f65589213b1f74e3d93cc1591b293c7b4248d632"
+    },
+    "lane": {
+      "worktree": "/Users/umairbutt/Source/umair/agent-orchestration-framework/.aof/mesh/dispatch-worktrees/dispatch-191-00",
+      "branch": "aof/mesh/191-00",
+      "baseCommit": "f65589213b1f74e3d93cc1591b293c7b4248d632"
+    }
+  },
+  "createdAt": "2026-11-12T11:25:00.688Z",
+  "updatedAt": "2026-11-12T12:15:59.938Z",
+  "failureReason": null,
+  "heartbeatAt": "2026-11-12T11:46:33.485Z",
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 322,
+      "output": 153833,
+      "cacheRead": 29045241,
+      "cacheCreate": 514694
+    },
+    "costUsd": 12.952135799999999,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 156,
+    "toolCalls": 76,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

@@ -1,0 +1,2 @@
+<!-- fragment:ownership.examples -->
+- **The classification review** of a story's example map, when `work.examples.enabled` is on — review every `technical` label on the map and relabel one that is really policy as `business`. A technical question may take a documented default, recorded as `defaulted <pointer>`. A business question never does, and an ADR never settles a business question: the person who owns the rule answers it.

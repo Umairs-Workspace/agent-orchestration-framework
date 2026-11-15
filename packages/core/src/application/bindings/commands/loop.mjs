@@ -10,6 +10,7 @@ import {
   sessionTableLine,
 } from "@aof/execution/session-model";
 import { meshNodeIdOf } from "@aof/mesh/commands/gate";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
 import { claudeModelFamily, resolveExecution, resolveExecutionResume } from "@aof/execution/runtime-selection";
 
@@ -76,8 +77,11 @@ export function assembleCommandsLoop({ runtimeSessionServices, workServices, loo
   const { buildNotifyEnvelope } = notifyNotifyServices;
   const { notify } = notifyNotifyServices;
   const { handOffLoop } = loopStopServices;
+  const { handOffStart } = loopStopServices;
   const { stopLoop } = loopStopServices;
   const { clearResumeRequest } = loopStopRequestServices;
+  const { spendStartRequest } = loopStopRequestServices;
+  const { loopStartsDir } = loopStopRequestServices;
   const { clearStopRequest } = loopStopRequestServices;
   const { createStopSource } = loopStopRequestServices;
   const { loopResumesDir } = loopStopRequestServices;
@@ -94,7 +98,7 @@ export function assembleCommandsLoop({ runtimeSessionServices, workServices, loo
     sessions: { claudeModelFamily, configuredSessionModels, normalizeEffort, parseSessionChoices, resolveSessionTable, SESSION_PHASES, sessionTableLine, resolveExecution, resolveExecutionResume, runtimeSession: runtimeSessionServices },
     items: { resolveItemExact },
     gradeCommand: { declaredRubric, usableCommand },
-    placement: { meshNodeIdOf },
+    placement: { meshNodeIdOf, resolveWorkspaceId },
     runs: { readRuns, staleRunningRuns },
     transitions: { transitionRunStart, transitionStaleRunsReclaimed },
     diagnostics: { reportDegrade },
@@ -104,8 +108,8 @@ export function assembleCommandsLoop({ runtimeSessionServices, workServices, loo
     asks: { askBlockLines, askContext, askEnvFor, awaitAnswer, isParkedHalt, parkedHalt },
     loopDiagnostics: { installLoopDiagnostics, loopDiagLogDir, loopDiagScopeTag, readLastLoopDiagEvent },
     notifications: { buildNotifyEnvelope, notify },
-    stops: { handOffLoop, stopLoop },
-    stopRequests: { clearResumeRequest, clearStopRequest, createStopSource, loopResumesDir, loopStopsDir, markStopHonoured, readStopRequest, stopRequestPath },
+    stops: { handOffLoop, handOffStart, stopLoop },
+    stopRequests: { clearResumeRequest, clearStopRequest, createStopSource, loopResumesDir, loopStartsDir, loopStopsDir, markStopHonoured, readStopRequest, spendStartRequest, stopRequestPath },
     // Core composition: the package never imports the assembled registry.
     invoke: async (id, input, ctx) => {
       const { invoke } = await provideCommandCore();

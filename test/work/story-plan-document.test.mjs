@@ -36,6 +36,12 @@ import { budgetGroup, PLAN_BASENAME } from "@aof/work/doctor/budget";
 const planEnabledFromConfig = _aofApplication.assets.configInspect.planEnabledFromConfig;
 const validateConfig = _aofApplication.assets.configInspect.validateConfig;
 import { loadBundle, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
+import { readAssetText } from "../../packages/core/src/asset-base.mjs";
+
+// 192/ADR-005 — refine's build brief is core's `build-brief` fragment. `briefText` is the asset seam
+// the refine render reads it through, a variable so task 03's red probe can delete a sentence from
+// the fragment file in process.
+let briefText = readAssetText;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -441,8 +447,13 @@ export const storyPlanDocumentTests = [
       // Half one — the authoring instruction is CONDITIONAL on the gate, and the gate is off by
       // default. A refine brief that authored the document unconditionally would spend the budget
       // before story 00's measurement exists to justify it.
-      const refine = await read(path.join("packages", "core", "assets", "commands", "refine.md"));
+      // 192/ADR-005 — the brief is core's `build-brief` practice: it is read from the refine a project
+      // with `work.plan.enabled` on is given, and a project with it off is given none of it.
+      const refineFor = (config) => loadBundle({ config, readText: briefText }).resources.find((resource) => resource.id === "refine").body;
+      const refine = refineFor({ work: { plan: { enabled: true } } });
+      assert.doesNotMatch(refineFor({}), /work\.plan\.enabled|PLAN\.md/, "a project with the gate off is given no brief at all");
       assert.match(refine, /work\.plan\.enabled/, "the refine brief must read the gate");
+      assert.match(refine, /\*\*It restates no declared path\.\*\*/, "the refine brief must ban restating a declared path");
       assert.match(
         refine,
         /ONLY when the project has turned it on/i,
@@ -465,5 +476,23 @@ export const storyPlanDocumentTests = [
         "no finding may report a plan document's absence"
       );
     }),
+  },
+
+  // ══ 192/02 · tasks/03 — a deleted sentence still turns its suite red ══
+  {
+    name: "192/02 03 a deleted sentence still turns its suite red — \"It restates no declared path.\"",
+    run: async () => {
+      const gate = storyPlanDocumentTests.find((test) => test.name === "96/02-02 with the gate off, refine authors no plan and no finding reports its absence");
+      assert.ok(gate, "the gate case is registered");
+      briefText = (assetClass, file) => {
+        const text = readAssetText(assetClass, file);
+        return file.startsWith("fragments/build-brief/") ? text.replace("It restates no declared path.", "") : text;
+      };
+      try {
+        await assert.rejects(() => gate.run(), /ban restating a declared path/u);
+      } finally {
+        briefText = readAssetText;
+      }
+    },
   },
 ];

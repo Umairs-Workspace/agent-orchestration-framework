@@ -51,6 +51,8 @@ function declaredBundleFiles(descriptor, root) {
   for (const member of descriptor.members) {
     if (member.file) add(member.file);
     else if (member.dir) for (const name of readdirSync(path.join(root, member.dir))) add(`${member.dir}/${name}`);
+    // 192/ADR-002 §3 — a fragment for a slot only an authored variant carries has that runtime's body alone.
+    else if (member.kind === "fragment" && Object.values(member.variants ?? {}).some((variant) => variant?.file)) { /* its bodies are added below */ }
     else throw new Error(`declared member ${member.id} names neither a file nor a dir`);
     for (const variant of Object.values(member.variants ?? {})) {
       if (!variant) continue;
@@ -117,9 +119,13 @@ export const archTests = [
     name: "arch/ADR-001: every declared member resolves to an existing path on disk",
     run: async () => {
       for (const member of readDescriptor().members) {
-        const target = member.file ?? member.dir;
         const root = assetPath(member.assetClass ?? "bundle");
-        assert.doesNotThrow(() => statSync(path.join(root, target)), `member ${member.id} exists at ${target}`);
+        // A fragment's bodies are its common file and each runtime's (192/ADR-002 §3); one may be Codex's alone.
+        const targets = member.kind === "fragment"
+          ? [member.file, ...Object.values(member.variants ?? {}).map((variant) => variant?.file)].filter(Boolean)
+          : [member.file ?? member.dir];
+        assert.ok(targets.length > 0, `member ${member.id} names a path`);
+        for (const target of targets) assert.doesNotThrow(() => statSync(path.join(root, target)), `member ${member.id} exists at ${target}`);
       }
     }
   }

@@ -2271,6 +2271,124 @@
     }
   },
   {
+    "id": "mesh:session-start",
+    "input": {
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string"
+        },
+        "node": {
+          "type": "string"
+        },
+        "item": {
+          "type": "string"
+        },
+        "waitMs": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "project"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "mesh",
+        "session",
+        "start"
+      ],
+      "spec": {
+        "usage": "aof mesh session start <project> [--node <id>] [--item <ref>] [--wait <ms>] [--workspace <path|id>] [--json]",
+        "flags": {
+          "node": {
+            "type": "string",
+            "description": "the node to start it on (default: this control)"
+          },
+          "item": {
+            "type": "string",
+            "description": "a work item in the project to start it on"
+          },
+          "wait": {
+            "type": "string",
+            "description": "how long to watch for the session's link, in ms (default 0)"
+          },
+          "workspace": {
+            "type": "string",
+            "description": "target workspace: a path, or a registered workspace id"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "mesh:session-list",
+    "input": {
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "mesh",
+        "session",
+        "list"
+      ],
+      "spec": {
+        "usage": "aof mesh session list [<project>] [--workspace <path|id>] [--json]",
+        "flags": {
+          "workspace": {
+            "type": "string",
+            "description": "target workspace: a path, or a registered workspace id"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "mesh:session-end",
+    "input": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "string"
+        },
+        "node": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "session"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "mesh",
+        "session",
+        "end"
+      ],
+      "spec": {
+        "usage": "aof mesh session end <session> [--node <id>] [--workspace <path|id>] [--json]",
+        "flags": {
+          "node": {
+            "type": "string",
+            "description": "the node the session is on (default: the node its presence names)"
+          },
+          "workspace": {
+            "type": "string",
+            "description": "target workspace: a path, or a registered workspace id"
+          }
+        }
+      }
+    }
+  },
+  {
     "id": "mesh:assign",
     "input": {
       "type": "object",
@@ -2815,6 +2933,9 @@
         },
         "allow": {
           "type": "string"
+        },
+        "global": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -2829,7 +2950,7 @@
         "enable"
       ],
       "spec": {
-        "usage": "aof messaging enable <type> --channel <id> [--allow <user-id>[,<user-id>…]] [--json]",
+        "usage": "aof messaging enable <type> --channel <id> [--allow <user-id>[,<user-id>…]] [--global] [--json]",
         "workspace": false,
         "flags": {
           "channel": {
@@ -2839,6 +2960,10 @@
           "allow": {
             "type": "string",
             "description": "Discord user ids that may answer by reply and run the slash commands, comma-separated; added to the channel's list"
+          },
+          "global": {
+            "type": "boolean",
+            "description": "edit the machine-wide ~/.aof/aof.config.json: its channels serve every project with no channels of its own"
           }
         }
       }
@@ -2854,6 +2979,9 @@
         },
         "targetDir": {
           "type": "string"
+        },
+        "global": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -2868,8 +2996,14 @@
         "disable"
       ],
       "spec": {
-        "usage": "aof messaging disable <type> [--json]",
-        "workspace": false
+        "usage": "aof messaging disable <type> [--global] [--json]",
+        "workspace": false,
+        "flags": {
+          "global": {
+            "type": "boolean",
+            "description": "edit the machine-wide ~/.aof/aof.config.json: its channels serve every project with no channels of its own"
+          }
+        }
       }
     }
   },
@@ -4698,6 +4832,9 @@
         "handOff": {
           "type": "boolean"
         },
+        "startHandOff": {
+          "type": "boolean"
+        },
         "thinking": {
           "type": [
             "array",
@@ -4734,7 +4871,7 @@
         "loop"
       ],
       "spec": {
-        "usage": "aof work loop <driver|NN-MM|backlog-slug|backlog-path> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
+        "usage": "aof work loop <driver|NN-MM|backlog-slug|backlog-path> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--hand-off-start] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
         "flags": {
           "level": {
             "type": "string",
@@ -4759,6 +4896,10 @@
           "handOff": {
             "type": "boolean",
             "description": "hand a halted supervised loop back to its supervisor, which relaunches it with --resume on its next poll; starts nothing here"
+          },
+          "handOffStart": {
+            "type": "boolean",
+            "description": "ask the supervisor to start this scope as a new supervised loop on its next poll; starts nothing here, and refuses a scope that is running or has a halted supervised loop to resume"
           },
           "dryRun": {
             "type": "boolean",

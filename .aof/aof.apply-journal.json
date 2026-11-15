@@ -755,7 +755,7 @@
         "id": "aof-refine",
         "kind": "skill"
       },
-      "hash": "sha256:7dd11a03deb7fd53797a9761c13b6b3afa7605baf51eaf6559c62034ea76107a"
+      "hash": "sha256:f9a0cb011297852906417ab1b9697c2b02c370e63016ad4cafdd053381a97a0b"
     },
     {
       "path": ".agents/skills/aof-refine/procedure.md",
@@ -767,7 +767,7 @@
         "file": "procedure.md",
         "sourceFile": "procedure.md"
       },
-      "hash": "sha256:80dee4de3f9e4a9dc745ad81d059b15a0128d4770710b6e9166b6e069c26bb14"
+      "hash": "sha256:c13fac2b1c431ae6af1658992234941c4b6ded5855140986bf086ee3d3bca8b6"
     },
     {
       "path": ".agents/skills/aof-refine/agents/openai.yaml",

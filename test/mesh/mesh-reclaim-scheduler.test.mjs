@@ -130,6 +130,9 @@ export const meshReclaimSchedulerTests = [
       const controlTicker = manualTicker();
       const ws = await loadWorkspace(fx.root, undefined, { env: fx.env });
       const handle = await startLauncher(ws, {
+        // 191/08: a nominated control with no mesh.relay.url now derives a loopback relay on 4183
+        // (191/ADR-001 amendment 2026-11-14 §2); `relay: false` keeps this test off that real port.
+        relay: false,
         exec: async () => ({ stdout: JSON.stringify(STATUS_FIXTURE(ws.config.mesh.nodeId)), status: 0 }),
         platform: "linux",
         peerPollTicker: manualTicker(),
@@ -177,6 +180,9 @@ export const meshReclaimSchedulerTests = [
       const controlTicker = manualTicker();
       const ws = await loadWorkspace(fx.root, undefined, { env: fx.env });
       const handle = await startLauncher(ws, {
+        // 191/08: a nominated control with no mesh.relay.url now derives a loopback relay on 4183
+        // (191/ADR-001 amendment 2026-11-14 §2); `relay: false` keeps this test off that real port.
+        relay: false,
         exec: async () => ({ stdout: JSON.stringify(STATUS_FIXTURE(ws.config.mesh.nodeId)), status: 0 }),
         platform: "linux",
         peerPollTicker: manualTicker(),
@@ -231,6 +237,9 @@ export const meshReclaimSchedulerTests = [
       const server = fakeStreamServer({ connectedNodeIds: ["node-a"] });
       const ws = await loadWorkspace(fx.root, undefined, { env: fx.env });
       const handle = await startLauncher(ws, {
+        // 191/08: a nominated control with no mesh.relay.url now derives a loopback relay on 4183
+        // (191/ADR-001 amendment 2026-11-14 §2); `relay: false` keeps this test off that real port.
+        relay: false,
         exec: async () => ({ stdout: JSON.stringify(STATUS_FIXTURE(ws.config.mesh.nodeId)), status: 0 }),
         platform: "linux",
         peerPollTicker: manualTicker(),

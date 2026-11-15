@@ -83,3 +83,24 @@ test("a spawn-helper installed without its execute bit is made executable, once 
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("a spawn-helper that cannot be read is reported as a degrade, and an absent build dir is not", { skip: process.platform === "win32" || process.getuid?.() === 0 }, () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "aof-spawn-helper-"));
+  const locked = path.join(root, "prebuilds", "darwin-arm64");
+  try {
+    const entry = path.join(root, "lib", "index.js");
+    mkdirSync(path.dirname(entry), { recursive: true });
+    writeFileSync(entry, "");
+    mkdirSync(locked, { recursive: true });
+    writeFileSync(path.join(locked, "spawn-helper"), "");
+    chmodSync(locked, 0o000);
+    const events = [];
+    const reportDegrade = (code, error) => events.push([code, error?.code]);
+    assert.deepEqual(ensureSpawnHelperExecutable(entry, { platform: "darwin", arch: "arm64", reportDegrade }), []);
+    // build/Release and build/Debug are absent (ENOENT) and stay quiet; the locked prebuild is reported.
+    assert.deepEqual(events, [["pty-spawn-helper", "EACCES"]]);
+  } finally {
+    chmodSync(locked, 0o755);
+    rmSync(root, { recursive: true, force: true });
+  }
+});

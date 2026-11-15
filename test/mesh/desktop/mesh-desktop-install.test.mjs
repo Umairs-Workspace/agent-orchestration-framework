@@ -95,6 +95,10 @@ function preflightProbes(overrides = {}) {
     // The bundle declaration is injected for the same reason: a preflight probe that reads
     // the real bundle is one more thing this suite reaches that it did not choose to.
     bundleHookFn: overrides.bundleHookFn ?? (() => ({ id: "claude-run-heartbeat", event: "PostToolUse" })),
+    // 191/08 — the machine-wide config `control-relay-loopback` reads, injected for F-26's reason
+    // above and answering a healthy control (nominated, its relay derived): this suite reads no
+    // real `~/.aof/aof.config.json`.
+    meshConfigFn: overrides.meshConfigFn ?? (async () => ({ mesh: { relay: { controlNode: "fixture-node" } } })),
     // 175/03 — the preflight's answer is PINNED to Windows' four, so this suite answers the same
     // on a Mac host; a row that installs for darwin names its platform AFTER this spread. The
     // darwin seams are inert all the same, so such a row reaches no real `xcode-select`, `xattr`
@@ -328,8 +332,8 @@ export const meshDesktopInstallTests = [
       );
       assert.deepEqual(
         [...PREFLIGHT_CHECKS],
-        ["claude-authenticated", "payload-build", "workspace-identity-pinned", "heartbeat-hook-installed"],
-        "126/06: four checks, the fourth appended last so the three that shipped keep their order",
+        ["claude-authenticated", "payload-build", "workspace-identity-pinned", "heartbeat-hook-installed", "control-relay-loopback"],
+        "126/06: four checks, the fourth appended last so the three that shipped keep their order — and 191/08's fifth, last again",
       );
       for (const entry of preflight) {
         assert.ok(["pass", "fail"].includes(entry.status), `${entry.code} carries a status of pass or fail`);
@@ -505,6 +509,8 @@ export const meshDesktopInstallTests = [
           buildInfoFn: () => ({ mode: "embedded", buildId: null }),
           workspacesFn: async () => ({ ok: false, workspaces: [], skipped: [] }),
           workspaceConfigFn: async () => ({}),
+          // 191/08 — `control-relay-loopback` fails too: a URL set on a loopback-bound control.
+          meshConfigFn: async () => ({ mesh: { address: "127.0.0.1", relay: { controlNode: "fixture-node", url: "ws://127.0.0.1:4182/ws/relay" } } }),
           nodeId: "fixture-node",
         };
 
@@ -558,6 +564,8 @@ export const meshDesktopInstallTests = [
         },
         nodeId: "fixture-node",
         env: {},
+        // 191/08 — `control-relay-loopback` fails too: a URL set on a loopback-bound control.
+        meshConfigFn: async () => ({ mesh: { address: "127.0.0.1", relay: { controlNode: "fixture-node", url: "ws://127.0.0.1:4182/ws/relay" } } }),
         // 175/03 — the four this row was written for, on any host.
         platform: "win32",
       });

@@ -27,19 +27,39 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { EXAMPLE_COLUMN, groupRuleId, parseExampleMap, readMapToken, rowExampleId, scenarioExampleId } from "@aof/specification-by-example/map";
 import { parseFeature } from "@aof/work/feature-parse";
+import { loadBundle } from "../../packages/core/src/work/bundle.mjs";
+import { packageAssetClass, readAssetText } from "../../packages/core/src/asset-base.mjs";
 
 const getCommand = _aofApplication.getCommand;
 const parseSpecArgv = _aofApplication.cli.parseSpecArgv;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
-const read = async (rel) => readBundleProse(rel, repoRoot).replace(/\r\n/g, "\n");
+// 192/ADR-005 §7 — refine's source and the three briefs hold slots where discovery's prose stood; the
+// prose is the specification-by-example package's fragments. So the four SOURCES are read as the
+// render a project with `work.examples.enabled` on is given (each member's common text, composed by
+// the loader), and every rendered COPY is still read from this checkout, which has the key on.
+const DISCOVERY_ON = Object.freeze({ work: Object.freeze({ examples: Object.freeze({ enabled: true }) }) });
+let discoveryRender = null;
+// The render with one sentence deleted from the package's fragment files (task 03's red probe): the
+// words of `sentence` may wrap, so any run of whitespace between them matches.
+const withoutSentence = (sentence) => {
+  const pattern = new RegExp(sentence.split(/\s+/u).map((word) => word.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")).join("\\s+"), "gu");
+  const practice = packageAssetClass("@aof/specification-by-example");
+  return loadBundle({ config: DISCOVERY_ON, readText: (assetClass, file) => (assetClass === practice ? readAssetText(assetClass, file).replace(pattern, "") : readAssetText(assetClass, file)) });
+};
+const renderedSource = (id) => {
+  discoveryRender ??= loadBundle({ config: DISCOVERY_ON });
+  return discoveryRender.resources.find((resource) => resource.id === id).body;
+};
+const read = async (rel) => (SOURCE_MEMBERS.has(rel) ? renderedSource(SOURCE_MEMBERS.get(rel)) : readBundleProse(rel, repoRoot)).replace(/\r\n/g, "\n");
 const flat = (text) => text.replace(/\s+/g, " ");
 
 const REFINE = "packages/core/assets/commands/refine.md";
 const PO = "packages/core/assets/agents/aof-product-owner.md";
 const ARCHITECT = "packages/core/assets/agents/aof-architect.md";
 const QA = "packages/core/assets/agents/aof-qa.md";
+const SOURCE_MEMBERS = new Map([[REFINE, "refine"], [PO, "aof-product-owner"], [ARCHITECT, "aof-architect"], [QA, "aof-qa"]]);
 const TEMPLATE = "packages/core/assets/templates/story/EXAMPLES.md";
 const INSTALLED = ".aof/templates/work/story/EXAMPLES.md";
 const GUIDE = "wiki/acceptance-criteria.md";
@@ -814,4 +834,32 @@ export const refineDiscoveryBeatTests = [
       }
     },
   },
+
+  // ══ 192/02 · tasks/03_a-check-that-read-the-moved-prose-still-reads-it.feature ══
+  {
+    name: "192/02 03 the discovery prose suite reads what a project with discovery on is given",
+    run: async () => {
+      assert.equal(/<!-- slot:/u.test(await read(REFINE)), false, "the source it judges is a render, with no marker left");
+      assert.ok((await read(REFINE)).includes("Discovery comes first"), "…and with discovery on");
+      assert.equal(readBundleProse(REFINE, repoRoot).includes("Discovery comes first"), false, "refine's source file itself holds a slot where the beat stood");
+      for (const copy of REFINE_COPIES) assert.ok(flat(await read(copy)).includes("Discovery comes first"), `${copy} is still read from this checkout`);
+    },
+  },
+  ...["A business question is never given a default in a driven session", "The PO drafts the example map"].map((sentence) => ({
+    name: `192/02 03 a deleted sentence still turns its suite red — "${sentence}"`,
+    run: async () => {
+      const cases = refineDiscoveryBeatTests.filter((test) => !test.name.startsWith("192/02"));
+      const failed = [];
+      discoveryRender = withoutSentence(sentence);
+      try {
+        assert.equal(flat(renderedSource("refine")).includes(sentence), false, "the sentence is gone from the render");
+        for (const test of cases) {
+          try { await test.run(); } catch { failed.push(test.name); }
+        }
+      } finally {
+        discoveryRender = null;
+      }
+      assert.ok(failed.length > 0, `deleting "${sentence}" from its fragment file turns at least one case red`);
+    },
+  })),
 ];

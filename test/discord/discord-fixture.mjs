@@ -2,7 +2,8 @@ import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/discord/discord-fixture.mjs — the Discord bot's shared fixtures (milestone 131 / story 10;
-// ADR-008). ONE home for the fake gateway (task 01) and the reply background (task 03), shared by the
+// ADR-008). ONE home for the fake gateway (task 01), the reply background (task 03) and the command
+// background (191/06: the bot on the fake gateway, and the verbs a command dispatches), shared by the
 // suites in this directory and by `test/arch/loop/acd-loop-ask-answered-from-discord.test.mjs`
 // (task 05 QA ruling 2: reused, never copied). `test/support/` is a row at its ceiling, so they live
 // here, under this directory's exemption.
@@ -20,6 +21,8 @@ const openAsk = _aofApplication.loop.askRequest.openAsk;
 const readAsks = _aofApplication.loop.askRequest.readAsks;
 const recordAskMessage = _aofApplication.messaging.askMessages.recordAskMessage;
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startDiscordBot = _aofApplication.messaging.discord.bot.startDiscordBot;
+const startGateway = _aofApplication.messaging.discord.gateway.startGateway;
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
 // A synthetic bot token (131/09 QA ruling 1); its third segment is what a leak check greps for.
@@ -232,4 +235,81 @@ export function reply({ from = ALLOWED, username = "umami", text = "take option 
     content: text,
     ...(to == null ? {} : { message_reference: { message_id: to } }),
   };
+}
+
+// ── the command background (191/06) ──────────────────────────────────────────────────────────────
+
+// The session every command case speaks of: its id, the ADR-002 name the Claude app lists it under,
+// and the control node it runs on.
+export const SESSION_ID = "0b9e6c1e-3f0a-4d8e-9c55-2a7d1f3e8b10";
+export const SESSION_NAME = "aof-0b9e6c1e";
+export const CONTROL_NODE = "node-6eb3";
+
+// A coded error, as a registered verb throws a refusal.
+export const coded = (code, message = code) => Object.assign(new Error(message), { code });
+
+// fakeVerbs({ nodes, items, sessions, start, end, loop }) → an `invoke(id, input, ctx)` standing in
+// for the six verbs a command may dispatch, each answering in its real verb's shape:
+//   `mesh:status`        `{ nodes }` — `nodes` are node ids (live) or whole node rows;
+//   `work:list`          the rows of `items[<workspace id>]`;
+//   `mesh:session-list`  the `sessions` of the ONE project asked about, as the verb scopes them — so
+//                        a session of a project the bot never asks about is never answered;
+//   `mesh:session-start`, `mesh:session-end`, `work:loop` — `start`, `end`, `loop`: a value, an Error
+//                        to throw, or a function of the input.
+// Any other verb throws: a command that reaches a seventh is a failing case, not a silent `[]`.
+export function fakeVerbs({ nodes = [CONTROL_NODE], items = {}, sessions = [], start = null, end = null, loop = null } = {}) {
+  const scripted = (answer, input) => {
+    const value = typeof answer === "function" ? answer(input) : answer;
+    if (value instanceof Error) throw value;
+    return value;
+  };
+  return async (id, input, ctx) => {
+    if (id === "mesh:status") {
+      return { nodes: nodes.map((node) => (typeof node === "string" ? { nodeId: node, presence: { nodeId: node, heartbeatAt: "2026-09-25T12:00:00.000Z" }, stale: false } : node)), boards: [], isControlNode: true };
+    }
+    if (id === "work:list") return items[resolveWorkspaceId(ctx.workspace)] ?? [];
+    if (id === "mesh:session-list") return { ok: true, project: input.project ?? null, sessions: sessions.filter((session) => input.project == null || session.workspaceId === input.project) };
+    if (id === "mesh:session-start") return scripted(start, input);
+    if (id === "mesh:session-end") return scripted(end, input);
+    if (id === "work:loop") return scripted(loop, input);
+    throw new Error(`fakeVerbs: no answer scripted for ${id}`);
+  };
+}
+
+// onBot(interaction, { workspaces, invoke, now }) → the ordered sequence of what the BOT did with one
+// interaction delivered over the fake gateway: every Discord request it sent (`{ kind: "request",
+// method, route, body }`) and every verb it dispatched (`{ kind: "invoke", id, input, workspace }`,
+// `workspace` the project folder it was dispatched in). The bot is the real one — the gateway, the
+// dispatch table, the handler and `discordRequest` — over a fake socket and a fake `fetch`; it is
+// stopped once the interaction is answered (the edit of a command, the callback of an autocomplete).
+export async function onBot(interaction, { workspaces, invoke = fakeVerbs(), now = () => new Date("2026-09-25T12:00:00.000Z") } = {}) {
+  const sequence = [];
+  const clock = fakeClock();
+  const fake = fakeGateway();
+  const fetch = async (url, init) => {
+    sequence.push({ kind: "request", method: init.method, route: url.replace("https://discord.com/api/v10", ""), body: init.body == null ? null : JSON.parse(init.body) });
+    return { status: 200, headers: { get: () => "application/json" }, json: async () => ({}) };
+  };
+  const bot = startDiscordBot({
+    token: TOKEN,
+    fetch,
+    timers: clock.timers,
+    now,
+    servedWorkspaces: async () => workspaces,
+    invoke: async (id, input, ctx) => {
+      sequence.push({ kind: "invoke", id, input, workspace: path.basename(ctx.workspace.projectRoot) });
+      return await invoke(id, input, ctx);
+    },
+    gateway: (options) => startGateway({ ...options, request: fake.request, socketFactory: fake.socketFactory, timers: clock.timers, random: () => 0.5 }),
+  });
+  try {
+    await flush();
+    fake.current().receive({ op: 0, t: "INTERACTION_CREATE", s: 2, d: interaction });
+    const answered = (entry) => entry.kind === "request" && (interaction.type === 4 ? entry.body?.type === 8 : entry.method === "PATCH");
+    for (let i = 0; i < 200 && !sequence.some(answered); i += 1) await new Promise((resolve) => setTimeout(resolve, 5));
+    await flush();
+    return sequence;
+  } finally {
+    bot.stop();
+  }
 }

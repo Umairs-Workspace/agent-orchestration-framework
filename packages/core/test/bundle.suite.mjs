@@ -117,8 +117,10 @@ function descriptorMembers() {
   return readDescriptor().members;
 }
 
+// A `fragment` member (192/ADR-002 §2) is prose the loader composes INTO a member's text, never a
+// member it returns: the loaded set is every other kind.
 function memberIds() {
-  return descriptorMembers().map((member) => member.id);
+  return descriptorMembers().filter((member) => member.kind !== "fragment").map((member) => member.id);
 }
 
 // ── 149/02 + 149/03 — aof:review joins the bundle and aof:code-review leaves it ──────────────────────
@@ -268,10 +270,13 @@ const teachCommandBundleTests = [
     run: async () => {
       const { PRACTICES } = await import("../src/practices.mjs");
       assert.ok(Object.isFrozen(PRACTICES), "PRACTICES is frozen");
-      assert.equal(PRACTICES.length, 1, "its one entry");
+      // 192/02 (ADR-005 §1) registers @aof/specification-by-example second; learning stays first.
+      assert.equal(PRACTICES.length, 2, "two entries, in registration order");
       const { contribution } = await import("@aof/learning/contribution");
-      assert.equal(PRACTICES[0], contribution, "…is @aof/learning's contribution");
+      assert.equal(PRACTICES[0], contribution, "…the first is @aof/learning's contribution");
       assert.equal(PRACTICES[0].assets.package, "@aof/learning");
+      const { contribution: specification } = await import("@aof/specification-by-example/contribution");
+      assert.equal(PRACTICES[1], specification, "…the second is @aof/specification-by-example's");
     },
   },
   {
@@ -432,7 +437,8 @@ export const bundleTests = [
         // artifact-sync enqueue SCRIPT, whose hook ENTRY ships through the settings
         // merge). It has been a real member kind since m43 and this list did not
         // admit it — the valid-kind list moves with the code (m46/ADR-006).
-        assert.ok(["agent", "asset", "command", "hook", "skill", "template"].includes(member.kind), `member ${member.id} has a valid kind`);
+        // `fragment` is 192/ADR-002 §2's: a practice's prose for one slot of a target member.
+        assert.ok(["agent", "asset", "command", "fragment", "hook", "skill", "template"].includes(member.kind), `member ${member.id} has a valid kind`);
       }
       assert.deepEqual(
         members.filter((m) => m.kind === "agent").map((m) => m.id).sort(),

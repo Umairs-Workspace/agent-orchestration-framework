@@ -5,7 +5,7 @@ import { promisify } from "node:util";
 import { meshNodeIdOf } from "@aof/mesh/commands/gate";
 import { probeFabric, remediationForReason } from "@aof/mesh/fabric";
 
-export function assembleCommandsDoctor({ workDoctorServices, globalWorkPublisherServices, cacheReadServices, workReadServices, effectsTableServices, effectsJournalServices, effectsDispatchServices, effectsReconcileServices, workObserveServices, meshPresenceServices, provideCommandCore }) {
+export function assembleCommandsDoctor({ workDoctorServices, workDoctorPracticesServices = null, globalWorkPublisherServices, cacheReadServices, workReadServices, effectsTableServices, effectsJournalServices, effectsDispatchServices, effectsReconcileServices, workObserveServices, meshPresenceServices, provideCommandCore }) {
   // Core composition for work-owned doctor commands.
 
   const { buildSnapshot } = workDoctorServices;
@@ -31,6 +31,8 @@ export function assembleCommandsDoctor({ workDoctorServices, globalWorkPublisher
   const { reconcileRunRecords } = effectsReconcileServices;
   // 167/00 — the daemon-cost lane reads the snapshots through the presence module's reader.
   const readCostSnapshots = meshPresenceServices?.readCostSnapshots;
+  // 192/ADR-006 §2 — core's extension lanes' facts, read at the command edge and handed to the engine as data.
+  const readExtensionFacts = workDoctorPracticesServices?.readExtensionFacts ?? null;
   const execFileAsync = promisify(execFile);
 
   const loadNodeIdentity = () => import("@aof/mesh/node-identity");
@@ -38,7 +40,7 @@ export function assembleCommandsDoctor({ workDoctorServices, globalWorkPublisher
   // Registration does not invoke it; shutdown revokes it with the other ports.
   const loadCommandCore = () => provideCommandCore();
 
-  const { doctorCommand, readRenameMap } = createDoctorCommand({ buildSnapshot, doctorWork, staleWindowFromConfig, CONVENTION_DOCS, claudeProjectsDir, readCachedWorkFacts, isMeshWorktree, meshNodeIdOf, probeFabric, remediationForReason, effectsFor, knownEvents, openEffectsJournal, effectsJournalPath, readEvents, readEventSteps, readUnsettledSteps, meshGlobalPropagationDecision, pendingSteps, drainEffects, reachableLoci, reconcileRunRecords, execFileAsync, loadNodeIdentity, loadCommandCore, readCostSnapshots });
+  const { doctorCommand, readRenameMap } = createDoctorCommand({ buildSnapshot, doctorWork, staleWindowFromConfig, CONVENTION_DOCS, claudeProjectsDir, readCachedWorkFacts, isMeshWorktree, meshNodeIdOf, probeFabric, remediationForReason, effectsFor, knownEvents, openEffectsJournal, effectsJournalPath, readEvents, readEventSteps, readUnsettledSteps, meshGlobalPropagationDecision, pendingSteps, drainEffects, reachableLoci, reconcileRunRecords, execFileAsync, loadNodeIdentity, loadCommandCore, readCostSnapshots, readExtensionFacts });
 
   return { doctorCommand, readRenameMap };
 }

@@ -8,8 +8,35 @@
 export const SESSION_SPAWN_KIND = "session-spawn";
 export const SESSION_SPAWN_ACK_KIND = "session-spawn-ack";
 
-export function buildSessionSpawnFrame(to, { sessionId, workspaceId, assistant, itemRef = null, at } = {}) {
-  return {
+// SESSION_LAUNCHES — 191/ADR-002 §1, the CLOSED set of programs a launched session may be started
+// as. `launch` NAMES one of these; it is never text the node runs. The handler builds the one
+// command line it types from this name, a UUID and a name in a closed character class
+// (`launchCommandLine`, session-spawn-handler.mjs), so nothing a frame carries ever reaches a PTY.
+// Widening this set is an ADR, never an edit: FF-19102 pins it to exactly this one value.
+export const SESSION_LAUNCHES = Object.freeze(["claude-remote-control"]);
+
+// CLAUDE_HOOK_ASSISTANT — 191/ADR-002 amendment 2026-11-14 §4, the ONE home of the label Claude's
+// own hooks key a session record under (the third part of the m48 session key). Three readers take
+// it: the hook's default (`commands/session.mjs`), the handler for a `claude-remote-control` launch
+// (`session-spawn-handler.mjs`), and a loop drive's session stream (`loop-session-stream.mjs`,
+// through its `loopSession` port). Each upserts the record the others write, so one session is one
+// record and one presence entry. It lives here because this is a zero-import leaf both mesh readers
+// already import; `commands/session.mjs` imports the handler, so the handler reading the label from
+// there would close a cycle. FF-19110 holds the literal to this line.
+export const CLAUDE_HOOK_ASSISTANT = "claude-code";
+
+// knownSessionLaunch(value) → the value when it is a member of SESSION_LAUNCHES, else null. Exact
+// match: no trimming, no case folding — a value that is not byte-for-byte a member is dropped. The
+// ONE membership test: the builders below and the worker's handler (which receives the RAW wire
+// frame) all ask it.
+export function knownSessionLaunch(value) {
+  return typeof value === "string" && SESSION_LAUNCHES.includes(value) ? value : null;
+}
+
+// `launch` is ADDITIVE and present only when it is known: absent (or dropped) means a bare shell,
+// exactly the pre-191 frame, so a frame without it is byte-identical to the one 50/ADR-002 froze.
+export function buildSessionSpawnFrame(to, { sessionId, workspaceId, assistant, itemRef = null, launch, at } = {}) {
+  const frame = {
     kind: SESSION_SPAWN_KIND,
     to,
     sessionId,
@@ -18,6 +45,9 @@ export function buildSessionSpawnFrame(to, { sessionId, workspaceId, assistant, 
     itemRef: typeof itemRef === "string" && itemRef.length > 0 ? itemRef : null,
     at,
   };
+  const known = knownSessionLaunch(launch);
+  if (known != null) frame.launch = known;
+  return frame;
 }
 
 export function buildSessionSpawnAckFrame({ sessionId, nodeId, ok, code } = {}) {
@@ -55,18 +85,19 @@ export function buildSessionSpawnAckFrame({ sessionId, nodeId, ok, code } = {}) 
 // router rebuilds a byte-identical down-frame from `signal` on the far side.
 //
 // A pure projection of its inputs — no fs, no clock, no network.
-export function buildSessionSpawnEnvelope(nodeId, { sessionId, workspaceId, assistant, itemRef, at } = {}) {
-  return {
-    kind: SESSION_SPAWN_KIND,
-    nodeId,
-    signal: {
-      sessionId: sessionId ?? null,
-      workspaceId: workspaceId ?? null,
-      assistant: assistant ?? null,
-      itemRef: itemRef ?? null,
-      at: at ?? null,
-    },
+export function buildSessionSpawnEnvelope(nodeId, { sessionId, workspaceId, assistant, itemRef, launch, at } = {}) {
+  const signal = {
+    sessionId: sessionId ?? null,
+    workspaceId: workspaceId ?? null,
+    assistant: assistant ?? null,
+    itemRef: itemRef ?? null,
+    at: at ?? null,
   };
+  // 191/ADR-002 §1 — the launch rides inside `signal` only when it is a known one, so the
+  // envelope can never carry a value the router's rebuild would then have to drop.
+  const known = knownSessionLaunch(launch);
+  if (known != null) signal.launch = known;
+  return { kind: SESSION_SPAWN_KIND, nodeId, signal };
 }
 
 // buildSessionSpawnAckEnvelope(nodeId, frame) — the RETURN direction's relay envelope
@@ -110,4 +141,32 @@ export function buildSessionSpawnAckEnvelope(nodeId, { sessionId, ok, code } = {
       code: typeof code === "string" && code.length > 0 ? code : null,
     },
   };
+}
+
+// ─────────────────────────────────── 191/ADR-004 — ending a launched session ────
+//
+// `session-end` is the lane's SECOND down-frame: it asks the node holding a launched session to
+// halt it. It lives here, beside the spawn kind, for the same reason that kind does — one home for
+// the literal, so the verb that pushes the envelope, the router that unwraps it and the worker
+// client that reads the frame share one contract.
+//
+// THERE IS NO `session-end-ack` (ADR-004 §4). The end is confirmed by the session's record
+// leaving the node's own presence, which the node writes and the control only reads.
+export const SESSION_END_KIND = "session-end";
+
+// buildSessionEndFrame(to, { sessionId, at }) → the DOWN-frame. It names the session and nothing
+// else: the node is the authority on whether it launched that id (`handler.end`), so the frame
+// carries no workspace, no assistant and nothing a node could be talked into acting on.
+export function buildSessionEndFrame(to, { sessionId, at } = {}) {
+  return { kind: SESSION_END_KIND, to, sessionId, at };
+}
+
+// buildSessionEndEnvelope(nodeId, { sessionId, at }) — the control-side relay envelope that carries
+// the frame above across processes, the exact sibling of `buildSessionSpawnEnvelope`: the frozen
+// `{ kind, nodeId, signal }` shape, the envelope kind IS the frame kind, and every frame field
+// rides inside `signal`. It takes the BUILT frame as its field bag.
+//
+// A pure projection of its inputs — no fs, no clock, no network.
+export function buildSessionEndEnvelope(nodeId, { sessionId, at } = {}) {
+  return { kind: SESSION_END_KIND, nodeId, signal: { sessionId: sessionId ?? null, at: at ?? null } };
 }

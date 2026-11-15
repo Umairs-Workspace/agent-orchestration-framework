@@ -27,7 +27,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // `packages/core/src/notify/notify.mjs` excluded, calls of the imported binding only — task 00 ruling 7) is one
 // of ADR-005 §4's six sites, enumerated by file and by the event literals its envelopes are built
 // with; each site's module builds its envelope through `buildNotifyEnvelope`, whose keys
-// deep-equal the eleven, and `EVENTS` holds seven. NON-VACUOUS: the sweep finds six sites. AMENDED at
+// deep-equal the eleven (twelve since 191/07's `choices`), and `EVENTS` holds seven. NON-VACUOUS: the sweep finds six sites. AMENDED at
 // 131/12 (ADR-010 §4-§5): SEVEN sites — `session-needs-input` gains `announceWorkerAsk` in
 // `packages/core/src/mesh/park-resume.mjs` (the control's post of a worker's ask), and `session-answered` stays ONE
 // call in `packages/core/src/commands/resume.mjs`, serving both the local and the mesh leg.
@@ -133,7 +133,9 @@ const FIRING_SITES = Object.freeze([
   "packages/mesh/src/park-resume.mjs session-needs-input",
 ]);
 const SEVEN = FIRING_SITES.length;
-const ENVELOPE_KEYS = Object.freeze(["event", "ref", "at", "node", "phase", "elapsedMs", "question", "stop", "outcome", "answerPath", "link"]);
+// AMENDED at 191/07 (ADR-007 §2): the twelfth key, `choices` — an ask's fixed answers as labels,
+// `null` on every other event.
+const ENVELOPE_KEYS = Object.freeze(["event", "ref", "at", "node", "phase", "elapsedMs", "question", "stop", "outcome", "answerPath", "link", "choices"]);
 // Task 00 ruling 3: the form's direct importers — and, as amended at 131/11 (ADR-009 §5), the slash
 // commands' renders, which read a waiting row exactly as the terminal and the posted message do.
 const FORM_IMPORTERS = Object.freeze(["packages/messaging/src/discord-commands.mjs", "packages/core/src/application/bindings/loop/ask.mjs", "packages/messaging/src/discord.mjs", "apps/ui/src/board/action.mjs"]);
@@ -617,11 +619,11 @@ export const archTests = [
     },
   },
   {
-    name: "arch/131 FF-13107 (acd-loop-ask-reaches-every-face): the envelope's keys deep-equal the eleven and EVENTS holds seven",
+    name: "arch/131 FF-13107 (acd-loop-ask-reaches-every-face): the envelope's keys deep-equal the twelve and EVENTS holds seven",
     run: () => {
       assert.equal(EVENTS.length, 7, `EVENTS holds seven — it holds ${EVENTS.length}`);
       for (const event of EVENTS) {
-        assert.deepEqual(Object.keys(buildNotifyEnvelope(event, { ref: "131" })), [...ENVELOPE_KEYS], `the ${event} envelope's keys deep-equal the eleven`);
+        assert.deepEqual(Object.keys(buildNotifyEnvelope(event, { ref: "131" })), [...ENVELOPE_KEYS], `the ${event} envelope's keys deep-equal the twelve (191/07 added choices)`);
       }
     },
   },

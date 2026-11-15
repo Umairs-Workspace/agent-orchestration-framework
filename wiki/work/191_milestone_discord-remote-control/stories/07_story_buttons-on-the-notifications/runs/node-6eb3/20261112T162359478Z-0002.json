@@ -1,0 +1,133 @@
+{
+  "runId": "20261112T162359478Z-0002",
+  "itemRef": "191/07",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "f7b7c494-5a65-4986-8e24-b581b902c523",
+  "brief": {
+    "loop": {
+      "loopRunId": "3e5ed9bd-583b-4467-9531-f2972feb5e6a",
+      "scope": "191",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-11-12T11:02:07.586Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        }
+      }
+    },
+    "grade": {
+      "ref": "191/07",
+      "verdict": "fail",
+      "codes": [
+        "case-failed"
+      ],
+      "runner": {
+        "command": [
+          "node",
+          "scripts/test-rubric.mjs"
+        ],
+        "cwd": "/Users/umairbutt/Source/umair/agent-orchestration-framework/.aof/mesh/dispatch-worktrees/dispatch-191-07",
+        "exit": 1,
+        "durationMs": 1180576
+      },
+      "report": {
+        "format": "tap",
+        "path": null,
+        "floor": 500
+      },
+      "cases": {
+        "total": 437,
+        "failed": 2,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "case": "arch/77 FF-7706: a governed project that is not an aof checkout gets an audit of its own instruments",
+          "message": "  error: \"a cited control that contradicts its recorded result is named as that contradiction\\n+ actual - expected\\n\\n+ 'timed-out'\\n- 'contradicted'\\n\"",
+          "scenario": null
+        },
+        {
+          "case": "arch/77 FF-7706: the census decides registration for the suites a governed workspace walks, from a child started at the toolkit root",
+          "message": "  error: \"the probe ran against the subject's own runner: {\\\"ok\\\":false,\\\"names\\\":[],\\\"result\\\":{\\\"outcome\\\":\\\"deadline-expired\\\",\\\"command\\\":\\\"/Users/umairbutt/.nvm/versions/node/v24.14.1/bin/node\\\",\\\"args\\\":[\\\"/Users/umairbutt/Source/umair/agent-orchestration-framework/.aof/mesh/dispatch-worktrees/dispatch-191-07/packages/core/src/work/audit-probe.mjs\\\",\\\"/var/folders/g5/r\\n\\nfalse !== true\\n\"",
+          "scenario": null
+        }
+      ],
+      "gradedAt": "2026-11-12T16:04:18.444Z",
+      "provenance": {
+        "node": "node-6eb3",
+        "run": "20261112T160014643Z-0001",
+        "commit": "e94eea59cecf0d7b0ca506f10a08d8dded9246c4",
+        "at": "2026-11-12T16:04:18.444Z"
+      }
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-11-12T14:57:50.148Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/m42-item-3: no NEW silent catch — every src file is at or below its shrink-only baseline, and unlisted files have none"
+      ],
+      "baseCommit": "e94eea59cecf0d7b0ca506f10a08d8dded9246c4"
+    },
+    "progress": {
+      "resets": 0,
+      "attemptRunId": "20261112T145751080Z-0000",
+      "summary": null,
+      "continuation": true
+    },
+    "lane": {
+      "worktree": "/Users/umairbutt/Source/umair/agent-orchestration-framework/.aof/mesh/dispatch-worktrees/dispatch-191-07",
+      "branch": "aof/mesh/191-07",
+      "baseCommit": "e94eea59cecf0d7b0ca506f10a08d8dded9246c4"
+    }
+  },
+  "createdAt": "2026-11-12T16:23:59.478Z",
+  "updatedAt": "2026-11-12T16:25:31.183Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 32,
+      "output": 9425,
+      "cacheRead": 5480752,
+      "cacheCreate": 11728
+    },
+    "costUsd": 1.8296766,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 16,
+    "toolCalls": 5,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

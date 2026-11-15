@@ -415,7 +415,12 @@ export const loopCommandWaveTests = [
       // loop with its account lines — the launch is the one door that may resume, so it cannot move.
       // 181/ADR-003: four lines reject an unusable declared rubric at the invocation door,
       // before promotion or runtime startup. The predicate remains in the grade leaf.
-      assert.ok(lines <= 2223, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2223 it was at 181 — extract, or raise this bound with a reason`);
+      // 2223 -> 2250 is 191/04 (ADR-005): `--hand-off-start` in its three homes, its dispatch and its
+      // one render line, its command face, and the two points a fresh supervised launch spends its
+      // start request (the walk's head, and a refusal at the door). The verb itself, the companion
+      // refusals and the clear's guard were extracted to stop.mjs and stop-request.mjs at build;
+      // what stays is the face and the launch, which only the shell owns.
+      assert.ok(lines <= 2250, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2250 it was at 191/04 — extract, or raise this bound with a reason`);
     },
   },
 
@@ -1716,6 +1721,23 @@ export const loopCommandWaveTests = [
   },
   ...waitingLaneTests(),
   ...repairGradeTests(),
+  // #27 — the CI flake on 129/04 task03/task06. A run id is unique only within its item (19/ADR-003),
+  // so two lanes minting their first run in one millisecond share it; the graded row is found by ref
+  // and run id together. A frozen clock makes every mint collide.
+  {
+    name: "129/04 two lanes whose first runs share a run id each keep their own graded, merged row",
+    run: async () => {
+      await withLaneRepo(async (fx) => {
+        const { state } = await runWave(fx, { child: fakeLaneChild(fx), rubric: stubRubric(emits(passingTap())), now: () => NOW });
+        assert.equal(laneRows(state, "07/01")[0]?.runId, laneRows(state, "07/03")[0]?.runId, "the two lanes' run ids collide by construction");
+        for (const ref of ["07/01", "07/03"]) {
+          assert.equal(laneRows(state, ref).length, 1, `${ref}: one continue row`);
+          assert.equal(laneRows(state, ref)[0].verdict, "pass", `${ref}: its own grade`);
+          assert.ok(laneRows(state, ref)[0].merge, `${ref}: merged`);
+        }
+      }, { git: "fake" });
+    },
+  },
 ];
 
 // ── 147 / task 00, E6 — A RED GRADE STILL STOPS THE LOOP, AND NO REPAIR SESSION IS HANDED IT. The red-grade

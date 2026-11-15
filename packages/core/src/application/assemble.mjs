@@ -61,6 +61,7 @@ import { assembleCommandsDoc } from './bindings/commands/doc.mjs';
 import { assembleWorkDoctorDiagrams } from './bindings/work/doctor-diagrams.mjs';
 import { assembleWorkDoctor } from './bindings/work/doctor.mjs';
 import { assembleWorkDoctorExamples } from './bindings/work/doctor-examples.mjs';
+import { assembleWorkDoctorPractices } from './bindings/work/doctor-practices.mjs';
 import { assembleEffectsReconcile } from './bindings/effects/reconcile.mjs';
 import { assembleCommandsDoctor } from './bindings/commands/doctor.mjs';
 import { assembleLoopAskRequest } from './bindings/loop/ask-request.mjs';
@@ -152,6 +153,7 @@ import { assembleCommandsMeshUi } from './bindings/commands/mesh/ui.mjs';
 import { assembleCommandsMeshDesktopPreflight } from './bindings/commands/mesh/desktop-preflight.mjs';
 import { assembleCommandsMeshDesktop } from './bindings/commands/mesh/desktop.mjs';
 import { assembleCommandsMeshContribution } from './bindings/commands/mesh/contribution.mjs';
+import { assembleCommandsMeshSessionVerbs } from './bindings/commands/mesh/session.mjs';
 import { assembleCommandsMessagingMessaging } from './bindings/commands/messaging/messaging.mjs';
 import { assembleCommandsMigrateFolder } from './bindings/commands/migrate-folder.mjs';
 import { assembleCommandsNext } from './bindings/commands/next.mjs';
@@ -292,9 +294,10 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const commandsDispatch = assembleCommandsDispatch({ workReadServices: workRead, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, workDispatchServices: workDispatch });
   const commandsDoc = assembleCommandsDoc({ commandsResolveServices: commandsResolve, cacheReadServices: cacheRead, workReadServices: workRead });
   const workDoctorDiagrams = assembleWorkDoctorDiagrams({ configInspectServices: configInspect });
-  const workDoctor = assembleWorkDoctor({ runStoreServices: runStore, workDoctorDiagramsServices: workDoctorDiagrams, workDoctorExamplesServices: workDoctorExamples, configInspectServices: configInspect, provideWorkExamplesAnswers: async () => { lifetime.assertReady(); return workExamplesAnswers; } });
+  const workDoctorPractices = assembleWorkDoctorPractices();
+  const workDoctor = assembleWorkDoctor({ runStoreServices: runStore, workDoctorDiagramsServices: workDoctorDiagrams, workDoctorExamplesServices: workDoctorExamples, workDoctorPracticesServices: workDoctorPractices, configInspectServices: configInspect, provideWorkExamplesAnswers: async () => { lifetime.assertReady(); return workExamplesAnswers; } });
   const effectsReconcile = assembleEffectsReconcile({ workServices: work, runStoreServices: runStore, effectsTableServices: effectsTable, effectsJournalServices: effectsJournal, degradeServices: degrade });
-  const commandsDoctor = assembleCommandsDoctor({ workDoctorServices: workDoctor, globalWorkPublisherServices: globalWorkPublisher, cacheReadServices: cacheRead, workReadServices: workRead, effectsTableServices: effectsTable, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, effectsReconcileServices: effectsReconcile, workObserveServices: workObserve, meshPresenceServices: meshPresence, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
+  const commandsDoctor = assembleCommandsDoctor({ workDoctorServices: workDoctor, workDoctorPracticesServices: workDoctorPractices, globalWorkPublisherServices: globalWorkPublisher, cacheReadServices: cacheRead, workReadServices: workRead, effectsTableServices: effectsTable, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, effectsReconcileServices: effectsReconcile, workObserveServices: workObserve, meshPresenceServices: meshPresence, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
   const loopAskRequest = assembleLoopAskRequest({ workspaceServices: workspace, degradeServices: degrade, meshLauncherLockServices: meshLauncherLock });
   const runSessionCapture = assembleRunSessionCapture({ runStoreServices: runStore, degradeServices: degrade });
   const runSpendIngest = assembleRunSpendIngest({ runStoreServices: runStore });
@@ -337,7 +340,8 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const loopProgress = assembleLoopProgress({ degradeServices: degrade, workDispatchServices: workDispatch });
   const loopChildDrive = assembleLoopChildDrive({ workspaceServices: workspace, runStoreServices: runStore, workObserveServices: workObserve, degradeServices: degrade });
   const loopAsk = assembleLoopAsk({ loopAskRequestServices: loopAskRequest, runStoreServices: runStore, runHeartbeatConsumptionServices: runHeartbeatConsumption, workObserveServices: workObserve, notifyNotifyServices: notifyNotify, degradeServices: degrade, commandsResolveServices: commandsResolve, workDispatchServices: workDispatch, meshWorktreeServices: meshWorktree });
-  const meshTerminalRelayBridge = assembleMeshTerminalRelayBridge({ degradeServices: degrade });
+  const meshRegistry = assembleMeshRegistry({ meshStoreServices: meshStore });
+  const meshTerminalRelayBridge = assembleMeshTerminalRelayBridge({ degradeServices: degrade, meshRegistryServices: meshRegistry });
   const commandsDrive = assembleCommandsDrive({ runtimeSessionServices: runtimeSession, loopAskServices: loopAsk, agentSessionDriverServices: agentSessionDriver, claudeTrustServices: claudeTrust, degradeServices: degrade, runStoreServices: runStore, loopAskRequestServices: loopAskRequest, runHeartbeatConsumptionServices: runHeartbeatConsumption, effectsRunTransitionsServices: effectsRunTransitions, runSessionCaptureServices: runSessionCapture, commandsResolveServices: commandsResolve, workObserveServices: workObserve, runSpendIngestServices: runSpendIngest, meshStoreServices: meshStore, meshTerminalRelayBridgeServices: meshTerminalRelayBridge, meshSessionServices: meshSession, commandsMeshSessionServices: commandsMeshSession });
   const loopCycle = assembleLoopCycle({ commandsResolveServices: commandsResolve, loopChildDriveServices: loopChildDrive, loopAskServices: loopAsk, loopAskRequestServices: loopAskRequest, loopProgressServices: loopProgress, commandsGradeServices: commandsGrade, itemLockServices: itemLock, runStoreServices: runStore, effectsRunTransitionsServices: effectsRunTransitions, degradeServices: degrade, runSpendIngestServices: runSpendIngest, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
   const loopWave = assembleLoopWave({ workServices: work, runStoreServices: runStore, runHeartbeatConsumptionServices: runHeartbeatConsumption, effectsRunTransitionsServices: effectsRunTransitions, degradeServices: degrade, workDispatchServices: workDispatch, meshWorktreeServices: meshWorktree, loopChildDriveServices: loopChildDrive, loopAskServices: loopAsk, loopCycleServices: loopCycle, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
@@ -349,7 +353,6 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const commandsLoopsShow = assembleCommandsLoopsShow({ workLoopsServices: workLoops });
   const commandsLoopsValidate = assembleCommandsLoopsValidate({ workLoopsServices: workLoops });
   const commandsMeshAssign = assembleCommandsMeshAssign({ meshAssignmentServices: meshAssignment });
-  const meshRegistry = assembleMeshRegistry({ meshStoreServices: meshStore });
   const commandsMeshIdentity = assembleCommandsMeshIdentity({ meshStoreServices: meshStore, meshPresenceServices: meshPresence, meshRegistryServices: meshRegistry, provideMeshDeclarations: async () => { lifetime.assertReady(); return meshDeclarations; } });
   const commandsMeshHeartbeat = assembleCommandsMeshHeartbeat({ workReadServices: workRead, cacheReadServices: cacheRead, commandsMeshIdentityServices: commandsMeshIdentity, meshPresenceServices: meshPresence });
   const meshRelay = assembleMeshRelay({ meshRegistryServices: meshRegistry, meshStoreServices: meshStore, degradeServices: degrade });
@@ -382,10 +385,11 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const meshUiServe = assembleMeshUiServe({ boardServeServices: boardServe, globalMeshQueryServices: globalMeshQuery, workServices: work, meshAssignmentServices: meshAssignment, loopStopServices: loopStop, meshTerminalMirrorServices: meshTerminalMirror, meshTerminalRelayBridgeServices: meshTerminalRelayBridge, terminalProvidersServices: terminalProviders, degradeServices: degrade });
   meshUiServe.serveMeshUi = lifetime.server(meshUiServe.serveMeshUi);
   const commandsMeshUi = assembleCommandsMeshUi({ meshUiServeServices: meshUiServe, meshTerminalMirrorServices: meshTerminalMirror, meshTerminalRelayBridgeServices: meshTerminalRelayBridge, diagnosticsLogServices: diagnosticsLog, workServices: work, meshLauncherServices: meshLauncher, meshPresenceServices: meshPresence, degradeServices: degrade });
-  const commandsMeshDesktopPreflight = assembleCommandsMeshDesktopPreflight({ meshPresenceServices: meshPresence, workspaceServices: workspace });
+  const commandsMeshDesktopPreflight = assembleCommandsMeshDesktopPreflight({ meshPresenceServices: meshPresence, workspaceServices: workspace, meshTerminalRelayBridgeServices: meshTerminalRelayBridge, meshRegistryServices: meshRegistry });
   const commandsMeshDesktop = assembleCommandsMeshDesktop({ commandsMeshDesktopPreflightServices: commandsMeshDesktopPreflight });
-  const commandsMeshContribution = assembleCommandsMeshContribution({ commandsMeshIdentityServices: commandsMeshIdentity, commandsMeshHeartbeatServices: commandsMeshHeartbeat, commandsMeshRelayServices: commandsMeshRelay, commandsMeshInviteServices: commandsMeshInvite, commandsMeshJoinServices: commandsMeshJoin, commandsMeshRevokeServices: commandsMeshRevoke, commandsMeshServeServices: commandsMeshServe, commandsMeshLogsServices: commandsMeshLogs, commandsMeshTerminalResumeServices: commandsMeshTerminalResume, commandsMeshAssignServices: commandsMeshAssign, commandsMeshRecoverPushServices: commandsMeshRecoverPush, commandsMeshRepoServices: commandsMeshRepo, commandsMeshUiServices: commandsMeshUi, commandsMeshDesktopServices: commandsMeshDesktop });
-  const commandsMessagingMessaging = assembleCommandsMessagingMessaging({ notifyNotifyServices: notifyNotify, notifySecretServices: notifySecret });
+  const commandsMeshSessionVerbs = assembleCommandsMeshSessionVerbs({ globalMeshQueryServices: globalMeshQuery, workServices: work, meshTerminalRelayBridgeServices: meshTerminalRelayBridge, meshTerminalMirrorServices: meshTerminalMirror, meshSessionServices: meshSession, degradeServices: degrade, commandPort });
+  const commandsMeshContribution = assembleCommandsMeshContribution({ commandsMeshIdentityServices: commandsMeshIdentity, commandsMeshHeartbeatServices: commandsMeshHeartbeat, commandsMeshRelayServices: commandsMeshRelay, commandsMeshInviteServices: commandsMeshInvite, commandsMeshJoinServices: commandsMeshJoin, commandsMeshRevokeServices: commandsMeshRevoke, commandsMeshServeServices: commandsMeshServe, commandsMeshLogsServices: commandsMeshLogs, commandsMeshTerminalResumeServices: commandsMeshTerminalResume, commandsMeshSessionVerbsServices: commandsMeshSessionVerbs, commandsMeshAssignServices: commandsMeshAssign, commandsMeshRecoverPushServices: commandsMeshRecoverPush, commandsMeshRepoServices: commandsMeshRepo, commandsMeshUiServices: commandsMeshUi, commandsMeshDesktopServices: commandsMeshDesktop });
+  const commandsMessagingMessaging = assembleCommandsMessagingMessaging({ notifyNotifyServices: notifyNotify, notifySecretServices: notifySecret, provideWork: async () => { lifetime.assertReady(); return work; } });
   const commandsMigrateFolder = assembleCommandsMigrateFolder({ importRecoveryServices: importRecovery, importStoreServices: importStore });
   const commandsNext = assembleCommandsNext({ workReadServices: workRead, itemLockServices: itemLock });
   const integrationsRouting = assembleIntegrationsRouting({ degradeServices: degrade });
@@ -418,7 +422,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const discordCommands = assembleDiscordCommands({ degradeServices: degrade, notifyAskMessagesServices: notifyAskMessages, loopStopRequestServices: loopStopRequest, provideLoopStop: async () => { lifetime.assertReady(); return loopStop; } });
   const discordGateway = assembleDiscordGateway({ degradeServices: degrade });
   const discordReplies = assembleDiscordReplies({ loopAskRequestServices: loopAskRequest, notifyAskMessagesServices: notifyAskMessages });
-  const discordBot = assembleDiscordBot({ degradeServices: degrade, discordCommandsServices: discordCommands, discordGatewayServices: discordGateway, discordRepliesServices: discordReplies, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; }, provideWork: async () => { lifetime.assertReady(); return work; }, provideMeshPresence: async () => { lifetime.assertReady(); return meshPresence; }, provideWorkAcceptorObservations: async () => { lifetime.assertReady(); return workAcceptorObservations; } });
+  const discordBot = assembleDiscordBot({ degradeServices: degrade, discordCommandsServices: discordCommands, discordGatewayServices: discordGateway, discordRepliesServices: discordReplies, loopAskRequestServices: loopAskRequest, notifyAskMessagesServices: notifyAskMessages, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; }, provideWork: async () => { lifetime.assertReady(); return work; }, provideMeshPresence: async () => { lifetime.assertReady(); return meshPresence; }, provideWorkAcceptorObservations: async () => { lifetime.assertReady(); return workAcceptorObservations; } });
   const memoryGraphifyBackend = assembleMemoryGraphifyBackend({ commandCoreServices: commandPort, memoryLocalIndexingServices: memoryLocalIndexing });
   const memoryLocalBackend = assembleMemoryLocalBackend({ memoryLocalIndexingServices: memoryLocalIndexing });
   const meshDeclarations = assembleMeshDeclarations({ meshPresenceServices: meshPresence, runStoreServices: runStore, commandsRunRetryServices: commandsRunRetry, workServices: work, loopStopRequestServices: loopStopRequest, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
@@ -907,6 +911,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
         commands: discordCommands,
         gateway: discordGateway,
         replies: discordReplies,
+        buttons: Object.freeze({ handleButton: discordBot.handleButton }),
         bot: discordBot,
       }),
     }),

@@ -20,7 +20,7 @@
 // thread block via Atomics.wait (Node permits this on the main thread); it only happens
 // on the rare transient failure, never on the success path.
 import { spawnSync, spawn } from "node:child_process";
-import { cpSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -71,6 +71,42 @@ export function bundleFixtureRoot(repoRoot) {
   });
   if (result.status !== 0) throw new Error(`Native bundle fixture init failed: ${result.stderr || result.stdout}`);
   nativeFixtures.set(repoRoot, project);
+  return project;
+}
+
+// A PRACTICE FIXTURE (192/02): a scratch project initialised from this checkout's bundle for Claude,
+// Codex and opencode under its own `AOF_GLOBAL_HOME`, then given `work` keys in its own config and
+// updated — exactly what an operator does after turning a practice on. One project per `name` per
+// process; `work` is merged over whatever `init` wrote, so a project with nothing set keeps init's
+// config untouched.
+const practiceFixtures = new Map();
+
+export function practiceFixtureRoot(repoRoot, name, work = {}) {
+  const key = `${repoRoot}\0${name}`;
+  if (practiceFixtures.has(key)) return practiceFixtures.get(key);
+  const parent = path.resolve(os.tmpdir());
+  const fixture = mkdtempSync(path.join(parent, `aof-practice-${name.toLowerCase()}-`));
+  const project = path.join(fixture, "project");
+  mkdirSync(project);
+  process.once("exit", () => {
+    if (path.dirname(path.resolve(fixture)) !== parent) throw new Error("Practice fixture escaped its temporary parent");
+    rmSync(fixture, { recursive: true, force: true });
+  });
+  const cli = (args) => {
+    const result = spawnCliSync(process.execPath, [path.join(repoRoot, "packages/core/bin/aof.mjs"), "work", ...args, "--json"], {
+      cwd: project, encoding: "utf8", windowsHide: true,
+      env: { ...process.env, AOF_GLOBAL_HOME: path.join(fixture, "home"), NODE_NO_WARNINGS: "1" }
+    });
+    if (result.status !== 0) throw new Error(`Practice fixture ${name}: aof work ${args.join(" ")} failed: ${result.stderr || result.stdout}`);
+  };
+  cli(["init", "--runtime", "claude,codex,opencode"]);
+  const configPath = path.join(project, ".aof", "aof.config.json");
+  const config = existsSync(configPath) ? JSON.parse(readFileSync(configPath, "utf8")) : {};
+  config.work = { ...config.work, ...work };
+  mkdirSync(path.dirname(configPath), { recursive: true });
+  writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
+  cli(["update"]);
+  practiceFixtures.set(key, project);
   return project;
 }
 

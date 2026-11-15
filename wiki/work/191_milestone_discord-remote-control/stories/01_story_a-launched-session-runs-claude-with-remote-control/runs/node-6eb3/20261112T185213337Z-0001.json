@@ -1,0 +1,85 @@
+{
+  "runId": "20261112T185213337Z-0001",
+  "itemRef": "191/01",
+  "state": "cancelled",
+  "attempt": 1,
+  "outcome": "cancelled",
+  "sessionId": "30fa3977-0d36-41bb-824f-35c016f1699b",
+  "brief": {
+    "loop": {
+      "loopRunId": "3e5ed9bd-583b-4467-9531-f2972feb5e6a",
+      "scope": "191",
+      "level": "L2",
+      "cap": 3,
+      "phase": "verify",
+      "cycle": 1,
+      "startedAt": "2026-11-12T11:02:07.586Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        }
+      }
+    },
+    "progress": {
+      "resets": 0,
+      "attemptRunId": "20261112T130412738Z-0000",
+      "summary": null,
+      "continuation": false
+    }
+  },
+  "createdAt": "2026-11-12T18:52:13.337Z",
+  "updatedAt": "2026-11-12T22:01:07.406Z",
+  "failureReason": null,
+  "heartbeatAt": "2026-11-12T21:57:09.367Z",
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-fable-5-2",
+    "effort": "high",
+    "tokens": {
+      "input": 215,
+      "output": 138228,
+      "cacheRead": 16040692,
+      "cacheCreate": 986850
+    },
+    "costUsd": 10.586960099999999,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 106,
+    "toolCalls": 55,
+    "exitReason": "error"
+  },
+  "asks": [
+    {
+      "question": "Decision needed: 191/01 is green on everything I can run, but one manual check is unsigned — launching through the desktop app's own daemons and seeing the session by name in the Claude app. Do I accept 191/01 now and carry that check to the milestone's outsider check, or hold it in review?\nOptions: (A) Accept now and carry the check to the 191 outsider check, which already needs both halves. (B) Hold 191/01 in review until F-03 is fixed, the app is restarted on this build, and you have looked at the Claude app.\nI would pick: A. Holding makes 01 wait on F-03's fix, which is not scheduled yet, and the milestone cannot be accepted without this check either way. I did not take A myself because two earlier milestones refused to sign a manual check off from a substitute.\nWhat the answer changes: A — I mark 191/01 done, tick task 03 and its box in the SPEC, write its OUTCOME with this as an open gap, and the loop moves on to 191/02. B — 191/01 stays `in-review` and the session-lane stories behind it wait.\n\n**What ran**\n- **Suites:** the story's four suites are green (120 cases), including all 15 scenarios and rows of tasks 00–02.\n- **FF-19102:** green, with its red probe recorded (two deliberate breaks, each failed with the expected message, both restored).\n- **Neighbouring controls:** only the two known reds, F-01 and F-02, neither from this story.\n- **Gate:** `validate` passes; `doctor` shows advisory warnings only.\n\n**Task 03, measured against a real `claude`**\n\nI could not go through the daemons: they run a 31 October payload, a restart is yours to do, and F-03 would refuse the start on this build anyway. I ran the shipped handler in a stand-in process instead, with the daemon's own environment and a throwaway store.\n\n- **The link:** it is in the PTY bytes at 200 columns, about 12 s after the spawn, so ADR-002 §6 stands. It arrives as plain text in a notice line, not as an OSC-8 hyperlink as RESEARCH Q1 expected; 191/02's link pattern matches it.\n- **Trust dialog:** none appeared in a fresh session worktree for item 191. I removed that worktree afterwards.\n- **Ending:** `/exit` ended the PTY and left no session record.\n- **Not observed:** the session's name and green dot in the Claude app, and its tile in the real fleet grid. Three browsers answer your account and I did not pick one.\n\n**Findings logged in `VERIFICATION.md`**\n- **F-05, needs your ratification:** a launched session writes two records for one id (`claude` from the launcher, `claude-code` from Claude's hooks). The grid still shows one slot, but the fleet pane reads as having no producer for up to 30 s after start and after each prompt. The fix is one label and an amendment to ADR-002 §4; it is not blocking 191/01.\n- **F-06:** the unsigned check above.\n- **F-07:** a nit — ADR-002 does not mention that names starting with `-` are refused; I will add the two lines at acceptance.\n\nThe story is still `in-review`; no retrospective or OUTCOME has been written yet.",
+      "phase": "verify",
+      "askedAt": "2026-11-12T19:13:28.905Z",
+      "parkedAt": null,
+      "answer": "Stop the loop. I'll continue on in session",
+      "answeredAt": "2026-11-12T22:00:38.055Z",
+      "by": "you"
+    }
+  ]
+}

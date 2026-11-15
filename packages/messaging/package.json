@@ -11,6 +11,7 @@
     "./notify": "./src/notify.mjs",
     "./gateway": "./src/gateway.mjs",
     "./discord-commands": "./src/discord-commands.mjs",
+    "./discord-buttons": "./src/discord-buttons.mjs",
     "./replies": "./src/replies.mjs",
     "./bot": "./src/bot.mjs",
     "./commands": "./src/commands.mjs"

@@ -1,4 +1,4 @@
-import { SESSION_SPAWN_KIND, buildSessionSpawnAckFrame } from "./session-spawn-directive.mjs";
+import { SESSION_SPAWN_KIND, SESSION_END_KIND, buildSessionSpawnAckFrame } from "./session-spawn-directive.mjs";
 import { buildTerminalResumeRefusedFrame } from "./terminal-resume-refusal.mjs";
 export const WORKTREE_CONTENT_FRAME_KIND = "worktree-content";
 export const LOG_ENTRIES_FRAME_KIND = "log-entries";
@@ -274,6 +274,9 @@ function createWorkerStreamClient({
   // milestone 50 / story 01 (ADR-002) — the session-spawn DOWN-frame's handler
   // (mesh-session-spawn-handler.mjs). Registered via onSessionSpawn(handler).
   let sessionSpawnHandler = null;
+  // 191/ADR-004 §1 — the session-end DOWN-frame's handler (the same module's `handler.end`).
+  // Registered via onSessionEnd(handler).
+  let sessionEndHandler = null;
   // milestone 38 / ADR-009 — pending clone-credential-request correlation, keyed by
   // assignmentId (per-clone, per-assignment: at most ONE clone-miss is ever in flight
   // for a given assignment). A bounded wait backstops a request that is refused,
@@ -404,6 +407,13 @@ function createWorkerStreamClient({
     // registered sessionSpawnHandler; unregistered → dropped, like every kind here.
     if (frame?.kind === SESSION_SPAWN_KIND) {
       sessionSpawnHandler?.(frame);
+      return;
+    }
+    // 191/ADR-004 §1 — the session-end DOWN-frame: the control asks THIS worker to halt a
+    // session it launched. Dispatched to the registered sessionEndHandler, which ends only a PTY
+    // its own handler opened; unregistered → dropped, like every kind here.
+    if (frame?.kind === SESSION_END_KIND) {
+      sessionEndHandler?.(frame);
       return;
     }
     // VERIFICATION (live soak 2026-07-25) — the control-driven recovery-push DOWN-frame:
@@ -898,6 +908,13 @@ function createWorkerStreamClient({
     sessionSpawnHandler = typeof handler === "function" ? handler : null;
   }
 
+  // onSessionEnd(handler) — 191/ADR-004 §1: registers the ONE handler invoked with a PARSED
+  // session-end DOWN-frame, shaped exactly like onSessionSpawn. Additive — unregistered drops
+  // session-end frames silently (never-crash discipline).
+  function onSessionEnd(handler) {
+    sessionEndHandler = typeof handler === "function" ? handler : null;
+  }
+
   // notifyDrop() — an explicit signal the connection dropped (production wires this
   // from the transport's own onDrop/close event); schedules a backoff reconnect over
   // the injected ticker. The reconnect itself does not resend a frame on its own — a
@@ -964,6 +981,7 @@ function createWorkerStreamClient({
     onTerminalInput,
     onTerminalResume,
     onSessionSpawn,
+    onSessionEnd,
     notifyDrop,
     stop,
     get connected() { return connected; },

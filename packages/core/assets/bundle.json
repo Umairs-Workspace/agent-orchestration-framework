@@ -1,4 +1,14 @@
 {
+  "practices": [
+    {
+      "id": "build-brief",
+      "title": "Build brief",
+      "summary": "Refine writes a one-page PLAN.md for the story's builder.",
+      "keys": [
+        "work.plan.enabled"
+      ]
+    }
+  ],
   "members": [
     {
       "id": "aof-architect",
@@ -1058,6 +1068,19 @@
               "section": "procedure-refine"
             }
           ]
+        }
+      }
+    },
+    {
+      "id": "build-brief-refine",
+      "kind": "fragment",
+      "practice": "build-brief",
+      "target": "command:refine",
+      "slot": "contract.brief",
+      "file": "fragments/build-brief/refine.md",
+      "variants": {
+        "codex": {
+          "file": "fragments/build-brief/refine.codex.md"
         }
       }
     },

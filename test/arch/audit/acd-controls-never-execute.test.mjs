@@ -156,7 +156,8 @@ const DOCTOR_LANE_MODULES = Object.freeze([
 // through the core binding to the adapter that constructs it from its own module. Since 135/01 the
 // examples lane arrives through the spine's practice-neutral `extensionGroups` seam.
 const SPINE_PORT = /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup, diagramListing = async \(\) => null, storyProbe = null, budgetRows = \[\], extensionGroups = \[\] \}\)/u;
-const CORE_PORT = /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup, diagramListing, storyProbe, budgetRows: EXAMPLES_BUDGET_ROWS, extensionGroups: \[examplesGroup\] \}\)/u;
+// 192/03 (192/ADR-006 §2) appends core's practice-render lane after the examples lane, through the same seam.
+const CORE_PORT = /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup, diagramListing, storyProbe, budgetRows: EXAMPLES_BUDGET_ROWS, extensionGroups: \[examplesGroup, \.\.\.\(practiceRenderGroup \? \[practiceRenderGroup\] : \[\]\)\] \}\)/u;
 const EXAMPLES_LANE = "@aof/specification-by-example/doctor-lane";
 // The diagrams lane's module, @aof/diagrams' own: the spine imports it from nowhere and takes the
 // group (and the item listing probe beside it) by injection.

@@ -185,6 +185,8 @@ export const yarnInstallationTests = [
         'worker-repo-admission.mjs': ["node:path","node:child_process","node:fs/promises","node:crypto","@aof/foundation/fs"],
         'clone-credential-provider.mjs': ["node:crypto","@aof/foundation/text"],
         'session-spawn-handler.mjs': ["node:path","node:fs"],
+        // 191/02 (ADR-003 §1): the one start core mints the session id and probes locality.
+        'session-start.mjs': ["node:crypto","node:fs"],
         'worker-execution.mjs': ["node:path","node:child_process","node:fs/promises","node:os","@aof/contracts/loop-bounds"],
         // 167/03: a backed-off workspace whose files changed is tried at once — the one stat digest.
         'launcher.mjs': ["node:os","node:path","node:fs","node:fs/promises","@aof/foundation/cost-meter","@aof/work/discovery"],
@@ -209,7 +211,9 @@ export const yarnInstallationTests = [
         'commands/repo.mjs': [],
         'commands/revoke.mjs': [],
         'commands/serve.mjs': ["node:path"],
-        'commands/session.mjs': ["node:os","node:fs/promises"],
+        // 191/02 (ADR-003): the registered session verbs share the hook seam's module — the project
+        // folder name (node:path), the locality probe (node:fs) and the coded refusals.
+        'commands/session.mjs': ["node:os","node:path","node:fs","node:fs/promises","@aof/contracts/error"],
         'commands/terminal-resume.mjs': ["@aof/contracts/error"],
         'commands/ui.mjs': ["node:path","@aof/foundation/cost-meter"],
         'assignment-reclaim.mjs': ['node:fs', '@aof/contracts/loop-bounds'],

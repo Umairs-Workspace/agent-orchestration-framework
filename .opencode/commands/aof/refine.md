@@ -246,8 +246,7 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
      files to ground the boundaries. Do not request elevated access, change permissions, install
      tools, or retry outside the sandbox just to obtain this advisory graph.
 
-- **story — Contract (Three Amigos):** author the task `.feature` files under `tasks/`, opening with
-  the discovery beat below when the project has turned it on.
+- **story — Contract (Three Amigos):** author the task `.feature` files under `tasks/`.
 
   Discovery comes first, and ONLY when the project has turned it on: read `work.examples.enabled`
   from `.aof/aof.config.json`. It defaults to **off**, and only the boolean `true` turns it on —
@@ -374,7 +373,8 @@ story-by-story is needless friction once the breakdown is trusted):
   fanning out the Three Amigos in parallel (the stories are independent by construction). Take
   **documented default decisions** for non-critical open questions (record them in `STATE.md`); **stop
   early only** for a genuine blocking unknown or an unsafe/irreversible decision — a real gate, never
-  routine breakdown or contract authoring. When `work.examples.enabled` is on, a business-rule
+  routine breakdown or contract authoring.
+  When `work.examples.enabled` is on, a business-rule
   question from a story's example map never takes a default. The cascade runs the discovery beat for
   every story, and authors a story's Contract only when its map has no open business question. Every
   open business question from every story is asked at the single end review, through

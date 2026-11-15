@@ -1062,7 +1062,7 @@ function dedupe(findings) {
 // file's mesh block independently and hands it in here as plain data, exactly like
 // `now`/`staleWindow` — the engine itself performs no extra disk read.
 async function doctorWork(workDir, config, scope, options = {}) {
-  const { now, staleWindow, budgets, groups = CHECK_GROUPS, acceptingRef, rawCommittedMesh, committedConfigPath, legacyIdentitySidecarPresent, legacyIdentitySidecarPath, cache, selfNode, projectRoot, projectsDir, sync, daemonCost } = options;
+  const { now, staleWindow, budgets, groups = CHECK_GROUPS, acceptingRef, rawCommittedMesh, committedConfigPath, legacyIdentitySidecarPresent, legacyIdentitySidecarPath, cache, selfNode, projectRoot, projectsDir, sync, daemonCost, extensions } = options;
   // milestone 43 / story 06 (ADR-005) — `cache` + `selfNode` are injected at the SAME impure
   // edge as `now` and `rawCommittedMesh`: plain data, read by `commands/doctor.mjs`, so the
   // engine still performs no store open and still reads no clock. Absent ⇒ the snapshot is
@@ -1105,6 +1105,10 @@ async function doctorWork(workDir, config, scope, options = {}) {
     legacyIdentitySidecarPath: legacyIdentitySidecarPath ?? null,
     // 167/00 — this node's daemon cost snapshots, read at the command edge; absent, the lane is silent.
     daemonCost: daemonCost ?? null,
+    // 192/03 (192/ADR-006 §2) — facts an extension group's composer read at the command edge, keyed by
+    // that composer and passed through untouched: the engine names none of them. Absent, every
+    // extension group that reads one is silent, so the engine's other callers are unchanged.
+    extensions: extensions ?? {},
   };
 
   const all = [];

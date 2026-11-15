@@ -70,12 +70,13 @@ export function enabledBundle(bundle, config) {
   return { ...bundle, resources: bundle.resources.filter(enabled), assets: (bundle.assets ?? []).filter(enabled) };
 }
 
-export async function synthesizeBundleConfig(fullBundle, { runtimes, targetDir }) {
-  // Config-aware projection (the ONLY project-config read on the render path): the
-  // `work.agents.delegation` toggle drops disable-model-invocation off the codex-*
-  // skills when ON, so init/update render them auto-invocable. Absent config ⇒ OFF
-  // ⇒ no change (the bundle default). No runtime branch — a generic per-resource map.
-  const { config, configPath } = await readConfig(targetDir);
+export async function synthesizeBundleConfig(fullBundle, { runtimes, targetDir, project }) {
+  // Config-aware projection: the `work.agents.delegation` toggle drops
+  // disable-model-invocation off the codex-* skills when ON, so init/update render them
+  // auto-invocable. Absent config ⇒ OFF ⇒ no change (the bundle default). No runtime
+  // branch — a generic per-resource map. A caller that loaded the bundle with the
+  // project's config hands that same read in as `project`, so it is read once.
+  const { config, configPath } = project ?? await readConfig(targetDir);
   const bundle = enabledBundle(fullBundle, config);
   const members = new Set(bundle.resources.map(resource => `${resource.kind}:${resource.id}`));
   const projectResources = await Promise.all((config.resources ?? []).map(async resource => members.has(`${resource.kind}:${resource.id}`)

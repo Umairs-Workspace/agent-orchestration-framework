@@ -87,7 +87,8 @@ const meshTerminalResumeCommand = {
     const push = createPush(ctx?.workspace?.config);
     if (push == null) {
       throw commandError(
-        "No mesh relay is configured here (config.mesh.relay.url) — terminal-resume runs on the CONTROL node, whose serve daemon routes it to the holder.",
+        // 191/ADR-001 amendment 2026-11-14 §6 — the nomination first (see session-start.mjs).
+        "No mesh relay is available here — terminal-resume runs on the CONTROL node, whose serve daemon routes it to the holder: a relay runs only on the nominated control — set `mesh.relay.controlNode` to this node's id in `~/.aof/aof.config.json`, which derives its relay, or set `mesh.relay.url`.",
         "relay-unconfigured",
         400,
       );

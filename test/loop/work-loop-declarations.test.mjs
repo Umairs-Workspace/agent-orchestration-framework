@@ -11,7 +11,7 @@ import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // `test/arch/loop/acd-declaration-predicate-is-composed.test.mjs`.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, mkdir, readdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readdir, readFile, realpath, rm, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,7 +36,15 @@ const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
 const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
 const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
 const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
+const loopStartsDir = _aofApplication.loop.stopRequest.loopStartsDir;
+const readStartRequests = _aofApplication.loop.stopRequest.readStartRequests;
+const requestLoopResume = _aofApplication.loop.stopRequest.requestLoopResume;
+const requestLoopStart = _aofApplication.loop.stopRequest.requestLoopStart;
+const startRequestPath = _aofApplication.loop.stopRequest.startRequestPath;
+const handOffStart = _aofApplication.loop.stop.handOffStart;
 const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const forgetNodeWorkspace = _aofApplication.mesh.globalNodeRegistry.forgetNodeWorkspace;
+import { workspaceIdFromPath } from "@aof/mesh/workspace-identity";
 import { stripComments } from "../support/source-slice.mjs";
 import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 
@@ -84,6 +92,7 @@ function ask(runs, { ceilingMs = CEILING, now = NOW, items, ...rest } = {}) {
     retryReadiness,
     ...("stopped" in rest ? { stopped: rest.stopped } : {}),
     ...("resumeRequested" in rest ? { resumeRequested: rest.resumeRequested } : {}),
+    ...("startRequested" in rest ? { startRequested: rest.startRequested } : {}),
   });
 }
 
@@ -711,4 +720,304 @@ export const workLoopDeclarationsTests = [
       }, { record: producerRecord({ state: "done", failureReason: null, reclaimedAt: null, heartbeatAt: null }) });
     },
   },
+  // ── 191/04 tasks 00 and 01 — the start request (ADR-005). The verb cases run the REAL CLI over the
+  // on-disk producer fixture (workspace id `ws-repo-a`, milestone 53) under the harness's isolated
+  // `AOF_GLOBAL_HOME`, whose `loopStartsDir()` holds the request; the engine cases add the one
+  // `startRequested` key to `ask`'s input. Every case removes the requests it wrote.
+  {
+    name: "191/04 task00 E1 — a scope that never ran gets a start request holding exactly five keys, and nothing is spawned",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      await withProducerFixture(async ({ dir }) => {
+        const runsDir = path.join(dir, "wiki", "work", "53_milestone_fixture", "runs");
+        const runsBefore = await readdir(runsDir);
+        const run = cliIn(dir, ["work", "loop", "53", "--hand-off-start", "--json"]);
+        assert.equal(run.status, 0, run.stderr || run.stdout);
+        const answer = JSON.parse(run.stdout);
+        assert.equal(answer.ok, true);
+        assert.equal(answer.requested, true);
+        assert.equal(answer.scope, "53");
+        assert.equal(path.dirname(answer.path), loopStartsDir(), `a path under <meshRoot>/loop-starts/: ${answer.path}`);
+        assert.equal(path.basename(path.dirname(answer.path)), "loop-starts");
+        const request = JSON.parse(await readFile(answer.path, "utf8"));
+        assert.deepEqual(Object.keys(request), ["scope", "workspaceId", "by", "requestedAt", "level"], "exactly the five keys");
+        assert.equal(request.scope, "53");
+        assert.equal(request.workspaceId, "ws-repo-a");
+        assert.equal(request.level, null, "level is null unless given");
+        assert.deepEqual(await readdir(runsDir), runsBefore, "no run was started: nothing was spawned");
+        const human = cliIn(dir, ["work", "loop", "53", "--hand-off-start"]);
+        assert.equal(human.status, 0, human.stderr);
+        assert.match(human.stdout, /53 — start requested: the supervisor starts a new supervised loop on its next poll\./u);
+      }, { record: null });
+      await rm(loopStartsDir(), { recursive: true, force: true });
+    },
+  },
+  {
+    name: "191/04 task00 — a scope the grammar refuses is refused before any read, and its incompatible companions are refused naming both flags (four rows)",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      await withProducerFixture(async ({ dir }) => {
+        const scoped = cliIn(dir, ["work", "loop", "../x", "--hand-off-start", "--json"]);
+        assert.notEqual(scoped.status, 0, "non-zero");
+        const refusal = JSON.parse(scoped.stdout);
+        assert.equal(refusal.ok, false);
+        assert.equal(refusal.code, "loop-start-scope", scoped.stdout);
+        for (const flag of ["--stop", "--resume", "--hand-off", "--dry-run"]) {
+          const run = cliIn(dir, ["work", "loop", "53", "--hand-off-start", flag, "--json"]);
+          assert.notEqual(run.status, 0, `--hand-off-start ${flag}: refused`);
+          const error = JSON.parse(run.stdout).error;
+          assert.ok(error.includes("--hand-off-start") && error.includes(flag), `--hand-off-start ${flag}: names both flags: ${error}`);
+        }
+        assert.deepEqual(await readStartRequests(loopStartsDir()), [], "no start request is written");
+      }, { record: null });
+    },
+  },
+  {
+    name: "191/04 task00 E3, E4 — a halted supervised scope is refused toward resume, a running scope is refused, and neither writes a request",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      const fresh = new Date().toISOString();
+      for (const [label, record, code] of [
+        ["E3 · halted supervised", producerRecord({ state: "done", failureReason: null, reclaimedAt: null, heartbeatAt: null }), "loop-start-resumable"],
+        ["E4 · running", producerRecord({ state: "running", failureReason: null, reclaimedAt: null, createdAt: fresh, heartbeatAt: fresh, updatedAt: fresh }), "loop-start-running"],
+      ]) {
+        await withProducerFixture(async ({ dir }) => {
+          const run = cliIn(dir, ["work", "loop", "53", "--hand-off-start", "--json"]);
+          assert.notEqual(run.status, 0, `${label}: non-zero`);
+          const answer = JSON.parse(run.stdout);
+          assert.equal(answer.ok, false, label);
+          assert.equal(answer.code, code, `${label}: ${run.stdout}`);
+          if (code === "loop-start-resumable") {
+            assert.ok(answer.error.includes("/loop resume 53"), `names /loop resume 53: ${answer.error}`);
+            assert.ok(answer.error.includes("aof work loop 53 --hand-off"), `names aof work loop 53 --hand-off: ${answer.error}`);
+          }
+          assert.deepEqual(await readStartRequests(loopStartsDir()), [], `${label}: no start request is written`);
+        }, { record });
+      }
+    },
+  },
+  {
+    name: "191/04 task00 E5 — two requests a second apart leave one request, holding the later requestedAt",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      await withProducerFixture(async ({ dir }) => {
+        const workspace = await loadWorkspace(dir, undefined, { env: process.env });
+        const first = await handOffStart(workspace, { scope: "53", now: () => new Date("2026-11-12T10:00:00.000Z") });
+        const second = await handOffStart(workspace, { scope: "53", now: () => new Date("2026-11-12T10:00:01.000Z") });
+        assert.equal(first.ok, true, JSON.stringify(first));
+        assert.equal(second.path, first.path, "one home per workspace and scope");
+        const standing = (await readStartRequests(loopStartsDir())).filter((request) => request.scope === "53");
+        assert.equal(standing.length, 1, "exactly one start request for 53");
+        assert.equal(standing[0].requestedAt, "2026-11-12T10:00:01.000Z");
+      }, { record: null });
+      await rm(loopStartsDir(), { recursive: true, force: true });
+    },
+  },
+  {
+    name: "191/04 task01 E2 — the next poll lists a fresh supervised start, with no --resume, and a level rides the argv",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      const route = _aofApplication.getCommand("work:loop").cli.route;
+      await withProducerFixture(async ({ dir, status }) => {
+        assert.deepEqual((await status()).declarations.rows, [], "no row before the request");
+        await requestLoopStart(loopStartsDir(), { scope: "53", workspaceId: "ws-repo-a", by: { node: "node-1", pid: 1 } });
+        const rows = (await status()).declarations.rows;
+        assert.deepEqual(rows, [{
+          id: "start:ws-repo-a:53",
+          label: "loop 53",
+          argv: [...route, "53", "--supervised"],
+          cwd: dir,
+          scope: "53",
+          level: null,
+          cap: null,
+        }], "one start row: the route, the scope and --supervised, with no --resume");
+        await requestLoopStart(loopStartsDir(), { scope: "53", workspaceId: "ws-repo-a", by: { node: "node-1", pid: 1 }, level: "L3" });
+        const levelled = (await status()).declarations.rows;
+        assert.deepEqual(levelled.map((row) => row.argv), [[...route, "53", "--level", "L3", "--supervised"]], "a level rides the argv before --supervised");
+        await requestLoopStart(loopStartsDir(), { scope: "53", workspaceId: "ws-other", by: { node: "node-1", pid: 1 } });
+        assert.equal((await status()).declarations.rows.length, 1, "a request for a workspace this node does not serve starts nothing");
+      }, { record: null });
+      await rm(loopStartsDir(), { recursive: true, force: true });
+    },
+  },
+  {
+    name: "191/04 task01 — a scope already running yields no start row, and a resume row is unchanged",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      const fresh = new Date().toISOString();
+      const live = producerRecord({ state: "running", failureReason: null, reclaimedAt: null, createdAt: fresh, heartbeatAt: fresh, updatedAt: fresh });
+      await withProducerFixture(async ({ dir }) => {
+        await requestLoopStart(loopStartsDir(), { scope: "53", workspaceId: "ws-repo-a", by: { node: "node-1", pid: 1 } });
+        const workspace = await loadWorkspace(dir, undefined, { env: process.env });
+        const rows = (await meshStatusCommand.run({ now: fresh, declarations: true }, { workspace, globalWorkStoreOptions: { env: process.env } })).declarations.rows;
+        assert.equal(rows.some((row) => row.id === "start:ws-repo-a:53"), false, `no start row: ${JSON.stringify(rows.map((row) => row.id))}`);
+        assert.deepEqual(rows.map((row) => row.id), ["lr-1"], "the live loop is listed on its own liveness");
+      }, { record: live });
+      await rm(loopStartsDir(), { recursive: true, force: true });
+
+      await withProducerFixture(async ({ status }) => {
+        await requestLoopResume(loopResumesDir(), { loopRunId: "lr-1", scope: "53", workspaceId: "ws-repo-a", by: { node: "node-1", pid: 1 } });
+        const rows = (await status()).declarations.rows;
+        assert.equal(rows.length, 1, "the handed-back declaration is listed");
+        assert.equal(rows[0].argv.at(-1), "--resume", `its argv still ends with --resume: ${rows[0].argv.join(" ")}`);
+        assert.equal(rows[0].argv.includes("--supervised"), false, "and carries no --supervised");
+        await unlink(path.join(loopResumesDir(), "lr-1.json"));
+      }, { record: producerRecord({ state: "done", failureReason: null, reclaimedAt: null, heartbeatAt: null }) });
+    },
+  },
+  {
+    name: "191/04 task01 — start rows are gated by the compute budget like every row (the engine over literal requests)",
+    run() {
+      const request = { workspaceId: "ws-1", scope: "191", level: null };
+      const admitted = ask([], { items: [], startRequested: [request] });
+      assert.deepEqual(admitted.starts, [{ workspaceId: "ws-1", projectRoot: "C:/repo", scope: "191", level: null }], "an admitting budget starts it");
+      assert.deepEqual(admitted.rows, [], "a start is never a declaration row");
+      assert.deepEqual(ask([], { items: [], ceilingMs: 0, startRequested: [request] }).starts, [], "a budget that admits no launch starts nothing");
+      // Beside a relaunch the same budget refuses: neither row is answered.
+      const spent = ask([run({ state: "failed", failureReason: "runtime_offline", attempt: 2 })], { ceilingMs: 0, startRequested: [{ ...request, scope: "192" }] });
+      assert.deepEqual([spent.rows.length, spent.starts.length], [0, 0], "the gate applies to every row alike");
+      assert.deepEqual(ask([], { items: [], startRequested: [request, request] }).starts.length, 1, "two requests for one scope start it once");
+      assert.deepEqual(ask([], { items: [] }).starts, [], "an absent list starts nothing");
+      assert.deepEqual(ask([], { items: [], startRequested: "191" }).starts, [], "an ill-typed list starts nothing");
+      const listed = ask([run()], { startRequested: [{ ...request, scope: "53" }] });
+      assert.deepEqual([listed.rows.length, listed.starts.length], [1, 0], "a scope with a row of its own is not started beside it");
+    },
+  },
+  // ── 191/04 task 03 (F-14) — a start resolves the workspace the mesh already knows. Each case writes
+  // a workspace under a REAL temp root (`realpath`, so the CLI's cwd and the loaded workspace derive
+  // one id on macOS's symlinked tmpdir) whose config pins no `mesh.workspaceId` unless the case pins
+  // one, runs the REAL CLI under the harness's isolated `AOF_GLOBAL_HOME`, and removes what it wrote.
+  {
+    name: "191/04 task03 R1 — an unpinned, published project gets a start request under its derived id, and the supervisor is handed its start row",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      await withStartWorkspace(async ({ dir, workspace, status }) => {
+        const ws = await workspace();
+        assert.equal(ws.config?.mesh?.workspaceId, undefined, "Given: the config pins no mesh.workspaceId");
+        const derived = workspaceIdFromPath(dir);
+        // And the mesh registers it under the id derived from that root — the publish's own write path.
+        const registered = await registerOnNode(ws);
+        try {
+          assert.ok(registered.includes(derived), `the mesh registers ${derived}: ${JSON.stringify(registered)}`);
+
+          // When `aof work loop 22 --hand-off-start --json` runs in "ws-p".
+          const run = cliIn(dir, ["work", "loop", "22", "--hand-off-start", "--json"]);
+          assert.equal(run.status, 0, run.stderr || run.stdout);
+          const answer = JSON.parse(run.stdout);
+          assert.equal(answer.ok, true, run.stdout);
+          assert.equal(answer.requested, true);
+          assert.equal(path.dirname(answer.path), loopStartsDir(), `a request under <meshRoot>/loop-starts/: ${answer.path}`);
+          assert.equal(path.basename(loopStartsDir()), "loop-starts");
+          const request = JSON.parse(await readFile(answer.path, "utf8"));
+          assert.equal(request.workspaceId, derived, "the request names the derived id the mesh registered");
+          assert.equal(request.scope, "22");
+
+          // R1 · the supervisor is handed a start row for it: exactly one fresh --supervised row, at its root.
+          const route = _aofApplication.getCommand("work:loop").cli.route;
+          const rows = (await status()).declarations.rows.filter((row) => row.scope === "22");
+          assert.deepEqual(rows, [{
+            id: `start:${derived}:22`,
+            label: "loop 22",
+            argv: [...route, "22", "--supervised"],
+            cwd: dir,
+            scope: "22",
+            level: null,
+            cap: null,
+          }], "exactly one fresh --supervised row for 22, at ws-p's project root");
+        } finally {
+          await forgetRegistration(derived);
+        }
+      });
+      await rm(loopStartsDir(), { recursive: true, force: true });
+    },
+  },
+  {
+    name: "191/04 task03 R1 — a standalone node (no registered member) is handed the same start row: the producer's fallback resolves the id too",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      await withStartWorkspace(async ({ dir, status }) => {
+        const derived = workspaceIdFromPath(dir);
+        const run = cliIn(dir, ["work", "loop", "22", "--hand-off-start", "--json"]);
+        assert.equal(run.status, 0, run.stderr || run.stdout);
+        assert.equal(JSON.parse(await readFile(JSON.parse(run.stdout).path, "utf8")).workspaceId, derived);
+        const rows = (await status()).declarations.rows.filter((row) => row.scope === "22");
+        assert.deepEqual(rows.map((row) => [row.id, row.cwd, row.argv.at(-1)]), [[`start:${derived}:22`, dir, "--supervised"]], "one fresh --supervised row, at the root");
+      });
+      await rm(loopStartsDir(), { recursive: true, force: true });
+    },
+  },
+  {
+    name: "191/04 task03 R1 — a pinned id still wins",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      await withStartWorkspace(async ({ dir }) => {
+        assert.notEqual(workspaceIdFromPath(dir), "a7fc47eec5f91bc0", "the pin differs from the derivation, so the case can tell them apart");
+        const run = cliIn(dir, ["work", "loop", "22", "--hand-off-start", "--json"]);
+        assert.equal(run.status, 0, run.stderr || run.stdout);
+        const request = JSON.parse(await readFile(JSON.parse(run.stdout).path, "utf8"));
+        assert.equal(request.workspaceId, "a7fc47eec5f91bc0", "the request names the pinned id");
+      }, { name: "ws-a", pin: "a7fc47eec5f91bc0" });
+      await rm(loopStartsDir(), { recursive: true, force: true });
+    },
+  },
+  {
+    name: "191/04 task03 R2 — no workspace id resolves at all: refused loop-start-no-workspace, naming mesh.workspaceId in .aof/aof.config.json and not aof mesh identity",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      // A workspace with no project root (and no work dir, the derivation's other anchor) and no pin:
+      // the CLI always loads a rooted workspace, so the command face `aof work loop` runs is driven
+      // directly with the input its `--hand-off-start --json` argv parses to.
+      const workspace = { config: { mesh: { nodeId: "node-1" } } };
+      const loopCommand = _aofApplication.getCommand("work:loop");
+      await assert.rejects(loopCommand.run({ scope: "22", startHandOff: true }, { workspace }), (error) => {
+        assert.equal(error.code, "loop-start-no-workspace", String(error?.message));
+        assert.match(error.message, /`mesh\.workspaceId`/u, `names mesh.workspaceId: ${error.message}`);
+        assert.match(error.message, /\.aof\/aof\.config\.json/u, `names the project's .aof/aof.config.json: ${error.message}`);
+        assert.doesNotMatch(error.message, /aof mesh identity/u, `does not name aof mesh identity: ${error.message}`);
+        return true;
+      });
+      const answer = await handOffStart(workspace, { scope: "22" });
+      assert.deepEqual([answer.ok, answer.code], [false, "loop-start-no-workspace"], "the core answers the refusal as a value");
+      assert.deepEqual(await readStartRequests(loopStartsDir()), [], "nothing is requested");
+    },
+  },
 ];
+
+// 191/04 task 03 — a workspace "ws-p" under a real temp root, its config naming the node but pinning
+// no `mesh.workspaceId` unless `pin` is given; `status()` is `mesh status --declarations` over it.
+async function withStartWorkspace(fn, { name = "ws-p", pin } = {}) {
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-loop-start-")));
+  try {
+    const dir = await makeProducerWorkspace(root, name, { record: null });
+    await writeFile(path.join(dir, ".aof", "aof.config.json"), JSON.stringify({
+      name, work: { dir: "wiki/work" }, mesh: { nodeId: "node-1", ...(pin == null ? {} : { workspaceId: pin }) },
+    }, null, 2));
+    const workspace = () => loadWorkspace(dir, undefined, { env: process.env });
+    const status = async () => meshStatusCommand.run({ now: NOW, declarations: true }, { workspace: await workspace(), globalWorkStoreOptions: { env: process.env } });
+    return await fn({ dir, workspace, status });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+// Registers `ws` as a member of node-1 through the publish's own write path, and answers the ids
+// node-1 now carries.
+async function registerOnNode(ws) {
+  const store = await openGlobalWorkProjectionStore({ env: process.env });
+  try {
+    await publishNodeRecord(ws, "node-1", { nodeId: "node-1", host: "node-1", os: "darwin", runtimes: ["claude"], aofVersion: "1.2.3", publishedAt: NOW });
+    await publishGlobalRegistryDescriptorsToStore(store, ws, { now: NOW });
+    return store.db.prepare("SELECT workspace_id FROM global_node_workspaces WHERE node_id = ?").all("node-1").map((row) => row.workspace_id);
+  } finally {
+    store.close();
+  }
+}
+
+async function forgetRegistration(workspaceId) {
+  const store = await openGlobalWorkProjectionStore({ env: process.env });
+  try {
+    forgetNodeWorkspace(store, "node-1", workspaceId);
+  } finally {
+    store.close();
+  }
+}

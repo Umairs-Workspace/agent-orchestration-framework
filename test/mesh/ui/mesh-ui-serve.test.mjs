@@ -707,7 +707,10 @@ export const meshUiServeTests = [
         assert.ok(read >= 0 && admit < read, `${route}: …BEFORE any readJsonBody(`);
         assert.doesNotMatch(body, /request\.method\s*!==\s*"POST"/, `${route}: no inline method guard of its own`);
         assert.doesNotMatch(body, /headers\.origin/, `${route}: no inline Origin guard of its own`);
-        assert.match(body, /resolveLocalWorkspaceRow\s*\(/, `${route}: calls resolveLocalWorkspaceRow(`);
+        // 191/ADR-003 §1 — the session route resolves through the one start core, which the verb
+        // shares; the other two keep the helper.
+        if (route === "/api/mesh/session") assert.match(body, /planSessionStart\s*\(/, `${route}: calls planSessionStart(`);
+        else assert.match(body, /resolveLocalWorkspaceRow\s*\(/, `${route}: calls resolveLocalWorkspaceRow(`);
         assert.doesNotMatch(body, /\.workspaces\s*\?\?\s*\[\]\)\s*\.find\(/, `${route}: no inline row lookup of its own`);
       }
     },

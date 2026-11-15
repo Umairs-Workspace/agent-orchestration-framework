@@ -12,7 +12,8 @@ const LOOP_SESSION_RESTATE_MS = 30_000;
 
 // createLoopSessionStreams({ loopSession, readRuns, reportDegrade }) → { openLoopStream, withLoopStream }.
 // `loopSession` is the drive's optional port (`openTerminalIngressClient`, `pingSession`,
-// `resolveNodeId`, `resolveWorkspaceId`); without it no drive streams.
+// `resolveNodeId`, `resolveWorkspaceId`, and `assistant`, the hook's label); without it no drive
+// streams.
 export function createLoopSessionStreams({ loopSession = null, readRuns, reportDegrade }) {
   // The loop run that drives a lent drive: the `loopRunId` its run record's loop declaration names,
   // else the lent run id itself (still a loop's drive, still read-only). A drive that owns its run
@@ -83,15 +84,17 @@ export function createLoopSessionStreams({ loopSession = null, readRuns, reportD
   }
 
   // The statement itself, keyed EXACTLY as the session's own hook keys its record
-  // (`aof session start|ping`: this node's id, the workspace's canonical id, the `claude-code`
-  // label), so it upserts that record rather than writing a sibling beside it.
+  // (`aof session start|ping`: this node's id, the workspace's canonical id, the hook's label),
+  // so it upserts that record rather than writing a sibling beside it. The label is the port's
+  // `assistant`: it has one home, `CLAUDE_HOOK_ASSISTANT` in the mesh's session-spawn directive
+  // (191/ADR-002 amendment 2026-11-14 §4), which the drive binding hands in.
   async function stateLoopSession(workspace, { sessionId, loopRunId }) {
     const config = workspace.config ?? {};
     return loopSession.pingSession(workspace, {
       nodeId: await loopSession.resolveNodeId(workspace),
       workspaceId: loopSession.resolveWorkspaceId({ config, projectRoot: workspace.projectRoot }),
       repo: config.name ?? path.basename(workspace.projectRoot),
-      assistant: "claude-code",
+      assistant: loopSession.assistant,
       sessionId,
       relaying: true,
       loopRunId,

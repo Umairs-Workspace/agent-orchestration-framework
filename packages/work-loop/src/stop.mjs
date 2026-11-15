@@ -13,7 +13,7 @@
 // so a declaration whose latest run names another node is refused by name (ADR-006 §1) — the
 // operator stops it on that node's own console.
 
-import { decideLoopScope, loopScopeIncludes, readLoopDeclaration } from "./engine.mjs";
+import { decideLoopScope, loopScopeIncludes, readLoopDeclaration, resolveLoopLevel } from "./engine.mjs";
 
 import { heartbeatFromConfig } from "@aof/contracts/loop-bounds";
 
@@ -26,8 +26,11 @@ export function createLoopStops({
 }) {
   const { listItems } = work;
   const { isRunning, isStale, readRuns } = runs;
-  const { meshNodeIdOf } = placement;
-  const { STOP_LEVELS, loopResumesDir, loopStopsDir, markStopHonoured, requestLoopResume, requestLoopStop, resumeRequestPath, stopRequestPath } = stopRequests;
+  // `resolveWorkspaceId` is the mesh's ONE identity precedence (pinned `mesh.workspaceId`, then the id
+  // derived from the project root), supplied by the core binding so a start names the id the mesh
+  // registered the project under (191/F-14), never only a hand-pinned one.
+  const { meshNodeIdOf, resolveWorkspaceId } = placement;
+  const { STOP_LEVELS, loopResumesDir, loopStopsDir, markStopHonoured, requestLoopResume, requestLoopStop, resumeRequestPath, stopRequestPath, loopStartsDir, requestLoopStart, startRequestPath } = stopRequests;
 
   // The refusal codes, each a coded document (ADR-002 §3, §5): the command face maps
   // `loop-stop-no-declaration` to 404 and the other two to 409; `loop-stop-exclusive` (400) is the
@@ -49,6 +52,16 @@ export function createLoopStops({
     notSupervised: "loop-hand-off-not-supervised",
     running: "loop-hand-off-running",
     notLocal: "loop-hand-off-not-local",
+  });
+
+  // 191/04 (ADR-005 §2) — the start's refusals, values like the hand-off's: the face maps every one
+  // to 409 but the scope's and the level's, which are the caller's input (400).
+  const START_REFUSALS = Object.freeze({
+    scope: "loop-start-scope",
+    running: "loop-start-running",
+    resumable: "loop-start-resumable",
+    level: "loop-start-level",
+    noWorkspace: "loop-start-no-workspace",
   });
 
   const refuse = (code, message) => ({ ok: false, code, message });
@@ -204,10 +217,68 @@ export function createLoopStops({
     return { ok: true, handedOff: true, loopRunId: declaration.loopRunId, scope: read.scope, path: resumeRequestPath(dir, declaration.loopRunId) };
   }
 
+  // handOffStart(workspace, { scope, level, now }) — 191/04 (ADR-005 §1-§2): ask the SUPERVISOR to
+  // start the scope as a NEW supervised loop, and start nothing here. It reads the scope's runs
+  // exactly as the hand-off does, and writes the durable start request the declarations producer
+  // turns into one fresh `--supervised` row. A scope whose loop is live is refused
+  // (`loop-start-running`), and so is one with a supervised declaration `--hand-off` would relaunch
+  // (`loop-start-resumable`): a fresh start would reset that halted loop's total budget, so the
+  // refusal names the resume instead. Answers `{ ok: true, requested: true, scope, path }`.
+  // `--hand-off-start` is its own request: each companion flag is refused before any read, naming both.
+  const START_COMPANIONS = Object.freeze([["stop", "--stop"], ["resume", "--resume"], ["handOff", "--hand-off"], ["dryRun", "--dry-run"]]);
+
+  async function handOffStart(workspace, { scope, level = null, now, ...flags } = {}) {
+    const companion = START_COMPANIONS.find(([key]) => flags[key] === true);
+    if (companion != null) {
+      return refuse("invalid-input", `--hand-off-start and ${companion[1]} are exclusive: --hand-off-start asks the supervisor to start a new supervised loop and is its own request — pass it without ${companion[1]}.`);
+    }
+    // The grammar is asked before any read, the hand-off's own order.
+    const read = await scopeDeclaration(workspace, scope, START_REFUSALS);
+    if (read.refusal) return read.refusal;
+    // A level the loop would refuse at its door is refused here, before anything is written: the
+    // supervisor would otherwise spawn a loop that dies at once, every poll, on a request nothing clears.
+    if (level != null) {
+      const resolvedLevel = resolveLoopLevel(level);
+      if (resolvedLevel?.admitted !== true) {
+        return refuse(START_REFUSALS.level, `Level ${JSON.stringify(level)} is not one \`aof work loop ${read.scope}\` starts at (${resolvedLevel?.code ?? "refused"}) — nothing was requested (${START_REFUSALS.level}).`);
+      }
+    }
+    const { declaration, latest } = read;
+    const clock = clockOf(now);
+    if (latest != null && isRunning(latest) && !isStale(latest, clock().getTime(), heartbeatFromConfig(workspace))) {
+      return refuse(START_REFUSALS.running, `Loop ${declaration.loopRunId} in scope ${read.scope} is running — there is nothing to start (${START_REFUSALS.running}).`);
+    }
+    // Exactly the declarations `--hand-off` would relaunch: supervised, and last run on this node.
+    const localNode = meshNodeIdOf(workspace.config);
+    const runNode = typeof latest?.node === "string" && latest.node.length > 0 ? latest.node : null;
+    const local = localNode == null || runNode == null || runNode === localNode;
+    if (declaration != null && declaration.supervised === true && local) {
+      return refuse(START_REFUSALS.resumable, `Scope ${read.scope} has a halted supervised loop (${declaration.loopRunId}) — a fresh start would reset its budget. Resume it instead: \`/loop resume ${read.scope}\`, or \`aof work loop ${read.scope} --hand-off\` (${START_REFUSALS.resumable}).`);
+    }
+    // The id the mesh resolves (191/F-14): pinned first, then the path derivation `aof mesh repo
+    // publish` registered. Only a workspace with neither anchor is refused, and the refusal names the
+    // one fix that works: pinning the id in the project's config (no verb writes it).
+    const workspaceId = resolveWorkspaceId(workspace);
+    if (typeof workspaceId !== "string" || workspaceId.length === 0) {
+      return refuse(START_REFUSALS.noWorkspace, `This workspace resolves no mesh workspace id (no pinned id and no project root to derive one from), so no supervisor can be asked to start ${read.scope} — pin \`mesh.workspaceId\` in the project's \`.aof/aof.config.json\` (${START_REFUSALS.noWorkspace}).`);
+    }
+    const dir = loopStartsDir();
+    await requestLoopStart(dir, {
+      scope: read.scope,
+      workspaceId,
+      by: { node: localNode, pid: process.pid },
+      level: level ?? null,
+      now: clock,
+    });
+    return { ok: true, requested: true, scope: read.scope, path: startRequestPath(dir, { workspaceId, scope: read.scope }) };
+  }
+
   return Object.freeze({
     HAND_OFF_REFUSALS,
+    START_REFUSALS,
     STOP_REFUSALS,
     handOffLoop,
+    handOffStart,
     hasLoopOn,
     stopLoop
   });
