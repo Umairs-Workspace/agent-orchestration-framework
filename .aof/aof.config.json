@@ -165,17 +165,6 @@
       "startToCloseMs": 14400000,
       "heartbeatMs": 1800000,
       "scheduleToCloseMs": 43200000
-    },
-    "notify": {
-      "channels": {
-        "discord": {
-          "type": "discord",
-          "channelId": "1553365880904089651",
-          "allow": [
-            "1119197349521137757"
-          ]
-        }
-      }
     }
   },
   "memory": {
