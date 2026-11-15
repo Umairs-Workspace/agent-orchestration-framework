@@ -26,6 +26,7 @@ const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
 const loopStartsDir = _aofApplication.loop.stopRequest.loopStartsDir;
 const requestLoopStart = _aofApplication.loop.stopRequest.requestLoopStart;
 const startRequestPath = _aofApplication.loop.stopRequest.startRequestPath;
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import {
   DECLARATION_L1,
   cancellableDriver,
@@ -965,6 +966,28 @@ loopCommandResumeTests.push(
         await assert.rejects(runLoopBody({ scope: "03", level: "L3", supervised: true }, { ...fx.ctx, agentSessionDriverOptions: completingDriver(fx).options, stopSource: fakeStopSource(), report: (line) => lines.push(line) }));
         assert.equal(existsSync(startRequestPath(loopStartsDir(), startOf("03"))), false, "the refused start's request is spent");
         assert.deepEqual(lines, ["Cleared the start request for 03 — the loop refused to start, so the supervisor will not start it again."]);
+      } finally {
+        await fx.cleanup();
+        await resetLoopStarts();
+      }
+    },
+  },
+  {
+    // 191/04 task 03 (F-14) — the spend names the id the start was written under: an unpinned
+    // workspace's request sits under its DERIVED id, and a fresh supervised launch must still spend it,
+    // or the supervisor would start the scope again on every poll once the loop settled.
+    name: "191/04 task03 — a fresh supervised launch in a workspace with no pinned id spends the start request written under its derived id",
+    async run() {
+      await resetLoopStarts();
+      const fx = await loopFixture();
+      try {
+        assert.equal(fx.workspace.config.mesh, undefined, "the fixture pins no mesh.workspaceId");
+        const derived = { workspaceId: resolveWorkspaceId(fx.workspace), scope: "03" };
+        await requestLoopStart(loopStartsDir(), { ...derived, by: { node: "win-host-a", pid: 4242 }, now: () => new Date("2026-11-15T10:00:00.000Z") });
+        const driver = completingDriver(fx, { onCommand: closing(fx) });
+        const { lines } = await runCollected({ scope: "03", supervised: true }, { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: fakeStopSource() });
+        assert.equal(existsSync(startRequestPath(loopStartsDir(), derived)), false, "the request under the derived id is spent");
+        assert.equal(lines.filter((line) => line === START_CLEARED("03")).length, 1, lines.join("\n"));
       } finally {
         await fx.cleanup();
         await resetLoopStarts();

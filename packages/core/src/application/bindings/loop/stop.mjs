@@ -1,6 +1,7 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import { createLoopStops } from "@aof/work-loop/stop";
 import { meshNodeIdOf } from "@aof/mesh/commands/gate";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
 export function assembleLoopStop({ workServices, runStoreServices, loopStopRequestServices }) {
   // Core composition; @aof/work-loop owns the implementation.
@@ -25,7 +26,7 @@ export function assembleLoopStop({ workServices, runStoreServices, loopStopReque
   const implementation = createLoopStops({
     work: { listItems },
     runs: { isRunning, isStale, readRuns },
-    placement: { meshNodeIdOf },
+    placement: { meshNodeIdOf, resolveWorkspaceId },
     stopRequests: { STOP_LEVELS, loopResumesDir, loopStopsDir, markStopHonoured, requestLoopResume, requestLoopStop, resumeRequestPath, stopRequestPath, loopStartsDir, requestLoopStart, startRequestPath },
   });
 

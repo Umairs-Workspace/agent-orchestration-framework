@@ -26,7 +26,10 @@ export function createLoopStops({
 }) {
   const { listItems } = work;
   const { isRunning, isStale, readRuns } = runs;
-  const { meshNodeIdOf } = placement;
+  // `resolveWorkspaceId` is the mesh's ONE identity precedence (pinned `mesh.workspaceId`, then the id
+  // derived from the project root), supplied by the core binding so a start names the id the mesh
+  // registered the project under (191/F-14), never only a hand-pinned one.
+  const { meshNodeIdOf, resolveWorkspaceId } = placement;
   const { STOP_LEVELS, loopResumesDir, loopStopsDir, markStopHonoured, requestLoopResume, requestLoopStop, resumeRequestPath, stopRequestPath, loopStartsDir, requestLoopStart, startRequestPath } = stopRequests;
 
   // The refusal codes, each a coded document (ADR-002 §3, §5): the command face maps
@@ -252,9 +255,12 @@ export function createLoopStops({
     if (declaration != null && declaration.supervised === true && local) {
       return refuse(START_REFUSALS.resumable, `Scope ${read.scope} has a halted supervised loop (${declaration.loopRunId}) — a fresh start would reset its budget. Resume it instead: \`/loop resume ${read.scope}\`, or \`aof work loop ${read.scope} --hand-off\` (${START_REFUSALS.resumable}).`);
     }
-    const workspaceId = workspace?.config?.mesh?.workspaceId ?? null;
+    // The id the mesh resolves (191/F-14): pinned first, then the path derivation `aof mesh repo
+    // publish` registered. Only a workspace with neither anchor is refused, and the refusal names the
+    // one fix that works: pinning the id in the project's config (no verb writes it).
+    const workspaceId = resolveWorkspaceId(workspace);
     if (typeof workspaceId !== "string" || workspaceId.length === 0) {
-      return refuse(START_REFUSALS.noWorkspace, `This workspace has no mesh workspace id, so no supervisor can be asked to start ${read.scope} — publish one with \`aof mesh identity\` (${START_REFUSALS.noWorkspace}).`);
+      return refuse(START_REFUSALS.noWorkspace, `This workspace resolves no mesh workspace id (no pinned id and no project root to derive one from), so no supervisor can be asked to start ${read.scope} — pin \`mesh.workspaceId\` in the project's \`.aof/aof.config.json\` (${START_REFUSALS.noWorkspace}).`);
     }
     const dir = loopStartsDir();
     await requestLoopStart(dir, {

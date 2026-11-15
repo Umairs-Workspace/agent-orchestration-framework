@@ -11,7 +11,7 @@ import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // `test/arch/loop/acd-declaration-predicate-is-composed.test.mjs`.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, mkdir, readdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readdir, readFile, realpath, rm, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -43,6 +43,8 @@ const requestLoopStart = _aofApplication.loop.stopRequest.requestLoopStart;
 const startRequestPath = _aofApplication.loop.stopRequest.startRequestPath;
 const handOffStart = _aofApplication.loop.stop.handOffStart;
 const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const forgetNodeWorkspace = _aofApplication.mesh.globalNodeRegistry.forgetNodeWorkspace;
+import { workspaceIdFromPath } from "@aof/mesh/workspace-identity";
 import { stripComments } from "../support/source-slice.mjs";
 import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 
@@ -881,4 +883,141 @@ export const workLoopDeclarationsTests = [
       assert.deepEqual([listed.rows.length, listed.starts.length], [1, 0], "a scope with a row of its own is not started beside it");
     },
   },
+  // ── 191/04 task 03 (F-14) — a start resolves the workspace the mesh already knows. Each case writes
+  // a workspace under a REAL temp root (`realpath`, so the CLI's cwd and the loaded workspace derive
+  // one id on macOS's symlinked tmpdir) whose config pins no `mesh.workspaceId` unless the case pins
+  // one, runs the REAL CLI under the harness's isolated `AOF_GLOBAL_HOME`, and removes what it wrote.
+  {
+    name: "191/04 task03 R1 — an unpinned, published project gets a start request under its derived id, and the supervisor is handed its start row",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      await withStartWorkspace(async ({ dir, workspace, status }) => {
+        const ws = await workspace();
+        assert.equal(ws.config?.mesh?.workspaceId, undefined, "Given: the config pins no mesh.workspaceId");
+        const derived = workspaceIdFromPath(dir);
+        // And the mesh registers it under the id derived from that root — the publish's own write path.
+        const registered = await registerOnNode(ws);
+        try {
+          assert.ok(registered.includes(derived), `the mesh registers ${derived}: ${JSON.stringify(registered)}`);
+
+          // When `aof work loop 22 --hand-off-start --json` runs in "ws-p".
+          const run = cliIn(dir, ["work", "loop", "22", "--hand-off-start", "--json"]);
+          assert.equal(run.status, 0, run.stderr || run.stdout);
+          const answer = JSON.parse(run.stdout);
+          assert.equal(answer.ok, true, run.stdout);
+          assert.equal(answer.requested, true);
+          assert.equal(path.dirname(answer.path), loopStartsDir(), `a request under <meshRoot>/loop-starts/: ${answer.path}`);
+          assert.equal(path.basename(loopStartsDir()), "loop-starts");
+          const request = JSON.parse(await readFile(answer.path, "utf8"));
+          assert.equal(request.workspaceId, derived, "the request names the derived id the mesh registered");
+          assert.equal(request.scope, "22");
+
+          // R1 · the supervisor is handed a start row for it: exactly one fresh --supervised row, at its root.
+          const route = _aofApplication.getCommand("work:loop").cli.route;
+          const rows = (await status()).declarations.rows.filter((row) => row.scope === "22");
+          assert.deepEqual(rows, [{
+            id: `start:${derived}:22`,
+            label: "loop 22",
+            argv: [...route, "22", "--supervised"],
+            cwd: dir,
+            scope: "22",
+            level: null,
+            cap: null,
+          }], "exactly one fresh --supervised row for 22, at ws-p's project root");
+        } finally {
+          await forgetRegistration(derived);
+        }
+      });
+      await rm(loopStartsDir(), { recursive: true, force: true });
+    },
+  },
+  {
+    name: "191/04 task03 R1 — a standalone node (no registered member) is handed the same start row: the producer's fallback resolves the id too",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      await withStartWorkspace(async ({ dir, status }) => {
+        const derived = workspaceIdFromPath(dir);
+        const run = cliIn(dir, ["work", "loop", "22", "--hand-off-start", "--json"]);
+        assert.equal(run.status, 0, run.stderr || run.stdout);
+        assert.equal(JSON.parse(await readFile(JSON.parse(run.stdout).path, "utf8")).workspaceId, derived);
+        const rows = (await status()).declarations.rows.filter((row) => row.scope === "22");
+        assert.deepEqual(rows.map((row) => [row.id, row.cwd, row.argv.at(-1)]), [[`start:${derived}:22`, dir, "--supervised"]], "one fresh --supervised row, at the root");
+      });
+      await rm(loopStartsDir(), { recursive: true, force: true });
+    },
+  },
+  {
+    name: "191/04 task03 R1 — a pinned id still wins",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      await withStartWorkspace(async ({ dir }) => {
+        assert.notEqual(workspaceIdFromPath(dir), "a7fc47eec5f91bc0", "the pin differs from the derivation, so the case can tell them apart");
+        const run = cliIn(dir, ["work", "loop", "22", "--hand-off-start", "--json"]);
+        assert.equal(run.status, 0, run.stderr || run.stdout);
+        const request = JSON.parse(await readFile(JSON.parse(run.stdout).path, "utf8"));
+        assert.equal(request.workspaceId, "a7fc47eec5f91bc0", "the request names the pinned id");
+      }, { name: "ws-a", pin: "a7fc47eec5f91bc0" });
+      await rm(loopStartsDir(), { recursive: true, force: true });
+    },
+  },
+  {
+    name: "191/04 task03 R2 — no workspace id resolves at all: refused loop-start-no-workspace, naming mesh.workspaceId in .aof/aof.config.json and not aof mesh identity",
+    async run() {
+      await rm(loopStartsDir(), { recursive: true, force: true });
+      // A workspace with no project root (and no work dir, the derivation's other anchor) and no pin:
+      // the CLI always loads a rooted workspace, so the command face `aof work loop` runs is driven
+      // directly with the input its `--hand-off-start --json` argv parses to.
+      const workspace = { config: { mesh: { nodeId: "node-1" } } };
+      const loopCommand = _aofApplication.getCommand("work:loop");
+      await assert.rejects(loopCommand.run({ scope: "22", startHandOff: true }, { workspace }), (error) => {
+        assert.equal(error.code, "loop-start-no-workspace", String(error?.message));
+        assert.match(error.message, /`mesh\.workspaceId`/u, `names mesh.workspaceId: ${error.message}`);
+        assert.match(error.message, /\.aof\/aof\.config\.json/u, `names the project's .aof/aof.config.json: ${error.message}`);
+        assert.doesNotMatch(error.message, /aof mesh identity/u, `does not name aof mesh identity: ${error.message}`);
+        return true;
+      });
+      const answer = await handOffStart(workspace, { scope: "22" });
+      assert.deepEqual([answer.ok, answer.code], [false, "loop-start-no-workspace"], "the core answers the refusal as a value");
+      assert.deepEqual(await readStartRequests(loopStartsDir()), [], "nothing is requested");
+    },
+  },
 ];
+
+// 191/04 task 03 — a workspace "ws-p" under a real temp root, its config naming the node but pinning
+// no `mesh.workspaceId` unless `pin` is given; `status()` is `mesh status --declarations` over it.
+async function withStartWorkspace(fn, { name = "ws-p", pin } = {}) {
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-loop-start-")));
+  try {
+    const dir = await makeProducerWorkspace(root, name, { record: null });
+    await writeFile(path.join(dir, ".aof", "aof.config.json"), JSON.stringify({
+      name, work: { dir: "wiki/work" }, mesh: { nodeId: "node-1", ...(pin == null ? {} : { workspaceId: pin }) },
+    }, null, 2));
+    const workspace = () => loadWorkspace(dir, undefined, { env: process.env });
+    const status = async () => meshStatusCommand.run({ now: NOW, declarations: true }, { workspace: await workspace(), globalWorkStoreOptions: { env: process.env } });
+    return await fn({ dir, workspace, status });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+// Registers `ws` as a member of node-1 through the publish's own write path, and answers the ids
+// node-1 now carries.
+async function registerOnNode(ws) {
+  const store = await openGlobalWorkProjectionStore({ env: process.env });
+  try {
+    await publishNodeRecord(ws, "node-1", { nodeId: "node-1", host: "node-1", os: "darwin", runtimes: ["claude"], aofVersion: "1.2.3", publishedAt: NOW });
+    await publishGlobalRegistryDescriptorsToStore(store, ws, { now: NOW });
+    return store.db.prepare("SELECT workspace_id FROM global_node_workspaces WHERE node_id = ?").all("node-1").map((row) => row.workspace_id);
+  } finally {
+    store.close();
+  }
+}
+
+async function forgetRegistration(workspaceId) {
+  const store = await openGlobalWorkProjectionStore({ env: process.env });
+  try {
+    forgetNodeWorkspace(store, "node-1", workspaceId);
+  } finally {
+    store.close();
+  }
+}

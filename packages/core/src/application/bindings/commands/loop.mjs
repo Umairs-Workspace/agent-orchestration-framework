@@ -10,6 +10,7 @@ import {
   sessionTableLine,
 } from "@aof/execution/session-model";
 import { meshNodeIdOf } from "@aof/mesh/commands/gate";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
 import { claudeModelFamily, resolveExecution, resolveExecutionResume } from "@aof/execution/runtime-selection";
 
@@ -97,7 +98,7 @@ export function assembleCommandsLoop({ runtimeSessionServices, workServices, loo
     sessions: { claudeModelFamily, configuredSessionModels, normalizeEffort, parseSessionChoices, resolveSessionTable, SESSION_PHASES, sessionTableLine, resolveExecution, resolveExecutionResume, runtimeSession: runtimeSessionServices },
     items: { resolveItemExact },
     gradeCommand: { declaredRubric, usableCommand },
-    placement: { meshNodeIdOf },
+    placement: { meshNodeIdOf, resolveWorkspaceId },
     runs: { readRuns, staleRunningRuns },
     transitions: { transitionRunStart, transitionStaleRunsReclaimed },
     diagnostics: { reportDegrade },

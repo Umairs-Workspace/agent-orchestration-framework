@@ -4,7 +4,7 @@ import { argvFor } from "@aof/work-loop/argv";
 
 
 // Core supplies configured services and deferred application loaders. Construction is inert.
-export function createSupervisedDeclarations({ resolveNodeWorkspaces, isRunning, isStale, readRuns, retryReadiness, resolveAttemptCeiling, listItems, loadWorkspace, STOP_STATES, loopResumesDir, loopStopsDir, readResumeRequest, readStopRequest, loopStartsDir, readStartRequests, loadCommandRegistry }) {
+export function createSupervisedDeclarations({ resolveNodeWorkspaces, isRunning, isStale, readRuns, retryReadiness, resolveAttemptCeiling, listItems, loadWorkspace, STOP_STATES, loopResumesDir, loopStopsDir, readResumeRequest, readStopRequest, loopStartsDir, readStartRequests, resolveWorkspaceId, loadCommandRegistry }) {
 // THE DECLARATIONS PRODUCER (126/02, ADR-005 §2, §5-§8) — which declarations should be running on
 // this node now, composed into rows a supervisor can act on.
 //
@@ -124,7 +124,10 @@ async function supervisedDeclarations(ws, localId, nowIso, ctx) {
   // be resolved is never readable as an empty node.
   const members = resolved.workspaces.length > 0
     ? resolved.workspaces
-    : [{ workspaceId: ws.config?.mesh?.workspaceId ?? null, workDir: ws.workDir, projectRoot: ws.projectRoot }];
+    // Its id through the ONE precedence (191/F-14), the id `handOffStart` names in a start request: a
+    // raw read of the pinned key left an unpinned standalone workspace with no id, and its start
+    // request unread.
+    : [{ workspaceId: resolveWorkspaceId(ws), workDir: ws.workDir, projectRoot: ws.projectRoot }];
 
   const workspaces = [];
   for (const member of members) {
