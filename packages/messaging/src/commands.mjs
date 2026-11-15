@@ -1,9 +1,8 @@
 import { existsSync } from "node:fs";
-import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 
 // Core supplies configured application services; construction performs no I/O.
-export function createMessagingCommands({ CHANNELS, DEFAULT_TOKEN_ENV, sendTestMessage, messagingSecretPath, messagingSecretPresent, writeMessagingSecret, readConfig, writeConfig }) {
+export function createMessagingCommands({ CHANNELS, DEFAULT_TOKEN_ENV, sendTestMessage, messagingSecretPath, messagingSecretPresent, writeMessagingSecret, readConfig, writeConfig, readGlobalConfig, writeGlobalConfig, loadWorkspace }) {
 // messaging:init / messaging:enable / messaging:disable / messaging:status / messaging:test — `aof messaging`, the
 // one way a notify channel's credential enters aof and the per-project switch that turns it on
 // (milestone 131 / stories 08-09; ADR-005 §1 as amended at 131/08, ADR-007). One module registers
@@ -29,6 +28,13 @@ export function createMessagingCommands({ CHANNELS, DEFAULT_TOKEN_ENV, sendTestM
 //                     §7, 131/10's `allow`). It asks the store only whether a credential is present,
 //                     and never reads an env var's value into its answer.
 //
+// THE GLOBAL LAYER (194). `enable`/`disable --global` edit `work.notify.channels` in the machine-wide
+// `<aof home>/aof.config.json` (`readGlobalConfig`/`writeGlobalConfig`), never a project's. A project
+// whose `work.notify` has no `channels` key inherits those channels; one with the key, `{}` included,
+// keeps its own. That rule has ONE home, `loadWorkspace`, so `status` and `test` read a project's
+// channels through it rather than the raw file. A project-level `disable` while the global config
+// has channels of the type leaves `channels: {}`, which switches the global channel off there.
+//
 // THE ARGV RULE. argv lands in shell history and the process list, so the token never arrives by
 // argv: any positional after the type — or a URL-looking type — is refused
 // `messaging-secret-in-argv` before any read or write, and no refusal ever repeats what it refused.
@@ -52,6 +58,7 @@ const labelOf = (type) => CHANNELS[type]?.label ?? type;
 const credentialOf = (type) => `${labelOf(type)} ${CHANNELS[type]?.credential ?? "credential"}`;
 const initHint = (type) => `aof messaging init ${type}`;
 const enableHint = (type) => `aof messaging enable ${type} --channel <id>`;
+const globalEnableHint = (type) => `${enableHint(type)} --global`;
 
 // The channel type a verb names, refused by code when it is missing, unknown or argv-borne secret.
 function channelTypeFrom(positionals, verb) {
@@ -183,6 +190,31 @@ function channelNamesOfType(config, type) {
   return Object.entries(channels).filter(([, channel]) => isPlainObject(channel) && channel.type === type).map(([name]) => name);
 }
 
+// Whether a project's `work.notify` declares its channels at all — `{}` counts (194 Q5).
+function declaresChannels(config) {
+  const notify = config?.work?.notify;
+  return isPlainObject(notify) && Object.hasOwn(notify, "channels");
+}
+
+// Drops an emptied `work.notify` (and then an emptied `work`) from a config about to be written.
+// A remaining `link` keeps `channels: {}` beside it, the same honest no-op (ADR-005 §1).
+function pruneEmptyNotify(config, { pruneWork }) {
+  const notify = config.work.notify;
+  if (Object.keys(notify.channels).length === 0 && Object.keys(notify).every((key) => key === "channels")) delete config.work.notify;
+  if (pruneWork && Object.keys(config.work).length === 0) delete config.work;
+}
+
+// The global config as the loader reads it, for a verb that only READS it: unreadable is "no global
+// channels", as `loadWorkspace` treats it, with the refusal's message kept for `status` to show.
+// Only `--global` writes go through the strict `readGlobalConfig` and refuse.
+async function globalForReading() {
+  try {
+    return { config: (await readGlobalConfig()).config, problem: null };
+  } catch (error) {
+    return { config: {}, problem: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 const noSecretLine = (type) => `No ${credentialOf(type)} is stored on this machine yet — run \`${initHint(type)}\`.`;
 
 // The channel id `enable` was handed, refused by code when it is missing or not the type's shape.
@@ -227,6 +259,11 @@ const TARGET_INPUT = Object.freeze({
   required: ["type", "targetDir"],
   additionalProperties: false,
 });
+const SWITCH_INPUT = Object.freeze({
+  ...TARGET_INPUT,
+  properties: { ...TARGET_INPUT.properties, global: { type: "boolean" } },
+});
+const GLOBAL_FLAG = Object.freeze({ type: "boolean", description: "edit the machine-wide ~/.aof/aof.config.json: its channels serve every project with no channels of its own" });
 
 function switchArgv(verb) {
   return (positionals, options = {}) => {
@@ -237,6 +274,7 @@ function switchArgv(verb) {
       targetDir: process.cwd(),
       ...(verb === "enable" && options.channel !== undefined ? { channelId: options.channel } : {}),
       ...(verb === "enable" && options.allow !== undefined ? { allow: String(options.allow) } : {}),
+      ...(options.global === true ? { global: true } : {}),
     };
   };
 }
@@ -252,6 +290,7 @@ const messagingEnableCommand = {
       targetDir: { type: "string" },
       channelId: { type: "string" },
       allow: { type: "string" },
+      global: { type: "boolean" },
     },
     required: ["type", "targetDir"],
     additionalProperties: false,
@@ -263,10 +302,12 @@ const messagingEnableCommand = {
   // degrades on every send. Any other id adds a channel, numbered `<type>-2`, `<type>-3`, … as 08 does.
   // `--allow` ADDS user ids to that channel's `allow` (131/ADR-008 §3's answer list), keeping the ones
   // already there: re-running with the same id changes nothing, and nothing here ever removes one.
-  async run({ type, targetDir, channelId, allow }) {
+  async run({ type, targetDir, channelId, allow, global = false }) {
     const id = checkedChannelId(type, channelId);
     const allowIds = checkedAllow(type, allow);
-    const { configPath, config } = await projectConfigOrRefuse(targetDir, "enable");
+    const { configPath, config } = global ? await readGlobalConfig() : await projectConfigOrRefuse(targetDir, "enable");
+    const write = global ? writeGlobalConfig : writeConfig;
+    const where = global ? "globally" : "for this project";
     const stored = await messagingSecretPresent(type);
     const notes = [];
     const existing = channelNamesOfType(config, type);
@@ -284,11 +325,11 @@ const messagingEnableCommand = {
     if (onId.length > 0) {
       const added = applyAllow(onId);
       if (allowIds === undefined) {
-        notes.push(`${type} is already enabled for this project on channel ${id} (${onId.map((name) => `"${name}"`).join(", ")}) — nothing changed.`);
+        notes.push(`${type} is already enabled ${where} on channel ${id} (${onId.map((name) => `"${name}"`).join(", ")}) — nothing changed.`);
       } else {
-        notes.push(`${type} is already enabled for this project on channel ${id} (${onId.map((name) => `"${name}"`).join(", ")}).`);
+        notes.push(`${type} is already enabled ${where} on channel ${id} (${onId.map((name) => `"${name}"`).join(", ")}).`);
         if (added > 0) {
-          await writeConfig(configPath, config);
+          await write(configPath, config);
           changed = true;
           notes.push(...onId.map((name) => allowNote(name, added, config.work.notify.channels[name].allow.length)));
         } else {
@@ -300,10 +341,10 @@ const messagingEnableCommand = {
       delete channel.urlEnv;
       channel.channelId = id;
       const added = applyAllow([idless]);
-      await writeConfig(configPath, config);
+      await write(configPath, config);
       channels = [idless];
       changed = true;
-      notes.push(`Set channel ${id} on "${idless}" for this project in ${configPath}.`);
+      notes.push(`Set channel ${id} on "${idless}" ${where} in ${configPath}.`);
       if (allowIds !== undefined) notes.push(allowNote(idless, added, channel.allow.length));
     } else {
       if (!isPlainObject(config.work)) config.work = {};
@@ -313,10 +354,10 @@ const messagingEnableCommand = {
       for (let n = 2; Object.hasOwn(config.work.notify.channels, name); n += 1) name = `${type}-${n}`;
       config.work.notify.channels[name] = { type, channelId: id };
       const added = applyAllow([name]);
-      await writeConfig(configPath, config);
+      await write(configPath, config);
       channels = [name];
       changed = true;
-      notes.push(`Enabled ${type} on channel ${id} for this project in ${configPath}.`);
+      notes.push(`Enabled ${type} on channel ${id} ${where} in ${configPath}.`);
       if (allowIds !== undefined) notes.push(allowNote(name, added, config.work.notify.channels[name].allow.length));
     }
     if (!stored) notes.push(noSecretLine(type));
@@ -326,11 +367,12 @@ const messagingEnableCommand = {
   cli: {
     route: ["messaging", "enable"],
     spec: {
-      usage: "aof messaging enable <type> --channel <id> [--allow <user-id>[,<user-id>…]] [--json]",
+      usage: "aof messaging enable <type> --channel <id> [--allow <user-id>[,<user-id>…]] [--global] [--json]",
       workspace: false,
       flags: {
         channel: { type: "string", description: "the Discord channel id the bot posts to (not a secret)" },
         allow: { type: "string", description: "Discord user ids that may answer by reply and run the slash commands, comma-separated; added to the channel's list" },
+        global: GLOBAL_FLAG,
       },
     },
     argv: switchArgv("enable"),
@@ -341,26 +383,47 @@ const messagingEnableCommand = {
 
 const messagingDisableCommand = {
   id: "messaging:disable",
-  input: TARGET_INPUT,
+  input: SWITCH_INPUT,
 
-  async run({ type, targetDir }) {
+  async run({ type, targetDir, global = false }) {
+    const named = (names) => names.map((name) => `"${name}"`).join(", ");
+    if (global) {
+      const { configPath, config } = await readGlobalConfig();
+      const removed = channelNamesOfType(config, type);
+      if (removed.length === 0) {
+        return { type, configPath, changed: false, removed, notes: [`${type} is not enabled globally — nothing changed.`] };
+      }
+      for (const name of removed) delete config.work.notify.channels[name];
+      pruneEmptyNotify(config, { pruneWork: true });
+      await writeGlobalConfig(configPath, config);
+      return { type, configPath, changed: true, removed, notes: [`Disabled ${type} globally in ${configPath} (removed ${named(removed)}). Projects with channels of their own are unchanged.`] };
+    }
     const { configPath, config } = await projectConfigOrRefuse(targetDir, "disable");
     const removed = channelNamesOfType(config, type);
+    // While the global config has channels of the type, an emptied project keeps `channels: {}`:
+    // dropping the key would hand the project the global channel it was just switched off from.
+    const globalHasType = channelNamesOfType((await globalForReading()).config, type).length > 0;
     if (removed.length === 0) {
+      if (globalHasType && !declaresChannels(config)) {
+        if (!isPlainObject(config.work)) config.work = {};
+        if (!isPlainObject(config.work.notify)) config.work.notify = {};
+        config.work.notify.channels = {};
+        await writeConfig(configPath, config);
+        return { type, configPath, changed: true, removed, notes: [`Switched the global ${type} channel off for this project in ${configPath} — the global config is unchanged.`] };
+      }
       return { type, configPath, changed: false, removed, notes: [`${type} is not enabled for this project — nothing changed.`] };
     }
-    const notify = config.work.notify;
-    for (const name of removed) delete notify.channels[name];
-    // Nothing else left in the block → the block goes. A remaining `link` keeps `channels: {}`
-    // beside it, the same honest no-op (ADR-005 §1).
-    if (Object.keys(notify.channels).length === 0 && Object.keys(notify).every((key) => key === "channels")) delete config.work.notify;
+    for (const name of removed) delete config.work.notify.channels[name];
+    if (!globalHasType) pruneEmptyNotify(config, { pruneWork: false });
     await writeConfig(configPath, config);
-    return { type, configPath, changed: true, removed, notes: [`Disabled ${type} for this project in ${configPath} (removed ${removed.map((name) => `"${name}"`).join(", ")}).`] };
+    const notes = [`Disabled ${type} for this project in ${configPath} (removed ${named(removed)}).`];
+    if (globalHasType) notes.push(`The global ${type} channel stays off here too (\`work.notify.channels\` is left as {}).`);
+    return { type, configPath, changed: true, removed, notes };
   },
 
   cli: {
     route: ["messaging", "disable"],
-    spec: { usage: "aof messaging disable <type> [--json]", workspace: false },
+    spec: { usage: "aof messaging disable <type> [--global] [--json]", workspace: false, flags: { global: GLOBAL_FLAG } },
     argv: switchArgv("disable"),
     render: (result) => result.notes.join("\n"),
     json: switchJson,
@@ -382,12 +445,20 @@ const messagingStatusCommand = {
   // the process's own global home.
   async run({ targetDir }, ctx = {}) {
     const env = ctx.env ?? process.env;
-    const { configPath, config } = await readConfig(targetDir);
+    const { configPath } = await readConfig(targetDir);
     const inProject = existsSync(configPath);
+    // The project's channels as the notifier and the bot read them: through the one loader, which
+    // layers the global channels under a project that declares none (194). Its own env, never
+    // `ctx.env`, which is only the token override's lookup.
+    const workspace = inProject ? await loadWorkspace(targetDir) : null;
+    const from = workspace?.notifyChannelsFrom?.layer ?? (inProject ? "project" : null);
+    const { config: global, problem: globalProblem } = await globalForReading();
     const channels = [];
     for (const type of TYPES) {
-      const names = inProject ? channelNamesOfType(config, type) : [];
-      const entries = names.map((name) => config.work.notify.channels[name]);
+      const names = inProject ? channelNamesOfType(workspace.config, type) : [];
+      const entries = names.map((name) => workspace.config.work.notify.channels[name]);
+      const globalNames = channelNamesOfType(global, type);
+      const globalEntries = globalNames.map((name) => global.work.notify.channels[name]);
       const first = entries[0] ?? null;
       const name = typeof first?.tokenEnv === "string" ? first.tokenEnv : DEFAULT_TOKEN_ENV;
       channels.push({
@@ -395,12 +466,12 @@ const messagingStatusCommand = {
         stored: await messagingSecretPresent(type),
         path: messagingSecretPath(type),
         envOverride: { name, set: nonBlank(env[name]) },
+        global: { ...channelSummary(globalNames, globalEntries), problem: globalProblem },
         project: inProject
           ? {
-            enabled: names.length > 0,
-            channels: names,
-            channelIds: entries.map((entry) => (typeof entry.channelId === "string" ? entry.channelId : null)),
-            allowCounts: entries.map((entry) => (Array.isArray(entry.allow) ? entry.allow.length : 0)),
+            ...channelSummary(names, entries),
+            from,
+            switchedOff: names.length === 0 && globalNames.length > 0,
           }
           : null,
       });
@@ -421,6 +492,7 @@ const messagingStatusCommand = {
       entry.type,
       `  this machine: ${entry.stored ? `set (${entry.path})` : `not set — run \`${initHint(entry.type)}\``}`,
       `  env override ${entry.envOverride.name}: ${entry.envOverride.set ? "set" : "not set"}`,
+      `  global: ${globalLine(entry)}`,
       `  this project: ${projectLine(entry)}`,
     ].join("\n")).join("\n\n"),
 
@@ -428,18 +500,40 @@ const messagingStatusCommand = {
   },
 };
 
-// `enabled (discord → 123…, 2 may answer by reply, ops → no channel id — run …)`, `disabled`, or
-// `no project here`.
+// The names, ids and answer-list sizes of one layer's channels of a type.
+function channelSummary(names, entries) {
+  return {
+    enabled: names.length > 0,
+    channels: names,
+    channelIds: entries.map((entry) => (typeof entry.channelId === "string" ? entry.channelId : null)),
+    allowCounts: entries.map((entry) => (Array.isArray(entry.allow) ? entry.allow.length : 0)),
+  };
+}
+
+// `discord → 123…, 2 may answer by reply, ops → no channel id — run …` for one layer's summary.
+function channelList(type, summary) {
+  return summary.channels.map((name, index) => {
+    const id = summary.channelIds[index];
+    if (id == null) return `${name} → no channel id — run \`${enableHint(type)}\``;
+    const allowed = summary.allowCounts[index];
+    return allowed > 0 ? `${name} → ${id}, ${allowed} may answer by reply` : `${name} → ${id}`;
+  }).join(", ");
+}
+
+// `enabled (discord → 123…)`, `not set — run …`, or `unreadable — <why>` (194).
+function globalLine(entry) {
+  if (entry.global.problem != null) return `unreadable — ${entry.global.problem}`;
+  return entry.global.enabled ? `enabled (${channelList(entry.type, entry.global)})` : `not set — run \`${globalEnableHint(entry.type)}\` to serve every project`;
+}
+
+// `enabled (discord → 123…, 2 may answer by reply, ops → no channel id — run …)`, the same with
+// `, from the global config` when the project inherits them (194), `disabled`, `disabled here (the
+// global channel is switched off)`, or `no project here`.
 function projectLine(entry) {
   if (entry.project == null) return "no project here";
-  if (!entry.project.enabled) return "disabled";
-  const each = entry.project.channels.map((name, index) => {
-    const id = entry.project.channelIds[index];
-    if (id == null) return `${name} → no channel id — run \`${enableHint(entry.type)}\``;
-    const allowed = entry.project.allowCounts[index];
-    return allowed > 0 ? `${name} → ${id}, ${allowed} may answer by reply` : `${name} → ${id}`;
-  });
-  return `enabled (${each.join(", ")})`;
+  if (!entry.project.enabled) return entry.project.switchedOff ? "disabled here (the global channel is switched off)" : "disabled";
+  const inherited = entry.project.from === "global" ? ", from the global config" : "";
+  return `enabled (${channelList(entry.type, entry.project)}${inherited})`;
 }
 
 // ── test: one real post, and what went wrong if it did not arrive ──────────────────────────────
@@ -464,11 +558,12 @@ const messagingTestCommand = {
 
   // `ctx.env` / `ctx.fetch` are the seams a test drives; the store is the process's own global home.
   async run({ type, targetDir }, ctx = {}) {
-    const { configPath, config } = await projectConfigOrRefuse(targetDir, "test");
-    if (channelNamesOfType(config, type).length === 0) {
-      throw commandError(`${type} is not enabled for this project — run \`${enableHint(type)}\` first.`, "messaging-not-enabled", 400);
+    await projectConfigOrRefuse(targetDir, "test");
+    // The channels the notifier will use, the global ones included (194), through the one loader.
+    const workspace = await loadWorkspace(targetDir);
+    if (channelNamesOfType(workspace.config, type).length === 0) {
+      throw commandError(`${type} is not enabled for this project — run \`${enableHint(type)}\` first, or \`${globalEnableHint(type)}\` for every project without its own.`, "messaging-not-enabled", 400);
     }
-    const workspace = { config, projectRoot: path.dirname(path.dirname(configPath)) };
     const results = (await sendTestMessage(workspace, { type, ...(ctx.env ? { env: ctx.env } : {}), ...(ctx.fetch ? { fetch: ctx.fetch } : {}) }))
       .map((entry) => ({ ...entry, hint: entry.ok ? null : testHint(type, entry) }));
     const failed = results.filter((entry) => !entry.ok);

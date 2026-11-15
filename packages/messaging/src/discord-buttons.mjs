@@ -124,6 +124,14 @@ export function createDiscordButtons({ readIndexedMessage, readAsks, loopAsksDir
     return null;
   }
 
+  // The `allow` key a refusal names, with the global config's path when the project inherits its
+  // channels from there (194).
+  function allowKeyOf(workspace, name) {
+    const from = workspace?.notifyChannelsFrom;
+    const where = from?.layer === "global" ? ` in ${from.configPath}` : "";
+    return `\`work.notify.channels.${name}.allow\`${where}`;
+  }
+
   // Who answered `ref` first, and when, read from the ask store — never parsed out of a refusal's prose.
   async function firstAnswer(workspace, ref) {
     const asks = await readAsks(loopAsksDir(), { workspaceId: resolveWorkspaceId(workspace) });
@@ -172,10 +180,10 @@ export function createDiscordButtons({ readIndexedMessage, readAsks, loopAsksDir
 
     const workspace = await context.loadWorkspace(record.projectRoot);
     const found = channelOf(workspace?.config, record.channelId);
-    const key = `work.notify.channels.${found?.[0] ?? "discord"}.allow`;
+    const key = allowKeyOf(workspace, found?.[0] ?? "discord");
     const allow = Array.isArray(found?.[1]?.allow) ? found[1].allow : [];
     if (!allow.includes(user.id)) {
-      return { action: "refused", ...refusal("discord-button-not-allowed", `You are not on this project's answer list (\`${key}\`), so nothing was run`), disable: false };
+      return { action: "refused", ...refusal("discord-button-not-allowed", `You are not on this project's answer list (${key}), so nothing was run`), disable: false };
     }
     const who = discordActor(user.username);
     const { invoke } = context;

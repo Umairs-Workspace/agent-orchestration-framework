@@ -48,6 +48,14 @@ function channelOf(config, channelId) {
   return null;
 }
 
+// The `allow` key a refusal names, as the operator would edit it: `work.notify.channels.<name>.allow`,
+// and the global config's path when the project inherits its channels from there (194).
+function allowKeyOf(workspace, name) {
+  const from = workspace?.notifyChannelsFrom;
+  const where = from?.layer === "global" ? ` in ${from.configPath}` : "";
+  return `\`work.notify.channels.${name}.allow\`${where}`;
+}
+
 // Who answered `ref` first, and when, read from the ask store — the verb's refusal names both only
 // in prose, and this line must not parse prose.
 async function firstAnswer(workspace, ref) {
@@ -110,13 +118,13 @@ async function handleReply(message, { request, invoke, loadWorkspace, answerCont
 
   const workspace = await loadWorkspace(record.projectRoot);
   const found = channelOf(workspace?.config, record.channelId);
-  const key = `work.notify.channels.${found?.[0] ?? "discord"}.allow`;
+  const key = allowKeyOf(workspace, found?.[0] ?? "discord");
   const allow = Array.isArray(found?.[1]?.allow) ? found[1].allow : [];
   if (allow.length === 0) {
-    return refuse("discord-answer-off", `Answering from Discord is off for this project — nobody is on its answer list (\`${key}\`). Nothing was changed.`);
+    return refuse("discord-answer-off", `Answering from Discord is off for this project — nobody is on its answer list (${key}). Nothing was changed.`);
   }
   if (!allow.includes(message.author?.id)) {
-    return refuse("discord-answer-not-allowed", `You are not on this project's answer list (\`${key}\`), so the answer was not taken.`);
+    return refuse("discord-answer-not-allowed", `You are not on this project's answer list (${key}), so the answer was not taken.`);
   }
 
   try {

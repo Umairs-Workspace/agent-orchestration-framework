@@ -561,12 +561,13 @@ export const notifyMessagingTests = [
           assert.equal(entry.type, "discord");
           assert.equal(entry.stored, true);
           assert.deepEqual(entry.envOverride, { name: "AOF_DISCORD_BOT_TOKEN", set: false });
-          assert.deepEqual(entry.project, { enabled: true, channels: ["discord"], channelIds: [CHANNEL], allowCounts: [0] });
+          assert.deepEqual(entry.project, { enabled: true, channels: ["discord"], channelIds: [CHANNEL], allowCounts: [0], from: "project", switchedOff: false });
           const text = messagingStatusCommand.cli.render(result);
           assert.equal(text, [
             "discord",
             `  this machine: set (${messagingSecretPath("discord")})`,
             "  env override AOF_DISCORD_BOT_TOKEN: not set",
+            "  global: not set — run `aof messaging enable discord --channel <id> --global` to serve every project",
             `  this project: enabled (discord → ${CHANNEL})`,
           ].join("\n"));
           await assertNothingLeaked([text, JSON.stringify(messagingStatusCommand.cli.json(result))], null);
@@ -580,9 +581,9 @@ export const notifyMessagingTests = [
       const ON = { channels: { discord: { type: "discord", channelId: CHANNEL } } };
       for (const [stored, env, notifyBlock, expected] of [
         [false, {}, null, { stored: false, set: false, project: null }],
-        [true, {}, ON, { stored: true, set: false, project: { enabled: true, channels: ["discord"], channelIds: [CHANNEL], allowCounts: [0] } }],
-        [false, { AOF_DISCORD_BOT_TOKEN: TOKEN_B }, undefined, { stored: false, set: true, project: { enabled: false, channels: [], channelIds: [], allowCounts: [] } }],
-        [true, { AOF_DISCORD_BOT_TOKEN: "  " }, ON, { stored: true, set: false, project: { enabled: true, channels: ["discord"], channelIds: [CHANNEL], allowCounts: [0] } }],
+        [true, {}, ON, { stored: true, set: false, project: { enabled: true, channels: ["discord"], channelIds: [CHANNEL], allowCounts: [0], from: "project", switchedOff: false } }],
+        [false, { AOF_DISCORD_BOT_TOKEN: TOKEN_B }, undefined, { stored: false, set: true, project: { enabled: false, channels: [], channelIds: [], allowCounts: [], from: "project", switchedOff: false } }],
+        [true, { AOF_DISCORD_BOT_TOKEN: "  " }, ON, { stored: true, set: false, project: { enabled: true, channels: ["discord"], channelIds: [CHANNEL], allowCounts: [0], from: "project", switchedOff: false } }],
       ]) {
         await withHome(async () => {
           if (stored) await writeMessagingSecret("discord", TOKEN_A);
@@ -612,7 +613,7 @@ export const notifyMessagingTests = [
           const result = await invoke("messaging:status", { targetDir: root }, { env: {} });
           const entry = result.channels.find((channel) => channel.type === "discord");
           assert.equal(entry.envOverride.name, "OPS_BOT");
-          assert.deepEqual(entry.project, { enabled: true, channels: ["ops"], channelIds: [null], allowCounts: [0] });
+          assert.deepEqual(entry.project, { enabled: true, channels: ["ops"], channelIds: [null], allowCounts: [0], from: "project", switchedOff: false });
           assert.match(messagingStatusCommand.cli.render(result), /ops → no channel id — run `aof messaging enable discord --channel <id>`/u);
         });
       });

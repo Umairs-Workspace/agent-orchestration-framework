@@ -2933,6 +2933,9 @@
         },
         "allow": {
           "type": "string"
+        },
+        "global": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -2947,7 +2950,7 @@
         "enable"
       ],
       "spec": {
-        "usage": "aof messaging enable <type> --channel <id> [--allow <user-id>[,<user-id>…]] [--json]",
+        "usage": "aof messaging enable <type> --channel <id> [--allow <user-id>[,<user-id>…]] [--global] [--json]",
         "workspace": false,
         "flags": {
           "channel": {
@@ -2957,6 +2960,10 @@
           "allow": {
             "type": "string",
             "description": "Discord user ids that may answer by reply and run the slash commands, comma-separated; added to the channel's list"
+          },
+          "global": {
+            "type": "boolean",
+            "description": "edit the machine-wide ~/.aof/aof.config.json: its channels serve every project with no channels of its own"
           }
         }
       }
@@ -2972,6 +2979,9 @@
         },
         "targetDir": {
           "type": "string"
+        },
+        "global": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -2986,8 +2996,14 @@
         "disable"
       ],
       "spec": {
-        "usage": "aof messaging disable <type> [--json]",
-        "workspace": false
+        "usage": "aof messaging disable <type> [--global] [--json]",
+        "workspace": false,
+        "flags": {
+          "global": {
+            "type": "boolean",
+            "description": "edit the machine-wide ~/.aof/aof.config.json: its channels serve every project with no channels of its own"
+          }
+        }
       }
     }
   },

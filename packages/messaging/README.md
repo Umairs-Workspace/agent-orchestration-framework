@@ -15,7 +15,7 @@ imports of core, mesh, work-loop or another workspace's private source.
 | `replies` | `createDiscordReplies` receives ask readers and identity; replies invoke the supplied command service. |
 | `discord-buttons` | The one `custom_id` grammar and the buttons a notification carries (pure exports); `createDiscordButtons` receives the message-index reader, ask readers, identity and the actor rule, and a tap invokes the supplied command service. |
 | `bot` | `createDiscordBot` receives gateway/handler services, command invocation, workspace loading and mesh-member/worktree lookup. |
-| `commands` | `createMessagingCommands` receives notifier, credential and configuration services and returns the five descriptors and `messagingContribution`. |
+| `commands` | `createMessagingCommands` receives notifier, credential and configuration services (the project's and the machine-wide global config's) and the workspace loader, and returns the five descriptors and `messagingContribution`. `status` and `test` read a project's channels through the loader, which layers the global channels under a project with none of its own. |
 
 Constructing factories does no I/O. Starting a gateway/bot, invoking a command or sending a notification
 performs the requested work. The bot accepts an asynchronous worktree-folding service so core can keep

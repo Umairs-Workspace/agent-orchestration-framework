@@ -23,6 +23,7 @@ on the notifications are milestone 191's ADR-007.
 | The bot token (the secret) | `<aof home>/messaging/discord.secret`, written by `aof messaging init discord` | No. It is machine-wide, outside every checkout, and owner-only (`0600` on POSIX) |
 | The channel id | `work.notify.channels.discord.channelId` in the project's `.aof/aof.config.json`, written by `aof messaging enable discord --channel <channel-id>` | Yes. An id is not a secret |
 | The per-project switch | the `work.notify` block itself | Yes. It never holds a URL, webhook or token |
+| A channel for every project (optional) | `work.notify.channels` in the global `<aof home>/aof.config.json`, written by `aof messaging enable discord --channel <channel-id> --global` | No. It is machine-wide, outside every checkout |
 | An optional override | the env var `AOF_DISCORD_BOT_TOKEN` (or the name a channel's `tokenEnv` gives) | No |
 
 **The token is the credential.** It never enters argv, config, logs or command output. aof reads it
@@ -138,6 +139,22 @@ an admin.
 To turn it off: `aof messaging disable discord`. To stop sending from a machine entirely, delete
 `<aof home>/messaging/discord.secret`. No verb removes it.
 
+**One channel for every project.** Instead of step 3 in each project, declare the channel once on
+this machine, anywhere:
+
+```
+aof messaging enable discord --channel <channel-id> --allow <user-id>,<user-id> --global
+```
+
+This writes the same `channels` block into `<aof home>/aof.config.json`, and every project whose
+`work.notify` has no `channels` key of its own posts there and answers there, with the global
+`allow` list. A project with channels of its own uses only its own, its own `allow` list included:
+the two are never mixed. `aof messaging disable discord` in a project that uses the global channel
+switches it off for that project only, by leaving `"channels": {}` in the project's config.
+`aof messaging disable discord --global` removes the global channel and leaves every project's own
+channels alone. The global channel serves the projects on THIS machine; a worker node reads its
+own `<aof home>`.
+
 ## 4. Check it
 
 ```
@@ -148,8 +165,13 @@ aof messaging status
 discord
   this machine: set (<aof home>/messaging/discord.secret)
   env override AOF_DISCORD_BOT_TOKEN: not set
+  global: not set — run `aof messaging enable discord --channel <id> --global` to serve every project
   this project: enabled (discord → <channel-id>)
 ```
+
+A project using the global channel says so: `this project: enabled (discord → <channel-id>, from
+the global config)`, and `project.from` is `"global"` in `--json`. A project that switched it off
+reads `disabled here (the global channel is switched off)`.
 
 `status` reports only whether a token is present, never its value. `--json` returns the same
 facts, with the channel ids in `project.channelIds`. Once a channel has an `allow` list (see

@@ -73,7 +73,7 @@ test('messaging commands edit only notify configuration through the supplied con
   await mkdir(path.dirname(configPath));await writeFile(configPath,'{}');
   const config={name:'fixture',work:{untouched:true}},writes=[];
   const notifier=createNotifier({});
-  const commands=createMessagingCommands({...notifier,readConfig:async target=>{assert.equal(target,root);return {configPath,config};},writeConfig:async (file,value)=>{assert.equal(file,configPath);writes.push(structuredClone(value));},messagingSecretPresent:async()=>false});
+  const commands=createMessagingCommands({...notifier,readConfig:async target=>{assert.equal(target,root);return {configPath,config};},writeConfig:async (file,value)=>{assert.equal(file,configPath);writes.push(structuredClone(value));},readGlobalConfig:async()=>({configPath:path.join(root,'global.json'),config:{}}),messagingSecretPresent:async()=>false});
   await commands.messagingEnableCommand.run({type:'discord',targetDir:root,channelId:channel});
   assert.equal(writes.length,1);
   assert.equal(writes[0].name,'fixture');assert.equal(writes[0].work.untouched,true);

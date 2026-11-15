@@ -11,10 +11,14 @@
 //
 // milestone 191 / story 07 — the buttons on a notification (ADR-007): which messages carry them,
 // the index records a tap reads, and the tap itself (tasks 01 and 02).
+//
+// story 194 — the global Discord channel on the answering side: replies, slash commands and the
+// registrar over projects that inherit it, and a project's own channels replacing it.
 import { discordBotTests } from "./discord-bot.test.mjs";
 import { discordButtonsTests } from "./discord-buttons.test.mjs";
 import { discordCommandsTests } from "./discord-commands.test.mjs";
 import { discordGatewayTests } from "./discord-gateway.test.mjs";
+import { discordGlobalChannelTests } from "./discord-global-channel.test.mjs";
 import { discordRepliesTests } from "./discord-replies.test.mjs";
 
 export const tests = [
@@ -22,5 +26,6 @@ export const tests = [
   ...discordButtonsTests,
   ...discordCommandsTests,
   ...discordGatewayTests,
+  ...discordGlobalChannelTests,
   ...discordRepliesTests,
 ];

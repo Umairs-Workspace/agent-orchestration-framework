@@ -108,6 +108,14 @@ function discordChannels(workspace) {
   return Object.entries(channels).filter(([, channel]) => isPlainObject(channel) && channel.type === "discord");
 }
 
+// The `allow` key a refusal names, with the global config's path when the project inherits its
+// channels from there (194).
+function allowKeyOf(workspace, name) {
+  const from = workspace?.notifyChannelsFrom;
+  const where = from?.layer === "global" ? ` in ${from.configPath}` : "";
+  return `\`work.notify.channels.${name}.allow\`${where}`;
+}
+
 // ── registration (ADR-009 §1) ───────────────────────────────────────────────────────────────────
 
 // createRegistrar({ request, servedWorkspaces }) → { register(applicationId, { force }) } — one pass:
@@ -360,7 +368,7 @@ async function answerSessionStart(command, counted, kept, context) {
     if (targets.length === 0) {
       // A project this channel serves but this user is not listed on is refused as such, by name.
       const barred = counted.find(({ workspace }) => named([workspace], wanted).length > 0);
-      if (barred != null) return refusal("discord-command-not-allowed", `You are not on the answer list of ${folderOf(barred.workspace)} (\`work.notify.channels.${barred.name}.allow\`) — nothing was started`);
+      if (barred != null) return refusal("discord-command-not-allowed", `You are not on the answer list of ${folderOf(barred.workspace)} (${allowKeyOf(barred.workspace, barred.name)}) — nothing was started`);
       return refusal("discord-scope-ambiguous", `No project here is named ${wanted} — the projects are ${kept.map(folderOf).join(", ")}`);
     }
   }
@@ -437,10 +445,10 @@ async function reach(interaction, context) {
 async function answerCommand(interaction, command, context) {
   const { dm, user, counted, kept } = await reach(interaction, context);
   if (dm) return refusal("discord-command-dm", "aof's commands answer in a project channel, not in a direct message");
-  if (counted.length === 0) return "This channel is not an aof project channel — enable one with `aof messaging enable discord --channel <id>`.";
+  if (counted.length === 0) return "This channel is not an aof project channel — enable one with `aof messaging enable discord --channel <id>` in a project, or add `--global` for every project without its own.";
   if (kept.length === 0) {
-    const keys = [...new Set(counted.map(({ name }) => `work.notify.channels.${name}.allow`))].join(", ");
-    return refusal("discord-command-not-allowed", `You are not on the answer list of any project in this channel (\`${keys}\`) — nothing was run`);
+    const keys = [...new Set(counted.map(({ workspace, name }) => allowKeyOf(workspace, name)))].join(", ");
+    return refusal("discord-command-not-allowed", `You are not on the answer list of any project in this channel (${keys}) — nothing was run`);
   }
   const nowMs = context.now().getTime();
   if (command.name === "loop") return answerLoop(command, kept, user, context);
