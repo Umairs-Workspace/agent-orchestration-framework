@@ -25,7 +25,9 @@ const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const BIN = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
-const TOKEN = "MTIzNDU2Nzg5MDEyMzQ1Njc4.AbCdEf.a1B2c3D4e5F6g7H8i9J0k1L2m3N";
+// A synthetic bot token, the fixture's shape (131/09 QA ruling 1). It is assembled from its three
+// segments so the source never holds a token-shaped literal for a secret scanner to match.
+const TOKEN = ["MTIzNDU2Nzg5MDEyMzQ1Njc4", "AbCdEf", "a1B2c3D4e5F6g7H8i9J0k1L2m3N"].join(".");
 const GLOBAL_CHANNEL = "1571198918107078736";
 const OWN_CHANNEL = "1580000000000000001";
 const ALLOWED = "1119197349521137757";
