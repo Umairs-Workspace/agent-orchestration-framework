@@ -196,12 +196,14 @@ export const archTests = [
       const source = await preflightSource();
 
       assert.match(
-        source,
+        // Line comments are stripped first, so the list may carry a comment between codes and the
+        // pattern holds no repeated comment group a hostile input could backtrack through.
+        source.replace(/\/\/[^\n]*/g, ""),
         // 126/06 appended a FOURTH code and superseded 126/04 task03's count of three. The
         // literal is matched loosely on whitespace because the frozen list is now spread
         // over several lines; what is pinned is the ORDER and that there is ONE such site.
         // 191/08 (191/ADR-001 amendment 2026-11-14 §5) appended a FIFTH, `control-relay-loopback`, last.
-        /PREFLIGHT_CHECKS = Object\.freeze\(\[\s*"claude-authenticated",\s*"payload-build",\s*"workspace-identity-pinned",\s*"heartbeat-hook-installed",(?:[ \t]*\/\/[^\n]*)?(?:\s*\n[ \t]*\/\/[^\n]*)*\s*"control-relay-loopback",?\s*\]\)/,
+        /PREFLIGHT_CHECKS = Object\.freeze\(\[\s*"claude-authenticated",\s*"payload-build",\s*"workspace-identity-pinned",\s*"heartbeat-hook-installed",\s*"control-relay-loopback",?\s*\]\)/,
         "the five checks are named by code, in one order, in one place",
       );
 
