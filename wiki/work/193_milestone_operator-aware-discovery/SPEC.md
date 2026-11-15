@@ -6,7 +6,7 @@ title: "Discovery researches the domain before it asks — the operator is asked
 status: not-started
 owner: product-owner
 created: 2026-11-12
-updated: 2026-11-12
+updated: 2026-11-14
 schema: 1
 aofVersion: 0.1.0
 depends: [192]
@@ -111,6 +111,7 @@ each optional practice and the key that turns it on.
   `.aof/templates/work/story/EXAMPLES.md`).
 - `schemas/aof.schema.json`, for the new `work.operator` block and the `work.examples.operatorAware`
   switch.
-- `192_milestone_buildable-commands`, not started. It delivers the slots and fragments this
-  milestone's prose is written as (story 04). Stories 00–03 are code and do not need it, but a
-  story cannot name another milestone in `depends:`, so the whole milestone waits on it.
+- `192_milestone_buildable-commands`, done (accepted 2026-11-14). It delivers the slots, fragments
+  and template variants this milestone's prose is written as (story 04, ARCHITECTURE ADR-006 §8).
+  Stories 00–03 are code and do not need it, but a story cannot name another milestone in
+  `depends:`, so the whole milestone waited on it.

@@ -11,6 +11,8 @@ does; that researched examples return as one batch to skim and object to; that `
 mandatory and `Background:` is added below `expert` (SPEC Scope). Relabelled technical: how many
 researchers run, whether the batch carries a token, where an item names its domains, and whether
 background counts toward a driven ask's length.
+Re-refined 2026-11-14 against milestone 192 as delivered: Q5-Q7 added, all technical; no rule
+or example changed, and no question reached the operator.
 -->
 
 ## R1 · A question the PO cannot place is a fact to research, not a question for the operator
@@ -39,3 +41,6 @@ background counts toward a driven ask's length.
 - Q2 · technical · defaulted ARCHITECTURE.md#ADR-004 · Does the batch carry a map token? (No. Its anchor is the finding; an objection is asked by the example's own token.)
 - Q3 · technical · defaulted ARCHITECTURE.md#ADR-003 · Where does an item name its domains? (`domains:` in its record doc's frontmatter.)
 - Q4 · technical · defaulted ARCHITECTURE.md#ADR-005 · Does background count toward a driven ask's 1,500 characters? (Yes.)
+- Q5 · technical · defaulted ARCHITECTURE.md#ADR-006 · How do two keys gate a fragment, when 192 keys a fragment by its practice? (A second practice, `operator-aware`, keyed on both, declared in the package's bundle fragment.)
+- Q6 · technical · defaulted ARCHITECTURE.md#ADR-006 · Does a brief or cascade sentence that says `business` stay beside the new one? (No. Each such discovery fragment is replaced, so a render never teaches both vocabularies.)
+- Q7 · technical · defaulted ARCHITECTURE.md#ADR-006 · Where do the role sentence and the researcher's half go? (Two new inline slots in core, `config.roles` and `ownership.research`, in the common source and the Codex text.)

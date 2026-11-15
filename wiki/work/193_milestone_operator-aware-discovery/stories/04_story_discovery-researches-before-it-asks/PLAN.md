@@ -2,18 +2,21 @@
 
 ## Mechanism
 
-This story is prose, shipped the way milestone 192 makes possible: as members of the
-specification-by-example practice's own bundle fragment, each naming the slot it fills and the two
-keys that turn it on, `work.examples.enabled` and `work.examples.operatorAware`. Read 192's
-ARCHITECTURE before anything else; it decides where a fragment's body lives and how a variant
-replaces another. This plan says what goes in them.
+This story is prose, shipped through milestone 192's mechanism (read 192's ADR-001, ADR-002,
+ADR-004 and ADR-005 before anything else). In the package's bundle fragment, declare a second
+practice, `operator-aware`, beside `discovery`, with both keys, `work.examples.enabled` and
+`work.examples.operatorAware`. A fragment names that practice, never a key. Bodies live under
+the package's `fragments/operator-aware/`, one file per target and a `.codex` twin, each slot's
+body under its `<!-- fragment:<slot> -->` line, as discovery's do.
 
-The operator-aware beat is a variant of the discovery beat 192 moved out of core, for the same
-slot, and it replaces it. Start from a copy of that fragment and keep its order: the PO drafts,
-the architect reviews, strike, the main session asks, the driven paragraph, the doctor. Then:
+Every discovery fragment that says `business` gets an operator-aware counterpart that `replaces`
+it (ADR-006 §8 lists them): the beat, the formulation, the cascade, the hand-back, the Codex entry
+rule, and the PO and architect briefs. Start each from a copy of the one it replaces and keep its
+order. Then, in the beat:
 
-- The drafting and architect sentences change their vocabulary: three labels, and `domain` as the
-  default for a question the PO cannot place.
+- The opening gate sentence reads both keys (192/ADR-005 §5).
+- The drafting and architect sentences take three labels, and `domain` as the default for a
+  question the PO cannot place.
 - One new step after "Strike before asking" reads the profile and the item's domains, gives the
   level table, and sends the domain questions below `expert` to one researcher pass. It says what
   a finding does to its question: settle it, or turn it into a `policy` question.
@@ -21,16 +24,22 @@ the architect reviews, strike, the main session asks, the driven paragraph, the 
   `expert`. The driven paragraph gains where `Background:` goes and that it counts toward the
   length it already names.
 - One new paragraph after it is the batch.
-- The fragments for the `--autonomous` and output slots each gain a sentence: the batch joins the
-  one end review, and the hand-back lists what research settled and names an undeclared profile.
 
-Two things need a slot core does not have yet: the role sentence, where refine says who plays the
-roles, and the researcher brief, which has no gated prose today. Add the slot to the core source
-and its Codex body, and nothing else.
+The formulation counterpart adds `researched` beside `confirmed` and `stated` as an example that
+must be carried; the cascade and hand-back counterparts say `policy`, add the batch to the one end
+review, and list what research settled and an undeclared profile.
+
+Two fragments fill slots core does not have yet: the role sentence (`config.roles`, inline, after
+"you are the architect, the QA and the developer in turn") and the researcher's half
+(`ownership.research`, inline, after its ownership line). Add each marker to the common source and
+to its section of the Codex workflow, and nothing else in core.
+
+The template variants are two `template-variant` members: `story`/`EXAMPLES.md` and
+`milestone`/`RESEARCH.md`.
 
 Teach by pointing. The map's forms live in the template variant and the finding's form in the
-research variant; the beat names them and restates neither. Each brief fragment gets its half and
-no more. Write each Codex body by hand, in that runtime's voice (the native question tool).
+research variant; the beat names them and restates neither. Write each Codex body by hand, in that
+runtime's voice (the native question tool, the `needs_input` fallback discovery's Codex beat has).
 
 ## Verification step
 
@@ -55,11 +64,16 @@ a batch that opens with a `Q<n>` token and so anchors an answer it should not.
 
 ## Known traps
 
-- The fragment paths in `files:` are a guess made before 192 was refined. If 192 puts them
-  elsewhere, stop and settle the write set with `aof:refine 193/04` rather than writing outside it.
+- `replaces` takes one fragment id, of this package, with the same target and slot. A counterpart
+  that also needs to keep some of the original carries that text itself: diff the two before
+  deleting a line (the token, the doctor stop, one question per driven ask, Codex's `needs_input`).
+- 192's suites that pin the shipped practices as exactly `discovery` and `build-brief` go red the
+  moment the practice is declared. Move them in the same change; they are in `files:`.
 - `acd-prompt-bounds-name-their-home` holds every number a prompt states to a home in code. Add no
   new number to the prose.
-- A variant that replaces a fragment must carry everything the original did that still applies
-  (the token, the doctor stop, one question per driven ask). Diff the two before deleting a line.
-- FF-19204 compares renders byte for byte. A slot added to a core source must render to nothing
-  when empty, trailing newline included.
+- FF-19204 compares renders byte for byte, and 192/FF-19205 holds that a slot leaves nothing
+  behind. A new inline slot must render to nothing when empty, trailing newline included.
+- 192/FF-19206 refuses a load where a runtime's texts carry a slot and a fragment has no body
+  for it. Both new slots are in the Codex text, so every operator-aware fragment for them has a
+  Codex body.
+- Keep the practice's one-line summary short: the update's practice list already wraps (192 F-04).

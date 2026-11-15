@@ -30,6 +30,18 @@ doc: state
 - Waves once 192 is done: 00 and 02; then 01 and 03; then 04. `aof work next 193` answers
   `blocked` until then. Only 04 needs 192, but a story cannot name another milestone in
   `depends:`, so the edge is on the milestone.
+- 2026-11-14 — 192 accepted. Story 04 re-refined against 192 as delivered (`aof:refine 193/04`,
+  solo, run `20261114T160938432Z-0000`, no session id). 192 kept 04's guessed file layout but keys
+  a fragment by its practice, not its own keys, so ADR-006 §2 was amended and §8 added:
+  operator-aware discovery is a second practice of the package, `operator-aware`, on when
+  `work.examples.enabled` and `work.examples.operatorAware` both hold `true`; its fragments replace,
+  rather than sit beside, every discovery fragment that says `business` (the beat, the
+  formulation, the cascade, the hand-back, the Codex entry rule, the PO and architect briefs); two
+  new core slots (`config.roles`, `ownership.research`). 04's `files:` gained the three suites that
+  pin the shipped practice list and the lock; its PLAN, Notes and task 04 were re-cut to match.
+  Stories 00–03 needed no re-refine; 03's "sixth module" became the seventh (192 added
+  `contribution.mjs`). The run's mint moved 04 to `in-progress`; it was returned to `not-started`
+  (`aof work status 193/04 not-started`), since nothing in it is built before 00–03.
 
 ## Notes & decisions in flight
 
@@ -73,7 +85,17 @@ doc: state
   - **The warning is repeated by `aof work update` and by the turn-on itself** (ADR-006 §5).
   - **No standing notice in a project that left the switch off** (ADR-006 §6). That a practice
     exists is 192's to say, in its update's list of optional practices.
-  - **04's fragment paths are a guess** until 192 is refined (193/04, Notes).
+  - **04's fragment paths are a guess** until 192 is refined (193/04, Notes). Settled
+    2026-11-14: 192 kept the layout (ADR-006 §8).
+- 2026-11-14 — Default decisions taken at 04's re-refine (technical, ADR-006 §8):
+  - **The practice id is `operator-aware`**, declared beside `discovery` in the package's
+    `bundle.json`, with both keys. The id and its one-line summary are defaults the operator may
+    change before 04 is built; keep the summary short (192 F-04, the list's width).
+  - **Every discovery fragment that says `business` is replaced, not added to**, so a render never
+    teaches both vocabularies. The QA fragment names no label and stands.
+  - **The formulation fragment is replaced too**, to carry a `researched` example under its rule
+    as it carries an agreed one (ADR-002).
+  - **Two slots are added to core: `config.roles` and `ownership.research`**, both inline.
 - 2026-11-12 — Diagram not drawn: `diagram-generator-missing` (ADR-004). The brief is kept;
   `aof:add-diagram 193` draws it once the `diagram-design` plugin is installed.
 - 2026-11-12 — Recall. Architect, `9a62a92f-ba18-464b-b96b-b22b40aa696a`: five ADRs, no near-miss;

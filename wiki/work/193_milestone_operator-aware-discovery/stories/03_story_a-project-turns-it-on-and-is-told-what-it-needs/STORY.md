@@ -73,7 +73,7 @@ profile; `aof work update` and the turn-on itself printing the same sentence.
   192. What the switch renders is 04's.
 - `aof:init` is unchanged (ADR-006 §7): it renders before any config exists, so in a new project
   the switch is off. The SPEC's line about it was dropped at the review of the first refinement.
-- `packages/specification-by-example/src` gains its sixth module, `operator-lane.mjs`, and its
+- `packages/specification-by-example/src` gains its seventh module, `operator-lane.mjs`, and its
   budget row says which part of the practice it is. It is a separate module so this story and 01
   share no file.
 - The doctor and update cases join 02's `test/examples/operator-profile.test.mjs`; the switch's

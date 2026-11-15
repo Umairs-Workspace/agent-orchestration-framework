@@ -2,9 +2,10 @@
 Feature: On renders it, and off renders none of it
 
   WHY. Not every project needs facts looked up and questions explained, and no project should
-  load prose it has turned off (ADR-006). So the beat ships as fragments of the practice, through
-  milestone 192's slots: a project with the switch on is given it, for Claude and for Codex, and a
-  project with the switch off is given exactly what it was given before this story existed.
+  load prose it has turned off (ADR-006). So the beat ships as fragments of a practice of its own,
+  `operator-aware`, through milestone 192's slots (ADR-006 §8): a project with the switch on is
+  given it, for Claude and for Codex, in place of every discovery sentence that says `business`,
+  and a project with the switch off is given exactly what it was given before this story existed.
   FF-19204 is that second half, as a control.
 
   "ON" is a scratch project whose "work.examples" is "{ enabled: true, operatorAware: true }".
@@ -15,6 +16,33 @@ Feature: On renders it, and off renders none of it
     When ON's rendered refine command is read
     Then its discovery passage holds the operator-aware beat
     And it holds no sentence of CLASSIC's discovery passage that tells the PO how to label a question
+
+  Scenario: the practice is declared with both keys, and the update lists it
+    When "aof work update --json" runs in ON and in CLASSIC
+    Then each lists the practice "operator-aware" with the keys "work.examples.enabled" and "work.examples.operatorAware"
+    And it is on in ON and off in CLASSIC
+    And "discovery" is on in both
+
+  Scenario Outline: with the switch on, no rendered region still says "business"
+    When ON is rendered for "<runtime>"
+    Then its refine command's <region> refers to no question as a "business" question or a "business-rule" question
+
+    Examples:
+      | runtime | region                        |
+      | claude  | discovery passage             |
+      | claude  | formulation paragraph         |
+      | claude  | "--autonomous" block          |
+      | claude  | output section                |
+      | codex   | discovery passage             |
+      | codex   | formulation paragraph         |
+      | codex   | "--autonomous" block          |
+      | codex   | output section                |
+      | codex   | skill entry's rules           |
+
+  Scenario: the formulation carries a researched example as it carries an agreed one
+    When ON's formulation paragraph is read
+    Then it says every "confirmed", "stated" or "researched" example is carried under its own rule
+    And it still names "example-untraced"
 
   Scenario Outline: each runtime's render carries its half
     When ON is rendered for "<runtime>"
@@ -55,6 +83,12 @@ Feature: On renders it, and off renders none of it
     Then its refine command now holds the operator-aware beat
     And turning it off and updating again restores CLASSIC's render byte for byte
 
+  Scenario: turning the switch on and not updating is a stale render
+    Given CLASSIC, rendered
+    When "work.examples.operatorAware" is set to true in its config and "aof work doctor --json" runs
+    Then it reports "practice-render-stale" at error severity, naming "work.examples.operatorAware"
+    And once "aof work update" has run, the doctor reports no "practice-render-stale"
+
   Scenario: the switch on installs the template variants that teach the new forms
     When ON's installed ".aof/templates/work/story/EXAMPLES.md" is parsed
     Then the map reports no malformed line
@@ -93,7 +127,7 @@ Feature: On renders it, and off renders none of it
 
   Scenario: FF-19204 · off renders none of it
     When "test/arch/examples/acd-examples-off-is-today.test.mjs" runs
-    Then it fails unless CLASSIC's rendered refine command, its three agents (for Claude and for Codex) and its two installed templates equal what the same project renders from a bundle with the practice's operator-aware members removed
+    Then it fails unless CLASSIC's rendered refine command, its three agents (for Claude and for Codex) and its two installed templates equal what the same project renders from a bundle with the "operator-aware" practice and its members removed
     And it fails unless the same holds with "operatorAware: false"
 
   Scenario Outline: FF-19204 · each planted leak turns the control red
@@ -103,7 +137,7 @@ Feature: On renders it, and off renders none of it
 
     Examples:
       | planted                                                                       |
-      | an operator-aware fragment whose only key is "work.examples.enabled"          |
+      | an operator-aware fragment that names the "discovery" practice                |
       | a sentence of the operator-aware beat written into core's refine source       |
       | a template variant installed without asking the switch                        |
       | a slot that leaves a marker line behind when nothing fills it                 |

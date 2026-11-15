@@ -13,6 +13,11 @@ Revised 2026-11-12, the day it was written and before anything was built, at the
 review: the practice became opt-in, and its prose moved from core's commands to fragments that
 milestone 192 makes possible. ADR-003 §8–§9, ADR-004, ADR-005 §5, ADR-006 and ADR-007 changed.
 
+Revised again 2026-11-14, once milestone 192 was delivered and before anything here was built:
+ADR-006 §2 was written against 192 as framed, and 192 as built keys a fragment by its practice, not
+by its own keys. ADR-006 §2 and its Consequences, the new ADR-006 §8, ADR-007's notes on 192 and
+FF-19204's row changed. No other decision moved.
+
 ## Memory recall: what was surfaced, and what it changed
 
 Recall `9a62a92f-ba18-464b-b96b-b22b40aa696a` (architect, "example map question classes domain
@@ -23,6 +28,17 @@ policy researched provenance operator profile config") returned five ADRs and no
 - 154/ADR-004, 154/ADR-005, 49/ADR-001 and 62/ADR-003 do not bear on these decisions.
 
 The PO recall for the milestone's domain (`81ab7638-b609-41c1-9b3c-528eb4acbd15`) came back empty.
+
+At the 2026-11-14 revision, recall `84205724-0520-410d-a1ec-66f62e406e7b` (architect, "practice
+fragment replaces another practice's fragment second practice keys") returned five ADRs and no
+near-miss:
+
+- **192/ADR-002**, "A practice declares itself and its fragments in its own bundle fragment".
+  **Honoured.** Operator-aware discovery is declared as a practice of its own, and its fragments
+  replace the discovery practice's from inside the same package (ADR-006 §8).
+- **192/ADR-004**, "A practice can ship a variant of a template". **Honoured.** The two template
+  variants are members of that kind (ADR-006 §8).
+- 188/ADR-004, 169/ADR-004 and 169/ADR-007 do not bear on these decisions.
 
 One operator rule from the session's own memory shaped ADR-006: a config key whose absence keeps the
 old behaviour owes its adoption path in the same milestone. Here that path is split: this
@@ -351,12 +367,13 @@ every question. And every project would load the prose on every refine, on top o
    project's file only. A render must not depend on the machine it runs on, because rendered
    commands are committed.
 2. **The prose is the practice's, not core's.** Everything ADR-004 and ADR-005 decide is written
-   as fragments of the specification-by-example package, turned on by `work.examples.enabled` and
-   `work.examples.operatorAware` together: the beat for refine's discovery slot, which replaces
-   the beat that ships today; the halves for the PO, researcher and architect briefs; and a
-   variant of the `EXAMPLES.md` and `RESEARCH.md` templates that teaches the new forms. The slot
-   and fragment mechanism is milestone 192's. With the switch off, a project's rendered commands
-   and installed templates hold none of it.
+   as fragments of the specification-by-example package, under a practice of their own that
+   `work.examples.enabled` and `work.examples.operatorAware` turn on together (§8): the beat for
+   refine's discovery slot, which replaces the beat that ships today; the PO and architect brief
+   fragments, which replace today's; a researcher brief fragment, which is new; and a variant of
+   the `EXAMPLES.md` and `RESEARCH.md` templates that teaches the new forms. The slot and fragment
+   mechanism is milestone 192's. With the switch off, a project's rendered commands and installed
+   templates hold none of it.
 3. **What the switch does not gate: the grammar, the gate and the profile.** A map is data and is
    judged by what it says (ADR-002 §6). `work.operator` validates and resolves in every project
    (ADR-003 §9). Only the prose, and the warning in §5, depend on the switch.
@@ -380,6 +397,45 @@ every question. And every project would load the prose on every refine, on top o
 7. **`aof:init` does not ask.** It renders the bundle before any config exists, so in a new
    project the switch is off and there is nobody to ask on behalf of. The moment to say who the
    operator is, is the moment the switch is turned on (§5).
+8. **How it plugs into 192 (added 2026-11-14, against 192 as delivered).**
+   - **A second practice.** 192 keys a fragment by its practice, and a practice's keys have one
+     home, its entry (192/ADR-002 §1). So the package's `bundle.json` declares `operator-aware`
+     beside `discovery`, keyed on `work.examples.enabled` and `work.examples.operatorAware`. It is
+     on only when both hold `true` (192/ADR-003 §1), which is §1's rule, so the diagnostic in §1
+     and the render can never disagree.
+   - **Replace, never add beside, where today's prose says `business`.** A fragment may replace
+     one of its own package's for the same target and slot (192/ADR-002 §5). Every discovery
+     fragment that labels or names a `business` question is replaced, or the render would teach
+     both vocabularies at once:
+
+     | target | slot | operator-aware fragment |
+     |---|---|---|
+     | `command:refine` | `contract.discovery` | the beat; replaces the discovery beat |
+     | `command:refine` | `contract.formulation` | formulation from the map, carrying a `researched` example as it carries an agreed one (ADR-002); replaces today's |
+     | `command:refine` | `autonomous.milestone` | the cascade's sentences, with policy questions and the batch at the one stop; replaces today's |
+     | `command:refine` | `output.autonomous` | the hand-back, with what research settled and an undeclared profile; replaces today's |
+     | `command:refine` | `entry.rules` (Codex only) | policy questions need real answers, and a fact is researched first; replaces today's |
+     | `command:refine` | `config.roles` (new) | the role sentence of §2 of ADR-004 |
+     | `agent:aof-product-owner` | `ownership.examples` | the PO's half; replaces today's |
+     | `agent:aof-architect` | `ownership.examples` | the classification review with three labels; replaces today's |
+     | `agent:aof-researcher` | `ownership.research` (new) | the finding per domain question |
+
+     The QA brief's discovery fragment names no label and stands.
+   - **Two new slots, in core, and nothing else in core.** `config.roles` is inline, after the
+     sentence that says who plays the roles in solo mode; `ownership.research` is inline, after the
+     researcher brief's ownership line. Each is in the common source and the Codex text
+     (192/ADR-002 §7), and each operator-aware fragment carries a body for every runtime whose
+     texts hold its slot (192/FF-19206).
+   - **Each fragment keeps its own gate sentence** (192/ADR-005 §5). The beat opens by reading both
+     keys, so a project that turned the switch off and has not yet updated is still told to skip
+     it.
+   - **The template variants** are two members of kind `template-variant`: `story`/`EXAMPLES.md`
+     and `milestone`/`RESEARCH.md`. The discovery practice ships none, so no file has two variants
+     on (192/ADR-004 §3).
+   - **What 192 then says for free.** `aof work update` lists `operator-aware` with its two keys,
+     which is §6's adoption path. Turning the switch on and not updating is 192's
+     `practice-render-stale`, an error, beside this milestone's `operator-profile-undeclared`
+     warning; the two say different things and neither replaces the other.
 
 ### Alternatives considered
 
@@ -393,10 +449,13 @@ every question. And every project would load the prose on every refine, on top o
 
 ### Consequences
 
-Story 04 cannot be built until milestone 192 delivers slots and fragments, and a story cannot name
-another milestone in `depends:`, so the milestone as a whole waits on 192. The SPEC's
-"`aof:init` asking for the operator's role" is dropped, with the reason in §7.
-`packages/specification-by-example/src` gains its sixth module.
+Story 04 could not be built until milestone 192 delivered slots and fragments, and a story cannot
+name another milestone in `depends:`, so the milestone as a whole waited on 192; 192 was accepted
+2026-11-14. The SPEC's "`aof:init` asking for the operator's role" is dropped, with the reason in
+§7. `packages/specification-by-example/src` gains its seventh module (192 added the sixth,
+`contribution.mjs`). The practice list `aof work update` prints gains a third row, which makes
+192's open finding that the list is wider than a terminal (192 F-04) one row worse; that finding's
+fix (shorter summaries, or the key first) covers this row too.
 
 ## ADR-007 — Five stories: a grammar, a gate, a profile, a switch, a beat
 
@@ -420,10 +479,12 @@ another milestone in `depends:`, so the milestone as a whole waits on 192. The S
   profile cases join 02's suite, not the lane's.
 - 00 to 03 write no bundle prose, so none of them writes the manifest and none needs 192.
 - 04 writes fragments and their suite inside the practice's package. They are not in the code
-  graph. Their paths are 192's to fix, so 04's write set is settled when 192 is refined.
+  graph. Their paths were 192's to fix; 192 kept the layout 04 had guessed
+  (`assets/fragments/<practice>/<target>.md`, 192/ADR-002 Consequences), and 04's write set was
+  settled against 192 as delivered on 2026-11-14 (ADR-006 §8).
 
-Waves: 00 and 02; then 01 and 03; then 04. All of them wait on milestone 192, because the edge
-can only be drawn at the milestone.
+Waves: 00 and 02; then 01 and 03; then 04. All of them waited on milestone 192, because the edge
+can only be drawn at the milestone; 192 is done.
 
 **The live run** is the milestone's `@manual` check in `STATE.md`, not a story: one real refine of
 a story in a domain declared `new`, in a project with the switch on, read at the source. It needs
@@ -436,4 +497,4 @@ all five delivered.
 | FF-19201 | **The grammar still has one home.** The four classes, the five states and the four provenance labels are frozen arrays exported once from `packages/specification-by-example/src/map.mjs`. No other runtime module spells a `researched F<n>` label or state, or builds a finding id. The research document's file name is spelt in one module of that package. | `test/arch/examples/acd-example-map-single-home.test.mjs` (cases beside 134/FF-13402) — pending, lands with 193/00 | ADR-001 §1–§3, §6, §7 |
 | FF-19202 | **Off is still today.** With `work.examples` absent and with `enabled: false`, the snapshot row of a story whose map cites a finding carries no research text, `doctorWork` yields no `example-research-unanchored`, and `continue` on it is not refused. | `test/arch/examples/acd-examples-off-is-today.test.mjs` (cases beside 134/FF-13403) — pending, lands with 193/01 | ADR-002 §5 |
 | FF-19203 | **The operator profile has one resolver.** In comment-stripped runtime source, the three levels are spelt as a vocabulary only in `packages/contracts/src/operator-profile.mjs`, and `work.operator` is read from a config only through that module's resolver and merge. | `test/arch/examples/acd-operator-profile-one-resolver.test.mjs` — pending, lands with 193/02 | ADR-003 §3, §5 |
-| FF-19204 | **Off renders none of it.** For a fixture project with `work.examples.operatorAware` absent or `false`, the rendered refine command, the rendered PO, researcher and architect briefs (for Claude and for Codex) and the installed `EXAMPLES.md` and `RESEARCH.md` templates are byte-for-byte what the same project renders from a bundle with the practice's operator-aware members removed. | `test/arch/examples/acd-examples-off-is-today.test.mjs` (cases beside FF-19202) — pending, lands with 193/04 | ADR-006 §2 |
+| FF-19204 | **Off renders none of it.** For a fixture project with `work.examples.operatorAware` absent or `false`, the rendered refine command, the rendered PO, researcher and architect briefs (for Claude and for Codex) and the installed `EXAMPLES.md` and `RESEARCH.md` templates are byte-for-byte what the same project renders from a bundle with the `operator-aware` practice and its members removed. | `test/arch/examples/acd-examples-off-is-today.test.mjs` (cases beside FF-19202) — pending, lands with 193/04 | ADR-006 §2, §8 |
