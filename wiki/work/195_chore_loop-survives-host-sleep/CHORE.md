@@ -1,6 +1,6 @@
 ---
 type: chore
-number: 206
+number: 195
 slug: loop-survives-host-sleep
 title: "The loop survives a host sleep and recovers instead of halting"
 status: done
@@ -11,7 +11,7 @@ depends: []
 schema: 1
 aofVersion: 0.1.0
 ---
-# 206 · The loop survives a host sleep and recovers instead of halting
+# 195 · The loop survives a host sleep and recovers instead of halting
 
 ## Intent
 

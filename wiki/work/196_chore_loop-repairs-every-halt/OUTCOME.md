@@ -1,4 +1,4 @@
-# 207 · The loop repairs every halt but the operator's own, before it stops — Outcome
+# 196 · The loop repairs every halt but the operator's own, before it stops — Outcome
 
 ## Delivered
 

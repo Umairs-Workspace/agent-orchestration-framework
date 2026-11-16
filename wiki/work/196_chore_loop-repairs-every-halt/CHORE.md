@@ -1,6 +1,6 @@
 ---
 type: chore
-number: 207
+number: 196
 slug: loop-repairs-every-halt
 title: "The loop repairs every halt but the operator's own, before it stops"
 status: done
@@ -11,7 +11,7 @@ depends: []
 schema: 1
 aofVersion: 0.1.0
 ---
-# 207 · The loop repairs every halt but the operator's own, before it stops
+# 196 · The loop repairs every halt but the operator's own, before it stops
 
 ## Intent
 
@@ -20,7 +20,7 @@ cases failing: the rubric exited 1 outside any case, and the halt waited on the 
 diag log. 147 handed only the three lane stops to a repair session; the operator ruled the loop must
 try its best to repair itself first and ask when a decision is theirs. This chore widens the repair to
 every non-operator stop, lets a repair ask through the loop's ask wait, makes the grade halt explain an
-exit veto, and fixes two faults chore 206 (052dc1df) left on the branch. The evidence is in
+exit veto, and fixes two faults chore 195 (052dc1df) left on the branch. The evidence is in
 `~/.aof/mesh/logs/loop-diag.15.2026-11-14T15-58-10-676Z.log`.
 
 ## Definition of Done
@@ -42,7 +42,7 @@ exit veto, and fixes two faults chore 206 (052dc1df) left on the branch. The evi
       output tail in `work:grade --run`'s detail and the loop's halt Details.
 - [x] The at-capacity cleanup retry waits on a ref'd timer and retries only the current checkout's
       refused cleanups — the wave suite runs to its end instead of exiting 0 with no summary.
-- [x] 206's stale tests are re-pinned: FF-5307's `runs.mjs` digest, and the retry ladder's answer
+- [x] 195's stale tests are re-pinned: FF-5307's `runs.mjs` digest, and the retry ladder's answer
       re-driving `session-1` after a timeout retry resumed it (`test/loop/loop-command-stops.test.mjs`).
 - [x] `aof work validate` is green (no regression)
 

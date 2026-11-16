@@ -1,6 +1,6 @@
 ---
 type: chore
-number: 208
+number: 197
 slug: narrow-impacted-selection-windows-loop-defects
 title: "Narrow impacted test selection and fix three Windows loop defects"
 status: done
@@ -11,7 +11,7 @@ depends: []
 schema: 1
 aofVersion: 0.1.0
 ---
-# 208 · Narrow impacted test selection and fix three Windows loop defects
+# 197 · Narrow impacted test selection and fix three Windows loop defects
 
 ## Intent
 
@@ -47,7 +47,7 @@ starts with no code graph. This chore fixes the first three and settles the four
   there because FF-7207 keeps `packages/mesh/src/worktrees.mjs` free of any filesystem delete. An
   ignored queue needs no delete: `git worktree remove` does not refuse over an ignored file
   (measured on real git, 2026-11-15). The git model and its parity script lost their `clean` verb.
-- Item 3, delivered: chore 207 already put the runner's exit and a 4,000-character tail of its
+- Item 3, delivered: chore 196 already put the runner's exit and a 4,000-character tail of its
   output on the halt line and in the repair hand-over file. The tail now also rides the record of
   the repair run the halt starts, as `brief.halt.runner`.
 - Item 3, the limit: `packages/execution/src/runs.mjs` is digest-pinned as a frozen seam, so no

@@ -1,4 +1,4 @@
-# 206 · The loop survives a host sleep and recovers instead of halting — Outcome
+# 195 · The loop survives a host sleep and recovers instead of halting — Outcome
 
 ## Delivered
 
