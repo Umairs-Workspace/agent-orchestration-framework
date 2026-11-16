@@ -40,6 +40,127 @@ export async function writeText(filePath, content, { dryRun = false } = {}) {
   return { path: filePath, action: "write" };
 }
 
+// writeJson(filePath, value, { dryRun }) — write a JSON document a person also edits (a project or
+// global `aof.config.json`) without reformatting it. Every value that did not change is written back
+// as the file's own text, byte for byte: an inline `["a", "b"]` stays inline, a block indented by
+// four stays at four. Only what changed is laid out, in the file's indent unit and line ending. A
+// file that is absent or not JSON is written as `JSON.stringify(value, null, 2)` plus a newline,
+// which is what every config writer did before this.
+export async function writeJson(filePath, value, options = {}) {
+  const previous = await readFile(filePath, "utf8").catch(() => null);
+  return writeText(filePath, formatJson(value, previous), options);
+}
+
+// formatJson(value, previousText) — the pure half of writeJson. The result always parses to exactly
+// `value`: when the minimal edit would not (it cannot, but the check costs one parse), it falls back
+// to the plain layout rather than write a document that says something else.
+export function formatJson(value, previousText = null) {
+  const plain = JSON.parse(JSON.stringify(value) ?? "null");
+  const fresh = `${JSON.stringify(plain, null, 2)}\n`;
+  if (typeof previousText !== "string") return fresh;
+  let root;
+  try {
+    root = scanJson(previousText);
+  } catch {
+    return fresh;
+  }
+  const eol = previousText.includes("\r\n") ? "\r\n" : "\n";
+  const unit = /^([ \t]+)\S/m.exec(previousText)?.[1] ?? "  ";
+  const tail = /\n$/.test(previousText) ? eol : "";
+  const text = layoutJson(plain, root, "", { unit, eol }) + tail;
+  try {
+    if (JSON.stringify(JSON.parse(text)) === JSON.stringify(plain)) return text;
+  } catch {
+    // A layout that does not parse is never written; the plain one is.
+  }
+  return fresh;
+}
+
+function layoutJson(value, node, indent, style) {
+  if (node != null && JSON.stringify(JSON.parse(node.text)) === JSON.stringify(value)) return node.text;
+  const inner = indent + style.unit;
+  if (value !== null && typeof value === "object" && !Array.isArray(value) && node?.kind === "object") {
+    const keys = Object.keys(value);
+    if (keys.length === 0) return "{}";
+    const members = keys.map((key) => `${inner}${JSON.stringify(key)}: ${layoutJson(value[key], node.members.get(key), inner, style)}`);
+    return `{${style.eol}${members.join(`,${style.eol}`)}${style.eol}${indent}}`;
+  }
+  if (Array.isArray(value) && node?.kind === "array") {
+    if (value.length === 0) return "[]";
+    // An array the file wrote on one line stays on one line while it holds only scalars.
+    if (!node.text.includes("\n") && value.every((item) => item === null || typeof item !== "object")) {
+      return `[${value.map((item) => JSON.stringify(item)).join(", ")}]`;
+    }
+    const items = value.map((item, index) => `${inner}${layoutJson(item, node.items[index], inner, style)}`);
+    return `[${style.eol}${items.join(`,${style.eol}`)}${style.eol}${indent}]`;
+  }
+  return JSON.stringify(value, null, style.unit).split("\n").join(style.eol + indent);
+}
+
+// A JSON scanner that keeps each value's source text: objects by key, arrays by index. It accepts only
+// what JSON.parse accepts in structure; a scalar's own text is checked by the parse in layoutJson.
+const JSON_SCALAR = /true|false|null|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/y;
+
+function scanJson(text) {
+  let at = 0;
+  const space = () => { while (at < text.length && " \t\r\n".includes(text[at])) at += 1; };
+  const fail = () => { throw new SyntaxError(`unexpected JSON at ${at}`); };
+  const string = () => {
+    const start = at;
+    at += 1;
+    while (at < text.length && text[at] !== "\"") at += text[at] === "\\" ? 2 : 1;
+    if (at >= text.length) fail();
+    at += 1;
+    return JSON.parse(text.slice(start, at));
+  };
+  const value = () => {
+    space();
+    const start = at;
+    if (text[at] === "{" || text[at] === "[") {
+      const object = text[at] === "{";
+      const close = object ? "}" : "]";
+      const members = new Map();
+      const items = [];
+      at += 1;
+      space();
+      if (text[at] === close) {
+        at += 1;
+      } else {
+        for (;;) {
+          space();
+          if (object) {
+            if (text[at] !== "\"") fail();
+            const key = string();
+            space();
+            if (text[at] !== ":") fail();
+            at += 1;
+            members.set(key, value());
+          } else {
+            items.push(value());
+          }
+          space();
+          if (text[at] === ",") { at += 1; continue; }
+          if (text[at] === close) { at += 1; break; }
+          fail();
+        }
+      }
+      return object ? { kind: "object", text: text.slice(start, at), members } : { kind: "array", text: text.slice(start, at), items };
+    }
+    if (text[at] === "\"") {
+      string();
+      return { kind: "scalar", text: text.slice(start, at) };
+    }
+    JSON_SCALAR.lastIndex = at;
+    if (!JSON_SCALAR.test(text)) fail();
+    at = JSON_SCALAR.lastIndex;
+    return { kind: "scalar", text: text.slice(start, at) };
+  };
+  const root = value();
+  space();
+  if (at !== text.length) fail();
+  return root;
+}
+
 // The caller supplies diagnostic policy; file utilities never import application logging.
 export function createTempFileSweeper({ reportDegrade }) {
   // sweepStaleTempFiles(dir, { olderThanMs, now }) — m42 wave (a) / m38-F26: reclaim

@@ -3,7 +3,7 @@
 // `useHeadroom` / `unuseHeadroom` are a config-only read-merge-write of the
 // `work.headroom` block in `.aof/aof.config.json` (developer intent). They follow the
 // established `packagesAddCommand`/`packagesRemoveCommand` idiom in cli.mjs:
-//   readJson(configPath) → mutate ONLY work.headroom → writeText(2-space + trailing \n).
+//   readJson(configPath) → mutate ONLY work.headroom → writeJson (the file keeps its own formatting).
 //
 // Frozen contract (ADR-004 / ADR-001):
 //   useHeadroom   : work.headroom = { enabled: true, mode: "wrap",
@@ -28,7 +28,7 @@
 // INDEPENDENT of the lookup (the lookup only drives whether the install hint prints),
 // so the acd-headroom-config-isolation guard stays green.
 import { existsSync } from "node:fs";
-import { readJson, writeText } from "@aof/foundation/fs";
+import { readJson, writeJson } from "@aof/foundation/fs";
 import { findProjectConfig } from "../workspace.mjs";
 import { resolveHeadroomBinary } from "../headroom.mjs";
 
@@ -72,11 +72,11 @@ export async function readConfig(targetDir) {
   return { configPath, config };
 }
 
-// Write the config back in the project's 2-space + trailing-newline JSON style — the
+// Write the config back keeping the file's own formatting (writeJson) — the
 // SAME write packagesAddCommand/packagesRemoveCommand use. Only ever names the config
 // path; the lock is never resolved on this code path. Exported so init reuses it.
 export async function writeConfig(configPath, config) {
-  await writeText(configPath, `${JSON.stringify(config, null, 2)}\n`);
+  await writeJson(configPath, config);
 }
 
 // The shared core both useHeadroom and `init --with-headroom` reuse: set the enabled

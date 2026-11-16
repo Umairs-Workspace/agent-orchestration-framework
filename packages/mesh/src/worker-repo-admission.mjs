@@ -3,7 +3,7 @@ import { execFile } from "node:child_process";
 import { access, mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { isPlainObject, isWellFormedCloneUrl, writeRepoPublishedMarker } from "./repo-marker.mjs";
-import { writeText } from "@aof/foundation/fs";
+import { writeJson } from "@aof/foundation/fs";
 
 
 export function resolveCloneUrl(ws) {
@@ -569,7 +569,7 @@ async function pinWorkspaceIdInCheckout(checkoutPath, workspaceId) {
   }
   const mesh = config?.mesh != null && typeof config.mesh === "object" && !Array.isArray(config.mesh) ? config.mesh : {};
   const next = { ...config, mesh: { ...mesh, workspaceId } };
-  await writeText(configPath, `${JSON.stringify(next, null, 2)}\n`);
+  await writeJson(configPath, next);
 }
 
 // ────────────────────────────────────── the entry points ──────────────────────────────────────

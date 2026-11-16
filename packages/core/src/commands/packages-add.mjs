@@ -4,7 +4,7 @@
 // selection resolves in the argv adapter, the face's domain). Byte-identical
 // output.
 import path from "node:path";
-import { readJson, writeText } from "@aof/foundation/fs";
+import { readJson, writeJson } from "@aof/foundation/fs";
 import { findProjectConfig } from "../workspace.mjs";
 import { normalizePackage } from "../packages.mjs";
 import { hasRuntimeOptions, parseRuntimes, RUNTIME_FLAGS } from "../spine/flags.mjs";
@@ -49,7 +49,7 @@ export const packagesAddCommand = {
       return { dryRun: true, configPath, source: pkg.source, runtimes: pkg.runtimes };
     }
 
-    await writeText(configPath, `${JSON.stringify(nextConfig, null, 2)}\n`);
+    await writeJson(configPath, nextConfig);
     return { dryRun: false, configPath, source: pkg.source, runtimes: pkg.runtimes };
   },
 

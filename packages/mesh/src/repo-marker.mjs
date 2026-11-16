@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { readJson, writeText } from "@aof/foundation/fs";
+import { readJson, writeJson } from "@aof/foundation/fs";
 // src/mesh/repo-marker.mjs — the `mesh.repo` config subtree: the clone-URL SHAPE
 // rule and the per-repo PUBLISHED MARKER that is written against it.
 //
@@ -135,6 +135,6 @@ export async function writeRepoPublishedMarker({
       workspaceId,
     },
   };
-  await writeText(configPath, `${JSON.stringify(onDisk, null, 2)}\n`);
+  await writeJson(configPath, onDisk);
   return { configPath, cloneUrl };
 }

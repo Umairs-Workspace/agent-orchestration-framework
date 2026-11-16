@@ -19,7 +19,7 @@
 // writeConfig (2-space + trailing newline). The lock is never touched, and every
 // other work.agents.* sibling (models, mode, productOwner) survives byte-intact.
 import { existsSync } from "node:fs";
-import { readJson, writeText } from "@aof/foundation/fs";
+import { readJson, writeJson } from "@aof/foundation/fs";
 import { findProjectConfig } from "../workspace.mjs";
 
 // A core never prints: it REPORTS through the collector its caller injects, and the
@@ -52,7 +52,7 @@ export async function readConfig(targetDir) {
 }
 
 export async function writeConfig(configPath, config) {
-  await writeText(configPath, `${JSON.stringify(config, null, 2)}\n`);
+  await writeJson(configPath, config);
 }
 
 // The delegation state recorded in a config object. Absent ≡ the default ("off").

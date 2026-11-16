@@ -3,7 +3,7 @@
 // `packagesRemoveCommand`; byte-identical output. Runtime files and lock
 // install attempts stay untouched by contract.
 import path from "node:path";
-import { readJson, writeText } from "@aof/foundation/fs";
+import { readJson, writeJson } from "@aof/foundation/fs";
 import { findProjectConfig } from "../workspace.mjs";
 
 export const packagesRemoveCommand = {
@@ -35,7 +35,7 @@ export const packagesRemoveCommand = {
       return { dryRun: true, packageId: input.packageId, configPath };
     }
 
-    await writeText(configPath, `${JSON.stringify(nextConfig, null, 2)}\n`);
+    await writeJson(configPath, nextConfig);
     return { dryRun: false, packageId: input.packageId, configPath };
   },
 

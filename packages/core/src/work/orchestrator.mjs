@@ -31,7 +31,7 @@
 // of the two), and per-role sub-agent models remain independent via
 // `work.agents.models`.
 import { existsSync } from "node:fs";
-import { readJson, writeText } from "@aof/foundation/fs";
+import { readJson, writeJson } from "@aof/foundation/fs";
 import { findProjectConfig } from "../workspace.mjs";
 import { resolveExecution } from "@aof/execution/runtime-selection";
 import { reviewRoundsFromConfig } from "@aof/contracts/loop-bounds";
@@ -129,10 +129,10 @@ export async function readConfig(targetDir) {
   return { configPath, config };
 }
 
-// Write the config back in the project's 2-space + trailing-newline JSON style —
+// Write the config back keeping the file's own formatting (writeJson) —
 // the SAME write the other config-only surfaces use.
 export async function writeConfig(configPath, config) {
-  await writeText(configPath, `${JSON.stringify(config, null, 2)}\n`);
+  await writeJson(configPath, config);
 }
 
 // The orchestrator model currently recorded in a config object, or null when

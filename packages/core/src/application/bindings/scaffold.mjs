@@ -5,7 +5,7 @@ import { defaultBodyFile, supportedResourceKinds, supportedRuntimes, RESOURCE_KI
 
 export function assembleScaffold({ fsServices, workspaceServices }) {
   const { readJson } = fsServices;
-  const { writeText } = fsServices;
+  const { writeText, writeJson } = fsServices;
   const { normalizeId } = fsServices;
 
   const { globalWorkspacePaths } = workspaceServices;
@@ -102,7 +102,7 @@ export function assembleScaffold({ fsServices, workspaceServices }) {
     }
 
     await writeText(absoluteAssetPath, skeletonFor(kind, { id, name: input.name, description: input.description, body: input.body }));
-    await writeText(paths.configPath, `${JSON.stringify(config, null, 2)}\n`);
+    await writeJson(paths.configPath, config);
 
     return {
       dryRun: false,

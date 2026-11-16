@@ -1,5 +1,5 @@
 import os from "node:os";
-import { readJson, writeText } from "@aof/foundation/fs";
+import { readJson, writeJson } from "@aof/foundation/fs";
 import { resolvePeers } from "../fabric.mjs";
 import { MESH_WORKSPACE_FLAG, guardMeshPositionals } from "./face-shared.mjs";
 
@@ -125,7 +125,7 @@ async function writeGlobalMeshConfig({ env, relayUrl, controlNode, credential, f
     relay: nextRelay,
     credential,
   };
-  await writeText(paths.configPath, `${JSON.stringify(onDisk, null, 2)}\n`);
+  await writeJson(paths.configPath, onDisk);
   return paths.configPath;
 }
 

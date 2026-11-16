@@ -42,7 +42,7 @@
 // by the sidecar persist (ADR-004.2/.3) — a fresh derive leaves it byte-unchanged.
 import path from "node:path";
 import crypto from "node:crypto";
-import { readJson, writeText } from "@aof/foundation/fs";
+import { readJson, writeText, writeJson } from "@aof/foundation/fs";
 import { trimRun } from "@aof/foundation/text";
 
 // The ONE sidecar-path builder (ADR-004.1): `.aof/mesh/identity.json`, anchored on
@@ -304,7 +304,7 @@ export async function migrateIdentity(configPath, sidecarPath) {
   // shared sibling key survives byte-equivalent.
   const { nodeId: _nodeId, salt: _salt, ...remainingMesh } = mesh;
   const nextConfig = { ...config, mesh: remainingMesh };
-  await writeText(configPath, `${JSON.stringify(nextConfig, null, 2)}\n`);
+  await writeJson(configPath, nextConfig);
   return { migrated: true };
 }
 

@@ -9,5 +9,5 @@ export function assembleFs({ degradeServices }) {
 
   const sweepStaleTempFiles = createTempFileSweeper({ reportDegrade });
 
-  return { "readJson": api0.readJson, "writeText": api0.writeText, "normalizeId": api0.normalizeId, sweepStaleTempFiles };
+  return { "readJson": api0.readJson, "writeText": api0.writeText, "writeJson": api0.writeJson, "normalizeId": api0.normalizeId, sweepStaleTempFiles };
 }

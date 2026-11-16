@@ -9,7 +9,7 @@ export function assembleCommandsAssetsRemove({ fsServices, workspaceServices }) 
   // that is assets:clean's job.
 
   const { readJson } = fsServices;
-  const { writeText } = fsServices;
+  const { writeJson } = fsServices;
   const { globalWorkspacePaths } = workspaceServices;
   const { workspacePaths } = workspaceServices;
 
@@ -69,7 +69,7 @@ export function assembleCommandsAssetsRemove({ fsServices, workspaceServices }) 
       }
 
       if (assetDir) await rm(assetDir, { recursive: true, force: true });
-      await writeText(paths.configPath, `${JSON.stringify(config, null, 2)}\n`);
+      await writeJson(paths.configPath, config);
       return { dryRun: false, assetDir, configPath: paths.configPath };
     },
 

@@ -22,7 +22,7 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
   const { loadProjectConfig } = dslServices;
   const { normalizeId } = fsServices;
   const { readJson } = fsServices;
-  const { writeText } = fsServices;
+  const { writeText, writeJson } = fsServices;
 
   const { findProjectConfig } = workspaceServices;
   const { globalWorkspacePaths } = workspaceServices;
@@ -157,7 +157,7 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
 
     const config = baseConfig(existing, projectDir, scope, { resources });
 
-    await writeText(paths.configPath, `${JSON.stringify(config, null, 2)}\n`);
+    await writeJson(paths.configPath, config);
 
     return {
       ok: true,
@@ -201,7 +201,7 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
       return { ok: false, diagnostics };
     }
 
-    await writeText(paths.configPath, `${JSON.stringify(config, null, 2)}\n`);
+    await writeJson(paths.configPath, config);
     return {
       ok: true,
       diagnostics,
@@ -283,7 +283,7 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
       return { ok: false, diagnostics };
     }
 
-    await writeText(paths.configPath, `${JSON.stringify(config, null, 2)}\n`);
+    await writeJson(paths.configPath, config);
     return {
       ok: true,
       diagnostics,
