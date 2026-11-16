@@ -869,6 +869,32 @@ export const workDoctorControlsTests = [
     },
   },
   {
+    name: "control: a Go test file is a control-shaped name — `*_test.go` is cited and resolved, ordinary Go sources are not",
+    run: () => {
+      for (const [name, control] of [
+        ["boundary_test.go", true],
+        ["services/mcp/internal/sandbox/boundary_test.go", true],
+        ["x_test.go", true],
+        ["runner.go", false],
+        ["testing.go", false],
+        ["contest.go", false],
+        ["latest_test_data.go", false],
+        ["boundary_test.go.md", false],
+        ["boundary_test.golden", false],
+      ]) {
+        assert.equal(isControlFileName(name), control, name);
+      }
+      const GO = "services/mcp/internal/sandbox/boundary_test.go";
+      assert.deepEqual(controlPathsIn(`\`${GO}\` — landed 10/01`), [GO]);
+      assert.deepEqual(controlPathsIn("`services/mcp/internal/sandbox/runner.go` holds the kill"), []);
+      const register = { "ARCHITECTURE.md": fitnessRegister(`| **FF-01** | the boundary | \`${GO}\` — landed 10/01 | ADR-002 |`) };
+      const resolved = controlGroup(snapshotOf([item({ docs: register })], { probes: { [GO]: true } }), {});
+      assert.deepEqual(only(resolved, "control-unresolved"), [], "a landed Go test file resolves under leg A");
+      const missing = controlGroup(snapshotOf([item({ docs: register })], { probes: { [GO]: false } }), {});
+      assert.match(only(missing, "control-unresolved")[0].message, /FF-01 cites services\/mcp\/internal\/sandbox\/boundary_test\.go, which is not a file on disk/);
+    },
+  },
+  {
     name: "66/02 control: a pending control is admitted mid-flight, and its marker is inadmissible at the accept transition (ADR-009/C)",
     run: () => {
       const CITED = "test/arch/not-yet.test.mjs";

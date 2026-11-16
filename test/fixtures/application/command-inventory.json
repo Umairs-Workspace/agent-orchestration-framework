@@ -749,7 +749,7 @@
           },
           "offline": {
             "type": "boolean",
-            "description": "build without network egress"
+            "description": "build without network egress: no hosted model, and no fetch or publish of a shared graph"
           }
         }
       }
@@ -4961,7 +4961,7 @@
           },
           "noRepair": {
             "type": "boolean",
-            "description": "do not hand a lane halt (lane-open-failed, lane-merge-refused, lane-merge-conflict) to a repair session; stop for the operator as before. work.loop.repair: false is the standing form"
+            "description": "do not hand a halt to a repair session (every stop but uat-gate, session-needs-input, operator-interrupt, retry-parked and deadline-exhausted is handed over by default); stop for the operator instead. work.loop.repair: false is the standing form"
           }
         }
       }

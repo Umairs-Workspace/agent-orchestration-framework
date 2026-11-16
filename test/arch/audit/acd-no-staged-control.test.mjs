@@ -49,8 +49,9 @@ const workDir = path.join(repoRoot, "wiki", "work");
 // lockstep with `isControlFileName` — a strict superset of ADR-004 §4's glob, never a
 // relaxation of it. aof's own tree holds no `.cs`, so the agreement loop below cannot
 // see that branch; the enumerated shapes in the next test assert it for both spellings.
-// pytest's `test_*.py` / `*_test.py` widens it the same way, and for the same reason.
-const STAGED = /\.(?:test|spec)\.[A-Za-z0-9]+$|Tests?\.(?:cs|fs|vb)$|(?:^|\/)test_[A-Za-z0-9_]*\.py$|_test\.py$/;
+// pytest's `test_*.py` / `*_test.py` widens it the same way, and for the same reason, and
+// so does Go's `*_test.go`, the only files `go test` compiles as tests.
+const STAGED = /\.(?:test|spec)\.[A-Za-z0-9]+$|Tests?\.(?:cs|fs|vb)$|(?:^|\/)test_[A-Za-z0-9_]*\.py$|_test\.py$|_test\.go$/;
 
 async function walk(dir, out = []) {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -121,6 +122,12 @@ export const archTests = [
         ["conftest.py", false],
         ["latest_test_data.py", false],
         ["tap_report.py", false],
+        // Go's test-file spelling, and the Go sources it must leave admitted
+        ["boundary_test.go", true],
+        ["services/mcp/internal/sandbox/limits_test.go", true],
+        ["runner.go", false],
+        ["testing.go", false],
+        ["latest_test_data.go", false],
       ]) {
         assert.equal(isControlFileName(name), staged, name);
         assert.equal(STAGED.test(name), staged, `the gate's own glob agrees on ${name}`);

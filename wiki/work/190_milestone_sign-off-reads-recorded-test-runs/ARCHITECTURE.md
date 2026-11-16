@@ -369,6 +369,21 @@ declaring the file a suite, makes it selectable, and the runner then rejects it 
    `reportArgs` and `filesArgs` when the gate program takes a flag that skips its lanes (F-07).
    It authors `exclude`, with a reason, for test-shaped files the runner does not run.
 
+### Amendment — the work dir and the graph's freshness join the family (operator, 2026-11-11)
+
+The consumer-monorepo map-tests run (ADR-009) found two more ways a project keeps widening with
+nothing saying why. Two checks join the family, through the same one function, so the update and
+the project doctor still cannot disagree:
+
+- **`test-layout-workdir`**: asked once couplings are declared (until then `test-layout-couplings`
+  already says every document widens). It warns when no coupling's paths cover a record under
+  `work.dir`, since every `aof:continue` edits STATE, SPEC and feature files there.
+- **`test-layout-graph-fresh`**: warns when there is no code graph, or when HEAD's commit time is
+  later than the graph's `builtAt`, so every file added since widens as `not-in-graph`. Its repair
+  is `aof graph build . --offline`. The binding hands in `builtAt` (the artifact's mtime, the one
+  derivation) and HEAD's commit time; `layout.mjs` still reads no graph and no file (FF-19006), and
+  the check is omitted when there is no HEAD to compare.
+
 ### Alternatives considered
 
 - **Have the doctor ask the runner's own registry what it runs (F-05).** Rejected: that is a
@@ -385,6 +400,77 @@ declaring the file a suite, makes it selectable, and the runner then rejects it 
   judgement (ADR-003 §4), and a generated coupling would narrow on a guess.
 - **Template the resume flags for any runner.** Rejected: a template the program ignores would make
   `--resume` run the whole tree under a resume's name, which ADR-005 §1 refuses.
+
+## ADR-009 — A coupling that names readers reaches code, and `via` names a helper
+
+Amends ADR-003 §4 (operator, 2026-11-11). A map-tests run on a consumer monorepo (a Next.js app and
+two TypeScript packages, 75 Vitest suites) found two failures that §4's "a code file is placed by the
+graph or by a changed importer, never by a coupling" causes:
+
+- **Wrong narrowing.** Guard suites read source from disk rather than importing it: a fitness test
+  scans `packages/application/src/**` for framework imports, authorization tests read every route
+  page, and two suites spawn `prisma/seed.ts`. A change to a scanned file selected only its
+  importers and skipped the guard.
+- **Needless widening.** Code that no suite imports (route `page.tsx`/`error.tsx`/`loading.tsx`
+  that the framework loads, `seed.ts`) widened every run, and nothing could be declared to place
+  it. That was 10 of the 12 widened files in the latest replayed commit.
+
+Separately, a coupling had to list every reader by name. Four migration suites reached the
+migrations only through a non-suite helper (`viewings/test-support.ts`), so a grep for the coupled
+path missed them: 4 of the 9 suites that apply the SQL.
+
+### Decision
+
+1. **A coupling that names readers applies to code.** For a file that is code for the suites (the
+   selector's `suitesAreCode`, so a `.ts` file under Go suites keeps its document rules):
+   - when the graph or a changed importer places it, the coupling's readers **join** that selection,
+     under the same reason, with a `coupled` field naming them. Adding suites only widens;
+   - when no import reaches it (present with no suite dependent, or absent from the graph), the
+     coupling **places** it as `declared-coupling`. That narrows on a declaration, the trust a
+     document coupling already gets;
+   - **an empty coupling never places code.** It is skipped for code, not refused: whether a glob
+     matches code depends on the tree, not the config. The file then widens as before.
+2. **`via: [helper…]` names helpers, not suites.** At selection time, each helper expands to its
+   transitive suite dependents through the same `relations` port, so the list cannot go stale as
+   suites start or stop importing it. A helper the graph does not hold expands to nothing, and a
+   coupling left with no runnable reader places nothing, so the file widens.
+3. **The narrowing reasons stay the closed five of ADR-003 §5** (FF-19003). The union case keeps its
+   placement's reason and records `coupled`.
+
+### Alternatives considered
+
+- **Refuse `suites: []` on code at config validation.** Rejected: a glob matches code only on a
+  given tree, so validation cannot decide it. Skipping at selection time is decidable and keeps the
+  file widening.
+- **A `reads: "code"` marker on the coupling.** Rejected: the glob already says what it matches.
+- **Have map-tests snapshot a helper's suites into `suites`.** Rejected: the snapshot goes stale the
+  first time a suite starts or stops importing the helper.
+- **A sixth narrowing reason for the union.** Rejected: the placement's reason is already true, and
+  `coupled` names the extra readers.
+
+### Amendment — overlapping couplings combine, and a dead glob is named (operator, 2026-11-11)
+
+Adopting §1 on the consumer project found two silent failures:
+
+- **First match won.** A code file under `features/**` (reader A) and `features/viewings/**`
+  (reader B) got one coupling's readers, by order. For a document it was a wrong narrowing: an
+  earlier `wiki/**` → `[]` dropped a wiki page that a later coupling names a reader for.
+- **Route-group folders are glob syntax.** `app/(crm)/projects/**/page.tsx` reads `(crm)` as a
+  pattern group: it matches `app/crm/projects/…` and never the real folder, so the coupling did
+  nothing. A glob with no wildcard still matches literally; parentheses beside `*` or `**` do not.
+
+Decision:
+
+1. **Every matching coupling that names readers contributes them**, `via` expanded, so order never
+   matters. An empty coupling declares "nothing reads this" only when no matching coupling names a
+   reader, and still never for code. Readers that are all unrunnable place nothing, so the file
+   widens; one coupling's stale suite does not cancel another's live readers. The resolution's
+   `why` names every coupling that contributed.
+2. **`test-layout-couplings-match`** joins ADR-008's family: it warns, naming each one, about a
+   coupling glob that matches no tracked file and a `via` helper that is not a tracked file. It
+   catches the route-group trap and every typo or moved folder like it. A coupling written ahead of
+   its files warns until they exist, and says so. `/aof:map-tests` tells the author to escape
+   `()` (and `[]`, `{}`) in folder names inside a glob: `\(crm\)` or `[(]crm[)]`.
 
 ## Fitness functions
 

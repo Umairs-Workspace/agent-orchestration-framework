@@ -100,6 +100,21 @@ export function assembleSpineFace({ commandCoreServices, effectsJournalServices,
     return spec?.usage ? `\n\nUsage: ${spec.usage}` : "";
   }
 
+  // commandHelp(command, spec) → the text `aof <route> --help` prints: the usage line, the command
+  // it reached, and every flag the face accepts for it with its description.
+  function commandHelp(command, spec) {
+    const route = Array.isArray(command.cli?.route) ? `aof ${command.cli.route.join(" ")}` : command.id;
+    const lines = [`Usage: ${spec.usage ?? route}`, "", `Command: ${command.id}`];
+    const flags = Object.entries({ ...(spec.flags ?? {}), ...BASE_FLAGS });
+    if (flags.length > 0) {
+      const names = flags.map(([key, flag]) => `--${key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}${flag.type === "boolean" ? "" : " <value>"}`);
+      const width = Math.max(...names.map((name) => name.length));
+      lines.push("", "Flags:");
+      flags.forEach(([, flag], index) => lines.push(`  ${names[index].padEnd(width)}  ${flag.description ?? ""}`.trimEnd()));
+    }
+    return lines.join("\n");
+  }
+
   // deriveRouteTable — the route table IS the registry (never a hand-kept ladder):
   // every command carrying cli.route contributes its words as a key. A collision
   // is a programmer error and throws at derivation, so two commands can never
@@ -124,6 +139,12 @@ export function assembleSpineFace({ commandCoreServices, effectsJournalServices,
     // not swallow the operator's --json, so even a spec-parse refusal is ONE
     // structured envelope on stdout when --json was asked for.
     const wantsJson = args.some((arg) => arg === "--json" || (typeof arg === "string" && arg.startsWith("--json=")));
+    // `--help` answers from the command's own spec, before anything is parsed, loaded or invoked —
+    // unless the command declares `help` itself, in which case it is that command's flag.
+    if (args.includes("--help") && spec.flags?.help == null) {
+      console.log(commandHelp(command, spec));
+      return;
+    }
     let options;
     try {
       options = parseSpecArgv(args, spec, command.id);

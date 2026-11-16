@@ -189,7 +189,7 @@ doc: state
     path).
   - `@uat` (188/04 task 01) waits for F-02's fix.
 - 2026-11-01 — F-01 fixed, operator's choice.
-  - `aof mesh identity --reidentify` gave `umairs-mac-mini → node-9549`, invalidating nothing.
+  - `aof mesh identity --reidentify` gave `<mac-hostname> → node-9549`, invalidating nothing.
     `node-9549` is this install's opaque id, re-derived from the same salt, and the enrollment
     credential and node record already named it.
   - The sidecar had gone back to the hostname form on 2026-10-19, which recurs m131/F-131-02.

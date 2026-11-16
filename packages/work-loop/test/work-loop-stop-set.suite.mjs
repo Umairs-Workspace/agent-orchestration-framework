@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import {
   LOOP_REFUSALS,
+  LANE_STOPS,
   LOOP_STOPS,
+  OPERATOR_STOPS,
   REPAIRABLE_STOPS,
   decideHaltRepair,
   decideLoop,
@@ -19,40 +21,46 @@ const base = {
   cap: 3,
 };
 
-// 147/00 — THE REPAIRABLE STOPS AND THE HAND-OVER DECISION (tasks/00, R1 and R2). The engine declares
-// the handed-over set as an export of its own and decides the hand-over purely; `LOOP_STOPS` is
-// unchanged by it. The fifteen-row outline is the feature's own table.
+// 147/00 — THE REPAIRABLE STOPS AND THE HAND-OVER DECISION, WIDENED (2026-11-14). 147 handed over
+// only the three lane stops; the loop now tries its best before stopping, so every stop is handed to
+// a repair session EXCEPT the operator's own five — a UAT sign-off, a question already waiting on
+// the operator, the operator's Stop, a retry parked on a session limit, and the operator's time
+// budget. The engine declares both sets as exports and decides the hand-over purely; `LOOP_STOPS`
+// is unchanged by them. The fifteen-row outline covers every stop.
 const REPAIR_ROWS = Object.freeze([
   ["lane-open-failed", "repair"],
   ["lane-merge-refused", "repair"],
   ["lane-merge-conflict", "repair"],
   ["uat-gate", "stop"],
-  ["dependency-blocked", "stop"],
-  ["cap-exhausted", "stop"],
+  ["dependency-blocked", "repair"],
+  ["cap-exhausted", "repair"],
   ["deadline-exhausted", "stop"],
-  ["progress-exhausted", "stop"],
-  ["no-progress", "stop"],
-  ["grade-indeterminate", "stop"],
+  ["progress-exhausted", "repair"],
+  ["no-progress", "repair"],
+  ["grade-indeterminate", "repair"],
   ["session-needs-input", "stop"],
-  ["run-not-retryable", "stop"],
+  ["run-not-retryable", "repair"],
   ["retry-parked", "stop"],
-  ["unmapped-item-type", "stop"],
+  ["unmapped-item-type", "repair"],
   ["operator-interrupt", "stop"],
 ]);
 
 export const workLoopStopSetTests = [
   {
-    name: "147/00 R1 — REPAIRABLE_STOPS is a frozen export of exactly the three lane stops, and LOOP_STOPS is unchanged by it",
+    name: "147/00 R1 (widened) — REPAIRABLE_STOPS is every loop stop that is not one of the operator's five, both frozen, and LOOP_STOPS is unchanged by them",
     run() {
       assert.equal(Object.isFrozen(REPAIRABLE_STOPS), true);
-      assert.deepEqual([...REPAIRABLE_STOPS], ["lane-open-failed", "lane-merge-refused", "lane-merge-conflict"]);
-      assert.deepEqual([...REPAIRABLE_STOPS], LOOP_STOPS.slice(12), "the three are LOOP_STOPS' members 13-15, in their order");
+      assert.equal(Object.isFrozen(OPERATOR_STOPS), true);
+      assert.deepEqual([...OPERATOR_STOPS].sort(), ["deadline-exhausted", "operator-interrupt", "retry-parked", "session-needs-input", "uat-gate"]);
+      assert.deepEqual([...REPAIRABLE_STOPS], LOOP_STOPS.filter((stop) => !OPERATOR_STOPS.includes(stop)), "every non-operator stop, in LOOP_STOPS' order");
+      assert.deepEqual([...LANE_STOPS], LOOP_STOPS.slice(12), "the lane stops are LOOP_STOPS' members 13-15, in their order");
+      for (const stop of LANE_STOPS) assert.ok(REPAIRABLE_STOPS.includes(stop), `${stop} is still repairable`);
       assert.equal(LOOP_STOPS.length, 15, "LOOP_STOPS gains no member");
-      for (const stop of REPAIRABLE_STOPS) assert.ok(LOOP_STOPS.includes(stop), `${stop} is a loop stop`);
+      for (const stop of OPERATOR_STOPS) assert.ok(LOOP_STOPS.includes(stop), `${stop} is a loop stop`);
     },
   },
   {
-    name: "147/00 R2 [outline] the engine hands over only the three lane stops — decideHaltRepair over every stop with repair on and no earlier repair (15 rows)",
+    name: "147/00 R2 (widened) [outline] the engine hands over every stop but the operator's — decideHaltRepair over every stop with repair on and no earlier repair (15 rows)",
     run() {
       assert.equal(REPAIR_ROWS.length, LOOP_STOPS.length, "the outline covers every stop");
       assert.deepEqual(REPAIR_ROWS.map(([stop]) => stop).sort(), [...LOOP_STOPS].sort(), "…and names each exactly once");
@@ -63,7 +71,7 @@ export const workLoopStopSetTests = [
     },
   },
   {
-    name: "147/00 R1 — repair turned off answers stop for every lane stop; 147/01 R3 — one repair per halt: an earlier repair answers stop",
+    name: "147/00 R1 — repair turned off answers stop for every repairable stop; 147/01 R3 — one repair per halt: an earlier repair answers stop",
     run() {
       for (const stop of REPAIRABLE_STOPS) {
         assert.equal(decideHaltRepair({ stop, repairOn: false }), "stop", `${stop}: off`);
@@ -72,7 +80,7 @@ export const workLoopStopSetTests = [
         assert.equal(decideHaltRepair({ stop, repairOn: true, priorRepair: { runId: "R1" } }), "stop", `${stop}: a prior repair run stops`);
         assert.equal(decideHaltRepair({ stop, repairOn: true, priorRepair: "R1" }), "stop", `${stop}: any non-null prior repair stops`);
       }
-      assert.equal(decideHaltRepair({ stop: "uat-gate", repairOn: true, priorRepair: null }), "stop", "a non-lane stop is never repaired, whatever the switch");
+      for (const stop of OPERATOR_STOPS) assert.equal(decideHaltRepair({ stop, repairOn: true, priorRepair: null }), "stop", `${stop} is the operator's: never repaired, whatever the switch`);
       assert.equal(decideHaltRepair(), "stop", "no stop at all is a stop");
     },
   },

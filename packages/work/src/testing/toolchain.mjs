@@ -306,8 +306,10 @@ function compileProgram(command, unresolvableCode, key, options) {
   return { resolved };
 }
 
-// A coupling list is `[{ paths, suites, why }]`: `paths` a non-empty array of globs, `suites` an
-// array of suite paths (empty declares that nothing reads those paths), `why` the stated reason.
+// A coupling list is `[{ paths, suites, via?, why }]`: `paths` a non-empty array of globs, `suites`
+// an array of suite paths (empty, with no `via`, declares that nothing reads those paths), `via` an
+// optional array of helper modules whose suite dependents read them (190/ADR-009 §2), `why` the
+// stated reason.
 function couplingDeclarationProblem(couplings) {
   if (couplings === undefined) return null;
   if (!Array.isArray(couplings)) return "must be an array of { paths, suites, why } entries";
@@ -315,6 +317,7 @@ function couplingDeclarationProblem(couplings) {
     if (!isPlainObject(entry)) return `entry ${index} must be an object with paths, suites and why`;
     if (!Array.isArray(entry.paths) || stringArrayProblem(entry.paths) != null || entry.paths.length === 0) return `entry ${index}'s paths must be a non-empty array of globs`;
     if (!Array.isArray(entry.suites) || stringArrayProblem(entry.suites) != null) return `entry ${index}'s suites must be an array of suite paths, empty when nothing reads them`;
+    if (entry.via !== undefined && (!Array.isArray(entry.via) || stringArrayProblem(entry.via) != null || entry.via.length === 0)) return `entry ${index}'s via must be a non-empty array of helper module paths whose suite dependents read these paths`;
     if (typeof entry.why !== "string" || entry.why.trim() === "") return `entry ${index} must say why, as a non-empty string`;
   }
   return null;
@@ -366,10 +369,12 @@ function resolveTestToolchain(config, options = {}) {
 
   // 190/ADR-003 §1, §4 — WHAT A SUITE IS, AND WHAT READS A DOCUMENT. Both optional: absent keeps
   // today's predicate (`.test.mjs`) and no coupling, so every undeclared document still widens.
-  // Present and malformed is a refusal naming the key, never a silent narrowing.
+  // Present and malformed is a refusal naming the key, never a silent narrowing. A suffix starts at
+  // a separator: "." (`.test.mjs`, `.spec.ts`) or "_" (Go's `_test.go`, Python's `_test.py`), so a
+  // bare word such as `test.mjs`, which would also match `contest.mjs`, is still refused.
   const suffixesProblem = stringArrayProblem(declared.suiteSuffixes);
-  if (declared.suiteSuffixes !== undefined && (suffixesProblem != null || declared.suiteSuffixes.length === 0 || declared.suiteSuffixes.some((suffix) => !suffix.startsWith(".")))) {
-    return refusal(TEST_RUNNER_DECLARATION_INVALID, "work.test.suiteSuffixes", "work.test.suiteSuffixes must be a non-empty array of file suffixes, each starting with \".\" — it is what makes a file under a declared root a suite");
+  if (declared.suiteSuffixes !== undefined && (suffixesProblem != null || declared.suiteSuffixes.length === 0 || declared.suiteSuffixes.some((suffix) => !/^[._]./u.test(suffix)))) {
+    return refusal(TEST_RUNNER_DECLARATION_INVALID, "work.test.suiteSuffixes", "work.test.suiteSuffixes must be a non-empty array of file suffixes, each starting with \".\" or \"_\" (as `.test.mjs` or `_test.go`) — it is what makes a file under a declared root a suite");
   }
   const couplingsProblem = couplingDeclarationProblem(declared.couplings);
   if (couplingsProblem != null) {
@@ -398,6 +403,7 @@ function resolveTestToolchain(config, options = {}) {
       couplings: Object.freeze((declared.couplings ?? []).map((entry) => Object.freeze({
         paths: Object.freeze([...entry.paths]),
         suites: Object.freeze([...entry.suites]),
+        ...(entry.via === undefined ? {} : { via: Object.freeze([...entry.via]) }),
         why: entry.why,
       }))),
       // 190/ADR-008 §1 — absent and `[]` select the same, but only `[]` is an answer: the

@@ -94,6 +94,17 @@ export function createDriveStatus({ readRuns, claudeProjectsDir, reportDegrade, 
     return active;
   }
 
+  // The session transcript's mtime under the LANE's projects dir, or NaN when there is none yet.
+  async function transcriptWrittenAt({ lane, env, sessionId }) {
+    const file = path.join(claudeProjectsDir({ cwd: lane, ...(env == null ? {} : { env: { ...process.env, ...env } }) }), `${sessionId}.jsonl`);
+    try {
+      return (await stat(file)).mtimeMs;
+    } catch (error) {
+      if (error?.code !== "ENOENT") degrade(error);
+      return NaN;
+    }
+  }
+
   // readDriveFacts({ item, runId, lane, env, atMs }) → { sessionId, lastActivityAgeMs, subagentsActive }
   // `item` is the drive's item AS THE LANE SEES IT, or a function that resolves it.
   async function readDriveFacts({ item, runId, lane, env, atMs }) {
@@ -105,8 +116,15 @@ export function createDriveStatus({ readRuns, claudeProjectsDir, reportDegrade, 
       degrade(error);
     }
     const sessionId = typeof run?.sessionId === "string" && run.sessionId.length > 0 ? run.sessionId : null;
+    // THE NEWER OF TWO FACTS (2026-11-12). The consumed heartbeat is only written when the child's
+    // stall check drains the queue — once per heartbeat window, 25 minutes on the measured config —
+    // so on its own it printed `no activity yet` for the first half hour of sessions whose
+    // transcripts were full of edits and test runs. The session transcript's last write is the
+    // activity itself; the heartbeat stays the floor (a runtime with no Claude transcript).
     const heartbeatAt = Date.parse(run?.heartbeatAt ?? "");
-    const lastActivityAgeMs = Number.isFinite(heartbeatAt) ? atMs - heartbeatAt : null;
+    const transcriptAt = sessionId == null ? NaN : await transcriptWrittenAt({ lane, env, sessionId });
+    const lastActivityAt = Math.max(Number.isFinite(heartbeatAt) ? heartbeatAt : -Infinity, Number.isFinite(transcriptAt) ? transcriptAt : -Infinity);
+    const lastActivityAgeMs = Number.isFinite(lastActivityAt) ? Math.max(0, atMs - lastActivityAt) : null;
     const subagentsActive = sessionId == null ? 0 : await activeSubagents({ lane, env, sessionId, atMs });
     return { sessionId, lastActivityAgeMs, subagentsActive };
   }

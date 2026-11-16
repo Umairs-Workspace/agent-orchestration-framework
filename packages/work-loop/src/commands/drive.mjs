@@ -206,6 +206,39 @@ export function createPhaseDrivers({
     }
   }
 
+  // A RETRY OF A TIMED-OUT CONTINUE RESUMES THE SESSION THE DEADLINE CUT (2026-11-12). Measured on
+  // loop 07: two story builds were killed at their one-hour bound mid-work, and each retry opened a
+  // cold session that spent its first half hour re-reading what the killed one already knew. A
+  // deadline is not a verdict on the session's context, so the retry carries it on: the target is
+  // the PARTICULAR prior attempt this run retries (`retryOf`), only when that attempt failed
+  // `timeout`, and only when its transcript is still in this tree — anything else resolves cold,
+  // exactly as ADR-008's fix target does.
+  async function resolveTimeoutResumeTarget({
+    phase,
+    item,
+    recorded,
+    cwd = process.cwd(),
+    env = process.env,
+    isResumable = transcriptExists,
+  } = {}) {
+    if (phase !== "continue" || recorded?.retryOf == null) return null;
+    try {
+      const prior = (await readRuns(item)).find((run) => run.runId === recorded.retryOf);
+      if (prior?.failureReason !== "timeout") return null;
+      const sessionId = typeof prior.sessionId === "string" ? prior.sessionId.trim() : "";
+      if (sessionId.length === 0 || path.basename(sessionId) !== sessionId) return null;
+      return await isResumable({ sessionId, cwd, env, buildRun: prior }) ? sessionId : null;
+    } catch (error) {
+      reportDegrade("drive-timeout-resume", error);
+      return null;
+    }
+  }
+
+  // The turn typed into a session resumed after its deadline: the phase command, and why it is back.
+  function composeTimeoutResumeInput(command) {
+    return `${command}\n\n## RESUMED AFTER THE ATTEMPT DEADLINE\nThe previous attempt of this phase was stopped by its time limit while you were working. This conversation is intact: continue from where you stopped. Check the working tree for what is already done and do not redo it.`;
+  }
+
   function printable(value) {
     if (typeof value === "string") return value;
     try {
@@ -583,8 +616,22 @@ export function createPhaseDrivers({
         const fixSource = answer == null ? fixFromFile ?? ctx.loopDrive?.fix ?? null : null;
         const fix = phase === "continue" && fixSource?.buildRun ? fixSource : null;
         const launchPhase = fix == null ? phase : "fix";
+        const timeoutResumeId = answer == null && fix == null
+          ? await resolveTimeoutResumeTarget({
+            phase,
+            item,
+            recorded,
+            cwd: ctx.workspace.projectRoot,
+            env: baseOptions.env ?? process.env,
+            ...(typeof baseOptions.resumeSessionAvailable === "function"
+              ? { isResumable: baseOptions.resumeSessionAvailable }
+              : {}),
+          })
+          : null;
         const resumeSessionId = answer != null
           ? answer.sessionId
+          : timeoutResumeId != null
+          ? timeoutResumeId
           : fix?.resumeBuildRun == null
           ? null
           : await resolvePhaseResumeTarget({
@@ -598,6 +645,8 @@ export function createPhaseDrivers({
           });
         const launchCommand = answer != null
           ? answer.text
+          : timeoutResumeId != null
+          ? composeTimeoutResumeInput(command)
           : fix == null
           ? command
           : composeFixInput(command, {

@@ -3036,8 +3036,14 @@ declare first, and stop. `aof test` refuses there too.
 </config>
 
 <process>
-1. **The before replay — first, before the layout is read.** List the last 30 non-merge commits
-   that touch a file outside the work dir:
+1. **The before replay — first, before the layout is read.** **Make the graph current first**, or
+   the replay measures a stale graph rather than the declaration: every file added since the last
+   build widens as `not-in-graph`. When HEAD's commit time (`git log -1 --format=%cI`) is later
+   than the graph's `builtAt` (any `--plan --json` answer carries it), **say the graph is stale and
+   stop**, naming `aof graph build . --offline` as the step to run first: it sends nothing to a
+   hosted model and neither fetches nor publishes a shared graph. This command does not rebuild it,
+   because its only write is the declaration. Then list the last 30 non-merge commits that touch a
+   file outside the work dir:
 
    ```
    git log --no-merges -n 30 --format=%H -- . ":(exclude)<work.dir>"
@@ -3051,34 +3057,63 @@ declare first, and stop. `aof test` refuses there too.
 
    `--plan` selects and stops: it launches nothing, writes no record and is answered from none, so
    the replay costs seconds. Keep each result. From the 30, count:
-   - **widened**: `scope` is `all`; keep every `widened[].reason` with its file;
+   - **widened**: `scope` is `all`; keep every `widened[].reason` with its file, and count apart
+     the widened files under `<work.dir>`;
    - **narrowed**: `scope` is `impacted`; keep `selected.length`;
    - **refused**: a `refusal` (for instance `changed-set-empty`); count it apart, never as either;
    - **the total**: `total`, the whole suite the declaration holds.
 
    The replay uses today's graph, so a file deleted since its commit widens as `not-in-graph`. That
-   is honest, and it is reported as it is.
+   is honest, and it is reported in two parts: files that no longer exist at HEAD (deleted since),
+   and files that do, which the graph never holds (a document, an asset), so only a coupling places
+   them.
 2. **Read the runner and the layout.** Read the declared `work.test.command` and `args` and the
    program they run, the gate (`work.test.gate`) and the program it runs, and the tracked test files
    (`git ls-files`). Run `aof project doctor --json` and read its `test-layout-*` checks: they name
    the test files the declaration cannot select, by directory, and the keys that are absent.
+   **Check the selection's fidelity too**: read how the program treats a selected path. A runner
+   that rewrites it (reduces it to a file name, or hands it to a filter that matches substrings)
+   runs more suites than were selected. That is a finding for the project, reported in the output;
+   this command does not fix it.
 3. **Roots and suffixes.** Author `work.test.roots` as every directory that holds the runner's
    suites (the doctor's `test-layout-suites` directories are the candidates), and
-   `work.test.suiteSuffixes` as the suffixes those suites end in, each starting with `.`. Declare a
+   `work.test.suiteSuffixes` as the suffixes those suites end in, each starting with `.` or `_` (as `.test.mjs` or Go's `_test.go`). Declare a
    directory or a suffix only when the runner actually runs those files: a test-shaped file the
    runner never runs is not a suite, and declaring it makes nothing selectable. **Exclude it
    instead**: author `work.test.exclude` as `[{ paths, why }]`, where `paths` holds globs for the
    test-shaped files the runner does not run and `why` says what runs them, if anything. An excluded
    file is never selected, and the doctor stops counting it.
-4. **Couplings, judged, each with its reason.** A coupling `{ paths, suites, why }` is how a
-   changed document (not code) selects the suites that read it. Author each one from a **search of
-   the suites for the coupled paths**: grep the suite files for each candidate document path, both
-   as a literal string and as `path.join` segments, and read the suites that a hit names. Couple a
-   path to exactly the suites shown to read it, and write the `why` from what the search found. When
-   a suite walks a directory or reads a manifest it does not name, couple the directory to it, or
-   declare nothing for those paths, so they keep widening: a coupling built on a guess narrows on a
-   guess. **Write `couplings: []` when no suite reads a document**, because that is the considered
-   answer. Leaving the key absent means nobody asked the question.
+4. **Couplings, judged, each with its reason.** A coupling `{ paths, suites, via?, why }` is how
+   a changed file that no import edge reaches selects the suites that read it (190/ADR-009). Author
+   each one from a **search of the suites for the coupled paths**: grep the suite files for each
+   candidate path, both as a literal string and as `path.join` segments, and read the suites that a
+   hit names. Couple a path to exactly the suites shown to read it, and write the `why` from what
+   the search found. The candidates are:
+   - **documents and data the suites read**: fixtures, manifests, schemas, migrations;
+   - **the work dir and the doc trees, always**: `<work.dir>`, root `*.md` and any other doc or
+     asset tree. Every `aof:continue` edits them, so when no suite reads them, couple them to
+     `suites: []`; left undeclared, each STATE or SPEC edit widens the run to the whole suite;
+   - **code a suite reads from disk instead of importing**: a fitness test that walks a source
+     tree, a guard that reads route pages, a suite that spawns a script. Couple those paths to the
+     reading suites; for code the coupling adds to what the graph selects, and places a file no
+     import reaches. **Never write `suites: []` for code**: an empty coupling never places code, so
+     it changes nothing;
+   - **a helper between the suites and the path**: when a hit is a module that is not a suite (a
+     shared test-support file the suites import), name it in `via` instead of listing its
+     importers. The selector expands it to every suite that reaches it, at selection time, so the
+     list cannot go stale.
+
+   Overlapping couplings combine: a file takes the readers of every coupling that matches it, and
+   an empty one counts only where no matching coupling names a reader. **Escape glob syntax in
+   folder names**: a route group such as `(crm)` beside `*` or `**` is read as a pattern group and
+   matches `crm`, never the folder. Write `\(crm\)` (`\\(crm\\)` inside the JSON string) or
+   `[(]crm[)]`, and the same for `[ ]` and `{ }`. The doctor's `test-layout-couplings-match` names
+   any glob that matches no tracked file, so read it after the write.
+
+   When a suite walks a directory or reads a manifest it does not name, couple the directory to
+   it, or declare nothing for those paths, so they keep widening: a coupling built on a guess
+   narrows on a guess. **Write `couplings: []` when no suite reads a document**, because that is the
+   considered answer. Leaving the key absent means nobody asked the question.
 5. **Gate resume, only for a program that honours the resume contract.** The resume contract is:
    the gate program takes **a newline-separated file list at `{files}`** and plans only those files,
    and writes **a JSON report at `{report}`** of the shape
@@ -3112,7 +3147,12 @@ Report, in this order:
 - **the before and after replays**, side by side: of the 30 commits, how many widened, the
   **median and 75th-percentile selected count** among those that narrowed, and the total. Under
   `--dry-run`, the before replay only;
-- **every reason that still widens** after, each with the files that caused it;
+- **every reason that still widens** after, each with the files that caused it, with the widened
+  files under `<work.dir>` counted apart and `not-in-graph` split into deleted-since and
+  never-in-the-graph;
+- **the graph**: its `builtAt`, which step 1 found current;
+- **runner fidelity**: the finding from step 2, or that the program passes each selected path
+  through unchanged;
 - **near-total narrowing, said in one line**: when the narrowed median is within 10% of the total,
   say the narrowed runs are near-total, and name the composition root a near-total selection keeps
   reaching (the module that nearly every suite imports) when the replay shows one;
@@ -4171,7 +4211,7 @@ left dangling.
 
 Use the native skill $aof-repair; $ARGUMENTS is the operator text after its name.
 
-Repair only the cause named by the handover: diagnose lane-halt, fixture discrepancy or capability failure against actual state. Preserve operator changes and all owned commits. No reset, stash, force-adopt, unrelated story implementation or automatic loop launch. Prove the specific failure is gone using the named check; retain the handover and report unknowns. Bound the repair to the named cause and report the next operator command.
+Repair the cause named by the handover, whatever halted the loop: a lane that will not merge home or reopen, or a story whose grade, gates or retries ran out. Diagnose against actual state, fix the cause (the story's code and tests in its lane included), ask the operator one question per ask when a decision or permission is theirs, and prove the failure is gone with the check the loop applies. Preserve operator changes and all owned commits. No reset, stash, force-adopt, unrelated fixes or automatic loop launch. One repair per halt: an unverifiable repair is a handback that names what stands in the way.
 
 ## Codex execution contract
 Use only tools actually exposed by this session. File reading/editing, shell execution, search,
@@ -4193,40 +4233,45 @@ Read {{files.procedure.md}} for this procedure and {{references.workflow-contrac
 
 <!-- variant:procedure-repair -->
 <objective>
-Repair is bounded to the handover's named cause: diagnose it, apply its local remedy and run
-the named proof once. A failed or inconclusive proof is a handback, not an unbounded retry loop.
-A loop (`aof work loop`) halted on one of its three LANE stops — `lane-open-failed`,
-`lane-merge-refused` or `lane-merge-conflict` — and handed the halt to you. A lane halt is about the
-loop's OWN bookkeeping (a dispatch worktree that will not merge home, or will not reopen), never about
-the code a story built. Your one job is to remove that cause so the loop, which is waiting on this
-session's outcome, can resume on its own. You end `done` only when the cause is gone.
+A loop (`aof work loop`) halted and, rather than stop for the operator, handed the halt to you. The
+loop tries its best before it stops: your one job is to remove the cause so the loop, which is
+waiting on this session's outcome, can resume on its own. Diagnose the named cause, fix it, prove it
+is gone with the check the loop will apply, and end `done`. When the fix needs a decision or a
+permission that is the operator's, ask (below) and carry on with the answer. A failed or
+inconclusive proof is a handback, not an unbounded retry loop: you get one repair per halt.
 </objective>
 
 <input>
 `$ARGUMENTS` is `<ref> <file>`: the halted ref (a story such as `03/03`, or a milestone when the
-halt was the loop's own commit), and the path of the hand-over file the loop wrote under the aof home
+halt was the loop's own), and the path of the hand-over file the loop wrote under the aof home
 (`loop-repairs/<runId>.json`).
 
 **It reads the hand-over file named in its arguments, and the loop-diag log the file names.** The
 file holds exactly these keys: `stop` (the halt's code), `producer` (which door produced it), `ref`,
 `details` (the halt line's `Details:` text exactly as the loop printed it — lane, branch, base, tip,
-files, reason, error, whatever the producer carried), `diagLog` (this invocation's loop-diag log
-path, or null), `lane` (the lane worktree's path, or null when no lane exists), `branch`, `base`,
-`tip` (the lane's branch and the two commits its merge home was asked between, or null) and `scope`
-(the loop's scope). Read the file first and in full; then read the tail of `diagLog` when it is
-named — it records the loop's own exit reasons and the driver's stop bracket, which is where a halt
-that is not what its code says is explained.
+files, verdict, codes, cases, exit, runner output, reason, error, whatever the producer carried),
+`diagLog` (this invocation's loop-diag log path, or null), `lane` (the lane worktree's path, or
+null), `branch`, `base`, `tip` (the lane's branch and the two commits its merge home was asked
+between, or null) and `scope` (the loop's scope). Read the file first and in full; then read the
+tail of `diagLog` when it is named — it records the loop's own exit reasons, every attempt's settle
+line and the driver's stop bracket, which is where a halt that is not what its code says is
+explained. The ref's run records (`aof work run-status <ref> --json`) hold each attempt's outcome and
+`failureReason`.
 </input>
 
 <where>
-**It works in the primary checkout, and in the lane worktree only when the file names one.** The
+**It works in the primary checkout, and in the story's lane worktree when the cause is there.** The
 session is launched in the primary (the checkout the loop runs in). Merge-home and the lane reopen
-both act from the primary, so that is where the cause usually lives. Enter the lane (`lane`) only
-when the hand-over names one and the cause is inside it — a lane that holds uncommitted work, a lane
-whose branch is behind. A lane may not exist at all (`lane: null`): then there is nothing to enter.
+act from the primary. A story driven in a wave is built in its lane,
+`.aof/mesh/dispatch-worktrees/dispatch-<NN>-<SS>` (the hand-over's `lane` when it names one): its
+code, its tests and its gates live there, and the loop brings the lane's branch home when it resumes.
+So a fix to a story's code or tests is made IN THE LANE and committed on the lane's branch, never in
+the primary. When no lane exists, the story was built in the primary.
 </where>
 
-<the_three_halts>
+<the_halts>
+**The lane stops — the loop's own bookkeeping:**
+
 - **`lane-merge-conflict`** (`dispatch:merge-home:conflict`) — the lane's branch (`branch`, at
   `tip`) could not be merged into the primary's HEAD from `base`; the merge was aborted and the
   primary is exactly as it was. Find what conflicts: `git merge-tree <base> HEAD <tip>`, or
@@ -4239,8 +4284,8 @@ whose branch is behind. A lane may not exist at all (`lane: null`): then there i
   the one merge verb refused before touching anything: `files` names the primary's dirty paths the
   lane also touched (`reason` may say `detached-head`, `branch-missing`, `commit-failed`,
   `gate-propagation-failed`). A detached primary is checked back out on its branch. A dirty path the
-  OPERATOR owns is not yours to commit (see the rule below). A `.git/index.lock` nobody holds is
-  removed only after `git status` proves no git process is running.
+  OPERATOR owns is not yours to commit — ask the operator what to do with it (see the rules). A
+  `.git/index.lock` nobody holds is removed only after `git status` proves no git process is running.
 - **`lane-open-failed`** (`work:dispatch:<code>`, `run-store:duplicate-run`, `lane:<code>`) — the
   lane could not be opened or brought to HEAD. `assignment-gate-propagation-dirty-worktree` means the
   lane worktree holds uncommitted changes: inspect them in the lane; a heartbeat queue
@@ -4250,7 +4295,43 @@ whose branch is behind. A lane may not exist at all (`lane: null`): then there i
   or settled with `aof work run-complete <ref> --outcome failed`; a LIVE one (a session still
   heartbeating) is not yours — end the repair failed naming it. `at-capacity` means every lane slot is
   held (`aof work dispatch --list`); a stranded lane is swept with `aof work dispatch --sweep`.
-</the_three_halts>
+
+**The story stops — the build, its gates and its grade:**
+
+- **`grade-indeterminate`** (`work:grade:<code>`) — the rubric ran and its result could not be read
+  as a verdict. `details` carries `verdict`, `codes`, `cases`, and on a non-zero exit `exit` and the
+  runner's own output tail. `report-vacuous` with no failing case and a non-zero `exit` means the
+  runner failed OUTSIDE any case — an unhandled error, a test module that did not load, a crashed
+  sub-run — and the cause is in its output. `report-missing` / `report-unreadable` mean the declared
+  report (`work.rubric.report`) was not written or not in its format; `runner-timeout` that the rubric
+  outran its deadline; `runner-spawn-failed` that it never started. Reproduce in the lane:
+  `aof work grade <ref> --run --json` (it prints the runner's detail), fix the cause — the story's
+  code or tests, or the project's rubric script when the rubric itself is wrong — and re-grade.
+- **`cap-exhausted`**, **`no-progress`**, **`progress-exhausted`** — the build was driven its
+  allowed number of attempts or review rounds and the same findings kept coming back. `details`
+  carries the findings (gate, code, case, message). Read them and the last attempt's transcript
+  summary in the diag log; fix what they name in the lane, then prove it with the same gates.
+- **`run-not-retryable`** — an attempt ended in a way a retry cannot cure. Read the run's
+  `failureReason`: a story-code cause is fixed in the lane; an environment cause that is the
+  operator's (a signed-out `claude`, a missing credential, a full disk) is asked about, never
+  worked around.
+- **`dependency-blocked`** — the next item depends on one that is not `done`. Check the dependency at
+  the source (`aof work status <dep>`): a dependency that is in fact delivered but whose record lags
+  is the operator's to accept — ask; never mark another item done yourself.
+- **`unmapped-item-type`** — the item's type has no driven phase. Read the record doc; a misspelled
+  `type:` is fixed, anything else is asked.
+</the_halts>
+
+<asking>
+**When the fix needs the operator, ask — one question per ask, through the native question tool.** The
+loop posts it, notifies the operator and waits; the answer is typed into this session and you carry
+on. Ask before: changing the project's rubric, test configuration or CI; touching a file the
+operator owns (dirty in the primary and not the loop's own write); deleting anything you did not
+create; anything the rules below do not already allow. Put on the question's first line what the
+halt is and what you need decided, then `Decision needed:`, `Options:`, `I would pick:` and
+`What the answer changes:`, under 1,500 characters, with the options also given as the tool's
+options. Do not ask what you can find out: read, run and measure first.
+</asking>
 
 <rules>
 These rules are what let an unattended repair run without doing harm. Each is absolute.
@@ -4259,18 +4340,19 @@ These rules are what let an unattended repair run without doing harm. Each is ab
   `checkout -B`.** Nor `update-ref`, nor a `git worktree remove --force` of a lane holding
   uncommitted work. Every lane commit and every primary commit is preserved; a merge is `--no-ff`
   and resolved by hand, never squashed or rewritten.
-- **It never commits, stashes or discards the operator's uncommitted changes in the primary; a
-  cause that is the operator's own work ends the repair failed, naming the paths.** The loop's own
-  writes live under `wiki/work/<milestone dir>/` (record docs, run records) and may be committed;
-  anything else that is dirty in the primary is the operator's desk. If the merge is refused because
-  of such a path, you do not touch it — you end failed and say which paths, so the operator decides.
+- **It never commits, stashes or discards the operator's uncommitted changes in the primary without
+  asking.** The loop's own writes live under `wiki/work/<milestone dir>/` (record docs, run records)
+  and may be committed; anything else that is dirty in the primary is the operator's desk. When the
+  cause is such a path, ask what to do with it; an unanswered question ends the repair failed,
+  naming the paths.
 - **It never edits a delivered `.feature`.** A task's contract is locked; a merge that conflicts in
-  one is resolved keeping the delivered text, never by rewriting a scenario.
+  one is resolved keeping the delivered text, never by rewriting a scenario, and a failing scenario
+  is fixed in the code or its step definitions, never by weakening the contract.
 - **It never runs `aof work loop`; the loop resumes itself.** The loop that handed you this halt is
   waiting on this session's outcome and re-enters its body with `--resume` the moment you end
   `done`. Starting another loop would run two over one scope. Likewise never `aof work drive`.
-- **It changes nothing the halt did not cause.** No fixes to story code, no refactors, no record
-  edits beyond what the cause needs. A problem you notice that is not the cause is reported in your
+- **It fixes the cause, and only the cause.** No refactors, no unrelated fixes, no record edits
+  beyond what the cause needs. A problem you notice that is not the cause is reported in your
   closing statement and left alone.
 </rules>
 
@@ -4284,7 +4366,12 @@ Before you end `done`, prove the cause is gone the way the loop will test it:
   lane, or the primary is back on its branch;
 - a lane that would not open — `git status --porcelain` in the lane is empty and the lane's branch
   carries whatever work it held; `aof work dispatch --list --json` shows it as a clean lane; no
-  `running` run stands on the item unless a live session owns it.
+  `running` run stands on the item unless a live session owns it;
+- a story stop — in the tree the story is built in, `aof work validate <ref>` and
+  `aof work doctor <ref>` are clean and `aof work grade <ref> --run --json` answers `pass` (or, for a
+  grade the baseline excuses, no failing case beyond the inherited ones); your fix is committed on
+  the lane's branch, and `git status --porcelain` in the lane is empty;
+- a dependency or type stop — the record now reads as the loop needs it.
 
 A repair you cannot verify is not `done`.
 </verify>
@@ -4292,10 +4379,10 @@ A repair you cannot verify is not `done`.
 <output>
 **It ends by stating the cause it found and what it changed, or why it could not repair.** Three or
 four sentences, as the last thing you say: the stop and ref, the cause (the actual file or record,
-not the code's name for it), each change you made (commits by sha, files by path), and the check
-that proves the cause is gone — or, when you could not repair, exactly what stands in the way and
-whose it is. Then end the session. The loop reads your outcome: `done` resumes it, anything else
-stops it for the operator with your run named in its halt line.
+not the code's name for it), each change you made (commits by sha, files by path) and each answer
+the operator gave, and the check that proves the cause is gone — or, when you could not repair,
+exactly what stands in the way and whose it is. Then end the session. The loop reads your outcome:
+`done` resumes it, anything else stops it for the operator with your run named in its halt line.
 </output>
 
 <!-- variant:retrospective -->

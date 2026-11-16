@@ -27,14 +27,14 @@ see, and a repository I have never opened in `claude` myself can still be looped
 
 ## Notes
 
-**Evidence (2026-11-10, voice-vox-company-portal, loop 14).** With the pty spawn fixed (node-pty's
+**Evidence (2026-11-10, <downstream-project>, loop 14).** With the pty spawn fixed (node-pty's
 `spawn-helper` restored to executable), every lane's `claude` started and then sat on a prompt until
 the 60 s readiness timeout, three attempts per lane, halting `cap-exhausted` with only
 `failureReason=timeout`. The screens are in `~/.aof/mesh/logs/degrade.log` (`screen-not-ready`):
 
 1. **"Quick safety check"** — the folder-trust prompt, in its newer form that also lists the
    permission rules the project's `.claude/settings.json` pre-approves.
-2. **The MCP enable prompt** for the project's `.mcp.json` servers (`voicevox`, `aspire`).
+2. **The MCP enable prompt** for the project's `.mcp.json` servers (`<project-server>`, `aspire`).
 
 **Why aof's pre-trust stopped working.** `ensureWorktreeTrusted` (`packages/execution/src/claude-trust.mjs`)
 writes `projects[<lane worktree>].hasTrustDialogAccepted`. Claude Code 2.1.312 keys trust — and the

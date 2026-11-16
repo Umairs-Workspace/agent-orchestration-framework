@@ -58,6 +58,25 @@ import { reduceRuntimeObservation, settleRuntimeReviews } from "./runtime-events
 // distinct precisely so the record can carry `resumeAfter` and the retry can WAIT.
 const RETRYABLE_REASONS = new Set(["runtime_offline", "timeout", "session_limit"]);
 
+// suspendedSpansFor(spans, createdAt, settledAt) — the caller's `[fromMs, toMs]` pairs (an awake
+// clock's own shape), clipped to the attempt's window and written as `{ from, to }` UTC-Z
+// instants. Anything unreadable is dropped; no spans answers `[]`.
+export function suspendedSpansFor(spans, createdAt, settledAt) {
+  if (!Array.isArray(spans)) return [];
+  const startMs = Date.parse(createdAt);
+  const endMs = Date.parse(settledAt);
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return [];
+  const out = [];
+  for (const span of spans) {
+    if (!Array.isArray(span) || span.length !== 2) continue;
+    const from = Math.max(Number(span[0]), startMs);
+    const to = Math.min(Number(span[1]), endMs);
+    if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) continue;
+    out.push({ from: new Date(from).toISOString(), to: new Date(to).toISOString() });
+  }
+  return out;
+}
+
 export function isRetryable(failureReason) {
   return RETRYABLE_REASONS.has(failureReason);
 }
@@ -596,6 +615,8 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
       resumeAfter: raw.resumeAfter ?? null,
       spend: raw.spend ?? null,
       asks: Array.isArray(raw.asks) ? raw.asks : [],
+      // 2026-11-12 — OPTIONAL, present only on a run that lived through a host suspend (below).
+      ...(Array.isArray(raw.suspended) && raw.suspended.length > 0 ? { suspended: raw.suspended } : {}),
       ...(Object.prototype.hasOwnProperty.call(raw, "execution") ? { execution: structuredClone(raw.execution) } : {}),
     };
   }
@@ -819,7 +840,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   // the classifier failing closed, ADR-002, NOT a store rejection); reclaimedAt is set
   // when the reclaim scan supplies it. The other resilience keys are PRESERVED unless
   // the transition sets them. `now` is the injected UTC-Z clock (20/ADR-007).
-  async function applyTransition(item, runId, toState, { now, failureReason = null, reclaimedAt = null, resumeAfter = null } = {}) {
+  async function applyTransition(item, runId, toState, { now, failureReason = null, reclaimedAt = null, resumeAfter = null, suspended = null } = {}) {
     const record = await readRun(item, runId);
     const from = record.state;
     if (!isLegalTransition(from, toState)) {
@@ -843,6 +864,12 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
     if (reclaimedAt) {
       updated.reclaimedAt = reclaimedAt;
     }
+    // 2026-11-12 — THE SPANS THE HOST WAS SUSPENDED, observed by the settling process's awake
+    // clock and clipped to this attempt. Instants only, never a derived duration (126/00 leg 9):
+    // the budget subtracts them as it subtracts a wait on a human. An OPTIONAL key, written only
+    // when a span exists, so every record that never slept is byte-identical.
+    const spans = suspendedSpansFor(suspended, record.createdAt, updated.updatedAt);
+    if (spans.length > 0) updated.suspended = [...(Array.isArray(record.suspended) ? record.suspended : []), ...spans];
     await persist(item, updated);
     return updated;
   }
@@ -877,7 +904,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   // be read (no session id, none there, empty) is reported. `settleSpend: false` skips the spend
   // block while the answers are still stamped — the driven settles, which settle spend themselves
   // against a resume baseline, pass it (through the transition seam's `spendSettled`).
-  async function completeRun(item, { runId, outcome, failureReason = null, resumeAfter = null, now, projectsDir, settleSpend = true } = {}) {
+  async function completeRun(item, { runId, outcome, failureReason = null, resumeAfter = null, now, projectsDir, settleSpend = true, suspended = null } = {}) {
     let targetRunId = runId;
     if (!targetRunId) {
       const running = (await readRuns(item)).filter((run) => run.state === "running");
@@ -889,7 +916,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
       }
       targetRunId = running[0].runId;
     }
-    const settled = await applyTransition(item, targetRunId, outcome, { failureReason, resumeAfter, now });
+    const settled = await applyTransition(item, targetRunId, outcome, { failureReason, resumeAfter, now, suspended });
     if (settled.execution?.runtime === "codex") return settled;
     if (typeof projectsDir !== "string" || projectsDir.length === 0) return settled;
     // One degrade event carries every unread stamp: the reporter throttles per code, so a second

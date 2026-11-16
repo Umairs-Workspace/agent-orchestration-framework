@@ -96,7 +96,7 @@ const graphBuildCommand = {
       flags: {
         backend: { type: "string", description: "graphify backend (e.g. claude)" },
         tokenBudget: { type: "string", description: "token budget for the build" },
-        offline: { type: "boolean", description: "build without network egress" },
+        offline: { type: "boolean", description: "build without network egress: no hosted model, and no fetch or publish of a shared graph" },
       },
     },
 
@@ -152,8 +152,10 @@ async function takePublished({ projectRoot, share, config }) {
   return listing;
 }
 
+// A shared build talks to the project's remote although nobody passed a flag for it (174/ADR-001),
+// so the render says so first, with the way to keep a build local.
 function renderShare(share) {
-  const lines = [];
+  const lines = [`Graph sharing is on (memory.graph.share: git-refs): this build asks ${share.remote} for HEAD's published graph and publishes a clean build there. Pass --offline to keep it local.`];
   const short = (sha) => sha.slice(0, 7);
   if (share.fetched?.used) lines.push(`Fetched the graph for ${short(share.fetched.commit)} from ${share.remote}.`);
   else if (share.fetched) lines.push(`Fetched the graph for ${short(share.fetched.commit)} from ${share.remote}, but ${share.fetched.reason}.`);

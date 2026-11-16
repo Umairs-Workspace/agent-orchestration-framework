@@ -161,9 +161,9 @@ const EXCLUDED = Object.freeze({
   // 163 — the wrapper over `work:questions`: prints the loop's open questions; answers none.
   "questions.md": "reads the loop's open questions; answers none, cuts nothing",
   "recent.md": "reads the stream chronologically",
-  // 147 — the session a loop hands a lane halt to: repairs the loop's own records and cuts nothing.
-  // Classified at 149, whose run of this control first met it unclassified.
-  "repair.md": "repairs one lane halt's records; cuts nothing",
+  // 147 — the session a loop hands a halt to: repairs its cause and cuts nothing. Classified at 149,
+  // whose run of this control first met it unclassified; widened past the lane halts 2026-11-14.
+  "repair.md": "repairs one loop halt's cause; cuts nothing",
   "retrospective.md": "distils one milestone's lessons",
   // 149 — reviews the operator's own build through continue's ladder and lanes; fixes nothing.
   "review.md": "reviews one story's build; cuts nothing",

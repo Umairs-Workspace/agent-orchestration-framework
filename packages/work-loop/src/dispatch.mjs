@@ -1,10 +1,10 @@
 import { executionRuntimes } from "@aof/contracts/loop-bounds";
 import path from "node:path";
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, readFile, stat } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rm, stat, utimes } from "node:fs/promises";
 
 // Core supplies work discovery, configured worktrees, locking and effect delivery.
-export function createDispatchLanes({ meshDispatchWorktreePath, isUnderMeshDispatchWorktreesRoot, addDispatchWorktree, removeDispatchWorktree, meshItemBranchName, findItemWorktree, listWorktrees, advanceBranchToBase, commitWorktreeChanges, parsePorcelainStatus, isHeartbeatQueuePath, resolveExec, findWork, reportDegrade, acquireMeshLauncherLock, prepareRuntimeAssets, validateExecutionEnvelope }) {
+export function createDispatchLanes({ meshDispatchWorktreePath, isUnderMeshDispatchWorktreesRoot, addDispatchWorktree, removeDispatchWorktree, meshItemBranchName, findItemWorktree, listWorktrees, advanceBranchToBase, commitWorktreeChanges, parsePorcelainStatus, isHeartbeatQueuePath, resolveExec, findWork, reportDegrade, acquireMeshLauncherLock, prepareRuntimeAssets, validateExecutionEnvelope, graphJsonPath }) {
 // src/work/dispatch.mjs — THE LOCAL CONCURRENT-DISPATCH LANE (story 65 / task 02).
 //
 // WHAT THIS MODULE IS FOR, in one measured sentence. `aof work next` now answers with the
@@ -251,6 +251,7 @@ async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
     await prepareRuntimeAssets(projectRoot, lane.worktree);
   };
   if (execution == null || executionRuntimes(execution).includes("claude")) await inheritIgnoredClaudeFiles(projectRoot, lane.worktree, { exec: options.exec });
+  await inheritCodeGraph(projectRoot, lane.worktree, { exec: options.exec });
   if (advanceTo == null) { if (executionRuntimes(execution).includes("codex")) await prepareNative(); return lane; }
   const advance = await advanceBranchToBase(lane.worktree, advanceTo, { exec: options.exec });
   // EVERY refusal is `lane-open-failed` (PO ruling, 129/03 fix round, I3): a lane that cannot be
@@ -333,11 +334,65 @@ async function ignoredRenderedFiles(projectRoot, worktree, exec) {
   }
   const missing = [...relpaths].filter((relpath) => !existsSync(path.join(worktree, relpath)) && existsSync(path.join(projectRoot, relpath)));
   if (missing.length === 0) return [];
-  // `git check-ignore` lists the ignored ones, verbatim as given; exit 1 means none are.
-  const answer = await exec(["check-ignore", "--", ...missing], { cwd: worktree });
-  if (answer.status !== 0 && answer.status !== 1) throw new Error(`git check-ignore failed in ${worktree}: ${answer.stderr || answer.stdout}`);
-  const ignored = new Set(String(answer.stdout ?? "").split(/\r?\n/u).map((line) => line.trim().replaceAll("\\", "/")).filter(Boolean));
+  const ignored = await ignoredPaths(exec, worktree, missing);
   return missing.filter((relpath) => ignored.has(relpath));
+}
+
+// ignoredPaths(exec, cwd, relpaths) → the set of those paths git ignores in the tree at `cwd`.
+// `git check-ignore` lists the ignored ones, verbatim as given; exit 1 means none are.
+async function ignoredPaths(exec, cwd, relpaths) {
+  if (relpaths.length === 0) return new Set();
+  const answer = await exec(["check-ignore", "--", ...relpaths], { cwd });
+  if (answer.status !== 0 && answer.status !== 1) throw new Error(`git check-ignore failed in ${cwd}: ${answer.stderr || answer.stdout}`);
+  return new Set(String(answer.stdout ?? "").split(/\r?\n/u).map((line) => line.trim().replaceAll("\\", "/")).filter(Boolean));
+}
+
+// inheritCodeGraph(projectRoot, worktree, { exec }) — A LANE STARTS WITH THE PRIMARY'S CODE GRAPH
+// (2026-11-15). The graph is derived and git-ignored, so a lane cut from the primary never had one.
+// `aof graph build` fetches a shared graph only for a commit on the default branch, so in a lane on
+// a feature branch every `aof test --scope impacted` widened to the whole suite as `no-graph` (a
+// downstream project worked around it by copying the graph in its worktree prepare step).
+//
+// THE PRIMARY'S GRAPH IS THE ONE COPIED, not the nearest published ancestor's: it needs no remote,
+// and the lane is cut from the primary's HEAD, so it is the closest graph there is to the lane's
+// base. The selection still names the graph's own instant and widens for a file it does not hold.
+// The copy keeps the file's mtime, because that mtime is the `builtAt` every reader reports.
+//
+// The copy rule is `inheritIgnoredClaudeFiles`' own: the primary holds the file, the lane lacks it,
+// and git IGNORES it, so the lane's `git add -A` never commits it. Two files travel: the graph, and
+// the `.gitignore` `aof graph build` writes beside it, which is what ignores the graph in a project
+// whose root ignore file does not name the directory. That nested file exists only in the primary,
+// so the primary is asked what is ignored, and the lane is asked again once the files are down: a
+// copy the lane does not ignore is removed, never left for a commit to pick up. A lane that
+// already holds a graph keeps its own. Best-effort: a fault is reported and the lane opens without
+// one, as before.
+async function inheritCodeGraph(projectRoot, worktree, { exec } = {}) {
+  if (typeof graphJsonPath !== "function" || path.resolve(projectRoot) === path.resolve(worktree)) return;
+  const graph = path.relative(projectRoot, graphJsonPath(projectRoot)).replaceAll("\\", "/");
+  if (!existsSync(path.join(projectRoot, graph)) || existsSync(path.join(worktree, graph))) return;
+  const git = resolveExec({ exec });
+  const copied = [];
+  try {
+    const missing = [`${path.posix.dirname(graph)}/.gitignore`, graph]
+      .filter((relpath) => existsSync(path.join(projectRoot, relpath)) && !existsSync(path.join(worktree, relpath)));
+    const ignored = await ignoredPaths(git, projectRoot, missing);
+    if (!ignored.has(graph)) return;
+    for (const relpath of missing.filter((entry) => ignored.has(entry))) {
+      const source = path.join(projectRoot, relpath);
+      const target = path.join(worktree, relpath);
+      await mkdir(path.dirname(target), { recursive: true });
+      await copyFile(source, target);
+      copied.push(relpath);
+      const { atime, mtime } = await stat(source);
+      await utimes(target, atime, mtime);
+    }
+    const confirmed = await ignoredPaths(git, worktree, copied);
+    const exposed = copied.filter((relpath) => !confirmed.has(relpath));
+    if (exposed.length > 0) throw new Error(`the lane at ${worktree} does not ignore the code graph files it was handed (${exposed.join(", ")}), so they were removed`);
+  } catch (error) {
+    reportDegrade("work-dispatch", error);
+    for (const relpath of copied) await rm(path.join(worktree, relpath), { force: true }).catch((fault) => reportDegrade("work-dispatch", fault));
+  }
 }
 
 // assertLaneTree(lanePath) — A DIRECTORY AT THE KEY IS A LANE ONLY WHILE IT IS A WORKTREE. On
@@ -696,7 +751,7 @@ async function sweepDispatchLanes(projectRoot, refs = [], options = {}) {
       continue;
     }
     try {
-      await removeDispatchWorktree(projectRoot, lane.ref, { exec: options.exec, removeBranch: false });
+      await removeFinishedLane(projectRoot, lane.ref, { exec: options.exec, removeBranch: false });
       removed.push(lane);
     } catch (error) {
       reportDegrade("work-dispatch", error);
@@ -748,11 +803,32 @@ async function cleanupDispatchLane(projectRoot, itemRef, options = {}) {
       };
     }
   }
-  const result = await removeDispatchWorktree(projectRoot, itemRef, {
+  const result = await removeFinishedLane(projectRoot, itemRef, {
     exec: options.exec,
     removeBranch: options.removeBranch !== false,
   });
   return { ref: itemRef, outcome: "removed", code: null, ...result };
+}
+
+// removeFinishedLane(projectRoot, itemRef, options) — the lane's untracked heartbeat queues, then
+// its tree. Plain `git worktree remove` refuses a tree holding an untracked file, and a queue is
+// per-node runtime state no commit ever carries (mesh's `isHeartbeatQueuePath`), so deleting it
+// loses nothing. Every other untracked file still refuses the remove.
+//
+// THE QUEUES ARE READ OFF `git status` AND DELETED BY PATH (2026-11-15). `status` skips ignored
+// directories and lists exactly the files the remove would refuse over, where the `git clean -x`
+// this replaces walked a lane's ignored `node_modules` past the git timeout. A queue the work dir's
+// ignore file hides is not listed and stays for the remove to take with the tree. Each delete is
+// of one file, never recursive (FF-7207).
+async function removeFinishedLane(projectRoot, itemRef, options = {}) {
+  const lanePath = meshDispatchWorktreePath(projectRoot, itemRef);
+  const listed = await resolveExec(options)(["-c", "core.quotePath=false", "status", "--porcelain", "--untracked-files=all"], { cwd: lanePath });
+  if (listed.status === 0) {
+    for (const { index, paths } of parsePorcelainStatus(listed.stdout)) {
+      if (index === "?" && isHeartbeatQueuePath(paths[0])) await rm(path.join(lanePath, paths[0]), { force: true });
+    }
+  }
+  return removeDispatchWorktree(projectRoot, itemRef, options);
 }
 
 // ──────────────────────────────── the lane commits and merges home (129/03) ────

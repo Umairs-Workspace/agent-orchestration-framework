@@ -49,12 +49,32 @@ export const LOOP_STOPS = Object.freeze([
   "lane-merge-conflict",
 ]);
 
-// 147 (R1, R2) — THE REPAIRABLE STOPS: the three lane stops and nothing else, as a frozen export
-// of their own beside `LOOP_STOPS`, which is unchanged. A lane halt is about the loop's OWN
-// records — a lane that will not merge home or will not reopen — never about the code a story
-// built, so it is the one class a fresh session can be handed to repair without judging the story.
-// Every other stop still ends the loop for the operator exactly as before this story.
-export const REPAIRABLE_STOPS = Object.freeze([
+// THE OPERATOR'S STOPS — the halts that ARE the operator's answer, or wait on it, and so are
+// never handed to a repair session: a UAT sign-off only a human gives, a session already asking
+// the operator a question, the operator's own Stop, a retry parked until a session limit lifts,
+// and the time budget the operator set. A repair could only bypass any of them.
+export const OPERATOR_STOPS = Object.freeze([
+  "uat-gate",
+  "session-needs-input",
+  "operator-interrupt",
+  "retry-parked",
+  "deadline-exhausted",
+]);
+
+// THE REPAIRABLE STOPS — every stop that is not the operator's (2026-11-14, widening 147's three
+// lane stops). 147 handed a fresh session only the loop's own bookkeeping halts; every other halt
+// ended the loop, so a grade the runner contradicted, a retry ladder that ran out, a gate that
+// stopped making progress all waited on a human to read a diag log and type `--resume`. The loop
+// now tries its best first: a repair session diagnoses the halt, fixes the cause — the story's
+// code and tests included — asks the operator when it needs a decision or a permission (the
+// question waits in the loop like any session's), and the loop resumes when it ends `done`. One
+// repair per halt still bounds it. Derived from `LOOP_STOPS`, so a stop added later is repairable
+// unless it is named the operator's above.
+export const REPAIRABLE_STOPS = Object.freeze(LOOP_STOPS.filter((stop) => !OPERATOR_STOPS.includes(stop)));
+
+// The lane stops — 147's original class, about the loop's own records. The repair brief reads it to
+// say which remit a halt falls under.
+export const LANE_STOPS = Object.freeze([
   "lane-open-failed",
   "lane-merge-refused",
   "lane-merge-conflict",
@@ -925,9 +945,25 @@ const livenessMs = (record) => Date.parse(record?.heartbeatAt ?? record?.updated
 // applies only when BOTH arrive — a positive-integer threshold AND a callable predicate — because
 // the same arithmetic answers a second question: absent them, a non-terminal attempt is treated
 // as ALIVE and ends at `now`, which is the render's "how long has this been going".
+//
+// A SETTLED ATTEMPT THAT WENT SILENT BEFORE ITS CLOSE (2026-11-12). The heartbeat bound kills a
+// session silent for `stalenessMs`, so while a host is awake a settled attempt's close is never
+// more than one window past its last liveness. A close further out than that is downtime the
+// record could not name — measured: a 5-hour host suspend, then a wake that settled the attempt
+// `failed / timeout` and charged all five hours, halting the loop `deadline-exhausted`. Such an
+// attempt ends at most one window after its last liveness. A record that carries `suspended`
+// spans names its downtime exactly and is charged by them instead (`unchargedMs`), so the cap is
+// only the reading for a record written before the spans existed.
 function attemptEndMs(record, nowMs, stalenessMs, isStale) {
   if (record?.reclaimedAt != null) return livenessMs(record);
-  if (SETTLED_RUN_STATES.includes(record?.state)) return Date.parse(record?.updatedAt);
+  if (SETTLED_RUN_STATES.includes(record?.state)) {
+    const closedMs = Date.parse(record?.updatedAt);
+    const lastAliveMs = livenessMs(record);
+    if (positiveInteger(stalenessMs) && !Array.isArray(record?.suspended) && Number.isFinite(lastAliveMs) && Number.isFinite(closedMs)) {
+      return Math.min(closedMs, lastAliveMs + stalenessMs);
+    }
+    return closedMs;
+  }
   const stale = positiveInteger(stalenessMs)
     && typeof isStale === "function"
     && Number.isFinite(nowMs)
@@ -945,7 +981,35 @@ export function attemptElapsedMs(input = {}) {
   const nowMs = Date.parse(input.now);
   const endMs = attemptEndMs(record, nowMs, input.stalenessMs, input.isStale);
   if (!Number.isFinite(endMs)) return null;
-  return Math.max(0, endMs - createdAtMs - askWaitMs(record, createdAtMs, endMs, nowMs));
+  return Math.max(0, endMs - createdAtMs - unchargedMs(record, createdAtMs, endMs, nowMs));
+}
+
+// THE SPANS A HOST WAS SUSPENDED are charged to nobody (2026-11-12), exactly as a wait on a human
+// is: the settling process's awake clock writes each as `{ from, to }`, and they are merged with
+// the ask intervals below so an overlap of the two is never subtracted twice.
+function suspendedIntervals(record) {
+  const spans = Array.isArray(record?.suspended) ? record.suspended : [];
+  const out = [];
+  for (const span of spans) {
+    const fromMs = Date.parse(span?.from);
+    const toMs = Date.parse(span?.to);
+    if (Number.isFinite(fromMs) && Number.isFinite(toMs) && toMs > fromMs) out.push([fromMs, toMs]);
+  }
+  return out;
+}
+
+function unchargedMs(record, startMs, endMs, nowMs) {
+  return mergedIntervalsMs([...askIntervals(record, startMs, endMs, nowMs), ...clip(suspendedIntervals(record), startMs, endMs)]);
+}
+
+function clip(intervals, startMs, endMs) {
+  const out = [];
+  for (const [fromMs, toMs] of intervals) {
+    const from = Math.max(fromMs, startMs);
+    const to = Math.min(toMs, endMs);
+    if (to > from) out.push([from, to]);
+  }
+  return out;
 }
 
 // THE WAIT ON A HUMAN IS CHARGED TO NOBODY (131/ADR-001 §4). Each ask's interval runs from its
@@ -954,7 +1018,7 @@ export function attemptElapsedMs(input = {}) {
 // whose chosen start or end does not parse, or whose clipped interval is empty, subtracts nothing;
 // a record with no `asks` subtracts nothing, so it answers exactly what it answered before. The
 // charge is derived from the instants on the record, never stored.
-function askWaitMs(record, startMs, endMs, nowMs) {
+function askIntervals(record, startMs, endMs, nowMs) {
   const asks = Array.isArray(record?.asks) ? record.asks : [];
   const intervals = [];
   for (const entry of asks) {
@@ -966,6 +1030,11 @@ function askWaitMs(record, startMs, endMs, nowMs) {
     const to = Math.min(toMs, endMs);
     if (to > from) intervals.push([from, to]);
   }
+  return intervals;
+}
+
+function mergedIntervalsMs(input) {
+  const intervals = [...input];
   intervals.sort((a, b) => a[0] - b[0]);
   let total = 0;
   let open = null;

@@ -863,7 +863,9 @@ export const loopCommandWaveTests = [
           if (input.fixFile != null) fixFiles.push({ path: input.fixFile, text: await readFile(input.fixFile, "utf8"), existed: existsSync(input.fixFile) });
         } });
         const merges = [];
-        const registry = scriptedRegistry({ dispatch: async (input, ctx, real) => { const a = await real(); if (input.cleanup) merges.push(input.ref); return a; } });
+        // A cleanup the tree refused (a Windows lock) is retried before the next dispatch (2026-11-12), and a
+        // retry is not a second merge: only the cleanup that closed the lane is counted.
+        const registry = scriptedRegistry({ dispatch: async (input, ctx, real) => { const a = await real(); if (input.cleanup && a?.outcome !== "refused") merges.push(input.ref); return a; } });
         const { state } = await runWave(fx, { child, rubric, registry });
         assert.equal(state.state, "done");
         const runs = await laneRunsOf(fx, "07/01");
@@ -1740,23 +1742,29 @@ export const loopCommandWaveTests = [
   },
 ];
 
-// ── 147 / task 00, E6 — A RED GRADE STILL STOPS THE LOOP, AND NO REPAIR SESSION IS HANDED IT. The red-grade
-// half of 147's rule R2 ("any other halt still stops for the operator"). It lives here rather than beside
-// E5 in `loop-command-stops` because grade/01 holds that suite to naming the grade nowhere, and this one
-// already drives the grade's halts over the same lane fixture. Hoisted like `waitingLaneTests`.
+// ── 147 / task 00, E6 (WIDENED 2026-11-14) — A GRADE THE LOOP CANNOT READ IS HANDED TO A REPAIR SESSION.
+// 147's rule R2 kept every non-lane halt for the operator; the loop now tries its best first, so the
+// grade halt goes to a repair session too. A repair that ends done resumes the loop in this process:
+// the reconcile brings the lane home and verify accepts the story, with no halt left to notify. It
+// lives here rather than beside E5 in `loop-command-stops` because grade/01 holds that suite to naming
+// the grade nowhere, and this one already drives the grade's halts over the same lane fixture.
+// Hoisted like `waitingLaneTests`.
 function repairGradeTests() {
   const HOOK = "MTIzNDU2Nzg5MDEyMzQ1Njc4.AbCdEf.repair"; // a synthetic bot token (131/09)
   return [
     {
-      name: "147/00 E6 — a red grade stops the loop with no repair session, as before",
+      name: "147/00 E6 (widened) — a grade the loop cannot read is handed to a repair session, and the loop resumes and finishes once it ends done",
       run: () => withLaneRepo(async (fx) => {
         fx.workspace.config.work.notify = { channels: { ops: { type: "discord", channelId: "123456789012345678", tokenEnv: "HOOK" } } };
         const posts = [];
         const fetch = async (url, init) => { posts.push(JSON.parse(init.body)); return { status: 204, headers: { get: () => null }, json: async () => ({}) }; };
-        // The phase child: it records each repair it is asked for and answers every phase done.
+        // The phase child: it records each repair it is asked for, completes a verify, and answers
+        // every phase done.
         const repairs = [];
+        const completeVerify = verifyCompleter(fx);
         const phase = async (input) => {
           if (input.phase === "repair") repairs.push({ ...input });
+          if (input.phase === "verify") await completeVerify(`/aof:verify ${input.ref}`);
           return { outcome: "document", document: { outcome: "done", sessionId: `child-${input.phase}-${input.ref}`, settlementContext: {} }, exitCode: 0, stderrTail: [] };
         };
         const report = collector();
@@ -1766,10 +1774,49 @@ function repairGradeTests() {
           notifyOptions: { env: { HOOK }, fetch },
         };
         const state = await runLoopLaunch({ scope: fx.milestone }, ctx);
-        assert.equal(state.act.stop, "grade-indeterminate");
-        assert.equal(repairs.length, 0, "no repair drive is spawned");
-        assert.equal(posts.length, 1, "the account and the notification are as before");
-        assert.equal(report.lines.some((line) => /Repair/u.test(line)), false);
+        const ref = `${fx.milestone}/01`;
+        assert.equal(state.state, "done", report.lines.join("\n"));
+        assert.equal(repairs.length, 1, "the grade halt is handed to ONE repair session");
+        const handOver = JSON.parse(await readFile(repairs[0].haltFile, "utf8"));
+        assert.equal(handOver.stop, "grade-indeterminate");
+        assert.equal(handOver.ref, ref);
+        assert.ok(report.lines.includes(`Repaired grade-indeterminate at ${ref} (run ${repairs[0].runId}) — resuming ${fx.milestone}.`), report.lines.join("\n"));
+        assert.equal(posts.length, 0, "a repaired halt and a finished loop notify nobody");
+      }, { git: "fake", stories: ["01"], commit: { "src/x.mjs": "// base\n" } }),
+    },
+    {
+      // A green report beside a non-zero exit is `report-vacuous`, and the cause is only in the
+      // runner's output. Its tail rides the repair run's `brief.halt`, so the halt is diagnosable from
+      // the run record without running the rubric again.
+      name: "a grade halted by the runner's exit keeps the tail of the runner's output on the repair run's record",
+      run: () => withLaneRepo(async (fx) => {
+        const repairs = [];
+        const completeVerify = verifyCompleter(fx);
+        const phase = async (input) => {
+          if (input.phase === "repair") repairs.push({ ...input });
+          if (input.phase === "verify") await completeVerify(`/aof:verify ${input.ref}`);
+          return { outcome: "document", document: { outcome: "done", sessionId: `child-${input.phase}-${input.ref}`, settlementContext: {} }, exitCode: 0, stderrTail: [] };
+        };
+        const crashed = { ...emits(passingTap(), 1), stderr: "Error: an unhandled rejection outside any case\n" };
+        const report = collector();
+        const ctx = {
+          ...laneCtx(fx, { child: fakeLaneChild(fx), rubric: stubRubric([emits(passingTap()), crashed]), report, driver: primaryDriver(fx), timers: fakeTimers(), signals: fakeSignals() }),
+          spawnPhaseDrive: phase,
+        };
+        const state = await runLoopLaunch({ scope: fx.milestone }, ctx);
+        const ref = `${fx.milestone}/01`;
+        assert.equal(state.state, "done", report.lines.join("\n"));
+        assert.equal(repairs.length, 1, "the grade halt is handed to ONE repair session");
+        const halted = report.lines.find((line) => line.includes("halted on grade-indeterminate"));
+        assert.ok(halted?.includes("exit=1") && halted.includes("an unhandled rejection outside any case"), `the halt line names the exit and the output: ${halted}`);
+        const record = (await readRuns(await resolveItemExact({ workspace: fx.workspace }, ref))).find((run) => run.runId === repairs[0].runId);
+        assert.ok(record, "the repair is a run on the halted ref");
+        assert.deepEqual(Object.keys(record.brief.halt), ["stop", "producer", "runner"]);
+        assert.equal(record.brief.halt.stop, "grade-indeterminate");
+        assert.equal(record.brief.halt.producer, "work:grade:report-vacuous");
+        assert.ok(record.brief.halt.runner.startsWith("the runner exited 1 although its report shows no failing case"), record.brief.halt.runner);
+        assert.ok(record.brief.halt.runner.includes("an unhandled rejection outside any case"), "the runner's stderr is in the kept tail");
+        assert.ok(record.brief.halt.runner.length < 4200, "the tail is bounded where work:grade builds it");
       }, { git: "fake", stories: ["01"], commit: { "src/x.mjs": "// base\n" } }),
     },
   ];

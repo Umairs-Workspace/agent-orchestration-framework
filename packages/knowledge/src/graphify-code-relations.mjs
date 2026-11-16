@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { computeImpact } from "./graph-impact.mjs";
+import { computeImpact, isInferredEdge } from "./graph-impact.mjs";
 import { graphArtifactBuiltAt as artifactBuiltAt, graphJsonPath as artifactPath, normalizeGraph as normalizeArtifact, readGraph as readArtifact } from "./graph-normalize.mjs";
 import { createKnowledgeEngine } from "./engine.mjs";
 
@@ -32,11 +32,15 @@ export function createCodeGraphReader({ readGraph, normalizeGraph, graphJsonPath
   // `ctx.transitive` (190/ADR-003 §2): `dependents` is every file that reaches the asked file
   // through edges, walked to a fixpoint over the SAME read — one artifact read however deep the
   // closure goes, with a visited set so a cycle ends the walk.
+  //
+  // `ctx.skipInferred`: neither the direct pass nor the closure follows an edge graphify guessed
+  // (`isInferredEdge`). Test selection sets it; every other reader sees every edge, as before.
   async function relations(paths, ctx) {
     const { graph, cause, ...answer } = availability(ctx.projectRoot);
     if (!answer.available) return { served: true, ...answer, cause, files: [] };
-    const files = computeImpact(graph, paths);
-    return { served: true, ...answer, files: ctx.transitive === true ? withTransitiveDependents(graph, files) : files };
+    const skipInferred = ctx.skipInferred === true;
+    const files = computeImpact(graph, paths, { skipInferred });
+    return { served: true, ...answer, files: ctx.transitive === true ? withTransitiveDependents(graph, files, { skipInferred }) : files };
   }
 
   return { availability, relations };
@@ -44,10 +48,11 @@ export function createCodeGraphReader({ readGraph, normalizeGraph, graphJsonPath
 
 // One reverse edge map at file grain, then a breadth-first walk from each answer's direct
 // dependents. Pure over the normalized graph.
-function withTransitiveDependents(graph, files) {
+function withTransitiveDependents(graph, files, { skipInferred = false } = {}) {
   const fileOf = new Map(graph.nodes.map((node) => [node.id, node.sourceFile?.replace(/\\/g, "/") ?? null]));
   const importers = new Map();
   for (const edge of graph.edges) {
+    if (skipInferred && isInferredEdge(edge)) continue;
     const source = fileOf.get(edge.source);
     const target = fileOf.get(edge.target);
     if (!source || !target || source === target) continue;

@@ -1,6 +1,7 @@
 import { spawn, execFile } from "node:child_process";
 import path from "node:path";
 import { resolveStartToCloseMs } from "@aof/contracts/loop-bounds";
+import { processAwakeClock } from "@aof/foundation/awake-clock";
 import { resolveExecution, validateExecutionEnvelope } from "./runtime-selection.mjs";
 import { CODEX_PROFILE, isSupportedCodexVersion, CODEX_RESULT_SCHEMA, CODEX_AUTO_REVIEW, CODEX_REVIEW_METHODS, parseCodexPhaseResult, permissionReply, validPermissionRequest, nativeReview, nativeQuestion, nativeUsage } from "./codex-protocol-profile.mjs";
 import { normalizeCodexActivity, reducePermissionReviews } from "./runtime-events.mjs";
@@ -11,6 +12,28 @@ import { codexProcessEnvironment } from "./codex-process-environment.mjs";
 const named = value => typeof value === "string" && value.trim().length > 0;
 const positive = (value, fallback) => Number.isSafeInteger(value) && value > 0 ? value : fallback;
 const failure = code => Object.assign(new Error(code), { code });
+
+// The notifications this adapter reads (anything else is discarded by name in `frame`), and the
+// subset it needs IN FULL to settle a run: turn identity, completion, usage and native review.
+const CONSUMED_NOTIFICATIONS = Object.freeze(["turn/started", "turn/completed", "thread/tokenUsage/updated",
+  "item/started", "item/completed", "item/agentMessage/delta", ...CODEX_REVIEW_METHODS]);
+const NEEDED_IN_FULL = Object.freeze(["turn/started", "turn/completed", "thread/tokenUsage/updated", ...CODEX_REVIEW_METHODS]);
+
+// May a line over `frameBytes` be dropped instead of failing the run? Only when its LEADING key
+// proves it a notification this adapter never needs in full. The App Server writes a
+// notification as `{"method":…}` and a request or response with `id` first, so a line that does
+// not open with `"method"` is never dropped: a request left unanswered would stall the turn, and
+// a response left unread would time its request out. What remains droppable is item lifecycle and
+// unconsumed notifications. The case that motivated this: an `item/completed` for a command whose
+// whole output (1.3 MB of `aof work doctor --json`) the App Server sends in one line, though the
+// model itself only ever sees a truncated copy. The adapter reads such an item for a liveness
+// tick at most, and a final answer that large is already refused as `result_invalid`
+// (`resultBytes`), so nothing a run settles on is lost. Nothing of the line is retained.
+function droppableOversizedLine(head) {
+  const method = /^\s*\{\s*"method"\s*:\s*"([^"\\]{1,256})"/u.exec(head)?.[1];
+  if (!named(method)) return false;
+  return !NEEDED_IN_FULL.includes(method) && !permissionReply(method) && method !== "item/tool/requestUserInput";
+}
 export const codexServerCommand = (bin = process.platform === "win32" ? "codex.exe" : "codex") => ({ bin, args: ["app-server", "--listen", "stdio://"] });
 function probeVersion(bin, options) {
   return new Promise((resolve, reject) => {
@@ -33,7 +56,7 @@ async function terminateOwned(child) {
 export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = probeVersion, selectExecutable = selectCodexExecutable, terminate = terminateOwned, composePhaseBriefInput = null } = {}) {
   async function operate(brief, options, readOnly = false, selectedExecutable = null) {
     let child, sessionId = null, turnId = null, cliVersion = null, execution = null, terminal = null;
-    let closed = false, finishing = false, finalText = null, queued = 0, sequence = 0, partial = "";
+    let closed = false, finishing = false, finalText = null, queued = 0, sequence = 0, partial = "", discarding = false;
     let events = Promise.resolve();
     let reviews = [];
     const reviewPending = () => reviews.some(review => review.observationState === "pending");
@@ -47,6 +70,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
     const selectionSignal = options.signal ? AbortSignal.any([options.signal, selectionStop.signal]) : selectionStop.signal;
     const decoder = new TextDecoder("utf-8", { fatal: true });
     const requestMs = positive(options.requestTimeoutMs, CODEX_PROFILE.requestMs);
+    const awakeClock = options.awakeClock ?? processAwakeClock();
     const interruptMs = positive(options.interruptMs, CODEX_PROFILE.interruptMs);
     const closeMs = positive(options.closeMs, CODEX_PROFILE.closeMs);
     let resolveTerminal, resolveClosed;
@@ -56,7 +80,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
     function settle(result) {
       if (terminal) return;
       terminal = result; resolveTerminal(result); selectionStop.abort();
-      for (const { reject, timer } of pending.values()) { clearTimeout(timer); reject(failure(result.failureReason ?? "operation_settled")); }
+      for (const { reject, timer } of pending.values()) { timer.clear(); reject(failure(result.failureReason ?? "operation_settled")); }
       pending.clear();
     }
     function write(message) {
@@ -70,9 +94,10 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       if (pending.size >= 32) return Promise.reject(failure("protocol_request_limit"));
       return new Promise((resolve, reject) => {
         const id = ++sequence;
-        const timer = setTimeout(() => { pending.delete(id); reject(failure("protocol_timeout")); if (!finishing) fail("protocol_timeout"); }, ms);
+        // 2026-11-12 — awake time: a request in flight across a host suspend is not a protocol timeout.
+        const timer = awakeClock.setTimeout(() => { pending.delete(id); reject(failure("protocol_timeout")); if (!finishing) fail("protocol_timeout"); }, ms);
         pending.set(id, { resolve, reject, timer });
-        try { write({ id, method, params }); } catch (error) { pending.delete(id); clearTimeout(timer); reject(error); }
+        try { write({ id, method, params }); } catch (error) { pending.delete(id); timer.clear(); reject(error); }
       });
     }
     async function publishQuestion(question) {
@@ -147,7 +172,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       if (Object.hasOwn(message, "id") && !Object.hasOwn(message, "method")) {
         const entry = pending.get(message.id);
         if (!entry || (Object.hasOwn(message, "result") === Object.hasOwn(message, "error"))) { fail("protocol_unmatched_response"); return; }
-        pending.delete(message.id); clearTimeout(entry.timer);
+        pending.delete(message.id); entry.timer.clear();
         Object.hasOwn(message, "error") ? entry.reject(failure("protocol_rpc_error")) : entry.resolve(message.result);
         return;
       }
@@ -156,8 +181,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       // Output deltas and legacy/extension notifications are not consumed here.
       // Discard them before the persistence queue: a verbose native command must
       // not crowd out phase results, usage, questions or approval refusals.
-      if (!Object.hasOwn(message, "id") && !["turn/started", "turn/completed", "thread/tokenUsage/updated",
-        "item/started", "item/completed", "item/agentMessage/delta", ...CODEX_REVIEW_METHODS].includes(message.method) && !permissionReply(message.method)) return;
+      if (!Object.hasOwn(message, "id") && !CONSUMED_NOTIFICATIONS.includes(message.method) && !permissionReply(message.method)) return;
       if (++queued > CODEX_PROFILE.queuedMessages) { fail("protocol_queue_limit"); return; }
       events = events.then(() => event(message)).catch(() => fail("persistence_failed")).finally(() => { queued--; });
     }
@@ -167,15 +191,22 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
         const text = decoder.decode(chunk, { stream: true });
         const lines = text.split("\n");
         for (let i = 0; i < lines.length; i++) {
+          const ended = i < lines.length - 1;
+          // The rest of an oversized droppable line: skipped up to its newline, never buffered.
+          if (discarding) { if (ended) discarding = false; continue; }
           partial += lines[i];
-          if (Buffer.byteLength(partial) > CODEX_PROFILE.frameBytes) { fail("protocol_frame_too_large"); return; }
-          if (i < lines.length - 1) { frame(partial); partial = ""; }
+          if (Buffer.byteLength(partial) > CODEX_PROFILE.frameBytes) {
+            if (!droppableOversizedLine(partial)) { fail("protocol_frame_too_large"); return; }
+            partial = ""; discarding = !ended; continue;
+          }
+          if (ended) { frame(partial); partial = ""; }
           if (terminal) return;
         }
       } catch { fail("protocol_invalid_json"); }
     }
     const abort = () => fail("abort");
-    const deadline = setTimeout(() => fail("timeout"), resolveStartToCloseMs(options.deadlinePolicy?.startToCloseMs ?? options.timeoutMs));
+    // 2026-11-12 — start-to-close counts awake time, as the PTY driver's does.
+    const deadline = awakeClock.setTimeout(() => fail("timeout"), resolveStartToCloseMs(options.deadlinePolicy?.startToCloseMs ?? options.timeoutMs));
     options.signal?.addEventListener("abort", abort, { once: true });
     try {
       if (options.signal?.aborted) { abort(); return { ...terminal, sessionId, processStarted: false }; }
@@ -268,7 +299,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
     } finally {
       releaseTurn();
       selectionStop.abort();
-      clearTimeout(deadline); options.signal?.removeEventListener("abort", abort);
+      deadline.clear(); options.signal?.removeEventListener("abort", abort);
       finishing = true;
       if (reviewPending()) {
         // Best-effort bounded observation after stop, never a native decision or rollback.
@@ -301,7 +332,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
         child.stdout.removeListener("data", data);
         child.stdin.destroy(); child.stdout.destroy(); child.stderr.destroy();
       }
-      for (const entry of pending.values()) { clearTimeout(entry.timer); entry.reject(failure("operation_settled")); } pending.clear();
+      for (const entry of pending.values()) { entry.timer.clear(); entry.reject(failure("operation_settled")); } pending.clear();
     }
     return { ...terminal, sessionId, processStarted: Boolean(child), cliVersion, executable, ...(discoveryIssues.length ? { discoveryIssues } : {}), ...(probeIssues.length ? { probeIssues } : {}), profile: CODEX_PROFILE.name, profileVersion: CODEX_PROFILE.version, ...(detectedVersions.length ? { detectedVersions } : {}), ...(execution ? { execution } : {}), ...(cleanupWarnings.length ? { cleanupWarnings } : {}) };
   }

@@ -27,6 +27,8 @@ function feature(scenarios) {
 
 function snapshotOf({ ref = "03/00", status = "in-progress", scenarios = [], report = "", present = true } = {}) {
   return {
+    // The work-stream root the engine always supplies: the run's unjoined cases anchor here.
+    workDir: "no-such-root-ff5408",
     items: [{
       ref,
       dir: path.join("no-such-root-ff5408", "item"),
@@ -172,8 +174,9 @@ export const rubricMissIsReportedUnjoinedTests = [
     run: () => {
       // All-`@manual` scenarios: nothing is offered to the join, so there is no scenario miss
       // to report — but a case that names none of them is still an unjoined case, reported
-      // against the item that has scenarios to be named after.
+      // once for the run because some item has scenarios it could have been named after.
       const manualOnly = {
+        workDir: "no-such-root-ff5408",
         items: [
           {
             ref: "03/00",
@@ -193,9 +196,10 @@ export const rubricMissIsReportedUnjoinedTests = [
       assert.deepEqual(byCode(forManual, "scenario-unjoined"), [], "no scenario-unjoined finding is reported for the all-@manual item");
       assert.deepEqual(forManual, [], "…and the manual item contributes nothing at all");
 
-      const forExecutable = findings.filter((finding) => finding.message.startsWith("03/01:"));
-      assert.deepEqual(byCode(forExecutable, "case-unjoined").length, 1, "the case is still reported case-unjoined");
-      assert.match(byCode(forExecutable, "case-unjoined")[0].message, /"names nothing at all"/, "…by the name the runner emitted");
+      const caseMisses = byCode(findings, "case-unjoined");
+      assert.equal(caseMisses.length, 1, "the case is still reported case-unjoined");
+      assert.equal(caseMisses[0].path, "no-such-root-ff5408", "…once for the run, at the work-stream root");
+      assert.match(caseMisses[0].message, /"names nothing at all"/, "…by the name the runner emitted");
     },
   },
 ];

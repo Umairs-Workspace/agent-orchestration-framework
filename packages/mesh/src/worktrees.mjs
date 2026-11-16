@@ -346,11 +346,14 @@ async function removeDispatchWorktree(projectRoot, itemRef, options = {}) {
   const exec = resolveExec(options);
   const worktreePath = meshDispatchWorktreePath(projectRoot, itemRef);
   const branch = typeof options.branch === "string" && options.branch.length > 0 ? options.branch : meshItemBranchName(itemRef);
-  // The heartbeat queues go first: plain `git worktree remove` refuses a tree holding an untracked
-  // file, and a queue is per-node runtime state no commit ever carries (HEARTBEAT_QUEUE_PATHSPECS),
-  // so removing it loses nothing. `-x` reaches a queue the work dir's ignore file already hides.
-  // Every other untracked file still refuses the remove, as above.
-  await exec(["clean", "-f", "-x", "-q", "--", ...HEARTBEAT_QUEUE_PATHSPECS], { cwd: worktreePath });
+  // NO HEARTBEAT QUEUE IS REMOVED HERE. Plain `git worktree remove` refuses a tree holding an
+  // untracked file, and an untracked queue is one; the lane's home (`removeFinishedLane`,
+  // work-loop/dispatch.mjs) deletes those by path before it calls this. This module ran
+  // `git clean -f -x -q` over the queue globs instead, and `-x` walks every ignored directory to
+  // match a glob: a lane's `node_modules` took about 75 s on Windows, past the git timeout, so
+  // every merged lane reported "cleanup refused (error)" (a downstream loop, 2026-11-15). A queue
+  // the work dir's ignore file hides needs no delete at all: the remove does not refuse over an
+  // ignored file, and takes it with the tree. This module still reaches no filesystem delete (FF-7207).
   const result = await exec(["worktree", "remove", worktreePath], { cwd: projectRoot });
   if (result.status !== 0) {
     throw gitError(`git worktree remove failed for dispatch item "${itemRef}": ${result.stderr || result.stdout}`, "dispatch-worktree-remove-failed", { itemRef, worktreePath, branch, stderr: result.stderr });

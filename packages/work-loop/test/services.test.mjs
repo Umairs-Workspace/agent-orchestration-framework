@@ -150,13 +150,15 @@ test("child drive uses supplied CLI only for Node and preserves subprocess argum
   assert.equal(entryReads, 1);
   await assert.rejects(services.spawnLaneDrive({ ...input, answerFile: "answer", fixFile: "fix" }), /cannot ride one drive/);
   assert.equal(calls.length, 2);
-  // 147/00 — a repair drive names its hand-over file (`--halt`), and nothing else beside it.
-  await assert.rejects(services.spawnLaneDrive({ ...input, phase: "repair", haltFile: "halt.json", fixFile: "fix" }), /rides a repair drive alone/);
-  await assert.rejects(services.spawnLaneDrive({ ...input, phase: "repair", haltFile: "halt.json", answerFile: "answer" }), /rides a repair drive alone/);
+  // 147/00 — a repair drive names its hand-over file (`--halt`), never a fix beside it.
+  await assert.rejects(services.spawnLaneDrive({ ...input, phase: "repair", haltFile: "halt.json", fixFile: "fix" }), /rides a repair drive without "fixFile"/);
   assert.equal(calls.length, 2, "a caller error spawns nothing");
   const repairFile = services.loopRepairFilePath("r1");
   assert.equal(repairFile, path.join("runtime", "loop-repairs", "r1.json"), "the hand-over lives beside loop-fixes under the aof home");
   assert.equal(services.loopFixFilePath("r1"), path.join("runtime", "loop-fixes", "r1.json"));
   await services.spawnLaneDrive({ ...input, phase: "repair", haltFile: repairFile });
   assert.deepEqual(calls[2].args, ["work", "drive", "repair", "42/01", "--run", "r1", "--halt", repairFile, "--json"]);
+  // 2026-11-14 — a repair that asked the operator is re-driven with the answer AND its hand-over.
+  await services.spawnLaneDrive({ ...input, phase: "repair", haltFile: repairFile, answerFile: "answer" });
+  assert.deepEqual(calls[3].args, ["work", "drive", "repair", "42/01", "--run", "r1", "--answer", "answer", "--halt", repairFile, "--json"]);
 });

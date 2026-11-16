@@ -4,7 +4,7 @@ updated: 2026-11-02
 ---
 # 188 · AOF guides the human through problem solving without taking over — Verification
 
-Run at `aof:verify 188` on 2026-11-01, on the Mac mini (`Umairs-Mac-mini.local`), at `55f24c9f` on
+Run at `aof:verify 188` on 2026-11-01, on the Mac mini (`<mac-hostname>.local`), at `55f24c9f` on
 `feat/guided-problem-solving`, solo, with the product owner played inline. Every test run used an
 isolated `AOF_GLOBAL_HOME`. No aof daemon was listening on `:4181` or `:4182`, so the whole-tree run
 was permitted here.
@@ -131,7 +131,7 @@ restore the file, then run the control green again. After the three probes `git 
 
 ### 188/04 task 01 — the operator is taught, not taken over (`@uat`)
 
-- **Procedure.** In their own repository, `voice-vox-company-portal`, the operator ran
+- **Procedure.** In their own repository, `<downstream-project>`, the operator ran
   `/aof:teach 08/01` on Claude Code, on a refined story they had not built. They first ran
   `aof work update`, which needed F-13's workaround.
 - **Observed.** The opening turn wrote none of their code and closed its run `done`, as F-02's fix
@@ -152,7 +152,7 @@ Recall was run per finding (`aof memory ingest`, then `aof memory recall "<text>
 
 | id | observed | type | severity | triage | routed-to | status |
 |---|---|---|---|---|---|---|
-| F-01 | `acd-run-records-name-no-machine` is red at the whole-tree gate. Nine tracked run records sit under `runs/umairs-mac-mini/` and carry `node: "umairs-mac-mini"`, neither opaque nor baselined: eight of 188's (milestone and stories 00–04) and one of spike 187's. The live identity here is `nodeId: "umairs-mac-mini"`, `derivedFrom: "Umairs-Mac-mini.local"`. The prior occurrence is m131/F-131-01, same cause: records written under a machine-name node. | regression | blocker | Re-identify the node (`aof mesh identity --reidentify`) and move the nine records to the opaque id, as 2026-09-23 did, or baseline the segment with a written reason. | operator chose re-identify, 2026-11-01. `aof mesh identity --reidentify` gave `umairs-mac-mini → node-9549`, the opaque id the enrollment credential and node record already named (the hostname form had come back to `identity.json` on 2026-10-19). The nine records were moved to `runs/node-9549/` with their `node` key rewritten, and the control is green (8/8). | closed |
+| F-01 | `acd-run-records-name-no-machine` is red at the whole-tree gate. Nine tracked run records sit under `runs/<mac-hostname>/` and carry `node: "<mac-hostname>"`, neither opaque nor baselined: eight of 188's (milestone and stories 00–04) and one of spike 187's. The live identity here is `nodeId: "<mac-hostname>"`, `derivedFrom: "<mac-hostname>.local"`. The prior occurrence is m131/F-131-01, same cause: records written under a machine-name node. | regression | blocker | Re-identify the node (`aof mesh identity --reidentify`) and move the nine records to the opaque id, as 2026-09-23 did, or baseline the segment with a written reason. | operator chose re-identify, 2026-11-01. `aof mesh identity --reidentify` gave `<mac-hostname> → node-9549`, the opaque id the enrollment credential and node record already named (the hostname form had come back to `identity.json` on 2026-10-19). The nine records were moved to `runs/node-9549/` with their `node` key rewritten, and the control is green (8/8). | closed |
 | F-02 | A teaching session that ends without stop, green or hand-off leaves its run `running`. teach.md step 7 closes it only on those three events. The next `/aof:review 00`, the hand-back ADR-003 §5 names, was refused `duplicate-run`, and the run was not stale, so nothing reclaimed it. A distinct incident: m68/F-04 also leaked a running run, but from `drive.mjs`. | defect | blocker | New `@bug` task 188/02 tasks/02, and 02 returns to `in-progress`. | `aof:continue 188/02`: fixed at `ff3a4410`, and proved live (see "F-02 re-check") | closed |
 | F-03 | `ARCHITECTURE.md` declares FF-17903 at `test/arch/bundle/acd-teach-vocabulary-one-home.test.mjs`, which is not a file on disk. Doctor: `control-unresolved` (warn, pending). The control landed at `test/arch/command/…` (STATE, 188/03). The register also still marks all three controls `pending`. Same cause as m57/F-57-03-3. | doc-gap | blocker (accept rule) | Correct the register's path and drop the `pending` markers, ratifying review 188/03's routing (a). | operator ratified 2026-11-01; register edited at this verify | closed |
 | F-04 | ADR-007 says the `teach` member "declares `runtimes: ["claude"]` and carries no Codex variant, so Codex and OpenCode render no `teach`". The render engine maps every command to Codex. The shipped mechanism is the member's `mapped: false` key, read in `bundle-runtime.mjs:94` (STATE, review 188/02 routing (a)). | doc-gap | non-blocker | Supersede ADR-007's sentence. No delivered `.feature` changes. | operator ratified 2026-11-01; ADR-007 amended at this verify | closed |

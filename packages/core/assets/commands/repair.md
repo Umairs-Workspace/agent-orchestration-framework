@@ -1,43 +1,48 @@
 ---
-description: Repair a lane halt the loop handed over — diagnose the cause named in the hand-over file, fix the loop's own records (a lane that would not merge home or would not reopen), and hand back so the loop resumes by itself. Never the story's code, never the loop.
+description: Repair a halt the loop handed over — diagnose the cause named in the hand-over file, fix it (the loop's own records, or the story's code, tests or rubric), ask the operator when a decision or permission is theirs, and hand back so the loop resumes by itself.
 argument-hint: "<halted ref> <hand-over file>"
-allowed-tools: [Read, Grep, Glob, Bash, Edit, Write]
+allowed-tools: [Read, Grep, Glob, Bash, Edit, Write, AskUserQuestion]
 ---
 <objective>
-Repair is bounded to the handover's named cause: diagnose it, apply its local remedy and run
-the named proof once. A failed or inconclusive proof is a handback, not an unbounded retry loop.
-A loop (`aof work loop`) halted on one of its three LANE stops — `lane-open-failed`,
-`lane-merge-refused` or `lane-merge-conflict` — and handed the halt to you. A lane halt is about the
-loop's OWN bookkeeping (a dispatch worktree that will not merge home, or will not reopen), never about
-the code a story built. Your one job is to remove that cause so the loop, which is waiting on this
-session's outcome, can resume on its own. You end `done` only when the cause is gone.
+A loop (`aof work loop`) halted and, rather than stop for the operator, handed the halt to you. The
+loop tries its best before it stops: your one job is to remove the cause so the loop, which is
+waiting on this session's outcome, can resume on its own. Diagnose the named cause, fix it, prove it
+is gone with the check the loop will apply, and end `done`. When the fix needs a decision or a
+permission that is the operator's, ask (below) and carry on with the answer. A failed or
+inconclusive proof is a handback, not an unbounded retry loop: you get one repair per halt.
 </objective>
 
 <input>
 `$ARGUMENTS` is `<ref> <file>`: the halted ref (a story such as `03/03`, or a milestone when the
-halt was the loop's own commit), and the path of the hand-over file the loop wrote under the aof home
+halt was the loop's own), and the path of the hand-over file the loop wrote under the aof home
 (`loop-repairs/<runId>.json`).
 
 **It reads the hand-over file named in its arguments, and the loop-diag log the file names.** The
 file holds exactly these keys: `stop` (the halt's code), `producer` (which door produced it), `ref`,
 `details` (the halt line's `Details:` text exactly as the loop printed it — lane, branch, base, tip,
-files, reason, error, whatever the producer carried), `diagLog` (this invocation's loop-diag log
-path, or null), `lane` (the lane worktree's path, or null when no lane exists), `branch`, `base`,
-`tip` (the lane's branch and the two commits its merge home was asked between, or null) and `scope`
-(the loop's scope). Read the file first and in full; then read the tail of `diagLog` when it is
-named — it records the loop's own exit reasons and the driver's stop bracket, which is where a halt
-that is not what its code says is explained.
+files, verdict, codes, cases, exit, runner output, reason, error, whatever the producer carried),
+`diagLog` (this invocation's loop-diag log path, or null), `lane` (the lane worktree's path, or
+null), `branch`, `base`, `tip` (the lane's branch and the two commits its merge home was asked
+between, or null) and `scope` (the loop's scope). Read the file first and in full; then read the
+tail of `diagLog` when it is named — it records the loop's own exit reasons, every attempt's settle
+line and the driver's stop bracket, which is where a halt that is not what its code says is
+explained. The ref's run records (`aof work run-status <ref> --json`) hold each attempt's outcome and
+`failureReason`.
 </input>
 
 <where>
-**It works in the primary checkout, and in the lane worktree only when the file names one.** The
+**It works in the primary checkout, and in the story's lane worktree when the cause is there.** The
 session is launched in the primary (the checkout the loop runs in). Merge-home and the lane reopen
-both act from the primary, so that is where the cause usually lives. Enter the lane (`lane`) only
-when the hand-over names one and the cause is inside it — a lane that holds uncommitted work, a lane
-whose branch is behind. A lane may not exist at all (`lane: null`): then there is nothing to enter.
+act from the primary. A story driven in a wave is built in its lane,
+`.aof/mesh/dispatch-worktrees/dispatch-<NN>-<SS>` (the hand-over's `lane` when it names one): its
+code, its tests and its gates live there, and the loop brings the lane's branch home when it resumes.
+So a fix to a story's code or tests is made IN THE LANE and committed on the lane's branch, never in
+the primary. When no lane exists, the story was built in the primary.
 </where>
 
-<the_three_halts>
+<the_halts>
+**The lane stops — the loop's own bookkeeping:**
+
 - **`lane-merge-conflict`** (`dispatch:merge-home:conflict`) — the lane's branch (`branch`, at
   `tip`) could not be merged into the primary's HEAD from `base`; the merge was aborted and the
   primary is exactly as it was. Find what conflicts: `git merge-tree <base> HEAD <tip>`, or
@@ -50,8 +55,8 @@ whose branch is behind. A lane may not exist at all (`lane: null`): then there i
   the one merge verb refused before touching anything: `files` names the primary's dirty paths the
   lane also touched (`reason` may say `detached-head`, `branch-missing`, `commit-failed`,
   `gate-propagation-failed`). A detached primary is checked back out on its branch. A dirty path the
-  OPERATOR owns is not yours to commit (see the rule below). A `.git/index.lock` nobody holds is
-  removed only after `git status` proves no git process is running.
+  OPERATOR owns is not yours to commit — ask the operator what to do with it (see the rules). A
+  `.git/index.lock` nobody holds is removed only after `git status` proves no git process is running.
 - **`lane-open-failed`** (`work:dispatch:<code>`, `run-store:duplicate-run`, `lane:<code>`) — the
   lane could not be opened or brought to HEAD. `assignment-gate-propagation-dirty-worktree` means the
   lane worktree holds uncommitted changes: inspect them in the lane; a heartbeat queue
@@ -61,7 +66,43 @@ whose branch is behind. A lane may not exist at all (`lane: null`): then there i
   or settled with `aof work run-complete <ref> --outcome failed`; a LIVE one (a session still
   heartbeating) is not yours — end the repair failed naming it. `at-capacity` means every lane slot is
   held (`aof work dispatch --list`); a stranded lane is swept with `aof work dispatch --sweep`.
-</the_three_halts>
+
+**The story stops — the build, its gates and its grade:**
+
+- **`grade-indeterminate`** (`work:grade:<code>`) — the rubric ran and its result could not be read
+  as a verdict. `details` carries `verdict`, `codes`, `cases`, and on a non-zero exit `exit` and the
+  runner's own output tail. `report-vacuous` with no failing case and a non-zero `exit` means the
+  runner failed OUTSIDE any case — an unhandled error, a test module that did not load, a crashed
+  sub-run — and the cause is in its output. `report-missing` / `report-unreadable` mean the declared
+  report (`work.rubric.report`) was not written or not in its format; `runner-timeout` that the rubric
+  outran its deadline; `runner-spawn-failed` that it never started. Reproduce in the lane:
+  `aof work grade <ref> --run --json` (it prints the runner's detail), fix the cause — the story's
+  code or tests, or the project's rubric script when the rubric itself is wrong — and re-grade.
+- **`cap-exhausted`**, **`no-progress`**, **`progress-exhausted`** — the build was driven its
+  allowed number of attempts or review rounds and the same findings kept coming back. `details`
+  carries the findings (gate, code, case, message). Read them and the last attempt's transcript
+  summary in the diag log; fix what they name in the lane, then prove it with the same gates.
+- **`run-not-retryable`** — an attempt ended in a way a retry cannot cure. Read the run's
+  `failureReason`: a story-code cause is fixed in the lane; an environment cause that is the
+  operator's (a signed-out `claude`, a missing credential, a full disk) is asked about, never
+  worked around.
+- **`dependency-blocked`** — the next item depends on one that is not `done`. Check the dependency at
+  the source (`aof work status <dep>`): a dependency that is in fact delivered but whose record lags
+  is the operator's to accept — ask; never mark another item done yourself.
+- **`unmapped-item-type`** — the item's type has no driven phase. Read the record doc; a misspelled
+  `type:` is fixed, anything else is asked.
+</the_halts>
+
+<asking>
+**When the fix needs the operator, ask — one question per ask, through `AskUserQuestion`.** The
+loop posts it, notifies the operator and waits; the answer is typed into this session and you carry
+on. Ask before: changing the project's rubric, test configuration or CI; touching a file the
+operator owns (dirty in the primary and not the loop's own write); deleting anything you did not
+create; anything the rules below do not already allow. Put on the question's first line what the
+halt is and what you need decided, then `Decision needed:`, `Options:`, `I would pick:` and
+`What the answer changes:`, under 1,500 characters, with the options also given as the tool's
+options. Do not ask what you can find out: read, run and measure first.
+</asking>
 
 <rules>
 These rules are what let an unattended repair run without doing harm. Each is absolute.
@@ -70,18 +111,19 @@ These rules are what let an unattended repair run without doing harm. Each is ab
   `checkout -B`.** Nor `update-ref`, nor a `git worktree remove --force` of a lane holding
   uncommitted work. Every lane commit and every primary commit is preserved; a merge is `--no-ff`
   and resolved by hand, never squashed or rewritten.
-- **It never commits, stashes or discards the operator's uncommitted changes in the primary; a
-  cause that is the operator's own work ends the repair failed, naming the paths.** The loop's own
-  writes live under `wiki/work/<milestone dir>/` (record docs, run records) and may be committed;
-  anything else that is dirty in the primary is the operator's desk. If the merge is refused because
-  of such a path, you do not touch it — you end failed and say which paths, so the operator decides.
+- **It never commits, stashes or discards the operator's uncommitted changes in the primary without
+  asking.** The loop's own writes live under `wiki/work/<milestone dir>/` (record docs, run records)
+  and may be committed; anything else that is dirty in the primary is the operator's desk. When the
+  cause is such a path, ask what to do with it; an unanswered question ends the repair failed,
+  naming the paths.
 - **It never edits a delivered `.feature`.** A task's contract is locked; a merge that conflicts in
-  one is resolved keeping the delivered text, never by rewriting a scenario.
+  one is resolved keeping the delivered text, never by rewriting a scenario, and a failing scenario
+  is fixed in the code or its step definitions, never by weakening the contract.
 - **It never runs `aof work loop`; the loop resumes itself.** The loop that handed you this halt is
   waiting on this session's outcome and re-enters its body with `--resume` the moment you end
   `done`. Starting another loop would run two over one scope. Likewise never `aof work drive`.
-- **It changes nothing the halt did not cause.** No fixes to story code, no refactors, no record
-  edits beyond what the cause needs. A problem you notice that is not the cause is reported in your
+- **It fixes the cause, and only the cause.** No refactors, no unrelated fixes, no record edits
+  beyond what the cause needs. A problem you notice that is not the cause is reported in your
   closing statement and left alone.
 </rules>
 
@@ -95,7 +137,12 @@ Before you end `done`, prove the cause is gone the way the loop will test it:
   lane, or the primary is back on its branch;
 - a lane that would not open — `git status --porcelain` in the lane is empty and the lane's branch
   carries whatever work it held; `aof work dispatch --list --json` shows it as a clean lane; no
-  `running` run stands on the item unless a live session owns it.
+  `running` run stands on the item unless a live session owns it;
+- a story stop — in the tree the story is built in, `aof work validate <ref>` and
+  `aof work doctor <ref>` are clean and `aof work grade <ref> --run --json` answers `pass` (or, for a
+  grade the baseline excuses, no failing case beyond the inherited ones); your fix is committed on
+  the lane's branch, and `git status --porcelain` in the lane is empty;
+- a dependency or type stop — the record now reads as the loop needs it.
 
 A repair you cannot verify is not `done`.
 </verify>
@@ -103,8 +150,8 @@ A repair you cannot verify is not `done`.
 <output>
 **It ends by stating the cause it found and what it changed, or why it could not repair.** Three or
 four sentences, as the last thing you say: the stop and ref, the cause (the actual file or record,
-not the code's name for it), each change you made (commits by sha, files by path), and the check
-that proves the cause is gone — or, when you could not repair, exactly what stands in the way and
-whose it is. Then end the session. The loop reads your outcome: `done` resumes it, anything else
-stops it for the operator with your run named in its halt line.
+not the code's name for it), each change you made (commits by sha, files by path) and each answer
+the operator gave, and the check that proves the cause is gone — or, when you could not repair,
+exactly what stands in the way and whose it is. Then end the session. The loop reads your outcome:
+`done` resumes it, anything else stops it for the operator with your run named in its halt line.
 </output>

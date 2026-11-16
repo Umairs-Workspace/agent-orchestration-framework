@@ -44,6 +44,7 @@
 import { spawn as spawnChildProcess } from "node:child_process";
 import { existsSync, mkdtempSync, openSync, closeSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
+import { processAwakeClock } from "@aof/foundation/awake-clock";
 
 // The four terminal outcomes, frozen. Every result carries exactly one of them, and no
 // consumer has to infer "did it finish?" from a null exit code.
@@ -197,6 +198,8 @@ export async function runBounded({
   // console, so the document, stderr and the stdin cancel channel are untouched; the deadline,
   // grace and abort kills below still land (`child.kill` is by pid). Elsewhere a no-op.
   ownConsole = false,
+  // The clock the deadline counts on: the process's awake clock, so a suspend is not run time.
+  awakeClock = processAwakeClock(),
 } = {}) {
   const bound = Number.isFinite(deadlineMs) && deadlineMs > 0 ? deadlineMs : DEFAULT_DEADLINE_MS;
   // The grace is a positive safe integer or the named default — `0`, a negative, `NaN`,
@@ -296,7 +299,10 @@ export async function runBounded({
     let stdinNote = "";
     let graceTimer = null;
 
-    const timer = setTimeout(() => {
+    // THE DEADLINE COUNTS AWAKE TIME (2026-11-12): a host suspend is not the child running long.
+    // A wall-clock timer fired on wake and killed two healthy lane sessions as `timeout`; the awake
+    // timer re-samples on wake and re-arms for what is left of the bound instead.
+    const timer = awakeClock.setTimeout(() => {
       // The first to fire decides: a deadline that expires inside an abort's grace keeps the
       // abort's verdict, one that expires before any abort is its own outcome.
       if (!aborted) expired = true;
@@ -309,8 +315,7 @@ export async function runBounded({
       } catch (error) {
         killNote = killFailureNote(error);
       }
-    }, bound);
-    if (typeof timer.unref === "function") timer.unref();
+    }, bound, { unref: true });
 
     // The abort: end the child's stdin (only when it was piped — the cancel channel of
     // 129/02 task 01), wait the grace, then kill. A deadline that already expired, or a run
@@ -346,7 +351,7 @@ export async function runBounded({
     const settle = (fields) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
+      timer.clear();
       if (graceTimer != null) { clearTimeout(graceTimer); graceTimer = null; }
       signal?.removeEventListener?.("abort", onAbort);
       resolve(result({ command, args: frozenArgs, attempted, deadlineMs: bound, stdout, stderr, ...fields }));
