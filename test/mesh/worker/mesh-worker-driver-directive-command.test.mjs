@@ -26,7 +26,7 @@ export const meshWorkerDriverDirectiveCommandTests = [
   {
     name: "task01/38-05 Scenario Outline — the directive's command string is typed into the PTY stdin as a whole line, never baked into the spawn argv (3 rows)",
     run: async () => {
-      const commands = ["/aof:refine 38/05 --autonomous", "/aof:continue", "/aof:verify 38/05"];
+      const commands = ["/aof:refine 38/05 --all", "/aof:continue", "/aof:verify 38/05"];
       for (const command of commands) {
         const which = createFakeWhich(["claude"]);
         const { spawn, spawnCalls, ptys } = createFakePtySpawn({ onWrite: ({ emitExit }) => emitExit(0) });
@@ -60,7 +60,7 @@ export const meshWorkerDriverDirectiveCommandTests = [
       // Assignment A — its own spawn tracker, its own worktreeCwd.
       const a = createFakePtySpawn({ onWrite: ({ emitExit }) => emitExit(0) });
       const resultA = await driveInteractiveClaudeSession(
-        { itemRef: "38/05", worktreeCwd: "/tmp/wt-a", task: "demo-a", command: "/aof:refine 38/05 --autonomous" },
+        { itemRef: "38/05", worktreeCwd: "/tmp/wt-a", task: "demo-a", command: "/aof:refine 38/05 --all" },
         { ptySpawn: a.spawn, which },
       );
       assert.equal(a.spawnCalls.length, 1, "assignment A spawns exactly one interactive session for its whole run");

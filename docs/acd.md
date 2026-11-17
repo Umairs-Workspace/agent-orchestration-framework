@@ -114,7 +114,7 @@ the item first – through `aof work promote`, appended to the stream – and th
 was given (a path to the item's folder, `wiki/work/backlog/milestone_x`, or its record doc names the
 same item); a later `--resume` names that number, not the slug. `work.loop.refine` sets how it refines:
 `per-story` (the default) drives one story's contract per refine session, and `whole-item` makes a
-milestone's break-down drive `/aof:refine <ref> --autonomous`, which authors every contract in one
+milestone's break-down drive `/aof:refine <ref> --all`, which authors every contract in one
 session; `--refine per-story|whole-item` overrides it for one run. Each phase's session runs on the
 model and effort the operator names — `aof work loop <ref> --model sonnet:high --model refine=opus:xhigh
 --model verify=fable:high` — where a value with no `PHASE=` applies to every phase and a phased one

@@ -67,7 +67,7 @@ function driveViaRealDriver(fx, ws, assignmentId, recorder, onWrite, watchTransc
     which,
     watchTranscriptSessionId,
   });
-  return handler({ kind: "directive", to: NODE_ID, assignmentId, itemRef: fx.itemRef, workspaceId: fx.workspaceId, at: now, command: "/aof:refine 38/05 --autonomous" });
+  return handler({ kind: "directive", to: NODE_ID, assignmentId, itemRef: fx.itemRef, workspaceId: fx.workspaceId, at: now, command: "/aof:refine 38/05 --all" });
 }
 
 export const meshWorkerDriverSessionIdTests = [
@@ -211,7 +211,7 @@ export const meshWorkerDriverSessionIdTests = [
       const which = createFakeWhich(["claude"]);
       const { spawn } = createFakePtySpawn({ onWrite: ({ emitExit }) => emitExit(0) });
       const result = await driveInteractiveClaudeSession(
-        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --autonomous" },
+        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --all" },
         { ptySpawn: spawn, which, watchTranscriptSessionId: async () => { throw new Error("watch fault (e.g. a permissions error mid-poll)"); } },
       );
       assert.equal(result.outcome, "done");

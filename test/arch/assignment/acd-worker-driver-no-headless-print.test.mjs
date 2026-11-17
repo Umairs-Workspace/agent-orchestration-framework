@@ -255,7 +255,7 @@ export const archTests = [
       const which = createFakeWhich([]); // nothing on PATH
       const { spawn, spawnCalls } = createFakePtySpawn();
       const result = await driveInteractiveClaudeSession(
-        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --autonomous" },
+        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --all" },
         { ptySpawn: spawn, which, watchTranscriptSessionId: async () => null },
       );
       assert.equal(spawnCalls.length, 0, "no spawn attempt is made when the provider's binary does not resolve");
@@ -424,7 +424,7 @@ export const archTests = [
       const which = createFakeWhich(["claude"]);
       const { spawn } = createFakePtySpawn({ onWrite: ({ emitData }) => emitData(`...\n${NEEDS_INPUT_SENTINEL}\n`) });
       const result = await driveInteractiveClaudeSession(
-        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --autonomous" },
+        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --all" },
         { ptySpawn: spawn, which, watchTranscriptSessionId: async () => null },
       );
       assert.equal(result.outcome, "needs-input");

@@ -239,7 +239,7 @@ async function validateWork(workDir, config, scopeRef, { projectRoot, historyRoo
   // wrong is what an EMPTY match rendered as: `aof work validate 999` returned zero
   // findings and the CLI printed `PASS — 999 is well-formed.` with exit 0, so a typo'd
   // ref, or a ref whose folder has not been scaffolded yet, reported the stream healthy.
-  // In an `--autonomous` cascade — which runs validate as a gate between steps and reads
+  // In an `--all` cascade — which runs validate as a gate between steps and reads
   // its exit code — a mistyped scope was indistinguishable from a green gate.
   //
   // It is a FINDING rather than a throw so the `{ findings }` envelope shape is unchanged

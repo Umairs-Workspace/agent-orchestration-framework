@@ -189,7 +189,7 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
       ...(typeof model === "string" && model.length > 0 ? ["--model", model] : []),
       ...(typeof thinking === "string" && thinking.length > 0 ? ["--thinking", thinking] : []),
       // 143/01 (ADR-002 §5) — the whole-item refine cascade; absent passes nothing.
-      ...(autonomous === true ? ["--autonomous"] : []),
+      ...(autonomous === true ? ["--all"] : []),
       "--json",
     ];
     const args = isPackaged() ? verb : [getCliEntry(), ...verb];

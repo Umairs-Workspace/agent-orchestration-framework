@@ -4,7 +4,7 @@ name: aof-refine
 description: Refine a numbered AOF work item — break a milestone into independent stories with researched ADRs, or author a story's task .feature contracts (Three Amigos) — delivered as a draft pull request. AOF planning on Hyperagent.
 ---
 
-Arguments: <item ref - NN or slug> [--autonomous] [--solo | --orchestrated] [--thinking <level>]
+Arguments: <item ref - NN or slug> [--all] [--solo | --orchestrated] [--thinking <level>]
 
 # aof-refine (Hyperagent)
 

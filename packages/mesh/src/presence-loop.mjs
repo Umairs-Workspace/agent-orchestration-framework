@@ -20,7 +20,7 @@
 // (the manualTicker() pattern, the 22 task-01 shape). The cadence is READ AT START and
 // STABLE for the run — a mid-run config edit does not retune a running loop.
 
-// The DOCUMENTED default presence cadence (ADR-003 — taken under --autonomous; reversible
+// The DOCUMENTED default presence cadence (ADR-003 — taken during a whole-item refine; reversible
 // by a config edit). A tight value within the ≤5s-liveness intent (PRD KR1: a peer's
 // change reflected ≤5s over the relay), so the loop publishes at least that often even
 // when cadenceSeconds is absent/malformed. The SINGLE source the "documented default"

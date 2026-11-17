@@ -155,7 +155,7 @@ export function loopConcurrencyFromConfig(workspace) {
 // same reason: FF-6901 makes `work.loop.*` the loop's one home, which is why it is not
 // `work.autonomous.refine`. Two members: `per-story` — today's loop, one story's contract per refine
 // drive, and what an unset key means, byte-identically — and `whole-item` — the break-down drive of
-// a milestone with no stories runs `/aof:refine <ref> --autonomous`, which breaks it down and
+// a milestone with no stories runs `/aof:refine <ref> --all`, which breaks it down and
 // authors every story's contract in one session. A member resolves verbatim; anything else — a case
 // variant, an underscore, a boolean — resolves to the default, never a throw.
 export const LOOP_REFINE_MODES = Object.freeze(["per-story", "whole-item"]);

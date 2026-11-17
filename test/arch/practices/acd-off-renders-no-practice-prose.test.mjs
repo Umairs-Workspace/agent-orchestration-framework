@@ -111,7 +111,7 @@ const regionOf = (text, open, close) => {
   assert.ok(region != null, `the region from ${JSON.stringify(open)} to ${JSON.stringify(close)} is found, in that order`);
   return region.slice(0, region.length - close.length);
 };
-const contractOf = (refine) => regionOf(refine, "- **story — Contract (Three Amigos):**", "**`--autonomous` — cascade");
+const contractOf = (refine) => regionOf(refine, "- **story — Contract (Three Amigos):**", "**`--all` — cascade");
 const lineCount = (text) => text.split("\n").length;
 
 export const archTests = [
@@ -246,7 +246,7 @@ export const archTests = [
       const at = (needle) => { const index = refine.indexOf(needle); assert.ok(index >= 0, `${needle} is there`); return index; };
       assert.ok(at("Discovery comes first") < at("**Formulation.**"), "the discovery beat comes before Formulation");
       assert.ok(at("**With an applicable example map, formulate from it.**") < at("**Under orchestrated mode"), "the formulation from the map comes before Under orchestrated mode");
-      assert.ok(at("**Finish the story contract") < at("**The build brief") && at("**The build brief") < at("**`--autonomous` — cascade"), "the build brief stands between the finish and the --autonomous block");
+      assert.ok(at("**Finish the story contract") < at("**The build brief") && at("**The build brief") < at("**`--all` — cascade"), "the build brief stands between the finish and the --all block");
     },
   },
   {

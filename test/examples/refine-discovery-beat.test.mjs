@@ -70,10 +70,10 @@ const ARCHITECT_COPIES = [".claude/agents/aof-architect.md", ".codex/agents/aof-
 const MAP_LINE = /^\s*(## R|- E|- Q)\d/m;
 
 // ── the slices the rulings name ─────────────────────────────────────────────────────────────────
-// The story Contract: its bullet to the `--autonomous` block's bold lead (task 00, developer 1).
+// The story Contract: its bullet to the `--all` block's bold lead (task 00, developer 1).
 function contractOf(refine) {
   const start = refine.indexOf("- **story — Contract (Three Amigos):**");
-  const end = refine.indexOf("**`--autonomous` — cascade");
+  const end = refine.indexOf("**`--all` — cascade");
   assert.ok(start >= 0 && end > start, "the story Contract section is found");
   return refine.slice(start, end);
 }
@@ -87,11 +87,11 @@ function passageOf(refine) {
   const end = next ? gate + next.index : contract.length;
   return { contract, passage: contract.slice(start, end), start, end };
 }
-// The `--autonomous` block: its bold lead to `<amendment_ratification>` (task 01, developer 1).
+// The `--all` block: its bold lead to `<amendment_ratification>` (task 01, developer 1).
 function autonomousOf(refine) {
-  const start = refine.indexOf("**`--autonomous` — cascade");
+  const start = refine.indexOf("**`--all` — cascade");
   const end = refine.indexOf("<amendment_ratification>");
-  assert.ok(start >= 0 && end > start, "the --autonomous block is found");
+  assert.ok(start >= 0 && end > start, "the --all block is found");
   return refine.slice(start, end);
 }
 const milestoneBulletOf = (block) => block.slice(block.indexOf("- **milestone** →"), block.indexOf("\n- **story** →"));

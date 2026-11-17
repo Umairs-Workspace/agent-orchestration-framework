@@ -30,7 +30,7 @@ export const meshWorkerDriverInteractivePtyTests = [
       const which = createFakeWhich(["claude"]);
       const { spawn, spawnCalls } = createFakePtySpawn({ onWrite: ({ emitExit }) => emitExit(0) });
       const result = await driveInteractiveClaudeSession(
-        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --autonomous" },
+        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --all" },
         { ptySpawn: spawn, which, watchTranscriptSessionId: async () => null },
       );
       assert.equal(spawnCalls.length, 1, "the interactive claude session is spawned exactly once");
@@ -78,7 +78,7 @@ export const meshWorkerDriverInteractivePtyTests = [
         ptySpawn: spawn,
         which,
       });
-      await handler({ kind: "directive", to: NODE_ID, assignmentId: "asg-1", itemRef: fx.itemRef, workspaceId: fx.workspaceId, at: "2026-07-18T09:00:00.000Z", command: "/aof:refine 38/05 --autonomous" });
+      await handler({ kind: "directive", to: NODE_ID, assignmentId: "asg-1", itemRef: fx.itemRef, workspaceId: fx.workspaceId, at: "2026-07-18T09:00:00.000Z", command: "/aof:refine 38/05 --all" });
 
       assert.equal(spawnCalls.length, 1, "the worker's default spawnRuntime drives the REAL interactive-pty path exactly once");
       // EXACT array-element checks, never a JSON.stringify substring scan: the
@@ -117,7 +117,7 @@ export const meshWorkerDriverInteractivePtyTests = [
       const which = createFakeWhich([]); // nothing resolves
       const { spawn, spawnCalls } = createFakePtySpawn();
       const result = await driveInteractiveClaudeSession(
-        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --autonomous" },
+        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --all" },
         { ptySpawn: spawn, which },
       );
       assert.equal(result.outcome, "failed");

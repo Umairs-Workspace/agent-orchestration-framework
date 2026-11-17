@@ -488,11 +488,11 @@ export const meshAssignmentLoopDirectiveTests = [
     name: "63/03 task01 Scenario Outline — every dispatchable phase, its directive kind, the command it types and the branch it runs on (5 rows, driven from ASSIGNMENT_PHASES)",
     run: async () => withIsolatedStore(async ({ store }) => {
       const rows = [
-        { phase: "refine", kind: ASSIGNMENT_LAUNCH_SESSION, command: "/aof:refine 63 --autonomous", branch: false },
+        { phase: "refine", kind: ASSIGNMENT_LAUNCH_SESSION, command: "/aof:refine 63 --all", branch: false },
         { phase: "continue", kind: ASSIGNMENT_LAUNCH_SESSION, command: "/aof:continue 63", branch: true },
         { phase: "verify", kind: ASSIGNMENT_LAUNCH_SESSION, command: "/aof:verify 63", branch: true },
         { phase: "autonomous", kind: ASSIGNMENT_LAUNCH_LOOP, command: null, branch: true },
-        { phase: "an unrecognised one", kind: ASSIGNMENT_LAUNCH_SESSION, command: "/aof:refine 63 --autonomous", branch: false },
+        { phase: "an unrecognised one", kind: ASSIGNMENT_LAUNCH_SESSION, command: "/aof:refine 63 --all", branch: false },
       ];
       // The table's four real phases ARE the vocabulary — a fifth member could not be
       // added silently without this failing.
@@ -541,8 +541,8 @@ export const meshAssignmentLoopDirectiveTests = [
     run: async () => {
       const refine = assignmentDirectiveResolution("refine", "63");
       const auto = assignmentDirectiveResolution("autonomous", "63");
-      assert.equal(refine.kind, ASSIGNMENT_LAUNCH_SESSION, "refine --autonomous is a SESSION, deliberately");
-      assert.ok(refine.command.includes("--autonomous"), "…told to type its delivered command, flag included");
+      assert.equal(refine.kind, ASSIGNMENT_LAUNCH_SESSION, "refine --all is a SESSION, deliberately");
+      assert.ok(refine.command.includes("--all"), "…told to type its delivered command, flag included");
       assert.equal(auto.kind, ASSIGNMENT_LAUNCH_LOOP, "the autonomous PHASE is a loop launch");
       assert.equal(auto.command, null, "…that types nothing");
       // The mapper's own answer for the autonomous phase still exists and is unchanged —

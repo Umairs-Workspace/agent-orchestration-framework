@@ -4990,7 +4990,7 @@
         "thinking": {
           "type": "string"
         },
-        "autonomous": {
+        "all": {
           "type": "boolean"
         },
         "model": {
@@ -5015,7 +5015,7 @@
         "refine"
       ],
       "spec": {
-        "usage": "aof work drive refine <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]",
+        "usage": "aof work drive refine <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--all] [--dry-run] [--json]",
         "flags": {
           "dryRun": {
             "type": "boolean",
@@ -5041,9 +5041,9 @@
             "type": "string",
             "description": "the model this session runs on, over the phase's configured session model"
           },
-          "autonomous": {
+          "all": {
             "type": "boolean",
-            "description": "refine only: break the item down and author every contract in this one session (/aof:refine --autonomous)"
+            "description": "refine only: break the item down and author every contract in this one session (/aof:refine --all)"
           },
           "halt": {
             "type": "string",
@@ -5076,7 +5076,7 @@
         "thinking": {
           "type": "string"
         },
-        "autonomous": {
+        "all": {
           "type": "boolean"
         },
         "model": {
@@ -5101,7 +5101,7 @@
         "continue"
       ],
       "spec": {
-        "usage": "aof work drive continue <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]",
+        "usage": "aof work drive continue <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--all] [--dry-run] [--json]",
         "flags": {
           "dryRun": {
             "type": "boolean",
@@ -5127,9 +5127,9 @@
             "type": "string",
             "description": "the model this session runs on, over the phase's configured session model"
           },
-          "autonomous": {
+          "all": {
             "type": "boolean",
-            "description": "refine only: break the item down and author every contract in this one session (/aof:refine --autonomous)"
+            "description": "refine only: break the item down and author every contract in this one session (/aof:refine --all)"
           },
           "halt": {
             "type": "string",
@@ -5162,7 +5162,7 @@
         "thinking": {
           "type": "string"
         },
-        "autonomous": {
+        "all": {
           "type": "boolean"
         },
         "model": {
@@ -5187,7 +5187,7 @@
         "verify"
       ],
       "spec": {
-        "usage": "aof work drive verify <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]",
+        "usage": "aof work drive verify <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--all] [--dry-run] [--json]",
         "flags": {
           "dryRun": {
             "type": "boolean",
@@ -5213,9 +5213,9 @@
             "type": "string",
             "description": "the model this session runs on, over the phase's configured session model"
           },
-          "autonomous": {
+          "all": {
             "type": "boolean",
-            "description": "refine only: break the item down and author every contract in this one session (/aof:refine --autonomous)"
+            "description": "refine only: break the item down and author every contract in this one session (/aof:refine --all)"
           },
           "halt": {
             "type": "string",
@@ -5248,7 +5248,7 @@
         "thinking": {
           "type": "string"
         },
-        "autonomous": {
+        "all": {
           "type": "boolean"
         },
         "model": {
@@ -5299,9 +5299,9 @@
             "type": "string",
             "description": "the model this session runs on, over the phase's configured session model"
           },
-          "autonomous": {
+          "all": {
             "type": "boolean",
-            "description": "refine only: break the item down and author every contract in this one session (/aof:refine --autonomous)"
+            "description": "refine only: break the item down and author every contract in this one session (/aof:refine --all)"
           },
           "halt": {
             "type": "string",
@@ -5334,7 +5334,7 @@
         "thinking": {
           "type": "string"
         },
-        "autonomous": {
+        "all": {
           "type": "boolean"
         },
         "model": {
@@ -5359,7 +5359,7 @@
         "review"
       ],
       "spec": {
-        "usage": "aof work drive review <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]",
+        "usage": "aof work drive review <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--all] [--dry-run] [--json]",
         "flags": {
           "dryRun": {
             "type": "boolean",
@@ -5385,9 +5385,9 @@
             "type": "string",
             "description": "the model this session runs on, over the phase's configured session model"
           },
-          "autonomous": {
+          "all": {
             "type": "boolean",
-            "description": "refine only: break the item down and author every contract in this one session (/aof:refine --autonomous)"
+            "description": "refine only: break the item down and author every contract in this one session (/aof:refine --all)"
           },
           "halt": {
             "type": "string",

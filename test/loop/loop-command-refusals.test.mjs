@@ -392,7 +392,7 @@ export const loopCommandRefineScopeTests = [
 // so deleting the lend at either seam turns a case red.
 loopCommandRefineScopeTests.push(
   ...[
-    ["whole-item", "/aof:refine 04 --solo --autonomous"],
+    ["whole-item", "/aof:refine 04 --solo --all"],
     ["per-story", "/aof:refine 04 --solo"],
   ].map(([refine, command]) => ({
     name: `143/01 review — an in-process walk under ${refine} composes the break-down drive as ${command}`,

@@ -268,7 +268,7 @@ export const fleetTerminalViewProducerFedTests = [
       // this test, which is exactly the window the terminal-view exists to serve.
       const running = handler({
         kind: "directive", to: NODE_ID, assignmentId: ASSIGNMENT_ID, itemRef: fx.itemRef,
-        workspaceId: fx.workspaceId, at: NOW, command: "/aof:refine 38/06 --autonomous",
+        workspaceId: fx.workspaceId, at: NOW, command: "/aof:refine 38/06 --all",
       });
 
       for (let i = 0; i < SPAWN_WAIT_TICKS && emitData == null; i += 1) await tick();
@@ -333,7 +333,7 @@ export const fleetTerminalViewProducerFedTests = [
       });
       await handler({
         kind: "directive", to: NODE_ID, assignmentId: ASSIGNMENT_ID, itemRef: fx.itemRef,
-        workspaceId: fx.workspaceId, at: NOW, command: "/aof:refine 38/06 --autonomous",
+        workspaceId: fx.workspaceId, at: NOW, command: "/aof:refine 38/06 --all",
       });
 
       const settled = await resolveCardStream({ home: fx.home, itemRef: fx.itemRef });
@@ -399,7 +399,7 @@ export const fleetTerminalViewProducerFedTests = [
 
         const running = handler({
           kind: "directive", to: NODE_ID, assignmentId: ASSIGNMENT_ID, itemRef: fx.itemRef,
-          workspaceId: fx.workspaceId, at: NOW, command: "/aof:refine 38/06 --autonomous",
+          workspaceId: fx.workspaceId, at: NOW, command: "/aof:refine 38/06 --all",
         });
 
         // The card opens its terminal — the REAL resolver, the REAL url helper, the
@@ -498,7 +498,7 @@ export const fleetTerminalViewProducerFedTests = [
 
         const running = handler({
           kind: "directive", to: NODE_ID, assignmentId: ASSIGNMENT_ID, itemRef: fx.itemRef,
-          workspaceId: fx.workspaceId, at: NOW, command: "/aof:refine 38/06 --autonomous",
+          workspaceId: fx.workspaceId, at: NOW, command: "/aof:refine 38/06 --all",
         });
 
         const stream = resolveTerminalStream({ targetNodeId: NODE_ID, sessionId: LIVE_SESSION });

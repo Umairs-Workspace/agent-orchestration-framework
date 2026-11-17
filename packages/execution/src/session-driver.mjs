@@ -104,7 +104,7 @@ function buildDriverCommand(driver, brief) {
 // terminal-ws.mjs) — never a hand-rolled second spawn path. cwd = the worktree
 // (task 00).
 //
-// THE WHOLE DIRECTIVE COMMAND STRING (`/aof:refine <ref> --autonomous`,
+// THE WHOLE DIRECTIVE COMMAND STRING (`/aof:refine <ref> --all`,
 // `/aof:continue`, `/aof:verify <ref>`) is typed into that ONE session's PTY stdin as
 // a SINGLE newline-terminated `pty.write` — never baked into the spawn argv as a `-p`
 // prompt (task 01). ONE long-lived interactive session per assignment:

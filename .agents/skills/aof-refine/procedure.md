@@ -5,7 +5,7 @@ author a story's task `.feature` files via Three Amigos.
 
 <config>
 Read `.aof/aof.config.json` → `work.dir`, `work.agents`, `work.tags`. Parse `$ARGUMENTS` into the item
-**ref** (`NN` / `NN/SS` / slug), an optional **`--autonomous`** flag, an optional **`--solo`** or
+**ref** (`NN` / `NN/SS` / slug), an optional **`--all`** flag, an optional **`--solo`** or
 **`--orchestrated`** flag and an optional **`--thinking <level>`**. Resolve the ref by running `aof work find "<ref>" --json` (folder-name
 lookup — never glob `**/*.md`).
 
@@ -72,7 +72,7 @@ unattributable run rather than a guessed one. A `duplicate-run` refusal means a 
 still open from a phase that died; the mint reclaims a stale run before it writes, so the next attempt
 recovers it. There is deliberately no heartbeat on a phase run.
 
-Dispatch on the item's `type`. **`--autonomous`** changes only *where you stop*, not *what you
+Dispatch on the item's `type`. **`--all`** changes only *where you stop*, not *what you
 produce* — without it each stage stops at its review gate; with it (see the block after the dispatch)
 refine cascades through every sub-stage of the item and stops once, at the end, for a single review.
 
@@ -358,7 +358,7 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
     finding. Do not make it binding, and do not restate the contract in it: the task `.feature`
     scenarios are the contract.
 
-**`--autonomous` — cascade, review once at the end.** Drive the item to *fully refined* without pausing
+**`--all` — cascade, review once at the end.** Drive the item to *fully refined* without pausing
 at each intermediate gate (the framework's balance is review-stops vs. autonomous runs — refining
 story-by-story is needless friction once the breakdown is trusted):
 
@@ -379,7 +379,7 @@ story-by-story is needless friction once the breakdown is trusted):
   question the person does not answer — deferred by the person, or refused by the harness — leaves
   its story at the Contract gate with no `tasks/` written; the other stories go on.
 - **story** → author its full Contract (already a single stage).
-- **spike / chore** → the refuse/redirect above applies unchanged; `--autonomous` has nothing to
+- **spike / chore** → the refuse/redirect above applies unchanged; `--all` has nothing to
   cascade (no sub-stage exists for either type).
 
 <amendment_ratification>
@@ -441,7 +441,7 @@ Still **doc-producing only**: stop before any build.
 
 <output>
 **Default** — report what was produced + what's still open.
-**`--autonomous`** — present the full refined tree (the milestone breakdown + every story's authored
+**`--all`** — present the full refined tree (the milestone breakdown + every story's authored
 contract) as a single review surface, calling out any default decisions taken and anything still open.
 When `work.examples.enabled` is on, it lists the business questions asked and their answers apart from
 the default decisions taken, and names each story a deferred question left at the Contract gate.

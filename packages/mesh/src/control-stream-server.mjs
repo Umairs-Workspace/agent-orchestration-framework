@@ -905,7 +905,7 @@ function freshnessLabel({ connected, everConnected, lastHeartbeatAt, now, window
 // OPTIONAL sixth key (included only when a non-empty string is supplied — the SAME
 // conditional-inclusion pattern buildCloneCredentialFrame's own optional `code`
 // already uses, never breaking a consumer that destructures only the original five):
-// the assignment's WHOLE command string (`/aof:refine <ref> --autonomous`,
+// the assignment's WHOLE command string (`/aof:refine <ref> --all`,
 // `/aof:continue`, `/aof:verify <ref>`) the worker types into its interactive
 // session's PTY stdin (mesh-worker-execution.mjs). This frame is otherwise
 // byte-identical to its pre-story-05 shape.

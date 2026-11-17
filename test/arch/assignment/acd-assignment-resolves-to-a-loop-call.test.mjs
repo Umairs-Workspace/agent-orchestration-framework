@@ -79,7 +79,7 @@ const DIRECTIVE_HOME = "packages/mesh/src/assignment-directive.mjs";
 // literal is the contract rather than a duplication, because the claim IS that the bytes a
 // worker types have not moved. Every other leg derives its expectation.
 const DELIVERED_COMMANDS = Object.freeze({
-  refine: "/aof:refine 63 --autonomous",
+  refine: "/aof:refine 63 --all",
   continue: "/aof:continue 63",
   verify: "/aof:verify 63",
   autonomous: "/aof:autonomous 63",

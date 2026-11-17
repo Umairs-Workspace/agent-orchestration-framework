@@ -97,7 +97,7 @@ export function createPhaseDrivers({
     if (answer != null) await admitAnswer(answer, { lentRunId: managedRunId, item });
     const fixSource = answer == null ? (input.fix ? await readFixFile(input.fix) : ctx.loopDrive?.fix) : null;
     const fix = phase === "continue" && fixSource?.buildRun ? fixSource : null;
-    const autonomous = input.autonomous === true || ctx.loopDrive?.autonomous === true;
+    const autonomous = input.all === true || ctx.loopDrive?.autonomous === true;
     const command = phaseCommand(phase, item.ref, sessionAgentMode(ctx.workspace, phase), { autonomous, halt }).replace(`/aof:${phase}`, `$aof-${phase}`);
     const choice = selected.phases[choicePhase];
     if (input.dryRun === true) return { ref: item.ref, phase, command, execution: selected, effort: { level: choice.effort, source: choice.effortSource }, model: { id: choice.model, source: choice.modelSource } };
@@ -266,14 +266,14 @@ export function createPhaseDrivers({
   // the mode and spells no default of its own.
   const PHASE_MODE_FLAGS = Object.freeze({ solo: "--solo", orchestrated: "--orchestrated" });
 
-  // 143/01 (ADR-002 §5) — a whole-item refine appends `--autonomous` AFTER the mode flag: the prompt
-  // is the cascade `aof:refine --autonomous` already performs. Absent, the command is byte-identical.
+  // 143/01 (ADR-002 §5) — a whole-item refine appends `--all` AFTER the mode flag: the prompt
+  // is the cascade `aof:refine --all` already performs. Absent, the command is byte-identical.
   // 147/02 — a REPAIR types `/aof:repair <ref> <hand-over file>`: the file's path is the session's
   // second argument, before any flag. Absent, the command is byte-identical to the other phases'.
   function phaseCommand(phase, ref, mode = null, { autonomous = false, halt = null } = {}) {
     const flag = Object.prototype.hasOwnProperty.call(PHASE_MODE_FLAGS, mode) ? ` ${PHASE_MODE_FLAGS[mode]}` : "";
     const handOver = typeof halt === "string" && halt.length > 0 ? ` ${halt}` : "";
-    return `/aof:${phase} ${ref}${handOver}${flag}${autonomous === true ? " --autonomous" : ""}`;
+    return `/aof:${phase} ${ref}${handOver}${flag}${autonomous === true ? " --all" : ""}`;
   }
 
   // 147/02 — `--halt <file>` is the repair session's HAND-OVER across the process boundary: the JSON
@@ -432,7 +432,7 @@ export function createPhaseDrivers({
           // 141 — the effort this one drive's session thinks at, over the phase's configured one.
           thinking: { type: "string" },
           // 143/01 — the whole-item refine: break down and author every contract in this one session.
-          autonomous: { type: "boolean" },
+          all: { type: "boolean" },
           // 143/03 — the model this one drive's session runs on, over the phase's configured one.
           model: { type: "string" },
           runtime: { type: "string" },
@@ -469,15 +469,15 @@ export function createPhaseDrivers({
           throw commandError(thinkingUnknownLevelMessage(thinkingGiven), THINKING_UNKNOWN_LEVEL, 400);
         }
 
-        // 143/01 (ADR-002 §5) — `--autonomous` wins over the loop's lend, as `--thinking` does. It is
+        // 143/01 (ADR-002 §5) — `--all` wins over the loop's lend, as `--thinking` does. It is
         // a REFINE cascade, so any other phase refuses it at the door, before any read or mint.
-        const autonomous = input.autonomous === true || ctx.loopDrive?.autonomous === true;
+        const autonomous = input.all === true || ctx.loopDrive?.autonomous === true;
         if (autonomous && phase !== "refine") {
-          throw commandError(`--autonomous is a refine cascade; \`aof work drive ${phase}\` does not take it. Use \`aof work drive refine <ref> --autonomous\`.`, "drive-autonomous-refine-only", 400);
+          throw commandError(`--all is a refine cascade; \`aof work drive ${phase}\` does not take it. Use \`aof work drive refine <ref> --all\`.`, "drive-all-refine-only", 400);
         }
 
         // 147/02 — `--halt <file>` is the repair session's hand-over, and only a repair takes it: any
-        // other phase refuses it at the door, before any read or mint, as `--autonomous` is refused.
+        // other phase refuses it at the door, before any read or mint, as `--all` is refused.
         const haltGiven = typeof input.halt === "string" && input.halt.length > 0 ? input.halt : null;
         if (haltGiven != null && phase !== "repair") {
           throw commandError(`--halt is the repair session's hand-over; \`aof work drive ${phase}\` does not take it. Use \`aof work drive repair <ref> --run <id> --halt <file>\`.`, "drive-halt-repair-only", 400);
@@ -813,7 +813,7 @@ export function createPhaseDrivers({
         spec: {
           usage: phase === "repair"
             ? "aof work drive repair <ref> --run <id> --halt <file> [--thinking LEVEL] [--model ID] [--dry-run] [--json]"
-            : `aof work drive ${phase} <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]`,
+            : `aof work drive ${phase} <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--all] [--dry-run] [--json]`,
           flags: {
             dryRun: { type: "boolean", description: "report the phase directive without starting an agent session" },
             run: { type: "string", description: "the lent run id: mint and settle nothing, heartbeat this record, and take stdin's end as the stop (a loop's child drive)" },
@@ -821,7 +821,7 @@ export function createPhaseDrivers({
             answer: { type: "string", description: "an answered ask file: resume the lent run's own session with the answer typed as its first input" },
             thinking: { type: "string", description: "the effort this session thinks at (low, medium, high, xhigh, max; extra-high is xhigh), over the phase's configured effort" },
             model: { type: "string", description: "the model this session runs on, over the phase's configured session model" },
-            autonomous: { type: "boolean", description: "refine only: break the item down and author every contract in this one session (/aof:refine --autonomous)" },
+            all: { type: "boolean", description: "refine only: break the item down and author every contract in this one session (/aof:refine --all)" },
             halt: { type: "string", description: "repair only: the hand-over file the loop wrote for the halt (loop-repairs/<runId>.json under the aof home), typed to the session as /aof:repair <ref> <file>" },
           },
         },
@@ -833,7 +833,7 @@ export function createPhaseDrivers({
           ...(typeof options.answer === "string" ? { answer: options.answer } : {}),
           ...(typeof options.thinking === "string" ? { thinking: options.thinking } : {}),
           ...(typeof options.model === "string" ? { model: options.model } : {}),
-          ...(options.autonomous === true ? { autonomous: true } : {}),
+          ...(options.all === true ? { all: true } : {}),
           ...(typeof options.halt === "string" ? { halt: options.halt } : {}),
         }),
         render(result) {

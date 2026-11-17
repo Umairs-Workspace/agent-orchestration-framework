@@ -1306,7 +1306,7 @@ export const driveCommandPhaseDriverTests = [
     run() {
       for (const command of [refineDriverCommand, continueDriverCommand, verifyDriverCommand]) {
         // 131/03 (ADR-003 §7) appended the fifth, `answer`, in the same three homes.
-        assert.deepEqual(Object.keys(command.input.properties), ["ref", "dryRun", "run", "fix", "answer", "thinking", "autonomous", "model", "runtime", "halt"], `${command.id}: the closed schema adds runtime in 154/06`);
+        assert.deepEqual(Object.keys(command.input.properties), ["ref", "dryRun", "run", "fix", "answer", "thinking", "all", "model", "runtime", "halt"], `${command.id}: the closed schema adds runtime in 154/06`);
         assert.equal(command.cli.spec.flags.runtime, undefined, "assistant is inferred from the model or recorded run");
         assert.deepEqual(command.input.properties.answer, { type: "string" }, `${command.id}: answer is a string`);
         assert.equal(command.cli.spec.flags.answer.type, "string", `${command.id}: --answer is a string flag`);
@@ -2449,25 +2449,25 @@ async function completeRunFor(item, runId) {
   await completeRun(item, { runId, outcome: "done", now: new Date().toISOString(), settleSpend: false });
 }
 
-// ── story 143/01, task 01 — THE BREAK-DOWN DRIVE CARRIES --autonomous. The drive composes it after the
+// ── story 143/01, task 01 — THE BREAK-DOWN DRIVE CARRIES --all. The drive composes it after the
 // mode flag, refuses it on any phase but refine before anything is minted, and takes it over both
 // seams: in-process on `ctx.loopDrive.autonomous`, and on a lane child's argv.
 function driveAutonomousTests() {
   return [
     ...[
-      [{}, { autonomous: true }, "/aof:refine 03/01 --solo --autonomous"],
-      [{ loop: { agents: { refine: { mode: "orchestrated" } } } }, { autonomous: true }, "/aof:refine 03/01 --orchestrated --autonomous"],
+      [{}, { all: true }, "/aof:refine 03/01 --solo --all"],
+      [{ loop: { agents: { refine: { mode: "orchestrated" } } } }, { all: true }, "/aof:refine 03/01 --orchestrated --all"],
       [{}, {}, "/aof:refine 03/01 --solo"],
     ].map(([work, flags, command]) => ({
-      name: `143/01 task01 the drive composes --autonomous after the mode flag [${JSON.stringify(work)} ${JSON.stringify(flags)} → ${command}]`,
+      name: `143/01 task01 the drive composes --all after the mode flag [${JSON.stringify(work)} ${JSON.stringify(flags)} → ${command}]`,
       async run() {
         const fx = await fixture();
         try {
           const workspace = { ...fx.workspace, config: { work: { ...fx.workspace.config.work, ...work } } };
           const result = await refineDriverCommand.run({ ref: "03/01", dryRun: true, ...flags }, { workspace });
           assert.equal(result.command, command);
-          if (flags.autonomous === true) {
-            assert.deepEqual(refineDriverCommand.cli.argv(["03/01"], { autonomous: true, dryRun: true }), { ref: "03/01", dryRun: true, autonomous: true }, "the CLI face carries the flag into the input");
+          if (flags.all === true) {
+            assert.deepEqual(refineDriverCommand.cli.argv(["03/01"], { all: true, dryRun: true }), { ref: "03/01", dryRun: true, all: true }, "the CLI face carries the flag into the input");
           }
         } finally {
           await fx.cleanup();
@@ -2482,10 +2482,10 @@ function driveAutonomousTests() {
           const storyDir = path.join(fx.workspace.workDir, "03_milestone_fixture", "stories", "01_story_ready");
           for (const command of [continueDriverCommand, verifyDriverCommand]) {
             const before = await readdir(storyDir);
-            await assert.rejects(command.run({ ref: "03/01", autonomous: true }, { workspace: fx.workspace }), (error) => error?.code === "drive-autonomous-refine-only", command.id);
-            await assert.rejects(command.run({ ref: "03/01" }, { workspace: fx.workspace, loopDrive: { autonomous: true } }), (error) => error?.code === "drive-autonomous-refine-only", `${command.id}: a lent flag too`);
+            await assert.rejects(command.run({ ref: "03/01", all: true }, { workspace: fx.workspace }), (error) => error?.code === "drive-all-refine-only", command.id);
+            await assert.rejects(command.run({ ref: "03/01" }, { workspace: fx.workspace, loopDrive: { autonomous: true } }), (error) => error?.code === "drive-all-refine-only", `${command.id}: a lent flag too`);
             assert.deepEqual(await readdir(storyDir), before, `${command.id}: nothing minted`);
-            assert.ok(command.cli.spec.usage.includes("[--autonomous]"), `${command.id}: usage names it`);
+            assert.ok(command.cli.spec.usage.includes("[--all]"), `${command.id}: usage names it`);
           }
         } finally {
           await fx.cleanup();
@@ -2498,26 +2498,26 @@ function driveAutonomousTests() {
         const fx = await fixture();
         try {
           const result = await refineDriverCommand.run({ ref: "03/01", dryRun: true }, { workspace: fx.workspace, loopDrive: { autonomous: true } });
-          assert.equal(result.command, "/aof:refine 03/01 --solo --autonomous");
+          assert.equal(result.command, "/aof:refine 03/01 --solo --all");
         } finally {
           await fx.cleanup();
         }
       },
     },
     {
-      name: "143/01 task01 the flag crosses the child seam: the lane child's argv carries --autonomous only when lent",
+      name: "143/01 task01 the flag crosses the child seam: the lane child's argv carries --all only when lent",
       async run() {
         const ending = (double) => double.calls[0].args.slice(double.calls[0].args.indexOf("--run"));
         for (const [autonomous, expected] of [
-          [true, ["--run", "r1", "--autonomous", "--json"]],
+          [true, ["--run", "r1", "--all", "--json"]],
           [undefined, ["--run", "r1", "--json"]],
           [false, ["--run", "r1", "--json"]],
         ]) {
-          const { double } = await lane({ phase: "refine", ...(autonomous === undefined ? {} : { autonomous }), script: { stdout: JSON.stringify({ ...DOC, phase: "refine", command: "/aof:refine 127/02 --solo --autonomous" }) } });
+          const { double } = await lane({ phase: "refine", ...(autonomous === undefined ? {} : { autonomous }), script: { stdout: JSON.stringify({ ...DOC, phase: "refine", command: "/aof:refine 127/02 --solo --all" }) } });
           assert.deepEqual(ending(double), expected, String(autonomous));
         }
         const { double } = await lane({ phase: "refine", autonomous: true, thinking: "xhigh", script: { stdout: JSON.stringify({ ...DOC, phase: "refine" }) } });
-        assert.deepEqual(ending(double), ["--run", "r1", "--thinking", "xhigh", "--autonomous", "--json"], "beside --thinking");
+        assert.deepEqual(ending(double), ["--run", "r1", "--thinking", "xhigh", "--all", "--json"], "beside --thinking");
       },
     },
   ];

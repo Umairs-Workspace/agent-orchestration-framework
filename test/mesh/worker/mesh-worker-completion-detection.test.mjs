@@ -69,7 +69,7 @@ export const meshWorkerCompletionDetectionTests = [
       const { spawn, ptys } = createFakePtySpawn();
       let completionArgs = null;
       const result = await driveInteractiveClaudeSession(
-        { itemRef: "18", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 18 --autonomous" },
+        { itemRef: "18", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 18 --all" },
         {
           ptySpawn: spawn,
           which,
@@ -90,7 +90,7 @@ export const meshWorkerCompletionDetectionTests = [
       const which = createFakeWhich(["claude"]);
       const { spawn, ptys } = createFakePtySpawn();
       const result = await driveInteractiveClaudeSession(
-        { itemRef: "18", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 18 --autonomous" },
+        { itemRef: "18", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 18 --all" },
         {
           ptySpawn: spawn,
           which,
@@ -113,7 +113,7 @@ export const meshWorkerCompletionDetectionTests = [
       // returns null so the real completion watch never even starts (no session id).
       const { spawn } = createFakePtySpawn({ onWrite: ({ emitExit }) => emitExit(0) });
       const result = await driveInteractiveClaudeSession(
-        { itemRef: "18", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 18 --autonomous" },
+        { itemRef: "18", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 18 --all" },
         { ptySpawn: spawn, which, watchTranscriptSessionId: async () => null, commandDelayMs: 0 },
       );
       assert.equal(result.outcome, "done", "a genuinely-exiting process still settles via onExit");

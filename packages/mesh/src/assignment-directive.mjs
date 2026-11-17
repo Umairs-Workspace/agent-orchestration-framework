@@ -2,7 +2,7 @@ import { decideLoopScope } from "@aof/work-loop/engine";
 // src/mesh/assignment-directive.mjs — the per-assignment PHASE directive (which
 // lifecycle command a worker runs), for milestone 38's UI-driven assignment
 // (extending story 04). The dispatch tick used to hardcode ONE command for every
-// assignment — `/aof:refine <ref> --autonomous` (mesh-assignment-reclaim.mjs's
+// assignment — `/aof:refine <ref> --all` (mesh-assignment-reclaim.mjs's
 // defaultAssignmentDirectiveCommand) — because "the control side has no operator-facing
 // command-SELECTION UI yet ... this milestone's assignment record stays FROZEN at its
 // ten-key shape, acd-assignment-record-frozen, so this default is computed here rather
@@ -62,10 +62,10 @@ export function phaseRunsOnItemBranch(phase) {
 }
 
 // assignmentDirectiveCommand(phase, itemRef) — the phase → whole-command-string mapper
-// the worker types into its interactive `claude` PTY. `refine` carries `--autonomous`
+// the worker types into its interactive `claude` PTY. `refine` carries `--all`
 // (the headless-worker cascade — a worker has no human to stop at each sub-step, exactly
 // the pre-existing default); `continue`/`verify` do NOT (neither command's argument-hint
-// accepts `--autonomous` — src/bundle/commands/{continue,verify}.md). `autonomous` is
+// accepts `--all` — src/bundle/commands/{continue,verify}.md). `autonomous` is
 // the whole-item cascade (`/aof:autonomous <ref>` — src/bundle/commands/autonomous.md
 // takes a single NN range): drive the item refine → build → verify until done, stopping
 // only for a genuine human gate. An unknown phase degrades to the refine default (never
@@ -80,7 +80,7 @@ export function assignmentDirectiveCommand(phase, itemRef) {
       return `/aof:autonomous ${itemRef}`;
     case "refine":
     default:
-      return `/aof:refine ${itemRef} --autonomous`;
+      return `/aof:refine ${itemRef} --all`;
   }
 }
 
@@ -96,7 +96,7 @@ export const ASSIGNMENT_LAUNCH_LOOP = "loop";
 
 // The ONE phase with a coordinator to remove. `/aof:autonomous <ref>` is a session that
 // decides the order of refine, build and verify for itself on a machine nobody is
-// watching; that ordering is what moves into code here. `refine --autonomous` is NOT
+// watching; that ordering is what moves into code here. `refine --all` is NOT
 // this phase and must never be reached by matching the word: it cascades WITHIN the
 // refine step, `GATE_ORDER` has no rung for it and `work:loop` has no scope form that
 // expresses it (ADR-006 §1a), so it stays a session with its delivered string.

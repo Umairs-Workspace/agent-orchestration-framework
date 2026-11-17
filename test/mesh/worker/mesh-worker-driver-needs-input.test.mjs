@@ -41,7 +41,7 @@ function driveViaRealDriver(fx, ws, assignmentId, recorder, onWrite, now = "2026
     ptySpawn: spawn,
     which,
   });
-  return handler({ kind: "directive", to: NODE_ID, assignmentId, itemRef: fx.itemRef, workspaceId: fx.workspaceId, at: now, command: "/aof:refine 38/05 --autonomous" });
+  return handler({ kind: "directive", to: NODE_ID, assignmentId, itemRef: fx.itemRef, workspaceId: fx.workspaceId, at: now, command: "/aof:refine 38/05 --all" });
 }
 
 // terminalOutcomeOf(frames) — this story's outcome is surfaced either as a literal
@@ -63,7 +63,7 @@ export const meshWorkerDriverNeedsInputTests = [
         onWrite: ({ emitData }) => emitData(`some agent output\n${NEEDS_INPUT_SENTINEL}\n`),
       });
       const result = await driveInteractiveClaudeSession(
-        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --autonomous" },
+        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --all" },
         { ptySpawn: spawn, which },
       );
       assert.equal(result.outcome, "needs-input", "the outcome is needs-input — a THIRD state, distinct from both done and failed");
@@ -91,7 +91,7 @@ export const meshWorkerDriverNeedsInputTests = [
         },
       });
       const result = await driveInteractiveClaudeSession(
-        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --autonomous" },
+        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --all" },
         { ptySpawn: spawn, which },
       );
       assert.equal(result.outcome, "done", "a run that merely NARRATES NEEDS_INPUT inside a longer line (never a standalone, newline-terminated NEEDS_INPUT line) resolves via its clean exit code, not a false sentinel match");

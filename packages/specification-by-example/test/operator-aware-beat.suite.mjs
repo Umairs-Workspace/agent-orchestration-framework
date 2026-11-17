@@ -98,7 +98,7 @@ const between = (text, from, to, what) => {
 };
 // The story Contract, its discovery passage (the paragraph naming the gate, to the section's next
 // bold-led paragraph), and the regions the scenarios name, for either runtime's refine text.
-const contractOf = (refine) => between(refine, "- **story — Contract (Three Amigos):**", "**`--autonomous` — cascade", "the story Contract");
+const contractOf = (refine) => between(refine, "- **story — Contract (Three Amigos):**", "**`--all` — cascade", "the story Contract");
 function passageOf(refine) {
   const contract = contractOf(refine);
   const gate = contract.indexOf("`work.examples.enabled`");
@@ -114,7 +114,7 @@ const bulletOf = (passage, lead) => {
   return passage.slice(start, next === -1 ? passage.length : next);
 };
 const formulationOf = (refine) => between(contractOf(refine), "**With an applicable example map, formulate from it.**", "**Under orchestrated mode", "the formulation");
-const autonomousOf = (refine) => between(refine, "**`--autonomous` — cascade", "<amendment_ratification>", "the --autonomous block");
+const autonomousOf = (refine) => between(refine, "**`--all` — cascade", "<amendment_ratification>", "the --all block");
 const outputOf = (refine) => between(refine, "<output>", "</output>", "the output section");
 const rolesOf = (refine) => between(refine, "you are the architect, the QA and the developer in turn.", "\n\n", "the roles sentence");
 const ownershipOf = (brief) => between(brief, "<ownership>", "</ownership>", "the ownership block");
@@ -307,7 +307,7 @@ const researchTests = [
     name: "examples/193-04 01 a decision is still never defaulted, and a finding is not a default",
     run: () => {
       says(passage(), [/`policy` question is asked of a person and never takes a default/u, /A finding with no source settles nothing/u], "the passage");
-      says(autonomousOf(claudeRefine()), [/a `policy` question from a story's example map never takes a default/u], "the --autonomous block");
+      says(autonomousOf(claudeRefine()), [/a `policy` question from a story's example map never takes a default/u], "the --all block");
     },
   },
 ];
@@ -364,7 +364,7 @@ const batchTests = [
     run: () => says(autonomousOf(claudeRefine()), [
       /each story's batch of researched examples is asked at that same end review, with that story's other questions/u,
       /The review surface lists what research settled, apart from the questions asked and the defaults taken/u,
-    ], "the --autonomous block"),
+    ], "the --all block"),
   },
   {
     name: "examples/193-04 02 the doctor is still asked after the answers",
@@ -455,7 +455,7 @@ const recommendationTests = [
 const REGIONS = Object.freeze({
   "discovery passage": passageOf,
   "formulation paragraph": formulationOf,
-  "\"--autonomous\" block": autonomousOf,
+  "\"--all\" block": autonomousOf,
   "output section": outputOf,
 });
 const HALVES = Object.freeze([

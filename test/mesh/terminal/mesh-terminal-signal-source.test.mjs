@@ -143,7 +143,7 @@ async function startProducerLane({ sessionId = "sess-1", mintedWriteCredential =
     itemRef: ITEM_REF,
     worktreeCwd: path.join(os.tmpdir(), "aof-signal-source-wt"),
     task: "demo",
-    command: "/aof:refine 46/01 --autonomous",
+    command: "/aof:refine 46/01 --all",
   };
 
   const driverPromise = driveInteractiveClaudeSession(brief, options);

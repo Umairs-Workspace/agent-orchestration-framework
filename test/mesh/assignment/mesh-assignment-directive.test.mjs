@@ -6,7 +6,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/mesh/assignment/mesh-assignment-directive.test.mjs — VERIFICATION (UI phase selection,
 // 2026-07-25). Story 04 put a UI face on `aof mesh assign`, but the dispatch tick
-// hardcoded ONE command for every assignment — `/aof:refine <ref> --autonomous`. The
+// hardcoded ONE command for every assignment — `/aof:refine <ref> --all`. The
 // operator now picks the lifecycle phase (refine/continue/verify) in the UI; because the
 // assignment record is FROZEN (acd-assignment-record-frozen), the phase rides an
 // additive side-table (`global_assignment_directives`) keyed by assignment_id, exactly
@@ -98,15 +98,15 @@ async function readPhaseRow(home, assignmentId) {
 
 export const meshAssignmentDirectiveTests = [
   {
-    name: "assignment-directive: the phase → command mapper (refine carries --autonomous; continue/verify do not; unknown degrades to refine)",
+    name: "assignment-directive: the phase → command mapper (refine carries --all; continue/verify do not; unknown degrades to refine)",
     run: async () => {
-      assert.equal(assignmentDirectiveCommand("refine", "18"), "/aof:refine 18 --autonomous");
+      assert.equal(assignmentDirectiveCommand("refine", "18"), "/aof:refine 18 --all");
       assert.equal(assignmentDirectiveCommand("continue", "18"), "/aof:continue 18");
       assert.equal(assignmentDirectiveCommand("verify", "18"), "/aof:verify 18");
       assert.equal(assignmentDirectiveCommand("autonomous", "18"), "/aof:autonomous 18");
       // An unknown/garbage phase never becomes arbitrary PTY text — it maps to the refine default.
-      assert.equal(assignmentDirectiveCommand("rm -rf", "18"), "/aof:refine 18 --autonomous");
-      assert.equal(assignmentDirectiveCommand(undefined, "18"), "/aof:refine 18 --autonomous");
+      assert.equal(assignmentDirectiveCommand("rm -rf", "18"), "/aof:refine 18 --all");
+      assert.equal(assignmentDirectiveCommand(undefined, "18"), "/aof:refine 18 --all");
       assert.deepEqual([...ASSIGNMENT_PHASES], ["refine", "continue", "verify", "autonomous"]);
       assert.equal(DEFAULT_ASSIGNMENT_PHASE, "refine");
     },
@@ -147,7 +147,7 @@ export const meshAssignmentDirectiveTests = [
 
       const byId = new Map(streamServer.dispatched.map((f) => [f.assignmentId, f]));
       assert.equal(byId.get("asg-cont")?.command, "/aof:continue 18", "the recorded `continue` phase dispatches /aof:continue");
-      assert.equal(byId.get("asg-plain")?.command, "/aof:refine 19 --autonomous", "no phase row → the refine default, unchanged");
+      assert.equal(byId.get("asg-plain")?.command, "/aof:refine 19 --all", "no phase row → the refine default, unchanged");
     }),
   },
   {

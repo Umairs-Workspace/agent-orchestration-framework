@@ -57,7 +57,7 @@ export const meshWorkerDriverOutputChunkTests = [
       const watchGate = new Promise((res) => { resolveWatch = res; });
 
       const driverPromise = driveInteractiveClaudeSession(
-        { itemRef: "38/06", worktreeCwd: "/tmp/wt-output-chunk", task: "demo", command: "/aof:refine 38/06 --autonomous" },
+        { itemRef: "38/06", worktreeCwd: "/tmp/wt-output-chunk", task: "demo", command: "/aof:refine 38/06 --all" },
         {
           ptySpawn,
           which,

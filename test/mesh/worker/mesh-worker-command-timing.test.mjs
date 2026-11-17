@@ -31,7 +31,7 @@ export const meshWorkerCommandTimingTests = [
       // rather than the un-framed input the double hands to a directive test as `chunk`.
       const { spawn } = createFakePtySpawn({ onWrite: ({ rawChunk, emitExit }) => { written.push(rawChunk); if (rawChunk === "\r") emitExit(0); } });
       const p = driveInteractiveClaudeSession(
-        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --autonomous" },
+        { itemRef: "38/05", worktreeCwd: "/tmp/wt", task: "demo", command: "/aof:refine 38/05 --all" },
         { ptySpawn: spawn, which, watchTranscriptSessionId: async () => null, commandDelayMs: 60 },
       );
       // 15ms in — well under the 60ms delay — nothing has been typed yet.
@@ -40,7 +40,7 @@ export const meshWorkerCommandTimingTests = [
       const result = await p; // resolves after the body write -> the separate submit -> emitExit(0) -> done
       assert.deepEqual(
         written,
-        [`${BRACKETED_PASTE_START}/aof:refine 38/05 --autonomous${BRACKETED_PASTE_END}`, "\r"],
+        [`${BRACKETED_PASTE_START}/aof:refine 38/05 --all${BRACKETED_PASTE_END}`, "\r"],
         "70/06: the directive body is ONE bracketed paste; the Enter is a SEPARATE write (carriage return, never line feed)",
       );
       assert.equal(result.outcome, "done");

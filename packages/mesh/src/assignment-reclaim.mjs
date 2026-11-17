@@ -70,7 +70,7 @@ function defaultListAssignments(store, workspaceId) {
 // defaultAssignmentDirectiveCommand(itemRef) — milestone 38 / story 05 (ADR-013): the
 // DOCUMENTED DEFAULT whole command string dispatched with a directive when the operator
 // chose NO explicit phase. Every dispatch names the first phase of the full lifecycle,
-// `/aof:refine <ref> --autonomous`, exactly ADR-013's own worked example — the worker
+// `/aof:refine <ref> --all`, exactly ADR-013's own worked example — the worker
 // types EXACTLY this into its interactive session's PTY stdin
 // (mesh-worker-execution.mjs's driveInteractiveClaudeSession).
 //

@@ -19,7 +19,7 @@ sets `work.examples.enabled` to `true` (134/ADR-006).
 
 The package is a registered practice (192/ADR-005). Its `assets/bundle.json` declares the practice
 `discovery`, keyed on `work.examples.enabled`, and the fragments that fill refine's and the PO,
-architect and QA briefs' slots: the discovery beat, formulating from the map, the `--autonomous`
+architect and QA briefs' slots: the discovery beat, formulating from the map, the `--all`
 cascade's business questions, the classification review and QA's tables under a map rule. Each
 fragment has a body for Claude Code and opencode (`assets/fragments/discovery/<target>.md`) and one
 for Codex in its own wording (`<target>.codex.md`).
