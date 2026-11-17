@@ -1,6 +1,7 @@
 import os from "node:os";
 import { readJson, writeJson } from "@aof/foundation/fs";
 import { resolvePeers } from "../fabric.mjs";
+import { identityFromRepositoryRefusal } from "../node-identity.mjs";
 import { MESH_WORKSPACE_FLAG, guardMeshPositionals } from "./face-shared.mjs";
 
 
@@ -176,6 +177,11 @@ const meshJoinCommand = {
     const nodeId = config?.mesh?.nodeId;
     if (typeof nodeId !== "string" || nodeId.length === 0) {
       throw faceError("mesh:join needs this node's identity (config.mesh.nodeId) — run `aof mesh identity` first.", "no-node-identity");
+    }
+    // 202 — nor one the repository carries: enrolled, it would be the same node as every other
+    // checkout that took it. Refused here, before anything reaches the control node.
+    if (ws.identityFromRepository != null) {
+      throw faceError(identityFromRepositoryRefusal("aof mesh join", ws.identityFromRepository), "identity-from-repository");
     }
 
     // The ADVERTISED host — the SAME rule mesh:identity publishes by

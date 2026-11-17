@@ -13,7 +13,8 @@ import path from "node:path";
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
 const meshIdentityCommand = _aofApplication.getCommand("mesh:identity");
-import { migrateIdentityToGlobal, sidecarPathFor } from "@aof/mesh/node-identity";
+import { migrateIdentityToGlobal, sidecarPathFor, installHash, OPAQUE_NODE_ID_SHAPE } from "@aof/mesh/node-identity";
+import { ensureAofGitignore } from "../../../packages/core/src/aof-gitignore.mjs";
 
 async function withTemp(fn) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-global-identity-"));
@@ -167,4 +168,109 @@ export const globalNodeIdentityTests = [
       assert.equal(ws.config.mesh.workspaceId, "repo-workspace", "workspace-specific mesh keys still overlay global mesh config");
     }),
   },
+  ...identityFromRepositoryTests(),
 ];
+
+// ══ 202 — a machine never takes its node id from a repository ══
+//
+// A machine with no identity of its own still READS an id a repository carries (a committed
+// `mesh.nodeId` / `mesh.salt`, or a legacy `.aof/mesh/identity.json`), because a machine already
+// running on one must keep it. The verbs that put a machine in a mesh refuse to adopt it silently:
+// `--name` keeps it and `--reidentify` mints the machine its own, each writing the machine's file.
+function identityFromRepositoryTests() {
+  const t = (name, run) => ({ name: `global-node-identity/202 ${name}`, run });
+
+  async function repoWith(tmp, mesh) {
+    const repo = await makeWorkspace(tmp, "repo");
+    await writeFile(
+      path.join(repo, ".aof", "aof.config.json"),
+      `${JSON.stringify({ name: "repo", work: { dir: "./wiki/work" }, mesh: { workspaceId: "w-1", ...mesh } }, null, 2)}\n`,
+      "utf8",
+    );
+    return repo;
+  }
+  const refusal = (code) => (error) => error.code === code;
+  const fresh = (tmp) => ({ AOF_GLOBAL_HOME: path.join(tmp, "fresh-machine") });
+
+  return [
+    t("a committed mesh.nodeId is refused by mesh identity and mesh join on a machine with no identity", () => withTemp(async (tmp) => {
+      const repo = await repoWith(tmp, { nodeId: "other-mac" });
+      const env = fresh(tmp);
+      const workspace = await loadWorkspace(repo, undefined, { env });
+      assert.equal(workspace.config.mesh.nodeId, "other-mac", "the read is unchanged: a machine already on that id keeps it");
+      await assert.rejects(meshIdentityCommand.run({}, { workspace }), (error) => {
+        assert.equal(error.code, "identity-from-repository");
+        assert.match(error.message, /mesh\.nodeId in .*aof\.config\.json/u);
+        assert.match(error.message, /aof mesh identity --name other-mac.*aof mesh identity --reidentify/u);
+        return true;
+      });
+      assert.ok(!existsSync(globalMeshPaths({ env }).identityPath), "nothing was written to the machine's identity");
+
+      const sent = [];
+      const fetch = async (...args) => { sent.push(args); throw new Error("must not be reached"); };
+      await assert.rejects(
+        _aofApplication.getCommand("mesh:join").run({ code: "123456", relayUrl: "ws://127.0.0.1:9/ws/relay" }, { workspace, fetch }),
+        refusal("identity-from-repository"),
+      );
+      assert.deepEqual(sent, [], "join refused before anything reached the control node");
+    })),
+    t("a committed mesh.salt alone is refused, naming the id it would derive", () => withTemp(async (tmp) => {
+      const repo = await repoWith(tmp, { salt: "shared-salt" });
+      const workspace = await loadWorkspace(repo, undefined, { env: fresh(tmp) });
+      await assert.rejects(meshIdentityCommand.run({}, { workspace }), (error) => {
+        assert.equal(error.code, "identity-from-repository");
+        assert.ok(error.message.includes(`node-${installHash("shared-salt")}`), error.message);
+        return true;
+      });
+    })),
+    t("a legacy per-repo identity file is refused, naming the file", () => withTemp(async (tmp) => {
+      const repo = await makeWorkspace(tmp, "legacy");
+      const legacyPath = sidecarPathFor(path.join(repo, ".aof"));
+      await mkdir(path.dirname(legacyPath), { recursive: true });
+      await writeFile(legacyPath, `${JSON.stringify({ nodeId: "legacy-node", salt: "s", pinned: true }, null, 2)}\n`, "utf8");
+      const workspace = await loadWorkspace(repo, undefined, { env: fresh(tmp) });
+      await assert.rejects(meshIdentityCommand.run({}, { workspace }), (error) => {
+        assert.equal(error.code, "identity-from-repository");
+        assert.ok(error.message.includes(legacyPath) && error.message.includes("legacy-node"), error.message);
+        return true;
+      });
+    })),
+    t("a machine with its own identity is unaffected by a committed id", () => withTemp(async (tmp) => {
+      const home = path.join(tmp, "home");
+      const own = await mintIdentity(await makeWorkspace(tmp, "first"), { AOF_GLOBAL_HOME: home });
+      const repo = await repoWith(tmp, { nodeId: "other-mac", salt: "shared-salt" });
+      const workspace = await loadWorkspace(repo, undefined, { env: { AOF_GLOBAL_HOME: home } });
+      assert.equal(workspace.identityFromRepository, null);
+      const record = await meshIdentityCommand.run({}, { workspace });
+      assert.equal(record.nodeId, own.record.nodeId, "the machine's own id, never the committed one");
+    })),
+    t("--name keeps the id deliberately, and the machine is then unaffected", () => withTemp(async (tmp) => {
+      const repo = await repoWith(tmp, { nodeId: "other-mac" });
+      const env = fresh(tmp);
+      const record = await meshIdentityCommand.run({ name: "other-mac" }, { workspace: await loadWorkspace(repo, undefined, { env }) });
+      assert.equal(record.nodeId, "other-mac");
+      const identity = JSON.parse(await readFile(globalMeshPaths({ env }).identityPath, "utf8"));
+      assert.equal(identity.nodeId, "other-mac");
+      assert.equal(identity.pinned, true);
+      const again = await loadWorkspace(repo, undefined, { env });
+      assert.equal(again.identityFromRepository, null);
+      assert.equal((await meshIdentityCommand.run({}, { workspace: again })).nodeId, "other-mac");
+    })),
+    t("--reidentify gives the machine its own id instead", () => withTemp(async (tmp) => {
+      const repo = await repoWith(tmp, { nodeId: "other-mac" });
+      const env = fresh(tmp);
+      const moved = await meshIdentityCommand.run({ reidentify: true }, { workspace: await loadWorkspace(repo, undefined, { env }) });
+      assert.equal(moved.from, "other-mac");
+      assert.match(moved.to, OPAQUE_NODE_ID_SHAPE);
+      const again = await loadWorkspace(repo, undefined, { env });
+      assert.equal(again.identityFromRepository, null);
+      assert.equal(again.config.mesh.nodeId, moved.to);
+    })),
+    t("the managed .aof/.gitignore ignores the legacy per-repo identity file", () => withTemp(async (tmp) => {
+      const repo = await makeWorkspace(tmp, "ignored");
+      await ensureAofGitignore(repo);
+      const lines = (await readFile(path.join(repo, ".aof", ".gitignore"), "utf8")).split(/\r?\n/u);
+      assert.ok(lines.includes("mesh/identity.json"), lines.join("\n"));
+    })),
+  ];
+}

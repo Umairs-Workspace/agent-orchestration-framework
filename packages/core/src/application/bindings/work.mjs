@@ -1,7 +1,7 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import path from "node:path";
 import os from "node:os";
-import { sidecarPathFor, readSidecar, healIdentitySidecar } from "@aof/mesh/node-identity";
+import { sidecarPathFor, readSidecar, healIdentitySidecar, identityFromRepository as identityFromRepositoryOf } from "@aof/mesh/node-identity";
 import { validateWork as validateRecords } from "@aof/work/validation";
 import { layerOperatorProfile } from "@aof/contracts/operator-profile";
 import { layerLocalConfig, perPersonSources } from "@aof/contracts/local-config";
@@ -224,6 +224,7 @@ export function assembleWork({ workspaceServices, fsServices, workDigestTemplate
     const globalIdentityPath = globalMesh.identityPath;
     let sidecarPath = globalIdentityPath;
     let sidecar = await readSidecar(globalIdentityPath);
+    const machineNodeId = sidecar.nodeId;
     if (!(typeof sidecar.nodeId === "string" && sidecar.nodeId.length > 0)) {
       const legacyPath = sidecarPathFor(aofDir);
       const legacy = await readSidecar(legacyPath);
@@ -240,6 +241,16 @@ export function assembleWork({ workspaceServices, fsServices, workDigestTemplate
     // in place). On the common path — same machine, same hostname — it is a pure read.
     const currentHostname = typeof hostname === "string" ? hostname : os.hostname();
     sidecar = await healIdentitySidecar({ sidecar, hostname: currentHostname, sidecarPath });
+    // 202 — whether the id this machine would use comes from the repository rather than its own
+    // identity file. Read only; the verbs that put a machine in a mesh refuse on it.
+    const identityFromRepository = identityFromRepositoryOf({
+      machineNodeId,
+      legacyIdentityPath: sidecarPath === globalIdentityPath ? null : sidecarPath,
+      legacyNodeId: sidecar.nodeId,
+      projectMesh: projectConfig.mesh,
+      configPath,
+      identityPath: globalIdentityPath,
+    });
 
     // Overlay the sidecar's identity onto config.mesh in the RETURNED object ONLY — a
     // pure in-memory merge, no further disk write here. Precedence: sidecar > committed
@@ -277,7 +288,7 @@ export function assembleWork({ workspaceServices, fsServices, workDigestTemplate
     // injects AOF_GLOBAL_HOME through loadWorkspace gets a hermetic, machine-shared identity
     // for free. It is ALWAYS the global path (never the legacy sidecar); the legacy sidecar
     // is a read-only fallback here and is migrated up by `work doctor`, not by a mint.
-    return { configPath, config, configFault, projectRoot, workDir, aofDir, identityPath: globalIdentityPath, globalMeshRoot: globalMesh.meshRoot, notifyChannelsFrom, configSources, localConfigPath: local.present ? local.configPath : null };
+    return { configPath, config, configFault, projectRoot, workDir, aofDir, identityPath: globalIdentityPath, identityFromRepository, globalMeshRoot: globalMesh.meshRoot, notifyChannelsFrom, configSources, localConfigPath: local.present ? local.configPath : null };
   }
 
   return { "recordDoc": api0.recordDoc, "typeHasRecordDoc": api0.typeHasRecordDoc, "parseFrontmatter": api0.parseFrontmatter, "WORK_ITEM_SCHEMA_VERSION": api0.WORK_ITEM_SCHEMA_VERSION, "readItemSchema": api0.readItemSchema, "readItemVersion": api0.readItemVersion, "rollbackItemStatus": api0.rollbackItemStatus, "setItemStatus": api0.setItemStatus, "applyItemFrontmatter": api0.applyItemFrontmatter, "ITEM_RE": api1.ITEM_RE, "BACKLOG_ITEM_RE": api1.BACKLOG_ITEM_RE, "BACKLOG_ROOT": api1.BACKLOG_ROOT, "ARCHIVE_ROOT": api1.ARCHIVE_ROOT, "parseStorySpan": api1.parseStorySpan, "listItems": api2.listItems, "isLiveStreamRow": api2.isLiveStreamRow, "findWork": api2.findWork, "listStream": api2.listStream, "isDependTarget": api3.isDependTarget, "siblingDependencyNumber": api3.siblingDependencyNumber, "siblingGate": api3.siblingGate, "isDependNumber": api3.isDependNumber, "rewriteRefEntry": api3.rewriteRefEntry, "rewriteDependsEntries": api3.rewriteDependsEntries, "nextWork": api4.nextWork, validateWork, loadWorkspace, "healIdentitySidecar": api5.healIdentitySidecar };

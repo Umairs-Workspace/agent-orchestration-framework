@@ -1,4 +1,4 @@
-import { resolveInstallSalt as resolveNodeInstallSalt } from "../node-identity.mjs";
+import { resolveInstallSalt as resolveNodeInstallSalt, identityFromRepositoryRefusal } from "../node-identity.mjs";
 import os from "node:os";
 import { MESH_WORKSPACE_FLAG, guardMeshPositionals, refuseReadMiss } from "./face-shared.mjs";
 import { resolvePeers } from "../fabric.mjs";
@@ -124,6 +124,12 @@ const meshIdentityCommand = {
     // (ADR-004.2, F-3203) — never the committed config.
     // `let`: the registration overrides below re-bind it with the pinned id/address so
     // the SAME publish sees them (deriveNodeId reads config.mesh.nodeId).
+    // 202 — an id the repository carries is never published as this machine's; `--name` pins one
+    // deliberately and is the way past this, as is `--reidentify` above.
+    const requestedName = typeof input?.name === "string" ? input.name.trim() : "";
+    if (requestedName.length === 0 && ws.identityFromRepository != null) {
+      throw faceError(identityFromRepositoryRefusal("aof mesh identity", ws.identityFromRepository), "identity-from-repository");
+    }
     let config = ws.config ?? {};
     // Mint the machine-wide identity to the GLOBAL home (34/story 00) — ws.identityPath,
     // resolved by loadWorkspace from AOF_GLOBAL_HOME; a synthetic workspace (tests) with
@@ -150,7 +156,6 @@ const meshIdentityCommand = {
     //
     // Both persist to the per-install sidecar (never the committed config — ADR-004.2),
     // through the SAME writeSidecarPatch every other sidecar writer uses.
-    const requestedName = typeof input?.name === "string" ? input.name.trim() : "";
     const requestedAddress = typeof input?.address === "string" ? input.address.trim() : "";
     // A `--name` that MOVES an existing id is a re-identification (132/05, F-2): it answers the
     // same envelope `--reidentify` does, naming what the old id keyed. A first pin, or one that

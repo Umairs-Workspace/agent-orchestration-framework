@@ -5,3 +5,4 @@ notion.work-map.json
 artifact-sync-queue.ndjson
 artifact-sync-queue.ndjson.batch
 aof.config.local.json
+mesh/identity.json

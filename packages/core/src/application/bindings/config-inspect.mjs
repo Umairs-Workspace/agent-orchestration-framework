@@ -227,13 +227,19 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
   // same relay and control node, and the project's `mesh` is laid OVER the machine's own
   // (`loadWorkspace`), so it also beats what this machine joined. The repository's own mesh keys,
   // `mesh.workspaceId` and `mesh.repo`, belong in the project file and are not listed here.
+  //
+  // A committed `mesh.nodeId` or `mesh.salt` is never just deleted: a machine with no identity file of
+  // its own takes its id from it (`deriveNodeId` keeps a present `mesh.nodeId`; the salt hashes to the
+  // same id) and persists nothing, so deleting the key would give that machine a new id, and every
+  // record keyed by the old one would go stale. The message says to pin the id on that machine first.
   const MACHINE_MESH_KEYS = Object.freeze([
-    ["mesh.nodeId", "identity"], ["mesh.salt", "identity"], ["mesh.address", "identity"],
+    ["mesh.nodeId", "identity"], ["mesh.salt", "identity"], ["mesh.address", "address"],
     ["mesh.credential", "credential"],
     ["mesh.relay.url", "join"], ["mesh.relay.controlNode", "join"], ["mesh.fabric", "join"], ["mesh.enabled", "join"],
   ]);
   const MACHINE_MESH_MESSAGES = {
-    identity: (key) => `${key} is one machine's mesh identity, so committing it gives every checkout of this repository the same one. Remove it from the project's .aof/aof.config.json: \`aof mesh identity\` keeps it per machine, in ~/.aof/mesh/identity.json.`,
+    identity: (key) => `${key} is one machine's mesh identity, so committing it gives every checkout of this repository the same node id. Do not just delete it: a machine with no identity file of its own takes its id from it, and would get a new one. First, on each machine already joined with this repository, run \`aof mesh relay --json\` to read its node id and \`aof mesh identity --name <that id>\` to keep it in that machine's ~/.aof/mesh/identity.json; then remove ${key} from the project's .aof/aof.config.json.`,
+    address: (key) => `${key} is one machine's advertised address, so committing it advertises every checkout of this repository at that address. Remove it from the project's .aof/aof.config.json: \`aof mesh identity --address <ip>\` keeps it per machine, in ~/.aof/mesh/identity.json.`,
     join: (key) => `${key} says how one machine joins a mesh, so committing it points every checkout of this repository at that mesh, over each machine's own setting. Remove it from the project's .aof/aof.config.json: \`aof mesh join\` writes it per machine, to ~/.aof/aof.config.json.`,
     credential: (key) => `${key} is one machine's enrollment credential, a secret, and it is in the committed config. Remove it from the project's .aof/aof.config.json, rotate it, and run \`aof mesh join\` again, which keeps it in ~/.aof/aof.config.json.`,
   };

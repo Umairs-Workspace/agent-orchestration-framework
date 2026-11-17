@@ -161,6 +161,32 @@ export function isOpaqueNodeId(nodeId, salt) {
   return nodeId === `node-${installHash(salt)}` || nodeId === `node-${widenedInstallHash(salt)}`;
 }
 
+// 202 — A NODE ID IS NEVER TAKEN FROM A REPOSITORY. A machine's id lives in its own
+// identity file in the aof home. A machine with none still reads the two places a
+// repository can carry one: a legacy per-repo `.aof/mesh/identity.json`, and a committed
+// `mesh.nodeId` or `mesh.salt`. Those reads stay, because a machine that already runs on
+// such an id must keep it. But a fresh machine that took one would join as the same node
+// as every other checkout, so `mesh identity` and `mesh join` refuse on this answer.
+// PURE: null when the machine has its own id or the repository carries none, else
+// { nodeId, from, keys, identityPath } — the id it would take, and where from.
+export function identityFromRepository({ machineNodeId, legacyIdentityPath = null, legacyNodeId = null, projectMesh, configPath, identityPath }) {
+  if (typeof machineNodeId === "string" && machineNodeId.length > 0) return null;
+  if (legacyIdentityPath != null) return { nodeId: legacyNodeId, from: legacyIdentityPath, keys: [], identityPath };
+  const mesh = projectMesh != null && typeof projectMesh === "object" ? projectMesh : {};
+  const keys = ["nodeId", "salt"].filter((key) => typeof mesh[key] === "string" && mesh[key].length > 0);
+  if (keys.length === 0) return null;
+  const nodeId = keys.includes("nodeId") ? mesh.nodeId : `node-${installHash(mesh.salt)}`;
+  return { nodeId, from: configPath, keys: keys.map((key) => `mesh.${key}`), identityPath };
+}
+
+// The refusal both verbs give on that answer, naming the two deliberate ways out: keep the
+// id (this machine already runs on it) or mint this machine its own.
+export function identityFromRepositoryRefusal(verb, source) {
+  const what = source.keys.length > 0 ? `${source.keys.join(" and ")} in ${source.from}` : `the identity file ${source.from}`;
+  const home = source.identityPath ?? "~/.aof/mesh/identity.json";
+  return `${verb} will not take this machine's node id from the repository (${what}). This machine has no identity of its own at ${home}, and every checkout that takes this one joins the mesh as the same node, ${source.nodeId}. If this machine already runs as ${source.nodeId}, keep it: \`aof mesh identity --name ${source.nodeId}\`. Otherwise give it its own: \`aof mesh identity --reidentify\`. Either writes ${home}, and this is not asked again.`;
+}
+
 // isSameHost(a, b) — do two raw hostnames name the same machine, modulo case, the macOS
 // `.local` suffix and separator runs? The self-heal's copied-.aof trigger compares the
 // current machine against the sidecar's recorded derivation host with this, so the

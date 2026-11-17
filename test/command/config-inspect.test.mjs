@@ -1644,7 +1644,11 @@ function machineMeshKeyTests() {
       ]);
       assert.ok(warned.every((item) => item.severity === "warning"));
       const message = (key) => warned.find((item) => item.path === key).message;
-      assert.match(message("mesh.nodeId"), /aof mesh identity.*~\/\.aof\/mesh\/identity\.json/u);
+      // Deleting a committed id would re-key a machine that takes its id from it, so the message pins first.
+      for (const key of ["mesh.nodeId", "mesh.salt"]) {
+        assert.match(message(key), /Do not just delete it.*aof mesh identity --name <that id>.*then remove/u, key);
+      }
+      assert.match(message("mesh.address"), /aof mesh identity --address <ip>.*~\/\.aof\/mesh\/identity\.json/u);
       assert.match(message("mesh.relay.url"), /aof mesh join.*~\/\.aof\/aof\.config\.json/u);
       assert.match(message("mesh.credential"), /secret.*rotate it/u);
       const report = await doctorConfig(dir);

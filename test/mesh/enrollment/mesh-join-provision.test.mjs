@@ -79,7 +79,12 @@ async function makeJoiner(relayUrl) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-meshjoin-node-"));
   await mkdir(path.join(root, ".aof"), { recursive: true });
   await mkdir(path.join(root, "wiki", "work"), { recursive: true });
-  const mesh = { nodeId: JOINER_ID, salt: "fixture-salt" };
+  // The joiner's id is its machine's own (the global home every case points AOF_GLOBAL_HOME at),
+  // never the committed config: a repository's id is refused by join (202).
+  const identityPath = path.join(root, ".global-aof", "mesh", "identity.json");
+  await mkdir(path.dirname(identityPath), { recursive: true });
+  await writeFile(identityPath, `${JSON.stringify({ nodeId: JOINER_ID, salt: "fixture-salt", pinned: true }, null, 2)}\n`, "utf8");
+  const mesh = {};
   if (typeof relayUrl === "string" && relayUrl.length > 0) {
     mesh.relay = { url: relayUrl };
   }

@@ -55,7 +55,15 @@ export const AOF_PER_PERSON_GITIGNORE_ENTRIES = [
   LOCAL_CONFIG_FILE,
 ];
 
-const HEADER = "# aof — derived artifacts and per-person settings; never commit (the tracked install is committed).\n";
+// 202 — PER-MACHINE IDENTITY. The legacy per-repo node identity, `.aof/mesh/identity.json`, from
+// before an id moved to the machine's aof home. A machine with no identity of its own still reads
+// one, so a committed copy would hand every checkout the same node id. `.aof/mesh/` is otherwise
+// tracked (the record bus), so this one file is named.
+export const AOF_PER_MACHINE_GITIGNORE_ENTRIES = [
+  "mesh/identity.json",
+];
+
+const HEADER = "# aof — derived artifacts, per-person settings and per-machine identity; never commit (the tracked install is committed).\n";
 
 // ensureEntries(filePath, entries, header) — THE ONE ADDITIVE WRITER. Idempotent: preserves every
 // existing line, never duplicates an entry (matched trimmed, whole-line), creates the file with
@@ -80,10 +88,10 @@ async function ensureEntries(filePath, entries, header) {
 }
 
 // Idempotently ensure `<targetDir>/.aof/.gitignore` ignores every entry — by default the derived
-// artifacts and the per-person settings both. Additive (preserves any existing lines, e.g. an
+// artifacts, the per-person settings and the per-machine identity. Additive (preserves any existing lines, e.g. an
 // assistant-workspace `/work/`), never duplicates an entry, and never touches the repo-root
 // `.gitignore`. Returns true iff the file was created or changed.
-export async function ensureAofGitignore(targetDir, entries = [...AOF_GITIGNORE_ENTRIES, ...AOF_PER_PERSON_GITIGNORE_ENTRIES]) {
+export async function ensureAofGitignore(targetDir, entries = [...AOF_GITIGNORE_ENTRIES, ...AOF_PER_PERSON_GITIGNORE_ENTRIES, ...AOF_PER_MACHINE_GITIGNORE_ENTRIES]) {
   const { workspaceDir } = workspacePaths(targetDir);
   return ensureEntries(path.join(workspaceDir, ".gitignore"), entries, HEADER);
 }
