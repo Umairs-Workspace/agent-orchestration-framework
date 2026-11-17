@@ -1238,6 +1238,7 @@ function memoryNodeSchemaTests() {
 //   tasks/01_the-local-file-holds-only-per-person-keys.feature
 //   tasks/02_the-local-file-is-never-committed.feature
 //   tasks/03_init-config-writes-the-operator-profile-locally.feature
+//   tasks/04_the-runtime-audit-covers-every-child-process-199-touched.feature (@bug, F-03)
 // One entry per scenario, Scenario Outline rows folded into one entry. Every fixture is a project `P`
 // in a fresh temp directory, its global home another, named through `AOF_GLOBAL_HOME` (199 Q5): no
 // run reads or writes the real `~/.aof`, and the local file is planted as a fixture beside `P`'s config.
@@ -1432,7 +1433,7 @@ function localConfigTests() {
         ["work.notify.channels", { discord: { channel: "42" } }, null],
         ["work.agents.session.effort", { build: "high" }, null],
         ["work.notify.webhook", "https://example.test", ["config-local-key-not-allowed", "work.notify.webhook"]],
-        ["work.agents.session.models", { build: "opus" }, ["config-local-key-not-allowed", "work.agents.session.models"]],
+        ["work.agents.session.models", { build: "opus" }, ["config-local-key-not-allowed", "work.agents.session.models.build"]],
         ["work.agents.mode", "orchestrated", ["config-local-key-not-allowed", "work.agents.mode"]],
         ["mesh.address", "127.0.0.1", ["config-local-key-not-allowed", "mesh.address"]],
         ["work.operator.expertise.mesh", "guru", ["operator-profile-bad-value", "work.operator.expertise.mesh"]],
@@ -1444,11 +1445,11 @@ function localConfigTests() {
           if (expected == null) {
             assert.deepEqual(localCodes(report), [], `${key}: ${report.stdout}`);
           } else {
-            // A refusal names the leaf that was written, so "at" a key means at it or within it.
+            // A refusal names the leaf that was written (199 F-01): `work.agents.session.models.build`, never its object.
             const [code, keyPath] = expected;
             assert.equal(local.length, 1, `${key}: ${report.stdout}`);
             assert.equal(local[0].code, code, `${key}: ${report.stdout}`);
-            assert.ok(local[0].path === keyPath || local[0].path.startsWith(`${keyPath}.`), `${key}: reported at ${local[0].path}`);
+            assert.equal(local[0].path, keyPath, `${key}: reported at ${local[0].path}`);
             assert.ok(local.every((entry) => entry.file === fx.localPath), `${key}: each diagnostic names the local file`);
           }
         });
@@ -1567,5 +1568,45 @@ function localConfigTests() {
       const status = fx.git("status", "--porcelain", "--untracked-files=all");
       assert.ok(!status.stdout.includes("aof.config.local.json"), status.stdout);
     })),
+
+    // ── 04 · the runtime audit covers every child process 199 touched (@bug, F-03) ──
+    // The real tree and the real audit, read through the boundary detector `core-workspace` runs, so
+    // these cases stay green or red on 199's own files whatever another package's entries do.
+    t("04 the boundary detector names no file 199 touched", async () => {
+      const { report } = await runtimeAudit();
+      const named = report.findings.filter((finding) => AUDITED_199.some((file) => finding.includes(file)));
+      assert.deepEqual(named, []);
+    }),
+    t("04 the doctor's tracked-file probe is audited with its reason", async () => {
+      const { audit } = await runtimeAudit();
+      const [entry, ...more] = audit.filter((row) => row.file === AUDITED_199[1] && row.kind === "child-process");
+      assert.deepEqual(more, []);
+      assert.ok(entry?.expression.includes('"ls-files", "--error-unmatch"'), entry?.expression);
+      for (const words of ["command edge", "only when that file exists", "constructs no application module"]) {
+        assert.ok(entry.reason.includes(words), `the reason says "${words}": ${entry.reason}`);
+      }
+    }),
+    t("04 config-inspect's audited calls are re-stamped, their reasons naming 199", async () => {
+      const { audit, report } = await runtimeAudit();
+      const rows = audit.filter((row) => row.file === AUDITED_199[0] && row.kind === "child-process");
+      assert.equal(rows.length, 3, rows.map((row) => row.expression).join("\n"));
+      const live = new Set(report.runtime.filter((row) => row.file === AUDITED_199[0]).map((row) => `${row.digest}:${row.sourceDigest}`));
+      for (const row of rows) {
+        assert.ok(live.has(`${row.digest}:${row.sourceDigest}`), `matches the file as it now stands: ${row.expression}`);
+        assert.ok(row.reason.includes("199") && row.reason.includes("this call and its argv are unchanged"), row.reason);
+      }
+    }),
   ];
+}
+
+const AUDITED_199 = [
+  "packages/core/src/application/bindings/config-inspect.mjs",
+  "packages/core/src/application/bindings/work/doctor.mjs",
+];
+
+async function runtimeAudit() {
+  const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+  const { inspectBoundaries } = await import("../../scripts/workspace-boundaries.mjs");
+  const audit = JSON.parse(await readFile(path.join(repoRoot, "scripts", "workspace-runtime-audit.json"), "utf8"));
+  return { audit, report: inspectBoundaries(repoRoot, { runtimeAudit: audit }) };
 }

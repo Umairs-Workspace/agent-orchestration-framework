@@ -3,7 +3,7 @@ type: story
 number: 199
 slug: local-config
 title: "Each person on a shared repository keeps their own settings in an uncommitted .aof/aof.config.local.json, laid over the project's config, so one person's operator profile is never another's"
-status: in-review
+status: done
 owner: product-owner
 created: 2026-11-17
 updated: 2026-11-17
@@ -29,19 +29,32 @@ reads:
   - test/command/config-inspect.test.mjs
   - test/examples/operator-profile.test.mjs
 files:
+  - .aof/.gitignore
+  - packages/contracts/package.json
   - packages/contracts/src/local-config.mjs
-  - packages/core/src/application/bindings/work.mjs
-  - packages/core/src/workspace.mjs
+  - packages/contracts/src/operator-profile.mjs
   - packages/core/src/aof-gitignore.mjs
-  - packages/core/src/application/bindings/config-inspect.mjs
+  - packages/core/src/application/bindings/commands/doctor.mjs
+  - packages/core/src/application/bindings/commands/init-update.mjs
   - packages/core/src/application/bindings/commands/project-show.mjs
-  - packages/core/src/application/bindings/work/init.mjs
+  - packages/core/src/application/bindings/commands/validate-shared.mjs
+  - packages/core/src/application/bindings/config-inspect.mjs
+  - packages/core/src/application/bindings/work.mjs
   - packages/core/src/application/bindings/work/doctor.mjs
-  - packages/core/test/workspace.suite.mjs
+  - packages/core/src/application/bindings/work/init.mjs
+  - packages/core/src/workspace.mjs
   - packages/core/test/work-init.suite.mjs
+  - packages/messaging/src/discord-buttons.mjs
+  - packages/messaging/src/discord-commands.mjs
+  - packages/messaging/src/replies.mjs
+  - scripts/workspace-runtime-audit.json
+  - test/arch/audit/acd-controls-never-execute.test.mjs
+  - test/arch/command/acd-cli-entry-executes.test.mjs
+  - test/arch/session/acd-session-driver-mesh-blind.test.mjs
+  - test/arch/testing/acd-source-directory-budget.test.mjs
   - test/command/config-inspect.test.mjs
-  - test/command/local-config.test.mjs
-  - test/examples/operator-profile.test.mjs
+  - test/examples/doctor-examples-lane.test.mjs
+  - test/fixtures/application/command-inventory.json
 ---
 # 199 · Each person on a shared repository keeps their own settings in an uncommitted local config
 
@@ -60,6 +73,7 @@ the profile knows, and I can set my own values without a commit that changes the
 - [x] `tasks/01_the-local-file-holds-only-per-person-keys.feature` (R2): only `work.operator`, `work.notify.channels` and `work.agents.session.effort` are accepted; anything else is refused and never loaded.
 - [x] `tasks/02_the-local-file-is-never-committed.feature` (R3): init and update keep it in `.aof/.gitignore`; the doctor warns when git tracks it.
 - [x] `tasks/03_init-config-writes-the-operator-profile-locally.feature` (R4): the operator profile goes to the local file by default and to the committed file with `--project`.
+- [x] `tasks/04_the-runtime-audit-covers-every-child-process-199-touched.feature` (`@bug`, F-03): `config-inspect.mjs`'s three audit entries are re-stamped and `work/doctor.mjs`'s new `git ls-files` probe is audited.
 
 ## Notes
 

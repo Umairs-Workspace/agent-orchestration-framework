@@ -21,7 +21,7 @@ function readLocalConfigFacts(workspace) {
   if (typeof aofDir !== "string" || aofDir === "") return null;
   const file = path.join(aofDir, LOCAL_CONFIG_FILE);
   if (!existsSync(file)) return { file, tracked: false };
-  const asked = spawnSync("git", ["ls-files", "--error-unmatch", "--", LOCAL_CONFIG_FILE], { cwd: aofDir, encoding: "utf8" });
+  const asked = spawnSync("git", ["ls-files", "--error-unmatch", "--", LOCAL_CONFIG_FILE], { cwd: aofDir, encoding: "utf8", timeout: 30_000 });
   const shown = path.relative(workspace.projectRoot ?? path.dirname(aofDir), file).replaceAll("\\", "/");
   return { file, shown, tracked: asked.status === 0 };
 }

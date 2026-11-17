@@ -348,24 +348,24 @@
     "kind": "child-process",
     "expression": "execFile(\"git\", args, { cwd, timeout: 5000, windowsHide: true }, (error, stdout) => {\n      resolve(error ? null : String(stdout ?? \"\").trim());\n    })",
     "digest": "2972e2d83bfdc291c23c129de3a54884c93c88ed5fa6ff34f306a2629334c534",
-    "sourceDigest": "cff36bdfcb2c9287a0323a866ec8fd0639a08117ec7dd4899bc725e4e5b4b41a",
-    "reason": "Reads repository identity through Git; no JavaScript child entry."
+    "sourceDigest": "51753b3a9d5538b420f81fdbc9385477e904cebafb646cd55e7ca39037b59a94",
+    "reason": "Reads repository identity through Git; no JavaScript child entry. 3562430f (config writers keep the file's own formatting) swaps this module's config write from writeText to writeJson; this call and its argv are unchanged."
   },
   {
     "file": "packages/mesh/src/worker-repo-admission.mjs",
     "kind": "child-process",
     "expression": "execFile(\"git\", args, { cwd, env, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) => {\n      if (error && (error.code === \"ENOENT\" || error.killed || error.signal)) {\n        reject(error);\n        return;\n      }\n      resolve({ stdout: String(stdout ?? \"\"), stderr: String(stderr ?? \"\"), status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0 });\n    })",
     "digest": "9ad28354e3ccdef15c04c6e9e272c1aa2a84311b4eb4902c9671f8f6552abae6",
-    "sourceDigest": "25a5b1019da40f802f76345cda4757566abb2a78c7785d40e67ce1f05e450019",
-    "reason": "The exec port wraps Git clone of the admitted repository using the explicit credential environment. TECH_DEBT 4 (D) re-reviewed at PR #22: the module gained read-only checkout checks (access, readFile) and a reuse path that skips the clone; the git call and its credential environment are unchanged."
+    "sourceDigest": "ba9e0d604008c83aaed1446f44e5415428176489018b7737ba662c3be1cb5a33",
+    "reason": "The exec port wraps Git clone of the admitted repository using the explicit credential environment. TECH_DEBT 4 (D) re-reviewed at PR #22: the module gained read-only checkout checks (access, readFile) and a reuse path that skips the clone; the git call and its credential environment are unchanged. 3562430f (config writers keep the file's own formatting) swaps this module's config write from writeText to writeJson; this call and its argv are unchanged."
   },
   {
     "file": "packages/mesh/src/worker-repo-admission.mjs",
     "kind": "child-process",
     "expression": "exec([\"-c\", \"credential.helper=\", \"clone\", cloneUrl, checkoutPath], { env: cloneEnv })",
     "digest": "666d14055cc86113bc2184c0cac700b9889b101ac3f115f4cc6f442628b13e8b",
-    "sourceDigest": "25a5b1019da40f802f76345cda4757566abb2a78c7785d40e67ce1f05e450019",
-    "reason": "The exec port wraps Git clone of the admitted repository using the explicit credential environment. TECH_DEBT 4 (D) re-reviewed at PR #22: the module gained read-only checkout checks (access, readFile) and a reuse path that skips the clone; the git call and its credential environment are unchanged."
+    "sourceDigest": "ba9e0d604008c83aaed1446f44e5415428176489018b7737ba662c3be1cb5a33",
+    "reason": "The exec port wraps Git clone of the admitted repository using the explicit credential environment. TECH_DEBT 4 (D) re-reviewed at PR #22: the module gained read-only checkout checks (access, readFile) and a reuse path that skips the clone; the git call and its credential environment are unchanged. 3562430f (config writers keep the file's own formatting) swaps this module's config write from writeText to writeJson; this call and its argv are unchanged."
   },
   {
     "file": "packages/server/src/terminal-ws.mjs",
@@ -940,24 +940,32 @@
     "kind": "child-process",
     "expression": "spawnSync(locator, [binary], { encoding: \"utf8\" })",
     "digest": "dc5db708145856b8186e5cca621b17108ba30b7c9b88167999c0d2962c14ec42",
-    "sourceDigest": "becea61b667727a0fa9a16477d3fb43c28b56acf4f73caf8e64b7d99a83e9944",
-    "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed. 154/01 adds runtime execution inspection; the platform binary locator call and its argv are unchanged. 180/01 adds the memory node's legacy warnings and doctor check; the locator call and its argv are unchanged. 190/04 adds the test-layout family's tracked-file read beside it; the locator call and its argv are unchanged. 193/02-03 add the operator profile's diagnostics and the operator-aware switch beside the examples gate; this call and its argv are unchanged. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged."
+    "sourceDigest": "5063bbfb39e9ed2e00f8f80f66620776b521b48875eaeef7e7da5d7efb4d3374",
+    "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed. 154/01 adds runtime execution inspection; the platform binary locator call and its argv are unchanged. 180/01 adds the memory node's legacy warnings and doctor check; the locator call and its argv are unchanged. 190/04 adds the test-layout family's tracked-file read beside it; the locator call and its argv are unchanged. 193/02-03 add the operator profile's diagnostics and the operator-aware switch beside the examples gate; this call and its argv are unchanged. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 199 adds the per-person local config (its provenance, its diagnostics and the local file read beside the project config) around it; this call and its argv are unchanged."
   },
   {
     "file": "packages/core/src/application/bindings/config-inspect.mjs",
     "kind": "child-process",
     "expression": "spawnSync(\"git\", [\"ls-files\", \"-z\"], { cwd: projectDir, encoding: \"utf8\", timeout: 30_000, maxBuffer: 256 * 1024 * 1024 })",
     "digest": "cd18cc5d7c87dfe071a2d076953b4486b6c2dbe3027cba91c4ec321e7fc5fae0",
-    "sourceDigest": "becea61b667727a0fa9a16477d3fb43c28b56acf4f73caf8e64b7d99a83e9944",
-    "reason": "190/ADR-008 §1: the project doctor's test-layout family lists the tracked files with `git ls-files` at its own edge, bounded by a timeout, to judge the declared test roots against the tree. It reads names only and constructs no application module. 193/02-03 add the operator profile's diagnostics and the operator-aware switch beside the examples gate; this call and its argv are unchanged. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged."
+    "sourceDigest": "5063bbfb39e9ed2e00f8f80f66620776b521b48875eaeef7e7da5d7efb4d3374",
+    "reason": "190/ADR-008 §1: the project doctor's test-layout family lists the tracked files with `git ls-files` at its own edge, bounded by a timeout, to judge the declared test roots against the tree. It reads names only and constructs no application module. 193/02-03 add the operator profile's diagnostics and the operator-aware switch beside the examples gate; this call and its argv are unchanged. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 199 adds the per-person local config (its provenance, its diagnostics and the local file read beside the project config) around it; this call and its argv are unchanged."
   },
   {
     "file": "packages/core/src/application/bindings/config-inspect.mjs",
     "kind": "child-process",
     "expression": "spawnSync(\"git\", [\"log\", \"-1\", \"--format=%cI\"], { cwd: projectDir, encoding: \"utf8\", timeout: 30_000 })",
     "digest": "febff93b7b5a19159979342ba0408bbdd32ff9e09aa7cd8c18f852b8f469499f",
-    "sourceDigest": "becea61b667727a0fa9a16477d3fb43c28b56acf4f73caf8e64b7d99a83e9944",
-    "reason": "Chore 197's `test-layout-graph-fresh` doctor lane reads HEAD's commit time with `git log -1 --format=%cI` at its own edge, bounded by a timeout, to compare it with the code graph's build time. It reads one timestamp and constructs no application module."
+    "sourceDigest": "5063bbfb39e9ed2e00f8f80f66620776b521b48875eaeef7e7da5d7efb4d3374",
+    "reason": "Chore 197's `test-layout-graph-fresh` doctor lane reads HEAD's commit time with `git log -1 --format=%cI` at its own edge, bounded by a timeout, to compare it with the code graph's build time. It reads one timestamp and constructs no application module. 199 adds the per-person local config (its provenance, its diagnostics and the local file read beside the project config) around it; this call and its argv are unchanged."
+  },
+  {
+    "file": "packages/core/src/application/bindings/work/doctor.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(\"git\", [\"ls-files\", \"--error-unmatch\", \"--\", LOCAL_CONFIG_FILE], { cwd: aofDir, encoding: \"utf8\", timeout: 30_000 })",
+    "digest": "3fb9f2390745f256220cbcada29abc57b196d37643960e2df511f550bfb41bdb",
+    "sourceDigest": "38f83cf641151b7569a2bc26c71c769b880cd967e3f41829405fba052eff3107",
+    "reason": "199: the work doctor's local-config lane asks `git ls-files --error-unmatch` whether `.aof/aof.config.local.json` is tracked, at the command edge before the engine runs, only when that file exists, bounded by a timeout. It reads one path's tracked state and constructs no application module; no git, or no repository, reads as untracked."
   },
   {
     "file": "packages/mesh/src/worker-execution.mjs",

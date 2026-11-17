@@ -44,7 +44,7 @@ Feature: The local file holds only per-person keys
         | "work.notify.channels"             | "{ discord: { channel: '42' } }" | no "config-local-" diagnostic                                      |
         | "work.agents.session.effort"       | "{ build: 'high' }"       | no "config-local-" diagnostic                                      |
         | "work.notify.webhook"              | "'https://example.test'"  | "config-local-key-not-allowed" at "work.notify.webhook"            |
-        | "work.agents.session.models"       | "{ build: 'opus' }"       | "config-local-key-not-allowed" at "work.agents.session.models"     |
+        | "work.agents.session.models"       | "{ build: 'opus' }"       | "config-local-key-not-allowed" at "work.agents.session.models.build" |
         | "work.agents.mode"                 | "'orchestrated'"          | "config-local-key-not-allowed" at "work.agents.mode"               |
         | "mesh.address"                     | "'127.0.0.1'"             | "config-local-key-not-allowed" at "mesh.address"                   |
         | "work.operator.expertise.mesh"     | "'guru'"                  | "operator-profile-bad-value" at "work.operator.expertise.mesh"     |
