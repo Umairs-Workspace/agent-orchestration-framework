@@ -940,24 +940,24 @@
     "kind": "child-process",
     "expression": "spawnSync(locator, [binary], { encoding: \"utf8\" })",
     "digest": "dc5db708145856b8186e5cca621b17108ba30b7c9b88167999c0d2962c14ec42",
-    "sourceDigest": "5063bbfb39e9ed2e00f8f80f66620776b521b48875eaeef7e7da5d7efb4d3374",
-    "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed. 154/01 adds runtime execution inspection; the platform binary locator call and its argv are unchanged. 180/01 adds the memory node's legacy warnings and doctor check; the locator call and its argv are unchanged. 190/04 adds the test-layout family's tracked-file read beside it; the locator call and its argv are unchanged. 193/02-03 add the operator profile's diagnostics and the operator-aware switch beside the examples gate; this call and its argv are unchanged. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 199 adds the per-person local config (its provenance, its diagnostics and the local file read beside the project config) around it; this call and its argv are unchanged."
+    "sourceDigest": "01ccd16e5a62ec7dc43eb4432f4707f2f9f6b0751ef64bb406bdea1b0319c2ed",
+    "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed. 154/01 adds runtime execution inspection; the platform binary locator call and its argv are unchanged. 180/01 adds the memory node's legacy warnings and doctor check; the locator call and its argv are unchanged. 190/04 adds the test-layout family's tracked-file read beside it; the locator call and its argv are unchanged. 193/02-03 add the operator profile's diagnostics and the operator-aware switch beside the examples gate; this call and its argv are unchanged. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 199 adds the per-person local config (its provenance, its diagnostics and the local file read beside the project config) around it; this call and its argv are unchanged. The project-only machine-mesh-key warning (`config-mesh-machine-key`) is added beside it; this call and its argv are unchanged."
   },
   {
     "file": "packages/core/src/application/bindings/config-inspect.mjs",
     "kind": "child-process",
     "expression": "spawnSync(\"git\", [\"ls-files\", \"-z\"], { cwd: projectDir, encoding: \"utf8\", timeout: 30_000, maxBuffer: 256 * 1024 * 1024 })",
     "digest": "cd18cc5d7c87dfe071a2d076953b4486b6c2dbe3027cba91c4ec321e7fc5fae0",
-    "sourceDigest": "5063bbfb39e9ed2e00f8f80f66620776b521b48875eaeef7e7da5d7efb4d3374",
-    "reason": "190/ADR-008 §1: the project doctor's test-layout family lists the tracked files with `git ls-files` at its own edge, bounded by a timeout, to judge the declared test roots against the tree. It reads names only and constructs no application module. 193/02-03 add the operator profile's diagnostics and the operator-aware switch beside the examples gate; this call and its argv are unchanged. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 199 adds the per-person local config (its provenance, its diagnostics and the local file read beside the project config) around it; this call and its argv are unchanged."
+    "sourceDigest": "01ccd16e5a62ec7dc43eb4432f4707f2f9f6b0751ef64bb406bdea1b0319c2ed",
+    "reason": "190/ADR-008 §1: the project doctor's test-layout family lists the tracked files with `git ls-files` at its own edge, bounded by a timeout, to judge the declared test roots against the tree. It reads names only and constructs no application module. 193/02-03 add the operator profile's diagnostics and the operator-aware switch beside the examples gate; this call and its argv are unchanged. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 199 adds the per-person local config (its provenance, its diagnostics and the local file read beside the project config) around it; this call and its argv are unchanged. The project-only machine-mesh-key warning (`config-mesh-machine-key`) is added beside it; this call and its argv are unchanged."
   },
   {
     "file": "packages/core/src/application/bindings/config-inspect.mjs",
     "kind": "child-process",
     "expression": "spawnSync(\"git\", [\"log\", \"-1\", \"--format=%cI\"], { cwd: projectDir, encoding: \"utf8\", timeout: 30_000 })",
     "digest": "febff93b7b5a19159979342ba0408bbdd32ff9e09aa7cd8c18f852b8f469499f",
-    "sourceDigest": "5063bbfb39e9ed2e00f8f80f66620776b521b48875eaeef7e7da5d7efb4d3374",
-    "reason": "Chore 197's `test-layout-graph-fresh` doctor lane reads HEAD's commit time with `git log -1 --format=%cI` at its own edge, bounded by a timeout, to compare it with the code graph's build time. It reads one timestamp and constructs no application module. 199 adds the per-person local config (its provenance, its diagnostics and the local file read beside the project config) around it; this call and its argv are unchanged."
+    "sourceDigest": "01ccd16e5a62ec7dc43eb4432f4707f2f9f6b0751ef64bb406bdea1b0319c2ed",
+    "reason": "Chore 197's `test-layout-graph-fresh` doctor lane reads HEAD's commit time with `git log -1 --format=%cI` at its own edge, bounded by a timeout, to compare it with the code graph's build time. It reads one timestamp and constructs no application module. 199 adds the per-person local config (its provenance, its diagnostics and the local file read beside the project config) around it; this call and its argv are unchanged. The project-only machine-mesh-key warning (`config-mesh-machine-key`) is added beside it; this call and its argv are unchanged."
   },
   {
     "file": "packages/core/src/application/bindings/work/doctor.mjs",

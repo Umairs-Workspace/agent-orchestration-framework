@@ -214,6 +214,8 @@ export const configInspectTests = [
   ...memoryNodeFaceTests(),
   // 199 — the per-person local config (see `localConfigTests`).
   ...localConfigTests(),
+  // A machine's mesh keys committed to the project config (see `machineMeshKeyTests`).
+  ...machineMeshKeyTests(),
 ];
 
 const DIAGRAMS_ID = generatorIds()[0];
@@ -1596,6 +1598,68 @@ function localConfigTests() {
         assert.ok(row.reason.includes("199") && row.reason.includes("this call and its argv are unchanged"), row.reason);
       }
     }),
+  ];
+}
+
+// ══ a machine's mesh keys in the committed project config ══
+//
+// A checkout of a repository on a new machine must not inherit another machine's place in a mesh:
+// its identity (`aof mesh identity`, per machine) or its join (`aof mesh join`, to the global
+// config). The project's `mesh` is laid over the machine's own, so a committed relay would also
+// beat what this machine joined. Project validation warns of each such key, naming its home; the
+// repository's own `mesh.workspaceId` and `mesh.repo` raise nothing, and neither does the global
+// file, which is where the machine keys belong.
+function machineMeshKeyTests() {
+  const t = (name, run) => ({ name: `mesh machine keys: ${name}`, run });
+  const MACHINE = {
+    nodeId: "other-mac", salt: "s", address: "10.0.0.9", fabric: "direct", enabled: true,
+    credential: { relayAuth: "secret", nodeId: "other-mac" },
+    relay: { url: "ws://10.0.0.1:4182/ws/relay", controlNode: "other-control" },
+  };
+  const REPO = { workspaceId: "9db1fd84f5895e38", repo: { cloneUrl: "https://example.test/r.git", published: true } };
+
+  async function withConfigs({ project, global = null }, fn) {
+    const root = await mkdtemp(path.join(os.tmpdir(), "aof-mesh-keys-"));
+    const previous = process.env.AOF_GLOBAL_HOME;
+    process.env.AOF_GLOBAL_HOME = path.join(root, "home");
+    try {
+      const dir = path.join(root, "project");
+      await mkdir(path.join(dir, ".aof"), { recursive: true });
+      await mkdir(process.env.AOF_GLOBAL_HOME, { recursive: true });
+      await writeFile(path.join(dir, ".aof", "aof.config.json"), `${JSON.stringify({ name: "p", resources: [], ...project }, null, 2)}\n`);
+      if (global) await writeFile(path.join(process.env.AOF_GLOBAL_HOME, "aof.config.json"), `${JSON.stringify(global, null, 2)}\n`);
+      return await fn(dir);
+    } finally {
+      restoreEnv("AOF_GLOBAL_HOME", previous);
+      await rm(root, { recursive: true, force: true });
+    }
+  }
+  const machineKeys = (diagnostics) => diagnostics.filter((item) => item.code === "config-mesh-machine-key");
+
+  return [
+    t("each machine key in the project file is a warning naming its home, and the config stays valid", () => withConfigs({ project: { mesh: { ...REPO, ...MACHINE } } }, async (dir) => {
+      const warned = machineKeys(await validateConfig(dir));
+      assert.deepEqual(warned.map((item) => item.path).sort(), [
+        "mesh.address", "mesh.credential", "mesh.enabled", "mesh.fabric", "mesh.nodeId", "mesh.relay.controlNode", "mesh.relay.url", "mesh.salt",
+      ]);
+      assert.ok(warned.every((item) => item.severity === "warning"));
+      const message = (key) => warned.find((item) => item.path === key).message;
+      assert.match(message("mesh.nodeId"), /aof mesh identity.*~\/\.aof\/mesh\/identity\.json/u);
+      assert.match(message("mesh.relay.url"), /aof mesh join.*~\/\.aof\/aof\.config\.json/u);
+      assert.match(message("mesh.credential"), /secret.*rotate it/u);
+      const report = await doctorConfig(dir);
+      assert.equal(report.checks.find((check) => check.id === "config-valid").severity, "ok");
+      const check = report.checks.find((item) => item.id === "config-mesh-machine-key");
+      assert.equal(check?.severity, "warning");
+      assert.equal(check.details.length, 8);
+    })),
+    t("the repository's own mesh keys raise nothing", () => withConfigs({ project: { mesh: REPO } }, async (dir) => {
+      assert.deepEqual(machineKeys(await validateConfig(dir)), []);
+      assert.equal((await doctorConfig(dir)).checks.find((check) => check.id === "config-mesh-machine-key"), undefined);
+    })),
+    t("the global file is their home, so it raises nothing for them", () => withConfigs({ project: { mesh: REPO }, global: { mesh: MACHINE } }, async () => {
+      assert.deepEqual(machineKeys(await validateGlobalConfig()), []);
+    })),
   ];
 }
 

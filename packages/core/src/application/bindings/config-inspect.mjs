@@ -218,7 +218,34 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
 
   async function validateConfig(projectDir = process.cwd(), options = {}) {
     const configPath = await findProjectConfig(projectDir, options.config);
-    return validateConfigFile(configPath, { validateGlobalRefs: true, globalOptions: options });
+    return validateConfigFile(configPath, { validateGlobalRefs: true, globalOptions: options, project: true });
+  }
+
+  // The mesh keys that place ONE MACHINE in a mesh. Each has a per-machine home: the identity in
+  // `~/.aof/mesh/identity.json` (`aof mesh identity`), the join in `~/.aof/aof.config.json`
+  // (`aof mesh join`). In the committed project file, every checkout gets the same identity, or the
+  // same relay and control node, and the project's `mesh` is laid OVER the machine's own
+  // (`loadWorkspace`), so it also beats what this machine joined. The repository's own mesh keys,
+  // `mesh.workspaceId` and `mesh.repo`, belong in the project file and are not listed here.
+  const MACHINE_MESH_KEYS = Object.freeze([
+    ["mesh.nodeId", "identity"], ["mesh.salt", "identity"], ["mesh.address", "identity"],
+    ["mesh.credential", "credential"],
+    ["mesh.relay.url", "join"], ["mesh.relay.controlNode", "join"], ["mesh.fabric", "join"], ["mesh.enabled", "join"],
+  ]);
+  const MACHINE_MESH_MESSAGES = {
+    identity: (key) => `${key} is one machine's mesh identity, so committing it gives every checkout of this repository the same one. Remove it from the project's .aof/aof.config.json: \`aof mesh identity\` keeps it per machine, in ~/.aof/mesh/identity.json.`,
+    join: (key) => `${key} says how one machine joins a mesh, so committing it points every checkout of this repository at that mesh, over each machine's own setting. Remove it from the project's .aof/aof.config.json: \`aof mesh join\` writes it per machine, to ~/.aof/aof.config.json.`,
+    credential: (key) => `${key} is one machine's enrollment credential, a secret, and it is in the committed config. Remove it from the project's .aof/aof.config.json, rotate it, and run \`aof mesh join\` again, which keeps it in ~/.aof/aof.config.json.`,
+  };
+
+  function machineMeshDiagnostics(raw) {
+    const found = [];
+    for (const [key, kind] of MACHINE_MESH_KEYS) {
+      let value = raw;
+      for (const part of key.split(".")) value = value != null && typeof value === "object" && !Array.isArray(value) ? value[part] : undefined;
+      if (value !== undefined) found.push(diagnostic("warning", key, MACHINE_MESH_MESSAGES[kind](key), "config-mesh-machine-key"));
+    }
+    return found;
   }
 
   // 199 — the per-person local file's diagnostics, each naming the file (`file`) and marked
@@ -332,6 +359,8 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
         diagnostics.push(diagnostic("warning", entry.path, legacyMessage(entry), "memory-config-legacy"));
       }
     } catch (error) { diagnostics.push(diagnostic("error", error.path, error.message, error.code)); }
+    // A machine's mesh keys are a warning in the project file only: the global file is their home.
+    if (options.project) diagnostics.push(...machineMeshDiagnostics(raw));
 
     return diagnostics;
   }
@@ -357,6 +386,16 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
         severity: "warning",
         message: `${legacyMemory.length} memory setting(s) use an old spelling: ${legacyMemory.map((item) => item.message).join("; ")}.`,
         details: legacyMemory.map(({ path: from, message }) => ({ path: from, message }))
+      });
+    }
+
+    const machineMesh = inspection.diagnostics.filter((item) => item.code === "config-mesh-machine-key");
+    if (machineMesh.length > 0) {
+      checks.push({
+        id: "config-mesh-machine-key",
+        severity: "warning",
+        message: `The committed config holds ${machineMesh.length} mesh setting(s) that belong to one machine (${machineMesh.map((item) => item.path).join(", ")}), so every checkout inherits them.`,
+        details: machineMesh.map(({ path: key, message }) => ({ path: key, message }))
       });
     }
 
