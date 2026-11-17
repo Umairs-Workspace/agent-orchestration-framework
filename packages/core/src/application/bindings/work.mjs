@@ -4,6 +4,8 @@ import os from "node:os";
 import { sidecarPathFor, readSidecar, healIdentitySidecar } from "@aof/mesh/node-identity";
 import { validateWork as validateRecords } from "@aof/work/validation";
 import { layerOperatorProfile } from "@aof/contracts/operator-profile";
+import { layerLocalConfig, perPersonSources } from "@aof/contracts/local-config";
+import { readLocalConfig } from "../../workspace.mjs";
 import * as api0 from "@aof/work/records";
 import * as api1 from "@aof/work/identity";
 import * as api2 from "@aof/work/discovery";
@@ -78,15 +80,13 @@ export function assembleWork({ workspaceServices, fsServices, workDigestTemplate
   // (194 Q1/Q5): a project whose `work.notify` holds a `channels` key at all — `{}` included, which
   // is how a project switches the global channel off (194 Q2) — keeps exactly its own; only a
   // project with no such key inherits the global ones. `link` is never inherited: it names one
-  // repo. Answers the layered config and where its channels came from (null when nowhere).
-  function layerNotifyChannels(config, configPath, global) {
+  // repo. WHICH file's channels win is `perPersonSources`' one answer (199); this lays the machine's
+  // channels in when that answer is `global`, and otherwise leaves the config as it is.
+  function layerNotifyChannels(config, global, channelsFrom) {
+    if (channelsFrom?.layer !== "global") return config;
     const notify = isPlainObject(config.work) && isPlainObject(config.work.notify) ? config.work.notify : null;
-    if (notify != null && Object.hasOwn(notify, "channels")) return { config, notifyChannelsFrom: { layer: "project", configPath } };
-    const channels = isPlainObject(global.config.work) && isPlainObject(global.config.work.notify) ? global.config.work.notify.channels : undefined;
-    if (!isPlainObject(channels) || Object.keys(channels).length === 0) return { config, notifyChannelsFrom: null };
     const work = isPlainObject(config.work) ? config.work : {};
-    const layered = { ...config, work: { ...work, notify: { ...(notify ?? {}), channels: structuredClone(channels) } } };
-    return { config: layered, notifyChannelsFrom: { layer: "global", configPath: global.configPath } };
+    return { ...config, work: { ...work, notify: { ...(notify ?? {}), channels: structuredClone(global.config.work.notify.channels) } } };
   }
 
   // milestone 33 / story 00 (ADR-004.5, F-3203) — the self-heal STEP, factored out of
@@ -183,16 +183,32 @@ export function assembleWork({ workspaceServices, fsServices, workDigestTemplate
     const aofDir = path.basename(configDir) === ".aof" ? configDir : path.join(projectRoot, ".aof");
 
     const globalConfig = await readGlobalConfig(env);
+    // The project's own file, before anything is laid under it: the provenance below reads it.
+    const projectConfig = config;
     const globalMeshConfig = isPlainObject(globalConfig.config.mesh) ? globalConfig.config.mesh : {};
     if (Object.keys(globalMeshConfig).length > 0) {
       const localMeshConfig = isPlainObject(config.mesh) ? config.mesh : {};
       config = { ...config, mesh: mergePlainObjects(globalMeshConfig, localMeshConfig) };
     }
-    const layeredNotify = layerNotifyChannels(config, configPath, globalConfig);
-    config = layeredNotify.config;
+    // 199 — where each per-person value comes from, read off the three files before any is laid: the
+    // channels' layering below asks it, and the workspace returns it.
+    const local = await readLocalConfig(aofDir);
+    const configSources = perPersonSources({
+      global: globalConfig,
+      project: { config: projectConfig, configPath },
+      local: { config: local.allowed, configPath: local.configPath },
+    });
+    const notifyChannelsFrom = configSources["work.notify.channels"] ?? null;
+    config = layerNotifyChannels(config, globalConfig, notifyChannelsFrom);
     // 193/ADR-003 §5 — the machine-wide operator profile laid under the project's, key by key, through
     // the profile's one merge. In memory only: neither file is written.
     config = layerOperatorProfile(globalConfig.config, config);
+    // 199 — the per-person local file on top: global < project < local, each allowed block by the
+    // merge it already has, and a refused key never loaded. An unreadable local file is a fault the
+    // caller sees, never a silent skip; a project fault, read first, keeps precedence. No local file
+    // leaves every value exactly as above.
+    config = layerLocalConfig(config, local.allowed);
+    if (configFault == null && local.fault != null) configFault = local.fault;
     // The per-install identity (34/story 00) — read from the MACHINE-WIDE GLOBAL home
     // (globalMeshPaths().identityPath, honoring AOF_GLOBAL_HOME) so one identity is shared
     // by every workspace on this machine and the global work store keyed on nodeId is
@@ -261,7 +277,7 @@ export function assembleWork({ workspaceServices, fsServices, workDigestTemplate
     // injects AOF_GLOBAL_HOME through loadWorkspace gets a hermetic, machine-shared identity
     // for free. It is ALWAYS the global path (never the legacy sidecar); the legacy sidecar
     // is a read-only fallback here and is migrated up by `work doctor`, not by a mint.
-    return { configPath, config, configFault, projectRoot, workDir, aofDir, identityPath: globalIdentityPath, globalMeshRoot: globalMesh.meshRoot, notifyChannelsFrom: layeredNotify.notifyChannelsFrom };
+    return { configPath, config, configFault, projectRoot, workDir, aofDir, identityPath: globalIdentityPath, globalMeshRoot: globalMesh.meshRoot, notifyChannelsFrom, configSources, localConfigPath: local.present ? local.configPath : null };
   }
 
   return { "recordDoc": api0.recordDoc, "typeHasRecordDoc": api0.typeHasRecordDoc, "parseFrontmatter": api0.parseFrontmatter, "WORK_ITEM_SCHEMA_VERSION": api0.WORK_ITEM_SCHEMA_VERSION, "readItemSchema": api0.readItemSchema, "readItemVersion": api0.readItemVersion, "rollbackItemStatus": api0.rollbackItemStatus, "setItemStatus": api0.setItemStatus, "applyItemFrontmatter": api0.applyItemFrontmatter, "ITEM_RE": api1.ITEM_RE, "BACKLOG_ITEM_RE": api1.BACKLOG_ITEM_RE, "BACKLOG_ROOT": api1.BACKLOG_ROOT, "ARCHIVE_ROOT": api1.ARCHIVE_ROOT, "parseStorySpan": api1.parseStorySpan, "listItems": api2.listItems, "isLiveStreamRow": api2.isLiveStreamRow, "findWork": api2.findWork, "listStream": api2.listStream, "isDependTarget": api3.isDependTarget, "siblingDependencyNumber": api3.siblingDependencyNumber, "siblingGate": api3.siblingGate, "isDependNumber": api3.isDependNumber, "rewriteRefEntry": api3.rewriteRefEntry, "rewriteDependsEntries": api3.rewriteDependsEntries, "nextWork": api4.nextWork, validateWork, loadWorkspace, "healIdentitySidecar": api5.healIdentitySidecar };

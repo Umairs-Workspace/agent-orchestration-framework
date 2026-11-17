@@ -31,8 +31,9 @@ export function assembleCommandsDoctor({ workDoctorServices, workDoctorPractices
   const { reconcileRunRecords } = effectsReconcileServices;
   // 167/00 — the daemon-cost lane reads the snapshots through the presence module's reader.
   const readCostSnapshots = meshPresenceServices?.readCostSnapshots;
-  // 192/ADR-006 §2 — core's extension lanes' facts, read at the command edge and handed to the engine as data.
-  const readExtensionFacts = workDoctorPracticesServices?.readExtensionFacts ?? null;
+  // 192/ADR-006 §2 — core's extension lanes' facts, read at the command edge and handed to the engine as
+  // data. The work doctor composes every lane's (199 added the local config's to the practices').
+  const readExtensionFacts = workDoctorServices.readExtensionFacts ?? workDoctorPracticesServices?.readExtensionFacts ?? null;
   const execFileAsync = promisify(execFile);
 
   const loadNodeIdentity = () => import("@aof/mesh/node-identity");

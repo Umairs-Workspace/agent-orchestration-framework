@@ -163,8 +163,10 @@ const DOCTOR_LANE_MODULES = Object.freeze([
 // examples lane arrives through the spine's practice-neutral `extensionGroups` seam.
 const SPINE_PORT = /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup, diagramListing = async \(\) => null, storyProbe = null, budgetRows = \[\], extensionGroups = \[\] \}\)/u;
 // 192/03 (192/ADR-006 §2) appends core's practice-render lane after the examples lane, through the same seam;
-// 193/03 (193/ADR-006 §5) puts the practice's operator lane between the two.
-const CORE_PORT = /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup, diagramListing, storyProbe, budgetRows: EXAMPLES_BUDGET_ROWS, extensionGroups: \[examplesGroup, operatorGroup, \.\.\.\(practiceRenderGroup \? \[practiceRenderGroup\] : \[\]\)\] \}\)/u;
+// 193/03 (193/ADR-006 §5) puts the practice's operator lane between the two. 199 appends core's
+// local-config lane last: a pure group over a fact the doctor command reads at its edge (is the
+// per-person local file tracked by git?), defined in this same binding and importing no lane module.
+const CORE_PORT = /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup, diagramListing, storyProbe, budgetRows: EXAMPLES_BUDGET_ROWS, extensionGroups: \[examplesGroup, operatorGroup, \.\.\.\(practiceRenderGroup \? \[practiceRenderGroup\] : \[\]\), localConfigGroup\] \}\)/u;
 const EXAMPLES_LANE = "@aof/specification-by-example/doctor-lane";
 const OPERATOR_LANE = "@aof/specification-by-example/operator-lane";
 // The diagrams lane's module, @aof/diagrams' own: the spine imports it from nowhere and takes the

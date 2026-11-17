@@ -39,6 +39,8 @@ import { legacyMessage } from "@aof/knowledge/memory-config";
 import { agentModeFromConfig } from "@aof/contracts/agent-mode";
 import { describeOperatorProfile, operatorProfileDiagnostics, operatorProfileFromConfig } from "@aof/contracts/operator-profile";
 import { workDirFor } from "../../aof-gitignore.mjs";
+import { aofDirForConfig, readLocalConfig } from "../../workspace.mjs";
+import { perPersonSources } from "@aof/contracts/local-config";
 export function assembleConfigInspect({ dslServices, fsServices, workspaceServices, degradeServices, workToolchainServices = null }) {
   const { loadConfig } = dslServices;
   const { loadProjectConfig } = dslServices;
@@ -104,6 +106,9 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
       });
     }
 
+    // 199 — the per-person local file's diagnostics, after the gate: they are that person's to fix,
+    // and never stop the project from being inspected.
+    diagnostics.push(...await validateLocalConfig(projectDir, options));
     const executionInspection = executionConfig ? inspectExecution(executionConfig, { ...options, roles: [...acdRoleSet()] }) : null;
     if (executionInspection) diagnostics.push(...executionInspection.diagnostics.map(value => ({ severity: "error", ...value })));
 
@@ -138,16 +143,33 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
       executionByRuntime: executionConfig ? Object.fromEntries(["claude", "codex"].map(runtime => [runtime, inspectExecution(executionConfig, { ...options, runtime, roles: [...acdRoleSet()] })])) : {},
       assetRuntimes,
       delegation: executionConfig ? { enabled: readDelegation(executionConfig), model: readDelegationModel(executionConfig) } : null,
-      operator: await inspectOperatorProfile(configPath, options),
+      ...await inspectPerPerson(configPath, options),
     };
   }
 
-  // 193/ADR-003 §6 — the resolved operator profile and where each value came from. Read from the two
-  // raw files rather than `executionConfig`, so a profile the validator refuses still answers (a bad
-  // level reads `new`), and an unreadable file of either is read as holding no block.
-  async function inspectOperatorProfile(configPath, options) {
+  // 193/ADR-003 §6 — the resolved operator profile and where each value came from — and 199's
+  // per-person local file: where it is, and the source of every per-person value. Read from the raw
+  // files rather than `executionConfig`, so a profile the validator refuses still answers (a bad level
+  // reads `new`), and an unreadable file is read as holding nothing. The local file contributes its
+  // allowed blocks only, through the loader's own read, so this answer is the loaded workspace's.
+  async function inspectPerPerson(configPath, options) {
     const readOrEmpty = (target) => readJsonWithDiagnostic(target).catch(() => ({}));
-    return describeOperatorProfile(await readOrEmpty(globalWorkspacePaths(options).configPath), await readOrEmpty(configPath));
+    const globalPath = globalWorkspacePaths(options).configPath;
+    const global = { config: await readOrEmpty(globalPath), configPath: globalPath };
+    const project = { config: await readOrEmpty(configPath), configPath };
+    const read = await readLocalConfig(aofDirForConfig(configPath));
+    const local = { config: read.allowed, configPath: read.configPath };
+    const sources = perPersonSources({ global, project, local });
+    return {
+      operator: describeOperatorProfile(global.config, project.config, local.config),
+      local: {
+        configPath: read.configPath,
+        present: read.present,
+        fault: read.fault?.message ?? null,
+        overrides: Object.keys(sources).filter((key) => sources[key].layer === "local"),
+      },
+      sources,
+    };
   }
 
   async function inspectGlobalConfig(options = {}) {
@@ -197,6 +219,23 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
   async function validateConfig(projectDir = process.cwd(), options = {}) {
     const configPath = await findProjectConfig(projectDir, options.config);
     return validateConfigFile(configPath, { validateGlobalRefs: true, globalOptions: options });
+  }
+
+  // 199 — the per-person local file's diagnostics, each naming the file (`file`) and marked
+  // `layer: "local"`. Unreadable is `config-local-unreadable`; a key off the allow-list is
+  // `config-local-key-not-allowed`, at its leaf; the allowed blocks go through the same validators as
+  // the project file's. No file, nothing. Kept apart from `validateConfig`, which gates a render and
+  // a config-editor save: neither reads this file, so one person's file never blocks them.
+  async function validateLocalConfig(projectDir = process.cwd(), options = {}) {
+    const local = await readLocalConfig(aofDirForConfig(await findProjectConfig(projectDir, options.config)));
+    if (!local.present) return [];
+    const ofLocal = (entry) => ({ ...entry, file: local.configPath, layer: "local" });
+    if (local.fault != null) return [ofLocal(diagnostic("error", "config", local.fault.message, local.fault.code))];
+    const diagnostics = local.refused.map((entry) => ofLocal(diagnostic("error", entry.path, entry.message, entry.code)));
+    const blocks = [];
+    validateWork(local.allowed.work, blocks);
+    for (const entry of blocks) diagnostics.push(ofLocal({ ...entry, message: `In ${local.configPath}: ${entry.message}` }));
+    return diagnostics;
   }
 
   async function validateGlobalConfig(options = {}) {
@@ -2174,5 +2213,5 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     };
   }
 
-  return { inspectConfig, inspectExecutionSettings, inspectGlobalConfig, adapterWarningsForConfig, validateConfig, validateGlobalConfig, doctorConfig, notionAuthCheck, testLayoutChecks, managedToolChecks, providerPrereqCheck, toolPlatformCheckFor, toolPlatformChecks, resolveWorkDiagrams, planEnabledFromConfig, examplesEnabledFromConfig, operatorAwareFromConfig, operatorProfileFromConfig };
+  return { inspectConfig, inspectExecutionSettings, inspectGlobalConfig, adapterWarningsForConfig, validateConfig, validateLocalConfig, validateGlobalConfig, doctorConfig, notionAuthCheck, testLayoutChecks, managedToolChecks, providerPrereqCheck, toolPlatformCheckFor, toolPlatformChecks, resolveWorkDiagrams, planEnabledFromConfig, examplesEnabledFromConfig, operatorAwareFromConfig, operatorProfileFromConfig };
 }

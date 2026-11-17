@@ -109,10 +109,10 @@ function discordChannels(workspace) {
 }
 
 // The `allow` key a refusal names, with the global config's path when the project inherits its
-// channels from there (194).
+// channels from there (194), or from the per-person local file (199).
 function allowKeyOf(workspace, name) {
   const from = workspace?.notifyChannelsFrom;
-  const where = from?.layer === "global" ? ` in ${from.configPath}` : "";
+  const where = from?.layer === "global" || from?.layer === "local" ? ` in ${from.configPath}` : "";
   return `\`work.notify.channels.${name}.allow\`${where}`;
 }
 

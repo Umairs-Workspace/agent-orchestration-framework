@@ -15,6 +15,7 @@ import { realpathSync } from "node:fs";
 import { utimes } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
+import { operatorLevel, operatorProfileFromConfig } from "@aof/contracts/operator-profile";
 
 export const configInspectTests = [
   {
@@ -211,6 +212,8 @@ export const configInspectTests = [
   ...memoryNodeSchemaTests(),
   // 180/01 task 03 — the faces print the memory node's new paths (see `memoryNodeFaceTests`).
   ...memoryNodeFaceTests(),
+  // 199 — the per-person local config (see `localConfigTests`).
+  ...localConfigTests(),
 ];
 
 const DIAGRAMS_ID = generatorIds()[0];
@@ -1224,6 +1227,345 @@ function memoryNodeSchemaTests() {
       ["refuses", { name: "p", resources: [], memory: { corpora: ["work", "code"] } }],
     ].map(([verdict, config], index) => t(`E12 · the schema holds the new node, still admits the old spelling, and has no egress key — row ${index + 1} ${verdict}`, async () => {
       assert.equal((await validator())(config), verdict === "accepts");
+    })),
+  ];
+}
+
+// ══ 199 · each person keeps their own settings in an uncommitted local config ══
+//
+// Traceability wiring for story 199. Covers EVERY @executable scenario in
+//   tasks/00_the-local-file-wins-and-says-where-each-value-came-from.feature
+//   tasks/01_the-local-file-holds-only-per-person-keys.feature
+//   tasks/02_the-local-file-is-never-committed.feature
+//   tasks/03_init-config-writes-the-operator-profile-locally.feature
+// One entry per scenario, Scenario Outline rows folded into one entry. Every fixture is a project `P`
+// in a fresh temp directory, its global home another, named through `AOF_GLOBAL_HOME` (199 Q5): no
+// run reads or writes the real `~/.aof`, and the local file is planted as a fixture beside `P`'s config.
+function localConfigTests() {
+  const ABSENT = Symbol("absent");
+  const cliPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "packages", "core", "bin", "aof.mjs");
+  const loadWorkspace = _aofApplication.loadWorkspace;
+  const examplesEnabledFromConfig = _aofApplication.assets.configInspect.examplesEnabledFromConfig;
+  const GIT_IDENTITY = ["-c", "user.email=fixture@example.test", "-c", "user.name=Fixture", "-c", "commit.gpgsign=false"];
+
+  // A dotted path's value as a plain object: "work.operator.role" + "P" → { work: { operator: { role: "P" } } }.
+  const at = (dotted, value) => dotted.split(".").reverse().reduce((inner, key) => ({ [key]: inner }), value);
+  const deepMerge = (base, over) => {
+    const merged = { ...base };
+    for (const [key, value] of Object.entries(over)) {
+      merged[key] = value && typeof value === "object" && !Array.isArray(value) && merged[key] && typeof merged[key] === "object" ? deepMerge(merged[key], value) : value;
+    }
+    return merged;
+  };
+  const valueAt = (config, dotted) => dotted.split(".").reduce((value, key) => (value == null ? undefined : value[key]), config);
+
+  // `project` / `local` / `global` are config objects (or ABSENT); `localText` plants raw text instead.
+  // `repo: true` makes `P` a git repository with aof initialised (`aof work init`).
+  async function withLocal({ project = {}, local = ABSENT, localText = null, global = ABSENT, repo = false } = {}, body) {
+    // Real-pathed: on macOS the temp dir is a symlink, and the CLI names files by the path it runs in.
+    const root = realpathSync(await mkdtemp(path.join(os.tmpdir(), "aof-local-config-")));
+    const projectDir = path.join(root, "P");
+    const home = path.join(root, "home");
+    try {
+      await mkdir(path.join(projectDir, ".aof"), { recursive: true });
+      await mkdir(path.join(projectDir, "wiki", "work"), { recursive: true });
+      await mkdir(home, { recursive: true });
+      const configPath = path.join(projectDir, ".aof", "aof.config.json");
+      const localPath = path.join(projectDir, ".aof", "aof.config.local.json");
+      const globalPath = path.join(home, "aof.config.json");
+      await writeFile(configPath, `${JSON.stringify(deepMerge({ name: "fixture", resources: [], work: { dir: "./wiki/work" } }, project), null, 2)}\n`, "utf8");
+      if (localText != null) await writeFile(localPath, localText, "utf8");
+      else if (local !== ABSENT) await writeFile(localPath, `${JSON.stringify(local, null, 2)}\n`, "utf8");
+      if (global !== ABSENT) await writeFile(globalPath, `${JSON.stringify(global, null, 2)}\n`, "utf8");
+      const env = { ...process.env, AOF_GLOBAL_HOME: home, NODE_NO_WARNINGS: "1" };
+      const cli = (...argv) => {
+        const result = spawnCliSync(process.execPath, [cliPath, ...argv], { cwd: projectDir, encoding: "utf8", windowsHide: true, env });
+        let json = null;
+        try { json = JSON.parse(result.stdout); } catch { json = null; }
+        return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? "", json };
+      };
+      const git = (...argv) => spawnCliSync("git", [...GIT_IDENTITY, ...argv], { cwd: projectDir, encoding: "utf8", windowsHide: true });
+      if (repo) {
+        assert.equal(git("init", "-q").status, 0);
+        const init = cli("work", "init", "--json");
+        assert.equal(init.status, 0, init.stderr || init.stdout);
+      }
+      const read = async (file) => JSON.parse(await readFile(file, "utf8"));
+      await body({
+        root, project: projectDir, home, env, cli, git, configPath, localPath, globalPath, read,
+        load: (cwd = projectDir) => loadWorkspace(cwd, undefined, { env }),
+        resolved: async (cwd = projectDir) => operatorProfileFromConfig((await loadWorkspace(cwd, undefined, { env })).config),
+        validate: () => cli("project", "validate", "--json"),
+        ignoreLines: async () => (await readFile(path.join(projectDir, ".aof", ".gitignore"), "utf8")).split(/\r?\n/),
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }
+
+  const localCodes = (report) => (report.json?.diagnostics ?? []).filter((entry) => entry.code?.startsWith("config-local-"));
+  const t = (name, run) => ({ name: `199 ${name}`, run });
+
+  return [
+    // ── 00 · the local file wins, and every value says which file it came from ──
+    t("00 E1 · the local operator role wins over the project's", () => withLocal({
+      project: at("work.operator.role", "Builds the mesh"),
+      local: at("work.operator.role", "Product owner, new to the codebase"),
+    }, async (fx) => {
+      assert.equal((await fx.resolved()).role, "Product owner, new to the codebase");
+    })),
+    t("00 E2 · expertise merges per domain, the local entry winning", () => withLocal({
+      project: at("work.operator.expertise", { mesh: "expert", ui: "working" }),
+      local: at("work.operator.expertise", { ui: "new" }),
+    }, async (fx) => {
+      const profile = await fx.resolved();
+      assert.equal(operatorLevel(profile, "mesh"), "expert");
+      assert.equal(operatorLevel(profile, "ui"), "new");
+    })),
+    t("00 E3 · with no local file, every value is today's", async () => {
+      const project = deepMerge(deepMerge(deepMerge(at("work.operator", { role: "P", expertise: { ui: "working" } }), at("work.agents.session.effort", { build: "high" })), at("mesh.fabric", "direct")), at("work.intake", "backlog"));
+      const global = deepMerge(deepMerge(at("work.operator", { role: "G", expertise: { mesh: "expert" } }), at("work.notify.channels", { discord: { type: "discord", channelId: "1" } })), at("mesh.address", "127.0.0.1"));
+      await withLocal({ project, global }, async (fx) => {
+        const workspace = await fx.load();
+        // Today's per-block rules, spelled out: mesh merged, channels replaced, the profile merged by its own rule.
+        const expected = deepMerge(await fx.read(fx.configPath), {
+          mesh: { address: "127.0.0.1", fabric: "direct" },
+          work: { notify: { channels: { discord: { type: "discord", channelId: "1" } } }, operator: { role: "P", expertise: { mesh: "expert", ui: "working" } } },
+        });
+        const { nodeId, salt, ...mesh } = workspace.config.mesh;
+        assert.deepEqual({ ...workspace.config, mesh }, expected);
+        assert.equal(workspace.localConfigPath, null);
+        assert.equal(workspace.configFault, null);
+        assert.deepEqual(Object.values(workspace.configSources).filter((source) => source.layer === "local"), []);
+      });
+    }),
+    t("00 E4 · inspection names the local file as a value's source", () => withLocal({ local: at("work.operator.role", "Product owner") }, async (fx) => {
+      const shown = fx.cli("project", "show", "--json");
+      assert.equal(shown.status, 0, shown.stderr);
+      assert.deepEqual(shown.json.sources["work.operator.role"], { layer: "local", configPath: fx.localPath });
+      assert.equal(shown.json.operator.roleSource, "local");
+      assert.deepEqual(shown.json.local.overrides, ["work.operator.role"]);
+      assert.ok(fx.cli("project", "show").stdout.includes(`local: ${fx.localPath} — overrides work.operator.role`));
+    })),
+    t("00 E5 · a loop lane reads the local file of the checkout that started it", () => withLocal({ local: at("work.operator.role", "Product owner") }, async (fx) => {
+      assert.equal(fx.git("init", "-q").status, 0);
+      assert.equal(fx.git("add", ".aof/aof.config.json").status, 0);
+      assert.equal(fx.git("commit", "-q", "-m", "fixture").status, 0);
+      const lane = path.join(fx.project, ".aof", "mesh", "worktrees", "a1");
+      const added = fx.git("worktree", "add", "-q", "--detach", lane);
+      assert.equal(added.status, 0, added.stderr);
+      await assert.rejects(readFile(path.join(lane, ".aof", "aof.config.local.json")), "the lane holds no local file of its own");
+      assert.equal((await fx.resolved(lane)).role, "Product owner");
+      assert.equal((await fx.load(lane)).localConfigPath, fx.localPath);
+    })),
+    t("00 every layer and every allow-listed key, from the right file", async () => {
+      const rows = [
+        ["work.operator.role", "G", "P", "L", "L", "local"],
+        ["work.operator.role", "G", "P", ABSENT, "P", "project"],
+        ["work.operator.role", "G", ABSENT, ABSENT, "G", "global"],
+        ["work.operator.role", "G", ABSENT, "L", "L", "local"],
+        ["work.notify.channels", { discord: { type: "discord", channelId: "G" } }, { discord: { type: "discord", channelId: "P" } }, { discord: { type: "discord", channelId: "L" } }, { discord: { type: "discord", channelId: "L" } }, "local"],
+        ["work.notify.channels", { discord: { type: "discord", channelId: "G" } }, ABSENT, ABSENT, { discord: { type: "discord", channelId: "G" } }, "global"],
+        ["work.agents.session.effort.build", ABSENT, "high", "xhigh", "xhigh", "local"],
+        ["work.agents.session.effort.build", ABSENT, "high", ABSENT, "high", "project"],
+      ];
+      for (const [key, global, project, local, resolved, source] of rows) {
+        const label = `${key} G=${JSON.stringify(global)} P=${JSON.stringify(project)} L=${JSON.stringify(local)}`;
+        await withLocal({
+          global: global === ABSENT ? ABSENT : at(key, global),
+          project: project === ABSENT ? {} : at(key, project),
+          local: local === ABSENT ? ABSENT : at(key, local),
+        }, async (fx) => {
+          const workspace = await fx.load();
+          assert.deepEqual(valueAt(workspace.config, key), resolved, label);
+          const file = { local: fx.localPath, project: fx.configPath, global: fx.globalPath }[source];
+          assert.deepEqual(workspace.configSources[key], { layer: source, configPath: file }, label);
+        });
+      }
+    }),
+    t("00 an unreadable local file is reported, never silently skipped", () => withLocal({ localText: "{ not json" }, async (fx) => {
+      const [entry, ...rest] = localCodes(fx.validate());
+      assert.deepEqual(rest, []);
+      assert.equal(entry.code, "config-local-unreadable");
+      assert.equal(entry.severity, "error");
+      assert.equal(entry.file, fx.localPath);
+      assert.ok(entry.message.includes(fx.localPath), entry.message);
+      // The load degrades, as it does for a torn project file, but says so: the fault names the file.
+      const workspace = await fx.load();
+      assert.equal(workspace.configFault?.code, "config-local-unreadable");
+      assert.equal(workspace.configFault?.path, fx.localPath);
+      assert.ok(fx.cli("project", "show").stdout.includes(`local: ${fx.localPath} — unreadable`), "inspection says the file is unreadable, not that it overrides nothing");
+    })),
+
+    // ── 01 · the local file holds only per-person keys ──
+    t("01 E6 · an allow-listed key is honoured", () => withLocal({ local: at("work.operator", { role: "Product owner" }) }, async (fx) => {
+      const report = fx.validate();
+      assert.deepEqual(localCodes(report), [], report.stdout);
+      assert.equal((await fx.resolved()).role, "Product owner");
+    })),
+    t("01 E7 · a team key is refused, and the refusal says where it belongs", () => withLocal({
+      project: at("work.intake", "backlog"),
+      local: at("work.intake", "stream"),
+    }, async (fx) => {
+      const [entry, ...rest] = localCodes(fx.validate());
+      assert.deepEqual(rest, []);
+      assert.deepEqual([entry.code, entry.path, entry.severity], ["config-local-key-not-allowed", "work.intake", "error"]);
+      assert.ok(entry.message.includes(".aof/aof.config.json"), entry.message);
+      assert.equal((await fx.load()).config.work.intake, "backlog");
+    })),
+    t("01 E8 · a practice key is refused, so no render or gate differs between teammates", () => withLocal({ repo: true }, async (fx) => {
+      const refine = path.join(fx.project, ".claude", "commands", "aof", "refine.md");
+      assert.equal(fx.cli("work", "update", "--json").status, 0);
+      const without = await readFile(refine, "utf8");
+      await writeFile(fx.localPath, `${JSON.stringify(at("work.examples.enabled", true))}\n`, "utf8");
+      const [entry, ...rest] = localCodes(fx.validate());
+      assert.deepEqual(rest, []);
+      assert.deepEqual([entry.code, entry.path], ["config-local-key-not-allowed", "work.examples.enabled"]);
+      const updated = fx.cli("work", "update", "--json");
+      assert.equal(updated.status, 0, updated.stderr);
+      assert.equal(await readFile(refine, "utf8"), without, "the rendered refine command is byte-for-byte the one rendered with no local file");
+      assert.equal(examplesEnabledFromConfig((await fx.load()).config), false, "the discovery gate resolves off");
+    })),
+    t("01 the allow-list, at its edges", async () => {
+      const rows = [
+        ["work.operator.expertise", { mesh: "expert" }, null],
+        ["work.notify.channels", { discord: { channel: "42" } }, null],
+        ["work.agents.session.effort", { build: "high" }, null],
+        ["work.notify.webhook", "https://example.test", ["config-local-key-not-allowed", "work.notify.webhook"]],
+        ["work.agents.session.models", { build: "opus" }, ["config-local-key-not-allowed", "work.agents.session.models"]],
+        ["work.agents.mode", "orchestrated", ["config-local-key-not-allowed", "work.agents.mode"]],
+        ["mesh.address", "127.0.0.1", ["config-local-key-not-allowed", "mesh.address"]],
+        ["work.operator.expertise.mesh", "guru", ["operator-profile-bad-value", "work.operator.expertise.mesh"]],
+      ];
+      for (const [key, value, expected] of rows) {
+        await withLocal({ local: at(key, value) }, async (fx) => {
+          const report = fx.validate();
+          const local = (report.json?.diagnostics ?? []).filter((entry) => entry.layer === "local");
+          if (expected == null) {
+            assert.deepEqual(localCodes(report), [], `${key}: ${report.stdout}`);
+          } else {
+            // A refusal names the leaf that was written, so "at" a key means at it or within it.
+            const [code, keyPath] = expected;
+            assert.equal(local.length, 1, `${key}: ${report.stdout}`);
+            assert.equal(local[0].code, code, `${key}: ${report.stdout}`);
+            assert.ok(local[0].path === keyPath || local[0].path.startsWith(`${keyPath}.`), `${key}: reported at ${local[0].path}`);
+            assert.ok(local.every((entry) => entry.file === fx.localPath), `${key}: each diagnostic names the local file`);
+          }
+        });
+      }
+    }),
+    t("01 a refused key never reaches the loaded config", () => withLocal({
+      project: at("mesh.address", "127.0.0.1"),
+      local: at("mesh.address", "10.0.0.9"),
+    }, async (fx) => {
+      assert.equal((await fx.load()).config.mesh.address, "127.0.0.1");
+    })),
+
+    // ── 02 · the local file is never committed ──
+    t("02 E9 · init and update add the ignore entry when it is missing", async () => {
+      // An ignore file from before 199: an operator's own line and two of aof's derived entries.
+      const before = ["/work/", "aof.memory.index.json", "notion.work-map.json"];
+      for (const command of [["work", "init"], ["work", "update"]]) {
+        await withLocal({ repo: command[1] === "update" }, async (fx) => {
+          await writeFile(path.join(fx.project, ".aof", ".gitignore"), `${before.join("\n")}\n`, "utf8");
+          const ran = fx.cli(...command, "--json");
+          assert.equal(ran.status, 0, ran.stderr || ran.stdout);
+          const after = await fx.ignoreLines();
+          assert.equal(after.filter((line) => line.trim() === "aof.config.local.json").length, 1, command.join(" "));
+          assert.deepEqual(after.slice(0, before.length), before, `${command.join(" ")}: every line it held before is still there, in order`);
+        });
+      }
+    }),
+    t("02 the entry is not added twice", () => withLocal({ repo: true }, async (fx) => {
+      assert.equal(fx.cli("work", "update", "--json").status, 0);
+      assert.equal(fx.cli("work", "update", "--json").status, 0);
+      assert.equal((await fx.ignoreLines()).filter((line) => line.trim() === "aof.config.local.json").length, 1);
+    })),
+    t("02 E10 · a tracked local file is reported with its fix", () => withLocal({ repo: true, local: at("work.operator.role", "Sam") }, async (fx) => {
+      const added = fx.git("add", "-f", ".aof/aof.config.local.json");
+      assert.equal(added.status, 0, added.stderr);
+      const doctor = fx.cli("work", "doctor", "--json");
+      const findings = (doctor.json?.findings ?? []).filter((finding) => finding.code === "config-local-tracked");
+      assert.equal(findings.length, 1, doctor.stdout || doctor.stderr);
+      assert.equal(findings[0].severity, "warn");
+      assert.ok(findings[0].message.includes(".aof/aof.config.local.json"), findings[0].message);
+      assert.ok(findings[0].message.includes("git rm --cached .aof/aof.config.local.json"), findings[0].message);
+    })),
+    t("02 an ignored local file raises nothing", () => withLocal({ repo: true, local: at("work.operator.role", "Sam") }, async (fx) => {
+      assert.equal(fx.git("check-ignore", "-q", ".aof/aof.config.local.json").status, 0, "the file is ignored");
+      const doctor = fx.cli("work", "doctor", "--json");
+      assert.ok(doctor.json != null, doctor.stdout || doctor.stderr);
+      assert.deepEqual((doctor.json.findings ?? []).filter((finding) => finding.code === "config-local-tracked"), []);
+    })),
+
+    // ── 03 · init-config writes the operator profile to the local file by default ──
+    t("03 E11 · the profile goes to a new local file, and the project file is untouched", () => withLocal({ repo: true }, async (fx) => {
+      const before = await readFile(fx.configPath);
+      const ran = fx.cli("work", "init-config", "--operator-role", "Product owner", "--json");
+      assert.equal(ran.status, 0, ran.stderr || ran.stdout);
+      assert.equal((await fx.read(fx.localPath)).work.operator.role, "Product owner");
+      assert.deepEqual(await readFile(fx.configPath), before, "the project file is byte-for-byte unchanged");
+      assert.equal(ran.json.profileWritten, "local");
+      assert.equal(ran.json.localConfigPath, ".aof/aof.config.local.json");
+      assert.ok(fx.cli("work", "init-config", "--operator-role", "Product owner").stdout.includes(".aof/aof.config.local.json"), "the human output names the local file");
+    })),
+    t("03 E12 · --project writes it to the committed file", () => withLocal({ repo: true }, async (fx) => {
+      const ran = fx.cli("work", "init-config", "--project", "--operator-role", "Product owner", "--json");
+      assert.equal(ran.status, 0, ran.stderr || ran.stdout);
+      assert.equal((await fx.read(fx.configPath)).work.operator.role, "Product owner");
+      await assert.rejects(readFile(fx.localPath), "no local file has been created");
+      assert.equal(ran.json.profileWritten, "project");
+    })),
+    t("03 E13 · a profile already committed is still read, beneath the local one", () => withLocal({
+      repo: true,
+      project: at("work.operator", { role: "Solo dev", expertise: { mesh: "expert" } }),
+    }, async (fx) => {
+      const profile = await fx.resolved();
+      assert.equal(profile.role, "Solo dev");
+      assert.equal(operatorLevel(profile, "mesh"), "expert");
+    })),
+    t("03 profile flags land in the local file, and other settings do not", async () => {
+      const rows = [
+        [["--expertise", "ui=new"], async (fx) => {
+          const local = await fx.read(fx.localPath);
+          assert.equal(local.work.operator.expertise.ui, "new");
+          assert.equal(local.work.operator.role, "Old");
+        }],
+        [["--operator-role", "New"], async (fx) => assert.equal((await fx.read(fx.localPath)).work.operator.role, "New")],
+        [["--operator-aware", "on"], async (fx, before) => {
+          assert.equal((await fx.read(fx.configPath)).work.examples.operatorAware, true);
+          assert.equal(await readFile(fx.localPath, "utf8"), before.local);
+        }],
+        [["--global", "--operator-role", "G"], async (fx, before) => {
+          assert.equal((await fx.read(fx.globalPath)).work.operator.role, "G");
+          assert.equal(await readFile(fx.configPath, "utf8"), before.project);
+          assert.equal(await readFile(fx.localPath, "utf8"), before.local);
+        }],
+        [["--project", "--global", "--operator-role", "X"], async (fx, before, ran) => {
+          assert.notEqual(ran.status, 0);
+          assert.ok(`${ran.stdout}${ran.stderr}`.includes("--project") && `${ran.stdout}${ran.stderr}`.includes("--global"), ran.stdout + ran.stderr);
+          assert.equal(await readFile(fx.configPath, "utf8"), before.project);
+          assert.equal(await readFile(fx.localPath, "utf8"), before.local);
+          await assert.rejects(readFile(fx.globalPath), "nothing changed in the global home");
+        }],
+      ];
+      for (const [flags, check] of rows) {
+        await withLocal({ repo: true, project: at("work.examples.enabled", true), local: at("work.operator.role", "Old") }, async (fx) => {
+          const before = { project: await readFile(fx.configPath, "utf8"), local: await readFile(fx.localPath, "utf8") };
+          const ran = fx.cli("work", "init-config", ...flags, "--json");
+          if (!flags.includes("--project")) assert.equal(ran.status, 0, `${flags.join(" ")}: ${ran.stderr || ran.stdout}`);
+          await check(fx, before, ran);
+        });
+      }
+    }),
+    t("03 the local file it writes is kept out of git", () => withLocal({ repo: true }, async (fx) => {
+      const ignorePath = path.join(fx.project, ".aof", ".gitignore");
+      await writeFile(ignorePath, (await fx.ignoreLines()).filter((line) => line.trim() !== "aof.config.local.json").join("\n"), "utf8");
+      const ran = fx.cli("work", "init-config", "--operator-role", "Product owner", "--json");
+      assert.equal(ran.status, 0, ran.stderr || ran.stdout);
+      assert.ok((await fx.ignoreLines()).includes("aof.config.local.json"));
+      const status = fx.git("status", "--porcelain", "--untracked-files=all");
+      assert.ok(!status.stdout.includes("aof.config.local.json"), status.stdout);
     })),
   ];
 }

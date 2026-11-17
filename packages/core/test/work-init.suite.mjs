@@ -114,6 +114,8 @@ const ABSENT = Symbol("absent");
 const BAD = "operator-profile-bad-value";
 
 // A scratch project whose `work.operator` is `operator` (or none), and its own global home, empty.
+// 199 Q2 moved the profile's default home to the uncommitted local file; these cases read the
+// project's file, so they ask for it with `--project` (199's own cases cover the default).
 async function withWords({ operator = ABSENT } = {}, body) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-operator-words-"));
   const project = path.join(root, "P");
@@ -163,7 +165,7 @@ const operatorWordsTests = [
     name: "193/03 01 E4 · one level is corrected and the rest is left alone",
     run: () => withWords({ operator: { role: "B", expertise: { fraud: "new", "tenancy-law": "expert" } } }, async (fx) => {
       const before = await fx.config();
-      const written = fx.cli("work", "init-config", "--expertise", "fraud=working", "--json");
+      const written = fx.cli("work", "init-config", "--project", "--expertise", "fraud=working", "--json");
       assert.equal(written.status, 0, written.stdout || written.stderr);
       const after = await fx.config();
       assert.deepEqual(after.work.operator, { role: "B", expertise: { fraud: "working", "tenancy-law": "expert" } });
@@ -199,7 +201,7 @@ const operatorWordsTests = [
     name: "193/03 01 a role is stored exactly as it was given",
     run: () => withWords({}, async (fx) => {
       const role = "I build the software for a fraud team. I am not a fraud analyst.";
-      const written = fx.cli("work", "init-config", "--operator-role", role, "--json");
+      const written = fx.cli("work", "init-config", "--project", "--operator-role", role, "--json");
       assert.equal(written.status, 0, written.stdout || written.stderr);
       assert.equal((await fx.config()).work.operator.role, role);
       assert.equal(written.json?.profileWritten, "project");
@@ -220,7 +222,7 @@ const operatorWordsTests = [
       for (const [label, flags, outcome] of FLAG_ROWS) {
         await withWords({}, async (fx) => {
           const before = await fx.bytes();
-          const ran = fx.cli("work", "init-config", ...flags, "--json");
+          const ran = fx.cli("work", "init-config", ...(typeof outcome === "object" ? ["--project"] : []), ...flags, "--json");
           if (outcome === BAD || outcome === "global-only") {
             assert.notEqual(ran.status, 0, `${label}: refused`);
             if (outcome === BAD) assert.equal(ran.json?.code, BAD, `${label}: ${ran.stdout || ran.stderr}`);
@@ -252,7 +254,7 @@ const operatorWordsTests = [
   {
     name: "193/03 01 what the verb wrote is what the resolver reads",
     run: () => withWords({}, async (fx) => {
-      const written = fx.cli("work", "init-config", "--operator-role", "B", "--expertise", "fraud=working");
+      const written = fx.cli("work", "init-config", "--project", "--operator-role", "B", "--expertise", "fraud=working");
       assert.equal(written.status, 0, written.stdout || written.stderr);
       const operator = fx.cli("project", "show", "--json").json?.operator;
       assert.deepEqual([operator?.role, operator?.roleSource], ["B", "project"]);

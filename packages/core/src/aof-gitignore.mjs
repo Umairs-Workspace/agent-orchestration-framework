@@ -19,6 +19,7 @@
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile, appendFile, writeFile, mkdir } from "node:fs/promises";
+import { LOCAL_CONFIG_FILE } from "@aof/contracts/local-config";
 import { workspacePaths } from "./workspace.mjs";
 
 // Paths (relative to `.aof/`) the workspace must never commit — derived/regenerable
@@ -45,7 +46,16 @@ export const AOF_GITIGNORE_ENTRIES = [
   "artifact-sync-queue.ndjson.batch",
 ];
 
-const HEADER = "# aof — derived/regenerable artifacts; never commit (the tracked install is committed).\n";
+// 199 — PER-PERSON SETTINGS, never committed for a different reason: they are not derived, they are
+// one person's. `.aof/aof.config.local.json` lays one person's operator profile (and the other
+// allow-listed keys) over the project's committed config; committed, it would impose that person's
+// settings on everyone who pulls. Kept apart from the derived-artifact register above, whose subject
+// is "rebuildable from something else", and ensured by the same baseline write.
+export const AOF_PER_PERSON_GITIGNORE_ENTRIES = [
+  LOCAL_CONFIG_FILE,
+];
+
+const HEADER = "# aof — derived artifacts and per-person settings; never commit (the tracked install is committed).\n";
 
 // ensureEntries(filePath, entries, header) — THE ONE ADDITIVE WRITER. Idempotent: preserves every
 // existing line, never duplicates an entry (matched trimmed, whole-line), creates the file with
@@ -69,11 +79,11 @@ async function ensureEntries(filePath, entries, header) {
   return true;
 }
 
-// Idempotently ensure `<targetDir>/.aof/.gitignore` ignores every entry. Additive
-// (preserves any existing lines, e.g. an assistant-workspace `/work/`), never
-// duplicates an entry, and never touches the repo-root `.gitignore`. Returns true
-// iff the file was created or changed.
-export async function ensureAofGitignore(targetDir, entries = AOF_GITIGNORE_ENTRIES) {
+// Idempotently ensure `<targetDir>/.aof/.gitignore` ignores every entry — by default the derived
+// artifacts and the per-person settings both. Additive (preserves any existing lines, e.g. an
+// assistant-workspace `/work/`), never duplicates an entry, and never touches the repo-root
+// `.gitignore`. Returns true iff the file was created or changed.
+export async function ensureAofGitignore(targetDir, entries = [...AOF_GITIGNORE_ENTRIES, ...AOF_PER_PERSON_GITIGNORE_ENTRIES]) {
   const { workspaceDir } = workspacePaths(targetDir);
   return ensureEntries(path.join(workspaceDir, ".gitignore"), entries, HEADER);
 }

@@ -379,9 +379,11 @@ export const archTests = [
       // 193/02 — the work binding resolves the operator profile through `@aof/contracts/operator-profile`,
       // a pure config read (189 -> 190). 2026-11-15 — dispatch's impacted selection names the graph file
       // through `@aof/knowledge/graph-normalize`'s `graphJsonPath` (190 -> 191). Neither is a driver or
-      // a lifecycle module; the driver fences above are unchanged.
-      for (const leaf of ["packages/contracts/src/operator-profile.mjs", "packages/knowledge/src/graph-normalize.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, leaf)), leaf);
-      assert.equal(sinkGraph.seen.size, 191, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, the integration registry's contributions, the awake clock, the operator profile and the graph path");
+      // a lifecycle module; the driver fences above are unchanged. 199 — the work binding lays the
+      // per-person local config over the project's through `@aof/contracts/local-config`, a pure leaf
+      // that imports only the operator profile (191 -> 192).
+      for (const leaf of ["packages/contracts/src/operator-profile.mjs", "packages/knowledge/src/graph-normalize.mjs", "packages/contracts/src/local-config.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, leaf)), leaf);
+      assert.equal(sinkGraph.seen.size, 192, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, the integration registry's contributions, the awake clock, the operator profile, the graph path and the local config");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

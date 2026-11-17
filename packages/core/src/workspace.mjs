@@ -1,5 +1,5 @@
 import path from "node:path";
-import { access } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import { defaultGlobalWorkspaceDir } from "./paths.mjs";
 
 export function workspacePaths(projectDir = process.cwd()) {
@@ -119,6 +119,82 @@ export async function findProjectConfig(projectDir = process.cwd(), explicitConf
   // config path — an unconfigured project is a legitimate state, and loadWorkspace's
   // `{ config: {} }` degrade (chore 94) is unchanged by this walk.
   return workspacePaths(start).configPath;
+}
+
+// 199 — THE PER-PERSON LOCAL FILE, `<aofDir>/aof.config.local.json`: found beside the project's
+// config, or, in a linked worktree (a loop lane: a checkout of committed files only, so it never
+// holds the untracked local file), beside the config of the checkout that started it. That checkout
+// is found through git's common directory, read from the worktree's `.git` FILE (`gitdir: …`) and
+// the `commondir` it names, so the walk spawns no git: `loadWorkspace` runs on every prompt. A plain
+// checkout, a submodule (no `commondir`) and a bare common dir all answer the file beside the config.
+async function findLocalConfig(aofDir, LOCAL_CONFIG_FILE) {
+  const own = path.join(aofDir, LOCAL_CONFIG_FILE);
+  if (await exists(own)) return own;
+  const main = await mainCheckoutOf(aofDir);
+  if (main == null) return own;
+  const there = path.join(main.root, path.relative(main.worktree, aofDir), LOCAL_CONFIG_FILE);
+  return (await exists(there)) ? there : own;
+}
+
+// `{ root, worktree }` when `dir` is inside a linked worktree: the main checkout's root, and the
+// worktree's own top level. Null otherwise, and on anything it cannot read.
+async function mainCheckoutOf(dir) {
+  for (let at = path.resolve(dir); ; at = path.dirname(at)) {
+    const dotGit = path.join(at, ".git");
+    let text = null;
+    try {
+      text = await readFile(dotGit, "utf8");
+    } catch (error) {
+      if (error?.code === "EISDIR") return null;
+      if (path.dirname(at) === at) return null;
+      continue;
+    }
+    const gitdir = /^gitdir:\s*(.+?)\s*$/mu.exec(text)?.[1];
+    if (gitdir == null) return null;
+    const resolvedGitdir = path.resolve(at, gitdir);
+    try {
+      const commonDir = path.resolve(resolvedGitdir, (await readFile(path.join(resolvedGitdir, "commondir"), "utf8")).trim());
+      return path.basename(commonDir) === ".git" ? { root: path.dirname(commonDir), worktree: at } : null;
+    } catch {
+      return null;
+    }
+  }
+}
+
+// The `.aof` directory a config path belongs to, as `loadWorkspace` derives it: the config's own
+// directory when that is `.aof`, else (a legacy root config) the `.aof` beside it. The local file
+// lives there, so every reader and writer of it asks this.
+export function aofDirForConfig(configPath) {
+  const configDir = path.dirname(configPath);
+  return path.basename(configDir) === ".aof" ? configDir : path.join(configDir, ".aof");
+}
+
+// The local file, read and filtered: `{ configPath, present, allowed, refused, fault }`. Absent is
+// today's behaviour (`present: false`, nothing allowed, no fault). An unreadable or unparseable file
+// is a `config-local-unreadable` fault naming the file, never a silent skip; `allowed` and `refused`
+// are `filterLocalConfig`'s split of a parsed one. The local-config leaf is imported here, on the first
+// read, not statically: this module is on `aof --version`'s path, which reads no config (FF-16004).
+export async function readLocalConfig(aofDir) {
+  const { filterLocalConfig, LOCAL_CONFIG_FILE, LOCAL_UNREADABLE } = await import("@aof/contracts/local-config");
+  const configPath = await findLocalConfig(aofDir, LOCAL_CONFIG_FILE);
+  const none = { configPath, present: false, allowed: {}, refused: [], fault: null };
+  let text;
+  try {
+    text = await readFile(configPath, "utf8");
+  } catch (error) {
+    if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return none;
+    return { ...none, present: true, fault: { path: configPath, code: LOCAL_UNREADABLE, message: `Cannot read ${configPath}: ${error.message}` } };
+  }
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    return { ...none, present: true, fault: { path: configPath, code: LOCAL_UNREADABLE, message: `${configPath} is not valid JSON, so none of its settings are read: ${error.message}` } };
+  }
+  const { allowed, refused } = filterLocalConfig(raw);
+  const unusable = refused.find((entry) => entry.code === LOCAL_UNREADABLE);
+  if (unusable) return { ...none, present: true, fault: { path: configPath, code: LOCAL_UNREADABLE, message: `${configPath}: ${unusable.message}` } };
+  return { configPath, present: true, allowed, refused, fault: null };
 }
 
 export async function isLegacyConfigOnlyProject(projectDir = process.cwd()) {

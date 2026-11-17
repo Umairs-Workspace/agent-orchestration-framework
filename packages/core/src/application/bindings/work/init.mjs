@@ -8,12 +8,14 @@ import { loadBundle } from "../../../work/bundle.mjs";
 import { practiceRecord, practiceStates } from "../../../work/bundle-compose.mjs";
 import { bundleVersion, summarizeActions, synthesizeBundleConfig } from "../../../work/bundle-synthesis.mjs";
 import { ensureAofGitignore, ensureWorkDirGitFiles, workDirFor } from "../../../aof-gitignore.mjs";
+import { aofDirForConfig } from "../../../workspace.mjs";
 import { setHeadroomEnabled, readConfig, writeConfig } from "../../../work/headroom.mjs";
 import { applyClaudeSettingsMerge } from "../../../claude-settings.mjs";
 import { codexOwnershipBaseline } from "../../../codex-settings.mjs";
 import { readJson } from "@aof/foundation/fs";
 import { commandError } from "@aof/contracts/error";
 import { correctOperatorProfile, operatorProfileDiagnostics } from "@aof/contracts/operator-profile";
+import { LOCAL_CONFIG_FILE } from "@aof/contracts/local-config";
 
 export function assembleWorkInit({ workspaceServices, workMemoryServices, configInspectServices }) {
   // `aof work init` — render the shipped ACD bundle into a consumer repo
@@ -329,6 +331,7 @@ export function assembleWorkInit({ workspaceServices, workMemoryServices, config
   // on: it is the operator's statement, and a project may turn the switch on later.
   const BAD_PROFILE = "operator-profile-bad-value";
   const GLOBAL_PROFILE_ONLY = "init-config-global-profile-only";
+  const PROJECT_AND_GLOBAL = "init-config-project-and-global";
 
   // "fraud=expert,tenancy-law=new" → { fraud: "expert", "tenancy-law": "new" }. A pair with no `=`, an
   // empty side or a domain named twice is refused here; the slug and the level are the validator's.
@@ -381,18 +384,61 @@ export function assembleWorkInit({ workspaceServices, workMemoryServices, config
     return { targetDir, global: true, configPath, created, profileWritten: "global", operator };
   }
 
+  // 199 Q2 — this checkout's per-person local file, read for a profile write: the file sits in the
+  // `.aof` directory `loadWorkspace` reads it from, a legacy root config's included. A local file aof
+  // cannot read is refused rather than overwritten (it is someone's), and refused before any write.
+  async function readLocalTarget(configPath) {
+    const aofDir = aofDirForConfig(configPath);
+    const localPath = path.join(aofDir, LOCAL_CONFIG_FILE);
+    const created = !existsSync(localPath);
+    let read = {};
+    if (!created) {
+      try {
+        read = await readJson(localPath);
+      } catch (error) {
+        throw commandError(`${localPath} cannot be read, so the operator profile was not written: ${error instanceof Error ? error.message : String(error)}. Fix or remove the file, then run this again.`, "config-local-unreadable", 400);
+      }
+    }
+    const config = read != null && typeof read === "object" && !Array.isArray(read) ? read : {};
+    return { aofDir, localPath, created, config };
+  }
+
+  // The profile into the local file, read-merge-write, and the file kept out of git.
+  async function writeLocalProfile(target, words) {
+    const operator = correctOperatorProfile(target.config, words);
+    await writeConfig(target.localPath, target.config);
+    await ensureAofGitignore(path.dirname(target.aofDir));
+    return { localConfigPath: target.localPath, localCreated: target.created, operator };
+  }
+
   // `aof work init-config [dir] [--layers …] [--refinements …] [--domains …]
-  //   [--operator-aware on|off] [--operator-role <text>] [--expertise <domain>=<level>,…] [--global]`.
-  // opts: { targetDir, tags: { layers, refinements, domains }, operatorAware, operatorRole, expertise, global, env }
+  //   [--operator-aware on|off] [--operator-role <text>] [--expertise <domain>=<level>,…] [--project|--global]`.
+  // opts: { targetDir, tags: { layers, refinements, domains }, operatorAware, operatorRole, expertise, project, global, env }
   // (`env` names the global home for `--global`, as the config-inspect bindings take it; default process.env).
+  //
+  // 199 Q2 — WHERE THE PROFILE GOES. The operator profile is one person's, so by default it is written
+  // to the uncommitted `.aof/aof.config.local.json`, which lies over the project's file; `--project`
+  // writes it to the committed `.aof/aof.config.json` instead, and `--global` to the machine-wide file.
+  // Everything else this verb writes is the project's and goes to the project's file as before. A
+  // request that is the profile and nothing else writes the local file only, so the committed file is
+  // left byte-for-byte as it was.
   async function initConfig(options = {}) {
     const targetDir = path.resolve(options.targetDir ?? process.cwd());
     // Every refusal comes before any write.
+    if (options.project && options.global) {
+      throw commandError("--project and --global name different files: --project writes the operator profile to this project's committed .aof/aof.config.json, --global to the machine-wide ~/.aof/aof.config.json. Give one of them.", PROJECT_AND_GLOBAL, 400);
+    }
     const words = operatorWords(options);
     if (options.global) return initGlobalProfile(targetDir, options, words);
     const operatorAware = switchRequest(options.operatorAware);
     const { configPath, config } = await readConfig(targetDir);
     const created = !existsSync(configPath);
+    const localTarget = words != null && !options.project ? await readLocalTarget(configPath) : null;
+    const projectPartAsked = operatorAware != null || TAG_GROUPS.some((group) => normalizeTagGroup(options.tags?.[group]).length > 0);
+    if (localTarget != null && !projectPartAsked) {
+      const local = await writeLocalProfile(localTarget, words);
+      return { targetDir, configPath, created: false, projectWritten: false, profileWritten: "local", ...local };
+    }
     if (operatorAware === true && !examplesEnabledFromConfig(config)) {
       throw commandError("operator-aware discovery means nothing without discovery: work.examples.enabled is not true in this project. Turn discovery on first (work.examples.enabled: true), then the switch.", "examples-operator-aware-without-discovery", 400);
     }
@@ -445,21 +491,25 @@ export function assembleWorkInit({ workspaceServices, workMemoryServices, config
       }
     }
 
-    // work.operator — the operator's own words, replacing what they name.
-    const operator = words == null ? null : correctOperatorProfile(config, words);
+    // work.operator — the operator's own words, replacing what they name, in the project's file only
+    // when asked with `--project`; otherwise in the local file, after the project's write.
+    const operator = words == null || localTarget != null ? null : correctOperatorProfile(config, words);
 
     await writeConfig(configPath, config);
+    const local = localTarget != null ? await writeLocalProfile(localTarget, words) : null;
 
     return {
       targetDir,
       configPath,
       config,
       created,
+      projectWritten: true,
+      ...(local ?? {}),
       // The switch as its one resolver reads it, after the write.
       operatorAware: operatorAwareFromConfig(config),
       operatorAwareWritten,
-      profileWritten: operator == null ? null : "project",
-      operator,
+      profileWritten: local != null ? "local" : operator == null ? null : "project",
+      operator: local?.operator ?? operator,
       memoryBackend,
       backendWritten,
       // The write-side default, in the same `<value> + <written>` shape the backend and the

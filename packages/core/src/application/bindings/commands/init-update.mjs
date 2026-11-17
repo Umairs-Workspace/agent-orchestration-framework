@@ -193,6 +193,7 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
         operatorAware: { type: "string", enum: ["on", "off"] },
         operatorRole: { type: "string" },
         expertise: { type: "string" },
+        project: { type: "boolean" },
         global: { type: "boolean" },
       },
       required: ["targetDir"],
@@ -206,6 +207,7 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
         operatorAware: input.operatorAware,
         operatorRole: input.operatorRole,
         expertise: input.expertise,
+        project: Boolean(input.project),
         global: Boolean(input.global),
       });
       // The turn-on says at once what is still missing: the doctor's sentence, from the same function.
@@ -216,7 +218,7 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
     cli: {
       route: ["work", "init-config"],
       spec: {
-        usage: "aof work init-config [dir] [--layers @cli,@ui] [--refinements @work] [--domains @board] [--operator-aware on|off] [--operator-role <text>] [--expertise <domain>=<level>,…] [--global] [--json]",
+        usage: "aof work init-config [dir] [--layers @cli,@ui] [--refinements @work] [--domains @board] [--operator-aware on|off] [--operator-role <text>] [--expertise <domain>=<level>,…] [--project|--global] [--json]",
         workspace: false,
         flags: {
           target: { type: "string", description: "project directory (default: cwd; a bare positional dir also works)" },
@@ -226,6 +228,7 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
           operatorAware: { type: "string", description: "on|off — operator-aware discovery for this project (work.examples.operatorAware; needs discovery on)" },
           operatorRole: { type: "string", description: "who you are in this project, a sentence or two (work.operator.role; replaces the role)" },
           expertise: { type: "string", description: "comma-separated <domain>=expert|working|new (work.operator.expertise; replaces each domain named)" },
+          project: { type: "boolean", description: "write the operator profile to the project's committed .aof/aof.config.json (default: your uncommitted .aof/aof.config.local.json)" },
           global: { type: "boolean", description: "write the operator profile to the machine-wide ~/.aof/aof.config.json, and nothing else" },
         },
       },
@@ -236,6 +239,7 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
         ...(options.operatorAware !== undefined ? { operatorAware: String(options.operatorAware) } : {}),
         ...(options.operatorRole !== undefined ? { operatorRole: String(options.operatorRole) } : {}),
         ...(options.expertise !== undefined ? { expertise: String(options.expertise) } : {}),
+        ...(options.project ? { project: true } : {}),
         ...(options.global ? { global: true } : {}),
       }),
 
@@ -246,6 +250,8 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
             `work.operator written (global) — ${operatorSummary(result.operator)}; every project on this machine reads it under its own.`,
           ].join("\n");
         }
+        // 199 — the profile alone, into the local file: the project's file was not touched.
+        if (result.projectWritten === false) return [...localProfileLines(result), ...warningLines(result.operatorProfile)].join("\n");
         const lines = [
           `${result.created ? "Created" : "Updated"} ${relativeDisplayPath(result.configPath, result.targetDir)}`,
           // The key is named from the seam, not spelled again here: a face that prints the
@@ -272,7 +278,8 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
         if (result.operatorAwareWritten) {
           lines.push(`work.examples.operatorAware: ${result.operatorAware ? "on" : "off"} (set) — run "aof work update" to render it.`);
         }
-        if (result.profileWritten) lines.push(`work.operator written (project) — ${operatorSummary(result.operator)}`);
+        if (result.profileWritten === "project") lines.push(`work.operator written (project) — ${operatorSummary(result.operator)}`);
+        if (result.profileWritten === "local") lines.push(...localProfileLines(result));
         lines.push(...warningLines(result.operatorProfile));
         return lines.join("\n");
       },
@@ -284,6 +291,14 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
         created: result.created,
         profileWritten: result.profileWritten,
         operator: result.operator,
+      } : result.projectWritten === false ? {
+        targetDir: path.relative(process.cwd(), result.targetDir) || ".",
+        projectWritten: false,
+        localConfigPath: relativeDisplayPath(result.localConfigPath, result.targetDir),
+        localCreated: result.localCreated,
+        profileWritten: result.profileWritten,
+        operator: result.operator,
+        operatorProfile: result.operatorProfile ?? [],
       } : {
         targetDir: path.relative(process.cwd(), result.targetDir) || ".",
         configPath: relativeDisplayPath(result.configPath, result.targetDir),
@@ -298,6 +313,7 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
         operatorAware: result.operatorAware,
         operatorAwareWritten: result.operatorAwareWritten,
         profileWritten: result.profileWritten,
+        ...(result.profileWritten === "local" ? { localConfigPath: relativeDisplayPath(result.localConfigPath, result.targetDir), localCreated: result.localCreated } : {}),
         operator: result.operator,
         operatorProfile: result.operatorProfile ?? [],
       }),
@@ -429,6 +445,14 @@ function testLayoutLines(testLayout = []) {
 // 193/ADR-006 §5 — the operator lane's warning, in the test layout's line form.
 function warningLines(warnings = []) {
   return warnings.map(({ code, message }) => `warning: ${code} - ${message}`);
+}
+
+// 199 — where a profile written to the per-person local file went, and what that means.
+function localProfileLines(result) {
+  return [
+    `${result.localCreated ? "Created" : "Updated"} ${relativeDisplayPath(result.localConfigPath, result.targetDir)}`,
+    `work.operator written (local) — ${operatorSummary(result.operator)}; this file is yours, kept out of git, and read over the project's. Use --project to write it to the committed config instead.`,
+  ];
 }
 
 // What a profile write said, for the face: the role (quoted) and each domain's level it holds.

@@ -140,23 +140,39 @@ export function layerOperatorProfile(globalConfig, projectConfig) {
   return { ...projectConfig, work: { ...(work ?? {}), operator: mergeOperatorBlocks(globalBlock, blockOf(projectConfig)) } };
 }
 
+// 199 — the same merge the other way up: a config with a nearer file's block laid OVER its own, for
+// the per-person local file, which lies over the project's (`local-config.mjs`). In memory only. An
+// over-config with no block, or a config whose `work` is not an object, answers the config unchanged.
+export function overlayOperatorProfile(config, overConfig) {
+  const overBlock = blockOf(overConfig);
+  if (!isPlainObject(overBlock)) return config;
+  const work = config?.work;
+  if (work !== undefined && !isPlainObject(work)) return config;
+  return { ...config, work: { ...(work ?? {}), operator: mergeOperatorBlocks(blockOf(config), overBlock) } };
+}
+
 /**
  * The resolved profile and where each value came from, for `aof project show` (§6):
- * `{ declared, role, roleSource, expertise: [{ domain, level, source }] }`, each source `project`
- * or `global`, the domains in name order. Its values are exactly what the merge resolves to.
+ * `{ declared, role, roleSource, expertise: [{ domain, level, source }] }`, each source `local`
+ * (199's per-person file, nearest), `project` or `global`, the domains in name order. Its values are
+ * exactly what the merge resolves to.
  */
-export function describeOperatorProfile(globalConfig, projectConfig) {
-  const global = operatorProfileFromConfig(globalConfig);
-  const project = operatorProfileFromConfig(projectConfig);
-  const role = project.role ?? global.role;
-  const domains = [...new Set([...Object.keys(global.expertise), ...Object.keys(project.expertise)])].sort();
-  const expertise = domains.map((domain) => Object.hasOwn(project.expertise, domain)
-    ? { domain, level: project.expertise[domain], source: "project" }
-    : { domain, level: global.expertise[domain], source: "global" });
+export function describeOperatorProfile(globalConfig, projectConfig, localConfig = {}) {
+  const layers = [
+    ["local", operatorProfileFromConfig(localConfig)],
+    ["project", operatorProfileFromConfig(projectConfig)],
+    ["global", operatorProfileFromConfig(globalConfig)],
+  ];
+  const roleLayer = layers.find(([, profile]) => profile.role != null);
+  const domains = [...new Set(layers.flatMap(([, profile]) => Object.keys(profile.expertise)))].sort();
+  const expertise = domains.map((domain) => {
+    const [source, profile] = layers.find(([, candidate]) => Object.hasOwn(candidate.expertise, domain));
+    return { domain, level: profile.expertise[domain], source };
+  });
   return {
-    declared: role != null || expertise.length > 0,
-    role,
-    roleSource: project.role != null ? "project" : global.role != null ? "global" : null,
+    declared: roleLayer != null || expertise.length > 0,
+    role: roleLayer?.[1].role ?? null,
+    roleSource: roleLayer?.[0] ?? null,
     expertise,
   };
 }

@@ -1,0 +1,55 @@
+{
+  "runId": "20261117T101358446Z-0001",
+  "itemRef": "199",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "9f4a3d40-ee63-4807-b641-5b22ed39fb07",
+  "brief": {
+    "answers": [
+      {
+        "token": "199 Q1",
+        "question": "199 Q1 · Which settings may the uncommitted .aof/aof.config.local.json hold?",
+        "answer": "Allow-list (Recommended)",
+        "toolUseId": "toolu_01BMERjTUCeG1vL1NQrGk6s9",
+        "sessionId": "9f4a3d40-ee63-4807-b641-5b22ed39fb07",
+        "at": "2026-11-17T10:20:55.400Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "199 Q2",
+        "question": "199 Q2 · By default, where should `aof work init-config` write your operator profile (role and expertise)?",
+        "answer": "Local file (Recommended)",
+        "toolUseId": "toolu_01BMERjTUCeG1vL1NQrGk6s9",
+        "sessionId": "9f4a3d40-ee63-4807-b641-5b22ed39fb07",
+        "at": "2026-11-17T10:20:55.400Z",
+        "entrypoint": "claude-vscode"
+      }
+    ]
+  },
+  "createdAt": "2026-11-17T10:13:58.446Z",
+  "updatedAt": "2026-11-17T10:23:48.518Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-haiku-5-5|claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 513,
+      "output": 253551,
+      "cacheRead": 39509440,
+      "cacheCreate": 1113512
+    },
+    "costUsd": 19.833306,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 240,
+    "toolCalls": 123,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

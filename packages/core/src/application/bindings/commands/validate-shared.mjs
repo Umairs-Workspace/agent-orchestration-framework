@@ -13,12 +13,17 @@ export function assembleCommandsValidateShared({ configInspectServices }) {
   const { adapterWarningsForConfig } = configInspectServices;
   const { validateConfig } = configInspectServices;
   const { validateGlobalConfig } = configInspectServices;
+  const { validateLocalConfig } = configInspectServices;
 
   // The project-config validation report: diagnostics + adapter warnings, with
   // the strict/failed math the CLI has always applied.
   async function buildProjectValidationReport(input) {
     const targetDir = path.resolve(input.target ?? process.cwd());
-    const diagnostics = await validateConfig(targetDir, { config: input.config });
+    // 199 — the person validating sees their own local file's diagnostics beside the project's.
+    const diagnostics = [
+      ...await validateConfig(targetDir, { config: input.config }),
+      ...await validateLocalConfig(targetDir, { config: input.config }),
+    ];
     const adapterWarnings = await adapterWarningsForConfig(targetDir, {
       config: input.config,
       runtimes: input.runtimes,

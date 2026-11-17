@@ -164,9 +164,10 @@ export const doctorExamplesLaneTests = [
       assert.ok(Object.isFrozen(EXAMPLE_LANE_CODES));
       // 192/03 appended core's practice-render lane after it, through the same extension seam
       // (192/ADR-006 §2), so the examples lane is the first extension group rather than the last group;
-      // 193/03 put the practice's operator lane directly after it (193/ADR-006 §5).
+      // 193/03 put the practice's operator lane directly after it (193/ADR-006 §5); 199 appended core's
+      // local-config lane last.
       const at = CHECK_GROUPS.indexOf(examplesGroup);
-      assert.deepEqual([...CHECK_GROUPS.slice(at + 1)].map((group) => group.name), ["operatorGroup", "practiceRenderGroup"], "examplesGroup is followed by 193/03's operator lane, then 192/03's practice-render lane");
+      assert.deepEqual([...CHECK_GROUPS.slice(at + 1)].map((group) => group.name), ["operatorGroup", "practiceRenderGroup", "localConfigGroup"], "examplesGroup is followed by 193/03's operator lane, then 192/03's practice-render lane, then 199's local-config lane");
       // 181 appended the rubric configuration lane after diagramsGroup, as the last built-in lane;
       // the examples lane still follows every built-in lane, so it is the eleventh.
       assert.equal(CHECK_GROUPS[at - 1].name, "rubricConfigurationGroup", "…directly after the last built-in lane, 181's rubric configuration lane");

@@ -3712,6 +3712,9 @@
         "expertise": {
           "type": "string"
         },
+        "project": {
+          "type": "boolean"
+        },
         "global": {
           "type": "boolean"
         }
@@ -3727,7 +3730,7 @@
         "init-config"
       ],
       "spec": {
-        "usage": "aof work init-config [dir] [--layers @cli,@ui] [--refinements @work] [--domains @board] [--operator-aware on|off] [--operator-role <text>] [--expertise <domain>=<level>,…] [--global] [--json]",
+        "usage": "aof work init-config [dir] [--layers @cli,@ui] [--refinements @work] [--domains @board] [--operator-aware on|off] [--operator-role <text>] [--expertise <domain>=<level>,…] [--project|--global] [--json]",
         "workspace": false,
         "flags": {
           "target": {
@@ -3757,6 +3760,10 @@
           "expertise": {
             "type": "string",
             "description": "comma-separated <domain>=expert|working|new (work.operator.expertise; replaces each domain named)"
+          },
+          "project": {
+            "type": "boolean",
+            "description": "write the operator profile to the project's committed .aof/aof.config.json (default: your uncommitted .aof/aof.config.local.json)"
           },
           "global": {
             "type": "boolean",

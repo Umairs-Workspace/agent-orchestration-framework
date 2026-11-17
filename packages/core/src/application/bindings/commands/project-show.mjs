@@ -63,6 +63,14 @@ export function assembleCommandsProjectShow({ configInspectServices }) {
           const domains = result.operator.expertise.length;
           lines.push(`operator: ${result.operator.declared ? `declared, ${domains} domain${domains === 1 ? "" : "s"}` : "not declared"}`);
         }
+        // 199 — the per-person local file, and which values it decides here, so a person can see
+        // why their aof behaves unlike a teammate's.
+        if (result.local?.present) {
+          const overrides = result.local.overrides;
+          const what = result.local.fault != null ? `unreadable, so none of it is read: ${result.local.fault}`
+            : overrides.length > 0 ? `overrides ${overrides.join(", ")}` : "overrides nothing";
+          lines.push(`local: ${result.local.configPath} — ${what}`);
+        }
         if (result.legacyConfigIsStale) {
           lines.push(`warning: root aof.config.json is legacy; ${result.configPath} is authoritative`);
         }
