@@ -21,6 +21,7 @@
 import { existsSync } from "node:fs";
 import { decideScheduleToClose } from "./engine.mjs";
 import { DEFAULT_HEARTBEAT_MS } from "@aof/contracts/loop-bounds";
+import { ownerGone } from "@aof/contracts/freshness";
 
 // Core supplies application services; creating this interface starts no work.
 export function createAskOrchestration({
@@ -397,11 +398,12 @@ export function createAskOrchestration({
 
   // liveOwnerHolds(run, file, { stalenessMs, now }) — the `--resume` ownership rule (task 04, ruling
   // 13): a standing ask whose last entry is parked was given up and is re-entered, fresh or stale; an
-  // unparked one on a fresh run has a live owner and is left; on a stale run its owner died.
-  function liveOwnerHolds(run, { stalenessMs, nowMs }) {
+  // unparked one on a fresh run has a live owner and is left; on a stale run its owner died. So did
+  // the owner of a run behind the invocation's `ownerHorizon` (a restart, or `--reclaim`), fresh or not.
+  function liveOwnerHolds(run, { stalenessMs, nowMs, ownerHorizon = null }) {
     const entry = standingAsk(run);
     if (entry == null || entry.parkedAt != null) return false;
-    return !isStale(run, nowMs, stalenessMs);
+    return !isStale(run, nowMs, stalenessMs) && !ownerGone(run, ownerHorizon);
   }
 
   // The aof home's env as a loop and its children see it: this process's, with the injected store env

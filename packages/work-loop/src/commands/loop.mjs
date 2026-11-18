@@ -132,7 +132,7 @@ export function createLoopShell({
   const { askBlockLines, askContext, askEnvFor, awaitAnswer, isParkedHalt, parkedHalt } = asks;
   const { installLoopDiagnostics, loopDiagLogDir, loopDiagScopeTag, readLastLoopDiagEvent } = loopDiagnostics;
   const { buildNotifyEnvelope, notify } = notifications;
-  const { handOffLoop, handOffStart, stopLoop } = stops;
+  const { handOffLoop, handOffStart, hostBootedAtMs, leftRunningLines, ownerHorizonFor, stopLoop } = stops;
   const { clearResumeRequest, clearStopRequest, createStopSource, loopResumesDir, loopStartsDir, loopStopsDir, markStopHonoured, readStopRequest, spendStartRequest, stopRequestPath } = stopRequests;
   if (typeof invoke !== "function") throw new TypeError("createLoopShell: invoke is required");
 
@@ -419,13 +419,17 @@ export function createLoopShell({
     return { rows: listed, items };
   }
 
-  async function resumableState(scope, ctx, { now, stalenessThreshold } = {}) {
+  async function resumableState(scope, ctx, { now, stalenessThreshold, input } = {}) {
     const { items } = await localScopeItems(scope, ctx);
     const runs = [];
     for (const item of items) runs.push(...await readRuns(item));
+    const lastDeclaration = readLoopDeclaration(runs) ?? null;
+    // What this invocation KNOWS about dead owners, beside what `stalenessMs` infers (stop.mjs).
+    const ownerHorizon = await ownerHorizonFor(ctx.workspace, { resume: input?.resume === true, reclaim: input?.reclaim === true, now, loopRunId: lastDeclaration?.loopRunId, bootedAtMs: ctx.hostBootedAtMs });
     const stale = await staleRunningRuns(items, {
       now,
       stalenessThreshold: stalenessThreshold ?? heartbeatFromConfig(ctx.workspace),
+      ownerHorizon,
     });
     const staleIds = new Set(stale.map((run) => run.runId));
     return {
@@ -435,7 +439,8 @@ export function createLoopShell({
       live: runs
         .filter((run) => run.state === "running" && !staleIds.has(run.runId))
         .map((run) => ({ ref: run.itemRef, runId: run.runId, node: run.node ?? null })),
-      lastDeclaration: readLoopDeclaration(runs) ?? null,
+      lastDeclaration,
+      ownerHorizon,
     };
   }
 
@@ -455,6 +460,7 @@ export function createLoopShell({
   // 143/01 (ADR-002 §2) — `--refine` read against the one vocabulary: the member, `null` when the flag
   // is absent, and a coded refusal naming both members for anything else, before any registered read.
   const LOOP_REFINE_UNKNOWN = "loop-refine-unknown";
+  const LOOP_RECLAIM_NEEDS_RESUME = "loop-reclaim-needs-resume";
   function requestedRefine(input) {
     if (input?.refine === undefined || input.refine === null) return null;
     if (LOOP_REFINE_MODES.includes(input.refine)) return input.refine;
@@ -506,6 +512,10 @@ export function createLoopShell({
 
     // Reject malformed settings before paying for any registered read. L3's
     // workspace facts are gathered only after these vocabulary guards pass.
+    // `--reclaim` is a word about a RESUME: a fresh start has no dead loop to speak for.
+    if (input?.reclaim === true && input?.resume !== true) {
+      throw commandError("--reclaim settles the runs a dead loop left running, so it only means something on a resume — pass it with --resume (or with --hand-off, which asks the supervisor's relaunch to do it).", LOOP_RECLAIM_NEEDS_RESUME, 400);
+    }
     const requestedLevel = requireDecision(resolveLoopLevel(requested.level));
     const rubric = declaredRubric(ctx.workspace?.config);
     if (rubric != null && !usableCommand(rubric.command)) {
@@ -547,7 +557,7 @@ export function createLoopShell({
     let resume = { items: [], runs: [], stranded: [], lastDeclaration: null };
 
     if (input?.resume === true) {
-      resume = await resumableState(resolved.scope, ctx, { now: input.now });
+      resume = await resumableState(resolved.scope, ctx, { now: input.now, input });
       if (resume.lastDeclaration?.execution == null) requestedSessions(input);
       const inherited = resolveLoopResume({
         scope: resolved.scope,
@@ -583,7 +593,7 @@ export function createLoopShell({
         };
       }
     } else {
-      resume = await resumableState(resolved.scope, ctx, { now: input.now });
+      resume = await resumableState(resolved.scope, ctx, { now: input.now, input });
     }
 
     await resolveRuntimeInvocation({ input, ctx, resume, resolved, sessionRequest });
@@ -684,6 +694,9 @@ export function createLoopShell({
     if (input.resume === true) {
       throw commandError("--stop and --resume are exclusive: a stop asks the loop to halt, a resume asks for it back. Pass one.", "loop-stop-exclusive", 400);
     }
+    if (input.reclaim === true) {
+      throw commandError("--stop and --reclaim are exclusive: a stop asks a running loop to halt, a reclaim says the loop is already gone. Pass --reclaim with --resume.", LOOP_RECLAIM_NEEDS_RESUME, 400);
+    }
     await refuseBacklogScope(input, ctx, "--stop");
     const answer = await stopLoop(ctx.workspace, { scope: input.scope, now: input.now });
     if (answer.ok === false) {
@@ -703,7 +716,8 @@ export function createLoopShell({
       throw commandError("--hand-off asks the supervisor to relaunch the loop and is its own request — pass it without --stop, --dry-run or --resume.", "invalid-input", 400);
     }
     await refuseBacklogScope(input, ctx, "--hand-off");
-    const answer = await handOffLoop(ctx.workspace, { scope: input.scope, now: input.now });
+    // `--reclaim` rides the request; the relaunch reads it there and reclaims in its own process.
+    const answer = await handOffLoop(ctx.workspace, { scope: input.scope, now: input.now, ...(input.reclaim === true ? { reclaim: true } : {}) });
     if (answer.ok === false) {
       throw commandError(answer.message, answer.code, answer.code === "loop-hand-off-no-declaration" ? 404 : 409);
     }
@@ -1088,7 +1102,8 @@ export function createLoopShell({
       }, { ...ctx, workspace: ended.workspace });
       if (repaired.decision === "resume") {
         await printer(`Repaired ${act.stop} at ${act.ref ?? state.scope} (run ${repaired.runId}) — resuming ${state.scope}.`);
-        body = { ...input, scope: state.scope, resume: true };
+        // `--reclaim` is spent by the pass it was typed for: it vouched for the runs standing then.
+        body = { ...input, reclaim: false, scope: state.scope, resume: true };
         continue;
       }
       if (repaired.facts != null) await printer(`${renderLoopState(state)}${reportFacts({ ...(ended.halt?.details ?? {}), ...repaired.facts })}`);
@@ -1180,6 +1195,8 @@ export function createLoopShell({
     // run the sweep calls stale and the clock calls alive is exactly the disagreement that
     // reproduces the bill.
     const stalenessMs = heartbeatFromConfig(ctx.workspace);
+    // The owner horizon, resolved once with the scope's runs and handed to every liveness site.
+    const ownerHorizon = resolved.resume.ownerHorizon ?? null;
     const resumeRetries = new Map();
     const pendingFixes = new Map();
     // 81/03 — THE GRADE RIDES ITS OWN MAP, KEYED BY REF, and is read at exactly the one place
@@ -1339,6 +1356,7 @@ export function createLoopShell({
           {
             now: input.now,
             stalenessThreshold: stalenessMs,
+            ownerHorizon,
           },
           transitionOptionsFor(ctx),
         );
@@ -1348,7 +1366,10 @@ export function createLoopShell({
           // mints a NEW one before its first dispatch. Announced like every reclaim, retried by none.
           if (entry.record?.brief?.wave == null) resumeRetries.set(phaseRetryKey(entry.item.ref, entry.record?.brief?.loop?.phase), { item: entry.item, prior: entry.record });
           await narrate(`Reclaimed ${entry.item.ref} — run ${entry.record.runId} (${entry.record.failureReason}).`);
+          if (entry.ownerGone === true) await narrate(ownerHorizon.line(entry));
         }
+        // What the reclaim LEFT running, and why — each run the walk would otherwise die on, named (stop.mjs).
+        for (const line of await leftRunningLines(ctx.workspace, resolved.resume.items, { reclaimed, ownerHorizon, loopRunId, stalenessMs, now: input.now })) await narrate(line);
         for (const item of resolved.resume.items) {
           const itemRuns = await readRuns(item);
           const failed = itemRuns.filter((record) =>
@@ -1559,6 +1580,7 @@ export function createLoopShell({
       const waveBounds = {
         heartbeatMs: stalenessMs,
         stalenessMs,
+        ownerHorizon,
         scheduleToCloseMs,
         startToCloseMs: startToCloseFromConfig(ctx.workspace),
         startupGraceMs: startupGraceFromConfig(ctx.workspace),
@@ -1599,7 +1621,7 @@ export function createLoopShell({
       // a human, after the stop source has started and before the first act; asks with no waiting run
       // behind them are swept first. A park halts on the question, before any new drive is minted.
       if (preWalkHalt == null && input.resume === true) {
-        const reentry = await reenterPrimaryAsks({ ctx, primaryRoot: ctx.workspace.projectRoot, scope: resolved.scope, items: resolved.resume.items, ask, bookkeeping, ladderOptions, input, stalenessMs, narrate, factsFor });
+        const reentry = await reenterPrimaryAsks({ ctx, primaryRoot: ctx.workspace.projectRoot, scope: resolved.scope, items: resolved.resume.items, ask, bookkeeping, ladderOptions, input, stalenessMs, ownerHorizon, narrate, factsFor });
         if (reentry.stopped) return await haltOnStop(null, reentry.ref, reentry.drive, reentry.parked);
         preWalkHalt = reentry.halt;
       }
@@ -2122,6 +2144,8 @@ export function createLoopShell({
         // 131/11 ADR-009 §6 — the hand-off to the supervisor, in the same three homes.
         handOff: { type: "boolean" },
         startHandOff: { type: "boolean" }, // 191/04 ADR-005 §2 — the start request, in the same three homes.
+        // The operator's word that a loop is gone — on a resume, or a hand-off — in the same three homes.
+        reclaim: { type: "boolean" },
         // 141 — the effort every driven session thinks at, in the same three homes. 143/03 — repeatable,
         // so a list; a string from an older caller is still read as one value.
         thinking: { type: ["array", "string"] },
@@ -2147,12 +2171,13 @@ export function createLoopShell({
     cli: {
       route: ["work", "loop"],
       spec: {
-        usage: "aof work loop <driver|NN-MM|backlog-slug|backlog-path> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--hand-off-start] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
+        usage: "aof work loop <driver|NN-MM|backlog-slug|backlog-path> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--reclaim] [--stop] [--hand-off] [--hand-off-start] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
         flags: {
           level: { type: "string", description: "loop level (L1 report-only, L2 assisted, or L3 unattended when its computed gate passes)" },
           cap: { type: "string", description: "override the per-(ref, phase) drive ceiling" },
           reviewClaims: { type: "string", description: "JSON structured blocker claims keyed by ref and completed review rounds" },
           resume: { type: "boolean", description: "settle stranded runs and resume the last declaration" },
+          reclaim: { type: "boolean", description: "with --resume (or --hand-off): the loop being resumed is gone — settle every run it left running on this node at once, without waiting out the heartbeat window. Only when its process really is gone: a live loop's runs would be settled under it" },
           stop: { type: "boolean", description: "ask the scope's running loop to stop: the first request drains, a second cancels the in-flight session; --resume clears it" },
           handOff: { type: "boolean", description: "hand a halted supervised loop back to its supervisor, which relaunches it with --resume on its next poll; starts nothing here" },
           handOffStart: { type: "boolean", description: "ask the supervisor to start this scope as a new supervised loop on its next poll; starts nothing here, and refuses a scope that is running or has a halted supervised loop to resume" },
@@ -2171,6 +2196,7 @@ export function createLoopShell({
         ...(options.cap != null ? { cap: Number(options.cap) } : {}),
         ...(options.reviewClaims != null ? { reviewClaims: JSON.parse(options.reviewClaims) } : {}),
         ...(options.resume === true ? { resume: true } : {}),
+        ...(options.reclaim === true ? { reclaim: true } : {}),
         ...(options.stop === true ? { stop: true } : {}),
         ...(options.handOff === true ? { handOff: true } : {}),
         ...(options.handOffStart === true ? { startHandOff: true } : {}),
@@ -2200,6 +2226,8 @@ export function createLoopShell({
             executionHandoff: decodeExecutionHandoff(process.env.AOF_MESH_EXECUTION, sessions.resolveExecutionResume),
             // 131/03 — this invocation's own log, which the death report of the loop it resumes skips.
             diagLogPath: diag?.logPath ?? null,
+            // The machine's boot instant, read at THIS seam alone: a resume after a restart reclaims at once.
+            hostBootedAtMs: hostBootedAtMs(),
             config: faceCtx.options.config,
             // THE SEQUENTIAL DRIVE IS A CHILD PROCESS (2026-09-24): the loop's own process hosts no
             // PTY on any path, so the console-scoped kill of a finished session can only take a

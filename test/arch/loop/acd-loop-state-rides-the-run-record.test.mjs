@@ -434,7 +434,12 @@ export const archTests = [
         // RE-PINNED by chore 206 (2026-11-12, host sleep): settle stamps an OPTIONAL `suspended` span
         // list on the record, and the lineage budget subtracts it. No required key, state edge, writer
         // or board/UI reader changed; the commit that made the change left this pin stale.
-        ["packages/execution/src/runs.mjs", "d7c91fca6b12329155179892d7b4ccc75fba971b998f0f055e90a865566d8bae"],
+        // RE-PINNED by `--reclaim` and the boot horizon (2026-11-17): the stale scan and the sweep over
+        // it take an OPTIONAL `ownerHorizon`, and a running run THIS node minted that was last alive
+        // before it is a candidate inside its heartbeat window (`ownerGone`, beside `isStale` in
+        // contracts). Absent, the scan is the threshold's alone, byte for byte. No key, state edge or
+        // writer changed: the reclaim is the one edge it was, and a waiting run is still exempt.
+        ["packages/execution/src/runs.mjs", "0ac87fc5a91a6e813d73e8a89abe5bc5b5ed949c57c597dcdd984c89f7cd3289"],
         // RE-PINNED by 126/01 (ADR-003 §4), and the invariant it belongs to is NARROWED in the
         // open rather than quietly worked around: `53/ADR-004`'s intent was that loop state needs
         // no new FACE — which remains true and is why the `--json` document is untouched by that

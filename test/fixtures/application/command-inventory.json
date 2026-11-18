@@ -4874,6 +4874,9 @@
         "startHandOff": {
           "type": "boolean"
         },
+        "reclaim": {
+          "type": "boolean"
+        },
         "thinking": {
           "type": [
             "array",
@@ -4910,7 +4913,7 @@
         "loop"
       ],
       "spec": {
-        "usage": "aof work loop <driver|NN-MM|backlog-slug|backlog-path> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--hand-off-start] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
+        "usage": "aof work loop <driver|NN-MM|backlog-slug|backlog-path> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--reclaim] [--stop] [--hand-off] [--hand-off-start] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
         "flags": {
           "level": {
             "type": "string",
@@ -4927,6 +4930,10 @@
           "resume": {
             "type": "boolean",
             "description": "settle stranded runs and resume the last declaration"
+          },
+          "reclaim": {
+            "type": "boolean",
+            "description": "with --resume (or --hand-off): the loop being resumed is gone — settle every run it left running on this node at once, without waiting out the heartbeat window. Only when its process really is gone: a live loop's runs would be settled under it"
           },
           "stop": {
             "type": "boolean",

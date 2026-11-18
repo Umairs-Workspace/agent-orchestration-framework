@@ -1275,7 +1275,7 @@ export function createStoryCycle({
   // first, then the rest, each in `askedAt` order (ruling 12). An answered one is re-driven under its
   // own record, settled, retried as a first drive would be, and a finished build is graded through the
   // ladder (ruling 16). Answers `{ halt }` (null to walk on), or `{ stopped }` when a stop parked a wait.
-  async function reenterPrimaryAsks({ ctx, primaryRoot, scope, items, ask, bookkeeping, ladderOptions, input, stalenessMs, narrate, factsFor: readFacts }) {
+  async function reenterPrimaryAsks({ ctx, primaryRoot, scope, items, ask, bookkeeping, ladderOptions, input, stalenessMs, ownerHorizon = null, narrate, factsFor: readFacts }) {
     const { dir } = ask.deps;
     await sweepStaleAsks({
       dir,
@@ -1289,7 +1289,7 @@ export function createStoryCycle({
     for (const item of items) {
       for (const run of await readRuns(item)) {
         if (run.state !== "running" || run.brief?.wave != null || standingAsk(run) == null) continue;
-        if (liveOwnerHolds(run, { stalenessMs, nowMs })) continue;
+        if (liveOwnerHolds(run, { stalenessMs, nowMs, ownerHorizon })) continue;
         pairs.push({ item, run, file: await readAsk(dir, run.runId) });
       }
     }

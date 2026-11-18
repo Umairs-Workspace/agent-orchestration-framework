@@ -13,6 +13,8 @@
 // so a declaration whose latest run names another node is refused by name (ADR-006 §1) — the
 // operator stops it on that node's own console.
 
+import os from "node:os";
+
 import { decideLoopScope, loopScopeIncludes, readLoopDeclaration, resolveLoopLevel } from "./engine.mjs";
 
 import { heartbeatFromConfig } from "@aof/contracts/loop-bounds";
@@ -30,7 +32,7 @@ export function createLoopStops({
   // derived from the project root), supplied by the core binding so a start names the id the mesh
   // registered the project under (191/F-14), never only a hand-pinned one.
   const { meshNodeIdOf, resolveWorkspaceId } = placement;
-  const { STOP_LEVELS, loopResumesDir, loopStopsDir, markStopHonoured, requestLoopResume, requestLoopStop, resumeRequestPath, stopRequestPath, loopStartsDir, requestLoopStart, startRequestPath } = stopRequests;
+  const { STOP_LEVELS, loopResumesDir, loopStopsDir, markStopHonoured, readResumeRequest, requestLoopResume, requestLoopStop, resumeRequestPath, stopRequestPath, loopStartsDir, requestLoopStart, startRequestPath } = stopRequests;
 
   // The refusal codes, each a coded document (ADR-002 §3, §5): the command face maps
   // `loop-stop-no-declaration` to 404 and the other two to 409; `loop-stop-exclusive` (400) is the
@@ -185,7 +187,13 @@ export function createLoopStops({
   // the durable resume request the declarations producer reads, and answers
   // `{ ok: true, handedOff: true, loopRunId, scope, path }`. A refusal is a value, as the stop's is:
   // no declaration, an unsupervised one (resumed from a terminal instead), or a live one.
-  async function handOffLoop(workspace, { scope, now } = {}) {
+  //
+  // `reclaim: true` is the operator's word that the loop is GONE (`work:loop --hand-off --reclaim`,
+  // `/loop resume … reclaim`). A loop that died without settling its runs reads as running for a whole
+  // heartbeat window, so the live refusal is exactly what stands in the way: it is skipped, and the
+  // request carries `reclaim: true` for the relaunch to read. Nothing is settled here — the relaunch
+  // reclaims in its own process, where a reclaimed lane is re-driven from its own tree.
+  async function handOffLoop(workspace, { scope, now, reclaim = false } = {}) {
     const read = await scopeDeclaration(workspace, scope, HAND_OFF_REFUSALS);
     if (read.refusal) return read.refusal;
     const { declaration, latest } = read;
@@ -193,7 +201,7 @@ export function createLoopStops({
       return refuse(HAND_OFF_REFUSALS.noDeclaration, `No run in scope ${read.scope} carries a loop declaration — there is no loop to hand to the supervisor. Start one with \`aof work loop ${read.scope} --supervised\` (${HAND_OFF_REFUSALS.noDeclaration}).`);
     }
     if (declaration.supervised !== true) {
-      return refuse(HAND_OFF_REFUSALS.notSupervised, `Loop ${declaration.loopRunId} in scope ${read.scope} is not supervised, so no supervisor relaunches it — resume it from a terminal with \`aof work loop ${read.scope} --resume\` (${HAND_OFF_REFUSALS.notSupervised}).`);
+      return refuse(HAND_OFF_REFUSALS.notSupervised, `Loop ${declaration.loopRunId} in scope ${read.scope} is not supervised, so no supervisor relaunches it — resume it from a terminal with \`aof work loop ${read.scope} --resume${reclaim === true ? " --reclaim" : ""}\` (${HAND_OFF_REFUSALS.notSupervised}).`);
     }
     // As the stop refuses it (130/ADR-006 §1): the request is a file in THIS machine's aof home, so a
     // declaration whose latest run names another node is handed back on that node, never here.
@@ -203,8 +211,8 @@ export function createLoopStops({
       return refuse(HAND_OFF_REFUSALS.notLocal, `Loop ${declaration.loopRunId} in scope ${read.scope} last ran on ${runNode}, not on this node (${localNode}) — hand it back on ${runNode} (${HAND_OFF_REFUSALS.notLocal}).`);
     }
     const clock = clockOf(now);
-    if (latest != null && isRunning(latest) && !isStale(latest, clock().getTime(), heartbeatFromConfig(workspace))) {
-      return refuse(HAND_OFF_REFUSALS.running, `Loop ${declaration.loopRunId} in scope ${read.scope} is running — there is nothing to hand back (${HAND_OFF_REFUSALS.running}).`);
+    if (reclaim !== true && latest != null && isRunning(latest) && !isStale(latest, clock().getTime(), heartbeatFromConfig(workspace))) {
+      return refuse(HAND_OFF_REFUSALS.running, `Loop ${declaration.loopRunId} in scope ${read.scope} is running — there is nothing to hand back. If its process is gone and only its records say so, hand it back with a reclaim: \`aof work loop ${read.scope} --hand-off --reclaim\`, or \`/loop resume\` with \`reclaim: True\` (${HAND_OFF_REFUSALS.running}).`);
     }
     const dir = loopResumesDir();
     await requestLoopResume(dir, {
@@ -212,9 +220,10 @@ export function createLoopStops({
       scope: read.scope,
       workspaceId: workspace?.config?.mesh?.workspaceId ?? null,
       by: { node: localNode, pid: process.pid },
+      ...(reclaim === true ? { reclaim: true } : {}),
       now: clock,
     });
-    return { ok: true, handedOff: true, loopRunId: declaration.loopRunId, scope: read.scope, path: resumeRequestPath(dir, declaration.loopRunId) };
+    return { ok: true, handedOff: true, loopRunId: declaration.loopRunId, scope: read.scope, path: resumeRequestPath(dir, declaration.loopRunId), ...(reclaim === true ? { reclaim: true } : {}) };
   }
 
   // handOffStart(workspace, { scope, level, now }) — 191/04 (ADR-005 §1-§2): ask the SUPERVISOR to
@@ -225,7 +234,7 @@ export function createLoopStops({
   // (`loop-start-resumable`): a fresh start would reset that halted loop's total budget, so the
   // refusal names the resume instead. Answers `{ ok: true, requested: true, scope, path }`.
   // `--hand-off-start` is its own request: each companion flag is refused before any read, naming both.
-  const START_COMPANIONS = Object.freeze([["stop", "--stop"], ["resume", "--resume"], ["handOff", "--hand-off"], ["dryRun", "--dry-run"]]);
+  const START_COMPANIONS = Object.freeze([["stop", "--stop"], ["resume", "--resume"], ["handOff", "--hand-off"], ["dryRun", "--dry-run"], ["reclaim", "--reclaim"]]);
 
   async function handOffStart(workspace, { scope, level = null, now, ...flags } = {}) {
     const companion = START_COMPANIONS.find(([key]) => flags[key] === true);
@@ -273,6 +282,75 @@ export function createLoopStops({
     return { ok: true, requested: true, scope: read.scope, path: startRequestPath(dir, { workspaceId, scope: read.scope }) };
   }
 
+  // THE OWNER HORIZON — what a `work:loop` invocation KNOWS about dead owners, beside what a silent
+  // heartbeat lets the staleness threshold infer (`ownerGone`, `@aof/contracts/freshness`). A loop that
+  // dies without settling its runs leaves `running` records nothing beats, and for a whole heartbeat
+  // window they read as a live loop: a `--resume` inside it reclaimed nothing and died on the store's
+  // duplicate-run guard (measured 2026-11-17: a restart at 21:24:36Z, resumes at 21:31Z and 21:35Z,
+  // both refused). Two producers, and the operator's word wins:
+  //   · `reclaim` on a resume — the flag, or the word a hand-off left on the standing resume request
+  //     (`/loop resume … reclaim`), read here — vouches that the RESUMED LOOP is gone: every run
+  //     carrying its declaration that this node left running before THIS invocation began has no
+  //     owner. Another session's run in the same scope is not the operator's to vouch for;
+  //   · the machine's boot instant (`bootedAtMs`, which only the launch seam reads, so a test-driven
+  //     body and the probe carry none unless one is injected): nothing that beat before a restart
+  //     outlived it.
+  // Either way only THIS node's runs are behind it. `line` is the sentence a reclaim it admitted is
+  // narrated with, spelled here once, so neither the shell nor the wave spells it.
+  async function ownerHorizonFor(workspace, { resume = false, reclaim = false, now, loopRunId = null, bootedAtMs = null } = {}) {
+    const node = meshNodeIdOf(workspace.config);
+    const horizon = (beforeMs, because, asked) => ({
+      node,
+      beforeMs,
+      reclaim: asked,
+      ...(asked ? { loopRunId } : {}),
+      line: (entry) => `Run ${entry.record.runId} was last alive at ${entry.lastAliveAt}, inside its heartbeat window — reclaimed because ${because}.`,
+    });
+    // A scope with no declaration has no loop to vouch for: the resume answers `Nothing to resume`.
+    if (resume === true && typeof loopRunId === "string" && loopRunId.length > 0) {
+      if (reclaim === true) return horizon(clockOf(now)().getTime(), "--reclaim says its owner is gone", true);
+      const handedBack = await readResumeRequest(loopResumesDir(), loopRunId);
+      if (handedBack?.reclaim === true) return horizon(clockOf(now)().getTime(), "the hand-off asked for a reclaim", true);
+    }
+    return Number.isFinite(bootedAtMs) ? horizon(bootedAtMs, `this machine restarted at ${new Date(bootedAtMs).toISOString()}`, false) : null;
+  }
+
+  // This machine's boot instant. `os.uptime()` is whole seconds on some platforms, so a second is
+  // given away: the instant errs EARLY, and a run alive at the boot itself is never behind it.
+  const hostBootedAtMs = () => Date.now() - (Math.floor(os.uptime()) + 1) * 1000;
+
+  // leftRunningLines(workspace, items, …) → one line per run a resume's reclaim LEFT running, and why.
+  // A run still inside its heartbeat window is presumed to have an owner, and the walk then dies on it
+  // at the store's duplicate-run guard, whose message names neither the run nor a way out. So each is
+  // named: the resumed loop's own with the instant it becomes reclaimable and the one flag that
+  // settles it sooner — which is also where an operator meets `--reclaim` at all — and a run that is
+  // not that loop's as its own session's to settle. A run waiting on a human is not one of these (it
+  // is re-entered), and a run another node minted is named only when a reclaim was asked for.
+  async function leftRunningLines(workspace, items, { reclaimed = [], ownerHorizon = null, loopRunId = null, stalenessMs, now } = {}) {
+    const settled = new Set(reclaimed.map((entry) => entry.record.runId));
+    const localNode = meshNodeIdOf(workspace.config);
+    const nowMs = clockOf(now)().getTime();
+    const asked = ownerHorizon?.reclaim === true;
+    const lines = [];
+    for (const item of items) {
+      for (const run of await readRuns(item)) {
+        if (run.state !== "running" || settled.has(run.runId) || (Array.isArray(run.asks) && run.asks.length > 0)) continue;
+        const lastAlive = run.heartbeatAt ?? run.updatedAt;
+        const left = `Left ${run.itemRef} — run ${run.runId}`;
+        if ((run.node ?? null) !== localNode) {
+          if (asked) lines.push(`${left} was minted on ${run.node ?? "no mesh node"}, not on this node (${localNode ?? "no mesh node"}): a reclaim settles this node's runs only.`);
+        } else if (run.brief?.loop?.loopRunId !== loopRunId) {
+          lines.push(`${left} is running and is not the resumed loop's: it is its own session's to settle${asked ? ", and a reclaim settles only the runs that loop left" : ""}.`);
+        } else if (asked) {
+          lines.push(`${left} beat at ${lastAlive}, after this resume began: its owner is alive, so the reclaim did not settle it.`);
+        } else if (Date.parse(lastAlive) <= nowMs) {
+          lines.push(`${left} is inside its heartbeat window (last alive ${lastAlive}, reclaimable after ${new Date(Date.parse(lastAlive) + stalenessMs).toISOString()}). If the loop that owned it is gone, resume with --reclaim.`);
+        }
+      }
+    }
+    return lines;
+  }
+
   return Object.freeze({
     HAND_OFF_REFUSALS,
     START_REFUSALS,
@@ -280,6 +358,9 @@ export function createLoopStops({
     handOffLoop,
     handOffStart,
     hasLoopOn,
+    hostBootedAtMs,
+    leftRunningLines,
+    ownerHorizonFor,
     stopLoop
   });
 }

@@ -332,7 +332,7 @@ hour.
 | `/status` | `project` (optional) | lists what is in progress in each project, with its execution and node and any question waiting | only you see it |
 | `/asks` | `project` (optional) | lists the questions waiting or parked, each with a link to the bot's question message | only you see it |
 | `/loop stop` | `scope`, `project` (optional) | asks the loop for that scope to stop. The first request drains, and a second cancels the session in flight | the channel sees it |
-| `/loop resume` | `scope`, `project` (optional) | hands a halted supervised loop back to the desktop app, which relaunches it with `--resume` on its next poll | the channel sees it |
+| `/loop resume` | `scope`, `project` (optional), `reclaim` (optional) | hands a halted supervised loop back to the desktop app, which relaunches it with `--resume` on its next poll. With `reclaim: True`, the relaunch first settles the runs a dead loop left running | the channel sees it |
 | `/loop start` | `scope`, `project` (optional) | asks the desktop app to start a new supervised loop on that scope, on its next poll | the channel sees it |
 | `/session start` | `project`, `node` (optional), `item` (optional) | starts Claude in that project and answers with the link that opens it, or with the session's name | only you see it |
 | `/session list` | `project` (optional) | lists the live sessions in each project, each with its name, its node and how long it has run or when it was last seen | only you see it |
@@ -379,6 +379,30 @@ to run in a terminal instead: `aof work loop <scope> --resume`. A loop that is s
 refused, `loop-hand-off-running`, and one that last ran on another node is refused,
 `loop-hand-off-not-local`: hand it back on that node. From a terminal, the same hand-off is
 `aof work loop <scope> --hand-off`.
+
+**`reclaim: True` is for a loop whose process is gone.** A loop that dies without settling its runs
+(a crash, a kill) leaves them recorded as running. Until their heartbeat goes stale, 15 minutes by
+default (`work.loop.heartbeatMs`), aof reads the loop as alive: `/loop resume` is refused
+`loop-hand-off-running`, and a relaunch stops on *a non-terminal run already exists for this item*.
+`/loop resume scope:<scope> reclaim:True` is your word that the process is gone. The hand-off is
+then not refused, and the relaunch settles every run that loop left running on this node before it
+resumes. It answers `@<name> handed <scope> to the supervisor with a reclaim — its relaunch settles
+every run the loop left running on this node, whatever its heartbeat, then resumes`.
+
+- Use it only when the loop's process really is gone. If it is still running, its runs are settled
+  under it and two loops drive the same scope.
+- It settles only the runs of the loop you are resuming, and only the ones this node started. A run
+  another node started, or one another session started in the same scope, is left, and the relaunch
+  says so.
+- After a machine restart you don't need it: the relaunch sees that the runs are older than the
+  restart and settles them itself.
+- It cannot release a loop the desktop app is holding. When a relaunch has already stopped on *a
+  non-terminal run already exists*, the desktop app holds that loop and starts it again only when
+  you press Start there, or after the app restarts. The reclaim you asked for is kept, and that next
+  start applies it.
+
+From a terminal the same word is `--reclaim`: `aof work loop <scope> --resume --reclaim` resumes an
+unsupervised loop yourself, and `aof work loop <scope> --hand-off --reclaim` is this hand-off.
 
 **`/loop start` starts nothing itself either.** It writes a start request, and the desktop app
 starts the scope as a new supervised loop on its next poll. It answers `@<name> asked the supervisor

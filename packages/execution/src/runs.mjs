@@ -1,4 +1,4 @@
-import { isStale } from "@aof/contracts/freshness";
+import { isStale, ownerGone } from "@aof/contracts/freshness";
 // src/run-store.mjs — the run-record store, the state-machine validator, the
 // runs/ path seam, and (milestone 20) the RESILIENCE spine: failure
 // classification + attempt ceiling, the retry-lineage mint, the heartbeat +
@@ -1252,12 +1252,12 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   // is left BYTE-UNCHANGED (19/R4). Returns the list of reclaimed { item, run } entries
   // so the COMMAND layer can call the work.mjs status-rollback writer over them
   // (ADR-005 — the scan ORCHESTRATES, work.mjs WRITES; the store never writes frontmatter).
-  async function reclaimStaleRuns(items, { now, stalenessThreshold = Infinity } = {}) {
+  async function reclaimStaleRuns(items, { now, stalenessThreshold = Infinity, ownerHorizon = null } = {}) {
     const nowIso = now ?? new Date().toISOString();
     const reclaimed = [];
     for (const item of items) {
       await serialized(async current => {
-        for (const run of await staleRunningRuns([current], { now: nowIso, stalenessThreshold })) {
+        for (const run of await staleRunningRuns([current], { now: nowIso, stalenessThreshold, ownerHorizon })) {
           reclaimed.push({ item: current, run: await reclaimRun(current, run.runId, { now: nowIso }) });
         }
       })(item);
@@ -1270,7 +1270,12 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   // Split out so the transition seam can select candidates and settle each through the
   // ledger without re-deriving the staleness rule, and so `reclaimStaleRuns` above is
   // visibly scan-then-write rather than one interleaved loop.
-  async function staleRunningRuns(items, { now, stalenessThreshold = Infinity } = {}) {
+  //
+  // `ownerHorizon` (optional, `{ node, beforeMs }`) adds what the caller KNOWS to what silence lets
+  // the threshold infer: a run this node minted and that was last alive before the horizon has no
+  // owner, however fresh its heartbeat (`ownerGone`). Such a candidate carries `ownerGone: true`, so
+  // the caller can say it was not reclaimed on staleness. Absent, the scan is the threshold's alone.
+  async function staleRunningRuns(items, { now, stalenessThreshold = Infinity, ownerHorizon = null } = {}) {
     const nowMs = Date.parse(now ?? new Date().toISOString());
     const candidates = [];
     for (const item of items) {
@@ -1281,8 +1286,9 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
         // is read, and only a plain object exempts — a corrupt entry never makes an orphan
         // unreclaimable.
         if (openLastAsk(run.asks) != null) continue;
-        if (!isStale(run, nowMs, stalenessThreshold)) continue;
-        candidates.push({ ...run, item });
+        const stale = isStale(run, nowMs, stalenessThreshold);
+        if (!stale && !ownerGone(run, ownerHorizon)) continue;
+        candidates.push({ ...run, item, ...(stale ? {} : { ownerGone: true }) });
       }
     }
     return candidates;

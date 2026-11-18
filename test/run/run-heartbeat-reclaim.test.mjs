@@ -596,6 +596,83 @@ export const runHeartbeatReclaimTests = [
       }
     },
   },
+  // ── THE OWNER HORIZON (2026-11-17): what a caller KNOWS about dead owners, beside the threshold ──
+  //
+  // A loop that died with its machine left `running` records inside their heartbeat window, and a
+  // resume within it reclaimed nothing. The scan takes an optional `{ node, beforeMs }`: a run THIS
+  // node minted and that was last alive before the horizon has no owner, however fresh its heartbeat.
+  {
+    name: "run-heartbeat-reclaim — an owner horizon admits only this node's runs last alive before it, and only one loop's when it names one (eleven rows)",
+    async run() {
+      const { staleRunningRuns } = _aofApplication.execution.runs;
+      const now = "2026-11-17T21:31:00.000Z";
+      const horizonAt = "2026-11-17T21:24:36.000Z"; // the restart
+      const before = "2026-11-17T21:23:25.000Z"; // a beat the restart ended: 7.5 minutes old at `now`
+      const after = "2026-11-17T21:30:00.000Z"; // a beat after it
+      const FIFTEEN_MIN = 15 * 60 * 1000;
+      const horizon = (node) => ({ node, beforeMs: Date.parse(horizonAt) });
+      const rows = [
+        // label, the record's liveness and node, the horizon, admitted?, by the horizon?
+        ["no horizon: the fresh run is left, as before", { heartbeatAt: before, node: "node-a" }, undefined, false, false],
+        ["this node's run, last alive before the horizon", { heartbeatAt: before, node: "node-a" }, horizon("node-a"), true, true],
+        ["this node's run, alive after the horizon", { heartbeatAt: after, node: "node-a" }, horizon("node-a"), false, false],
+        ["a run alive AT the horizon is not behind it", { heartbeatAt: horizonAt, node: "node-a" }, horizon("node-a"), false, false],
+        ["another node's run is never matched", { heartbeatAt: before, node: "node-b" }, horizon("node-a"), false, false],
+        ["an absent node matches only an absent node", { heartbeatAt: before, node: null }, horizon(null), true, true],
+        ["a named node never matches an absent one", { heartbeatAt: before, node: null }, horizon("node-a"), false, false],
+        ["a never-beat run falls back to updatedAt", { heartbeatAt: null, updatedAt: before, node: "node-a" }, horizon("node-a"), true, true],
+        // A horizon that names ONE loop is behind that loop's runs alone (the operator's `--reclaim`).
+        ["the named loop's own run", { heartbeatAt: before, node: "node-a", brief: { loop: { loopRunId: "L1" } } }, { ...horizon("node-a"), loopRunId: "L1" }, true, true],
+        ["another loop's run is not the named loop's", { heartbeatAt: before, node: "node-a", brief: { loop: { loopRunId: "L2" } } }, { ...horizon("node-a"), loopRunId: "L1" }, false, false],
+        ["a run with no declaration is no loop's", { heartbeatAt: before, node: "node-a" }, { ...horizon("node-a"), loopRunId: "L1" }, false, false],
+      ];
+      for (const [label, liveness, ownerHorizon, admitted, byHorizon] of rows) {
+        const { repo, workDir } = await makeRepo();
+        try {
+          const item = await milestoneItem(workDir);
+          const record = await writeRecord(item, { runId: "20261117T185756777Z-0001", state: "running", updatedAt: after, ...liveness });
+          const candidates = await staleRunningRuns([item], { now, stalenessThreshold: FIFTEEN_MIN, ...(ownerHorizon === undefined ? {} : { ownerHorizon }) });
+          assert.deepEqual(candidates.map((run) => run.runId), admitted ? [record.runId] : [], label);
+          if (admitted) assert.equal(candidates[0].ownerGone === true, byHorizon, `${label}: marked as admitted by the horizon`);
+        } finally {
+          await rm(repo, { recursive: true, force: true });
+        }
+      }
+    },
+  },
+  {
+    name: "run-heartbeat-reclaim — a run the threshold already calls stale is not marked ownerGone, a waiting run stays exempt, and the reclaim settles a horizon run on the one edge",
+    async run() {
+      const { reclaimStaleRuns, staleRunningRuns } = _aofApplication.execution.runs;
+      const { repo, workDir } = await makeRepo();
+      try {
+        const now = "2026-11-17T21:31:00.000Z";
+        const ownerHorizon = { node: null, beforeMs: Date.parse("2026-11-17T21:24:36.000Z") };
+        const fresh = "2026-11-17T21:23:25.000Z";
+        const old = "2026-11-17T20:13:41.000Z";
+        const stale = await milestoneItem(workDir, { number: "21", slug: "stale" });
+        await writeRecord(stale, { runId: "20261117T185824868Z-0000", heartbeatAt: old, updatedAt: old });
+        const [byThreshold] = await staleRunningRuns([stale], { now, stalenessThreshold: 15 * 60 * 1000, ownerHorizon });
+        assert.equal(byThreshold.ownerGone, undefined, "stale on its own heartbeat: the horizon added nothing");
+
+        const waiting = await milestoneItem(workDir, { number: "22", slug: "waiting" });
+        await writeRecord(waiting, { runId: "20261117T190000000Z-0000", heartbeatAt: fresh, updatedAt: fresh, asks: [{ question: "Q", phase: "build", askedAt: fresh, parkedAt: null, answer: null, answeredAt: null, by: null }] });
+        assert.deepEqual(await staleRunningRuns([waiting], { now, stalenessThreshold: 15 * 60 * 1000, ownerHorizon }), [], "a run waiting on a human is re-entered, never reclaimed (131/ADR-003 §3)");
+
+        const item = await milestoneItem(workDir, { number: "23", slug: "fresh" });
+        const record = await writeRecord(item, { runId: "20261117T185756777Z-0001", heartbeatAt: fresh, updatedAt: fresh });
+        assert.deepEqual(await reclaimStaleRuns([item], { now, stalenessThreshold: 15 * 60 * 1000 }), [], "without the horizon the fresh run is left");
+        const [reclaimed] = await reclaimStaleRuns([item], { now, stalenessThreshold: 15 * 60 * 1000, ownerHorizon });
+        assert.equal(reclaimed.run.runId, record.runId);
+        assert.equal(reclaimed.run.state, "failed");
+        assert.equal(reclaimed.run.failureReason, "runtime_offline", "retryable, as every reclaim is");
+        assert.equal(reclaimed.run.reclaimedAt, now);
+        assert.equal(reclaimed.run.heartbeatAt, fresh, "the last beat is kept");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
   ...runWaitTests(),
 ];
 

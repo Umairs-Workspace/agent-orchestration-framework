@@ -48,6 +48,11 @@ import {
   mapStoreRefusal,
   sessionLendFor,
 } from "./engine.mjs";
+import { ownerGone } from "@aof/contracts/freshness";
+
+// A reclaim that did not wait out the heartbeat window says why, in the shell's own words: the
+// horizon the shell composed (`bounds.ownerHorizon`) carries the sentence, so the wave spells none.
+const ownerGoneLine = (entry, horizon) => (entry.ownerGone === true && typeof horizon?.line === "function" ? horizon.line(entry) : null);
 
 // Core supplies application services; creating this interface starts no work.
 export function createWaveOrchestration({
@@ -414,7 +419,7 @@ export function createWaveOrchestration({
           await consumeHeartbeatQueue(laneItem);
           const running = (await readRuns(laneItem)).find(isRunning);
           if (running != null) {
-            if (!isStale(running, Date.parse(clock()), bounds.stalenessMs) && !laneReentries.has(ref)) {
+            if (!isStale(running, Date.parse(clock()), bounds.stalenessMs) && !ownerGone(running, bounds.ownerHorizon) && !laneReentries.has(ref)) {
               throw Object.assign(new Error(`a non-terminal run ${running.runId} is still fresh in the lane at ${lanePath}`), { code: "duplicate-run", runId: running.runId });
             }
             advance = false;
@@ -454,10 +459,12 @@ export function createWaveOrchestration({
 
         // EVERY OPEN RECLAIMS FIRST (129/04 ruling): a stale running record in the lane is settled
         // `runtime_offline` before the mint; a still-fresh one refuses the open by name.
-        const reclaimed = await transitionStaleRunsReclaimed([laneItem], { now: clock(), stalenessThreshold: bounds.stalenessMs }, laneOpts);
+        const reclaimed = await transitionStaleRunsReclaimed([laneItem], { now: clock(), stalenessThreshold: bounds.stalenessMs, ownerHorizon: bounds.ownerHorizon }, laneOpts);
         for (const entry of reclaimed) {
           laneRetries.set(ref, { prior: entry.record });
           await narrate(`Reclaimed ${ref} — run ${entry.record.runId} (${entry.record.failureReason}).`);
+          const why = ownerGoneLine(entry, bounds.ownerHorizon);
+          if (why != null) await narrate(why);
         }
         if (!laneReentries.has(ref) && (await readRuns(laneItem)).some(isRunning)) {
           return halt(haltDecision("lane-open-failed", ref, "run-store:duplicate-run"), { lane: open.worktree, branch: open.branch });
@@ -1078,7 +1085,7 @@ export function createWaveOrchestration({
       // its slot and re-enters the wait in the lane's own tree. An unparked ask on a fresh run has a live
       // owner, and is left exactly as a heartbeating lane is.
       if (running != null && standingAsk(running) != null) {
-        if (liveOwnerHolds(running, { stalenessMs: bounds.stalenessMs, nowMs: Date.parse(clock()) })) {
+        if (liveOwnerHolds(running, { stalenessMs: bounds.stalenessMs, nowMs: Date.parse(clock()), ownerHorizon: bounds.ownerHorizon })) {
           liveElsewhere.add(ref);
           await narrate(`Lane ${ref} — live: run ${running.runId} is still heartbeating; left.`);
           continue;
@@ -1088,7 +1095,7 @@ export function createWaveOrchestration({
       }
       if (running != null) {
         const laneWorkspace = await loadWorkspace(lane.worktree, undefined, { env: ctx.globalWorkStoreOptions?.env });
-        const reclaimed = await transitionStaleRunsReclaimed([laneItem], { now: clock(), stalenessThreshold: bounds.stalenessMs }, transitionOptionsFor(ctx, { workspace: laneWorkspace, lockWorkspace: ctx.workspace }));
+        const reclaimed = await transitionStaleRunsReclaimed([laneItem], { now: clock(), stalenessThreshold: bounds.stalenessMs, ownerHorizon: bounds.ownerHorizon }, transitionOptionsFor(ctx, { workspace: laneWorkspace, lockWorkspace: ctx.workspace }));
         if (reclaimed.length === 0) {
           liveElsewhere.add(ref);
           await narrate(`Lane ${ref} — live: run ${running.runId} is still heartbeating; left.`);
@@ -1097,6 +1104,8 @@ export function createWaveOrchestration({
         for (const entry of reclaimed) {
           laneRetries.set(ref, { prior: entry.record });
           await narrate(`Reclaimed ${ref} — run ${entry.record.runId} (${entry.record.failureReason}).`);
+          const why = ownerGoneLine(entry, bounds.ownerHorizon);
+          if (why != null) await narrate(why);
         }
         await narrate(`Lane ${ref} — reclaimed: re-driven from its own tree${lane.dirty ? " with its dirt in place" : ""}.`);
         continue;

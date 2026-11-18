@@ -245,10 +245,14 @@ export function createStopRequests({ getRuntimeRoot, reportDegrade }) {
 
   // requestLoopResume(dir, { loopRunId, scope, workspaceId, by, now }) — the ONE writer: the five keys,
   // written whole over whatever stood there, so a second hand-off before the relaunch is idempotent.
-  async function requestLoopResume(dir, { loopRunId, scope, workspaceId, by, now = () => new Date() } = {}) {
+  // `reclaim: true` is a SIXTH key, written only when the operator asked for one: the relaunch reads
+  // it (`ownerHorizonFor`) as their word that the loop is gone. A plain hand-off's record is the five
+  // keys it always was, and a later plain hand-off over a reclaiming one drops the word with the file.
+  async function requestLoopResume(dir, { loopRunId, scope, workspaceId, by, reclaim = false, now = () => new Date() } = {}) {
     const fields = { loopRunId, scope, workspaceId, by, requestedAt: instant(now) };
     const record = {};
     for (const key of RESUME_KEYS) record[key] = fields[key] ?? null;
+    if (reclaim === true) record.reclaim = true;
     await writeRecord(resumeRequestPath(dir, loopRunId), record);
     return record;
   }

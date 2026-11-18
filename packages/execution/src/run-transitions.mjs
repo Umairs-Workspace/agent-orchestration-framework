@@ -209,14 +209,20 @@ async function transitionRunReclaimed(item, { runId, now } = {}, opts = {}) {
 // staleness rule is never re-derived here), then settle each through
 // transitionRunReclaimed. Returns one { item, record, eventId, effects } per
 // reclaimed run, so the caller can report what it reclaimed without owning any
-// consequence of it.
-async function transitionStaleRunsReclaimed(items, { now, stalenessThreshold } = {}, opts = {}) {
+// consequence of it. `ownerHorizon` rides to the scan untouched; a run it admitted
+// inside its heartbeat window is returned with `ownerGone: true` and the instant it
+// was last alive, which the settled record no longer says when it never beat.
+async function transitionStaleRunsReclaimed(items, { now, stalenessThreshold, ownerHorizon } = {}, opts = {}) {
   const nowIso = now ?? new Date().toISOString();
   const settled = [];
   await Promise.all(items.map((item) => consumeHeartbeatQueue(item)));
-  for (const candidate of await staleRunningRuns(items, { now: nowIso, stalenessThreshold })) {
+  for (const candidate of await staleRunningRuns(items, { now: nowIso, stalenessThreshold, ownerHorizon })) {
     const { item } = candidate;
-    settled.push({ item, ...(await transitionRunReclaimed(item, { runId: candidate.runId, now: nowIso }, opts)) });
+    settled.push({
+      item,
+      ...(await transitionRunReclaimed(item, { runId: candidate.runId, now: nowIso }, opts)),
+      ...(candidate.ownerGone === true ? { ownerGone: true, lastAliveAt: candidate.heartbeatAt ?? candidate.updatedAt } : {}),
+    });
   }
   return settled;
 }

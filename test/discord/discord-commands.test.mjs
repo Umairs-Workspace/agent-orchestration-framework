@@ -12,6 +12,7 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // `/loop start`. Each case runs the REAL bot on the shared fake gateway (`onBot`), over the fixture's
 // fake verbs, which answer in the registered verbs' own shapes.
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -49,7 +50,7 @@ const BETA = served("beta", { allow: [BETA_USER] });
 
 // An interaction as the gateway hands it: a command, its options, a member and a channel.
 function interaction({ name = "status", sub = null, options = {}, user = ALPHA_USER, username = "umami", channel = CHANNEL, member = true } = {}) {
-  const strings = Object.entries(options).map(([key, value]) => ({ type: 3, name: key, value }));
+  const strings = Object.entries(options).map(([key, value]) => ({ type: typeof value === "boolean" ? 5 : 3, name: key, value }));
   return {
     id: "700000000000000001",
     token: "interaction-token",
@@ -381,6 +382,48 @@ export const discordCommandsTests = [
         const request = JSON.parse(await readFile(path.join(loopResumesDir(), `${loopRunId}.json`), "utf8"));
         assert.deepEqual(Object.keys(request), ["loopRunId", "scope", "workspaceId", "by", "requestedAt"]);
         assert.equal(spawned.length, 0, "no process was spawned");
+      });
+    },
+  },
+
+  // ── /loop resume reclaim: the operator's word that the loop's process is gone (2026-11-17) ──────
+  {
+    name: "reclaim — /loop resume carries an optional boolean reclaim, and no other subcommand does",
+    run() {
+      const loop = COMMANDS[2];
+      const resume = loop.options.find((sub) => sub.name === "resume");
+      const reclaim = resume.options.find((option) => option.name === "reclaim");
+      assert.deepEqual({ type: reclaim.type, required: reclaim.required }, { type: 5, required: false }, "an optional BOOLEAN (Discord's type 5)");
+      assert.ok(reclaim.description.length <= 100, `Discord caps an option's description at 100 characters: ${reclaim.description.length}`);
+      assert.deepEqual(resume.options.map((option) => option.name), ["scope", "project", "reclaim"], "after the required scope, as Discord orders options");
+      for (const sub of loop.options.filter((entry) => entry.name !== "resume")) {
+        assert.equal(sub.options.some((option) => option.name === "reclaim"), false, `/loop ${sub.name} takes no reclaim`);
+      }
+    },
+  },
+  {
+    name: "reclaim — /loop resume of a loop that reads as running is refused naming the reclaim; with reclaim:True the real verb writes the word on the request, starts nothing, and the channel is told what the relaunch will do",
+    async run() {
+      await withLoopProject({ live: true }, async ({ workspace, loopRunId, invokeReal, spawned }) => {
+        const refused = context({ workspaces: [workspace], invoke: invokeReal });
+        await handleInteraction(interaction({ name: "loop", sub: "resume", options: { scope: "131" }, username: "umami" }), refused);
+        assert.match(edit(refused.sequence), /^\/loop resume 131 was refused \(loop-hand-off-running\): .*`\/loop resume` with `reclaim: True`/u);
+        assert.equal(existsSync(path.join(loopResumesDir(), `${loopRunId}.json`)), false, "the refusal wrote nothing");
+
+        const ctx = context({ workspaces: [workspace], invoke: invokeReal });
+        await handleInteraction(interaction({ name: "loop", sub: "resume", options: { scope: "131", reclaim: true }, username: "umami" }), ctx);
+        assert.deepEqual(invokes(ctx.sequence).map((entry) => [entry.id, entry.input]), [["work:loop", { scope: "131", handOff: true, reclaim: true }]]);
+        assert.equal(edit(ctx.sequence), "@umami handed 131 to the supervisor with a reclaim — its relaunch settles every run the loop left running on this node, whatever its heartbeat, then resumes");
+        const request = JSON.parse(await readFile(path.join(loopResumesDir(), `${loopRunId}.json`), "utf8"));
+        assert.deepEqual(Object.keys(request), ["loopRunId", "scope", "workspaceId", "by", "requestedAt", "reclaim"]);
+        assert.equal(request.reclaim, true);
+        assert.equal(spawned.length, 0, "no process was spawned");
+
+        // `reclaim: False` is a plain hand-off: the word is carried only when it is given.
+        const plain = context({ workspaces: [workspace], invoke: async () => ({ ok: true, handedOff: true }) });
+        await handleInteraction(interaction({ name: "loop", sub: "resume", options: { scope: "131", reclaim: false }, username: "umami" }), plain);
+        assert.deepEqual(invokes(plain.sequence).map((entry) => entry.input), [{ scope: "131", handOff: true }]);
+        assert.equal(edit(plain.sequence), "@umami handed 131 to the supervisor — it relaunches with --resume on its next poll");
       });
     },
   },

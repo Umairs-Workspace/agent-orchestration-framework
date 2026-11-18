@@ -2,6 +2,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 const completeRun = _aofApplication.execution.runs.completeRun;
 const heartbeat = _aofApplication.execution.runs.heartbeat;
@@ -991,6 +992,233 @@ loopCommandResumeTests.push(
       } finally {
         await fx.cleanup();
         await resetLoopStarts();
+      }
+    },
+  },
+);
+
+// ── `--reclaim` AND THE BOOT HORIZON (2026-11-17) — a resume inside the heartbeat window ────────
+//
+// A loop that dies without settling its runs leaves `running` records nothing beats, and for a whole
+// heartbeat window (`work.loop.heartbeatMs`, fifteen minutes by default) they read as a live loop. A
+// `--resume` inside it reclaimed nothing and died on the store's duplicate-run guard, twice in one
+// evening after a restart. Two things now reclaim inside the window: the machine's boot instant (the
+// launch seam's `ctx.hostBootedAtMs`), and the operator's word, `--reclaim` — typed on the resume, or
+// left on the resume request by a hand-off (`/loop resume … reclaim`). Each case seeds the measured
+// shape: a run last alive 7.5 minutes before the resume.
+const ownerHorizonFor = _aofApplication.loop.stop.ownerHorizonFor;
+const leftRunningLines = _aofApplication.loop.stop.leftRunningLines;
+const hostBootedAtMs = _aofApplication.loop.stop.hostBootedAtMs;
+const LAST_BEAT = "2026-11-17T21:23:25.000Z";
+const RESTART = "2026-11-17T21:24:36.000Z";
+const RESUMED = "2026-11-17T21:31:00.000Z";
+const died = { ...DECLARATION_L1, startedAt: "2026-11-17T21:09:37.000Z" };
+// The loop the restart killed: its drive of 03/01, minted at 21:10 and last alive at LAST_BEAT — well
+// inside the lineage's compute ceiling, so the re-drive is the reclaim's to make.
+const seedDeadLoop = (fx, extra = {}) => writeDeclarationRun(fx, { declaration: died, at: "2026-11-17T21:10:00.000Z", heartbeatAt: LAST_BEAT, ...extra });
+// The lines are collected whether the walk returns or throws: a resume that meets a run it may not
+// settle still dies on the store's duplicate-run guard, after it has said what it left.
+const resumeDead = (fx, input = {}, ctx = {}) => {
+  const driver = completingDriver(fx, { onCommand: closing(fx) });
+  const lines = [];
+  return runLoopBody({ scope: "03", resume: true, now: RESUMED, ...input }, { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: fakeStopSource(), report: (line) => lines.push(line), ...ctx })
+    .then((state) => ({ state, lines, driver }), (error) => ({ error, lines, driver }));
+};
+
+loopCommandResumeTests.push(
+  {
+    name: "reclaim — a bare --resume inside the heartbeat window leaves the run, and names it, the instant it becomes reclaimable and --reclaim",
+    async run() {
+      await resetLoopStops();
+      const fx = await loopFixture();
+      try {
+        const { item, record } = await seedDeadLoop(fx);
+        const lines = [];
+        const driver = completingDriver(fx, { onCommand: closing(fx) });
+        await runLoopBody({ scope: "03", resume: true, now: RESUMED }, { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: fakeStopSource(), report: (line) => lines.push(line) }).catch(() => null);
+        assert.equal((await readRuns(item)).find((run) => run.runId === record.runId).state, "running", "not reclaimed: its heartbeat is 7.5 minutes old against a 15-minute window");
+        assert.ok(
+          lines.includes(`Left 03/01 — run ${record.runId} is inside its heartbeat window (last alive ${LAST_BEAT}, reclaimable after 2026-11-17T21:38:25.000Z). If the loop that owned it is gone, resume with --reclaim.`),
+          lines.join("\n"),
+        );
+        assert.equal(lines.some((line) => line.startsWith("Reclaimed ")), false, lines.join("\n"));
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "reclaim — --resume --reclaim settles the run at once, says why, re-drives it and walks to done",
+    async run() {
+      await resetLoopStops();
+      const fx = await loopFixture();
+      try {
+        const { item, record } = await seedDeadLoop(fx);
+        const { state, lines, error } = await resumeDead(fx, { reclaim: true });
+        assert.equal(error, undefined, error?.stack);
+        const prior = (await readRuns(item)).find((run) => run.runId === record.runId);
+        assert.equal(prior.state, "failed");
+        assert.equal(prior.failureReason, "runtime_offline", "a reclaim, retryable as every reclaim is");
+        assert.equal(prior.reclaimedAt, RESUMED);
+        const at = lines.indexOf(`Reclaimed 03/01 — run ${record.runId} (runtime_offline).`);
+        assert.ok(at > -1, lines.join("\n"));
+        assert.equal(lines[at + 1], `Run ${record.runId} was last alive at ${LAST_BEAT}, inside its heartbeat window — reclaimed because --reclaim says its owner is gone.`);
+        assert.equal(lines.some((line) => line.startsWith("Left ")), false, "nothing was left running");
+        assert.equal(state.state, "done", lines.join("\n"));
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "reclaim — a resume after a restart settles a run last alive before the boot instant with no flag, and leaves one that beat after it",
+    async run() {
+      await resetLoopStops();
+      for (const [label, bootedAt, reclaimed] of [
+        ["the restart ended the loop", RESTART, true],
+        ["the run beat after the boot: its owner outlived nothing", "2026-11-17T21:20:00.000Z", false],
+      ]) {
+        const fx = await loopFixture();
+        try {
+          const { item, record } = await seedDeadLoop(fx);
+          const { lines } = await resumeDead(fx, {}, { hostBootedAtMs: Date.parse(bootedAt) });
+          const prior = (await readRuns(item)).find((run) => run.runId === record.runId);
+          assert.equal(prior.state, reclaimed ? "failed" : "running", `${label}: ${(lines ?? []).join("\n")}`);
+          if (reclaimed) {
+            assert.ok(lines.includes(`Run ${record.runId} was last alive at ${LAST_BEAT}, inside its heartbeat window — reclaimed because this machine restarted at ${RESTART}.`), lines.join("\n"));
+          }
+        } finally {
+          await fx.cleanup();
+        }
+      }
+    },
+  },
+  {
+    name: "reclaim — a test-driven body and the probe carry no boot instant, and the launch seam's reading errs early by at most two seconds",
+    async run() {
+      const fx = await loopFixture();
+      try {
+        assert.equal(await ownerHorizonFor(fx.workspace, { resume: true, now: RESUMED }), null, "no flag, no request, no boot instant: the threshold alone");
+        const read = hostBootedAtMs();
+        const exact = Date.now() - os.uptime() * 1000;
+        assert.ok(read <= exact && exact - read <= 2000, `the boot instant errs early, never late: ${exact - read} ms`);
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "reclaim — the horizon is this node's alone: a reclaim leaves another node's run and says so, and the operator's word outranks the boot instant (five rows)",
+    async run() {
+      await resetLoopStops();
+      const fx = await loopFixture({ mesh: { nodeId: "node-a" } });
+      try {
+        const bootedAtMs = Date.parse(RESTART);
+        const word = await ownerHorizonFor(fx.workspace, { resume: true, reclaim: true, now: RESUMED, loopRunId: "L1", bootedAtMs });
+        assert.deepEqual([word.node, word.beforeMs, word.reclaim, word.loopRunId], ["node-a", Date.parse(RESUMED), true, "L1"], "the flag: every run the resumed loop left running on this node before the resume began");
+        const boot = await ownerHorizonFor(fx.workspace, { resume: true, now: RESUMED, loopRunId: "L1", bootedAtMs });
+        assert.deepEqual([boot.node, boot.beforeMs, boot.reclaim, boot.loopRunId], ["node-a", bootedAtMs, false, undefined], "no flag: the boot instant, whichever session a run was");
+        const fresh = await ownerHorizonFor(fx.workspace, { resume: false, reclaim: true, now: RESUMED, loopRunId: "L1", bootedAtMs });
+        assert.equal(fresh.reclaim, false, "a word about a resume: a fresh invocation reads the boot instant only");
+        const undeclared = await ownerHorizonFor(fx.workspace, { resume: true, reclaim: true, now: RESUMED, bootedAtMs });
+        assert.equal(undeclared.reclaim, false, "a scope with no declaration has no loop to vouch for");
+
+        const item = await resolveItemExact(fx.ctx, "03/01");
+        const foreign = await startRun(item, { brief: { loop: died }, now: "2026-11-17T21:10:00.000Z", node: "node-b" });
+        await heartbeat(item, foreign.runId, { now: LAST_BEAT });
+        assert.deepEqual(await leftRunningLines(fx.workspace, [item], { ownerHorizon: word, loopRunId: "L1", stalenessMs: 900000, now: RESUMED }), [
+          `Left 03/01 — run ${foreign.runId} was minted on node-b, not on this node (node-a): a reclaim settles this node's runs only.`,
+        ]);
+        assert.deepEqual(await leftRunningLines(fx.workspace, [item], { ownerHorizon: boot, loopRunId: "L1", stalenessMs: 900000, now: RESUMED }), [], "with no reclaim asked for, another node's live run is not this resume's to name");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "reclaim — the operator vouches for the loop they resume: another session's fresh run in the same scope is left under --reclaim, and named as its own session's",
+    async run() {
+      await resetLoopStops();
+      const fx = await loopFixture();
+      try {
+        // The dead loop's own run, on the milestone; and a session nobody resumed, at work on the story.
+        const { item: milestone, record: own } = await seedDeadLoop(fx, { ref: "03" });
+        const story = await resolveItemExact(fx.ctx, "03/01");
+        const other = await startRun(story, { brief: {}, now: "2026-11-17T21:20:00.000Z" });
+        await heartbeat(story, other.runId, { now: LAST_BEAT });
+        const { lines, error } = await resumeDead(fx, { reclaim: true });
+        assert.equal((await readRuns(milestone)).find((run) => run.runId === own.runId).state, "failed", "the resumed loop's run is settled");
+        assert.equal((await readRuns(story)).find((run) => run.runId === other.runId).state, "running", "the other session's run is not");
+        assert.ok(
+          lines.includes(`Left 03/01 — run ${other.runId} is running and is not the resumed loop's: it is its own session's to settle, and a reclaim settles only the runs that loop left.`),
+          `${lines.join("\n")}\n${error?.stack ?? ""}`,
+        );
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "reclaim — --reclaim is a word about a resume: alone, with --stop and with --hand-off-start it is refused before anything is read or written",
+    async run() {
+      await resetLoopStops();
+      const fx = await loopFixture();
+      try {
+        const { item, record } = await seedDeadLoop(fx);
+        for (const [label, input, code] of [
+          ["alone", { scope: "03", reclaim: true }, "loop-reclaim-needs-resume"],
+          ["with --stop", { scope: "03", reclaim: true, stop: true }, "loop-reclaim-needs-resume"],
+          ["with --hand-off-start", { scope: "03", reclaim: true, startHandOff: true }, "invalid-input"],
+        ]) {
+          await assert.rejects(loopCommand.run({ ...input, now: RESUMED }, fx.ctx), (error) => error.code === code && /--reclaim/u.test(error.message), label);
+        }
+        assert.equal((await readRuns(item)).find((run) => run.runId === record.runId).state, "running", "nothing was settled");
+        assert.deepEqual(loopCommand.cli.argv(["03"], { resume: true, reclaim: true }), { scope: "03", resume: true, reclaim: true });
+        assert.deepEqual(loopCommand.cli.argv(["03"], { resume: true }), { scope: "03", resume: true }, "shaped only when passed");
+        assert.match(loopCommand.cli.spec.usage, /\[--resume\] \[--reclaim\]/u);
+        assert.equal(loopCommand.cli.launch({ handOff: true, reclaim: true }), null, "--hand-off --reclaim starts nothing: it is on the probe side");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "reclaim — a hand-off of a loop that reads as running is refused naming the reclaim; with it the request carries the word, and the relaunch reads it, reclaims and clears it",
+    async run() {
+      await resetLoopStops();
+      const fx = await loopFixture();
+      try {
+        const supervised = { ...died, supervised: true };
+        const { item, record } = await seedDeadLoop(fx, { declaration: supervised });
+        await assert.rejects(
+          loopCommand.run({ scope: "03", handOff: true, now: RESUMED }, fx.ctx),
+          (error) => error.code === "loop-hand-off-running" && /--hand-off --reclaim/u.test(error.message),
+          "inside the window the loop reads as running, and the refusal names the way out",
+        );
+        const resumes = loopResumesDir();
+        assert.equal(await readResumeRequest(resumes, "L1"), null, "the refusal wrote nothing");
+
+        const answer = await loopCommand.run({ scope: "03", handOff: true, reclaim: true, now: RESUMED }, fx.ctx);
+        assert.equal(answer.handedOff, true);
+        assert.equal(answer.reclaim, true);
+        const request = await readResumeRequest(resumes, "L1");
+        assert.deepEqual(Object.keys(request), ["loopRunId", "scope", "workspaceId", "by", "requestedAt", "reclaim"], "the five keys and the word");
+        assert.equal(request.reclaim, true);
+        assert.equal((await readRuns(item)).find((run) => run.runId === record.runId).state, "running", "the hand-off settled nothing: the relaunch does");
+
+        // The supervisor's relaunch: `--resume`, and no `--reclaim` on its argv.
+        const { lines, error } = await resumeDead(fx);
+        assert.equal(error, undefined, error?.stack);
+        assert.equal((await readRuns(item)).find((run) => run.runId === record.runId).state, "failed");
+        assert.ok(lines.includes(`Run ${record.runId} was last alive at ${LAST_BEAT}, inside its heartbeat window — reclaimed because the hand-off asked for a reclaim.`), lines.join("\n"));
+        assert.equal(await readResumeRequest(resumes, "L1"), null, "the relaunch spent the request, and the word with it");
+
+        // A plain hand-off writes the five keys it always did.
+        await requestLoopResume(resumes, { loopRunId: "L1", scope: "03", workspaceId: null, by: { node: null, pid: 1 }, now: () => new Date(RESUMED) });
+        assert.deepEqual(Object.keys(await readResumeRequest(resumes, "L1")), ["loopRunId", "scope", "workspaceId", "by", "requestedAt"]);
+      } finally {
+        await fx.cleanup();
+        await resetLoopStops();
       }
     },
   },

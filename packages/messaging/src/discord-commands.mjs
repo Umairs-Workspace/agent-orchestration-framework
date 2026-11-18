@@ -45,6 +45,7 @@ const DEFERRED_CHANNEL_MESSAGE = 5;
 const APPLICATION_COMMAND = 2;
 const SUB_COMMAND = 1;
 const STRING = 3;
+const BOOLEAN = 5;
 const AUTOCOMPLETE = 4;
 const AUTOCOMPLETE_RESULT = 8;
 // Discord's own ceiling on an autocomplete answer.
@@ -57,6 +58,9 @@ const SESSION_WAIT_MS = 45_000;
 
 const PROJECT_OPTION = Object.freeze({ type: STRING, name: "project", description: "The project to address, picked from the ones this channel serves you", required: false, autocomplete: true });
 const SCOPE_OPTION = Object.freeze({ type: STRING, name: "scope", description: "The loop's scope, as `aof work loop` takes it (e.g. 131 or 131-133)", required: true });
+// `/loop resume`'s own option: the operator's word that the loop's process is gone (`work:loop`'s
+// `reclaim`). Discord caps an option's description at 100 characters.
+const RECLAIM_OPTION = Object.freeze({ type: BOOLEAN, name: "reclaim", description: "The loop's process is gone: settle the runs it left running now, without waiting them out", required: false });
 // 191/ADR-006 §3: the options of the session commands. A start NEEDS its project; Discord lists a
 // required option before the optional ones.
 const START_PROJECT_OPTION = Object.freeze({ ...PROJECT_OPTION, description: "The project to start Claude in, picked from the ones this channel serves you", required: true });
@@ -74,7 +78,7 @@ const COMMANDS = Object.freeze([
     description: "Stop a loop, hand a supervised one back to the supervisor, or ask it to start a new one",
     options: Object.freeze([
       Object.freeze({ type: SUB_COMMAND, name: "stop", description: "Ask the loop to stop: the first request drains, a second cancels the in-flight session", options: Object.freeze([SCOPE_OPTION, PROJECT_OPTION]) }),
-      Object.freeze({ type: SUB_COMMAND, name: "resume", description: "Ask the supervisor to relaunch a supervised loop with --resume", options: Object.freeze([SCOPE_OPTION, PROJECT_OPTION]) }),
+      Object.freeze({ type: SUB_COMMAND, name: "resume", description: "Ask the supervisor to relaunch a supervised loop with --resume", options: Object.freeze([SCOPE_OPTION, PROJECT_OPTION, RECLAIM_OPTION]) }),
       Object.freeze({ type: SUB_COMMAND, name: "start", description: "Ask the supervisor to start a new supervised loop on a scope", options: Object.freeze([SCOPE_OPTION, PROJECT_OPTION]) }),
     ]),
   }),
@@ -151,7 +155,7 @@ function createRegistrar({ request, servedWorkspaces }) {
 
 // ── the answer to one interaction ───────────────────────────────────────────────────────────────
 
-// The command, its subcommand and its string options, from the interaction's `data`.
+// The command, its subcommand and its string and boolean options, from the interaction's `data`.
 function commandOf(data) {
   const top = Array.isArray(data?.options) ? data.options : [];
   const sub = top.find((option) => option?.type === SUB_COMMAND) ?? null;
@@ -159,6 +163,7 @@ function commandOf(data) {
   let focused = null;
   for (const option of sub == null ? top : (Array.isArray(sub.options) ? sub.options : [])) {
     if (option?.type === STRING && typeof option.value === "string") options[option.name] = option.value;
+    if (option?.type === BOOLEAN && typeof option.value === "boolean") options[option.name] = option.value;
     if (option?.focused === true) focused = { name: option.name, value: typeof option.value === "string" ? option.value : "" };
   }
   return { name: data?.name ?? null, sub: sub?.name ?? null, options, focused };
@@ -312,9 +317,14 @@ async function answerLoop(command, kept, user, context) {
     if (result.refused) return `/loop stop ${scope} was refused (${result.code}): ${result.message}`;
     return `${who} asked ${scope} to stop — ${stopSentence(result.answer)}`;
   }
-  const result = await dispatchLoop(context, { scope, handOff: true }, workspace);
+  // `reclaim: True` is the operator's word that the loop's process is gone. It rides the hand-off: the
+  // verb skips its live refusal and writes the word on the request, and the relaunch settles the runs.
+  const reclaim = command.options.reclaim === true;
+  const result = await dispatchLoop(context, { scope, handOff: true, ...(reclaim ? { reclaim: true } : {}) }, workspace);
   if (result.refused) return `/loop resume ${scope} was refused (${result.code}): ${result.message}`;
-  return `${who} handed ${scope} to the supervisor — it relaunches with --resume on its next poll`;
+  return reclaim
+    ? `${who} handed ${scope} to the supervisor with a reclaim — its relaunch settles every run the loop left running on this node, whatever its heartbeat, then resumes`
+    : `${who} handed ${scope} to the supervisor — it relaunches with --resume on its next poll`;
 }
 
 // ── the session commands (191/06, 191/ADR-006 §3-§4) ────────────────────────────────────────────

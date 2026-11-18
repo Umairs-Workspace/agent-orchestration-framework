@@ -671,6 +671,48 @@ export const loopCommandReconcileTests = [
     },
   },
   {
+    // `--reclaim` (2026-11-17) reaches the LANES through the same horizon as the primary: a lane whose
+    // run is still inside its heartbeat window is reclaimed on the operator's word and re-driven from
+    // its own tree, in this one process — where a bare resume leaves it live, and a reclaim made by an
+    // earlier process would have had it committed and merged home half-built instead.
+    name: "reclaim — a resume with --reclaim reclaims a lane's fresh running run and re-drives it from its own tree, dirt in place; a bare resume leaves it live",
+    run: async () => {
+      const seed = async (fx) => {
+        await runLoop(fx, { child: fakeLaneChild(fx, { answers: { "07/01": { outcome: "document", document: { outcome: "needs-input", sessionId: "s-1" } } } }) });
+        const lane = meshDispatchWorktreePath(fx.root, "07/01");
+        const laneItem = await resolveRefInWorktree(fx.root, fx.workDir, lane, "07/01");
+        await stripAsks(laneItem);
+        const running = (await readRuns(laneItem))[0];
+        const beat = new Date(Date.now() - 60_000).toISOString();
+        await heartbeat(laneItem, running.runId, { now: beat });
+        await writeFile(path.join(lane, "dirt.txt"), "uncommitted\n", "utf8");
+        return { lane, laneItem, running, beat };
+      };
+      const config = { loop: { heartbeatMs: 3600000 } };
+      await withLaneRepo(async (fx) => {
+        const { laneItem, running } = await seed(fx);
+        const child = fakeLaneChild(fx);
+        const { report } = await runLoop(fx, { child, input: { resume: true } });
+        assert.ok(report.lines.includes(`Lane 07/01 — live: run ${running.runId} is still heartbeating; left.`), report.lines.join("\n"));
+        assert.equal((await readRuns(laneItem))[0].state, "running", "a bare resume inside the window reclaims nothing");
+        assert.equal(child.calls.length, 0);
+      }, { stories: ["01"], config });
+      await withLaneRepo(async (fx) => {
+        const { running, beat } = await seed(fx);
+        let dirtSeen = null;
+        const child = fakeLaneChild(fx, { onSpawn: async (input) => { dirtSeen = { exists: existsSync(path.join(input.lane, "dirt.txt")), porcelain: (await git(["status", "--porcelain"], input.lane)).stdout }; } });
+        const { state, report } = await runLoop(fx, { child, input: { resume: true, reclaim: true } });
+        assert.equal(state.state, "done", report.lines.join("\n"));
+        const at = report.lines.indexOf(`Reclaimed 07/01 — run ${running.runId} (runtime_offline).`);
+        assert.ok(at > -1, report.lines.join("\n"));
+        assert.equal(report.lines[at + 1], `Run ${running.runId} was last alive at ${beat}, inside its heartbeat window — reclaimed because --reclaim says its owner is gone.`);
+        assert.ok(report.lines.some((line) => line.startsWith("Lane 07/01 — reclaimed: re-driven from its own tree with its dirt in place")), report.lines.join("\n"));
+        assert.ok(dirtSeen?.exists && /dirt\.txt/u.test(dirtSeen.porcelain), "re-driven with the dirt in place, uncommitted");
+        assert.equal(report.lines.some((line) => /reconciled/u.test(line) && /committed/u.test(line)), false, "never committed and merged home first");
+      }, { stories: ["01"], config });
+    },
+  },
+  {
     name: "129/04 task06 reconciliation walks every lane in dispatch-root order before the first ask; unclassified and out-of-scope lanes are left; the resumed wave re-mints its wave run and a reclaimed wave run is never retried",
     run: async () => {
       await withLaneRepo(async (fx) => {

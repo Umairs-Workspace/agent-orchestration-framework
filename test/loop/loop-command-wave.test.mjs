@@ -420,7 +420,12 @@ export const loopCommandWaveTests = [
       // start request (the walk's head, and a refusal at the door). The verb itself, the companion
       // refusals and the clear's guard were extracted to stop.mjs and stop-request.mjs at build;
       // what stays is the face and the launch, which only the shell owns.
-      assert.ok(lines <= 2250, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2250 it was at 191/04 — extract, or raise this bound with a reason`);
+      // 2250 -> 2278 is `--reclaim` and the boot horizon (2026-11-17): the flag in its three homes, its
+      // two refusals at the door, the launch seam reading the boot instant, and the horizon handed to
+      // each liveness site (the scan, the reclaim, the lanes, the re-entry). What the horizon IS, the
+      // sentence a reclaim it admitted is narrated with, and the lines for what a reclaim left running
+      // were extracted to stop.mjs at build; what stays is the passing, which only the shell can do.
+      assert.ok(lines <= 2278, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2278 it was at --reclaim — extract, or raise this bound with a reason`);
     },
   },
 
