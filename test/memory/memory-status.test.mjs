@@ -17,6 +17,7 @@ import os from "node:os";
 import path from "node:path";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { RECORD_TYPE_LAYERS } from "@aof/knowledge/memory/local-retrieval";
+import { blockIds, makePickProject } from "./recall-pick-model.test.mjs";
 
 const runMemory = _aofApplication.knowledge.work.memory.runMemory;
 const memoryIndexPath = _aofApplication.knowledge.memory.localIndexing.memoryIndexPath;
@@ -247,5 +248,85 @@ export const memoryStatusTests = [
         assert.equal(numbers.reduce((sum, [, value]) => sum + value, 0), result.recordCount, `${backend}: ${JSON.stringify(Object.fromEntries(numbers))}`);
       }
     }),
+  },
+  // ====================================================================
+  // 201/01 task 03 (`03_a-project-sees-what-the-pick-is.feature`, R4) — `aof memory status` names
+  // the recall pick, where its setting came from, and whether `claude` resolves on this node.
+  // Through the REAL CLI, because resolving an executable is the routed command's (core's), over a
+  // scratch project with its own global home. `claude` is the stand-in the fixture names, or
+  // nothing at all (an empty PATH), so no case depends on this machine's PATH or starts a process.
+  // ====================================================================
+  ...[
+    ["E12 · status names the pick and that claude resolves", undefined, "stand-in", "recall: pick haiku, 20 s (default) · claude resolves"],
+    ["E13 · status says when the node cannot pick", undefined, "none", "recall: pick haiku, 20 s (default) · claude not found, so every block is the lexical top 5"],
+    ["E14 · status says when the project turned the pick off", { pick: { enabled: false } }, "stand-in", "recall: pick off (project setting)"],
+    ["outline · a model", { pick: { model: "sonnet" } }, "stand-in", "recall: pick sonnet, 20 s (project setting) · claude resolves"],
+    ["outline · a time limit", { pick: { timeoutMs: 45000 } }, "stand-in", "recall: pick haiku, 45 s (project setting) · claude resolves"],
+    ["outline · a time limit under two seconds", { pick: { timeoutMs: 1500 } }, "stand-in", "recall: pick haiku, 1.5 s (project setting) · claude resolves"],
+    ["outline · enabled spelled", { pick: { enabled: true } }, "stand-in", "recall: pick haiku, 20 s (project setting) · claude resolves"],
+    ["outline · an empty pick", { pick: {} }, "stand-in", "recall: pick haiku, 20 s (default) · claude resolves"],
+    ["a pick turned off on a node with no claude says only that it is off", { pick: { enabled: false } }, "none", "recall: pick off (project setting)"],
+  ].map(([label, recall, pick, line]) => ({
+    name: `201/01 task 03 ${label}: \`aof memory status\` prints "${line}"`,
+    run: async () => {
+      const fx = await makePickProject({ memory: { backend: "local", ...(recall ? { recall } : {}) }, ingest: false });
+      try {
+        const ran = fx.run(["memory", "status"], { pick });
+        assert.equal(ran.status, 0, ran.stderr);
+        assert.deepEqual(ran.stdout.split("\n").filter((entry) => entry.startsWith("recall:")), [line]);
+        assert.equal((await fx.standIn(ran)).starts.length, 0, "no claude process is started");
+      } finally {
+        await fx.dispose();
+      }
+    },
+  })),
+  {
+    name: "201/01 task 03: the line sits with the other settings, and the stale-index line stays last",
+    run: async () => {
+      const fx = await makePickProject({ lessons: 3 });
+      try {
+        const store = path.join(fx.root, ".aof", "aof.memory.index.json");
+        await writeFile(store, JSON.stringify({ ...JSON.parse(await readFile(store, "utf8")), version: 1 }), "utf8");
+        const lines = fx.run(["memory", "status"]).stdout.split("\n").filter(Boolean);
+        const at = (prefix) => lines.findIndex((entry) => entry.startsWith(prefix));
+        assert.ok(at("corpora:") >= 0 && at("recall:") > at("corpora:"), `the recall: line comes after the corpora: line (${lines.join(" | ")})`);
+        assert.match(lines.at(-1), /the index is version 1.*`aof memory ingest`/u, "the line naming the stale index is the last line");
+        assert.equal(at("recall:"), lines.length - 2);
+      } finally {
+        await fx.dispose();
+      }
+    },
+  },
+  {
+    name: "201/01 task 03: status as JSON carries the same facts — the model, the time limit, the source, and whether claude resolves on this node",
+    run: async () => {
+      const fx = await makePickProject({ memory: { backend: "local", recall: { pick: { model: "sonnet" } } }, ingest: false });
+      try {
+        const resolves = JSON.parse(fx.run(["memory", "status", "--json"]).stdout).config.recall.pick;
+        assert.deepEqual(resolves, { enabled: true, model: "sonnet", timeoutMs: 20000, source: "project setting", claude: "resolves" });
+        const absent = JSON.parse(fx.run(["memory", "status", "--json"], { pick: "none" }).stdout).config.recall.pick;
+        assert.equal(absent.claude, "not-found", "it says when claude does not resolve");
+        const shim = JSON.parse(fx.run(["memory", "status", "--json"], { pick: path.join(fx.scratch, "claude.cmd") }).stdout).config.recall.pick;
+        assert.equal(shim.claude, "shell-shim", "…and when it resolves to a shell shim, which the pick never launches");
+      } finally {
+        await fx.dispose();
+      }
+    },
+  },
+  {
+    name: "201/01 task 03: with memory off, status claims no pick — the recall: line still names the setting, and a block recall prints nothing and starts no process",
+    run: async () => {
+      const fx = await makePickProject({ memory: { backend: "none" }, ingest: false });
+      try {
+        const status = fx.run(["memory", "status"]);
+        assert.match(status.stdout, /^memory: backend=none records=0\n/u);
+        assert.ok(status.stdout.split("\n").includes("recall: pick haiku, 20 s (default) · claude resolves"), "the recall: line still names the setting");
+        const block = fx.run(["memory", "recall", "worktree junction", "--block"]);
+        assert.deepEqual([block.status, blockIds(block.stdout), block.stderr], [0, [], ""], "a block recall prints nothing");
+        assert.equal((await fx.standIn(block)).starts.length, 0, "…and starts no process");
+      } finally {
+        await fx.dispose();
+      }
+    },
   },
 ];

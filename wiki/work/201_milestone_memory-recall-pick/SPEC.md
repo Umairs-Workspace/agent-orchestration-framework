@@ -1,18 +1,18 @@
 ---
 type: milestone
-number:
+number: 201
 slug: memory-recall-pick
 title: "Recall hands an agent what applies — the lexical ranker shortlists 20, a model picks at most 5, and the block ends empty when nothing applies"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-11-17
 schema: 1
 aofVersion: 0.1.0
 origin: wiki/planning/PRD-memory-engine.md
 depends: [177]
 ---
-# Recall hands an agent what applies
+# 201 · Recall hands an agent what applies
 
 ## Objective
 
@@ -41,9 +41,13 @@ In scope:
 - The retrospective's two recalls are recorded in the ledger like every other edge.
 - The retire-promoted filter keeps working ahead of the pick (lessons with a `**Promoted to:**`
   control are dropped before the shortlist).
+  - Corrected at refine, 2026-11-17: no recall path filters on a lesson's promotion today. 153
+    indexes the field and 177 measured the filter in throwaway code. This milestone builds it, for
+    a lesson promoted to a control, a rule or a prompt (ADR-005).
 - Decided at refine, not here: whether the pick is a separate cheap model call (as 177 measured,
   p50 8.9 s) or the recalling agent choosing from a 20-card block it already holds (not measured,
   needs no extra process). The architect records the choice as an ADR with its evidence.
+  - Decided 2026-11-17: a separate model call, made by the recall command (ADR-001).
 
 Out of scope:
 
@@ -61,7 +65,14 @@ backend method changes. 05/ADR-001's derived index is honoured unchanged.
 
 ## Stories
 
-To be broken down after promotion; no stories or task contracts are authored in this shatter.
+- [ ] `00_story_recall-hands-over-a-picked-block` — `recall --block` shortlists 20 with promoted lessons dropped, hands them to a picker, and prints at most 5 or nothing; when the picker cannot answer, the block is the lexical top 5 and stderr says so
+- [ ] `01_story_the-pick-is-a-model-call-a-project-can-see-and-set` — the picker is one lean `claude` call at haiku, run outside the project; `memory.recall.pick` turns it off or changes its model and time limit, and `aof memory status` and `aof project show` say what it is
+- [ ] `02_story_every-recall-leaves-a-record-and-the-po-asks-by-title` — the PO's refine recall asks by the item's title, and the retrospective records both of its recalls, in every runtime's rendered command
+- [ ] `03_story_the-recorded-recalls-replay-against-the-shipped-block` — a script replays the recorded recalls against the lexical block and the shipped one, so an outsider can see the direction 177 measured
+
+Refine recall (refine-po, ids `3cb2d413-fcfc-4afa-afec-8b4bde519c1c` and
+`d51f97fd-e46f-4c27-8a9c-e184a1041509`): the item-scoped recall was empty, and the same words with
+no item filter returned five records. Two shaped the break-down (ARCHITECTURE "Memory recall").
 
 ## Dependencies
 

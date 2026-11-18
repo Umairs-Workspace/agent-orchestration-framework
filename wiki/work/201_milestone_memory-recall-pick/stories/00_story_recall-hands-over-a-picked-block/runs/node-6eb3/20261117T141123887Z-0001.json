@@ -1,0 +1,34 @@
+{
+  "runId": "20261117T141123887Z-0001",
+  "itemRef": "201/00",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "7e78514f-586d-4ad4-9163-d5365376a5bb",
+  "brief": {},
+  "createdAt": "2026-11-17T14:11:23.887Z",
+  "updatedAt": "2026-11-17T15:50:39.434Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-fable-5-2",
+    "effort": "high",
+    "tokens": {
+      "input": 464,
+      "output": 315681,
+      "cacheRead": 54255037,
+      "cacheCreate": 951676
+    },
+    "costUsd": 24.581903099999998,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 231,
+    "toolCalls": 119,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

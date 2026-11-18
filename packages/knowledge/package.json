@@ -15,6 +15,7 @@
     "./graphify-code-relations": "./src/graphify-code-relations.mjs",
     "./memory/none-backend": "./src/memory/none-backend.mjs",
     "./memory/local-retrieval": "./src/memory/local-retrieval.mjs",
+    "./memory/recall-pick": "./src/memory/recall-pick.mjs",
     "./memory/local-indexing": "./src/memory/local-indexing.mjs",
     "./memory/claude-auto-memory": "./src/memory/claude-auto-memory.mjs",
     "./memory/local-backend": "./src/memory/local-backend.mjs",

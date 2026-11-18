@@ -15,6 +15,8 @@ import { realpathSync } from "node:fs";
 import { utimes } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
+import { PICK_EXECUTABLE, STAND_IN, makePickProject } from "../memory/recall-pick-model.test.mjs";
+import { readMemoryConfig } from "@aof/knowledge/memory-config";
 import { operatorLevel, operatorProfileFromConfig } from "@aof/contracts/operator-profile";
 
 export const configInspectTests = [
@@ -212,6 +214,8 @@ export const configInspectTests = [
   ...memoryNodeSchemaTests(),
   // 180/01 task 03 — the faces print the memory node's new paths (see `memoryNodeFaceTests`).
   ...memoryNodeFaceTests(),
+  // 201/01 — the recall pick on the faces a project reads: `aof project show`, the schema and the config editor.
+  ...recallPickFaceTests(),
   // 199 — the per-person local config (see `localConfigTests`).
   ...localConfigTests(),
   // A machine's mesh keys committed to the project config (see `machineMeshKeyTests`).
@@ -1116,7 +1120,8 @@ function memoryNodeFaceTests() {
         const { memory } = await inspectConfig(project);
         assert.deepEqual(memory.corpora, ["work", "imports", "code", "operator"]);
         assert.equal(memory.corporaSource, "project setting");
-        assert.deepEqual(memory.paths, { backend: "memory.backend", corpora: "memory.corpora", graph: "memory.graph", extraction: "memory.backends.graphify.extractionBackend" });
+        // 201/01 — and the key the recall pick is set under.
+        assert.deepEqual(memory.paths, { backend: "memory.backend", corpora: "memory.corpora", graph: "memory.graph", extraction: "memory.backends.graphify.extractionBackend", recallPick: "memory.recall.pick" });
         assert.deepEqual(memory.legacy, []);
       });
     }),
@@ -1141,8 +1146,9 @@ function memoryNodeFaceTests() {
       });
     }),
     ...[
-      ["E13", "new-shape twin", TWIN, ["corpora: work, imports, code, operator"]],
-      ["E13", "legacy config", LEGACY, ["corpora: work, imports, code, operator", "memory.sources → memory.corpora", "graph.share → memory.graph.share"]],
+      // 201/01 — the recall pick's line follows them (201/ADR-004 §6). This door is in-process, so it names the setting alone.
+      ["E13", "new-shape twin", TWIN, ["corpora: work, imports, code, operator", "recall: pick haiku, 20 s (default)"]],
+      ["E13", "legacy config", LEGACY, ["corpora: work, imports, code, operator", "memory.sources → memory.corpora", "graph.share → memory.graph.share", "recall: pick haiku, 20 s (default)"]],
     ].map(([example, label, config, added]) => t(`${example} · memory status adds the corpora line, and one line per old key — ${label}`, async () => {
       const { result, out } = await status(config);
       const today = seam.renderMemory("status", withoutConfig(result));
@@ -1183,7 +1189,9 @@ function memoryNodeFaceTests() {
             nodes: ["a", "b"].map((id) => ({ id, label: `${id}.mjs`, file_type: "code", source_file: `packages/${id}.mjs`, source_location: "L1" })),
             links: [{ source: "b", target: "a", relation: "imports" }] }));
           await utimes(graphJson, new Date("2026-10-30T00:00:00Z"), new Date("2026-10-30T00:00:00Z"));
-          const env = { ...process.env, NODE_NO_WARNINGS: "1", CLAUDE_CONFIG_DIR: claudeHome, AOF_GLOBAL_HOME: process.env.AOF_GLOBAL_HOME };
+          // 201/01 — a block recall is picked; the stand-in picks the first five cards in order, so the
+          // block is the ranker's and no case here starts the real `claude`.
+          const env = { ...process.env, NODE_NO_WARNINGS: "1", CLAUDE_CONFIG_DIR: claudeHome, AOF_GLOBAL_HOME: process.env.AOF_GLOBAL_HOME, [PICK_EXECUTABLE]: STAND_IN };
           const cli = (argv) => spawnCliSync(process.execPath, [cliPath, ...argv], { cwd: project, encoding: "utf8", windowsHide: true, env });
           if (args[1] === "recall") assert.equal(cli(["memory", "ingest", "--json"]).status, 0);
           const result = cli(args);
@@ -1205,6 +1213,81 @@ function memoryNodeFaceTests() {
 // THE FIXTURE is the feature's: the shipped "schemas/aof.schema.json" compiled with the project's
 // JSON-schema validator (ajv, a declared root dependency). Here rather than in the knowledge package's
 // suite, which declares no ajv (05/R3).
+// Milestone 201 / story 01 — the recall pick on the faces a project already reads (ADR-004 §5–§7).
+//   tasks/02_a-project-sets-the-pick.feature         the schema's node, and the config editor's save
+//   tasks/03_a-project-sees-what-the-pick-is.feature `aof project show`, as JSON and as text
+function recallPickFaceTests() {
+  const t = (name, run) => ({ name: `201/01 ${name}`, run });
+  const saveEditableSections = _aofApplication.assets.configEditor.saveEditableSections;
+  const validator = async () => {
+    const Ajv2020 = (await import("ajv/dist/2020.js")).default;
+    const schema = JSON.parse(await readFile(new URL("../../schemas/aof.schema.json", import.meta.url), "utf8"));
+    return new Ajv2020({ strict: false }).compile(schema);
+  };
+  const withPick = async (memory, fn) => {
+    const fx = await makePickProject({ memory, ingest: false });
+    try { return await fn(fx); } finally { await fx.dispose(); }
+  };
+  return [
+    t("task 03 E15 · project show carries the pick and where each value came from: with no memory.recall, recall.pick is { enabled: true, model: 'haiku', timeoutMs: 20000, source: 'default' }", () => withPick({ backend: "local" }, async (fx) => {
+      const shown = JSON.parse(fx.run(["project", "show", "--json"]).stdout);
+      assert.deepEqual(shown.memory.recall.pick, { enabled: true, model: "haiku", timeoutMs: 20000, source: "default" });
+      assert.equal(shown.memory.paths.recallPick, "memory.recall.pick", "…and names the key a project sets");
+      await fx.writeConfig({ backend: "local", recall: { pick: { model: "sonnet" } } });
+      assert.deepEqual(JSON.parse(fx.run(["project", "show", "--json"]).stdout).memory.recall.pick, { enabled: true, model: "sonnet", timeoutMs: 20000, source: "project setting" });
+    })),
+    t("task 03 · project show names what the pick sends, and to whom: the query and up to 20 records' text to the provider behind claude; with the pick off it says so and names nothing sent", () => withPick({ backend: "local" }, async (fx) => {
+      const on = fx.run(["project", "show"]);
+      assert.equal(on.status, 0, on.stderr);
+      const line = on.stdout.split("\n").find((entry) => entry.startsWith("memory: "));
+      assert.equal(line, "memory: recall pick haiku, 20 s (default) — sends the query and up to 20 records' text to the provider behind claude");
+      assert.equal((await fx.standIn(on)).starts.length, 0, "showing the setting starts no process");
+
+      await fx.writeConfig({ backend: "local", recall: { pick: { enabled: false } } });
+      const off = fx.run(["project", "show"]);
+      assert.equal(off.stdout.split("\n").find((entry) => entry.startsWith("memory: ")), "memory: recall pick off (project setting) — nothing is sent");
+      assert.equal(JSON.parse(fx.run(["project", "show", "--json"]).stdout).memory.recall.sends, null, "the JSON names nothing sent either");
+
+      // A project with memory off has nothing to pick from, so nothing is claimed about a pick.
+      await fx.writeConfig({ backend: "none" });
+      assert.equal(fx.run(["project", "show"]).stdout.split("\n").some((entry) => entry.startsWith("memory: ")), false);
+    })),
+    ...[
+      ["accepts", { backend: "local", recall: {} }],
+      ["accepts", { backend: "local", recall: { pick: {} } }],
+      ["accepts", { recall: { pick: { enabled: false, model: "sonnet", timeoutMs: 45000 } } }],
+      ["accepts", { recall: { pick: { timeoutMs: 1000 } } }],
+      ["accepts", { recall: { pick: { timeoutMs: 120000 } } }],
+      ["refuses", { recall: { pick: { timeoutMs: 999 } } }],
+      ["refuses", { recall: { pick: { timeoutMs: 120001 } } }],
+      ["refuses", { recall: { pick: { timeoutMs: "20000" } } }],
+      ["refuses", { recall: { pick: { model: "" } } }],
+      ["refuses", { recall: { pick: { enabled: "no" } } }],
+      ["refuses", { recall: { pick: { effort: "low" } } }],
+      ["refuses", { recall: { pick: false } }],
+      ["refuses", { recall: { shortlist: 40 } }],
+    ].map(([verdict, memory]) => t(`task 02 outline · the schema judges the three keys as the reader does — ${verdict} ${JSON.stringify(memory)}`, async () => {
+      assert.equal((await validator())({ name: "p", resources: [], memory }), verdict === "accepts");
+      // The reader and the schema agree, so validation and the editor cannot say two things.
+      let refused = null;
+      try { readMemoryConfig({ name: "p", resources: [], memory }); } catch (error) { refused = error.code; }
+      assert.equal(refused, verdict === "refuses" ? "invalid-memory-recall-pick" : null, "the memory reader gives the same verdict");
+    })),
+    t("task 02 · the config editor's Memory section accepts the pick, and judges it the same way: { model: 'sonnet' } is saved, and { timeoutMs: 500 } is refused at memory.recall.pick.timeoutMs", () => withPick({ backend: "local" }, async (fx) => {
+      const options = { env: { ...process.env, AOF_GLOBAL_HOME: fx.home } };
+      const configPath = path.join(fx.root, ".aof", "aof.config.json");
+      const saved = await saveEditableSections(fx.root, { memory: { backend: "local", recall: { pick: { model: "sonnet" } } } }, options);
+      assert.equal(saved.ok, true, JSON.stringify(saved.diagnostics));
+      assert.equal(JSON.parse(await readFile(configPath, "utf8")).memory.recall.pick.model, "sonnet", "the config holds memory.recall.pick.model as sonnet");
+
+      const refused = await saveEditableSections(fx.root, { memory: { backend: "local", recall: { pick: { timeoutMs: 500 } } } }, options);
+      assert.equal(refused.ok, false);
+      assert.deepEqual(refused.diagnostics.map((entry) => [entry.path, entry.code]), [["memory.recall.pick.timeoutMs", "invalid-memory-recall-pick"]]);
+      assert.equal(JSON.parse(await readFile(configPath, "utf8")).memory.recall.pick.model, "sonnet", "…and the refused save changed nothing");
+    })),
+  ];
+}
+
 function memoryNodeSchemaTests() {
   const t = (name, run) => ({ name: `180/01 task 02: ${name}`, run });
   const validator = async () => {

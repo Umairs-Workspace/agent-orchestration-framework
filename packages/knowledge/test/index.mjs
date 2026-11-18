@@ -24,6 +24,8 @@ import { claudeAutoMemoryTests } from "./claude-auto-memory.suite.mjs";
 import { memoryRecordOriginTests } from "./memory-record-origin.suite.mjs";
 // milestone 179 / story 01 — the knowledge-engine port: four verbs routed by declared corpora, and the miss.
 import { engineTests } from "./engine.suite.mjs";
+// milestone 201 / story 00 — the recall block is picked from a shortlist, fails soft, and drops promoted lessons.
+import { memoryRecallPickTests } from "./memory-recall-pick.suite.mjs";
 
 export const tests = [
   ...memoryBackendConfigTests,
@@ -43,4 +45,5 @@ export const tests = [
   ...claudeAutoMemoryTests,
   ...memoryRecordOriginTests,
   ...engineTests,
+  ...memoryRecallPickTests,
 ];

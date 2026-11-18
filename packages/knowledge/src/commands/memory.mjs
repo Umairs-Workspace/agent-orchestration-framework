@@ -1,7 +1,13 @@
+import { pickAnnouncement } from "../memory/recall-pick.mjs";
 
+// The default sink for a miss the pick announces: stderr, so stdout stays the block (201/ADR-003 §3).
+const announceOnStderr = (line) => console.error(line);
 
 // Configured application services are supplied by core; construction performs no I/O.
-export function createMemoryCommand({ MEMORY_USAGE, RECORD_RECALL_VERB, SCOPE_FLAGS, memoryJson, parseMemoryArgv, recordRecall, renderMemory, renderWithPropagationWarnings, resolveConfiguredBackend, runMemoryVerb }) {
+// `pickRecords` is the recall pick's capability (201/ADR-002 §3). Core composes it; a door built
+// without one hands out the lexical block, unannounced. `announce` is where an announced miss is
+// written, injectable so a harness can read the line without capturing the process's stderr.
+export function createMemoryCommand({ MEMORY_USAGE, RECORD_RECALL_VERB, SCOPE_FLAGS, memoryJson, parseMemoryArgv, recordRecall, renderMemory, renderWithPropagationWarnings, resolveConfiguredBackend, runMemoryVerb, pickRecords = null, announce = announceOnStderr }) {
 // src/commands/work/memory.mjs — `memory`, the registered door onto the memory seam (story 128),
 // and `work:memory`, its alias (178/ADR-001).
 
@@ -132,7 +138,13 @@ const memoryCommand = {
     // own ctx, because the ledger transition publishes through the same options feedback does
     // (journal, global-store). It resolves no backend and works with memory off.
     const recording = input.verb === RECORD_RECALL_VERB;
-    const result = await runMemoryVerb(input, { config, resolveBackend: resolveConfiguredBackend, ctx: recording ? ctx : memoryCtx, recordRecall });
+    const result = await runMemoryVerb(input, { config, resolveBackend: resolveConfiguredBackend, ctx: recording ? ctx : memoryCtx, recordRecall, pickRecords });
+    // 201/ADR-003 §3 — a pick that could not answer left the lexical block, and this door says so:
+    // one line, on stderr, so stdout stays the block and its lines stay exactly its records. The
+    // seam reports the miss on the result and prints nothing; a pick that is off or unwired is the
+    // configured behaviour and has no line.
+    const missed = pickAnnouncement(result?.pick, result?.records?.length ?? 0);
+    if (missed !== null) announce(missed);
     return { verb: input.verb, help: input.help === true, block: input.block === true, limit: input.opts?.all === true ? Infinity : input.opts?.limit, result };
   },
 

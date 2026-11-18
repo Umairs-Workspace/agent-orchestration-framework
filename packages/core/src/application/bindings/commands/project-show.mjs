@@ -71,6 +71,17 @@ export function assembleCommandsProjectShow({ configInspectServices }) {
             : overrides.length > 0 ? `overrides ${overrides.join(", ")}` : "overrides nothing";
           lines.push(`local: ${result.local.configPath} — ${what}`);
         }
+        // 201/ADR-004 §6, §7 — the recall pick is a model call the project did not have to configure,
+        // so the project is shown what it is and what it sends, or that it is off.
+        // `inspected` is config inspection's ANSWER about the memory node, never the node itself: the
+        // node's keys are read by its one reader (FF-18001, FF-20104). A project with memory off has
+        // nothing to pick from, so no line is printed for it.
+        const inspected = result["memory"] ?? null;
+        const pick = inspected !== null && inspected.backend !== "none" ? inspected.recall?.pick : null;
+        if (pick) {
+          const setting = pick.enabled ? `${pick.model}, ${pick.timeoutMs / 1000} s` : "off";
+          lines.push(`memory: recall pick ${setting} (${pick.source}) — ${pick.enabled ? `sends ${inspected.recall.sends}` : "nothing is sent"}`);
+        }
         if (result.legacyConfigIsStale) {
           lines.push(`warning: root aof.config.json is legacy; ${result.configPath} is authoritative`);
         }

@@ -238,4 +238,54 @@ export const memoryBackendConfigTests = [
       assert.deepEqual(rewriteLegacyMemoryConfig(kept), { config: kept, moves: [], conflicts: [] }, `nothing is overwritten: ${JSON.stringify(kept)}`);
     }
   }),
+  // milestone 201 / story 01 (ADR-004 §5, §6) — the recall pick's settings, read by the node's one reader.
+  { name: '201/01 task02 E8 · absent keys are the pick turned on: readMemoryConfig answers enabled, haiku and 20000 ms as the default, however much of the path is spelled', run: () => {
+    const defaults = { enabled: true, model: 'haiku', timeoutMs: 20000, source: 'default' };
+    for (const config of [undefined, {}, { memory: {} }, { memory: { backend: 'local' } }, { memory: { recall: {} } }, { memory: { recall: { pick: {} } } }]) {
+      assert.deepEqual(readMemoryConfig(config).recall, { pick: defaults }, JSON.stringify(config));
+    }
+    assert.equal(readMemoryConfig({}).paths.recallPick, 'memory.recall.pick');
+  } },
+  { name: '201/01 task02 E9 + E10 · a spelled key is a project setting and the others keep their defaults', run: () => {
+    const pick = (declared) => readMemoryConfig({ memory: { recall: { pick: declared } } }).recall.pick;
+    assert.deepEqual(pick({ enabled: false }), { enabled: false, model: 'haiku', timeoutMs: 20000, source: 'project setting' });
+    assert.deepEqual(pick({ model: 'sonnet', timeoutMs: 45000 }), { enabled: true, model: 'sonnet', timeoutMs: 45000, source: 'project setting' });
+    assert.deepEqual(pick({ enabled: true }), { enabled: true, model: 'haiku', timeoutMs: 20000, source: 'project setting' }, 'spelling the default is still the project saying so');
+    assert.deepEqual(pick({ timeoutMs: 1000 }).timeoutMs, 1000);
+    assert.deepEqual(pick({ timeoutMs: 120000 }).timeoutMs, 120000);
+  } },
+  { name: '201/01 task02 E11 + outline · a bad value is refused with invalid-memory-recall-pick at the path the author wrote, by every reader of the node', run: () => {
+    const rows = [
+      [{ pick: { timeoutMs: 500 } }, 'memory.recall.pick.timeoutMs'], [{ pick: { timeoutMs: 999 } }, 'memory.recall.pick.timeoutMs'],
+      [{ pick: { timeoutMs: 120001 } }, 'memory.recall.pick.timeoutMs'], [{ pick: { timeoutMs: '20000' } }, 'memory.recall.pick.timeoutMs'],
+      [{ pick: { timeoutMs: 1500.5 } }, 'memory.recall.pick.timeoutMs'], [{ pick: { model: '' } }, 'memory.recall.pick.model'],
+      [{ pick: { model: '  ' } }, 'memory.recall.pick.model'], [{ pick: { model: 4 } }, 'memory.recall.pick.model'],
+      [{ pick: { enabled: 'no' } }, 'memory.recall.pick.enabled'], [{ pick: { effort: 'low' } }, 'memory.recall.pick.effort'],
+      [{ pick: false }, 'memory.recall.pick'], [{ pick: [] }, 'memory.recall.pick'], [{ shortlist: 40 }, 'memory.recall.shortlist'],
+    ];
+    for (const [recall, at] of rows) {
+      for (const read of [readMemoryConfig, inspectMemoryConfiguration]) {
+        assert.throws(() => read({ memory: { backend: 'local', recall } }), (error) => error.code === 'invalid-memory-recall-pick' && error.path === at && error.status === 400, `${JSON.stringify(recall)} at ${at}`);
+      }
+    }
+    assert.throws(() => readMemoryConfig({ memory: { recall: 'off' } }), (error) => error.code === 'invalid-memory-recall-pick' && error.path === 'memory.recall');
+  } },
+  { name: '201/01 task03 · the status line and the inspection follow the settings: the summary names the model, the limit in seconds and the source, and what is sent is named only while the pick is on', run: async () => {
+    const { recallPickSummary, recallPickSends } = await import('../src/memory.mjs');
+    const pick = (declared) => readMemoryConfig({ memory: { recall: { pick: declared } } }).recall.pick;
+    assert.equal(recallPickSummary(pick({})), 'pick haiku, 20 s (default)');
+    assert.equal(recallPickSummary(pick({ timeoutMs: 1500 })), 'pick haiku, 1.5 s (project setting)');
+    assert.equal(recallPickSummary(pick({ enabled: false })), 'pick off (project setting)');
+    assert.equal(recallPickSummary({ ...pick({}), claude: 'resolves' }, { cap: 5 }), 'pick haiku, 20 s (default) · claude resolves');
+    assert.equal(recallPickSummary({ ...pick({}), claude: 'not-found' }, { cap: 5 }), 'pick haiku, 20 s (default) · claude not found, so every block is the lexical top 5');
+    assert.equal(recallPickSummary({ ...pick({ enabled: false }), claude: 'not-found' }, { cap: 5 }), 'pick off (project setting)', 'a pick that is off claims nothing about claude');
+    assert.equal(recallPickSends(pick({})), "the query and up to 20 records' text to the provider behind claude");
+    assert.equal(recallPickSends(pick({ enabled: false })), null);
+    const inspected = inspectMemoryConfiguration({ memory: { backend: 'local' } });
+    assert.deepEqual(inspected.recall, { pick: { enabled: true, model: 'haiku', timeoutMs: 20000, source: 'default' }, sends: "the query and up to 20 records' text to the provider behind claude" });
+    // The in-process door resolves no executable, so its status line says the setting and no more.
+    const lines = [];
+    await seam.runMemory(['status'], { config: { memory: { recall: { pick: { model: 'sonnet' } } } }, log: (line) => lines.push(line) });
+    assert.ok(lines[0].split('\n').includes('recall: pick sonnet, 20 s (project setting)'), lines[0]);
+  } },
 ];

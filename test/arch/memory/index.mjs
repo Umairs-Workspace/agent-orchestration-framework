@@ -79,6 +79,15 @@ import { archTests as acdMemoryConfigOneReaderTests } from "./acd-memory-config-
 // milestone 180 / story 01 — FF-18002: the schema's memory vocabularies are the code's, the
 // never-shared rule is stated, and no key configures egress (ADR-002..005).
 import { archTests as acdMemoryNodeSchemaTests } from "./acd-memory-node-schema.test.mjs";
+// milestone 201 / story 00 — FF-20101: the recall pick has one home, and no ranker, port or backend
+// knows it (ADR-002 §1, §2, §6).
+import { archTests as acdRecallPickSingleHomeTests } from "./acd-recall-pick-single-home.test.mjs";
+// milestone 201 / story 00 — FF-20102: knowledge starts no model; the pick reaches a process only
+// through the capability core injects (ADR-002 §3).
+import { archTests as acdRecallPickIsInjectedTests } from "./acd-recall-pick-is-injected.test.mjs";
+// milestone 201 / story 01 — FF-20103: the pick's launch has one builder, never --bare and never a
+// permission bypass, in a temp directory with the environment scrubbed (ADR-004 §2–§4).
+import { archTests as acdRecallPickLaunchTests } from "./acd-recall-pick-launch.test.mjs";
 
 export const tests = [
   ...acdAnchorTaxonomyAdditiveTests,
@@ -122,4 +131,9 @@ export const tests = [
   // milestone 180 / story 01 — FF-18001 and FF-18002 (see the import notes).
   ...acdMemoryConfigOneReaderTests,
   ...acdMemoryNodeSchemaTests,
+  // milestone 201 / story 00 — FF-20101 and FF-20102 (see the import notes).
+  ...acdRecallPickSingleHomeTests,
+  ...acdRecallPickIsInjectedTests,
+  // milestone 201 / story 01 — FF-20103 (see the import note).
+  ...acdRecallPickLaunchTests,
 ];

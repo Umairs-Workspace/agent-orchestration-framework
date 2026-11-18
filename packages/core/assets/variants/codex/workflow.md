@@ -4008,8 +4008,10 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
      **Recall prior lessons first (before authoring ADRs/stories).** Role-scoped, run unconditionally
      (memory may be off — see below): the **architect**, before writing an ADR, runs `aof memory
      recall "<the decision in a few words>" --area architecture --block`; the **PO**, before the
-     break-down, runs a recall keyed to the milestone's domain — `aof memory recall "<milestone
-     objective keywords>" --item <ref> --block`. Read the returned block and acknowledge any surfaced
+     break-down, runs a recall on the item's title — `aof memory recall "<the item's title,
+     verbatim>" --block`, with no item filter and no area filter. An item that has just entered the
+     stream has no records of its own, so a recall scoped to it returns nothing; its title finds what
+     earlier items recorded about the same subject. Read the returned block and acknowledge any surfaced
      **near-miss** relevant to a decision — honoured, or consciously departed from, in `ARCHITECTURE.md`
      (or `STATE.md`). An **empty block means nothing to surface** (memory may be off) — proceed
      unchanged.
@@ -4025,7 +4027,7 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
      or `irrelevant`, never a default. The architect uses edge `refine-architect`, actor
      `architect` and scope `{"area":"architecture"}`, then submits
      `aof memory record-recall <ref> --input <architect observation file>`. The PO uses edge
-     `refine-po`, actor `product-owner` and scope `{"item":"<ref>"}`, then submits
+     `refine-po`, actor `product-owner`, the item's title as its `query` and scope `{}`, then submits
      `aof memory record-recall <ref> --input <PO observation file>`. Each submits exactly once,
      on the item being refined. An empty block is still submitted, as `"records": []`, with no
      verdict invented. The prose that acknowledges a near-miss cites the recall id it explains.
@@ -4390,7 +4392,7 @@ exactly what stands in the way and whose it is. Then end the session. The loop r
 
 Use the native skill $aof-retrospective; $ARGUMENTS is the operator text after its name.
 
-Read the target story or milestone evidence, recall shared memory before triage and ingest after authoring. Keep stable R<n> ids and deduplicate lessons. Kind is mistake/blocker/near-miss/misunderstanding; Area is code/architecture/contract/security/process; Stage is refine/build/verify; Owner is required. No invented lesson or product evidence. Each story owns its own retrospective. Observability is written only by the CLI; a clean run need not produce a lesson doc.
+Read the target story or milestone evidence, recall shared memory before triage, record both recalls on the item's ledger once the lessons are written, and ingest after authoring. Keep stable R<n> ids and deduplicate lessons. Kind is mistake/blocker/near-miss/misunderstanding; Area is code/architecture/contract/security/process; Stage is refine/build/verify; Owner is required. No invented lesson or product evidence. Each story owns its own retrospective. Observability is written only by the CLI; a clean run need not produce a lesson doc.
 
 ## Codex execution contract
 Use only tools actually exposed by this session. File reading/editing, shell execution, search,
@@ -4438,6 +4440,8 @@ findings, its `## Findings` section and any recorded blocker stop):
 
 Before triage, recall the target's domain with `aof memory recall "<domain / keywords>" --block`.
 Use existing lessons to deduplicate, never as invented evidence; an empty block is harmless.
+**Keep the result.** Retain this recall's actual result unchanged, with the instant it ran: the exact
+query text and every returned line. Step 6 records it, and never re-runs the recall to rebuild it.
 
 1. **Refresh observability (on by default).** Run `aof work observe NN --write --if-enabled` — the
    CLI self-gates on `work.observability.enabled`, which now defaults **ON** (set it to `false` to opt
@@ -4461,8 +4465,9 @@ Use existing lessons to deduplicate, never as invented evidence; an empty block 
    Open a cited source to substantiate a record; never enumerate `VERIFICATION.md`,
    `FEEDBACK.ndjson` or run records as the evidence path. When memory is off, or the recall returns
    nothing, report the episodic evidence as unavailable — do not fall back to reading the raw ledgers.
-   This retrospective's own run is still open, so it is correctly absent. This evidence step records
-   no recall observation. Beside it, read:
+   This retrospective's own run is still open, so it is correctly absent. **Keep the result** —
+   retain this recall's actual result unchanged, with the instant it ran: the exact query text and
+   every returned record. Step 6 records it. Beside it, read:
    - `STATE.md` → durable decisions, the closure record and carried follow-ups — anything recording
      a decision-with-hindsight. Its `## Feedback (for retro)` notes project feedback the recall
      already returned: do not count it twice.
@@ -4494,16 +4499,42 @@ Use existing lessons to deduplicate, never as invented evidence; an empty block 
    report no new lesson, leave every existing lesson body byte-identical, and invent no recurrence
    or promotion (absence is information). Never manufacture entries to fill the page. The
    `observability/` folder (when the opt-in is on) is written regardless — it is a diagnostic, not
-   a lesson doc.
-6. **Index the authored records.** Run `aof memory ingest` only AFTER the lesson pass has
-   authored `promotionFrom`, `Recurs` and `Promoted to`; this is safe when memory is off. Keep the
-   shared Kind / Area / Stage / Owner vocabulary above.
+   a lesson doc. A clean item ran both recalls all the same, so both observations of step 6 are
+   still submitted.
+6. **Record both recalls.** Once the lessons are written — or step 5 has found none to write — each
+   of the two recalls above becomes one observation on the item this retrospective is for. From
+   each recall's actual result, kept unchanged since it ran, take the exact query text and, for
+   every returned record, its `item`, `id` and `recordType` (a lesson kind such as `near-miss`
+   means `lesson`; any other word, such as `finding` or `run`, is the record type itself). Never
+   re-run the recall to rebuild it. Write each observation to its own scratch file outside every
+   work folder: `id` (a fresh UUID minted once per recall — two recalls, two ids; a retry reuses
+   its id and `at`), `at` (the ISO instant of that recall), `edge`, `actor` `product-owner`,
+   `query` (verbatim), `scope` and `records` — one `{item, id, recordType, verdict}` per returned
+   record, each with an explicit verdict `honoured`, `departed` or `irrelevant`, never a default.
+   - **The recall before triage** uses `edge` `retrospective-domain` and `scope` `{}`. `honoured`:
+     the earlier lesson stopped a duplicate from being written, or earned a new lesson its
+     `Recurs`. `departed`: it was judged close, and a new lesson was written anyway.
+     `irrelevant`: neither. Submit it once:
+     `aof memory record-recall <ref> --input <domain observation file>`.
+   - **The evidence recall** of step 2 uses `edge` `retrospective-evidence`, `query` `""` and
+     `scope` `{"item":"<ref>","area":"delivery"}`. `honoured`: a lesson cites the record.
+     `irrelevant`: it carried no lesson. Evidence is never `departed`. Submit it once:
+     `aof memory record-recall <ref> --input <evidence observation file>`.
+
+   Memory may be off, and either recall may have returned nothing. An empty block is still
+   submitted, as `"records": []`, and so is an empty evidence array: no verdict and no extra
+   retrieval is invented.
+7. **Index the authored records.** Run `aof memory ingest` only AFTER the lesson pass has
+   authored `promotionFrom`, `Recurs` and `Promoted to`, and after step 6 has submitted both
+   observations; this is safe when memory is off. Keep the shared Kind / Area / Stage / Owner
+   vocabulary above.
 </process>
 
 <output>
 Per item: created / updated / skipped-clean, with the `R<n>` count and a one-line digest of each
 lesson; note whether an `observability/` snapshot was written (or skipped: `work.observability.enabled: false`). Modify only
-`RETROSPECTIVE.md` (the `observability/` folder is written by `aof work observe`, not by hand).
+`RETROSPECTIVE.md` by hand. Step 6's two submissions append two recall rows to the item's
+`FEEDBACK.ndjson`, and `aof work observe` writes the `observability/` folder.
 </output>
 
 <!-- variant:review -->

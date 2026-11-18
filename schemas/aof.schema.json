@@ -835,6 +835,35 @@
           },
           "additionalProperties": false
         },
+        "recall": {
+          "type": "object",
+          "description": "What `aof memory recall --block` does beyond ranking (201/ADR-004). OPTIONAL — absent means the pick is on at its defaults, so an existing project has nothing to adopt. `aof memory status` and `aof project show` name what resolves.",
+          "properties": {
+            "pick": {
+              "type": "object",
+              "description": "The recall pick: one `claude` call per block recall that chooses at most five of the 20 best-ranked records, or none. It sends the query and each shortlisted record's line and up to 1,500 characters of its text to the provider behind `claude`. On a node where `claude` cannot answer, the block is the lexical top five and stderr says why.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Whether the pick runs. Absent means true. `false` turns the model call off: every block is the lexical top five, and nothing is sent."
+                },
+                "model": {
+                  "type": "string",
+                  "pattern": "\\S",
+                  "description": "The model the pick asks `claude` for. Absent means `haiku`."
+                },
+                "timeoutMs": {
+                  "type": "integer",
+                  "minimum": 1000,
+                  "maximum": 120000,
+                  "description": "How long the pick may take, in milliseconds, before the child is ended and the block falls back. Absent means 20000."
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
         "sources": {
           "type": "array",
           "uniqueItems": true,

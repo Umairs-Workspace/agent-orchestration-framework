@@ -258,7 +258,8 @@ Every memory setting lives in the one `memory` node (milestone 180):
   "backend": "graphify",
   "corpora": ["work", "imports", "code", "operator"],              // absent ≡ work, imports, code
   "graph": { "share": "git-refs", "remote": "origin" },            // the code graph's sharing
-  "backends": { "graphify": { "extractionBackend": "claude-cli" } } // each engine's own settings
+  "backends": { "graphify": { "extractionBackend": "claude-cli" } }, // each engine's own settings
+  "recall": { "pick": { "enabled": true, "model": "haiku", "timeoutMs": 20000 } } // absent ≡ these
 }
 ```
 
@@ -268,6 +269,12 @@ the codebase graph; `memory.backends.graphify.extractionBackend` picks graphify'
 configures egress — `aof memory status` and `aof graph build` report it. The old spellings
 `memory.sources`, `memory.graphify` and a root `graph` still read for one release with a warning in
 `aof project doctor` and `aof memory status`; `aof work update` rewrites them.
+
+`aof memory recall --block` asks `claude` once per recall to pick, from the 20 best-ranked records, the
+ones that apply (at most five, or none). It is on by default and sends the query and those records'
+text to the provider behind `claude`. `memory.recall.pick.enabled: false` turns it off. On a node
+where `claude` cannot answer, the block is the ranker's first five and stderr says why.
+`aof memory status` and `aof project show` name the setting. See [wiki/memory.md](wiki/memory.md#the-recall-pick).
 
 ### Graphify codebase intelligence (milestones 09 · 11)
 

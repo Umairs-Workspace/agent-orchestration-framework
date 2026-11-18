@@ -136,6 +136,14 @@ The memory node's other keys are `memory.corpora` (what memory serves) and `memo
 `memory.graph.remote` (the code graph's sharing); none follows the execution runtime. The old
 `memory.graphify` and root `graph` spellings still read for one release, and `aof work update`
 rewrites them.
+
+**The recall pick asks `claude`, on a Codex project too.** `aof memory recall --block` makes one
+`claude` call per recall to choose which records apply (`memory.recall.pick`, on by default at
+`haiku`). It does not follow the execution runtime: a Codex or opencode session's recall still asks
+`claude` when `claude` resolves on the node. That is a second provider for such a session, and it
+is sent the query and up to 20 records' text. `aof project show` names it, and
+`"memory": { "recall": { "pick": { "enabled": false } } }` turns it off. On a node with no `claude`
+the block is the ranker's first five, and stderr names `pick-unavailable`.
 Preflight names that dependency and the local alternative. It never silently switches.
 
 ## Protocol profile and proof limits

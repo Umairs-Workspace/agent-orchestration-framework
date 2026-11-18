@@ -168,8 +168,10 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
      **Recall prior lessons first (before authoring ADRs/stories).** Role-scoped, run unconditionally
      (memory may be off — see below): the **architect**, before writing an ADR, runs `aof memory
      recall "<the decision in a few words>" --area architecture --block`; the **PO**, before the
-     break-down, runs a recall keyed to the milestone's domain — `aof memory recall "<milestone
-     objective keywords>" --item <ref> --block`. Read the returned block and acknowledge any surfaced
+     break-down, runs a recall on the item's title — `aof memory recall "<the item's title,
+     verbatim>" --block`, with no item filter and no area filter. An item that has just entered the
+     stream has no records of its own, so a recall scoped to it returns nothing; its title finds what
+     earlier items recorded about the same subject. Read the returned block and acknowledge any surfaced
      **near-miss** relevant to a decision — honoured, or consciously departed from, in `ARCHITECTURE.md`
      (or `STATE.md`). An **empty block means nothing to surface** (memory may be off) — proceed
      unchanged.
@@ -185,7 +187,7 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
      or `irrelevant`, never a default. The architect uses edge `refine-architect`, actor
      `architect` and scope `{"area":"architecture"}`, then submits
      `aof memory record-recall <ref> --input <architect observation file>`. The PO uses edge
-     `refine-po`, actor `product-owner` and scope `{"item":"<ref>"}`, then submits
+     `refine-po`, actor `product-owner`, the item's title as its `query` and scope `{}`, then submits
      `aof memory record-recall <ref> --input <PO observation file>`. Each submits exactly once,
      on the item being refined. An empty block is still submitted, as `"records": []`, with no
      verdict invented. The prose that acknowledges a near-miss cites the recall id it explains.

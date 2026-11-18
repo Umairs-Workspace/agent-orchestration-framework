@@ -2,7 +2,8 @@ import { commandError } from "@aof/contracts/error";
 import { KNOWLEDGE_CORPORA } from "./engine.mjs";
 
 // THE MEMORY NODE, READ IN ONE PLACE (180/ADR-001). Every memory setting but the backend selection
-// lives under `memory`: `corpora`, the code corpus's `graph` sharing and the per-engine `backends`.
+// lives under `memory`: `corpora`, the code corpus's `graph` sharing, the per-engine `backends`, and
+// `recall`, which holds the recall pick's settings (201/ADR-004 §5).
 // This module is the only one that reads those keys, in the new spelling or the old one
 // (`memory.sources`, `memory.graphify` and the root `graph`), and it answers the node in the new
 // shape. The three resolvers (`resolveMemorySources`, `resolveGraphifyExtraction`,
@@ -137,6 +138,48 @@ function readBackends(declared) {
   }
 }
 
+// ------------------------------------------------------------------- recall ----
+
+// The recall pick's settings (201/ADR-004 §5). Absent keys mean the pick is on, at these values, so
+// an existing project has nothing to adopt. 20 s is about twice the p95 spike 177 measured.
+export const RECALL_PICK_DEFAULTS = Object.freeze({ enabled: true, model: "haiku", timeoutMs: 20000 });
+export const RECALL_PICK_TIMEOUT_MS = Object.freeze({ min: 1000, max: 120000 });
+const RECALL_PICK_KEYS = Object.freeze(Object.keys(RECALL_PICK_DEFAULTS));
+
+// `memory.recall` → `{ pick: { enabled, model, timeoutMs, source } }`. `source` is "project
+// setting" as soon as the project spells any of the three keys, and "default" otherwise. Anything
+// the node does not know is refused at the path the author wrote.
+function readRecall(declared, present) {
+  const path = "memory.recall";
+  const pickPath = `${path}.pick`;
+  const refuse = (message, where) => { throw refusal(message, "invalid-memory-recall-pick", where); };
+  const settings = { ...RECALL_PICK_DEFAULTS };
+  let source = "default";
+  if (present) {
+    if (!isObject(declared)) refuse(`${path} must be an object, such as { "pick": { "enabled": false } }.`, path);
+    for (const key of Object.keys(declared)) if (key !== "pick") refuse(`Unknown ${path} setting "${key}" — aof knows "pick".`, `${path}.${key}`);
+  }
+  if (present && Object.hasOwn(declared, "pick")) {
+    const pick = declared.pick;
+    if (!isObject(pick)) refuse(`${pickPath} must be an object, such as { "enabled": false } or { "model": "haiku", "timeoutMs": 20000 }.`, pickPath);
+    for (const key of Object.keys(pick)) {
+      if (!RECALL_PICK_KEYS.includes(key)) refuse(`Unknown ${pickPath} setting "${key}" — aof knows ${listed(quoted(RECALL_PICK_KEYS))}.`, `${pickPath}.${key}`);
+    }
+    if (Object.hasOwn(pick, "enabled") && typeof pick.enabled !== "boolean") {
+      refuse(`${pickPath}.enabled is ${JSON.stringify(pick.enabled)} — it is true or false.`, `${pickPath}.enabled`);
+    }
+    if (Object.hasOwn(pick, "model") && (typeof pick.model !== "string" || pick.model.trim() === "")) {
+      refuse(`${pickPath}.model is ${JSON.stringify(pick.model)} — name the model the pick asks, such as "haiku".`, `${pickPath}.model`);
+    }
+    const { min, max } = RECALL_PICK_TIMEOUT_MS;
+    if (Object.hasOwn(pick, "timeoutMs") && !(Number.isInteger(pick.timeoutMs) && pick.timeoutMs >= min && pick.timeoutMs <= max)) {
+      refuse(`${pickPath}.timeoutMs is ${JSON.stringify(pick.timeoutMs)} — it is a whole number of milliseconds from ${min} to ${max}.`, `${pickPath}.timeoutMs`);
+    }
+    for (const key of RECALL_PICK_KEYS) if (Object.hasOwn(pick, key)) { settings[key] = pick[key]; source = "project setting"; }
+  }
+  return { pick: { ...settings, source } };
+}
+
 // ------------------------------------------------------------------- legacy ----
 
 // Every old spelling the config carries, one entry per setting it holds: a block reports each of
@@ -169,7 +212,7 @@ export function memoryConfigConflicts(config) {
 // --------------------------------------------------------------- the reader ----
 
 // readMemoryConfig(config) — the ROOT config in, the memory node out in the new shape:
-//   { corpora, corporaSource, graph: { share, remote }, backends: { graphify }, paths, legacy }
+//   { corpora, corporaSource, graph: { share, remote }, backends: { graphify }, recall: { pick }, paths, legacy }
 // `paths` names the key each setting was read from, as the author spelled it, and `legacy` lists
 // `{ path, replacement }` for every old spelling. A pair spelled twice is refused with
 // `memory-config-conflict`; an invalid value is refused at the path the author wrote.
@@ -209,12 +252,16 @@ export function readMemoryConfig(config) {
   const block = at(root, graphifyPath);
   const graphify = block.present ? readGraphifyBlock(block.value, graphifyPath) : {};
 
+  const recallNode = at(root, "memory.recall");
+  const recall = readRecall(recallNode.value, recallNode.present);
+
   return {
     corpora,
     corporaSource,
     graph,
     backends: { graphify },
-    paths: { corpora: corporaPath, graph: graphPath, extraction: `${graphifyPath}.extractionBackend` },
+    recall,
+    paths: { corpora: corporaPath, graph: graphPath, extraction: `${graphifyPath}.extractionBackend`, recallPick: "memory.recall.pick" },
     legacy: legacyEntries(root),
   };
 }
@@ -245,7 +292,7 @@ export function replaceMemoryNode(config, node) {
 // the keys sit in the order backend, corpora, graph, backends, with any other key after them; a
 // config with no `memory` node gets one where the root `graph` was. Every other root key keeps its
 // position. Stories 02 (`aof work update`) and 03 (the config editor) are its callers.
-const MEMORY_KEY_ORDER = Object.freeze(["backend", "corpora", "graph", "backends"]);
+const MEMORY_KEY_ORDER = Object.freeze(["backend", "corpora", "graph", "backends", "recall"]);
 
 function validLegacySources(value) {
   try {

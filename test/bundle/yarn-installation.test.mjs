@@ -102,6 +102,9 @@ export const yarnInstallationTests = [
         'graphify-code-backend.mjs': ['node:path', '@aof/contracts/error'],
         'graphify-code-relations.mjs': ['node:fs'],
         'memory/local-retrieval.mjs': ['@aof/work/ref-scope', '@aof/work/memory-vocabulary'],
+        // 201/ADR-005 §1: the recall pick's promoted-lesson filter reads a lesson's promotion pointers
+        // from the vocabulary's one home; the leaf imports nothing else.
+        'memory/recall-pick.mjs': ['@aof/work/memory-vocabulary'],
         // 148/ADR-001: the lesson grammar and its vocabulary have one home, in @aof/work.
         // 178/ADR-002 (178/F-01): `origin:` is read from the item's record doc through work's one frontmatter
         // parser, and the record doc and the archive root are named by work's identity home.
@@ -162,6 +165,8 @@ export const yarnInstallationTests = [
         'codex-app-server.mjs': ['node:child_process', 'node:path', '@aof/contracts/loop-bounds', '@aof/foundation/awake-clock'],
         // 172/ADR-001: the architect's headless conversation spawns one stream-json claude per diagram and ends its tree.
         'conversation-session.mjs': ['node:child_process'],
+        // 201/ADR-004 §4: the one-shot model ask starts its one child in a temp directory of its own.
+        'model-ask.mjs': ['node:child_process', 'node:fs/promises', 'node:os', 'node:path'],
         // 156: Windows Codex discovery (package bin, Store install) and the sandboxed child's PATH.
         'codex-executable.mjs': ['node:fs', 'node:fs/promises', 'node:child_process', 'node:module', 'node:path'],
         'codex-process-environment.mjs': ['node:fs', 'node:path'],

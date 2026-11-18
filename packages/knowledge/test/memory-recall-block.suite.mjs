@@ -17,11 +17,12 @@ import path from "node:path";
 import { mkdtemp, writeFile, readFile } from "node:fs/promises";
 import { recall } from "@aof/knowledge/memory/local-retrieval";
 import { createMemory } from "@aof/knowledge/memory";
+import { RECORD_CORPORA } from "@aof/knowledge/engine";
 
 // The block render is a pure projection of a RecallResult: no backend is ever selected, so both
 // loaders refuse.
 const refuseBackend = (name) => () => { throw new Error(`rendering a recall block must not load the ${name} backend`); };
-const { renderRecallBlock, HOOK_LIMIT } = createMemory({ loadLocalBackend: refuseBackend("local"), loadGraphifyBackend: refuseBackend("graphify") });
+const { renderRecallBlock, HOOK_LIMIT, runMemory } = createMemory({ loadLocalBackend: refuseBackend("local"), loadGraphifyBackend: refuseBackend("graphify") });
 
 // Build a full MemoryRecord (ADR-005) from a partial spec: every field present,
 // absent-type fields as "" (the empty-string-present convention retrieval reads).
@@ -383,6 +384,28 @@ export const memoryRecallBlockTests = [
       assert.equal(blockLines(renderRecallBlock({ records: [feedback] }))[0].split(" · ").length, 5);
       const lesson = { ...record({ recordType: "lesson", id: "R1", item: "39", kind: "near-miss", area: "process", title: "A lesson", summary: "the lesson gist", source: "x/RETROSPECTIVE.md:3" }), tags: [] };
       assert.equal(renderRecallBlock({ records: [lesson] }), "R1 (m39) · near-miss · process · A lesson · x/RETROSPECTIVE.md:3\n");
+    }
+  },
+  // ── milestone 201 / story 00 (ADR-002 §7): a pick card carries the block's own line ────────────
+  {
+    name: "201/00: the card a picker is handed carries the block's own line — tags, an episodic summary and an origin included — and a block still caps a result it is handed",
+    run: async () => {
+      const records = [
+        { ...record({ recordType: "lesson", id: "R1", item: "39", kind: "near-miss", area: "process", title: "alpha tagged", text: "alpha bravo", source: "x/RETROSPECTIVE.md:3" }), tags: ["recurring", "caught at review"] },
+        { ...record({ recordType: "run", id: "RUN-1", item: "39", kind: "run", area: "delivery", title: "alpha run", summary: "failed: cap-exhausted", text: "alpha bravo run", source: "39_milestone_x/runs/n/1.json#" }), tags: ["retried"] },
+        { ...record({ recordType: "adr", id: "ADR-002", item: "39", area: "architecture", title: "alpha decision", status: "Accepted", text: "alpha bravo decision", source: "x/ARCHITECTURE.md:6" }), origin: ["wiki/planning/PRD-x.md"] },
+      ];
+      const backend = { name: "local", corpora: RECORD_CORPORA, recall: (query, scope, opts) => recall(query, scope, opts, { records }), reindex: async () => ({ recordCount: 3 }), status: async () => ({ backend: "local", recordCount: 3 }) };
+      let request;
+      const { result } = await runMemory(["recall", "alpha bravo", "--block"], { config: {}, resolveBackend: async () => backend, pickRecords: async (handed) => { request = handed; return { answer: "[1, 2, 3]" }; } });
+      assert.equal(request.cards.length, 3, "non-vacuous: every record is a card");
+      assert.deepEqual(request.cards.map((card) => card.line), blockLines(renderRecallBlock(result)), "each card's line is its record's block line, byte for byte");
+      assert.ok(request.cards.some((card) => card.line.includes(" · [recurring; caught at review] · ")), "a tagged record's card carries its tags");
+      assert.ok(request.cards.some((card) => card.line.includes(" · failed: cap-exhausted · [retried] · ")), "an episodic record's card carries its summary");
+      assert.ok(request.cards.some((card) => card.line.includes(" · origin wiki/planning/PRD-x.md · ")), "a record's card carries its origin");
+      // The render keeps its own cap, for a caller that renders a result it built itself.
+      const eight = Array.from({ length: 8 }, (_, index) => record({ recordType: "lesson", id: `R${index + 1}`, item: "01", kind: "near-miss", area: "process", title: `t${index + 1}`, source: `m01/R.md:${index + 1}` }));
+      assert.equal(blockLines(renderRecallBlock({ records: eight })).length, HOOK_LIMIT);
     }
   }
 ];

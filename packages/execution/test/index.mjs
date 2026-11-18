@@ -1,6 +1,8 @@
 import { runtimeEventsTests } from "./runtime-events.suite.mjs";
 import { sessionModelTests } from "./session-model.suite.mjs";
 import { conversationSessionTests } from "./conversation-session.suite.mjs";
+// milestone 201 / story 01 — the one-shot model ask (ADR-004): its launch, its outcomes and its time limit.
+import { modelAskTests } from "./model-ask.suite.mjs";
 import { runtimeSessionTests } from "./runtime-session.suite.mjs";
 import { runtimeSelectionTests } from "./runtime-selection.suite.mjs";
 import { codexDiscoveryTests } from "./codex-discovery.suite.mjs";
@@ -30,4 +32,5 @@ export const tests = [
   ...runStoreDerivedLogTests,
   ...runStoreSpendTests,
   ...runStoreStateMachineTests,
+  ...modelAskTests,
 ];

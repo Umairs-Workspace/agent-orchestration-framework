@@ -1,4 +1,4 @@
-// Steps for memory-recall-ledger.feature (153/01). Everything here drives the REAL CLI —
+// Steps for memory-recall-ledger.feature (153/01; 201/02 adds R4). Everything here drives the REAL CLI —
 // `aof work memory record-recall <ref> --input <file>` — over a fixture work stream, and reads the
 // result back from the item's own FEEDBACK.ndjson (the evidence) and the global effects journal
 // (the publication). The runner resolves this module by convention from the feature's basename.
@@ -363,6 +363,173 @@ registry.define(/^an ordinary recall still emits a records array under JSON$/, a
   const recall = await runCli(context, 'work memory recall "junction cleanup" --json');
   assert.equal(recall.status, 0, `recall exits 0 (stderr: ${recall.stderr})`);
   assert.ok(Array.isArray(JSON.parse(recall.stdout)), "recall --json is an ARRAY");
+});
+
+// ------------------------------------------------- 201/02 · the edges 201/ADR-006 changes ----
+//
+// The refine and retrospective commands are prose, so what proves an observation "written the way
+// the command says" is the ledger accepting it through the canonical door (`aof memory …`). Each
+// observation here is built from the command's own words: its edge, actor, query and scope.
+
+const DELIVERY_TYPES = ["finding", "feedback", "run"];
+
+function recordsFor(kind, count) {
+  return Array.from({ length: count }, (_, index) => kind === "lesson"
+    ? { item: String(150 + index), id: `R${index + 1}`, recordType: "lesson", verdict: ["honoured", "departed", "irrelevant"][index % 3] }
+    // An evidence record is honoured (a lesson cites it) or irrelevant (it carried none) — never departed.
+    : { item: "157", id: `E${index + 1}`, recordType: DELIVERY_TYPES[index % 3], verdict: index % 4 === 0 ? "honoured" : "irrelevant" });
+}
+
+registry.define(
+  /^an observation "([^"]+)" with edge "([^"]+)", actor "([^"]+)", query "([^"]*)", scope "(\{.*\})" and (\d+) (lesson|delivery) records, each with a verdict$/,
+  (context, id, edge, actor, query, scope, count, kind) => {
+    context.observations ??= [];
+    context.observations.push({ id, at: "2026-11-17T12:00:00Z", edge, actor, query, scope: JSON.parse(scope), records: recordsFor(kind, Number(count)) });
+  },
+);
+
+registry.define(/^a local item "([^"]+)" with an empty ledger$/, async (context, ref) => {
+  await ensureMilestone(context, ref);
+  assert.equal(await readLedger(context, ref), "", "the item has no ledger yet");
+});
+
+async function submitCanonically(context, observation, ref) {
+  const file = path.join(context.root, `observation-${observation.id}.json`);
+  await writeFile(file, `${JSON.stringify(observation, null, 2)}\n`, "utf8");
+  return runCli(context, `memory record-recall ${ref} --input "${file}" --json`);
+}
+
+registry.define(/^each observation is submitted with "aof memory record-recall ([^"]+)"$/, async (context, ref) => {
+  await ensureWorkStream(context);
+  context.beforeLedger = context.items.has(ref) ? await readLedger(context, ref) : "";
+  context.submissions = [];
+  for (const observation of context.observations) context.submissions.push(await submitCanonically(context, observation, ref));
+  context.submittedTo = ref;
+});
+
+registry.define(/^every submission succeeds$/, (context) => {
+  assert.equal(context.submissions.length, context.observations.length, "one submission per observation");
+  for (const [index, result] of context.submissions.entries()) {
+    assert.equal(result.status, 0, `submission ${context.observations[index].id} exits 0 (stderr: ${result.stderr})`);
+    assert.deepEqual([JSON.parse(result.stdout).id, JSON.parse(result.stdout).replayed], [context.observations[index].id, false], "it wrote its own row, once");
+  }
+});
+
+const recallRows = async (context, ref) => (await readLedger(context, ref)).split("\n").filter(Boolean).map((line) => JSON.parse(line)).filter((row) => row.kind === "recall");
+
+registry.define(/^the ledger of item "([^"]+)" holds (\d+) rows of kind "recall", one per edge$/, async (context, ref, count) => {
+  const rows = await recallRows(context, ref);
+  assert.equal(rows.length, Number(count), `${count} recall row(s)`);
+  assert.deepEqual(rows.map((row) => row.edge), context.observations.map((observation) => observation.edge), "one row per edge, in submission order");
+  // The row keeps 153's shape exactly (201/ADR-006 §1): the submitted observation, plus its kind.
+  for (const [index, row] of rows.entries()) assert.deepEqual(row, { kind: "recall", ...context.observations[index] }, `${row.edge}'s row is the observation as submitted, with a verdict for every record`);
+});
+
+registry.define(/^the "([^"]+)" row of item "([^"]+)" has scope "(\{.*\})" and query "([^"]*)"$/, async (context, edge, ref, scope, query) => {
+  const row = (await recallRows(context, ref)).find((each) => each.edge === edge);
+  assert.ok(row, `item ${ref} holds a ${edge} row`);
+  assert.deepEqual(row.scope, JSON.parse(scope));
+  assert.equal(row.query, query);
+  assert.equal(row.actor, "product-owner");
+});
+
+registry.define(/^every recall row of item "([^"]+)" has an empty records array$/, async (context, ref) => {
+  for (const row of await recallRows(context, ref)) assert.deepEqual(row.records, [], `${row.edge} is recorded as empty, with no verdict invented`);
+});
+
+registry.define(/^submitting either one again changes nothing$/, async (context) => {
+  const ref = context.submittedTo;
+  const before = await readLedger(context, ref);
+  for (const observation of context.observations) {
+    const result = await submitCanonically(context, observation, ref);
+    assert.equal(result.status, 0, `the replay of ${observation.id} exits 0 (stderr: ${result.stderr})`);
+    assert.equal(JSON.parse(result.stdout).replayed, true, `${observation.id} is reported as a replay`);
+    assert.equal(await readLedger(context, ref), before, "the ledger is byte-identical");
+  }
+});
+
+registry.define(/^an accepted item "([^"]+)" whose ledger holds 2 raw rows and the two retrospective recall rows$/, async (context, ref) => {
+  await writeMilestone(context, { number: ref, slug: "memory", title: "Memory", status: "done" });
+  const item = context.items.get(ref);
+  const spec = path.join(item.dir, "SPEC.md");
+  await writeFile(spec, (await readFile(spec, "utf8")).replace("updated: 2026-06-19", "updated: 2026-10-01T00:00:00Z"), "utf8");
+  await appendRawFeedback(item, { id: "raw-1", text: "first", actor: "qa", refs: "", at: "2026-10-05T00:00:00Z" });
+  await appendRawFeedback(item, { id: "raw-2", text: "second", actor: "qa", refs: "", at: "2026-10-06T00:00:00Z" });
+  const base = { at: "2026-10-08T00:00:00Z", actor: "product-owner" };
+  for (const observation of [
+    { ...base, id: "d1", edge: "retrospective-domain", query: "episodic memory recall", scope: {}, records: recordsFor("lesson", 4) },
+    { ...base, id: "e1", edge: "retrospective-evidence", query: "", scope: { item: ref, area: "delivery" }, records: recordsFor("delivery", 34) },
+  ]) {
+    const result = await submitCanonically(context, observation, ref);
+    assert.equal(result.status, 0, `${observation.edge} recorded (stderr: ${result.stderr})`);
+  }
+  assert.deepEqual((await readFeedbackRecords(item)).map((row) => row.kind), ["raw", "raw", "recall", "recall"]);
+});
+
+registry.define(/^the raw feedback denominator is 2 with both retrospective rows on the ledger$/, (context) => {
+  const escape = lastJson(context).escape;
+  assert.equal(escape.status, "measured");
+  assert.equal(escape.feedbackRecords, 2, "two raw rows — neither retrospective recall row, with its 4 and its 34 records, is counted");
+});
+
+// ----------------------------------------------------------- the title recall, driven ----
+
+const TITLE_201 = "Recall hands an agent what applies — the lexical ranker shortlists 20, a model picks at most 5, and the block ends empty when nothing applies";
+const TITLE_LESSONS = [
+  ["153", "R1", "The recall block was handed to an agent with nothing that applies", "A recall handed its agent five lessons and none applies to the decision."],
+  ["157", "R2", "The lexical ranker shortlists a record on one shared word", "The ranker shortlists whatever shares a word, so the block is long and the agent reads all of it."],
+  ["178", "R3", "A model picks from a shortlist only when the block is asked for", "The block ends empty when the model picks nothing, and that is an answer."],
+];
+// A record about something else. The index holds it, and the title must not return it.
+const UNRELATED_LESSON = ["180", "R4", "Junction cleanup deleted through a symlink", "Removing a Windows junction walked into its target directory."];
+
+registry.define(/^a memory index with no record for item "([^"]+)", three records whose text shares words with its title and one that shares none$/, async (context, ref) => {
+  await ensureWorkStream(context);
+  const file = path.join(context.projectDir, ".aof", "aof.config.json");
+  await writeFile(file, `${JSON.stringify({ ...JSON.parse(await readFile(file, "utf8")), memory: { backend: "local" } }, null, 2)}\n`, "utf8");
+  // The item being refined: it has just entered the stream, so it has a title and no records.
+  await writeMilestone(context, { number: ref, slug: "memory-recall-pick", title: TITLE_201, status: "not-started" });
+  for (const [number, id, title, happened] of [...TITLE_LESSONS, UNRELATED_LESSON]) {
+    const dir = await writeMilestone(context, { number, slug: `m${number}`, title: `Milestone ${number}`, status: "done" });
+    await writeFile(path.join(dir, "RETROSPECTIVE.md"), [
+      "---", "doc: retrospective", "---", `# ${number} · Retrospective`, "",
+      `## ${id} — ${title}`, "",
+      "- **Kind:** near-miss · **Area:** process · **Stage:** build · **Owner:** developer",
+      `- **What happened:** ${happened}`, "",
+    ].join("\n"), "utf8");
+  }
+  const built = await runCli(context, "memory ingest --json");
+  assert.equal(built.status, 0, `ingest exits 0 (stderr: ${built.stderr})`);
+  context.titleRef = ref;
+});
+
+registry.define(/^the title of item "([^"]+)" is recalled with "([^"]+)"$/, async (context, ref, flags) => {
+  assert.equal(ref, context.titleRef);
+  context.lastResult = await runCli(context, `memory recall "${TITLE_201}" ${flags}`);
+  assert.equal(context.lastResult.status, 0, `recall exits 0 (stderr: ${context.lastResult.stderr})`);
+});
+
+registry.define(/^the recall prints an empty array$/, (context) => {
+  assert.deepEqual(JSON.parse(context.lastResult.stdout), [], "an item with no records of its own answers nothing to an item-scoped recall");
+});
+
+registry.define(/^the recall prints those three records first, each matched on the title's words$/, (context) => {
+  const records = JSON.parse(context.lastResult.stdout);
+  const identity = (record) => `${record.item}/${record.id}`;
+  const wanted = TITLE_LESSONS.map(([number, id]) => `${number}/${id}`).sort();
+  // The lexical ranker returns whatever shares any word, so the unrelated record may trail the
+  // list (201's pick is what drops it from a block). What the title must do is FIND the three:
+  // they are the first three returned, each matched on the title's words.
+  assert.deepEqual(records.slice(0, 3).map(identity).sort(), wanted, `the title, with no item filter, finds the three records that share its words (returned: ${records.map((record) => `${identity(record)}=${record.score}`).join(", ")})`);
+  for (const record of records.slice(0, 3)) {
+    assert.equal(record.recordType, "lesson");
+    assert.ok(record.score > 0, `${identity(record)} was matched on the title's words (score ${record.score})`);
+  }
+  for (const record of records.slice(3)) {
+    assert.equal(identity(record), `${UNRELATED_LESSON[0]}/${UNRELATED_LESSON[1]}`, "nothing else is in the index");
+    assert.ok(record.score < records[2].score, `the unrelated record ranks below all three (score ${record.score} against ${records[2].score})`);
+  }
+  assert.equal(records.some((record) => record.item === context.titleRef), false, "and none of them is the item's own");
 });
 
 export async function runStep(context, step) {

@@ -1,5 +1,6 @@
 import noneBackend from "./memory/none-backend.mjs";
-import { layerOf, statusPartition } from "./memory/local-retrieval.mjs";
+import { layerOf, renderRecallText, statusPartition } from "./memory/local-retrieval.mjs";
+import { PICK_MISS, PICK_SHORTLIST_SIZE, buildPickRequest, settlePick, shortlistRecords } from "./memory/recall-pick.mjs";
 import { evaluateRecurrence } from "./memory/recurrence.mjs";
 import { canonicalRecurrence } from "@aof/work/memory-vocabulary";
 import { ACCOUNTING_COUNTERS, accountMemory } from "@aof/work/memory-accounting";
@@ -302,23 +303,26 @@ const HOOK_LIMIT = 5;
 function renderRecallBlock(recallResult, { limit } = {}) {
   const records = (recallResult?.records ?? []).slice(0, limit ?? HOOK_LIMIT);
   if (records.length === 0) return "";
-  const lines = records.map((record) => {
-    const id = record.item ? `${record.id} (m${record.item})` : record.id;
-    // 148/ADR-003 — a record's tags (`recurring`, `caught at review`, a gap's discharge date) are
-    // ONE field, `[t1; t2]`, inserted before the source so the source stays last. An untagged
-    // record, and one from a store before index version 2 that carries no `tags`, renders the
-    // five-field line unchanged.
-    const tags = Array.isArray(record.tags) && record.tags.length > 0 ? ` · [${record.tags.join("; ")}]` : "";
-    // 157/ADR-003 — an episodic record's summary rides its line (a failed run's failureReason is
-    // in it), after the title and before the tags, so the source stays last. Every other record's
-    // line is byte-for-byte what it was.
-    const summary = layerOf(record.recordType) === "episodic" && record.summary ? ` · ${record.summary}` : "";
-    // 178/ADR-002 — the planning documents the record's item came from, after the tags and before
-    // the source. A record with none, and one from a store before version 4, renders as before.
-    const origin = Array.isArray(record.origin) && record.origin.length > 0 ? ` · origin ${record.origin.join("; ")}` : "";
-    return `${id} · ${record.kind || record.recordType} · ${record.area} · ${record.title}${summary}${tags}${origin} · ${record.source}`;
-  });
-  return lines.join("\n") + "\n";
+  return records.map(recallBlockLine).join("\n") + "\n";
+}
+
+// One record's block line. A function of its own since 201/ADR-002 §7: the card a picker is handed
+// carries this same line, so the block and the card cannot drift apart.
+function recallBlockLine(record) {
+  const id = record.item ? `${record.id} (m${record.item})` : record.id;
+  // 148/ADR-003 — a record's tags (`recurring`, `caught at review`, a gap's discharge date) are
+  // ONE field, `[t1; t2]`, inserted before the source so the source stays last. An untagged
+  // record, and one from a store before index version 2 that carries no `tags`, renders the
+  // five-field line unchanged.
+  const tags = Array.isArray(record.tags) && record.tags.length > 0 ? ` · [${record.tags.join("; ")}]` : "";
+  // 157/ADR-003 — an episodic record's summary rides its line (a failed run's failureReason is
+  // in it), after the title and before the tags, so the source stays last. Every other record's
+  // line is byte-for-byte what it was.
+  const summary = layerOf(record.recordType) === "episodic" && record.summary ? ` · ${record.summary}` : "";
+  // 178/ADR-002 — the planning documents the record's item came from, after the tags and before
+  // the source. A record with none, and one from a store before version 4, renders as before.
+  const origin = Array.isArray(record.origin) && record.origin.length > 0 ? ` · origin ${record.origin.join("; ")}` : "";
+  return `${id} · ${record.kind || record.recordType} · ${record.area} · ${record.title}${summary}${tags}${origin} · ${record.source}`;
 }
 
 // --------------------------------------------------------------- render ----
@@ -370,6 +374,9 @@ function renderMemory(verb, result, { block = false, limit, help = false, render
     if (result.config) {
       lines.push(`corpora: ${result.config.corpora.join(", ")}`);
       for (const entry of result.config.legacy) lines.push(`legacy: ${legacyMessage(entry)}`);
+      // 201/ADR-004 §6 — what the recall pick is, where the setting came from, and whether this node
+      // can make it. After the other settings; the stale-index line below stays last.
+      if (result.config.recall) lines.push(`recall: ${recallPickSummary(result.config.recall.pick, { cap: HOOK_LIMIT })}`);
     }
     // 148/ADR-003 — a store built before the current index version is named, with the verb that
     // rebuilds it, rather than reported as if its numbers were current.
@@ -549,6 +556,49 @@ async function executeMemoryVerb({ verb, query = "", only = null, exclude = null
   return undefined;
 }
 
+// THE PICKED BLOCK (201/ADR-002). A `recall --block` is the one recall that is picked: the seam
+// asks the port for the whole ranked scope (as `recurrence` and `status` do), shortlists it, hands
+// the shortlist to the injected picker and returns a RecallResult of what the picker chose, in the
+// picker's order. Every size, the promoted-lesson filter, the request and the reader of the answer
+// are `recall-pick.mjs`'s; this function only orchestrates, and no backend learns of the pick.
+//
+// The result keeps the frozen four keys (05/ADR-004). How the block was made rides a
+// non-enumerable `pick` (`{ mode, code, shortlisted, model }`), the `graphSignal` pattern, and
+// whatever non-enumerable diagnostic the backend attached to its own result is carried across.
+// The seam announces nothing: a miss is the routed command's to say (ADR-003 §3).
+async function pickedRecall(input, { backend, ctx, config, pickRecords }) {
+  const cap = input.opts?.limit ?? HOOK_LIMIT;
+  const ranked = await executeMemoryVerb({ ...input, opts: { ...input.opts, limit: Infinity } }, { backend, ctx });
+  if (!Array.isArray(ranked?.records)) return ranked;
+  const shortlist = shortlistRecords(ranked.records, { scope: input.scope, cap });
+  // An empty shortlist asks no picker (ADR-002 §4).
+  const outcome = shortlist.length === 0
+    ? null
+    : await askPicker(pickRecords, buildPickRequest({ query: ranked.query, shortlist, cap, lineOf: recallBlockLine }), { config, ctx });
+  const { records, pick } = settlePick({ shortlist, cap, outcome });
+  const result = { query: ranked.query, scope: ranked.scope, records, text: "" };
+  // The text is rendered from what was picked. Nothing in scope keeps the backend's own words
+  // (`none` names itself there). The result is always a new object, so a backend's is never written to.
+  result.text = ranked.records.length === 0 ? ranked.text ?? "" : renderRecallText(result);
+  for (const key of Object.getOwnPropertyNames(ranked)) {
+    if (!Object.hasOwn(result, key)) Object.defineProperty(result, key, Object.getOwnPropertyDescriptor(ranked, key));
+  }
+  Object.defineProperty(result, "pick", { value: pick, enumerable: false, writable: false, configurable: true });
+  return result;
+}
+
+// The picker is a capability core injects, as `recordRecall` is (ADR-002 §3). A caller that
+// injects none gets the lexical block unannounced, and a picker that throws is a miss like any
+// other: recall never fails because of the pick (ADR-003 §1).
+async function askPicker(pickRecords, request, context) {
+  if (typeof pickRecords !== "function") return { code: PICK_MISS.unwired };
+  try {
+    return await pickRecords(request, context);
+  } catch {
+    return { code: PICK_MISS.failed };
+  }
+}
+
 // THE CORE PATH after the parse — help → gate → resolve → execute — and the ONE function
 // both doors call with a parsed input. Help (the parse's boolean, checked as `=== true`) is
 // answered BEFORE the gate and before any backend is resolved; the gate then admits only
@@ -556,7 +606,7 @@ async function executeMemoryVerb({ verb, query = "", only = null, exclude = null
 // either door: the routed command's `run` hands the face's input here, and `runMemory`
 // hands `parseMemoryArgv`'s. `resolveBackend(config)` is injectable so a test can register
 // a stub under any name; the default is the real registry.
-async function runMemoryVerb(input, { config, resolveBackend = resolveConfiguredBackend, ctx = {}, recordRecall = null } = {}) {
+async function runMemoryVerb(input, { config, resolveBackend = resolveConfiguredBackend, ctx = {}, recordRecall = null, pickRecords = null } = {}) {
   if (input?.help === true) return memoryUsage();
   gateMemoryVerb(input?.verb);
   if (input.verb === RECORD_RECALL_VERB) {
@@ -578,7 +628,13 @@ async function runMemoryVerb(input, { config, resolveBackend = resolveConfigured
     }
   }
   const backend = await resolveBackend(config);
-  const result = await executeMemoryVerb(input, { backend, ctx: { ...ctx, configMemory: config?.memory ?? ctx.configMemory ?? {} } });
+  const backendCtx = { ...ctx, configMemory: config?.memory ?? ctx.configMemory ?? {} };
+  // 201/ADR-002 §5 — only the block is picked. `--all` is the whole scoped result, as before, and
+  // the text view, `--json` without `--block`, `recurrence` and `status` never reach the pick.
+  if (input.verb === "recall" && input.block === true && input.opts?.all !== true) {
+    return pickedRecall(input, { backend, ctx: backendCtx, config, pickRecords });
+  }
+  const result = await executeMemoryVerb(input, { backend, ctx: backendCtx });
   // 180/ADR-005 — status names the memory node as it was read: the corpora served and every old
   // key still spelled. Added here, after the port answers, so no backend learns of the config.
   if (input.verb === "status" && result) result.config = statusConfig(config);
@@ -586,8 +642,8 @@ async function runMemoryVerb(input, { config, resolveBackend = resolveConfigured
 }
 
 function statusConfig(config) {
-  const { corpora, corporaSource, legacy } = readMemoryConfig(config);
-  return { corpora, corporaSource, legacy };
+  const { corpora, corporaSource, legacy, recall } = readMemoryConfig(config);
+  return { corpora, corporaSource, legacy, recall };
 }
 
 // THE IN-PROCESS ENTRY over ARGV — a thin composition of the same path the routed door
@@ -597,11 +653,11 @@ function statusConfig(config) {
 // record, whose actuator is `module:src/work/memory.mjs#runMemory`. Returns
 // { ok, exitCode, result }; an unknown or missing verb is usage on stderr, exit non-zero,
 // and NO backend method invoked — the contract those callers pin, kept to the byte.
-async function runMemory(argv, { config, resolveBackend, render = defaultRender, log = NO_PRINT, ctx = {}, recordRecall = null } = {}) {
+async function runMemory(argv, { config, resolveBackend, render = defaultRender, log = NO_PRINT, ctx = {}, recordRecall = null, pickRecords = null } = {}) {
   const parsed = parseMemoryArgv(argv);
   let result;
   try {
-    result = await runMemoryVerb(parsed, { config, resolveBackend, ctx, recordRecall });
+    result = await runMemoryVerb(parsed, { config, resolveBackend, ctx, recordRecall, pickRecords });
   } catch (error) {
     if (error?.code !== "unknown-verb") throw error;
     console.error(error.message);
@@ -646,6 +702,24 @@ export function declaredBackendName(config) {
 export const MEMORY_BACKEND_CONFIG_PATH = ["memory", "backend"].join(".");
 
 
+// THE RECALL PICK, AS A PROJECT READS IT (201/ADR-004 §6, §7). `recallPickSummary` is the body of
+// `aof memory status`'s `recall:` line: the setting and where it came from, then, when the caller
+// knows it, whether `claude` resolves on this node (`pick.claude`, which core adds: knowledge
+// resolves no executable). `recallPickSends` is what leaves the machine, for `aof project show`.
+const PICK_UNAVAILABLE_REASONS = Object.freeze({ "not-found": "claude not found", "shell-shim": "claude resolves to a shell shim" });
+
+export function recallPickSummary(pick, { cap } = {}) {
+  if (!pick.enabled) return `pick off (${pick.source})`;
+  const head = `pick ${pick.model}, ${pick.timeoutMs / 1000} s (${pick.source})`;
+  if (pick.claude === "resolves") return `${head} · claude resolves`;
+  if (Object.hasOwn(PICK_UNAVAILABLE_REASONS, pick.claude ?? "")) return `${head} · ${PICK_UNAVAILABLE_REASONS[pick.claude]}, so every block is the lexical top ${cap}`;
+  return head;
+}
+
+export function recallPickSends(pick) {
+  return pick.enabled ? `the query and up to ${PICK_SHORTLIST_SIZE} records' text to the provider behind claude` : null;
+}
+
 // Pure inspection shares dispatch's single selection reader. It never probes a tool,
 // reads credentials, mutates configuration or opens a record store.
 export function inspectMemoryConfiguration(config) {
@@ -663,6 +737,8 @@ export function inspectMemoryConfiguration(config) {
   return { backend, source: declared === null ? 'default' : 'project setting', path: MEMORY_BACKEND_CONFIG_PATH,
     dependencies: extraction?.dependencies ?? [], extraction,
     corpora: node.corpora, corporaSource: node.corporaSource,
-    paths: { backend: MEMORY_BACKEND_CONFIG_PATH, corpora: node.paths.corpora, graph: node.paths.graph, extraction: node.paths.extraction },
+    // 201/ADR-004 §6, §7 — the recall pick as it resolves, and what it sends (null when it is off).
+    recall: { pick: node.recall.pick, sends: recallPickSends(node.recall.pick) },
+    paths: { backend: MEMORY_BACKEND_CONFIG_PATH, corpora: node.paths.corpora, graph: node.paths.graph, extraction: node.paths.extraction, recallPick: node.paths.recallPick },
     legacy: node.legacy };
 }

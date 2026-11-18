@@ -1,0 +1,46 @@
+{
+  "runId": "20261117T123611754Z-0001",
+  "itemRef": "201",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "149013bc-e5a0-4c89-9975-ec6d7c9b8583",
+  "brief": {
+    "answers": [
+      {
+        "token": "201/03 Q1",
+        "question": "201/03 Q1 · How should a replayed block be graded, so that \"the same improvement in direction\" can be read off the replay's report?",
+        "answer": "Model judge, sampled (Recommended)",
+        "toolUseId": "toolu_015GcJmMMihNv1oSHDVDppw8",
+        "sessionId": "149013bc-e5a0-4c89-9975-ec6d7c9b8583",
+        "at": "2026-11-17T13:31:15.275Z",
+        "entrypoint": "claude-vscode"
+      }
+    ]
+  },
+  "createdAt": "2026-11-17T12:36:11.754Z",
+  "updatedAt": "2026-11-17T13:35:54.075Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-fable-5-2",
+    "effort": "high",
+    "tokens": {
+      "input": 491,
+      "output": 480757,
+      "cacheRead": 63186112,
+      "cacheCreate": 999066
+    },
+    "costUsd": 29.9151591,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 242,
+    "toolCalls": 155,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

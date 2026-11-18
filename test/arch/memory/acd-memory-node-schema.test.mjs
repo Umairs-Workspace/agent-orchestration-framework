@@ -12,7 +12,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { KNOWLEDGE_CORPORA } from "@aof/knowledge/engine";
-import { ALWAYS_SERVED_CORPORA } from "@aof/knowledge/memory-config";
+import { ALWAYS_SERVED_CORPORA, RECALL_PICK_DEFAULTS, RECALL_PICK_TIMEOUT_MS, readMemoryConfig } from "@aof/knowledge/memory-config";
 import { GRAPHIFY_BACKENDS } from "../../../packages/knowledge/src/graphify-backends.mjs";
 
 const SCHEMA_URL = new URL("../../../schemas/aof.schema.json", import.meta.url);
@@ -52,6 +52,30 @@ function violations(schema) {
 
 const shipped = () => JSON.parse(readFileSync(SCHEMA_URL, "utf8"));
 
+// FF-20105 (201/ADR-004 §5) — the violations in the schema's `memory.recall.pick`: its property
+// names are the keys the reader accepts, its bounds are the reader's, and the node stays closed.
+function pickViolations(schema) {
+  const found = [];
+  const memory = schema.$defs?.memory ?? {};
+  const recall = memory.properties?.recall ?? {};
+  const pick = recall.properties?.pick ?? {};
+  const keys = Object.keys(RECALL_PICK_DEFAULTS);
+  if (JSON.stringify(sorted(Object.keys(pick.properties ?? {}))) !== JSON.stringify(sorted(keys))) found.push("recall.pick's property names are not the reader's keys");
+  if (JSON.stringify(Object.keys(recall.properties ?? {})) !== JSON.stringify(["pick"])) found.push("recall admits a key other than pick");
+  for (const [label, node] of [["memory", memory], ["memory.recall", recall], ["memory.recall.pick", pick]]) {
+    if (node.additionalProperties !== false) found.push(`${label} is not closed`);
+  }
+  const timeout = pick.properties?.timeoutMs ?? {};
+  if (timeout.type !== "integer" || timeout.minimum !== RECALL_PICK_TIMEOUT_MS.min || timeout.maximum !== RECALL_PICK_TIMEOUT_MS.max) found.push("recall.pick.timeoutMs is not the reader's whole-number range");
+  if (pick.properties?.enabled?.type !== "boolean") found.push("recall.pick.enabled is not a boolean");
+  if (pick.properties?.model?.type !== "string" || !pick.properties?.model?.pattern) found.push("recall.pick.model admits a blank");
+  // Every key the reader accepts, the reader accepts at its default; a key the schema adds, it refuses.
+  for (const key of Object.keys(pick.properties ?? {})) {
+    try { readMemoryConfig({ memory: { recall: { pick: { [key]: RECALL_PICK_DEFAULTS[key] } } } }); } catch { found.push(`the reader refuses the schema's key ${key}`); }
+  }
+  return found;
+}
+
 export const archTests = [
   {
     name: "arch/180 FF-18002 + 180/01 task 02: FF-18002 — the schema's vocabularies are the code's, and the never-shared rule is stated",
@@ -72,6 +96,30 @@ export const archTests = [
         const copy = shipped();
         plant(copy);
         assert.ok(violations(copy).length > 0, `the control reports ${label}`);
+      }
+    },
+  },
+  {
+    name: "arch/201 FF-20105: the schema's pick keys are the reader's — memory.recall.pick's property names equal the keys readMemoryConfig accepts, its bounds are the reader's, and the memory node stays closed",
+    run: () => {
+      assert.deepEqual(pickViolations(shipped()), []);
+      assert.deepEqual(sorted(Object.keys(RECALL_PICK_DEFAULTS)), ["enabled", "model", "timeoutMs"], "non-vacuity: the reader accepts three keys");
+      const pickOf = (schema) => schema.$defs.memory.properties.recall.properties.pick;
+      const plants = [
+        ["a key the reader does not accept", (s) => { pickOf(s).properties.effort = { type: "string" }; }],
+        ["a key the reader accepts, dropped", (s) => { delete pickOf(s).properties.model; }],
+        ["an open pick", (s) => { delete pickOf(s).additionalProperties; }],
+        ["an open recall", (s) => { s.$defs.memory.properties.recall.additionalProperties = true; }],
+        ["an open memory node", (s) => { s.$defs.memory.additionalProperties = true; }],
+        ["a second key under recall", (s) => { s.$defs.memory.properties.recall.properties.shortlist = { type: "integer" }; }],
+        ["a wider time limit", (s) => { pickOf(s).properties.timeoutMs.maximum = 600000; }],
+        ["a fractional time limit", (s) => { pickOf(s).properties.timeoutMs.type = "number"; }],
+        ["a blank model", (s) => { delete pickOf(s).properties.model.pattern; }],
+      ];
+      for (const [label, plant] of plants) {
+        const copy = shipped();
+        plant(copy);
+        assert.ok(pickViolations(copy).length > 0, `the control reports ${label}`);
       }
     },
   },

@@ -54,7 +54,7 @@ interface; *which backend answers* is a config choice they never see.
 | `status [--lessons]` | The active backend, record count, per-type and per-layer counts, vocabulary conformance, observed effectiveness (per lesson with `--lessons`) and whether the index is stale. |
 
 Scope flags are first-class filters: `--area --stage --kind --owner --item --status`, plus `--limit N`,
-`--all`, `--block` (the compact injection block a workflow pastes into agent context) and `--json` (the
+`--all`, `--block` (the compact injection block a workflow pastes into agent context, [picked](#the-recall-pick) from a shortlist) and `--json` (the
 structured `records` array; the default is a rendered text view). The backend interface itself is
 frozen at four methods — `{ name, recall, reindex, status }` — so `ingest`, `recurrence` and
 `record-recall` are seam-side compositions that a richer backend never has to implement. The former
@@ -249,28 +249,99 @@ Ranking quality is held by a live-corpus eval whose query/reference pairs are fi
 fixed in the ranker, never by editing the expectations
 ([157/ADR-003](work/157_milestone_episodic-memory-is-recallable/ARCHITECTURE.md)).
 
+## The recall pick
+
+A `recall --block` is the one recall that is **picked** (milestone 201). The ranker's first five were
+measured as two records of noise in every five, so the ranking is now a shortlist and a model chooses
+from it:
+
+1. The 20 best-ranked records in scope are shortlisted. A lesson already promoted to a control, a rule
+   or a prompt is dropped first, because it is enforced or loaded without recall. `--status` keeps
+   it: that caller is asking by promotion.
+2. One `claude` call is shown the query and the 20 records, each as its block line and up to 1,500
+   characters of its text. It answers with at most five of them, most applicable first, or none.
+3. The block is what it picked. A pick of nothing prints nothing.
+
+`--limit N` sets how many may be picked, and widens the shortlist to N when N is over 20. Nothing else
+is picked: `recall` without `--block`, `--json` without `--block`, `--all`, `recurrence` and `status`
+answer exactly as before, and still see a promoted lesson.
+
+**The call.** It is one process per recall, at the model `haiku`, with no tools, no MCP servers, no
+slash commands and no saved session. It runs in an empty temp directory outside the project, with the
+calling session's environment keys removed, so it fires no project hook and leaves no transcript. It
+uses the `claude` CLI's own sign-in. The query and the shortlisted records' text go to the provider
+behind `claude`.
+
+**When the model cannot answer**, the block is the first five of the shortlist, the exit code is still
+0, and one line on stderr says why. Stdout is always the block and nothing else.
+
+```
+[memory] pick unavailable (pick-timeout) — this block is the lexical top 5; records intact.
+```
+
+| code | what happened |
+|---|---|
+| `pick-unavailable` | no `claude` resolves on this node, or it resolves to a `.cmd` shell shim |
+| `pick-timeout` | no answer inside the time limit; the process was ended |
+| `pick-failed` | `claude` could not start, exited non-zero (not signed in, for one), or reported an error |
+| `pick-unreadable` | the answer held no usable list of card numbers |
+
+**Settings.** The pick is on when nothing is set. A project turns it off or retunes it under
+`memory.recall.pick`:
+
+```jsonc
+"memory": {
+  "backend": "local",
+  "recall": { "pick": { "enabled": true, "model": "haiku", "timeoutMs": 20000 } }
+}
+```
+
+`enabled: false` makes every block the lexical top five, sends nothing and prints no stderr line.
+`timeoutMs` is a whole number from 1,000 to 120,000. Any other key or value is refused with
+`invalid-memory-recall-pick` at the path you wrote.
+
+**Seeing it.** `aof memory status` prints one `recall:` line: the model, the time limit, where the
+setting came from, and whether `claude` resolves on this node. It starts no process and does not check
+the sign-in; a signed-out `claude` shows as `pick-failed` at the recall.
+
+```
+recall: pick haiku, 20 s (default) · claude resolves
+recall: pick haiku, 20 s (default) · claude not found, so every block is the lexical top 5
+recall: pick off (project setting)
+```
+
+`aof project show` says what the pick sends and to whom, and `aof project show --json` carries the three
+values and their source under `memory.recall.pick`.
+
 ## The decision edges
 
-Memory is **built into the workflow**, not only callable: six declared *decision-recall edges* recall at a
+Memory is **built into the workflow**, not only callable: eight declared *decision-recall edges* recall at a
 moment a decision is about to be made, keep that result, and afterwards record what the decision did with
-it. Their authored sources are `shatter`, `refine`, `continue` and `verify` in
+it. Their authored sources are `shatter`, `refine`, `continue`, `verify` and `retrospective` in
 [packages/core/assets/commands](../packages/core/assets/commands/continue.md), rendered into each runtime;
 the roster and each edge's protocol are enforced by
 [test/arch/memory/acd-learning-edge-reaches-every-cut.test.mjs](../test/arch/memory/acd-learning-edge-reaches-every-cut.test.mjs)
 ([153/ADR-004](work/153_milestone_memory-closes-the-loop/ARCHITECTURE.md),
-[157/ADR-004](work/157_milestone_episodic-memory-is-recallable/ARCHITECTURE.md)).
+[157/ADR-004](work/157_milestone_episodic-memory-is-recallable/ARCHITECTURE.md),
+[201/ADR-006](work/201_milestone_memory-recall-pick/ARCHITECTURE.md)). Every recall a command runs
+is one of these edges: none goes unrecorded.
 
 | Edge | Actor | Recall | Scope and condition |
 |---|---|---|---|
 | `shatter-po` | product owner | `recall "<query>" --block` | Unscoped, **once** before partition. The one observation is attached to the *first driver in PRD order*; other drivers cite that owner. An aborted shatter with no driver records nothing. |
 | `refine-architect` | architect | `recall … --area architecture --block` | The architect's **architecture filter**. |
-| `refine-po` | product owner | `recall … --block --item <ref>` | The PO's **item filter** — a different scope from the architect's, so the two edges never share a row. |
+| `refine-po` | product owner | `recall "<the item's title>" --block` | The item's **title, verbatim, with no item filter** and no area filter. An item that has just entered the stream has no records of its own, so a recall scoped to it is empty (177 measured 12 of 14). The observation records the title as the query and `{}` as the scope. |
 | `continue-developer` | developer | `recall … --kind near-miss --block` | The existing near-miss recall, unchanged. |
 | `continue-episodic` | developer | `ingest`, then `recall "" --item <ref> --area delivery --all --json` | **Retry only** — attempt 2 or later; attempt 1 has no episodic edge. No stage filter, so verify findings stay visible. The developer names the prior run (`retryOf`, else the latest terminal earlier attempt), its `failureReason` and every recalled finding in the build record before the first code change, and says the evidence is unavailable when memory is off. |
 | `verify-finding` | verifier | `ingest`, then `recall "<finding text>" --kind finding --block` | **Stream-wide** — no item and no stage filter. Matches support triage and are **never closed automatically**: cause and evidence are compared, the finding's own identity is excluded, and a bare `F` id is not a duplicate by id alone. |
+| `retrospective-domain` | product owner | `recall "<domain / keywords>" --block` | **Before triage**, unscoped, to deduplicate against earlier lessons. `honoured`: an earlier lesson stopped a duplicate or earned a `Recurs`. `departed`: judged close, and a new lesson was written anyway. `irrelevant`: neither. |
+| `retrospective-evidence` | product owner | `ingest`, then `recall "" --item <ref> --area delivery --all --json` | The item's **whole delivery history** (below). `honoured`: a lesson cites the record. `irrelevant`: it carried no lesson. Never `departed`. |
 
-Two things are **not** decision edges. A retrospective's *recurrence match* is a matching operation, and
-its *evidence gathering* is a recall that records no observation (both below).
+Both retrospective edges are submitted once each, on the item the retrospective is for, after the lessons
+are written and before the closing ingest. A retrospective that writes no document still submits both.
+
+One thing is **not** a decision edge: a retrospective's *recurrence match* is a matching operation, not a
+recall (below).
 
 ## Recall observations
 
@@ -350,10 +421,13 @@ A retrospective gathers its evidence through memory, in a fixed order
 2. `aof work memory ingest`, then **one** `recall "" --item <ref> --area delivery --all --json` — the
    item's findings, raw feedback and terminal runs with their stalls. Cited sources may be opened to
    substantiate a record, but raw files are never enumerated as the evidence path; when memory is off the
-   evidence is reported **unavailable**. This step records no recall observation, and `STATE.md`'s
-   feedback notes are not counted a second time.
+   evidence is reported **unavailable**. The result is kept for the `retrospective-evidence`
+   observation, and `STATE.md`'s feedback notes are not counted a second time.
 3. The **recurrence** match and the **promotion** fields for each new lesson, as above.
-4. `aof work memory ingest` once more, only after those fields are authored, so the index carries them.
+4. Both recalls are recorded: `retrospective-domain` and `retrospective-evidence`, one observation
+   each on the item's ledger, with a verdict for every returned record. This happens whether or not a
+   lesson was written, and an empty result is submitted as `"records": []`.
+5. `aof work memory ingest` once more, only after those fields are authored, so the index carries them.
 
 ## Backend selection
 

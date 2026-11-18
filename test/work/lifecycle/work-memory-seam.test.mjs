@@ -21,6 +21,12 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //        status→{backend:none, recordCount:0}.
 //   03_argv-scope-and-json-rendering.feature — scope flags parse into `scope`,
 //        --limit into `opts`; text view by default, structured records array under --json.
+//
+// 201/00 (`00_the-block-is-picked-from-a-shortlist.feature`, `01_the-pick-fails-soft-and-says-so.feature`,
+// `03_only-the-block-is-picked.feature`) adds the seam's half of the recall pick, through the
+// assembled application's `runMemory`: what the backend is asked for on a block recall and on
+// every other, what an un-injected caller is handed (E9), and what the result carries. The pick's
+// scenarios over the real ranker are in packages/knowledge/test/memory-recall-pick.suite.mjs.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 const runMemory = _aofApplication.knowledge.work.memory.runMemory;
@@ -67,6 +73,23 @@ function makeStub({ backendName = "local" } = {}) {
     }
   };
   return { backend, calls, fixedRecords, RENDERED_TEXT };
+}
+
+// 201/00 — a stub backend holding `count` lessons R1..Rn, already in rank order. It answers the
+// way a backend does: it cuts at the limit it is handed (five when handed none), and it records
+// the opts of every recall, which is what the pick's cases read.
+function pickRig(count) {
+  const rig = makeStub();
+  const ranked = Array.from({ length: count }, (_, index) => ({
+    score: count - index, recordType: "lesson", id: `R${index + 1}`, item: "50", itemSlug: "fixture", title: `lesson ${index + 1}`, area: "tooling",
+    stage: "build", kind: "near-miss", owner: "developer", status: "", text: `body ${index + 1}`, summary: "", source: `50_milestone_fixture/RETROSPECTIVE.md:${index + 1}`,
+  }));
+  rig.backend.recall = async (query, scope, opts, ctx) => {
+    rig.calls.push({ method: "recall", query, scope, opts, ctx });
+    const limit = opts?.all === true ? Infinity : opts?.limit ?? 5;
+    return { query, scope, records: ranked.slice(0, limit), text: rig.RENDERED_TEXT };
+  };
+  return rig;
 }
 
 // Run the seam against a stub, capturing stdout lines and the resolved-backend.
@@ -572,6 +595,102 @@ export const workMemorySeamTests = [
       } finally {
         rmSync(root, { recursive: true, force: true });
       }
+    },
+  },
+  // ====================================================================
+  // 201/00 — the recall pick, at the seam (ADR-002, ADR-003)
+  // ====================================================================
+  {
+    name: "201/00 task 01 E9 · a caller that injects no picker gets the backend's first five, unannounced: mode lexical, code pick-unwired, and nothing but the block is logged",
+    run: async () => {
+      const stub = pickRig(12);
+      const r = await runWithStub(["recall", "q", "--block"], { stub });
+      assert.equal(r.exitCode, 0);
+      assert.deepEqual(r.result.records.map((record) => record.id), ["R1", "R2", "R3", "R4", "R5"], "the result's records are the 5 best-ranked records");
+      assert.deepEqual(r.result.pick, { mode: "lexical", code: "pick-unwired", shortlisted: 12, model: null });
+      assert.equal(r.lines.length, 1, "one document is logged: the block");
+      assert.equal(r.lines[0].split("\n").filter(Boolean).length, 5, "…of five record lines");
+      assert.ok(!r.output.includes("[memory]"), "nothing is announced");
+    },
+  },
+  {
+    name: "201/00 task 00 the result says how the block was made: with a picker injected the keys are exactly query, scope, records and text, and the pick report says model",
+    run: async () => {
+      const stub = pickRig(30);
+      const handed = [];
+      const lines = [];
+      const outcome = await runMemory(["recall", "q", "--block"], {
+        config: { name: "fixture" },
+        resolveBackend: async () => stub.backend,
+        pickRecords: async (request, context) => { handed.push({ request, context }); return { answer: "[7, 2]" }; },
+        log: (line) => lines.push(line),
+      });
+      assert.deepEqual(Object.keys(outcome.result), ["query", "scope", "records", "text"], "the frozen four keys stay four (05/ADR-004)");
+      assert.deepEqual(outcome.result.records.map((record) => record.id), ["R7", "R2"], "the records are the picked ones, in the picker's order");
+      assert.deepEqual(outcome.result.pick, { mode: "model", code: null, shortlisted: 20, model: null });
+      assert.equal(handed.length, 1, "the picker was asked once");
+      assert.equal(handed[0].request.cards.length, 20, "…over 20 cards");
+      assert.deepEqual(handed[0].context.config, { name: "fixture" }, "the picker is handed the project's config, so core can read the pick's settings from it");
+      assert.equal(lines[0].split("\n").filter(Boolean).length, 2, "the block is two lines");
+    },
+  },
+  {
+    name: "201/00 task 03 outline: which recalls reach the pick — a block recall asks the backend for the whole ranked scope and hands it no block option; the text view, --json, --block --all, recurrence and status are asked as before",
+    run: async () => {
+      const asked = async (argv) => {
+        const stub = pickRig(30);
+        let picked = 0;
+        const outcome = await runMemory(argv, { config: {}, resolveBackend: async () => stub.backend, pickRecords: async () => { picked += 1; return { answer: "[1]" }; }, log: () => {} });
+        return { recalls: stub.calls.filter((call) => call.method === "recall"), picked, result: outcome.result };
+      };
+
+      const block = await asked(["recall", "q", "--kind", "near-miss", "--block"]);
+      assert.equal(block.picked, 1, "[--block] the picker was asked");
+      assert.deepEqual(block.recalls.map((call) => call.opts), [{ limit: Infinity }], "[--block] the backend is asked for the whole ranked scope, as recurrence and status ask");
+      assert.deepEqual(block.recalls[0].scope, { kind: "near-miss" }, "[--block] …with the caller's scope, so the backend still filters before it scores");
+      assert.ok(!("block" in block.recalls[0].opts), "[--block] no backend is handed a block option (FF-20101)");
+
+      const capped = await asked(["recall", "q", "--block", "--limit", "3"]);
+      assert.deepEqual(capped.recalls.map((call) => call.opts), [{ limit: Infinity }], "[--block --limit 3] the limit is the block's cap, never the backend's cut");
+      assert.equal(capped.result.records.length, 1);
+
+      const rows = [
+        { argv: ["recall", "q"], opts: [{}] },
+        { argv: ["recall", "q", "--json"], opts: [{}] },
+        { argv: ["recall", "q", "--limit", "8", "--json"], opts: [{ limit: 8 }] },
+        { argv: ["recall", "q", "--block", "--all"], opts: [{ all: true }] },
+        { argv: ["recurrence", "a lesson's text"], opts: [{ limit: Infinity }] },
+        { argv: ["status"], opts: [{ limit: Infinity }] },
+      ];
+      for (const row of rows) {
+        const label = row.argv.join(" ");
+        const r = await asked(row.argv);
+        assert.equal(r.picked, 0, `[${label}] the picker was not asked`);
+        assert.deepEqual(r.recalls.map((call) => call.opts), row.opts, `[${label}] the backend is asked what it was asked before`);
+        if (row.argv[0] === "recall") assert.equal(r.result.pick, undefined, `[${label}] an unpicked recall carries no pick report`);
+      }
+    },
+  },
+  {
+    name: "201/00 the picked result carries the backend's own diagnostic across, and nothing in scope is the backend's own answer",
+    run: async () => {
+      // A backend that reports a lost graph signal the way graphify does (10/ADR-004).
+      const stub = pickRig(8);
+      const recall = stub.backend.recall;
+      stub.backend.recall = async (...args) => {
+        const result = await recall(...args);
+        Object.defineProperty(result, "graphSignal", { value: "unavailable", enumerable: false, writable: false, configurable: true });
+        return result;
+      };
+      const r = await runWithStub(["recall", "q", "--block"], { stub });
+      assert.equal(r.result.graphSignal, "unavailable", "the degrade stays visible on a picked result");
+      assert.deepEqual(Object.keys(r.result), ["query", "scope", "records", "text"]);
+
+      // `none` answers an empty recall in its own words; a block recall hands that answer back.
+      const none = await runMemory(["recall", "q", "--block"], { config: {}, resolveBackend: async () => noneBackend, pickRecords: async () => { throw new Error("an empty shortlist asks no picker"); }, log: () => {} });
+      assert.deepEqual(none.result.records, []);
+      assert.match(none.result.text, /memory backend: none/, "the none backend's text is its own");
+      assert.deepEqual(none.result.pick, { mode: "lexical", code: null, shortlisted: 0, model: null });
     },
   },
 ];

@@ -195,3 +195,49 @@ Feature: Memory recall ledger — completed recalls become append-only decision 
     And the JSON error envelope should carry code "unknown-verb"
     And help for the memory command no longer advertises "brief"
     And an ordinary recall still emits a records array under JSON
+
+  Rule: R4 · 201/02 — the PO's title recall and the retrospective's two recalls are recorded like every other edge
+    201/ADR-006 changes no runtime module and no row shape. These scenarios drive the REAL CLI with
+    observations written the way the refine and retrospective commands now say, and with the title
+    recall itself, so the prompt edits are checked against what the ledger and the index accept.
+
+  Scenario: 201/02 task 00 · A refine-po observation written the way the command says is accepted
+    Given a local item "201" with an existing raw feedback row
+    And an observation "p1" with edge "refine-po", actor "product-owner", query "Recall hands an agent what applies", scope "{}" and 1 lesson records, each with a verdict
+    When each observation is submitted with "aof memory record-recall 201"
+    Then every submission succeeds
+    And the ledger of item "201" holds 1 rows of kind "recall", one per edge
+    And the "refine-po" row of item "201" has scope "{}" and query "Recall hands an agent what applies"
+    And the existing ledger bytes of item "201" remain an unchanged prefix
+
+  Scenario: 201/02 task 00 · A title recall finds records for an item that has none of its own
+    Given a memory index with no record for item "201", three records whose text shares words with its title and one that shares none
+    When the title of item "201" is recalled with "--item 201 --json"
+    Then the recall prints an empty array
+    When the title of item "201" is recalled with "--json"
+    Then the recall prints those three records first, each matched on the title's words
+
+  Scenario: 201/02 task 01 E4 · Two retrospective observations written the way the command says are accepted
+    Given a local item "157" with an empty ledger
+    And an observation "d1" with edge "retrospective-domain", actor "product-owner", query "episodic memory recall", scope "{}" and 4 lesson records, each with a verdict
+    And an observation "e1" with edge "retrospective-evidence", actor "product-owner", query "", scope "{"item":"157","area":"delivery"}" and 34 delivery records, each with a verdict
+    When each observation is submitted with "aof memory record-recall 157"
+    Then every submission succeeds
+    And the ledger of item "157" holds 2 rows of kind "recall", one per edge
+    And the "retrospective-domain" row of item "157" has scope "{}" and query "episodic memory recall"
+    And the "retrospective-evidence" row of item "157" has scope "{"item":"157","area":"delivery"}" and query ""
+    And submitting either one again changes nothing
+
+  Scenario: 201/02 task 01 E6 · A retrospective with memory off records both recalls as empty
+    Given memory is off and item "157" is local
+    And an observation "d1" with edge "retrospective-domain", actor "product-owner", query "episodic memory recall", scope "{}" and 0 lesson records, each with a verdict
+    And an observation "e1" with edge "retrospective-evidence", actor "product-owner", query "", scope "{"item":"157","area":"delivery"}" and 0 delivery records, each with a verdict
+    When each observation is submitted with "aof memory record-recall 157"
+    Then every submission succeeds
+    And the ledger of item "157" holds 2 rows of kind "recall", one per edge
+    And every recall row of item "157" has an empty records array
+
+  Scenario: 201/02 task 01 · Recording the evidence does not inflate the raw-feedback count
+    Given an accepted item "157" whose ledger holds 2 raw rows and the two retrospective recall rows
+    When counters reads item "157"
+    Then the raw feedback denominator is 2 with both retrospective rows on the ledger

@@ -615,7 +615,7 @@
         "id": "aof-refine",
         "kind": "skill"
       },
-      "hash": "sha256:23ea5478776cfa331df1bfb94a5d61aa496358d99a069981ccce6d39ecc7b947"
+      "hash": "sha256:ed547e77ecfe0b5760150dc24dd89e1a23e8f23ec2536957cb464239f553757d"
     },
     {
       "path": ".agents/skills/aof-repair/SKILL.md",
@@ -651,7 +651,7 @@
         "id": "aof-retrospective",
         "kind": "skill"
       },
-      "hash": "sha256:edc8179346d6ca8a8bcf5d0e91757ae038b826ba981d130c5ddd2c35853e944e"
+      "hash": "sha256:3ae5c0fcc4fbe72d91c672e1fc63ba2868999c477ec84daffae7c052785ebb0a"
     },
     {
       "path": ".agents/skills/aof-retrospective/agents/openai.yaml",
@@ -669,7 +669,7 @@
         "id": "aof-retrospective",
         "kind": "skill"
       },
-      "hash": "sha256:2c36c8688404a67911f0fa74796583bfad015df39e302daf916dadad531956af"
+      "hash": "sha256:bf7f503c78a72de86fd23247480e36107c24790e36869c927cb09dadb32cb5a6"
     },
     {
       "path": ".agents/skills/aof-review/SKILL.md",
@@ -849,7 +849,7 @@
         "id": "loop-retrospective-memory-ingest",
         "kind": "asset"
       },
-      "hash": "sha256:35deaa8eadfc66f0d8bce4d8511bfe585458a68add41431f8717dcbae9865395"
+      "hash": "sha256:e4eab92079ba72c90497bd6dc2ebc98a2e80e56c72a0dbebb160db15685eeed4"
     },
     {
       "path": ".aof/loops/review-fix-rereview-watcher.md",
@@ -1479,7 +1479,7 @@
         "id": "refine",
         "kind": "command"
       },
-      "hash": "sha256:8dedc5a2d6d049d7c788f8c50e0a6a3e067a9f1f38ed9db7b465a76bdf022fbf"
+      "hash": "sha256:b600b12d05ebc87cddb0784a4a9c6ba6b7a3c17a95168e0fc58bda9b88418fcf"
     },
     {
       "path": ".claude/commands/aof/repair.md",
@@ -1497,7 +1497,7 @@
         "id": "retrospective",
         "kind": "command"
       },
-      "hash": "sha256:1db67e75c963bb307340cbdaf1825efcf86a06d82960b8c5927b1793718ba7f1"
+      "hash": "sha256:b4561d46b76d944c0a08a29a09b0a1cd236a0cd9f6bece70d02c26eb2d8b3394"
     },
     {
       "path": ".claude/commands/aof/review.md",

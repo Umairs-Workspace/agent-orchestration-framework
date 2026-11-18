@@ -120,6 +120,22 @@
     "reason": "172/ADR-001: bounded termination of the architect conversation's own process tree on Windows (taskkill /T, the way codex-app-server ends its own), falling back to SIGKILL; explicit argv, no shell, the owned child's pid only. The session itself is spawned through the injected spawnChild with an argument vector and shell:false (FF-17201)."
   },
   {
+    "file": "packages/execution/src/model-ask.mjs",
+    "kind": "child-process",
+    "expression": "execFile(\"taskkill.exe\", [\"/PID\", String(pid), \"/T\", \"/F\"], { timeout: 2000, windowsHide: true }, (error) => { if (error) child.kill(\"SIGKILL\"); resolve(); })",
+    "digest": "7f0ad98ef91eeea870556585d1b6527202df7637a0d464c2e45ffbb84ede3793",
+    "sourceDigest": "8670847e8108e775eab3b60c33c33d43476f8be9b1d30a9bb5db60f8387fc573",
+    "reason": "201/ADR-004 §4: bounded termination of the model ask's own process tree on Windows when its time limit passes (taskkill /T, as the headless conversation ends its own), falling back to SIGKILL; explicit argv, no shell, the owned child's pid only."
+  },
+  {
+    "file": "packages/execution/src/model-ask.mjs",
+    "kind": "child-process",
+    "expression": "spawn(executable.command, [...(executable.args ?? []), ...args], { cwd, env, stdio: [\"pipe\", \"pipe\", \"pipe\"], windowsHide: true, detached: process.platform !== \"win32\", shell: false })",
+    "digest": "61200d7f8c41fd1bd189be1724218d5e4ca57a9ddaaebeb6254e602ae391f2a4",
+    "sourceDigest": "8670847e8108e775eab3b60c33c33d43476f8be9b1d30a9bb5db60f8387fc573",
+    "reason": "201/ADR-004 §4: the recall pick's one `claude` process, started with an argument vector and shell:false from the one launch builder (FF-20103), in a fresh temp directory outside the project, with the calling session's environment keys removed. The executable is the one core resolved through the provider seam; a shell shim is refused before this call."
+  },
+  {
     "file": "packages/execution/src/rubric-process.mjs",
     "kind": "child-process",
     "expression": "spawnChild(program, args, {\n        cwd: options.cwd,\n        env: options.env,\n        stdio: options.stdio,\n        shell: options.shell,\n      })",

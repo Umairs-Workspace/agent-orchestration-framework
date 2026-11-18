@@ -24,7 +24,8 @@ import { computedDynamicImports, importSpecifiers } from "../../support/module-f
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const READER = "packages/knowledge/src/memory-config.mjs";
 const SEAM = "packages/knowledge/src/memory.mjs";
-const NODE_KEYS = "corpora|sources|graphify|backends|graph";
+// `recall` joined the node at 201/01 (FF-20104): `memory.recall.pick` is read where the rest is.
+const NODE_KEYS = "corpora|sources|graphify|backends|graph|recall";
 const DOT_READ = new RegExp(`\\b(?:memory|configMemory)\\s*\\??\\.\\s*(?:${NODE_KEYS})\\b`, "u");
 const BRACKET_READ = new RegExp(`\\b(?:memory|configMemory)\\s*(?:\\?\\.)?\\s*\\[\\s*["'\`](?:${NODE_KEYS})["'\`]\\s*\\]`, "u");
 const ROOT_GRAPH = /\bconfig\s*\??\.\s*graph\b|\bconfig\s*(?:\?\.)?\s*\[\s*["'`]graph["'`]\s*\]/u;
@@ -57,7 +58,7 @@ export const archTests = [
       const files = packageSources();
       assert.ok(files.some((file) => file.rel === READER), `${READER} exists`);
       const outside = nodeReaders(files).filter((hit) => hit.rel !== READER);
-      assert.deepEqual(outside, [], `only ${READER} reads corpora/sources/graphify/backends/graph off a memory object, or graph off the root config`);
+      assert.deepEqual(outside, [], `only ${READER} reads corpora/sources/graphify/backends/graph/recall off a memory object, or graph off the root config`);
       assert.ok(nodeReaders(files).some((hit) => hit.rel === READER), "the detector sees the reader's own reads (non-vacuity)");
 
       const reader = files.find((file) => file.rel === READER).source;
@@ -76,6 +77,35 @@ export const archTests = [
       }
       // …and prose that merely names a key is not a read.
       assert.deepEqual(nodeReaders([{ rel: "packages/planted/src/prose.mjs", source: 'const file = "aof.memory.graphify.index.json"; // memory.sources\n' }]), []);
+    },
+  },
+  {
+    // FF-20104 (201/ADR-004 §5) — `memory.recall.pick` has one reader. The key is read off the
+    // config only in memory-config.mjs; every other module reads the reader's answer
+    // (`readMemoryConfig(config).recall.pick`), which is not a read of the key.
+    name: "arch/201 FF-20104: memory.recall.pick has one reader — only memory-config.mjs reads recall off a memory object, or spells the key's path",
+    run: () => {
+      const files = packageSources();
+      const reader = files.find((file) => file.rel === READER).source;
+      assert.match(stripComments(reader), /at\(root, "memory\.recall"\)/u, "the reader reads the key (non-vacuity)");
+      // The dotted path is spelled, as a string, in the reader alone: a second spelling is a second reader's label.
+      const spelled = files.filter((file) => /["'`]memory\.recall(?:\.pick)?(?:\.[A-Za-z]+)?["'`]/u.test(stripComments(file.source))).map((file) => file.rel);
+      assert.deepEqual(spelled, [READER], "only the reader spells memory.recall as a path");
+      // …and the defaults and the accepted range are declared there and nowhere else.
+      for (const name of ["RECALL_PICK_DEFAULTS", "RECALL_PICK_TIMEOUT_MS"]) {
+        const declared = files.filter((file) => new RegExp(`\\b(?:const|let|var)\\s+${name}\\s*=`, "u").test(stripComments(file.source))).map((file) => file.rel);
+        assert.deepEqual(declared, [READER], `${name} is declared in the reader alone`);
+      }
+      for (const planted of [
+        "export const read = (config) => config.memory.recall;",
+        "export const read = (config) => config.memory?.recall?.pick?.model ?? \"haiku\";",
+        "export const read = (ctx) => ctx.configMemory.recall.pick.enabled;",
+        "export const read = (memory) => memory[\"recall\"];",
+      ]) {
+        assert.equal(nodeReaders([{ rel: "packages/planted/src/planted.mjs", source: planted }]).length, 1, `the planted read is reported: ${planted}`);
+      }
+      // Reading the reader's answer is not reading the key.
+      assert.deepEqual(nodeReaders([{ rel: "packages/planted/src/answer.mjs", source: "export const pick = (config) => readMemoryConfig(config).recall.pick;\n" }]), []);
     },
   },
   {

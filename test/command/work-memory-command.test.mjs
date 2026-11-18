@@ -44,6 +44,14 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // and compare stdout, stderr and exit code. The command module's FF-17801 control lives in
 // test/arch/command/acd-memory-alias-one-implementation.test.mjs.
 //
+// 201/00 (`00_the-block-is-picked-from-a-shortlist.feature` … `03_only-the-block-is-picked.feature`)
+// adds the real CLI's half of the recall pick: the block's promoted-lesson filter and the paths
+// that are never picked, through both doors of the assembled application. The pick's scenarios
+// with a stub picker are in packages/knowledge/test/memory-recall-pick.suite.mjs. Since 201/01 the
+// CLI composes a real picker, so every CLI this suite spawns names the stand-in `claude`
+// (`STAND_IN_PICK` below): it picks the first five cards in order, which is the block these cases
+// were written against. What the model call itself does is test/memory/recall-pick-model.test.mjs's.
+//
 // Mirrors cli-face-contract.test.mjs: a temp fixture workspace, `spawnCliSync` of the real
 // `bin/aof.mjs` with cwd = the fixture root, exit code + stdout/stderr asserted.
 import assert from "node:assert/strict";
@@ -64,6 +72,7 @@ const memoryUsage = _aofApplication.knowledge.work.memory.memoryUsage;
 const runMemory = _aofApplication.knowledge.work.memory.runMemory;
 const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
 import { parseFeature } from "../integration/support/feature-runner.mjs";
+import { PICK_EXECUTABLE, STAND_IN } from "../memory/recall-pick-model.test.mjs";
 import { withCacheReadFixture, plantCacheRow, refuseCommand, runCommand, itemDirOf, WORKER_NODE, SYNCED_AT } from "../support/cache-read-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -120,7 +129,9 @@ const HUMAN_GOLDENS = [
       // 153/03 — observed effectiveness follows conformance; this fixture has no ledger and no recurrence.
       + "effectiveness: lesson surfaced 0 honoured 0 departed 0 irrelevant 0 recurred 0\n"
       // 180/ADR-005 — the corpora the memory node serves; this fixture spells no old key, so no legacy line.
-      + "corpora: work, imports, code\n",
+      + "corpora: work, imports, code\n"
+      // 201/ADR-004 §6 — the recall pick at its defaults; every CLI here names the stand-in, so `claude` resolves.
+      + "recall: pick haiku, 20 s (default) · claude resolves\n",
   },
   { invocation: ["reindex"], stdout: "reindex: 2 record(s)\n" },
   { invocation: ["ingest"], stdout: "reindex: 2 record(s)\n" },
@@ -285,7 +296,17 @@ const JSON_GOLDENS = [
       + "      \"code\"\n"
       + "    ],\n"
       + "    \"corporaSource\": \"default\",\n"
-      + "    \"legacy\": []\n"
+      + "    \"legacy\": [],\n"
+      // 201/ADR-004 §6 — the recall pick as it resolves, and whether this node can make it.
+      + "    \"recall\": {\n"
+      + "      \"pick\": {\n"
+      + "        \"enabled\": true,\n"
+      + "        \"model\": \"haiku\",\n"
+      + "        \"timeoutMs\": 20000,\n"
+      + "        \"source\": \"default\",\n"
+      + "        \"claude\": \"resolves\"\n"
+      + "      }\n"
+      + "    }\n"
       + "  }\n"
       + "}\n",
     check: (doc) => { assert.equal(doc.backend, "local"); assert.equal(doc.recordCount, 2); },
@@ -318,12 +339,18 @@ function storeToken(root) {
   return JSON.stringify(path.join(root, ".aof", "aof.memory.index.json")).slice(1, -1);
 }
 
+// 201/01 — every CLI this suite spawns names the stand-in `claude` for the recall pick, so no case
+// starts the real one. Left to itself the stand-in picks the first five cards in order, which is
+// the block the goldens below were captured as, and it makes `status` say that `claude` resolves
+// whatever this machine's PATH holds.
+const STAND_IN_PICK = { [PICK_EXECUTABLE]: STAND_IN };
+
 // The REAL CLI, spawned with cwd = the fixture root — the route table's door.
 function runCli(root, args) {
   const result = spawnCliSync(process.execPath, [cliPath, ...args], {
     cwd: root,
     encoding: "utf8",
-    env: { ...process.env, NODE_NO_WARNINGS: "1" },
+    env: { ...process.env, NODE_NO_WARNINGS: "1", ...STAND_IN_PICK },
   });
   return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
 }
@@ -389,9 +416,34 @@ function runIsolated(root, home, args) {
   const result = spawnCliSync(process.execPath, [cliPath, ...args], {
     cwd: root,
     encoding: "utf8",
-    env: { ...process.env, AOF_GLOBAL_HOME: home, NODE_NO_WARNINGS: "1" },
+    env: { ...process.env, AOF_GLOBAL_HOME: home, NODE_NO_WARNINGS: "1", ...STAND_IN_PICK },
   });
   return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
+}
+
+// 201/00 — milestone 39 with eight lessons that all say "worktree junction". R1 carries the query
+// in its title, so it ranks first, and it is promoted to a control; R2 names no promotion yet.
+const PROMOTED_201 = "control:171/FF-17104";
+async function makeRoot201() {
+  const fx = await makeRoot39({ ingest: false });
+  const lessons = Array.from({ length: 8 }, (_, index) => {
+    const n = index + 1;
+    const promotion = n === 1 ? ` · **Promoted to:** ${PROMOTED_201}` : n === 2 ? " · **Promoted to:** none" : "";
+    return [
+      `## R${n} — ${n === 1 ? "Worktree junction teardown" : `Cleanup step ${n}`}`, "",
+      `- **Kind:** near-miss · **Area:** tooling · **Stage:** build · **Owner:** developer${promotion}`,
+      `- **What happened:** a worktree junction was removed with its target${" and the cleanup ran again".repeat(n)}.`,
+      "- **Lesson:** unlink the worktree junction first.", "",
+    ].join("\n");
+  });
+  await writeFile(path.join(fx.milestone, "RETROSPECTIVE.md"), ["---", "doc: retrospective", "---", "# 39 · Fixture — Retrospective", "", ...lessons].join("\n"), "utf8");
+  assert.equal(fx.run(["memory", "ingest"]).status, 0, "the fixture ingests");
+  return fx;
+}
+
+// The record ids a block's lines open with, in order.
+function blockIds(stdout) {
+  return stdout.split("\n").filter(Boolean).map((line) => line.split(" ")[0]);
 }
 
 async function dropRoot39(fx) {
@@ -488,7 +540,7 @@ const PRE_PORT_ANSWERS = [
    "--json"
   ],
   "status": 0,
-  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"present\": true,\n  \"lessons\": 1,\n  \"adrs\": 1,\n  \"summaries\": 0,\n  \"capabilities\": 0,\n  \"gaps\": 0,\n  \"findings\": 0,\n  \"feedback\": 0,\n  \"runs\": 0,\n  \"index\": {\n    \"version\": 4,\n    \"current\": 4,\n    \"stale\": false\n  },\n  \"origin\": {\n    \"unresolved\": 0\n  },\n  \"types\": {\n    \"adr\": {\n      \"count\": 1,\n      \"layer\": \"semantic\"\n    },\n    \"lesson\": {\n      \"count\": 1,\n      \"layer\": \"procedural\"\n    }\n  },\n  \"layers\": {\n    \"episodic\": 0,\n    \"semantic\": 1,\n    \"procedural\": 1\n  },\n  \"conformance\": {\n    \"kind\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"area\": {\n      \"blank\": 0,\n      \"nonEnum\": 1\n    },\n    \"stage\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"owner\": {\n      \"blank\": 0\n    },\n    \"gapStatus\": {\n      \"nonEnum\": 0\n    }\n  },\n  \"effectiveness\": {\n    \"basis\": \"observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake\",\n    \"complete\": true,\n    \"diagnostics\": [],\n    \"types\": {\n      \"lesson\": {\n        \"surfaced\": 0,\n        \"honoured\": 0,\n        \"departed\": 0,\n        \"irrelevant\": 0,\n        \"recurred\": 0\n      }\n    }\n  },\n  \"config\": {\n    \"corpora\": [\n      \"work\",\n      \"imports\",\n      \"code\"\n    ],\n    \"corporaSource\": \"default\",\n    \"legacy\": []\n  }\n}\n",
+  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"present\": true,\n  \"lessons\": 1,\n  \"adrs\": 1,\n  \"summaries\": 0,\n  \"capabilities\": 0,\n  \"gaps\": 0,\n  \"findings\": 0,\n  \"feedback\": 0,\n  \"runs\": 0,\n  \"index\": {\n    \"version\": 4,\n    \"current\": 4,\n    \"stale\": false\n  },\n  \"origin\": {\n    \"unresolved\": 0\n  },\n  \"types\": {\n    \"adr\": {\n      \"count\": 1,\n      \"layer\": \"semantic\"\n    },\n    \"lesson\": {\n      \"count\": 1,\n      \"layer\": \"procedural\"\n    }\n  },\n  \"layers\": {\n    \"episodic\": 0,\n    \"semantic\": 1,\n    \"procedural\": 1\n  },\n  \"conformance\": {\n    \"kind\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"area\": {\n      \"blank\": 0,\n      \"nonEnum\": 1\n    },\n    \"stage\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"owner\": {\n      \"blank\": 0\n    },\n    \"gapStatus\": {\n      \"nonEnum\": 0\n    }\n  },\n  \"effectiveness\": {\n    \"basis\": \"observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake\",\n    \"complete\": true,\n    \"diagnostics\": [],\n    \"types\": {\n      \"lesson\": {\n        \"surfaced\": 0,\n        \"honoured\": 0,\n        \"departed\": 0,\n        \"irrelevant\": 0,\n        \"recurred\": 0\n      }\n    }\n  },\n  \"config\": {\n    \"corpora\": [\n      \"work\",\n      \"imports\",\n      \"code\"\n    ],\n    \"corporaSource\": \"default\",\n    \"legacy\": [],\n    \"recall\": {\n      \"pick\": {\n        \"enabled\": true,\n        \"model\": \"haiku\",\n        \"timeoutMs\": 20000,\n        \"source\": \"default\",\n        \"claude\": \"resolves\"\n      }\n    }\n  }\n}\n",
   "stderr": ""
  },
  {
@@ -530,7 +582,7 @@ const PRE_PORT_ANSWERS = [
    "--json"
   ],
   "status": 0,
-  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"present\": true,\n  \"lessons\": 1,\n  \"adrs\": 1,\n  \"summaries\": 0,\n  \"capabilities\": 0,\n  \"gaps\": 0,\n  \"findings\": 0,\n  \"feedback\": 0,\n  \"runs\": 0,\n  \"index\": {\n    \"version\": 4,\n    \"current\": 4,\n    \"stale\": false\n  },\n  \"origin\": {\n    \"unresolved\": 0\n  },\n  \"types\": {\n    \"adr\": {\n      \"count\": 1,\n      \"layer\": \"semantic\"\n    },\n    \"lesson\": {\n      \"count\": 1,\n      \"layer\": \"procedural\"\n    }\n  },\n  \"layers\": {\n    \"episodic\": 0,\n    \"semantic\": 1,\n    \"procedural\": 1\n  },\n  \"conformance\": {\n    \"kind\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"area\": {\n      \"blank\": 0,\n      \"nonEnum\": 1\n    },\n    \"stage\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"owner\": {\n      \"blank\": 0\n    },\n    \"gapStatus\": {\n      \"nonEnum\": 0\n    }\n  },\n  \"effectiveness\": {\n    \"basis\": \"observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake\",\n    \"complete\": true,\n    \"diagnostics\": [],\n    \"types\": {\n      \"lesson\": {\n        \"surfaced\": 0,\n        \"honoured\": 0,\n        \"departed\": 0,\n        \"irrelevant\": 0,\n        \"recurred\": 0\n      }\n    }\n  },\n  \"config\": {\n    \"corpora\": [\n      \"work\",\n      \"imports\",\n      \"code\"\n    ],\n    \"corporaSource\": \"default\",\n    \"legacy\": []\n  }\n}\n",
+  "stdout": "{\n  \"backend\": \"local\",\n  \"recordCount\": 2,\n  \"store\": \"<STORE>\",\n  \"present\": true,\n  \"lessons\": 1,\n  \"adrs\": 1,\n  \"summaries\": 0,\n  \"capabilities\": 0,\n  \"gaps\": 0,\n  \"findings\": 0,\n  \"feedback\": 0,\n  \"runs\": 0,\n  \"index\": {\n    \"version\": 4,\n    \"current\": 4,\n    \"stale\": false\n  },\n  \"origin\": {\n    \"unresolved\": 0\n  },\n  \"types\": {\n    \"adr\": {\n      \"count\": 1,\n      \"layer\": \"semantic\"\n    },\n    \"lesson\": {\n      \"count\": 1,\n      \"layer\": \"procedural\"\n    }\n  },\n  \"layers\": {\n    \"episodic\": 0,\n    \"semantic\": 1,\n    \"procedural\": 1\n  },\n  \"conformance\": {\n    \"kind\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"area\": {\n      \"blank\": 0,\n      \"nonEnum\": 1\n    },\n    \"stage\": {\n      \"blank\": 0,\n      \"nonEnum\": 0\n    },\n    \"owner\": {\n      \"blank\": 0\n    },\n    \"gapStatus\": {\n      \"nonEnum\": 0\n    }\n  },\n  \"effectiveness\": {\n    \"basis\": \"observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake\",\n    \"complete\": true,\n    \"diagnostics\": [],\n    \"types\": {\n      \"lesson\": {\n        \"surfaced\": 0,\n        \"honoured\": 0,\n        \"departed\": 0,\n        \"irrelevant\": 0,\n        \"recurred\": 0\n      }\n    }\n  },\n  \"config\": {\n    \"corpora\": [\n      \"work\",\n      \"imports\",\n      \"code\"\n    ],\n    \"corporaSource\": \"default\",\n    \"legacy\": [],\n    \"recall\": {\n      \"pick\": {\n        \"enabled\": true,\n        \"model\": \"haiku\",\n        \"timeoutMs\": 20000,\n        \"source\": \"default\",\n        \"claude\": \"resolves\"\n      }\n    }\n  }\n}\n",
   "stderr": ""
  }
 ];
@@ -814,7 +866,8 @@ export const workMemoryCommandTests = [
             types: { lesson: { surfaced: 0, honoured: 0, departed: 0, irrelevant: 0, recurred: 0 } },
           },
           // 180/ADR-005 — the memory node as it was read: the default corpora, nothing legacy.
-          config: { corpora: ["work", "imports", "code"], corporaSource: "default", legacy: [] },
+          // 201/ADR-004 §6 — and the recall pick's setting, which `none` still names.
+          config: { corpora: ["work", "imports", "code"], corporaSource: "default", legacy: [], recall: { pick: { enabled: true, model: "haiku", timeoutMs: 20000, source: "default", claude: "resolves" } } },
         }, "the none backend's honest status");
         assert.equal(probe.stdout, `${JSON.stringify(doc, null, 2)}\n`, "and nothing else on stdout");
       } finally {
@@ -1225,6 +1278,65 @@ export const workMemoryCommandTests = [
           const extra = Object.keys(record).filter((key) => key !== "score" && !MEMORY_RECORD_FIELDS.includes(key));
           assert.deepEqual(extra, [], `${record.id} carries only fields the parser leaves produce`);
         }
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+  {
+    name: "201/00 task 02 E10 through the real CLI: with the first five cards picked, the block is the ranker's first five with the promoted lesson dropped, nothing is announced, and both doors print the same bytes",
+    async run() {
+      const fx = await makeRoot201();
+      try {
+        const all = JSON.parse(fx.run(["memory", "recall", "worktree junction", "--all", "--json"]).stdout);
+        assert.equal(all[0].id, "R1", "non-vacuous: the promoted lesson is the best-ranked record");
+        assert.equal(all[0].status, PROMOTED_201, "…and the index carries its promotion as its status");
+        assert.ok(all.length >= 9, `the fixture holds the eight lessons and the ADR (${all.length})`);
+
+        const block = fx.run(["memory", "recall", "worktree junction", "--block"]);
+        assert.equal(block.status, 0, block.stderr);
+        assert.deepEqual(blockIds(block.stdout), all.slice(1, 6).map((record) => record.id), "the block is the records ranked 2nd to 6th: the promoted lesson is dropped and the next record takes its place");
+        assert.equal(block.stderr, "", "nothing is announced: the pick answered");
+        assert.ok(block.stdout.split("\n").filter(Boolean).every((line) => / · 39_milestone_fixture\/[A-Z]+\.md:\d+$/u.test(line)), "every line of stdout is a record line ending in its path:line");
+
+        const alias = fx.run(["work", "memory", "recall", "worktree junction", "--block"]);
+        assert.deepEqual([alias.status, alias.stdout, alias.stderr], [block.status, block.stdout, block.stderr], "aof work memory prints the same block");
+
+        // E11 — a lesson with no promotion yet (R2, `none`) and legacy lessons (R3…) are still shown.
+        assert.deepEqual(blockIds(block.stdout).slice(0, 2), ["R2", "R3"]);
+      } finally {
+        await dropRoot39(fx);
+      }
+    },
+  },
+  {
+    name: "201/00 task 03 through the real CLI: only the block is filtered — --json (E13), --block --all, --status control (E12), recurrence (E15) and status still see the promoted lesson, and --limit caps the block (E16)",
+    async run() {
+      const fx = await makeRoot201();
+      try {
+        const all = JSON.parse(fx.run(["memory", "recall", "worktree junction", "--all", "--json"]).stdout);
+
+        const json = fx.run(["memory", "recall", "worktree junction", "--json"]);
+        assert.deepEqual(JSON.parse(json.stdout).map((record) => record.id), all.slice(0, 5).map((record) => record.id), "[--json] the ranker's first five, the promoted lesson first, as today");
+        assert.equal(json.stderr, "");
+
+        const text = fx.run(["memory", "recall", "worktree junction"]);
+        assert.match(text.stdout, /→ {2}5 hit\(s\)\n {2}> \[R1 · m39\] Worktree junction teardown/u, "[text view] the 5 best-ranked records, the promoted lesson first");
+
+        const whole = fx.run(["memory", "recall", "worktree junction", "--block", "--all"]);
+        assert.deepEqual(blockIds(whole.stdout), all.map((record) => record.id), "[--block --all] the whole scoped result, neither picked nor filtered");
+
+        const byPromotion = fx.run(["memory", "recall", "worktree junction", "--status", "control", "--block"]);
+        assert.deepEqual(blockIds(byPromotion.stdout), ["R1"], "[--status control] a caller that asks by promotion is shown the promoted lesson");
+
+        const capped = fx.run(["memory", "recall", "worktree junction", "--block", "--limit", "3"]);
+        assert.deepEqual(blockIds(capped.stdout), all.slice(1, 4).map((record) => record.id), "[--block --limit 3] the limit is the block's cap");
+
+        const recurrence = JSON.parse(fx.run(["memory", "recurrence", all[0].text, "--json"]).stdout);
+        assert.equal(recurrence.qualifying, "39/R1", "[recurrence] a new lesson that repeats the promoted one still names it");
+
+        const status = JSON.parse(fx.run(["memory", "status", "--json"]).stdout);
+        assert.equal(status.recordCount, all.length, "[status] the record count includes the promoted lesson");
       } finally {
         await dropRoot39(fx);
       }

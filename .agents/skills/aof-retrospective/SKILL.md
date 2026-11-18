@@ -11,7 +11,7 @@ Arguments: [ref | range - omit for all done milestones without one]
 
 Use the native skill $aof-retrospective; $ARGUMENTS is the operator text after its name.
 
-Read the target story or milestone evidence, recall shared memory before triage and ingest after authoring. Keep stable R<n> ids and deduplicate lessons. Kind is mistake/blocker/near-miss/misunderstanding; Area is code/architecture/contract/security/process; Stage is refine/build/verify; Owner is required. No invented lesson or product evidence. Each story owns its own retrospective. Observability is written only by the CLI; a clean run need not produce a lesson doc.
+Read the target story or milestone evidence, recall shared memory before triage, record both recalls on the item's ledger once the lessons are written, and ingest after authoring. Keep stable R<n> ids and deduplicate lessons. Kind is mistake/blocker/near-miss/misunderstanding; Area is code/architecture/contract/security/process; Stage is refine/build/verify; Owner is required. No invented lesson or product evidence. Each story owns its own retrospective. Observability is written only by the CLI; a clean run need not produce a lesson doc.
 
 ## Codex execution contract
 Use only tools actually exposed by this session. File reading/editing, shell execution, search,
