@@ -24,6 +24,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
+import { importSpecifiers } from "../../support/module-family.mjs";
 import * as leaf from "@aof/knowledge/memory/recall-pick";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -121,7 +122,7 @@ export const archTests = [
       assert.match(own, MISS_CODE_RE);
       assert.match(own, ANNOUNCEMENT_RE);
       // …and it is pure: one import, the vocabulary's, and no node builtin.
-      const imports = [...own.matchAll(/\bfrom\s+["']([^"']+)["']/gu)].map((match) => match[1]);
+      const imports = importSpecifiers(own).map((entry) => entry.specifier);
       assert.deepEqual(imports, ["@aof/work/memory-vocabulary"], "the leaf imports the vocabulary and nothing else: no disk, no process");
     },
   },

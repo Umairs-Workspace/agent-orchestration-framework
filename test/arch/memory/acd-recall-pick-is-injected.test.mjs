@@ -16,6 +16,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
+import { importSpecifiers } from "../../support/module-family.mjs";
 import { recall } from "@aof/knowledge/memory/local-retrieval";
 import { RECORD_CORPORA } from "@aof/knowledge/engine";
 const runMemory = _aofApplication.knowledge.work.memory.runMemory;
@@ -29,14 +30,9 @@ const PICK_PATH = [
   "packages/knowledge/src/commands/memory.mjs",
 ];
 
-// Every module specifier a source names: static, side-effect and dynamic imports, and `require`.
-function importedSpecifiers(code) {
-  const specifiers = [];
-  for (const match of code.matchAll(/\bfrom\s+["']([^"']+)["']|\bimport\s*\(\s*["']([^"']+)["']|\bimport\s+["']([^"']+)["']|\brequire\s*\(\s*["']([^"']+)["']/gu)) {
-    specifiers.push(match[1] ?? match[2] ?? match[3] ?? match[4]);
-  }
-  return specifiers;
-}
+// Every module specifier a source names: static, side-effect and dynamic imports, and `require`,
+// read by the one extractor (FF-11901).
+const importedSpecifiers = (code) => importSpecifiers(code).map((entry) => entry.specifier);
 
 /** THE SHIPPED DETECTOR over one module's source: one message per forbidden import. */
 export function startsAModelFailures(rel, source) {
