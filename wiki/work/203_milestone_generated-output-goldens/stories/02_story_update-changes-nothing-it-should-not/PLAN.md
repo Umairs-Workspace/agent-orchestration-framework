@@ -40,9 +40,8 @@ paths in the same order, and only its instants differ. Reproduce that through th
 `upgrade` delta stores `.aof/aof.lock.json.golden`, the rebuild or the lock's order differs from
 init's, and that is a finding, not a baseline to accept.
 
-Then hand task 03 to the Windows control node: pull, set `AOF_GLOBAL_HOME`, run
-`node scripts/golden.mjs`, capture the output and `git ls-files --eol test/golden/baselines` into
-`evidence/`.
+Task 03 (amended at verify, 2026-11-21) shapes every committed scenario as a Windows capture would
+hold it, and normalises it back to its baseline, on any OS.
 
 ## Out of scope
 

@@ -14,7 +14,7 @@ import path from "node:path";
 import { hashContent } from "../../packages/core/src/lock.mjs";
 import { captureScenario } from "../support/golden/harness.mjs";
 import { DEFAULT_BASELINE_ROOT, INSTALL_RECORDS, compareTrees, materialise, readStored, rebuild, renderReport } from "../support/golden/baseline-store.mjs";
-import { normaliseContext } from "../support/golden/normalise.mjs";
+import { normaliseContext, normaliseSteps, normaliseText } from "../support/golden/normalise.mjs";
 import { LANES, findScenario } from "../support/golden/lanes.mjs";
 import workInit from "./work-init.lane.mjs";
 import workUpdate, { OLDER_RELEASE, USER_LINE, olderStart, rebuildInit, startingFiles } from "./work-update.lane.mjs";
@@ -269,4 +269,84 @@ const task02 = [
   },
 ];
 
-export const workUpdateTests = [...task00, ...task01, ...task02];
+// ── task 03 · R4 · a Windows-shaped capture of every scenario normalises to its baseline ──────
+//
+// What a Windows run changes is the bytes a capture holds, never the comparison: CRLF line
+// endings, "\" between path segments (JSON-escaped inside a step record), and a temp root spelled
+// in a case and short-name form its realpath does not share. Each is produced here on purpose
+// from the committed baselines, so the property holds on whatever OS runs the suite. Tree keys
+// need no case: the harness joins directory entry names with "/", never an OS path.
+
+const GOLDEN_LANES = ["work-init", "work-update"];
+const WINDOWS_ROOT = "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\aof-golden-Ab12";
+const WINDOWS_REAL = "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\aof-golden-Ab12";
+// The spelling a captured envelope carries: the realpath, in another case.
+const AS_CAPTURED = Object.freeze({ "<project>": `${WINDOWS_REAL}\\project`.toLowerCase(), "<home>": `${WINDOWS_REAL}\\home`.toLowerCase() });
+const INSTANT = "2026-11-21T17:30:00.123Z";
+const HASH = `sha256:${"0123456789abcdef".repeat(4)}`;
+const BUILD_ID = "win-build-0001";
+
+const windowsCtx = () =>
+  withValues(({ version }) =>
+    Object.freeze({
+      project: `${WINDOWS_ROOT}\\project`,
+      home: `${WINDOWS_ROOT}\\home`,
+      projectReal: `${WINDOWS_REAL}\\project`,
+      homeReal: `${WINDOWS_REAL}\\home`,
+      version,
+      buildId: BUILD_ID,
+      caseInsensitivePaths: true,
+    }),
+  );
+
+const everyScenario = () =>
+  GOLDEN_LANES.flatMap((laneId) => LANES.find((lane) => lane.id === laneId).scenarios.map(({ id }) => ({ laneId, id, expected: expectedOf(laneId, id) })));
+
+const fillRunValues = (text, ctx) => text.replaceAll("<timestamp>", INSTANT).replaceAll("sha256:<hash>", HASH).replaceAll("<version>", ctx.version).replaceAll("<build-id>", BUILD_ID);
+const toWindowsPaths = (text) => text.replace(/(<project>|<home>)((?:\/[^\s"'`<>|:;,()[\]{}]*)*)/gu, (_match, root, tail) => AS_CAPTURED[root] + tail.replaceAll("/", "\\"));
+const windowsRecord = (value, ctx) =>
+  typeof value === "string" ? toWindowsPaths(fillRunValues(value, ctx))
+  : Array.isArray(value) ? value.map((item) => windowsRecord(item, ctx))
+  : value && typeof value === "object" ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, windowsRecord(item, ctx)]))
+  : value;
+
+const task03 = [
+  {
+    name: "203/02 task03 E12 — every scenario's files, given CRLF line endings and real instants, hashes and version, normalise to exactly their committed baselines",
+    run: async () => {
+      const ctx = windowsCtx();
+      let files = 0;
+      let filled = 0;
+      for (const { laneId, id, expected } of everyScenario()) {
+        assert.ok(!expected.missing, expected.missing);
+        for (const [key, text] of expected.tree) {
+          assert.doesNotMatch(text, /<project>|<home>/u, `${laneId}/${id} ${key} holds a temp path: shape it as the step records are shaped`);
+          const windows = fillRunValues(text, ctx).replace(/\n/gu, "\r\n");
+          if (windows.replace(/\r\n/gu, "\n") !== text) filled += 1;
+          assert.equal(normaliseText(windows, ctx), text, `${laneId}/${id} ${key}`);
+          files += 1;
+        }
+      }
+      assert.ok(files > 1500 && filled > 0, `non-vacuity: ${files} files, ${filled} with run values filled`);
+    },
+  },
+  {
+    name: "203/02 task03 — every scenario's step records, with Windows temp paths in another case and JSON-escaped, normalise to exactly its steps.golden",
+    run: async () => {
+      const ctx = windowsCtx();
+      let withPaths = 0;
+      for (const { laneId, id, expected } of everyScenario()) {
+        const records = windowsRecord(JSON.parse(expected.steps), ctx);
+        const serialised = JSON.stringify(records);
+        if (/<project>|<home>/u.test(expected.steps)) {
+          assert.ok(serialised.includes(`${AS_CAPTURED["<project>"].replaceAll("\\", "\\\\")}\\\\`), `${laneId}/${id}: the records carry the JSON-escaped Windows root`);
+          withPaths += 1;
+        }
+        assert.equal(normaliseSteps(records, ctx), expected.steps, `${laneId}/${id} steps.golden`);
+      }
+      assert.ok(withPaths > 0, "non-vacuity: some scenario's step records name a temp path");
+    },
+  },
+];
+
+export const workUpdateTests = [...task00, ...task01, ...task02, ...task03];

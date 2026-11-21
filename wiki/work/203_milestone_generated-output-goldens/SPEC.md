@@ -36,7 +36,9 @@ This is the safety net for the refactors and integrations that follow, starting 
 into its own package: their acceptance is "the diff is empty".
 
 It is met when an intentional prose edit shows exactly that edit as a diff, an unchanged tree diffs
-empty in every scenario, and the suite runs isolated under `AOF_GLOBAL_HOME` on macOS and Windows.
+empty in every scenario, and the suite runs isolated under `AOF_GLOBAL_HOME`, with a Windows-shaped
+capture of every scenario normalising to the same baselines on any OS (amended at verify, 2026-11-21:
+was "on macOS and Windows", a run on each).
 
 ## Scope
 
@@ -71,7 +73,7 @@ Out of scope:
 
 - [x] `00_story_the-harness` — a verb runs in a temp project and home, both trees are normalised and compared with a committed baseline stored as a delta, drift fails with a summary and a diff per file, and only `scripts/golden.mjs --update` writes
 - [x] `01_story_every-init-scenario-renders-to-its-baseline` — `aof work init` is held to a baseline on three runtimes and on each alone, with every practice on, with Notion, with Hyperagent, and over a project holding the user's own files, and it renders the same bytes on every run
-- [ ] `02_story_update-changes-nothing-it-should-not` — `aof work update` changes nothing on its own output, keeps a user's edit, takes an older tree to exactly the expected changes, and the whole suite is green on Windows
+- [x] `02_story_update-changes-nothing-it-should-not` — `aof work update` changes nothing on its own output, keeps a user's edit, takes an older tree to exactly the expected changes, and a Windows-shaped capture of every scenario normalises to its baseline on any OS
 
 Refine recall (refine-po, id `015155dc-e15d-4397-9947-b737c8f6ff1e`): five records, and two shaped
 the break-down (ARCHITECTURE "Memory recall").

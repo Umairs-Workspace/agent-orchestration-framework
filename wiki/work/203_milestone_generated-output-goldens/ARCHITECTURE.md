@@ -315,13 +315,13 @@ tree run through new code.
 |---|---|---|
 | 00 · the harness | runner, normaliser, baseline store and writer, line diff, the update script, the LF pin, FF-20301 to FF-20303 | nothing |
 | 01 · every init scenario renders to its committed baseline | the `work-init` lane, its eight baselines, the determinism check | 00 |
-| 02 · update changes nothing it should not | the `work-update` lane, idempotence, the customised update, the upgrade, the Windows run | 00, 01 |
+| 02 · update changes nothing it should not | the `work-update` lane, idempotence, the customised update, the upgrade, the any-OS check (amended at verify, 2026-11-21: was a Windows run) | 00, 01 |
 
 The cuts follow the only coupling there is. 00 is tested on a fixture verb, a small script that
 writes a tree, so it needs no aof verb and no baseline from a lane. 01 is data plus baselines over
 00's API. 02 reads 01's scenarios and its committed `default` and `customised` baselines, and both
 add their lane to `test/support/golden/lanes.mjs`, so it follows 01. No story writes a runtime
-module, unless the determinism check or the Windows run finds instability, which is then fixed at
+module, unless the determinism check or the any-OS check finds instability, which is then fixed at
 its source as ADR-002 §5 requires.
 
 No ADR is diagrammed. The one flow with moving parts, the upgrade's rebuild, is a three-step list.

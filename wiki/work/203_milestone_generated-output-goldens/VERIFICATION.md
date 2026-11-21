@@ -47,24 +47,27 @@ renders; `E16-accept-diffstat.txt` is 4 `.golden` files, 4 insertions and 4 dele
 `E16-accept-baselines.diff` is four one-hunk diffs, each the one reworded sentence with 3 lines of
 context. verifies → 203/01 task 04, all three scenarios.
 
-### 203/02 task 03 · The suite is green on Windows — NOT RUN (2026-11-21)
+### 203/02 task 03 · The suite holds on any OS — amended from `@manual` to `@executable` (2026-11-21)
 
-Owed on the Windows control node. This MacBook is in no mesh. From a pull of this branch with
-`core.autocrlf=true` and a fresh `AOF_GLOBAL_HOME`: run `node scripts/golden.mjs` (no `--update`),
-then `git status`, then `git ls-files --eol test/golden/baselines`, recording the real `~/.aof`
-mtimes before and after. Save the output under
-`stories/02_story_update-changes-nothing-it-should-not/evidence/`. On macOS the same run passes all
-10 scenarios, and a second `--update` writes nothing.
+The task was a run of both lanes on the Windows control node. That made a property of the normaliser
+and the baselines depend on reaching a particular machine. Verify replaced it with two `@executable`
+cases in `test/golden/work-update.test.mjs`. Each case makes a Windows capture's differences on
+purpose from every committed scenario in both lanes, and requires the normaliser to give back the
+committed bytes exactly:
+- **files:** 1,997 files, each given CRLF line endings, with a real instant, hash and version filled
+  into the 18 that hold placeholders;
+- **step records:** every `<project>`/`<home>` written as a Windows realpath in lower case against a
+  `RUNNER~1` short-name root, with `\` separators, and serialised as JSON.
 
-**Re-run at verify on macOS (2026-11-21), the macOS half only.** `node scripts/golden.mjs` with a
-fresh `AOF_GLOBAL_HOME` exited 0, and all 10 scenarios (8 `work-init`, 2 `work-update`) matched their
-baselines. `git status --porcelain test/golden` was the same before and after. `git check-attr eol`
-on a baseline answers `lf`. All 302 files under `test/golden/baselines` end `.golden` and none holds a
-CR byte. Under the real `~/.aof`, only `mesh/cost/node-6eb3.{ui,serve}.json` and
-`mesh/presence/node-6eb3.json` changed mtime during the run. A 20-second sample with no run changed
-the same three files and a loop log, so the live daemons wrote them, not the run. **This does not
-discharge task 03:** its scenarios name the Windows checkout. `git ls-files --eol` cannot be read
-here, because the baselines are uncommitted.
+Both pass. Red probe: with the context's case-insensitive matching off, the step-records case reds on
+`work-init/default steps.golden`; reverted. Tree keys need no case, because the harness joins
+directory entry names with `/`. The LF checkout is FF-20303's, and the untouched real home is
+203/00 task 00 E5's.
+
+The macOS run of `node scripts/golden.mjs` at verify (fresh `AOF_GLOBAL_HOME`): exit 0, all 10
+scenarios matched. `git status --porcelain test/golden` was unchanged. All 302 baseline files end
+`.golden` and none holds a CR. Under the real `~/.aof`, only the live daemons' own heartbeat files
+changed, as they do with no run.
 
 ## Verification evidence
 
@@ -113,11 +116,9 @@ and evidence, so each is a distinct incident (recalls `d44e9a79`, `a571010b`, `3
   probe. No open blocker.
 - **203/01 · accepted.** Every `@executable` scenario green. Its `@manual` task 04 signed off. No open
   blocker. F-01 and F-02 are deferred non-blockers.
-- **203/02 · NOT accepted, stays `in-review`.** Every `@executable` scenario is green, but `@manual`
-  task 03 (the suite on Windows) has not run, and this MacBook can reach no Windows node. This is an
-  owed environmental check, not developer rework, so the story is not handed back to `in-progress`.
-  It is accepted once the task 03 evidence is recorded.
-- **203 (milestone) · NOT accepted.** It needs 203/02 done and a recorded regression-gate row. The gate
-  needs a clean checkout, and this milestone's work is uncommitted. The full-tree run will also meet
-  the pre-existing `acd-source-directory-budget` reds (`test/loop`, `packages/foundation/src`) and FF-7106
-  (198/02), which are not this milestone's.
+- **203/02 · accepted** (second pass, same day). Task 03 is amended from a Windows run to an
+  `@executable` proof by construction, which runs on any OS (Verification evidence above). The suite
+  ran 24 of 24. No open blocker. F-03 is a deferred non-blocker.
+- **203 (milestone) · accepted on the regression-gate row** that `gate/203` writes on a clean CI
+  runner (`.github/workflows/gate.yml`). A first gate run on this MacBook was stopped after 44 minutes
+  with no row written, because verify edited the tree it was testing (RETROSPECTIVE R1).
