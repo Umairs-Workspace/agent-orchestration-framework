@@ -6,13 +6,13 @@ Advisory and the builder's own. The task features are the contract.
 
 This story is data plus baselines over story 00's API. Almost no logic is new.
 
-`test/golden/work-init.lane.mjs` exports the lane: `{ id: "work-init", scenarios: [...] }`. Each
+The `work-init` lane module exports the lane: `{ id: "work-init", scenarios: [...] }`. Each
 scenario has `{ id, base, files, steps }`. `files` maps a project path to its text, and that is
 how a profile's `.aof/aof.config.json` and the customised project's user files arrive. `steps` is
 one argv each, `["work", "init", "--runtime", "<list>", "--json"]`, with its expected exit code.
 Keep the scenario table in ADR-005's order, so the file reads like the ADR.
 
-`test/support/golden/lanes.mjs` gains the lane. `test/golden/work-init.test.mjs` produces one
+The lane registry gains the lane. The `work-init` suite produces one
 case per scenario (`compare`, assert it passes, and use the report as the message), and the cases
 the features name over the stored deltas: the `removed.golden` prefixes, the `notion` delta, the
 empty home. The twice-run case calls the harness's run twice. It then applies only the exported rules whose
@@ -29,7 +29,7 @@ about the render, not a baseline to accept.
 From a clean state: `node scripts/golden.mjs --lane work-init` passes, a second `--update` writes
 nothing, and `git status` is clean. Then run E16 in a scratch worktree (task 04): edit one sentence
 of `packages/core/assets/commands/refine.md`, check the failure lists only refine's renders, each
-with one hunk, then accept, read `git diff --stat test/golden/baselines`, and revert. Save the
+with one hunk, then accept, read `git diff --stat` over the baselines, and revert. Save the
 failure text and the diffstat under `evidence/`.
 
 A failure of the twice-run check means an unstable render. Find the writer whose order follows
@@ -51,4 +51,4 @@ A failure of the twice-run check means an unstable render. Find the writer whose
 - `.codex/hooks.json` in the customised start must be a valid matcher group
   (`{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"echo mine"}]}]}}`). A flat shape makes
   `init` refuse with `codex-hooks-unparseable`, which was measured.
-- Two new files under `test/golden/` move that directory's row in `acd-source-directory-budget`.
+- Two new golden suite files move the golden directory's row in `acd-source-directory-budget`.

@@ -4,7 +4,7 @@ Advisory and the builder's own. The task features are the contract.
 
 ## Mechanism
 
-Four small modules under `test/support/golden/`, each with one job, and one script in front of
+Four small modules in the golden support folder, each with one job, and one script in front of
 them.
 
 1. **Run** (`harness.mjs`). It takes a lane and a scenario. It makes one temp root, writes the
@@ -34,7 +34,7 @@ parses `--lane`, `--scenario` and `--update`, orders scenarios base-first (a top
 The fixture lane belongs to the self-test alone. `golden-harness.test.mjs` declares it in-test,
 with `fixture-verb.mjs` as its command and a temp baseline root. That is why the run, the store
 and the writer each take the baseline root as a parameter, defaulting to
-`test/golden/baselines`. The script takes the same as `--root <dir>`, plus `--lane-module <path>`
+the committed baselines directory. The script takes the same as `--root <dir>`, plus `--lane-module <path>`
 for a lane outside the registry. Both exist for the self-test. The write tests run
 `scripts/golden.mjs` as a child process with those two flags and never import the writer, so
 FF-20302 stays true.
@@ -65,7 +65,7 @@ Then probe each fitness function red: add a seventh rule, import the writer from
   only the raw one.
 - A blanket backslash rewrite breaks the bundle's regex prose (E10). Separators change only inside
   matched temp paths, and in tree keys.
-- `test/golden`, `test/support/golden` and three `test/arch/testing` controls each move a row in
+- The two new golden directories and the three new testing controls each move a row in
   `acd-source-directory-budget`, which has no allowance (57 F-57-M-2). Move the rows in this story.
-- `scripts/golden.mjs` must spawn nothing itself. A child process or computed import in `scripts/`
-  owes an entry in `scripts/workspace-runtime-audit.json`.
+- The update script must spawn nothing itself. A child process or computed import in a script
+  owes an entry in the workspace runtime audit.

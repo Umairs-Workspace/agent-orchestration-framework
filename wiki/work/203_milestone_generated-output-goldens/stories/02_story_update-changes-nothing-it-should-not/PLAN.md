@@ -10,12 +10,12 @@ One new capability and one lane.
 materialises the committed baseline (ADR-003 §2). It fills `<project>`, `<home>`, `<version>`,
 `<build-id>` and `<timestamp>` with the run's values, then recomputes every `sha256:<hash>` in the
 lock's `work.files[]` and in the journal from the rebuilt file at that entry's path, using
-`hashContent` from `packages/core/src/lock.mjs`, the function that wrote them. Before that, it
+`hashContent` from the core lock module, the function that wrote them. Before that, it
 checks the drift guard. The stored hashes are placeholders, so drift is read from the step record:
 a baseline whose step reported a drift-warning is refused, and so is a lock entry whose file the
 baseline lacks. It returns a `Map<path, text>` and writes nothing.
 
-**The lane** (`test/golden/work-update.lane.mjs`). A scenario's starting `files` may be a function
+**The lane** (the `work-update` lane module). A scenario's starting `files` may be a function
 of the rebuild, which is how both scenarios start. The harness already writes starting files
 before the first step, so it needs no new step kind:
 
@@ -56,5 +56,5 @@ hold it, and normalises it back to its baseline, on any OS.
 - Codex outputs carry recorded ownership (`codex-output-conflict` refused a force in 192/02). A
   mutation on a codex path would meet those rules. Keep the three mutations on `.claude/` paths, as
   measured.
-- Two new files under `test/golden/` move that directory's row in `acd-source-directory-budget`
+- Two new golden suite files move the golden directory's row in `acd-source-directory-budget`
   again, after story 01's move.

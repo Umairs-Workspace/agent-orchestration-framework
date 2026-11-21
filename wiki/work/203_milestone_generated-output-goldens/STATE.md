@@ -11,7 +11,9 @@ doc: state
   built and reviewed.
 - 2026-11-21 — `aof:verify 203`: the contract amendment ratified, 203/02 task 03 amended from a
   Windows run to an any-OS `@executable` proof, all three stories accepted, F-01 to F-03 deferred.
-  The regression gate goes to a clean runner through `gate/203` (VERIFICATION, Accept decision).
+  The regression gate ran on this MacBook at `a984ebb0`: red. Two of its reds were 203's (the
+  plans restated declared paths; a control wrote its own import extractor), fixed at verify. The
+  rest were red before 203 (VERIFICATION, Accept decision).
 
 ## Closure record
 

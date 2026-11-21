@@ -94,12 +94,16 @@ holds today's behaviour, so any fix shows as a reviewed diff. None blocks 203: t
 what aof generates and does not change the verbs (SPEC, Scope). Recall at triage: one
 `aof memory recall --kind finding` per finding, after `aof memory ingest`. No candidate shared cause
 and evidence, so each is a distinct incident (recalls `d44e9a79`, `a571010b`, `3cf045c8`, recorded on 203).
+F-04 and F-05 came from the regression gate, not from the lanes. Each matched earlier findings with
+the same cause, cited in its row.
 
 | id | observed | type | severity | triage | routed-to | status |
 |---|---|---|---|---|---|---|
 | F-01 | Over a project that already holds `.claude/agents/aof-architect.md` written by the user, a first `aof work init` replaces it with aof's architect, reports it as `update`, and warns of no drift. `update` warns on an edit to a file aof installed; `init` does not warn on a file aof never installed. Held by the `customised` baseline (203/01 E14). Nearest recalled: m188/F-13, m57/F-57-01-4, both about `update`, not first-time `init`. | product gap | non-blocker | defer: whether `init` should refuse or warn is a product decision | backlog | open |
 | F-02 | Codex's refine skill renders from `packages/core/assets/variants/codex/workflow.md`, a hand-kept copy, so an edit to `packages/core/assets/commands/refine.md` changes Claude Code and opencode and leaves Codex saying the old sentence (203/01 E16 evidence). Nearest recalled: m193/F-01 (Codex agent rendering under operator-aware discovery), a different cause. | product gap | non-blocker | defer: whether the variant should follow `commands/*.md` is a product question | backlog | open |
 | F-03 | When `aof work update` keeps a drift-warned file, that file's lock entry moves to the end of `work.files` (`createLockManifest`, `packages/core/src/lock.mjs`, appends preserved entries after the planned ones), so a user who edits one aof file gets a reorder hunk in their committed lock. Deterministic; held by `customised-update` (203/02 task 01, as amended). Nearest recalled: m124/F-08, m129/F-62, m127/F-13, all lock-content causes, not ordering. | product gap | non-blocker | defer: a small story | backlog | open |
+| F-04 | The regression gate at `a984ebb0` found 203's three `PLAN.md` restating declared paths: 00 listed five, and 01 and 02 named more than one each (FF-9603 / 96/02-00, two cases). The story suites never run the stream-wide ban, so only the gate saw it. Prior occurrences with the same cause and evidence: m124/F-04, m127/F-19, m138/F-14, m146/F-146-02, m172/F-172-07. | contract defect | blocker | fix at verify: each plan names files by role and keeps one path | 203 (verify) | fixed |
+| F-05 | The same gate found FF-11901 red on 203's own control: `acd-golden-baselines-written-by-the-script.test.mjs` spelled its own import-specifier regex instead of `importSpecifiers` from `test/support/module-family.mjs`. Prior occurrence with the same cause and evidence: m201/F-02, also seen only at the gate. | code defect | blocker | fix at verify: the control reads specifiers through the shared extractor | 203 (verify) | fixed |
 
 ## Accept decision
 
@@ -119,6 +123,24 @@ and evidence, so each is a distinct incident (recalls `d44e9a79`, `a571010b`, `3
 - **203/02 · accepted** (second pass, same day). Task 03 is amended from a Windows run to an
   `@executable` proof by construction, which runs on any OS (Verification evidence above). The suite
   ran 24 of 24. No open blocker. F-03 is a deferred non-blocker.
-- **203 (milestone) · accepted on the regression-gate row** that `gate/203` writes on a clean CI
-  runner (`.github/workflows/gate.yml`). A first gate run on this MacBook was stopped after 44 minutes
-  with no row written, because verify edited the tree it was testing (RETROSPECTIVE R1).
+- **203 (milestone) · accepted on a recorded gate override.** `aof work regression-gate 203` ran on
+  this MacBook at `a984ebb0`, with nothing else touching the tree: 15,195 of 15,203 cases, 70.5 min,
+  red on 63 cases (REGRESSION.md; logs `.tmp/test-sharded/2026-11-21T19-16-41-526Z`). A first run was
+  stopped after 44 minutes with no row written, because verify edited the tree it was testing
+  (RETROSPECTIVE R1). Every red was read by its failure text and sorted by cause:
+  - **203's own, three cases, fixed at verify** (F-04, F-05). Each suite is green again run by file:
+    the plan ban 6 of 6 and 17 of 17, FF-11901's suite 12 of 12, the golden control 3 of 3.
+  - **57 cases red in 201's gate on this MacBook** (`28d07e22`, 2026-11-18), before 203 existed. They
+    include FF-11904's two over-budget layers (`test/loop` 66 > 64, `packages/foundation/src` 9 > 8),
+    FF-7106 on 198/02, the release fingerprint pin, and the macOS `/private/var` temp-path cases.
+  - **Two cases from `4cac6cd8`**, the loop-resume commit between 201's gate and 203: an unaudited `git`
+    child process in the work loop's command module (workspace-boundaries), and the work loop's
+    kernel imports (yarn-installation).
+  - **One unit cut short by an older red**: the SEA recipe guards ran 10 of 18 because FF-16008 nests
+    FF-16004's module ceiling (`aof work find` loads 761 modules against 759), red at 201 too. 203
+    changes no `src/` module.
+  - Five units were red in the pool and green alone, and are not counted.
+
+  A rerun would still be red on the 60 cases that are not 203's, so the accept goes through
+  `--gate-override`, its reason recorded as its own REGRESSION.md row. The stream's reds hold 201
+  at the same door and belong in a chore of their own, not in 203.

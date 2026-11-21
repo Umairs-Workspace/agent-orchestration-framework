@@ -15,6 +15,7 @@ import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { importSpecifiers } from "../../support/module-family.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -23,13 +24,11 @@ const THE_SCRIPT = "scripts/golden.mjs";
 const SWEPT_ROOTS = ["test", "scripts", "packages", "apps"];
 const GOLDEN_MODULES_DIR = "test/support/golden";
 
-// Static and literal dynamic import specifiers, in comment-stripped source.
-const SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(["'])([^"'\n]+)\1/gu;
-
+// Static and literal dynamic import specifiers, read through the one shared extractor (FF-11901).
 export function importersOf(target, sources) {
   return sources
     .filter(({ file, source }) =>
-      [...stripComments(source).matchAll(SPECIFIER)].some(([, , specifier]) => specifier.startsWith(".") && path.posix.normalize(path.posix.join(path.posix.dirname(file), specifier)) === target),
+      importSpecifiers(source).some(({ specifier }) => specifier.startsWith(".") && path.posix.normalize(path.posix.join(path.posix.dirname(file), specifier)) === target),
     )
     .map(({ file }) => file)
     .sort();
