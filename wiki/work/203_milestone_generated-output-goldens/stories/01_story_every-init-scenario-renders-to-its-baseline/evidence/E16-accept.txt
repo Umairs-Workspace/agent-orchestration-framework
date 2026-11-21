@@ -1,0 +1,10 @@
+wrote work-init/default/project/.claude/commands/aof/refine.md.golden
+wrote work-init/default/project/.opencode/commands/aof/refine.md.golden
+work-init/claude: already current
+work-init/codex: already current
+work-init/opencode: already current
+wrote work-init/all-practices/project/.claude/commands/aof/refine.md.golden
+wrote work-init/all-practices/project/.opencode/commands/aof/refine.md.golden
+work-init/notion: already current
+work-init/hyperagent: already current
+work-init/customised: already current

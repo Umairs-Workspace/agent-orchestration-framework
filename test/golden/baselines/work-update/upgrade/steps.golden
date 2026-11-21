@@ -1,0 +1,1011 @@
+[
+  {
+    "argv": [
+      "work",
+      "update",
+      "--json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "targetDir": ".",
+      "runtimes": [
+        "claude",
+        "codex",
+        "opencode"
+      ],
+      "dryRun": false,
+      "summary": {
+        "created": 1,
+        "updated": 1,
+        "skipped": 230,
+        "drift-warning": 0,
+        "deleted": 1
+      },
+      "manifest": ".aof/aof.lock.json",
+      "actions": [
+        {
+          "action": "skip",
+          "path": ".claude/agents/aof-architect.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/agents/aof-compliance.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/agents/aof-designer.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/agents/aof-developer.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/agents/aof-product-owner.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/agents/aof-qa.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/agents/aof-researcher.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/agents/aof-security.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/add-chore.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/add-diagram.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/add-milestone.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/add-spike.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/add-story.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/add-task.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/add-uat.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/assimilate-code.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/autonomous.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/continue.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/delegate.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/diagram-review.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/explain.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/feedback.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/init.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/insert-chore.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/insert-milestone.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/insert-story.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/insert-uat.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/loop-diagram.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/manual.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/map-tests.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/migrate.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/observe.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/pay-debt.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/promote.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/prototype.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/archive.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/questions.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/recent.md"
+        },
+        {
+          "action": "update",
+          "path": ".claude/commands/aof/refine.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/repair.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/retrospective.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/review.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/shatter.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/validate.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/verify.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/skills/codex-implementation/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/skills/codex-review/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/skills/codex-computer-use/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/teach.md"
+        },
+        {
+          "action": "skip",
+          "path": ".codex/aof/workflows/workflow-contract.md"
+        },
+        {
+          "action": "skip",
+          "path": ".codex/agents/aof-architect.toml"
+        },
+        {
+          "action": "skip",
+          "path": ".codex/agents/aof-compliance.toml"
+        },
+        {
+          "action": "skip",
+          "path": ".codex/agents/aof-designer.toml"
+        },
+        {
+          "action": "skip",
+          "path": ".codex/agents/aof-developer.toml"
+        },
+        {
+          "action": "skip",
+          "path": ".codex/agents/aof-product-owner.toml"
+        },
+        {
+          "action": "skip",
+          "path": ".codex/agents/aof-qa.toml"
+        },
+        {
+          "action": "skip",
+          "path": ".codex/agents/aof-researcher.toml"
+        },
+        {
+          "action": "skip",
+          "path": ".codex/agents/aof-security.toml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-add-chore/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-add-chore/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-add-diagram/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-add-diagram/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-add-milestone/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-add-milestone/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-add-spike/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-add-spike/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-add-story/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-add-story/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-add-task/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-add-task/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-add-uat/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-add-uat/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-assimilate-code/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-assimilate-code/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-autonomous/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-autonomous/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-continue/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-continue/procedure.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-continue/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-delegate/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-delegate/procedure.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-delegate/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-diagram-review/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-diagram-review/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-explain/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-explain/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-feedback/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-feedback/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-init/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-init/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-insert-chore/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-insert-chore/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-insert-milestone/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-insert-milestone/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-insert-story/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-insert-story/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-insert-uat/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-insert-uat/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-loop-diagram/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-loop-diagram/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-manual/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-manual/procedure.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-manual/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-map-tests/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-map-tests/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-migrate/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-migrate/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-observe/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-observe/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-pay-debt/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-pay-debt/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-promote/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-promote/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-prototype/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-prototype/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-archive/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-archive/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-questions/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-questions/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-recent/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-recent/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-refine/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-refine/procedure.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-refine/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-repair/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-repair/procedure.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-repair/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-retrospective/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-retrospective/procedure.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-retrospective/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-review/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-review/procedure.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-review/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-shatter/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-shatter/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-validate/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-validate/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-verify/SKILL.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-verify/procedure.md"
+        },
+        {
+          "action": "skip",
+          "path": ".agents/skills/aof-verify/agents/openai.yaml"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/agents/aof-architect.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/agents/aof-compliance.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/agents/aof-designer.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/agents/aof-developer.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/agents/aof-product-owner.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/agents/aof-qa.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/agents/aof-researcher.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/agents/aof-security.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/add-chore.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/add-diagram.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/add-milestone.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/add-spike.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/add-story.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/add-task.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/add-uat.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/assimilate-code.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/autonomous.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/continue.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/delegate.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/diagram-review.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/explain.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/feedback.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/init.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/insert-chore.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/insert-milestone.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/insert-story.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/insert-uat.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/loop-diagram.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/manual.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/map-tests.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/migrate.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/observe.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/pay-debt.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/promote.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/prototype.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/archive.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/questions.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/recent.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/refine.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/repair.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/retrospective.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/review.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/shatter.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/validate.md"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/commands/aof/verify.md"
+        },
+        {
+          "action": "skip",
+          "path": ".codex/hooks.json"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/plugins/aof-opencode-session-start.js"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/plugins/aof-opencode-session-prompt-ping.js"
+        },
+        {
+          "action": "skip",
+          "path": ".opencode/plugins/aof-opencode-session-end.js"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/chore/CHORE.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/milestone/AOF.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/milestone/ARCHITECTURE.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/milestone/COMPLIANCE.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/milestone/DESIGN.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/milestone/RESEARCH.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/milestone/SECURITY.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/milestone/SPEC.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/milestone/STATE.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/milestone/UAT.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/milestone/VERIFICATION.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/prototype/PROTOTYPE.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/prototype/STATE.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/shared/OUTCOME.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/spike/SPIKE.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/story/EXAMPLES.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/story/PLAN.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/story/STORY.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/task/example.feature"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/uat/SESSION.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/templates/work/uat/STATE.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/hooks/aof/artifact-sync-enqueue.mjs"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/hooks/aof/run-heartbeat-enqueue.mjs"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/hooks/aof/ask-pending-enqueue.mjs"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/frozen-set.jsonc"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/triggers.jsonc"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/autonomous-cascade.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/build-to-green.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/mesh-assignment-reclaim.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/retrospective-memory-ingest.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/review-fix-rereview.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/run-resilience.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/verify-triage-accept.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/operator.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/product-owner.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/rubric-process-exit.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/run-liveness.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/run-lifecycle-policy.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/build-to-green-watcher.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/review-fix-rereview-watcher.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/autonomous-cascade-watcher.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/speed-thoroughness-autonomy.md"
+        },
+        {
+          "action": "skip",
+          "path": ".aof/loops/instrument-audit.md"
+        },
+        {
+          "action": "delete",
+          "path": ".claude/commands/aof/retired.md"
+        }
+      ],
+      "notInstallable": [],
+      "claudeSettings": {
+        "path": "<project>/.claude/settings.json",
+        "action": "skipped",
+        "written": false,
+        "code": null,
+        "message": null,
+        "drift": [],
+        "tamper": [],
+        "installed": [
+          "locked-contract",
+          "litmus",
+          "tag-vocabulary",
+          "gate-order",
+          "anchors",
+          "acceptor-criterion"
+        ]
+      },
+      "testLayout": [],
+      "operatorProfile": [],
+      "practices": [
+        {
+          "id": "build-brief",
+          "title": "Build brief",
+          "summary": "Refine writes a one-page PLAN.md for the story's builder.",
+          "keys": [
+            "work.plan.enabled"
+          ],
+          "on": false
+        },
+        {
+          "id": "discovery",
+          "title": "Discovery",
+          "summary": "Refine drafts a story's example map and asks its business questions before any task is written.",
+          "keys": [
+            "work.examples.enabled"
+          ],
+          "on": false
+        },
+        {
+          "id": "operator-aware",
+          "title": "Operator-aware discovery",
+          "summary": "Refine researches a fact before it asks, and every question says what it would pick.",
+          "keys": [
+            "work.examples.enabled",
+            "work.examples.operatorAware"
+          ],
+          "on": false
+        }
+      ]
+    }
+  }
+]

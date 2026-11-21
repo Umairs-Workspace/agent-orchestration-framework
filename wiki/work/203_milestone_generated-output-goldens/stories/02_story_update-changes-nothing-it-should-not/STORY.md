@@ -5,10 +5,10 @@ slug: update-changes-nothing-it-should-not
 title: "Update changes nothing it should not — on its own output it changes nothing, over a user's edit it keeps the edit, from an older tree it makes exactly the expected changes, and the whole suite is green on Windows"
 parent: 203
 depends: [00, 01]
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-11-20
-updated: 2026-11-20
+updated: 2026-11-21
 adrs: [ADR-001, ADR-003, ADR-006]
 reads:
   - wiki/work/203_milestone_generated-output-goldens/stories/02_story_update-changes-nothing-it-should-not/EXAMPLES.md
@@ -52,9 +52,9 @@ diff is empty". The whole suite then runs on the Windows control node.
 
 ## Tasks
 
-- [ ] `tasks/00_update-on-its-own-output-changes-nothing.feature` (R1): for every `work-init` scenario, `update` after `init` leaves the tree equal to that scenario's baseline and reports nothing created, updated, deleted or drifted.
-- [ ] `tasks/01_update-keeps-what-the-user-changed.feature` (R2): over the customised tree with one aof file edited by the user and one new user file, update keeps both and says so.
-- [ ] `tasks/02_an-older-tree-upgrades-to-exactly-the-expected-changes.feature` (R3): the committed `default` baseline is rebuilt into a real tree, three older-release mutations are applied, and update makes exactly 1 update, 1 delete and 1 create, ending on the `default` baseline.
+- [x] `tasks/00_update-on-its-own-output-changes-nothing.feature` (R1): for every `work-init` scenario, `update` after `init` leaves the tree equal to that scenario's baseline and reports nothing created, updated, deleted or drifted.
+- [x] `tasks/01_update-keeps-what-the-user-changed.feature` (R2): over the customised tree with one aof file edited by the user and one new user file, update keeps both and says so.
+- [x] `tasks/02_an-older-tree-upgrades-to-exactly-the-expected-changes.feature` (R3): the committed `default` baseline is rebuilt into a real tree, three older-release mutations are applied, and update makes exactly 1 update, 1 delete and 1 create, ending on the `default` baseline.
 - [ ] `tasks/03_the-suite-is-green-on-windows.feature` (R4, `@manual`): both lanes pass on the Windows control node, isolated under `AOF_GLOBAL_HOME`, against the baselines written on macOS.
 
 ## Notes

@@ -1,0 +1,174 @@
+work-init/default: drifted
+2 changed
+  project/.claude/commands/aof/refine.md
+  project/.opencode/commands/aof/refine.md
+
+--- baseline/project/.claude/commands/aof/refine.md
++++ actual/project/.claude/commands/aof/refine.md
+@@ -7,7 +7,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+--- baseline/project/.opencode/commands/aof/refine.md
++++ actual/project/.opencode/commands/aof/refine.md
+@@ -3,7 +3,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+node scripts/golden.mjs --lane work-init --scenario default --update
+work-init/claude: drifted
+1 changed
+  project/.claude/commands/aof/refine.md
+
+--- baseline/project/.claude/commands/aof/refine.md
++++ actual/project/.claude/commands/aof/refine.md
+@@ -7,7 +7,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+node scripts/golden.mjs --lane work-init --scenario claude --update
+work-init/codex: matches its baseline
+work-init/opencode: drifted
+1 changed
+  project/.opencode/commands/aof/refine.md
+
+--- baseline/project/.opencode/commands/aof/refine.md
++++ actual/project/.opencode/commands/aof/refine.md
+@@ -3,7 +3,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+node scripts/golden.mjs --lane work-init --scenario opencode --update
+work-init/all-practices: drifted
+2 changed
+  project/.claude/commands/aof/refine.md
+  project/.opencode/commands/aof/refine.md
+
+--- baseline/project/.claude/commands/aof/refine.md
++++ actual/project/.claude/commands/aof/refine.md
+@@ -7,7 +7,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+--- baseline/project/.opencode/commands/aof/refine.md
++++ actual/project/.opencode/commands/aof/refine.md
+@@ -3,7 +3,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+node scripts/golden.mjs --lane work-init --scenario all-practices --update
+work-init/notion: drifted
+2 changed
+  project/.claude/commands/aof/refine.md
+  project/.opencode/commands/aof/refine.md
+
+--- baseline/project/.claude/commands/aof/refine.md
++++ actual/project/.claude/commands/aof/refine.md
+@@ -7,7 +7,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+--- baseline/project/.opencode/commands/aof/refine.md
++++ actual/project/.opencode/commands/aof/refine.md
+@@ -3,7 +3,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+node scripts/golden.mjs --lane work-init --scenario notion --update
+work-init/hyperagent: drifted
+2 changed
+  project/.claude/commands/aof/refine.md
+  project/.opencode/commands/aof/refine.md
+
+--- baseline/project/.claude/commands/aof/refine.md
++++ actual/project/.claude/commands/aof/refine.md
+@@ -7,7 +7,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+--- baseline/project/.opencode/commands/aof/refine.md
++++ actual/project/.opencode/commands/aof/refine.md
+@@ -3,7 +3,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+node scripts/golden.mjs --lane work-init --scenario hyperagent --update
+work-init/customised: drifted
+2 changed
+  project/.claude/commands/aof/refine.md
+  project/.opencode/commands/aof/refine.md
+
+--- baseline/project/.claude/commands/aof/refine.md
++++ actual/project/.claude/commands/aof/refine.md
+@@ -7,7 +7,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+--- baseline/project/.opencode/commands/aof/refine.md
++++ actual/project/.opencode/commands/aof/refine.md
+@@ -3,7 +3,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+node scripts/golden.mjs --lane work-init --scenario customised --update
+golden: 7 of 8 scenarios drifted

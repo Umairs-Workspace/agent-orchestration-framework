@@ -1,0 +1,1363 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "path": ".codex/aof/workflows/workflow-contract.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "workflow-contract",
+        "kind": "workflow"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".codex/agents/aof-architect.toml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-architect",
+        "kind": "agent"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".codex/agents/aof-compliance.toml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-compliance",
+        "kind": "agent"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".codex/agents/aof-designer.toml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-designer",
+        "kind": "agent"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".codex/agents/aof-developer.toml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-developer",
+        "kind": "agent"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".codex/agents/aof-product-owner.toml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-product-owner",
+        "kind": "agent"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".codex/agents/aof-qa.toml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-qa",
+        "kind": "agent"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".codex/agents/aof-researcher.toml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-researcher",
+        "kind": "agent"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".codex/agents/aof-security.toml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-security",
+        "kind": "agent"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-add-chore/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-chore",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-add-chore/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-chore",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-add-diagram/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-diagram",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-add-diagram/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-diagram",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-add-milestone/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-milestone",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-add-milestone/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-milestone",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-add-spike/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-spike",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-add-spike/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-spike",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-add-story/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-story",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-add-story/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-story",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-add-task/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-task",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-add-task/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-task",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-add-uat/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-uat",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-add-uat/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-uat",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-assimilate-code/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-assimilate-code",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-assimilate-code/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-assimilate-code",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-autonomous/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-autonomous",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-autonomous/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-autonomous",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-continue/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-continue",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-continue/procedure.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-continue",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "procedure.md",
+        "sourceFile": "procedure.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-continue/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-continue",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-delegate/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-delegate",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-delegate/procedure.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-delegate",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "procedure.md",
+        "sourceFile": "procedure.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-delegate/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-delegate",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-diagram-review/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-diagram-review",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-diagram-review/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-diagram-review",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-explain/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-explain",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-explain/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-explain",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-feedback/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-feedback",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-feedback/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-feedback",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-init/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-init",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-init/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-init",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-insert-chore/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-insert-chore",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-insert-chore/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-insert-chore",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-insert-milestone/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-insert-milestone",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-insert-milestone/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-insert-milestone",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-insert-story/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-insert-story",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-insert-story/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-insert-story",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-insert-uat/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-insert-uat",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-insert-uat/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-insert-uat",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-loop-diagram/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-loop-diagram",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-loop-diagram/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-loop-diagram",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-manual/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-manual",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-manual/procedure.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-manual",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "procedure.md",
+        "sourceFile": "procedure.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-manual/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-manual",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-map-tests/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-map-tests",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-map-tests/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-map-tests",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-migrate/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-migrate",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-migrate/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-migrate",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-observe/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-observe",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-observe/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-observe",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-pay-debt/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-pay-debt",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-pay-debt/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-pay-debt",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-promote/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-promote",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-promote/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-promote",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-prototype/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-prototype",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-prototype/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-prototype",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-archive/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-archive",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-archive/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-archive",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-questions/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-questions",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-questions/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-questions",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-recent/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-recent",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-recent/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-recent",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-refine/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-refine",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-refine/procedure.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-refine",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "procedure.md",
+        "sourceFile": "procedure.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-refine/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-refine",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-repair/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-repair",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-repair/procedure.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-repair",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "procedure.md",
+        "sourceFile": "procedure.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-repair/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-repair",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-retrospective/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-retrospective",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-retrospective/procedure.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-retrospective",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "procedure.md",
+        "sourceFile": "procedure.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-retrospective/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-retrospective",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-review/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-review",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-review/procedure.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-review",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "procedure.md",
+        "sourceFile": "procedure.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-review/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-review",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-shatter/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-shatter",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-shatter/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-shatter",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-validate/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-validate",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-validate/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-validate",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-verify/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-verify",
+        "kind": "skill"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-verify/procedure.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-verify",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "procedure.md",
+        "sourceFile": "procedure.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".agents/skills/aof-verify/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-verify",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".codex/hooks.json",
+      "runtime": "codex",
+      "resource": {
+        "id": "codex-hooks",
+        "kind": "hooks"
+      },
+      "hash": "sha256:<hash>",
+      "ownership": {
+        "kind": "hooks",
+        "groups": {
+          "UserPromptSubmit": [
+            "sha256:<hash>"
+          ],
+          "SessionStart": [
+            "sha256:<hash>"
+          ],
+          "Stop": [
+            "sha256:<hash>"
+          ]
+        }
+      }
+    },
+    {
+      "path": ".aof/templates/work/chore/CHORE.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "chore",
+        "kind": "template",
+        "file": "CHORE.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/milestone/AOF.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "milestone",
+        "kind": "template",
+        "file": "AOF.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/milestone/ARCHITECTURE.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "milestone",
+        "kind": "template",
+        "file": "ARCHITECTURE.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/milestone/COMPLIANCE.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "milestone",
+        "kind": "template",
+        "file": "COMPLIANCE.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/milestone/DESIGN.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "milestone",
+        "kind": "template",
+        "file": "DESIGN.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/milestone/RESEARCH.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "milestone",
+        "kind": "template",
+        "file": "RESEARCH.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/milestone/SECURITY.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "milestone",
+        "kind": "template",
+        "file": "SECURITY.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/milestone/SPEC.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "milestone",
+        "kind": "template",
+        "file": "SPEC.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/milestone/STATE.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "milestone",
+        "kind": "template",
+        "file": "STATE.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/milestone/UAT.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "milestone",
+        "kind": "template",
+        "file": "UAT.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/milestone/VERIFICATION.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "milestone",
+        "kind": "template",
+        "file": "VERIFICATION.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/prototype/PROTOTYPE.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "prototype",
+        "kind": "template",
+        "file": "PROTOTYPE.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/prototype/STATE.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "prototype",
+        "kind": "template",
+        "file": "STATE.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/shared/OUTCOME.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "shared",
+        "kind": "template",
+        "file": "OUTCOME.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/spike/SPIKE.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "spike",
+        "kind": "template",
+        "file": "SPIKE.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/story/EXAMPLES.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "story",
+        "kind": "template",
+        "file": "EXAMPLES.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/story/PLAN.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "story",
+        "kind": "template",
+        "file": "PLAN.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/story/STORY.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "story",
+        "kind": "template",
+        "file": "STORY.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/task/example.feature",
+      "runtime": "codex",
+      "resource": {
+        "id": "task",
+        "kind": "template",
+        "file": "example.feature"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/uat/SESSION.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "uat",
+        "kind": "template",
+        "file": "SESSION.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/templates/work/uat/STATE.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "uat",
+        "kind": "template",
+        "file": "STATE.md"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/frozen-set.jsonc",
+      "runtime": "codex",
+      "resource": {
+        "id": "frozen-set-declaration",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/triggers.jsonc",
+      "runtime": "codex",
+      "resource": {
+        "id": "trigger-declaration",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/autonomous-cascade.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "loop-autonomous-cascade",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/build-to-green.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "loop-build-to-green",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/mesh-assignment-reclaim.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "loop-mesh-assignment-reclaim",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/retrospective-memory-ingest.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "loop-retrospective-memory-ingest",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/review-fix-rereview.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "loop-review-fix-rereview",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/run-resilience.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "loop-run-resilience",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/verify-triage-accept.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "loop-verify-triage-accept",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/operator.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "actor-operator",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/product-owner.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "actor-product-owner",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/rubric-process-exit.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "anchor-rubric-process-exit",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/run-liveness.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "anchor-run-liveness",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/run-lifecycle-policy.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "anchor-run-lifecycle-policy",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/build-to-green-watcher.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "watcher-build-to-green",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/review-fix-rereview-watcher.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "watcher-review-fix-rereview",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/autonomous-cascade-watcher.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "watcher-autonomous-cascade",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/speed-thoroughness-autonomy.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "arbiter-speed-thoroughness-autonomy",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".aof/loops/instrument-audit.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "auditor-instrument-audit",
+        "kind": "asset"
+      },
+      "hash": "sha256:<hash>"
+    }
+  ]
+}

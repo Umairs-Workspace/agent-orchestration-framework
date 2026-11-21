@@ -41,6 +41,12 @@
 .aof/loops/*.md text eol=lf
 .planning/**/*.md text eol=lf
 test/fixtures/** text eol=lf
+# 203/ADR-003 §4 — the committed golden baselines. Each is compared byte for byte with a normalised
+# render that is always LF, so an unpinned `core.autocrlf=true` checkout would make the whole golden
+# suite red by construction on Windows. Tree-wide, because a baseline mirrors every file type aof
+# renders. Guarded by acd-golden-baselines-eol-pinned (FF-20303), which also holds every file here
+# to the `.golden` suffix.
+test/golden/baselines/** text eol=lf
 test/integration/**/*.feature text eol=lf
 
 # The shipped ACD bundle (milestone 01 / story 00): pin LF so the rendered

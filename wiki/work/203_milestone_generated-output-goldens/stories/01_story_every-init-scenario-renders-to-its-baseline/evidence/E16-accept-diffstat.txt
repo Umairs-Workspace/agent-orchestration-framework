@@ -1,0 +1,5 @@
+ .../all-practices/project/.claude/commands/aof/refine.md.golden         | 2 +-
+ .../all-practices/project/.opencode/commands/aof/refine.md.golden       | 2 +-
+ .../work-init/default/project/.claude/commands/aof/refine.md.golden     | 2 +-
+ .../work-init/default/project/.opencode/commands/aof/refine.md.golden   | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)

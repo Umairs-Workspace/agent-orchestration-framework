@@ -4,10 +4,10 @@ number: 00
 slug: the-harness
 title: "The harness — a verb runs isolated in a temp project and home, both trees are normalised and compared with a committed baseline stored as a delta, drift fails with a summary and a diff per file, and only the update script writes"
 parent: 203
-status: not-started
+status: done
 owner: product-owner
 created: 2026-11-20
-updated: 2026-11-20
+updated: 2026-11-21
 adrs: [ADR-001, ADR-002, ADR-003, ADR-004]
 reads:
   - wiki/work/203_milestone_generated-output-goldens/stories/00_story_the-harness/EXAMPLES.md
@@ -59,10 +59,10 @@ tree as told. No aof verb is a subject here. Stories 01 and 02 add the lanes.
 
 ## Tasks
 
-- [ ] `tasks/00_a-scenario-runs-isolated-and-both-trees-are-captured.feature` (R1): each step runs as a child process in a temp project with a temp `AOF_GLOBAL_HOME`, both trees and every step's record are captured, an unexpected exit fails by name, and the temp root is removed either way.
-- [ ] `tasks/01_output-is-normalised-by-a-closed-rule-list.feature` (R2): the six rules, in order, rewrite exactly what they name and nothing else, and a non-UTF-8 file fails by name.
-- [ ] `tasks/02_drift-fails-with-a-summary-and-a-diff-per-file.feature` (R3): the expected tree is materialised from a base and a delta, and a mismatch fails with counts, paths, a unified diff per file and the update command.
-- [ ] `tasks/03_only-the-update-script-writes-a-baseline.feature` (R4): a plain run never writes, `--update` writes the minimal delta and re-derives dependents, and a second `--update` writes nothing.
+- [x] `tasks/00_a-scenario-runs-isolated-and-both-trees-are-captured.feature` (R1): each step runs as a child process in a temp project with a temp `AOF_GLOBAL_HOME`, both trees and every step's record are captured, an unexpected exit fails by name, and the temp root is removed either way.
+- [x] `tasks/01_output-is-normalised-by-a-closed-rule-list.feature` (R2): the six rules, in order, rewrite exactly what they name and nothing else, and a non-UTF-8 file fails by name.
+- [x] `tasks/02_drift-fails-with-a-summary-and-a-diff-per-file.feature` (R3): the expected tree is materialised from a base and a delta, and a mismatch fails with counts, paths, a unified diff per file and the update command.
+- [x] `tasks/03_only-the-update-script-writes-a-baseline.feature` (R4): a plain run never writes, `--update` writes the minimal delta and re-derives dependents, and a second `--update` writes nothing.
 
 ## Notes
 

@@ -45,6 +45,13 @@ import { archTests as acdGitFakeParityTests } from "./acd-git-fake-parity.test.m
 // milestone 190 / story 00 — FF-19001 (a test record has one writer) and FF-19004 (the content key
 // has one producer). FF-19002 is a second leg in acd-test-command-reports-not-decides above.
 import { archTests as acdTestRecordOneWriterTests } from "./acd-test-record-one-writer.test.mjs";
+// milestone 203 / story 00 — the golden harness's three controls: FF-20301 (the normaliser's six
+// rules are closed, and no sibling rewrites captured content), FF-20302 (only `scripts/golden.mjs`
+// imports the baseline writer, and no golden module reads an environment switch) and FF-20303 (the
+// baselines are LF-pinned through git's own matcher, and every file under them ends `.golden`).
+import { archTests as acdGoldenNormaliserClosedTests } from "./acd-golden-normaliser-closed.test.mjs";
+import { archTests as acdGoldenBaselinesWrittenByTheScriptTests } from "./acd-golden-baselines-written-by-the-script.test.mjs";
+import { archTests as acdGoldenBaselinesEolPinnedTests } from "./acd-golden-baselines-eol-pinned.test.mjs";
 
 export const tests = [
   ...acdTestSelectionWidensNeverNarrowsTests,
@@ -61,4 +68,8 @@ export const tests = [
   ...acdGitFakeParityTests,
   // milestone 190 / story 00 — FF-19001, FF-19004.
   ...acdTestRecordOneWriterTests,
+  // milestone 203 / story 00 — FF-20301, FF-20302, FF-20303.
+  ...acdGoldenNormaliserClosedTests,
+  ...acdGoldenBaselinesWrittenByTheScriptTests,
+  ...acdGoldenBaselinesEolPinnedTests,
 ];

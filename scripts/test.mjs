@@ -63,6 +63,7 @@ import { tests as diagramsTests } from "../test/diagrams/index.mjs";
 import { tests as discordTests } from "../test/discord/index.mjs";
 import { tests as examplesTests } from "../test/examples/index.mjs";
 import { tests as gradeTests } from "../test/grade/index.mjs";
+import { tests as goldenTests } from "../test/golden/index.mjs";
 import { tests as graphTests } from "../test/graph/index.mjs";
 import { tests as loopTests } from "../test/loop/index.mjs";
 import { tests as memoryTests } from "../test/memory/index.mjs";
@@ -143,6 +144,7 @@ export const tests = [
   ...discordTests,
   ...examplesTests,
   ...gradeTests,
+  ...goldenTests,
   ...graphTests,
   ...loopTests,
   ...memoryTests,

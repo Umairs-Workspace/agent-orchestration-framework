@@ -1,0 +1,11 @@
+{
+  "work": {
+    "examples": {
+      "enabled": true,
+      "operatorAware": true
+    },
+    "plan": {
+      "enabled": true
+    }
+  }
+}

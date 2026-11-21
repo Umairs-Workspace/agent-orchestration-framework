@@ -1,0 +1,52 @@
+diff --git a/test/golden/baselines/work-init/all-practices/project/.claude/commands/aof/refine.md.golden b/test/golden/baselines/work-init/all-practices/project/.claude/commands/aof/refine.md.golden
+index e244d3be..e5016c99 100644
+--- a/test/golden/baselines/work-init/all-practices/project/.claude/commands/aof/refine.md.golden
++++ b/test/golden/baselines/work-init/all-practices/project/.claude/commands/aof/refine.md.golden
+@@ -7,7 +7,7 @@ aof-runtime: claude
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+ 
+diff --git a/test/golden/baselines/work-init/all-practices/project/.opencode/commands/aof/refine.md.golden b/test/golden/baselines/work-init/all-practices/project/.opencode/commands/aof/refine.md.golden
+index 17b054d2..b3ce438f 100644
+--- a/test/golden/baselines/work-init/all-practices/project/.opencode/commands/aof/refine.md.golden
++++ b/test/golden/baselines/work-init/all-practices/project/.opencode/commands/aof/refine.md.golden
+@@ -3,7 +3,7 @@ description: Refine a work item — break a milestone into independent stories,
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+ 
+diff --git a/test/golden/baselines/work-init/default/project/.claude/commands/aof/refine.md.golden b/test/golden/baselines/work-init/default/project/.claude/commands/aof/refine.md.golden
+index 413b1762..5b3946e9 100644
+--- a/test/golden/baselines/work-init/default/project/.claude/commands/aof/refine.md.golden
++++ b/test/golden/baselines/work-init/default/project/.claude/commands/aof/refine.md.golden
+@@ -7,7 +7,7 @@ aof-runtime: claude
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+ 
+diff --git a/test/golden/baselines/work-init/default/project/.opencode/commands/aof/refine.md.golden b/test/golden/baselines/work-init/default/project/.opencode/commands/aof/refine.md.golden
+index 255a23cc..0b6b3c41 100644
+--- a/test/golden/baselines/work-init/default/project/.opencode/commands/aof/refine.md.golden
++++ b/test/golden/baselines/work-init/default/project/.opencode/commands/aof/refine.md.golden
+@@ -3,7 +3,7 @@ description: Refine a work item — break a milestone into independent stories,
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+ 

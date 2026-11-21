@@ -25,13 +25,16 @@ Feature: Every runtime renders to its baseline
       Then it passes
       And scenario "<scenario>" names base "default"
       And its one step was "work init --runtime <scenario> --json", exiting 0
-      And its "removed.golden" lists only paths under <absent>
+      And its "removed.golden" lists only paths under <absent>, and of aof's own records <records>
 
+      # Amended at verify, 2026-11-21: the map did not count aof's own `.aof/` records. The apply
+      # journal belongs to the Codex hooks merge, and the loop records are bundle members declared
+      # `runtimes: ["claude", "codex"]`, so a runtime without them lists them as removed.
       Examples:
-        | example | scenario | absent                                  |
-        | E2      | claude   | ".agents/", ".codex/" and ".opencode/"  |
-        | E3      | codex    | ".claude/" and ".opencode/"             |
-        | E3      | opencode | ".agents/", ".claude/" and ".codex/"    |
+        | example | scenario | absent                                  | records                                                          |
+        | E2      | claude   | ".agents/", ".codex/" and ".opencode/"  | only ".aof/aof.apply-journal.json"                               |
+        | E3      | codex    | ".claude/" and ".opencode/"             | none                                                             |
+        | E3      | opencode | ".agents/", ".claude/" and ".codex/"    | only ".aof/aof.apply-journal.json" and the files of ".aof/loops/" |
 
     Scenario: the global home stays empty in every scenario of the lane
       When the harness compares every scenario in lane "work-init"

@@ -37,4 +37,8 @@ Feature: Update keeps what the user changed
     Scenario: the stored delta is the user's two files and the step record
       When the stored delta of scenario "customised-update" is listed
       Then it holds ".claude/commands/aof/refine.md", ".claude/commands/release.md" and "steps.golden"
+      And of the install records it holds ".aof/aof.lock.json" alone, with the kept file's entry moved to the end
       And its "removed.golden" is empty
+
+    # Amended at verify, 2026-11-21: `update` appends a kept, drift-warned file's lock entry after
+    # the planned ones (`createLockManifest`), so the lock is stored changed too.

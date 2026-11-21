@@ -304,9 +304,9 @@ export const SOURCE_DIRECTORY_BUDGETS = Object.freeze([
   Object.freeze({
     directory: "test/arch/testing",
     counts: "direct-children",
-    ceiling: 12,
+    ceiling: 15,
     allowance: 0,
-    why: "created by 119/03's own diff and budgeted in it: the 9 arch controls of this subject plus the index that names them. ITEM 63's layer had 591 and 439 flat siblings because no row existed to make anybody choose; a subject directory born unmetered would rebuild that one level down, which is the blind spot ADR-009 leg 2 exists to close. The next file here should be a case on the registration, the selection or the budget suite; a control about the test tree that fits none of those is the rarest file in this repository and deserves the pause — and if it is genuinely a new subject, that is a new row and a new directory, stated rather than drifted into. 10 -> 11 is milestone 160 story 01 adding `acd-git-fake-parity.test.mjs` (FF-16002): the control that holds the loop suites' git model to real git verb by verb, and the classification rule that decides which cases run on it. It is a case on the registration-and-selection subject of this directory: which port a registered case runs under. One file. 11 -> 12 is milestone 190 story 00 adding `acd-test-record-one-writer.test.mjs` (FF-19001, FF-19004): the record `aof test` now leaves for every run has one writer and its content key one producer. It is a case on the selection subject — what stands in for a run of the selected suites — and a new file rather than a leg because neither existing control owns the record store; FF-19002 IS a leg, in `acd-test-command-reports-not-decides`, whose door census it extends.",
+    why: "created by 119/03's own diff and budgeted in it: the 9 arch controls of this subject plus the index that names them. ITEM 63's layer had 591 and 439 flat siblings because no row existed to make anybody choose; a subject directory born unmetered would rebuild that one level down, which is the blind spot ADR-009 leg 2 exists to close. The next file here should be a case on the registration, the selection or the budget suite; a control about the test tree that fits none of those is the rarest file in this repository and deserves the pause — and if it is genuinely a new subject, that is a new row and a new directory, stated rather than drifted into. 10 -> 11 is milestone 160 story 01 adding `acd-git-fake-parity.test.mjs` (FF-16002): the control that holds the loop suites' git model to real git verb by verb, and the classification rule that decides which cases run on it. It is a case on the registration-and-selection subject of this directory: which port a registered case runs under. One file. 11 -> 12 is milestone 190 story 00 adding `acd-test-record-one-writer.test.mjs` (FF-19001, FF-19004): the record `aof test` now leaves for every run has one writer and its content key one producer. It is a case on the selection subject — what stands in for a run of the selected suites — and a new file rather than a leg because neither existing control owns the record store; FF-19002 IS a leg, in `acd-test-command-reports-not-decides`, whose door census it extends. 12 -> 15 is milestone 203 story 00 adding the golden harness's three controls (FF-20301 `acd-golden-normaliser-closed`, FF-20302 `acd-golden-baselines-written-by-the-script`, FF-20303 `acd-golden-baselines-eol-pinned`), each named by 203's ARCHITECTURE at this path: they are controls over the test tree's own golden suite, which is this directory's subject. A fourth golden control is a case on one of these three.",
   }),
   Object.freeze({
     directory: "test/arch/ui",
@@ -356,6 +356,20 @@ export const SOURCE_DIRECTORY_BUDGETS = Object.freeze([
     ceiling: 24,
     allowance: 0,
     why: "created by 119/03's own diff and budgeted in it: the 27 suites of this subject plus the index that names them. ITEM 63's layer had 591 and 439 flat siblings because no row existed to make anybody choose; a subject directory born unmetered would rebuild that one level down, which is the blind spot ADR-009 leg 2 exists to close. The next file here should be a case on the grade record, the rubric or the acceptance-horizon suite; the evidence rules are one subject and adding a file splits an argument across two — and if it is genuinely a new subject, that is a new row and a new directory, stated rather than drifted into. 142/09 moved owned suites out to their workspace (27 -> 26); a ceiling that shrinks with the tree is the ratchet working, never headroom. 142/09 moved owned suites out to their workspace (26 -> 24); a ceiling that shrinks with the tree is the ratchet working, never headroom.",
+  }),
+  Object.freeze({
+    directory: "test/golden",
+    counts: "direct-children",
+    ceiling: 6,
+    allowance: 0,
+    why: "created by milestone 203 story 00 and budgeted in the diff that creates it: the golden suites' index and `golden-harness.test.mjs`, the harness proven on a fixture verb (203/ADR-001 to ADR-004). Stories 01 and 02 each add one lane suite here, the init lane and the update lane, and raise this row in their own diff. 2 -> 4 is story 01: `work-init.lane.mjs`, the init lane's eight scenarios as data (203/ADR-005), and `work-init.test.mjs`, the suite that holds them to their baselines and runs the render twice. 4 -> 6 is story 02: `work-update.lane.mjs`, the update lane's two scenarios that start from a rebuilt baseline (203/ADR-006), and `work-update.test.mjs`, which also holds every init scenario idempotent under update. A further golden case belongs in the lane suite whose verb it runs; a new verb's lane (204, 205) is one suite, never a suite per scenario, because a scenario is a declaration in the lane, not a file.",
+  }),
+  Object.freeze({
+    directory: "test/support/golden",
+    counts: "direct-children",
+    ceiling: 6,
+    allowance: 0,
+    why: "created by milestone 203 story 00 and budgeted in the diff that creates it: the golden harness as six modules of one job each (203/00 PLAN): the runner, the closed normaliser (FF-20301), the read-only store, the one writer (FF-20302), the line diff and the lane registry. A seventh module here is a new job for the harness, and is a decision for an ADR; a new lane's declaration is an entry in `lanes.mjs` and its module, never a sibling of the harness.",
   }),
   Object.freeze({
     directory: "test/graph",
@@ -697,6 +711,8 @@ export const SOURCE_DIRECTORY_EXEMPTIONS = Object.freeze([
   
   
   
+  Object.freeze({ directory: "test/golden/baselines", why: "203/01: the committed golden baselines, one directory per lane (`work-init` first), every file below it ending `.golden` (203/ADR-003, FF-20303). It holds directories, never files, so its direct children are a lane list, not a layer of modules." }),
+  Object.freeze({ directory: "test/golden/fixtures", why: "203/00: `fixture-verb.mjs`, the golden harness's self-test subject, a script that writes what a spec file tells it to. One member, below the flat-layer threshold." }),
   Object.freeze({ directory: "test/fixtures", why: "a fixture ROOT whose members live in subdirectories; its direct children are not a flat layer of suites." }),
   // The depth-2 layers the recursive walk surfaces that are UNDER the threshold. Each is a leaf
   // of a directory that already carries a row or an exemption, and each is re-checked for size

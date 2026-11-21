@@ -1,0 +1,3 @@
+scratch/
+**/runs/.heartbeats.ndjson
+**/runs/.heartbeats.ndjson.batch

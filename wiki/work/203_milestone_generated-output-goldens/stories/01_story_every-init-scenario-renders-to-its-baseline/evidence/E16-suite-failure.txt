@@ -1,0 +1,203 @@
+# unit
+not ok - 203/01 task00 E1 — default, on three runtimes, is held whole: it passes, names no base, runs one init step, and stores every file it wrote
+2 changed
+  project/.claude/commands/aof/refine.md
+  project/.opencode/commands/aof/refine.md
+
+--- baseline/project/.claude/commands/aof/refine.md
++++ actual/project/.claude/commands/aof/refine.md
+@@ -7,7 +7,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+--- baseline/project/.opencode/commands/aof/refine.md
++++ actual/project/.opencode/commands/aof/refine.md
+@@ -3,7 +3,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+node scripts/golden.mjs --lane work-init --scenario default --update
+not ok - 203/01 task00 E2 — claude alone is held as a delta over default, whose removed.golden lists only paths under .agents/, .codex/, .opencode/
+1 changed
+  project/.claude/commands/aof/refine.md
+
+--- baseline/project/.claude/commands/aof/refine.md
++++ actual/project/.claude/commands/aof/refine.md
+@@ -7,7 +7,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+node scripts/golden.mjs --lane work-init --scenario claude --update
+not ok - 203/01 task00 E3 — opencode alone is held as a delta over default, whose removed.golden lists only paths under .agents/, .claude/, .codex/
+1 changed
+  project/.opencode/commands/aof/refine.md
+
+--- baseline/project/.opencode/commands/aof/refine.md
++++ actual/project/.opencode/commands/aof/refine.md
+@@ -3,7 +3,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+node scripts/golden.mjs --lane work-init --scenario opencode --update
+not ok - 203/01 task00 E4 — every step's envelope is held: default's steps.golden holds init's summary, runtimes and actions, and every path in it is relative to <project>
+2 changed
+  project/.claude/commands/aof/refine.md
+  project/.opencode/commands/aof/refine.md
+
+--- baseline/project/.claude/commands/aof/refine.md
++++ actual/project/.claude/commands/aof/refine.md
+@@ -7,7 +7,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+--- baseline/project/.opencode/commands/aof/refine.md
++++ actual/project/.opencode/commands/aof/refine.md
+@@ -3,7 +3,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+node scripts/golden.mjs --lane work-init --scenario default --update
+not ok - 203/01 task01 E5 — all-practices starts with its config, passes, names base default, and runs one init on three runtimes
+2 changed
+  project/.claude/commands/aof/refine.md
+  project/.opencode/commands/aof/refine.md
+
+--- baseline/project/.claude/commands/aof/refine.md
++++ actual/project/.claude/commands/aof/refine.md
+@@ -7,7 +7,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+--- baseline/project/.opencode/commands/aof/refine.md
++++ actual/project/.opencode/commands/aof/refine.md
+@@ -3,7 +3,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+node scripts/golden.mjs --lane work-init --scenario all-practices --update
+not ok - 203/01 task01 E6 — notion starts with its config, passes, names base default, and runs one init on three runtimes
+2 changed
+  project/.claude/commands/aof/refine.md
+  project/.opencode/commands/aof/refine.md
+
+--- baseline/project/.claude/commands/aof/refine.md
++++ actual/project/.claude/commands/aof/refine.md
+@@ -7,7 +7,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+--- baseline/project/.opencode/commands/aof/refine.md
++++ actual/project/.opencode/commands/aof/refine.md
+@@ -3,7 +3,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+node scripts/golden.mjs --lane work-init --scenario notion --update
+not ok - 203/01 task01 E7 — hyperagent starts with its config, passes, names base default, and runs one init on three runtimes
+2 changed
+  project/.claude/commands/aof/refine.md
+  project/.opencode/commands/aof/refine.md
+
+--- baseline/project/.claude/commands/aof/refine.md
++++ actual/project/.claude/commands/aof/refine.md
+@@ -7,7 +7,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+--- baseline/project/.opencode/commands/aof/refine.md
++++ actual/project/.opencode/commands/aof/refine.md
+@@ -3,7 +3,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+node scripts/golden.mjs --lane work-init --scenario hyperagent --update
+not ok - 203/01 task02 — the customised project renders to its baseline, from base default with one init on three runtimes
+2 changed
+  project/.claude/commands/aof/refine.md
+  project/.opencode/commands/aof/refine.md
+
+--- baseline/project/.claude/commands/aof/refine.md
++++ actual/project/.claude/commands/aof/refine.md
+@@ -7,7 +7,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+--- baseline/project/.opencode/commands/aof/refine.md
++++ actual/project/.opencode/commands/aof/refine.md
+@@ -3,7 +3,7 @@
+ ---
+ 
+ <objective>
+-Deepen a work item: break a milestone into **independent** stories (the doc-producing stage), or
++Sharpen a work item: break a milestone into **independent** stories (the doc-producing stage), or
+ author a story's task `.feature` files via Three Amigos.
+ </objective>
+
+node scripts/golden.mjs --lane work-init --scenario customised --update
+# file test/golden/work-init.test.mjs 10.213 27
+# executed 27 cases; failures 8

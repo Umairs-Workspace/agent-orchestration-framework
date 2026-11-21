@@ -6,7 +6,7 @@ title: "Every file aof generates is held to a committed baseline, and any drift 
 status: in-progress
 owner: product-owner
 created: 2026-11-20
-updated: 2026-11-20
+updated: 2026-11-21
 depends: []
 schema: 1
 aofVersion: 0.1.0
@@ -69,8 +69,8 @@ Out of scope:
 
 ## Stories
 
-- [ ] `00_story_the-harness` — a verb runs in a temp project and home, both trees are normalised and compared with a committed baseline stored as a delta, drift fails with a summary and a diff per file, and only `scripts/golden.mjs --update` writes
-- [ ] `01_story_every-init-scenario-renders-to-its-baseline` — `aof work init` is held to a baseline on three runtimes and on each alone, with every practice on, with Notion, with Hyperagent, and over a project holding the user's own files, and it renders the same bytes on every run
+- [x] `00_story_the-harness` — a verb runs in a temp project and home, both trees are normalised and compared with a committed baseline stored as a delta, drift fails with a summary and a diff per file, and only `scripts/golden.mjs --update` writes
+- [x] `01_story_every-init-scenario-renders-to-its-baseline` — `aof work init` is held to a baseline on three runtimes and on each alone, with every practice on, with Notion, with Hyperagent, and over a project holding the user's own files, and it renders the same bytes on every run
 - [ ] `02_story_update-changes-nothing-it-should-not` — `aof work update` changes nothing on its own output, keeps a user's edit, takes an older tree to exactly the expected changes, and the whole suite is green on Windows
 
 Refine recall (refine-po, id `015155dc-e15d-4397-9947-b737c8f6ff1e`): five records, and two shaped

@@ -5,10 +5,10 @@ slug: every-init-scenario-renders-to-its-baseline
 title: "Every init scenario renders to its committed baseline — default on three runtimes and on each alone, every practice on, Notion, Hyperagent, and a project holding the user's own files, each run twice to the same bytes"
 parent: 203
 depends: [00]
-status: not-started
+status: done
 owner: product-owner
 created: 2026-11-20
-updated: 2026-11-20
+updated: 2026-11-21
 adrs: [ADR-001, ADR-002, ADR-003, ADR-005]
 reads:
   - wiki/work/203_milestone_generated-output-goldens/stories/01_story_every-init-scenario-renders-to-its-baseline/EXAMPLES.md
@@ -57,10 +57,10 @@ instability that check finds is fixed where it is rendered, in this story (ADR-0
 
 ## Tasks
 
-- [ ] `tasks/00_every-runtime-renders-to-its-baseline.feature` (R1): `default` on three runtimes is held whole, `claude`, `codex` and `opencode` as deltas over it, and the global home stays empty.
-- [ ] `tasks/01_every-profile-renders-to-its-baseline.feature` (R2): `all-practices`, `notion` and `hyperagent` hold exactly what each turns on.
-- [ ] `tasks/02_a-customised-project-renders-to-its-baseline.feature` (R3): the user's own files and entries are held as kept, and the one file `init` overwrites is held as overwritten.
-- [ ] `tasks/03_the-render-is-the-same-on-every-run.feature` (R4): two runs of `default` are byte-identical once only instants and temp paths are normalised.
+- [x] `tasks/00_every-runtime-renders-to-its-baseline.feature` (R1): `default` on three runtimes is held whole, `claude`, `codex` and `opencode` as deltas over it, and the global home stays empty.
+- [x] `tasks/01_every-profile-renders-to-its-baseline.feature` (R2): `all-practices`, `notion` and `hyperagent` hold exactly what each turns on.
+- [x] `tasks/02_a-customised-project-renders-to-its-baseline.feature` (R3): the user's own files and entries are held as kept, and the one file `init` overwrites is held as overwritten.
+- [x] `tasks/03_the-render-is-the-same-on-every-run.feature` (R4): two runs of `default` are byte-identical once only instants and temp paths are normalised.
 - [ ] `tasks/04_an-intentional-prose-edit-shows-as-exactly-that-edit.feature` (R4, `@manual`): one sentence edited in a bundled command shows as that one hunk, in the scenarios that render it.
 
 ## Notes
