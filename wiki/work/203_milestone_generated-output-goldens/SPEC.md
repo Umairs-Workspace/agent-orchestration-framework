@@ -3,7 +3,7 @@ type: milestone
 number: 203
 slug: generated-output-goldens
 title: "Every file aof generates is held to a committed baseline, and any drift shows as a reviewable diff"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-11-20
 updated: 2026-11-21
