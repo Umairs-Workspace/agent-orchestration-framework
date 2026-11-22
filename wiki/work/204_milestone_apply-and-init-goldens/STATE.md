@@ -11,7 +11,9 @@ doc: state
 - 2026-11-22 — `aof:continue 204`, solo (milestone run `20261122T183526467Z-0001`): 204/00 to 204/03
   built and reviewed. All 23 registered golden scenarios match.
 - 2026-11-22 — `aof:verify 204`: FF-20401 and FF-20402 red-probed, all four stories accepted,
-  F-01 to F-06 deferred. Committed at `e44face1`. The regression gate runs on the committed tree.
+  F-01 to F-06 deferred. Committed at `e44face1`. The regression gate ran at `c92ac877` in a clean
+  worktree: red on 60 cases, every one red at 203's gate before 204 existed. Accepted on a recorded
+  gate override (VERIFICATION, Accept decision).
 
 ## Closure record
 

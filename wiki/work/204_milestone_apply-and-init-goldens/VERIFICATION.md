@@ -68,5 +68,26 @@ cause (recalls `e1a81326`, `8ef199d9`, `88f446d0`, `5a4c23e6`, `68898319` and `c
   blocker. F-01 is a deferred non-blocker.
 - **204/03 · accepted.** Every scenario green; init adds `/work/` to `.aof/.gitignore` through the
   additive owner, and `--global` writes only into the temp home. No open blocker.
-- **204 (milestone) · held for the regression gate.** `aof work regression-gate 204` runs on the
-  committed tree.
+- **204 (milestone) · accepted on a recorded gate override.** `aof work regression-gate 204` ran at
+  `c92ac877` in a clean detached worktree of this branch, because the main checkout holds an untracked
+  backlog draft that is not 204's and that the gate refuses as dirty. 15,301 of 15,309 cases ran in
+  39.9 min, and 60 were red (REGRESSION.md; logs `.tmp/test-sharded/2026-11-22T22-40-43-166Z` in that
+  worktree). A first run was lost when its session ended, and wrote no row. Each red was sorted by
+  cause:
+  - **None is 204's.** All 60 are red cases in 203's gate row at `a984ebb0`, by name. That is the
+    same 60 that 203's verify sorted, after 203's own three were fixed.
+  - **Where a red reaches a file 204 touched, the failure text names another cause.**
+    workspace-boundaries and yarn-installation name `packages/work-loop` (`loop.mjs`'s unaudited
+    `git` child process from `4cac6cd8`, and the work loop's kernel imports), not 204's re-stamped
+    `config-inspect.mjs` rows. The silent-catch baseline names `packages/foundation/src/fs.mjs`.
+    FF-16004 is `aof work find` at 761 modules against 759, as at 203. FF-11904 names `test/loop`
+    and `packages/foundation/src` only. `codex-ownership`'s two "156" cases fail on
+    `fatal: … is a main working tree`. The `distribution-workspaces` cases fail on the macOS
+    `/private/var` temp path.
+  - **Eight cases did not run.** The SEA recipe guards ran 10 of 18, cut short by FF-16004, as at 203.
+  - Six units were red in the pool and green alone (the daemon soak, server announcements, an HTTP
+    server's close, and a dispatch race), and are not counted.
+
+  A rerun would be red on the same 60. So the accept goes through `--gate-override`, and its reason
+  is recorded as its own REGRESSION.md row. These reds are the stream's, not 204's. They held 201
+  and 203 at the same door, and they belong in a chore of their own.
