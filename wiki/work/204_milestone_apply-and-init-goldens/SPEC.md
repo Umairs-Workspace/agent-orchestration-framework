@@ -3,7 +3,7 @@ type: milestone
 number: 204
 slug: apply-and-init-goldens
 title: "What aof apply, init and clean write is held to baselines, including their merges into files the user owns"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-11-20
 updated: 2026-11-22
