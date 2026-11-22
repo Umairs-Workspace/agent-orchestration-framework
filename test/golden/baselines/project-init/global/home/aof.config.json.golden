@@ -1,0 +1,40 @@
+{
+  "$schema": "https://aof.local/schemas/aof.schema.json",
+  "name": "aof-global",
+  "resources": [
+    {
+      "kind": "skill",
+      "id": "g-skill",
+      "path": "assets/skills/g-skill/SKILL.md",
+      "runtimes": [
+        "claude",
+        "codex",
+        "opencode"
+      ],
+      "description": "Global skill"
+    },
+    {
+      "kind": "agent",
+      "id": "g-agent",
+      "path": "assets/agents/g-agent/AGENT.md",
+      "runtimes": [
+        "claude",
+        "codex",
+        "opencode"
+      ],
+      "description": "Global agent"
+    },
+    {
+      "kind": "rule",
+      "id": "g-rule",
+      "path": "assets/rules/g-rule/RULE.md",
+      "runtimes": [
+        "claude",
+        "codex",
+        "opencode"
+      ],
+      "description": "Global rule"
+    }
+  ],
+  "packages": []
+}

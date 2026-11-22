@@ -5,7 +5,7 @@ slug: apply-merges-keep-the-user-s-entries
 title: "Apply's merges keep the user's entries — at every merge point, CLAUDE.md, .mcp.json and opencode's AGENTS.md merged rather than replaced, twice to the same tree, and a collision refused before any write"
 parent: 204
 depends: [00]
-status: not-started
+status: done
 owner: product-owner
 created: 2026-11-21
 updated: 2026-11-22
@@ -61,10 +61,10 @@ resembles.
 
 ## Tasks
 
-- [ ] `tasks/00_the-user-s-entries-survive-every-merge.feature` (R1): over the user's settings, Codex config and hooks, root and nested `AGENTS.md` and ignore files, only aof's entries move.
-- [ ] `tasks/01_claude-md-mcp-json-and-opencode-agents-md-are-merged.feature` (R2): the three files apply replaced whole become merges, and FF-20401 holds the rule.
-- [ ] `tasks/02_applying-twice-over-the-user-s-files-changes-nothing.feature` (R3): a second apply over the merged tree skips every file aof owns.
-- [ ] `tasks/03_two-writers-claiming-one-file-refuse-before-any-write.feature` (R4): a user's MCP server named as aof's refuses, and the held `AGENTS.md` conflict refuses, both writing nothing.
+- [x] `tasks/00_the-user-s-entries-survive-every-merge.feature` (R1): over the user's settings, Codex config and hooks, root and nested `AGENTS.md` and ignore files, only aof's entries move.
+- [x] `tasks/01_claude-md-mcp-json-and-opencode-agents-md-are-merged.feature` (R2): the three files apply replaced whole become merges, and FF-20401 holds the rule.
+- [x] `tasks/02_applying-twice-over-the-user-s-files-changes-nothing.feature` (R3): a second apply over the merged tree skips every file aof owns.
+- [x] `tasks/03_two-writers-claiming-one-file-refuse-before-any-write.feature` (R4): a user's MCP server named as aof's refuses, and the held `AGENTS.md` conflict refuses, both writing nothing.
 
 ## Notes
 

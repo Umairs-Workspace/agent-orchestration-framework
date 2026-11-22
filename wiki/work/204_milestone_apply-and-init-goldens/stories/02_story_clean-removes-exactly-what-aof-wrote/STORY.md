@@ -5,7 +5,7 @@ slug: clean-removes-exactly-what-aof-wrote
 title: "Clean removes exactly what aof wrote — every file it wholly owns, every merged file handed back holding only the user's content, a file the user edited kept, and a second clean changing nothing"
 parent: 204
 depends: [00, 01]
-status: not-started
+status: done
 owner: product-owner
 created: 2026-11-21
 updated: 2026-11-22
@@ -61,9 +61,9 @@ one new capability, a step that runs a fixture script to model a user's edit (AD
 
 ## Tasks
 
-- [ ] `tasks/00_clean-removes-every-file-aof-wholly-owns.feature` (R1): after a plain apply, clean leaves no generated file and no lock entry, a second clean does nothing, and the Claude settings and journal are held as they are.
-- [ ] `tasks/01_clean-hands-every-merged-file-back.feature` (R2): over the user's own files, each merged file comes back holding only the user's content, and FF-20402 holds the rule.
-- [ ] `tasks/02_a-file-the-user-edited-survives-clean.feature` (R3): an edited aof file is kept and warned about, a user's line beside aof's block is kept, and a step can model that edit.
+- [x] `tasks/00_clean-removes-every-file-aof-wholly-owns.feature` (R1): after a plain apply, clean leaves no generated file and no lock entry, a second clean does nothing, and the Claude settings and journal are held as they are.
+- [x] `tasks/01_clean-hands-every-merged-file-back.feature` (R2): over the user's own files, each merged file comes back holding only the user's content, and FF-20402 holds the rule.
+- [x] `tasks/02_a-file-the-user-edited-survives-clean.feature` (R3): an edited aof file is kept and warned about, a user's line beside aof's block is kept, and a step can model that edit.
 
 ## Notes
 

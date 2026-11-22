@@ -123,14 +123,15 @@ function driftCheck(report) {
   return report.checks.find((item) => item.id === "generated-output-drift");
 }
 
-// The drift-warning actions the doctor's check is computed from — re-run the SAME
+// The drift actions the doctor's check is computed from (a drift-warning, or the refusal an edited
+// co-authored entry plans as, 204/01) — re-run the SAME
 // real machinery (createRenderPlan + planApplyActions against the on-disk lock) the
 // check uses, to assert WHICH file drifted (the doctor summary only carries counts).
 async function driftActionsFor(targetDir, paths) {
   const config = await resolveFacesConfig();
   const desired = await createRenderPlan(config, { targetDir, runtimes: FACE_RUNTIMES });
   const actions = await planApplyActions(desired, await readLock(paths.lockPath), { targetDir });
-  return actions.filter((item) => item.action === "drift-warning");
+  return actions.filter((item) => item.action === "drift-warning" || item.action === "conflict");
 }
 
 export const graphRenderedFacesTests = [

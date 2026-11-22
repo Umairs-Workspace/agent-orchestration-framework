@@ -1,12 +1,11 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import path from "node:path";
+import { ensureWorkspaceGitignore } from "../../aof-gitignore.mjs";
 
 export function assembleWorkspaceWriter({ fsServices, configEditorServices, workspaceServices }) {
   const { writeText } = fsServices;
   const { assetBodyPath } = configEditorServices;
   const { workspacePaths } = workspaceServices;
-
-  const WORKSPACE_GITIGNORE = "/work/\n";
 
   async function writeWorkspaceConfig(targetDir, config) {
     const paths = workspacePaths(targetDir);
@@ -25,7 +24,8 @@ export function assembleWorkspaceWriter({ fsServices, configEditorServices, work
       resources.push(metadata);
     }
 
-    await writeText(path.join(paths.workspaceDir, ".gitignore"), WORKSPACE_GITIGNORE);
+    // 204/ADR-005: added to `.aof/.gitignore`, never written whole, so no line init did not write is lost.
+    await ensureWorkspaceGitignore(targetDir);
     await writeText(paths.configPath, `${JSON.stringify({
       $schema: config.$schema ?? "https://aof.local/schemas/aof.schema.json",
       name: config.name ?? "assistant-project",

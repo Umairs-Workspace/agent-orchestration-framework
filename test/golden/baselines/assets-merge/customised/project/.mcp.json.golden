@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "mine": {
+      "command": "my-mcp"
+    },
+    "docs": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "docs-mcp"
+      ]
+    },
+    "remote": {
+      "type": "http",
+      "url": "https://mcp.example.com/mcp"
+    }
+  }
+}

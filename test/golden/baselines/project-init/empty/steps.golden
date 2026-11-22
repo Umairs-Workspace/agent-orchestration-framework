@@ -1,0 +1,21 @@
+[
+  {
+    "argv": [
+      "init",
+      "--runtime",
+      "claude,codex,opencode",
+      "--json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "dryRun": false,
+      "configPath": "<project>/.aof/aof.config.json",
+      "lockPath": "<project>/.aof/aof.lock.json",
+      "runtimes": [
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    }
+  }
+]

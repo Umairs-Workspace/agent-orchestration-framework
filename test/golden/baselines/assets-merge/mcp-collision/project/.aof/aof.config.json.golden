@@ -1,0 +1,126 @@
+{
+  "name": "every-kind",
+  "runtimes": [
+    "claude",
+    "codex",
+    "opencode"
+  ],
+  "resources": [
+    {
+      "kind": "agent",
+      "id": "my-agent",
+      "description": "Reviews changes before they merge",
+      "path": "assets/agents/my-agent/AGENT.md",
+      "runtimes": [
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "kind": "skill",
+      "id": "my-skill",
+      "description": "Runs the tests and summarises failures",
+      "path": "assets/skills/my-skill/SKILL.md",
+      "runtimes": [
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "kind": "rule",
+      "id": "my-rule",
+      "description": "Keeps modules small",
+      "path": "assets/rules/my-rule/RULE.md",
+      "runtimes": [
+        "claude",
+        "codex",
+        "opencode"
+      ],
+      "paths": [
+        "src"
+      ]
+    },
+    {
+      "kind": "command",
+      "id": "my-command",
+      "description": "Lists the open pull requests",
+      "path": "assets/commands/my-command/COMMAND.md",
+      "runtimes": [
+        "claude",
+        "opencode"
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "id": "release",
+      "path": "assets/workflows/release/WORKFLOW.md",
+      "runtimes": [
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    }
+  ],
+  "mcpServers": [
+    {
+      "id": "docs",
+      "transport": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "docs-mcp"
+      ],
+      "runtimes": [
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    },
+    {
+      "id": "remote",
+      "transport": "http",
+      "url": "https://mcp.example.com/mcp",
+      "runtimes": [
+        "claude",
+        "codex"
+      ]
+    }
+  ],
+  "hooks": [
+    {
+      "id": "lint-on-stop",
+      "event": "Stop",
+      "command": "npm run lint",
+      "runtimes": [
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    }
+  ],
+  "projectDocs": [
+    {
+      "id": "guide",
+      "path": "docs/guide.md",
+      "targets": [
+        "AGENTS.md",
+        "CLAUDE.md"
+      ],
+      "runtimes": [
+        "claude",
+        "codex"
+      ]
+    }
+  ],
+  "settings": {
+    "codex": {
+      "model": "o3"
+    },
+    "claude": {
+      "model": "sonnet"
+    }
+  }
+}

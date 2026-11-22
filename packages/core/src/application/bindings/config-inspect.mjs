@@ -433,7 +433,9 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
         targetDir: projectDir,
         force: Boolean(options.force)
       });
-      const driftCount = actions.filter((item) => item.action === "drift-warning").length;
+      // 204/01: an edit inside aof's recorded entries of a co-authored file (ADR-002) plans as a
+      // refusal rather than a drift-warning, and is drift all the same.
+      const driftCount = actions.filter((item) => item.action === "drift-warning" || item.action === "conflict").length;
       checks.push({
         id: "generated-output-drift",
         severity: driftCount > 0 ? "warning" : "ok",

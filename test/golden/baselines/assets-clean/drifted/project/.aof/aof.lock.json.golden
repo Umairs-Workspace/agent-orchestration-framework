@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "generatedAt": "<timestamp>",
+  "runtimes": [
+    "claude",
+    "codex",
+    "opencode"
+  ],
+  "files": [
+    {
+      "path": ".claude/agents/my-agent.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "my-agent",
+        "kind": "agent",
+        "scope": "local"
+      },
+      "hash": "sha256:<hash>",
+      "generatedAt": "<timestamp>"
+    }
+  ],
+  "packages": [],
+  "frameworks": [],
+  "frameworkInstallAttempts": []
+}

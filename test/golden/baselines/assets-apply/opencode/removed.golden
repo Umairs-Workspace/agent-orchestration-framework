@@ -1,0 +1,15 @@
+project/.agents/skills/my-skill/SKILL.md
+project/.claude/.gitignore
+project/.claude/agents/my-agent.md
+project/.claude/aof/workflows/release.md
+project/.claude/commands/my-command.md
+project/.claude/rules/my-rule.md
+project/.claude/skills/my-skill/SKILL.md
+project/.codex/.gitignore
+project/.codex/agents/my-agent.toml
+project/.codex/aof/workflows/release.md
+project/.codex/hooks.json
+project/.mcp.json
+project/AGENTS.md
+project/CLAUDE.md
+project/src/AGENTS.md

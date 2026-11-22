@@ -590,4 +590,39 @@ const task03 = [
   })),
 ];
 
-export const goldenHarnessTests = [...task00, ...task01, ...task02, ...task03];
+// ── 204/02 task02 · a step may run a fixture script (204/ADR-001 §5) ─────────────────────────
+
+const USER_EDIT = "test/golden/fixtures/user-edit.mjs";
+
+const stepScript = [
+  {
+    name: "204/02 task02 — a step carrying a command runs that fixture script in the lane command's place, and its record names the script",
+    run: withDir(async () => {
+      const lane = { id: "edits", command: [FIXTURE_VERB], scenarios: [{ id: "s", files: { "notes.md": "one\n" }, steps: [{ command: USER_EDIT, argv: ["notes.md", "--append", "two\n"], exit: 0 }] }] };
+      const { tree, steps } = runScenario(lane, lane.scenarios[0]);
+      assert.equal(tree.get("project/notes.md").toString("utf8"), "one\ntwo\n");
+      assert.deepEqual(steps, [{ command: USER_EDIT, argv: ["notes.md", "--append", "two\n"], exit: 0, envelope: null }]);
+    }),
+  },
+  ...[
+    [["notes.md", "--append", "two\n"], 0, "one\ntwo\n"],
+    [["notes.md", "--prepend", "zero\n"], 0, "zero\none\n"],
+    [["absent.md", "--append", "x\n"], 1, null],
+  ].map(([argv, exit, after]) => ({
+    name: `204/02 task02 — user-edit.mjs ${argv.join(" ").replaceAll("\n", "\\n")} exits ${exit}${after === null ? ", names the missing file and creates nothing" : ""}`,
+    run: withDir(async (dir) => {
+      writeFileSync(path.join(dir, "notes.md"), "one\n");
+      const result = spawnCliSync(process.execPath, [path.join(repoRoot, USER_EDIT), ...argv], { cwd: dir, encoding: "utf8" });
+      assert.equal(result.status, exit, result.stderr);
+      if (after === null) {
+        assert.match(result.stderr, /absent\.md/u);
+        assert.ok(!existsSync(path.join(dir, "absent.md")), "no file is created");
+        assert.equal(readFileSync(path.join(dir, "notes.md"), "utf8"), "one\n");
+      } else {
+        assert.equal(readFileSync(path.join(dir, "notes.md"), "utf8"), after);
+      }
+    }),
+  })),
+];
+
+export const goldenHarnessTests = [...task00, ...task01, ...task02, ...task03, ...stepScript];

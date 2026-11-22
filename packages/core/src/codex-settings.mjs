@@ -20,9 +20,13 @@ export function codexOwnershipBaseline(lock) {
   return lock ? { ...lock, files: (lock.files ?? []).filter(entry => entry.runtime === "codex") } : null;
 }
 
-export function codexSharedOutput(output) {
+// 204/ADR-002 §1: a co-authored file is decided by its path alone, whatever runtime renders it.
+// The user may write each of these, so aof merges its own entries in and records what it owns.
+const CO_AUTHORED_PATHS = new Set(["CLAUDE.md", ".mcp.json", ".codex/config.toml", ".codex/hooks.json"]);
+
+export function coAuthoredOutput(output) {
   const name = portable(output.path);
-  return output.runtime === "codex" && (name.endsWith("/config.toml") || name.endsWith("/hooks.json") || path.basename(name) === "AGENTS.md");
+  return path.posix.basename(name) === "AGENTS.md" || CO_AUTHORED_PATHS.has(name);
 }
 
 // A lane inherits only recorded AOF fragments, never the operator's neighbours.
@@ -76,7 +80,7 @@ export async function prepareCodexWorktree(projectRoot, worktree) {
     let existing;
     try { existing = await readFile(output.absolutePath, "utf8"); } catch (error) { if (error.code !== "ENOENT") throw error; }
     const recorded = existing === undefined ? null : prior.get(portable(entry.path));
-    if (codexSharedOutput(output)) output = await mergeCodexOutput(output, recorded);
+    if (coAuthoredOutput(output)) output = await mergeCoAuthoredOutput(output, recorded);
     // A clean destination can be an older installed version (for example a lane
     // cut from HEAD after work update in the primary). Its own lock establishes
     // ownership; equality with the newer source is not an ownership condition.
@@ -102,10 +106,12 @@ export async function prepareCodexWorktree(projectRoot, worktree) {
   await writeLock(path.join(worktree, ".aof/aof.lock.json"), { ...(destinationLock ?? {}), version: sourceLock.version, ...(destinationLock?.files != null || files.length > 0 ? { files } : {}), ...(work === undefined ? {} : { work }) });
 }
 
-function refusal(output, message, code = "codex-output-conflict") {
+// 204/ADR-002 §4: Codex's refusals keep their code; every other co-authored file's is its own.
+function refusal(output, message, code = output.runtime === undefined || output.runtime === "codex" ? "codex-output-conflict" : "co-authored-output-conflict") {
   const error = new Error(`${code}: ${output.path}: ${message}`);
   error.code = code;
   error.path = output.path;
+  error.reason = message; // the bare reason: a conflict action is printed as `code: path: reason`
   return error;
 }
 
@@ -135,7 +141,8 @@ export async function checkCodexTarget(output, { targetDir = process.cwd(), glob
   try { await realpath(root); } catch (error) { if (error.code !== "ENOENT") throw error; }
 }
 
-export async function mergeCodexOutput(output, prior) {
+// 204/ADR-002 §2: each co-authored path merges by its kind.
+export async function mergeCoAuthoredOutput(output, prior) {
   let current;
   try { current = await readFile(output.absolutePath, "utf8"); }
   catch (error) { if (error.code !== "ENOENT") throw error; current = ""; }
@@ -143,6 +150,7 @@ export async function mergeCodexOutput(output, prior) {
   const name = portable(output.path);
   if (name.endsWith("/config.toml")) merged = mergeToml(output, current, prior);
   else if (name.endsWith("/hooks.json")) merged = mergeHooks(output, current, prior);
+  else if (name === ".mcp.json") merged = mergeMcpServers(output, current, prior);
   else merged = mergeGuidance(output, current, prior);
   return { ...output, ...merged, hash: hashContent(merged.content) };
 }
@@ -168,6 +176,68 @@ function mergeGuidance(output, current, prior) {
   }
   if (prefix && !prefix.endsWith("\n")) prefix += "\n";
   return { content: prefix + block + suffix, ownership: block ? { kind: "guidance", hash: hashContent(block) } : null };
+}
+
+// The empty render of a co-authored path: what retracting every owned entry merges in.
+function emptyCoAuthoredContent(filePath) {
+  const name = portable(filePath);
+  return name.endsWith("/hooks.json") ? '{"hooks":{}}' : name === ".mcp.json" ? '{"mcpServers":{}}' : "";
+}
+
+// 204/ADR-004 §1: the one retraction — aof's recorded fragment merged out of a co-authored file,
+// the rest kept. Apply calls it when an output leaves the plan; clean calls it for every lock entry
+// that carries ownership. An edited fragment refuses, as any merge over it does.
+export async function retractCoAuthoredOutput(prior, absolutePath) {
+  const empty = { path: prior.path, absolutePath, runtime: prior.runtime, resource: prior.resource ?? null, content: emptyCoAuthoredContent(prior.path) };
+  return mergeCoAuthoredOutput(empty, prior);
+}
+
+// 204/ADR-004 §2: nothing of the user's is left when, with empty containers dropped, a retracted
+// file holds no text (guidance, TOML) or no value (hooks, `.mcp.json`).
+export function nothingLeft(filePath, content) {
+  const name = portable(filePath);
+  if (!name.endsWith("/hooks.json") && name !== ".mcp.json") return content.trim() === "";
+  const empty = value => value === null || (typeof value === "object" && Object.values(value).every(empty));
+  return empty(JSON.parse(content || "{}"));
+}
+
+function parseMcp(output, text) {
+  let value;
+  try { value = text ? JSON.parse(text) : {}; }
+  catch { throw refusal(output, "invalid existing MCP JSON"); }
+  const plain = item => Boolean(item) && typeof item === "object" && !Array.isArray(item);
+  if (!plain(value) || (value.mcpServers !== undefined && !plain(value.mcpServers))) throw refusal(output, "mcpServers must be a JSON object");
+  return value;
+}
+
+// 204/ADR-002 §2: aof's servers are entries under `mcpServers`, recorded by id with the hash of
+// each entry's JSON. The user's servers and every other key stay where they are, aof's follow
+// them, and the file is reserialised only when its value changed. A legacy whole-file entry with
+// no ownership is adopted as aof's when the file still matches its hash (§5).
+function mergeMcpServers(output, current, prior) {
+  const found = parseMcp(output, current);
+  const wanted = parseMcp(output, output.content).mcpServers ?? {};
+  const entryHash = server => hashContent(JSON.stringify(server));
+  let recorded = prior?.ownership?.servers ?? {};
+  if (prior && !prior.ownership) {
+    if (hashContent(current) !== prior.hash) throw refusal(output, "legacy AOF MCP configuration was modified");
+    recorded = Object.fromEntries(Object.entries(found.mcpServers ?? {}).map(([id, server]) => [id, entryHash(server)]));
+  }
+  const servers = {};
+  for (const [id, server] of Object.entries(found.mcpServers ?? {})) {
+    if (!Object.hasOwn(recorded, id)) {
+      if (Object.hasOwn(wanted, id)) throw refusal(output, `unowned MCP server ${id} collides with the requested target`);
+      servers[id] = server;
+    } else if (entryHash(server) !== recorded[id]) throw refusal(output, `AOF MCP server ${id} was edited`);
+    else if (Object.hasOwn(wanted, id)) servers[id] = wanted[id];
+  }
+  for (const id of Object.keys(recorded)) if (!Object.hasOwn(found.mcpServers ?? {}, id)) throw refusal(output, `AOF MCP server ${id} was removed`);
+  for (const [id, server] of Object.entries(wanted)) servers[id] ??= server;
+  const next = found.mcpServers === undefined && Object.keys(servers).length === 0 ? found : { ...found, mcpServers: servers };
+  return {
+    content: same(found, next) ? current : `${JSON.stringify(next, null, 2)}\n`,
+    ownership: { kind: "mcp-servers", servers: Object.fromEntries(Object.entries(wanted).map(([id, server]) => [id, entryHash(server)])) },
+  };
 }
 
 function parseHooks(output, text) {
@@ -200,6 +270,7 @@ function mergeHooks(output, current, prior) {
     const desired = wanted.hooks?.[event] ?? [];
     if (desired.some(group => existing.some(other => same(group, other)))) throw refusal(output, `unowned ${event} hook collides with a requested hook`);
     next.hooks[event] = [...existing, ...desired];
+    if (!next.hooks[event].length) delete next.hooks[event]; // a retraction leaves no empty event behind
     if (desired.length) groups[event] = desired.map(group => hashContent(JSON.stringify(group)));
   }
   return { content: same(found, next) ? current : `${JSON.stringify(next, null, 2)}\n`, ownership: { kind: "hooks", groups },
@@ -428,20 +499,37 @@ function mergeToml(output, current, prior) {
     const table = JSON.parse(tableKey);
     const header = found.tables.get(tableKey);
     if (table.length === 0 || header) {
+      // 204/ADR-003 §1: a top-level addition goes before the first table header, or at the start
+      // of a file that has none, so it can never land inside a table appended at the end.
       const after = header ? header.end : 0;
       const nextTable = found.statements.find(statement => statement.table && statement.start >= after);
-      const position = nextTable?.start ?? current.length;
+      const position = nextTable?.start ?? (header ? current.length : 0);
       edits.push({ start: position, end: position, text: (position > 0 && current[position - 1] !== "\n" ? "\n" : "") + lines.join("") });
     } else {
       edits.push({ start: current.length, end: current.length, text: `${current && !current.endsWith("\n") ? "\n" : ""}\n[${table.map(part => /^[A-Za-z0-9_-]+$/u.test(part) ? part : JSON.stringify(part)).join(".")}]\n${lines.join("")}` });
       ownedTables[tableKey] = null;
     }
   }
+  // 204/ADR-003 §2: edits are applied last-offset first; at one offset the later edit is applied
+  // first, so the earlier one lands before it and the result keeps the render's order.
+  const ordered = edits.map((edit, index) => ({ ...edit, index }));
   let content = current;
-  for (const edit of edits.sort((a, b) => b.start - a.start || b.end - a.end)) content = content.slice(0, edit.start) + edit.text + content.slice(edit.end);
-  const merged = tomlIndex(output, content); // refuse a conflicting parent table before mutation
+  for (const edit of ordered.sort((a, b) => b.start - a.start || b.end - a.end || b.index - a.index)) content = content.slice(0, edit.start) + edit.text + content.slice(edit.end);
+  const merged = indexMergedToml(output, content, owned); // refuse a conflicting parent table or a misplaced entry before mutation
   for (const key of Object.keys(ownedTables)) ownedTables[key] = hashContent(merged.tables.get(key).raw);
   return { content, ownership: { kind: "toml", entries: owned, tables: ownedTables } };
+}
+
+// 204/ADR-003 §3: the merged text, re-indexed, must hold every owned entry under the table its key
+// names, exactly as recorded. An entry that parses under another table is read by Codex as that
+// table's field, and the next apply would see aof's own entry as removed. Refuses before any write.
+export function indexMergedToml(output, content, owned) {
+  const merged = tomlIndex(output, content);
+  for (const [key, hash] of Object.entries(owned)) {
+    const entry = merged.entries.get(key);
+    if (!entry || hashContent(entry.raw) !== hash) throw refusal(output, `the merge would not place ${JSON.parse(key).join(".")} under the table its key names`);
+  }
+  return merged;
 }
 
 export function codexJournalPath(targetDir) {

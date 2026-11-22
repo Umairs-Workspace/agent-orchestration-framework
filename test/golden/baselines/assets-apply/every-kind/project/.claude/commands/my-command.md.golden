@@ -1,0 +1,10 @@
+---
+aof-generated: true
+description: Lists the open pull requests
+aof-invocation: /my-command
+aof-runtime: claude
+---
+
+# my-command
+
+List the open pull requests.

@@ -1,0 +1,12 @@
+---
+aof-generated: true
+name: my-skill
+description: Runs the tests and summarises failures
+aof-runtime: claude
+---
+
+# my-skill
+
+## Workflow
+
+Run the tests, then summarise what failed.

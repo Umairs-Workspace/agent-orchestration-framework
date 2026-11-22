@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "generatedAt": "<timestamp>",
+  "catalog": null,
+  "runtimes": [
+    "claude",
+    "codex",
+    "opencode"
+  ],
+  "items": []
+}

@@ -55,10 +55,10 @@ Out of scope:
 
 ## Stories
 
-- [ ] `00_story_every-asset-kind-applies-to-its-baseline` — `aof assets apply` over a fixture `.aof/` holding every asset kind is held to a baseline on three runtimes and on each alone, applying twice changes nothing, and the Codex TOML merge writes a setting where Codex reads it
-- [ ] `01_story_apply-merges-keep-the-user-s-entries` — over a project holding the user's own files at every merge point, `apply` moves only aof's entries, `CLAUDE.md`, `.mcp.json` and opencode's `AGENTS.md` become merges rather than replacements, a second apply changes nothing, and two writers claiming one file or entry refuse before any write
-- [ ] `02_story_clean-removes-exactly-what-aof-wrote` — `aof assets clean` removes the files aof wholly owns, hands every merged file back holding only the user's content, keeps a file the user edited, and a second clean changes nothing
-- [ ] `03_story_init-keeps-the-ignore-lines-it-did-not-write` — `aof init` is held to a baseline on an empty folder, over a user's `.gitignore` files, after `aof work init`, and on a second run, it adds its `.aof/.gitignore` line instead of replacing the file, and `--global` writes only into the temp home
+- [x] `00_story_every-asset-kind-applies-to-its-baseline` — `aof assets apply` over a fixture `.aof/` holding every asset kind is held to a baseline on three runtimes and on each alone, applying twice changes nothing, and the Codex TOML merge writes a setting where Codex reads it
+- [x] `01_story_apply-merges-keep-the-user-s-entries` — over a project holding the user's own files at every merge point, `apply` moves only aof's entries, `CLAUDE.md`, `.mcp.json` and opencode's `AGENTS.md` become merges rather than replacements, a second apply changes nothing, and two writers claiming one file or entry refuse before any write
+- [x] `02_story_clean-removes-exactly-what-aof-wrote` — `aof assets clean` removes the files aof wholly owns, hands every merged file back holding only the user's content, keeps a file the user edited, and a second clean changes nothing
+- [x] `03_story_init-keeps-the-ignore-lines-it-did-not-write` — `aof init` is held to a baseline on an empty folder, over a user's `.gitignore` files, after `aof work init`, and on a second run, it adds its `.aof/.gitignore` line instead of replacing the file, and `--global` writes only into the temp home
 
 Refine recall (refine-po, id `57ee8760-c07a-4f92-86f9-cb20db8d3e62`): five records; two shaped the
 break-down (ARCHITECTURE "Memory recall").

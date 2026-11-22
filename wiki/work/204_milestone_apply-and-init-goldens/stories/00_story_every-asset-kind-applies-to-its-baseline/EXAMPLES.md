@@ -25,7 +25,7 @@ STATE, 2026-11-21).
 
 ## R3 · The lock and the journal record exactly what apply wrote
 - E8 · The lock holds one entry per output except `.claude/settings.json`, which is merged outside the lock; the Codex config's entry records `toml` ownership [proposed]
-- E9 · The apply journal holds an entry for every Codex output [proposed]
+- E9 · The apply journal holds an entry for every Codex output, and (amended by 204/01, ADR-002 §3) for `CLAUDE.md` and `.mcp.json` [proposed]
 
 ## R4 · Applying twice changes nothing
 - E10 · `re-apply`: the second step reports every action `skip`, and the tree equals `every-kind`'s [proposed]

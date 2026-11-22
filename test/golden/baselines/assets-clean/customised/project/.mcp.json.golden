@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "mine": {
+      "command": "my-mcp"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+---
+aof-generated: true
+description: Keeps modules small
+paths: src
+aof-runtime: opencode
+---
+
+# my-rule
+
+- Keep each module under 300 lines.

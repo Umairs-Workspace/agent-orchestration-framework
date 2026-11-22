@@ -68,6 +68,7 @@ Feature: Every asset kind renders to its baseline
       And every entry names its path, runtime, resource and hash
       And the entry for ".codex/config.toml" records "toml" ownership
 
-    Scenario: E9 · the apply journal holds every Codex output's intent
+    # Amended 2026-11-22 by 204/01: ADR-002 §3 journals every co-authored output, whatever its runtime.
+    Scenario: E9 · the apply journal holds the intent of every Codex output and every co-authored output
       When scenario "every-kind" runs
-      Then ".aof/aof.apply-journal.json" holds one entry for each output whose runtime is "codex"
+      Then ".aof/aof.apply-journal.json" holds one entry for each output whose runtime is "codex", and one for "CLAUDE.md" and ".mcp.json"

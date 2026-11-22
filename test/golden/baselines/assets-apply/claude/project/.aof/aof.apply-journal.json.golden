@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "path": ".mcp.json",
+      "runtime": "claude",
+      "resource": {
+        "id": "mcpServers",
+        "kind": "mcp"
+      },
+      "hash": "sha256:<hash>",
+      "ownership": {
+        "kind": "mcp-servers",
+        "servers": {
+          "docs": "sha256:<hash>",
+          "remote": "sha256:<hash>"
+        }
+      }
+    },
+    {
+      "path": ".codex/config.toml",
+      "runtime": "codex",
+      "resource": {
+        "id": "codex-config",
+        "kind": "settings"
+      },
+      "hash": "sha256:<hash>",
+      "ownership": {
+        "kind": "toml",
+        "entries": {
+          "[\"model\"]": "sha256:<hash>"
+        },
+        "tables": {}
+      }
+    },
+    {
+      "path": "CLAUDE.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "CLAUDE.md",
+        "kind": "project-doc"
+      },
+      "hash": "sha256:<hash>",
+      "ownership": {
+        "kind": "guidance",
+        "hash": "sha256:<hash>"
+      }
+    }
+  ]
+}

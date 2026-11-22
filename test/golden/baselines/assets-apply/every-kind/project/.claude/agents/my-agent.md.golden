@@ -1,0 +1,9 @@
+---
+aof-generated: true
+name: my-agent
+description: Reviews changes before they merge
+aof-runtime: claude
+---
+# my-agent
+
+Review each change for correctness before it merges.

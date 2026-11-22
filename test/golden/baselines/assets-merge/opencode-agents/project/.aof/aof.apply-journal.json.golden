@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "path": ".codex/config.toml",
+      "runtime": "codex",
+      "resource": {
+        "id": "codex-config",
+        "kind": "settings"
+      },
+      "hash": "sha256:<hash>",
+      "ownership": {
+        "kind": "toml",
+        "entries": {
+          "[\"model\"]": "sha256:<hash>"
+        },
+        "tables": {}
+      }
+    },
+    {
+      "path": "AGENTS.md",
+      "runtime": "opencode",
+      "resource": {
+        "id": "AGENTS.md",
+        "kind": "project-doc"
+      },
+      "hash": "sha256:<hash>",
+      "ownership": {
+        "kind": "guidance",
+        "hash": "sha256:<hash>"
+      }
+    }
+  ]
+}

@@ -18,7 +18,8 @@ import { writeText } from "@aof/foundation/fs";
 import { existsSync } from "node:fs";
 import { createRenderPlan, planApplyActions, executeApplyActions, createLockManifest, formatFriendlyApplyAction } from "../src/render-plan.mjs";
 import { hashContent, readLock, writeLock } from "../src/lock.mjs";
-import { prepareCodexWorktree, codexJournalPath, recordCodexApply } from "../src/codex-settings.mjs";
+import { prepareCodexWorktree, codexJournalPath, recordCodexApply, indexMergedToml } from "../src/codex-settings.mjs";
+import { readToml } from "../../../test/golden/assets-apply.test.mjs";
 import { assets } from "./support/assets-services.mjs";
 import { updateWork } from "../src/work/update.mjs";
 import { applyConfig } from "../src/adapters.mjs";
@@ -179,6 +180,47 @@ export const codexOwnershipTests = [
       assert.equal((await stat(codexJournalPath(root))).mtimeMs, journalTime);
       assert.equal(await read(root, ".aof/aof.lock.json"), lockBefore);
       assert.equal((await stat(path.join(root, ".aof/aof.lock.json"))).mtimeMs, lockTime);
+    }) },
+  // 204/00 task02 (204/ADR-003 §4): the TOML merge places a top-level setting before the first
+  // table. Read back with the golden suite's strict TOML reader, not aof's own index.
+  ...[
+    ["the file is absent", null],
+    ["the file holds a user's top-level key and server", 'approval_policy = "never"\n\n[mcp_servers.mine]\ncommand = "my-mcp"\n'],
+  ].map(([label, current]) => ({
+    name: `204/00 task02 — the TOML merge places a top-level setting before the first table when ${label}`,
+    run: () => fixture(async root => {
+      if (current !== null) await put(root, ".codex/config.toml", current);
+      const servers = [
+        { id: "docs", transport: "stdio", command: "npx", args: ["-y", "docs-mcp"], runtimes: ["codex"] },
+        { id: "remote", transport: "http", url: "https://mcp.example.com/mcp", runtimes: ["codex"] },
+      ];
+      const { lock } = await apply(root, { ...config(), resources: [], hooks: [], mcpServers: servers, settings: { codex: { model: "o3" } } });
+      const merged = await read(root, ".codex/config.toml");
+      const parsed = readToml(merged);
+      assert.equal(parsed.model, "o3", "model is a top-level setting");
+      const { entries, tables } = lock.files.find(entry => entry.path === ".codex/config.toml").ownership;
+      const at = keys => keys.reduce((node, part) => node?.[part], parsed);
+      for (const key of Object.keys(entries)) assert.notEqual(at(JSON.parse(key)), undefined, `${key} sits under the table its key names`);
+      assert.deepEqual(Object.keys(tables).sort(), ['["mcp_servers","docs"]', '["mcp_servers","remote"]']);
+      if (current === null) {
+        const leaves = (node, prefix = []) => Object.entries(node).flatMap(([key, value]) => value && typeof value === "object" && !Array.isArray(value) ? leaves(value, [...prefix, key]) : [JSON.stringify([...prefix, key])]);
+        assert.deepEqual(leaves(parsed).sort(), Object.keys(entries).sort(), "the merged text holds no line but aof's");
+      } else {
+        assert.ok(merged.includes('approval_policy = "never"\n'), "the user's top-level key is kept byte for byte");
+        assert.ok(merged.includes('[mcp_servers.mine]\ncommand = "my-mcp"\n'), "the user's server is kept byte for byte");
+        assert.deepEqual(parsed.mcp_servers.mine, { command: "my-mcp" });
+      }
+    }) })),
+  { name: "204/00 task02 — a merge that would put an owned top-level entry after a table header refuses with codex-output-conflict, and the target is unchanged",
+    run: () => fixture(async root => {
+      const current = '[mcp_servers.docs]\ncommand = "npx"\n';
+      await put(root, ".codex/config.toml", current);
+      const output = { path: ".codex/config.toml" };
+      const owned = { '["model"]': hashContent('model = "o3"\n') };
+      assert.throws(() => indexMergedToml(output, `${current}model = "o3"\n`, owned), error => error.code === "codex-output-conflict" && /model/.test(error.message));
+      assert.equal(await read(root, ".codex/config.toml"), current);
+      // The control: the same entry before the table is where its key says, and is accepted.
+      assert.equal(indexMergedToml(output, `model = "o3"\n\n${current}`, owned).entries.has('["model"]'), true);
     }) },
   ...[
     ["an unowned agent with the same name", ".codex/agents/reviewer.toml", "user agent\n"],

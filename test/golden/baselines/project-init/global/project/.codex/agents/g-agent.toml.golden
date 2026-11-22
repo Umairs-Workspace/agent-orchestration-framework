@@ -1,0 +1,4 @@
+# aof-generated: true; aof-runtime: codex
+description = "Global agent"
+developer_instructions = "Global agent body."
+name = "g-agent"

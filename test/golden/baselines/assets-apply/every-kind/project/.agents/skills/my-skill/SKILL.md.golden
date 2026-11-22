@@ -1,0 +1,12 @@
+---
+name: "my-skill"
+description: "Runs the tests and summarises failures"
+---
+
+<!-- aof-generated: true; aof-runtime: codex -->
+
+# my-skill
+
+## Workflow
+
+Run the tests, then summarise what failed.

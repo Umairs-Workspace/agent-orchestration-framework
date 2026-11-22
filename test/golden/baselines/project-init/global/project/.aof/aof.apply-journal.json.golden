@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "path": ".agents/skills/g-skill/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "g-skill",
+        "kind": "skill",
+        "scope": "global",
+        "global": {
+          "id": "g-skill",
+          "kind": "skill",
+          "configPath": "<home>/aof.config.json"
+        }
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": ".codex/agents/g-agent.toml",
+      "runtime": "codex",
+      "resource": {
+        "id": "g-agent",
+        "kind": "agent",
+        "scope": "global",
+        "global": {
+          "id": "g-agent",
+          "kind": "agent",
+          "configPath": "<home>/aof.config.json"
+        }
+      },
+      "hash": "sha256:<hash>"
+    },
+    {
+      "path": "AGENTS.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "g-rule",
+        "kind": "rule",
+        "scope": "global",
+        "global": {
+          "id": "g-rule",
+          "kind": "rule",
+          "configPath": "<home>/aof.config.json"
+        }
+      },
+      "hash": "sha256:<hash>",
+      "ownership": {
+        "kind": "guidance",
+        "hash": "sha256:<hash>"
+      }
+    },
+    {
+      "path": ".codex/.gitignore",
+      "runtime": "codex",
+      "resource": {
+        "id": "codex-runtime-gitignore",
+        "kind": "gitignore"
+      },
+      "hash": "sha256:<hash>"
+    }
+  ]
+}

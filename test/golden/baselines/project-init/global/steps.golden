@@ -1,0 +1,419 @@
+[
+  {
+    "argv": [
+      "init",
+      "--runtime",
+      "claude,codex,opencode",
+      "--json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "dryRun": false,
+      "configPath": "<project>/.aof/aof.config.json",
+      "lockPath": "<project>/.aof/aof.lock.json",
+      "runtimes": [
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    }
+  },
+  {
+    "argv": [
+      "assets",
+      "add",
+      "--global",
+      "skill",
+      "g-skill",
+      "--description",
+      "Global skill",
+      "--body",
+      "Global skill body.",
+      "--runtime",
+      "claude,codex,opencode",
+      "--json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "dryRun": false,
+      "assetPath": "<home>/assets/skills/g-skill/SKILL.md",
+      "configPath": "<home>/aof.config.json"
+    }
+  },
+  {
+    "argv": [
+      "assets",
+      "add",
+      "--global",
+      "agent",
+      "g-agent",
+      "--description",
+      "Global agent",
+      "--body",
+      "Global agent body.",
+      "--runtime",
+      "claude,codex,opencode",
+      "--json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "dryRun": false,
+      "assetPath": "<home>/assets/agents/g-agent/AGENT.md",
+      "configPath": "<home>/aof.config.json"
+    }
+  },
+  {
+    "argv": [
+      "assets",
+      "add",
+      "--global",
+      "rule",
+      "g-rule",
+      "--description",
+      "Global rule",
+      "--body",
+      "Global rule body.",
+      "--runtime",
+      "claude,codex,opencode",
+      "--json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "dryRun": false,
+      "assetPath": "<home>/assets/rules/g-rule/RULE.md",
+      "configPath": "<home>/aof.config.json"
+    }
+  },
+  {
+    "argv": [
+      "assets",
+      "add",
+      "--global",
+      "command",
+      "g-command",
+      "--body",
+      "x",
+      "--json"
+    ],
+    "exit": 1,
+    "envelope": {
+      "ok": false,
+      "error": "Invalid global resource kind \"command\". Expected skill, agent, rule.",
+      "code": "error"
+    }
+  },
+  {
+    "argv": [
+      "assets",
+      "use",
+      "--global",
+      "skill",
+      "g-skill",
+      "--json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "ok": true,
+      "kind": "skill",
+      "id": "g-skill",
+      "configPath": "<project>/.aof/aof.config.json"
+    }
+  },
+  {
+    "argv": [
+      "assets",
+      "use",
+      "--global",
+      "agent",
+      "g-agent",
+      "--json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "ok": true,
+      "kind": "agent",
+      "id": "g-agent",
+      "configPath": "<project>/.aof/aof.config.json"
+    }
+  },
+  {
+    "argv": [
+      "assets",
+      "use",
+      "--global",
+      "rule",
+      "g-rule",
+      "--json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "ok": true,
+      "kind": "rule",
+      "id": "g-rule",
+      "configPath": "<project>/.aof/aof.config.json"
+    }
+  },
+  {
+    "argv": [
+      "assets",
+      "apply",
+      "--json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "applied": true,
+      "strict": false,
+      "adapterWarnings": [],
+      "actions": [
+        {
+          "action": "create",
+          "path": ".claude/skills/g-skill/SKILL.md",
+          "absolutePath": "<project>/.claude/skills/g-skill/SKILL.md",
+          "runtime": "claude",
+          "resource": {
+            "id": "g-skill",
+            "kind": "skill",
+            "scope": "global",
+            "global": {
+              "id": "g-skill",
+              "kind": "skill",
+              "configPath": "<home>/aof.config.json"
+            }
+          },
+          "reason": "file does not exist",
+          "content": "---\naof-generated: true\nname: g-skill\ndescription: Global skill\naof-runtime: claude\n---\n\nGlobal skill body.\n",
+          "hash": "sha256:<hash>"
+        },
+        {
+          "action": "create",
+          "path": ".claude/agents/g-agent.md",
+          "absolutePath": "<project>/.claude/agents/g-agent.md",
+          "runtime": "claude",
+          "resource": {
+            "id": "g-agent",
+            "kind": "agent",
+            "scope": "global",
+            "global": {
+              "id": "g-agent",
+              "kind": "agent",
+              "configPath": "<home>/aof.config.json"
+            }
+          },
+          "reason": "file does not exist",
+          "content": "---\naof-generated: true\nname: g-agent\ndescription: Global agent\naof-runtime: claude\n---\nGlobal agent body.",
+          "hash": "sha256:<hash>"
+        },
+        {
+          "action": "create",
+          "path": ".claude/rules/g-rule.md",
+          "absolutePath": "<project>/.claude/rules/g-rule.md",
+          "runtime": "claude",
+          "resource": {
+            "id": "g-rule",
+            "kind": "rule",
+            "scope": "global",
+            "global": {
+              "id": "g-rule",
+              "kind": "rule",
+              "configPath": "<home>/aof.config.json"
+            }
+          },
+          "reason": "file does not exist",
+          "content": "---\naof-generated: true\ndescription: Global rule\naof-runtime: claude\n---\n\nGlobal rule body.\n",
+          "hash": "sha256:<hash>"
+        },
+        {
+          "action": "create",
+          "path": ".agents/skills/g-skill/SKILL.md",
+          "absolutePath": "<project>/.agents/skills/g-skill/SKILL.md",
+          "runtime": "codex",
+          "resource": {
+            "id": "g-skill",
+            "kind": "skill",
+            "scope": "global",
+            "global": {
+              "id": "g-skill",
+              "kind": "skill",
+              "configPath": "<home>/aof.config.json"
+            }
+          },
+          "reason": "file does not exist",
+          "content": "---\nname: \"g-skill\"\ndescription: \"Global skill\"\n---\n\n<!-- aof-generated: true; aof-runtime: codex -->\n\nGlobal skill body.\n",
+          "hash": "sha256:<hash>",
+          "expectedCurrentHash": null,
+          "journalPath": "<project>/.aof/aof.apply-journal.json",
+          "targetDir": "<project>",
+          "global": false
+        },
+        {
+          "action": "create",
+          "path": ".codex/agents/g-agent.toml",
+          "absolutePath": "<project>/.codex/agents/g-agent.toml",
+          "runtime": "codex",
+          "resource": {
+            "id": "g-agent",
+            "kind": "agent",
+            "scope": "global",
+            "global": {
+              "id": "g-agent",
+              "kind": "agent",
+              "configPath": "<home>/aof.config.json"
+            }
+          },
+          "reason": "file does not exist",
+          "content": "# aof-generated: true; aof-runtime: codex\ndescription = \"Global agent\"\ndeveloper_instructions = \"Global agent body.\"\nname = \"g-agent\"\n",
+          "hash": "sha256:<hash>",
+          "expectedCurrentHash": null,
+          "journalPath": "<project>/.aof/aof.apply-journal.json",
+          "targetDir": "<project>",
+          "global": false
+        },
+        {
+          "action": "create",
+          "path": "AGENTS.md",
+          "absolutePath": "<project>/AGENTS.md",
+          "runtime": "codex",
+          "resource": {
+            "id": "g-rule",
+            "kind": "rule",
+            "scope": "global",
+            "global": {
+              "id": "g-rule",
+              "kind": "rule",
+              "configPath": "<home>/aof.config.json"
+            }
+          },
+          "reason": "merge only recorded AOF ownership; preserve the user's content",
+          "content": "<!-- aof-managed:begin -->\n# AOF Generated Guidance\n\n<!-- Generated by AOF. Do not edit directly; update .aof/ instead. -->\n\n# g-rule\n\n> Global rule\n\nGlobal rule body.\n<!-- aof-managed:end -->\n",
+          "hash": "sha256:<hash>",
+          "expectedCurrentHash": null,
+          "journalPath": "<project>/.aof/aof.apply-journal.json",
+          "targetDir": "<project>",
+          "global": false,
+          "ownership": {
+            "kind": "guidance",
+            "hash": "sha256:<hash>"
+          }
+        },
+        {
+          "action": "create",
+          "path": ".opencode/skills/g-skill/SKILL.md",
+          "absolutePath": "<project>/.opencode/skills/g-skill/SKILL.md",
+          "runtime": "opencode",
+          "resource": {
+            "id": "g-skill",
+            "kind": "skill",
+            "scope": "global",
+            "global": {
+              "id": "g-skill",
+              "kind": "skill",
+              "configPath": "<home>/aof.config.json"
+            }
+          },
+          "reason": "file does not exist",
+          "content": "---\naof-generated: true\nname: g-skill\ndescription: Global skill\naof-runtime: opencode\n---\n\nGlobal skill body.\n",
+          "hash": "sha256:<hash>"
+        },
+        {
+          "action": "create",
+          "path": ".opencode/agents/g-agent.md",
+          "absolutePath": "<project>/.opencode/agents/g-agent.md",
+          "runtime": "opencode",
+          "resource": {
+            "id": "g-agent",
+            "kind": "agent",
+            "scope": "global",
+            "global": {
+              "id": "g-agent",
+              "kind": "agent",
+              "configPath": "<home>/aof.config.json"
+            }
+          },
+          "reason": "file does not exist",
+          "content": "---\ndescription: Global agent\nmode: subagent\n---\n\nGlobal agent body.\n",
+          "hash": "sha256:<hash>"
+        },
+        {
+          "action": "create",
+          "path": ".opencode/rules/g-rule.md",
+          "absolutePath": "<project>/.opencode/rules/g-rule.md",
+          "runtime": "opencode",
+          "resource": {
+            "id": "g-rule",
+            "kind": "rule",
+            "scope": "global",
+            "global": {
+              "id": "g-rule",
+              "kind": "rule",
+              "configPath": "<home>/aof.config.json"
+            }
+          },
+          "reason": "file does not exist",
+          "content": "---\naof-generated: true\ndescription: Global rule\naof-runtime: opencode\n---\n\nGlobal rule body.\n",
+          "hash": "sha256:<hash>"
+        },
+        {
+          "action": "create",
+          "path": ".claude/.gitignore",
+          "absolutePath": "<project>/.claude/.gitignore",
+          "runtime": "claude",
+          "resource": {
+            "id": "claude-runtime-gitignore",
+            "kind": "gitignore"
+          },
+          "reason": "file does not exist",
+          "content": "*\n!.gitignore\n",
+          "hash": "sha256:<hash>"
+        },
+        {
+          "action": "create",
+          "path": ".codex/.gitignore",
+          "absolutePath": "<project>/.codex/.gitignore",
+          "runtime": "codex",
+          "resource": {
+            "id": "codex-runtime-gitignore",
+            "kind": "gitignore"
+          },
+          "reason": "file does not exist",
+          "content": "*\n!.gitignore\n",
+          "hash": "sha256:<hash>",
+          "expectedCurrentHash": null,
+          "journalPath": "<project>/.aof/aof.apply-journal.json",
+          "targetDir": "<project>",
+          "global": false
+        },
+        {
+          "action": "create",
+          "path": ".opencode/.gitignore",
+          "absolutePath": "<project>/.opencode/.gitignore",
+          "runtime": "opencode",
+          "resource": {
+            "id": "opencode-runtime-gitignore",
+            "kind": "gitignore"
+          },
+          "reason": "file does not exist",
+          "content": "*\n!.gitignore\n",
+          "hash": "sha256:<hash>"
+        }
+      ],
+      "lock": ".aof/aof.lock.json",
+      "claudeSettings": {
+        "path": "<project>/.claude/settings.json",
+        "action": "created",
+        "written": true,
+        "code": null,
+        "message": null,
+        "drift": [],
+        "tamper": [],
+        "installed": [
+          "locked-contract",
+          "litmus",
+          "tag-vocabulary",
+          "gate-order",
+          "anchors",
+          "acceptor-criterion"
+        ]
+      }
+    }
+  }
+]

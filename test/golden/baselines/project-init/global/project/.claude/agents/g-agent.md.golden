@@ -1,0 +1,7 @@
+---
+aof-generated: true
+name: g-agent
+description: Global agent
+aof-runtime: claude
+---
+Global agent body.

@@ -1,0 +1,8 @@
+---
+description: Reviews changes before they merge
+mode: subagent
+---
+
+# my-agent
+
+Review each change for correctness before it merges.

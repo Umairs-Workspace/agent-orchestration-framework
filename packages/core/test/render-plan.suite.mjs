@@ -41,6 +41,10 @@ export const renderPlanTests = [
     run: tracksExpandedDslRootOutputDrift
   },
   {
+    name: "204/01 task01 E9 — a CLAUDE.md written whole before 204/01, unedited, is adopted as aof's guidance and planned as a merge, not refused",
+    run: adoptsLegacyWholeClaudeMd
+  },
+  {
     name: "renders package resources with namespace ownership",
     run: rendersPackageResourcesWithNamespace
   },
@@ -289,6 +293,34 @@ async function tracksExpandedDslRootOutputDrift() {
     await writeFile(path.join(targetDir, "AGENTS.md"), "Manual edit.\n", "utf8");
     actions = await planApplyActions(desired, prior, { targetDir });
     assert.equal(actions[0].action, "conflict");
+  } finally {
+    await rm(targetDir, { recursive: true, force: true });
+  }
+}
+
+async function adoptsLegacyWholeClaudeMd() {
+  const targetDir = await mkdtemp(path.join(os.tmpdir(), "aof-"));
+  try {
+    const config = await resolveConfig({
+      name: "demo",
+      resources: [],
+      projectDocs: [{ id: "guide", targets: ["CLAUDE.md"], runtimes: ["claude"], body: "Run the tests." }]
+    });
+    const [output] = await createRenderPlan(config, { targetDir, runtimes: ["claude"] });
+    assert.equal(output.path, "CLAUDE.md");
+    // What an apply from before 204/01 wrote: the render whole, locked with its hash and no ownership.
+    await writeFile(path.join(targetDir, "CLAUDE.md"), output.content, "utf8");
+    const legacy = { files: [{ path: "CLAUDE.md", runtime: "claude", resource: output.resource, hash: output.hash }] };
+    const [planned] = await planApplyActions([output], legacy, { targetDir });
+    assert.notEqual(planned.action, "conflict", planned.reason);
+    assert.equal(planned.ownership.kind, "guidance");
+    assert.equal(planned.content, `<!-- aof-managed:begin -->\n${output.content.trimEnd()}\n<!-- aof-managed:end -->\n`, "the whole legacy file becomes aof's block");
+
+    // The control: the same legacy file, edited by the user, is not adopted.
+    await writeFile(path.join(targetDir, "CLAUDE.md"), `${output.content}Mine.\n`, "utf8");
+    const [edited] = await planApplyActions([output], legacy, { targetDir });
+    assert.equal(edited.action, "conflict");
+    assert.equal(edited.code, "co-authored-output-conflict");
   } finally {
     await rm(targetDir, { recursive: true, force: true });
   }

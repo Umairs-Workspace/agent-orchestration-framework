@@ -1,0 +1,14 @@
+project/.agents/skills/my-skill/SKILL.md
+project/.codex/.gitignore
+project/.codex/agents/my-agent.toml
+project/.codex/aof/workflows/release.md
+project/.codex/hooks.json
+project/.opencode/.gitignore
+project/.opencode/agents/my-agent.md
+project/.opencode/aof/workflows/release.md
+project/.opencode/commands/my-command.md
+project/.opencode/plugins/aof-lint-on-stop.js
+project/.opencode/rules/my-rule.md
+project/.opencode/skills/my-skill/SKILL.md
+project/AGENTS.md
+project/src/AGENTS.md

@@ -1,0 +1,9 @@
+# aof — derived artifacts, per-person settings and per-machine identity; never commit (the tracked install is committed).
+aof.memory.index.json
+aof.memory.graphify.index.json
+notion.work-map.json
+artifact-sync-queue.ndjson
+artifact-sync-queue.ndjson.batch
+aof.config.local.json
+mesh/identity.json
+/work/

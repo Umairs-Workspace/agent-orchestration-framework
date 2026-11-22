@@ -96,6 +96,16 @@ export async function ensureAofGitignore(targetDir, entries = [...AOF_GITIGNORE_
   return ensureEntries(path.join(workspaceDir, ".gitignore"), entries, HEADER);
 }
 
+// 204/ADR-005: `aof init`'s assistant-workspace entry, added through the one additive writer, so
+// init keeps every line it did not write. A new file holds the entry alone, with no header, as
+// init has always written it.
+export const AOF_WORKSPACE_GITIGNORE_ENTRIES = ["/work/"];
+
+export async function ensureWorkspaceGitignore(targetDir) {
+  const { workspaceDir } = workspacePaths(targetDir);
+  return ensureEntries(path.join(workspaceDir, ".gitignore"), AOF_WORKSPACE_GITIGNORE_ENTRIES, "");
+}
+
 // --------------------------------------------------- graphify-out (10/ADR-005) --
 
 // The graphify backend's derived graph artifact lands at `<projectRoot>/graphify-out/`

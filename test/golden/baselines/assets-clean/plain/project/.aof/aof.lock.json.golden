@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "generatedAt": "<timestamp>",
+  "runtimes": [
+    "claude",
+    "codex",
+    "opencode"
+  ],
+  "files": [],
+  "packages": [],
+  "frameworks": [],
+  "frameworkInstallAttempts": []
+}

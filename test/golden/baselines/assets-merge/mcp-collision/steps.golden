@@ -1,0 +1,15 @@
+[
+  {
+    "argv": [
+      "assets",
+      "apply",
+      "--json"
+    ],
+    "exit": 1,
+    "envelope": {
+      "ok": false,
+      "error": "co-authored-output-conflict: .mcp.json: unowned MCP server docs collides with the requested target",
+      "code": "co-authored-output-conflict"
+    }
+  }
+]

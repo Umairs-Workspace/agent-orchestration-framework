@@ -1,0 +1,35 @@
+[
+  {
+    "argv": [
+      "init",
+      "--runtime",
+      "claude,codex,opencode",
+      "--json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "dryRun": false,
+      "configPath": "<project>/.aof/aof.config.json",
+      "lockPath": "<project>/.aof/aof.lock.json",
+      "runtimes": [
+        "claude",
+        "codex",
+        "opencode"
+      ]
+    }
+  },
+  {
+    "argv": [
+      "init",
+      "--runtime",
+      "claude,codex,opencode",
+      "--json"
+    ],
+    "exit": 1,
+    "envelope": {
+      "ok": false,
+      "error": "Config already exists at <project>/.aof/aof.config.json. Re-run with --force to replace it.",
+      "code": "config-exists"
+    }
+  }
+]

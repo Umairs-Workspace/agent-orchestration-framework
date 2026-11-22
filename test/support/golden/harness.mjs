@@ -70,16 +70,19 @@ export function runScenario(lane, scenario, { tempParent = os.tmpdir() } = {}) {
     const steps = [];
     for (const [index, step] of scenario.steps.entries()) {
       const declared = step.exit ?? 0;
-      const result = spawnCliSync(process.execPath, [...command, ...step.argv], {
+      // 204/ADR-001 §5: a step may name its own fixture script, by repository-relative path, which
+      // runs in the lane command's place with the same working directory and environment.
+      const program = step.command ? [path.join(repoRoot, ...step.command.split("/"))] : command;
+      const result = spawnCliSync(process.execPath, [...program, ...step.argv], {
         cwd: project,
         encoding: "utf8",
         windowsHide: true,
         env: { ...process.env, AOF_GLOBAL_HOME: home, NODE_NO_WARNINGS: "1" },
       });
-      steps.push({ argv: step.argv, exit: result.status, envelope: parseEnvelope(result.stdout ?? "") });
+      steps.push({ ...(step.command ? { command: step.command } : {}), argv: step.argv, exit: result.status, envelope: parseEnvelope(result.stdout ?? "") });
       if (result.status !== declared) {
         const error = new Error(
-          `golden: ${lane.id}/${scenario.id} step ${index + 1} (${step.argv.join(" ")}) exited ${result.status ?? result.signal}, where ${declared} is declared.\n` +
+          `golden: ${lane.id}/${scenario.id} step ${index + 1} (${[...(step.command ? [step.command] : []), ...step.argv].join(" ")}) exited ${result.status ?? result.signal}, where ${declared} is declared.\n` +
             `stderr:\n${result.stderr || "(empty)"}${result.error ? `\nspawn error: ${result.error.message}` : ""}`,
         );
         error.steps = steps;

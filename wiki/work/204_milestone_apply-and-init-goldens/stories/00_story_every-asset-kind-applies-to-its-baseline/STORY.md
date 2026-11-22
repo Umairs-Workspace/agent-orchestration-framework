@@ -5,7 +5,7 @@ slug: every-asset-kind-applies-to-its-baseline
 title: "Every asset kind applies to its committed baseline — on three runtimes and on each alone, and twice to the same tree"
 parent: 204
 depends: []
-status: not-started
+status: done
 owner: product-owner
 created: 2026-11-21
 updated: 2026-11-22
@@ -57,9 +57,9 @@ scenarios and their baselines, and the fix to the Codex TOML merge that `every-k
 
 ## Tasks
 
-- [ ] `tasks/00_every-asset-kind-renders-to-its-baseline.feature` (R1, R3): `every-kind` is held whole: every kind's render for each runtime that takes it, the lock and the journal.
-- [ ] `tasks/01_each-runtime-alone-renders-its-own-share.feature` (R2): `claude`, `codex` and `opencode` are held as deltas that remove the other runtimes' outputs, and what each writes outside its runtime is held (ADR-006 §3).
-- [ ] `tasks/02_applying-twice-changes-nothing.feature` (R4): a second apply skips every file, because the Codex config is written where Codex reads it.
+- [x] `tasks/00_every-asset-kind-renders-to-its-baseline.feature` (R1, R3): `every-kind` is held whole: every kind's render for each runtime that takes it, the lock and the journal.
+- [x] `tasks/01_each-runtime-alone-renders-its-own-share.feature` (R2): `claude`, `codex` and `opencode` are held as deltas that remove the other runtimes' outputs, and what each writes outside its runtime is held (ADR-006 §3).
+- [x] `tasks/02_applying-twice-changes-nothing.feature` (R4): a second apply skips every file, because the Codex config is written where Codex reads it.
 
 ## Notes
 

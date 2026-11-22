@@ -5,7 +5,7 @@ slug: init-keeps-the-ignore-lines-it-did-not-write
 title: "Init keeps the ignore lines it did not write, and --global writes only into the temp home — init held on an empty folder, over the user's ignore files, after work init and on a second run"
 parent: 204
 depends: []
-status: not-started
+status: done
 owner: product-owner
 created: 2026-11-21
 updated: 2026-11-22
@@ -55,9 +55,9 @@ instead of writing the file whole.
 
 ## Tasks
 
-- [ ] `tasks/00_init-writes-its-scaffold-and-refuses-a-second-run.feature` (R1): init on an empty folder is held whole, and a second init refuses and changes nothing.
-- [ ] `tasks/01_init-keeps-the-lines-and-sections-it-did-not-write.feature` (R2): the user's ignore lines, and `work init`'s ignore entries and lock section, survive init.
-- [ ] `tasks/02_global-assets-write-only-into-the-temp-home.feature` (R3): `assets add --global` writes into the temp home, a global command is refused, and the project renders the global assets it uses.
+- [x] `tasks/00_init-writes-its-scaffold-and-refuses-a-second-run.feature` (R1): init on an empty folder is held whole, and a second init refuses and changes nothing.
+- [x] `tasks/01_init-keeps-the-lines-and-sections-it-did-not-write.feature` (R2): the user's ignore lines, and `work init`'s ignore entries and lock section, survive init.
+- [x] `tasks/02_global-assets-write-only-into-the-temp-home.feature` (R3): `assets add --global` writes into the temp home, a global command is refused, and the project renders the global assets it uses.
 
 ## Notes
 

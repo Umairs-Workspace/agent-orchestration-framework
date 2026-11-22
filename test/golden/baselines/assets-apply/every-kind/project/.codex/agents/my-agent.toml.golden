@@ -1,0 +1,4 @@
+# aof-generated: true; aof-runtime: codex
+description = "Reviews changes before they merge"
+developer_instructions = "# my-agent\n\nReview each change for correctness before it merges."
+name = "my-agent"

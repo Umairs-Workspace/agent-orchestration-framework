@@ -1,0 +1,10 @@
+model = "o3"
+
+[mcp_servers.docs]
+args = ["-y", "docs-mcp"]
+command = "npx"
+transport = "stdio"
+
+[mcp_servers.remote]
+transport = "http"
+url = "https://mcp.example.com/mcp"

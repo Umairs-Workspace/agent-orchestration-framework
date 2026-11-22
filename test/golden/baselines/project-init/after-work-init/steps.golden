@@ -1,0 +1,432 @@
+[
+  {
+    "argv": [
+      "work",
+      "init",
+      "--runtime",
+      "claude",
+      "--json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "targetDir": ".",
+      "runtimes": [
+        "claude"
+      ],
+      "dryRun": false,
+      "summary": {
+        "created": 92,
+        "updated": 0,
+        "skipped": 0,
+        "drift-warning": 0,
+        "deleted": 0
+      },
+      "manifest": ".aof/aof.lock.json",
+      "actions": [
+        {
+          "action": "create",
+          "path": ".claude/agents/aof-architect.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/agents/aof-compliance.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/agents/aof-designer.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/agents/aof-developer.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/agents/aof-product-owner.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/agents/aof-qa.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/agents/aof-researcher.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/agents/aof-security.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/add-chore.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/add-diagram.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/add-milestone.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/add-spike.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/add-story.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/add-task.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/add-uat.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/assimilate-code.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/autonomous.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/continue.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/delegate.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/diagram-review.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/explain.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/feedback.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/init.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/insert-chore.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/insert-milestone.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/insert-story.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/insert-uat.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/loop-diagram.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/manual.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/map-tests.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/migrate.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/observe.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/pay-debt.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/promote.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/prototype.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/archive.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/questions.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/recent.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/refine.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/repair.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/retrospective.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/review.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/shatter.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/validate.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/verify.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/skills/codex-implementation/SKILL.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/skills/codex-review/SKILL.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/skills/codex-computer-use/SKILL.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/teach.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/chore/CHORE.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/milestone/AOF.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/milestone/ARCHITECTURE.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/milestone/COMPLIANCE.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/milestone/DESIGN.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/milestone/RESEARCH.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/milestone/SECURITY.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/milestone/SPEC.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/milestone/STATE.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/milestone/UAT.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/milestone/VERIFICATION.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/prototype/PROTOTYPE.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/prototype/STATE.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/shared/OUTCOME.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/spike/SPIKE.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/story/EXAMPLES.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/story/PLAN.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/story/STORY.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/task/example.feature"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/uat/SESSION.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/templates/work/uat/STATE.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/hooks/aof/artifact-sync-enqueue.mjs"
+        },
+        {
+          "action": "create",
+          "path": ".claude/hooks/aof/run-heartbeat-enqueue.mjs"
+        },
+        {
+          "action": "create",
+          "path": ".claude/hooks/aof/ask-pending-enqueue.mjs"
+        },
+        {
+          "action": "create",
+          "path": ".aof/frozen-set.jsonc"
+        },
+        {
+          "action": "create",
+          "path": ".aof/triggers.jsonc"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/autonomous-cascade.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/build-to-green.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/mesh-assignment-reclaim.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/retrospective-memory-ingest.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/review-fix-rereview.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/run-resilience.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/verify-triage-accept.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/operator.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/product-owner.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/rubric-process-exit.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/run-liveness.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/run-lifecycle-policy.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/build-to-green-watcher.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/review-fix-rereview-watcher.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/autonomous-cascade-watcher.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/speed-thoroughness-autonomy.md"
+        },
+        {
+          "action": "create",
+          "path": ".aof/loops/instrument-audit.md"
+        }
+      ],
+      "notInstallable": [],
+      "claudeSettings": {
+        "path": "<project>/.claude/settings.json",
+        "action": "created",
+        "written": true,
+        "code": null,
+        "message": null,
+        "drift": [],
+        "tamper": [],
+        "installed": [
+          "locked-contract",
+          "litmus",
+          "tag-vocabulary",
+          "gate-order",
+          "anchors",
+          "acceptor-criterion"
+        ]
+      }
+    }
+  },
+  {
+    "argv": [
+      "init",
+      "--runtime",
+      "claude",
+      "--json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "dryRun": false,
+      "configPath": "<project>/.aof/aof.config.json",
+      "lockPath": "<project>/.aof/aof.lock.json",
+      "runtimes": [
+        "claude"
+      ]
+    }
+  }
+]
