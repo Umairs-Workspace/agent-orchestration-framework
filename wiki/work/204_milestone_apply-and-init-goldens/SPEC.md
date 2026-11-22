@@ -3,10 +3,10 @@ type: milestone
 number: 204
 slug: apply-and-init-goldens
 title: "What aof apply, init and clean write is held to baselines, including their merges into files the user owns"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-11-20
-updated: 2026-11-20
+updated: 2026-11-22
 depends: [203]
 schema: 1
 aofVersion: 0.1.0
@@ -41,13 +41,27 @@ In scope:
 - **`--global`.** It writes into the temp global home, never the real one.
 - **Re-apply.** Applying twice changes nothing.
 
+- **The four defects that falsify the acceptance above, fixed at their source** (decided at refine,
+  2026-11-21, STATE): `clean` deleting a merged file whole; `apply` replacing a user's `CLAUDE.md`,
+  `.mcp.json` or opencode `AGENTS.md`; the Codex TOML merge misplacing a top-level setting; and
+  `init` replacing `.aof/.gitignore`. Each lands with the baseline that shows it fixed.
+
 Out of scope:
 - The harness itself, which is built in 203.
 - The ACD bundle that `aof work init` and `update` write, which is covered there too.
+- Two measured behaviours that damage no user content. They are held in the baselines as they are
+  and filed: `clean` leaving aof's entries in `.claude/settings.json`, and an `AGENTS.md` that two
+  runtimes render refusing (ARCHITECTURE ADR-006).
 
 ## Stories
 
-To be broken down by `aof:refine`.
+- [ ] `00_story_every-asset-kind-applies-to-its-baseline` — `aof assets apply` over a fixture `.aof/` holding every asset kind is held to a baseline on three runtimes and on each alone, applying twice changes nothing, and the Codex TOML merge writes a setting where Codex reads it
+- [ ] `01_story_apply-merges-keep-the-user-s-entries` — over a project holding the user's own files at every merge point, `apply` moves only aof's entries, `CLAUDE.md`, `.mcp.json` and opencode's `AGENTS.md` become merges rather than replacements, a second apply changes nothing, and two writers claiming one file or entry refuse before any write
+- [ ] `02_story_clean-removes-exactly-what-aof-wrote` — `aof assets clean` removes the files aof wholly owns, hands every merged file back holding only the user's content, keeps a file the user edited, and a second clean changes nothing
+- [ ] `03_story_init-keeps-the-ignore-lines-it-did-not-write` — `aof init` is held to a baseline on an empty folder, over a user's `.gitignore` files, after `aof work init`, and on a second run, it adds its `.aof/.gitignore` line instead of replacing the file, and `--global` writes only into the temp home
+
+Refine recall (refine-po, id `57ee8760-c07a-4f92-86f9-cb20db8d3e62`): five records; two shaped the
+break-down (ARCHITECTURE "Memory recall").
 
 ## Dependencies
 
