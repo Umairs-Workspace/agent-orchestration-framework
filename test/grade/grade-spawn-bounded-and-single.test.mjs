@@ -15,7 +15,6 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // the milestone's own worst failure mode, reachable from its own runner.
 import assert from "node:assert/strict";
 import { rm, readFile, writeFile } from "node:fs/promises";
-import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -23,7 +22,7 @@ const invoke = _aofApplication.invoke;
 import { DEFAULT_HEARTBEAT_MS, DEFAULT_START_TO_CLOSE_MS } from "@aof/contracts/loop-bounds";
 const GRADE_REENTRANCY_ENV = _aofApplication.work.commandTools.grade.GRADE_REENTRANCY_ENV;
 import { readRuntimeFiles } from "../support/read-src-files.mjs";
-import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
+import { BOOT_HEADROOM, MIN_DEADLINE_MS, makeGradeRepo, measureBootMs, writeRunner, rubricFor, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -57,45 +56,8 @@ setInterval(() => fs.appendFileSync(process.env.AOF_ALIVE_OUT, "x"), 25);
 // previously pinned literal of 400ms, 4 of 8 concurrent runs of this lane were red — with the
 // startup byte above already in place, which is why writing earlier is not the fix.
 //
-// A LARGER LITERAL IS NOT THE FIX EITHER; it only moves the race onto a slower machine. So the
-// bound is MEASURED on the machine that is about to run the case, under the load it is under
-// right now: spawn the same runner with no deadline at all, time how long until its first byte
-// lands, and give the bounded run a generous multiple of that. The fixture still DECLARES the
-// value and the product still RESOLVES it (69's `work.loop.startToCloseMs`, asserted below
-// against `plan.deadlineMs`) — what changed is that the declared number is derived from an
-// observation instead of chosen from thin air.
-const BOOT_HEADROOM = 6;
-const MIN_DEADLINE_MS = 400;
-
-// A FUSE, not a deadline. Bounding the measurement at anything near the value it is measuring
-// would beg the question; this is the "the machine is broken" limit, and blowing it is a loud
-// red rather than the silent hang an unbounded poll would give a CI runner.
-const BOOT_FUSE_MS = 30_000;
-
-const measureBootMs = async (runnerPath, aliveOut) => {
-  await writeFile(aliveOut, "", "utf8");
-  const started = Date.now();
-  const child = spawn(process.execPath, [runnerPath], {
-    env: { ...process.env, AOF_ALIVE_OUT: aliveOut },
-    stdio: "ignore",
-  });
-  const exited = new Promise((resolve) => { child.once("exit", resolve); });
-  try {
-    for (;;) {
-      if ((await readFile(aliveOut, "utf8")).length > 0) return Date.now() - started;
-      if (Date.now() - started > BOOT_FUSE_MS) {
-        throw new Error(`the boot probe wrote nothing in ${BOOT_FUSE_MS}ms — node cannot start here`);
-      }
-      await sleep(10);
-    }
-  } finally {
-    child.kill("SIGKILL");
-    // AWAIT THE REAP. The probe holds `boot.log` open and appends every 25ms; on Windows the
-    // fixture's `rm` would race that handle and fail with EPERM/EBUSY, turning a clean lane
-    // into a cleanup flake — the same class of defect this whole fix exists to remove.
-    await exited;
-  }
-};
+// A larger literal is not the fix either: the bound is measured by `measureBootMs`
+// (test/support/grade-fixture.mjs), which 81/00 shares.
 
 // This repo's own shape: passes to stdout, failures to STDERR, and a non-zero exit.
 const SPLIT_STREAM_RUNNER = `

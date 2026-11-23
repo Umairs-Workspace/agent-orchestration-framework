@@ -10,8 +10,8 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // against 54/00's: 54/00 proves the PURE COMPILER over handed observations; these prove the
 // COMMAND over a real repository — it reads that repo's actual configuration, decides what
 // to run, and (mostly) spawns nothing.
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
-import { spawnSync } from "node:child_process";
+import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { spawn, spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 
@@ -152,3 +152,46 @@ export function spawnsDeclaredRubric(code) {
   visit(tree);
   return readsTheRubric && spawns;
 }
+
+// F-54-01-1. A force-kill deadline must clear this machine's own process-creation cost, or the child
+// is killed before it runs a line and a premise guard measures node's boot, not the deadline.
+// A LARGER LITERAL IS NOT THE FIX EITHER; it only moves the race onto a slower machine. So the
+// bound is MEASURED on the machine that is about to run the case, under the load it is under
+// right now: spawn the same runner with no deadline at all, time how long until its first byte
+// lands, and give the bounded run a generous multiple of that. The fixture still DECLARES the
+// value and the product still RESOLVES it (69's `work.loop.startToCloseMs`, asserted below
+// against `plan.deadlineMs`) — what changed is that the declared number is derived from an
+// observation instead of chosen from thin air.
+export const BOOT_HEADROOM = 6;
+export const MIN_DEADLINE_MS = 400;
+
+// A FUSE, not a deadline. Bounding the measurement at anything near the value it is measuring
+// would beg the question; this is the "the machine is broken" limit, and blowing it is a loud
+// red rather than the silent hang an unbounded poll would give a CI runner.
+const BOOT_FUSE_MS = 30_000;
+
+// `envKey` names the variable the runner writes its first byte to (AOF_ALIVE_OUT, AOF_START_OUT).
+export const measureBootMs = async (runnerPath, aliveOut, envKey = "AOF_ALIVE_OUT") => {
+  await writeFile(aliveOut, "", "utf8");
+  const started = Date.now();
+  const child = spawn(process.execPath, [runnerPath], {
+    env: { ...process.env, [envKey]: aliveOut },
+    stdio: "ignore",
+  });
+  const exited = new Promise((resolve) => { child.once("exit", resolve); });
+  try {
+    for (;;) {
+      if ((await readFile(aliveOut, "utf8")).length > 0) return Date.now() - started;
+      if (Date.now() - started > BOOT_FUSE_MS) {
+        throw new Error(`the boot probe wrote nothing in ${BOOT_FUSE_MS}ms — node cannot start here`);
+      }
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
+  } finally {
+    child.kill("SIGKILL");
+    // AWAIT THE REAP. The probe holds `boot.log` open and appends every 25ms; on Windows the
+    // fixture's `rm` would race that handle and fail with EPERM/EBUSY, turning a clean lane
+    // into a cleanup flake — the same class of defect this whole fix exists to remove.
+    await exited;
+  }
+};

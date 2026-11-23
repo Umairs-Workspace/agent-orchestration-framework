@@ -36,7 +36,7 @@ const rubricSpawnOptions = _aofApplication.work.commandTools.grade.rubricSpawnOp
 const spawnRubricAsync = _aofApplication.work.commandTools.grade.spawnRubricAsync;
 const GRADE_REENTRANCY_ENV = _aofApplication.work.commandTools.grade.GRADE_REENTRANCY_ENV;
 import { readRuntimeFiles } from "../support/read-src-files.mjs";
-import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn, spawnsDeclaredRubric } from "../support/grade-fixture.mjs";
+import { BOOT_HEADROOM, MIN_DEADLINE_MS, makeGradeRepo, measureBootMs, writeRunner, rubricFor, ctxFor, countingSpawn, spawnsDeclaredRubric } from "../support/grade-fixture.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "../loop/loop-command-probe.test.mjs";
 import { capturingReport, emitsPassing, gradingCtx, stubRubric } from "../support/loop-grade-fixture.mjs";
 
@@ -312,13 +312,16 @@ export const gradeWaitsWithoutBlockingTests = [
       const { repo } = await makeGradeRepo();
       const runner = await writeRunner(repo, "forever.cjs", NEVER_TERMINATES);
       const startMarker = path.join(repo, "started");
+      // The window clears this machine's node boot under its current load (F-54-01-1): at a pinned
+      // 500ms a loaded whole-tree run killed the runner before it wrote, and the guard went red.
+      const windowMs = Math.max(MIN_DEADLINE_MS, (await measureBootMs(runner, path.join(repo, "boot.log"), "AOF_START_OUT")) * BOOT_HEADROOM);
       const fx = await makeGradeRepo({
         rubric: rubricFor(runner, { env: { AOF_START_OUT: startMarker } }),
-        loop: { startToCloseMs: 600_000, heartbeatMs: 500 },
+        loop: { startToCloseMs: 600_000, heartbeatMs: windowMs },
       });
       try {
         const ctx = await ctxFor(fx.repo);
-        assert.equal(gradeDeadlineFromConfig(ctx.workspace), 500, "guard: the derived deadline is the window, not the attempt bound");
+        assert.equal(gradeDeadlineFromConfig(ctx.workspace), windowMs, "guard: the derived deadline is the window, not the attempt bound");
 
         const result = await invoke("work:grade", { ref: "03", run: true }, ctx);
 
@@ -333,7 +336,7 @@ export const gradeWaitsWithoutBlockingTests = [
         assert.equal(result.grade.verdict, "indeterminate", "the verdict is indeterminate");
         assert.ok(result.grade.codes.includes("runner-timeout"), "…carrying the code runner-timeout");
         // THE DETAIL NAMES THE DEADLINE IT EXCEEDED.
-        assert.match(String(result.detail), /500/u, "the reported detail names the deadline the runner exceeded");
+        assert.match(String(result.detail), new RegExp(`\\b${windowMs}ms\\b`, "u"), "the reported detail names the deadline the runner exceeded");
       } finally {
         await rm(repo, { recursive: true, force: true });
         await rm(fx.repo, { recursive: true, force: true });
