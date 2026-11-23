@@ -244,6 +244,11 @@ export const globalWorkPropagationTests = [
           // this case measures the propagation ticker, not the listener — the same fake the launcher
           // suites inject (mesh-launcher-stream-role).
           startControlStreamServer: async () => ({ stop() {}, updatePeers() {} }),
+          // 191/ADR-001's amendment (729ae6a6): a nominated control with no `mesh.relay.url` derives
+          // its loopback relay on 4183 and the launcher binds it — on a control node whose daemon holds
+          // that port, a second warning (EADDRINUSE) this case then counted as its own. The relay is not
+          // this case's subject either; `relay: false` is the launcher's own isolation seam for it.
+          relay: false,
           globalPublisher: async () => {
             calls += 1;
             if (calls === 1) {
@@ -259,7 +264,7 @@ export const globalWorkPropagationTests = [
         // 131/10 (ADR-008 §1): a control-node launcher with no bot token also says `discord-bot-off`
         // once, at info. That line is the bot's, not this case's subject.
         const publishWarnings = handle.warnings.filter((warning) => warning.code !== "discord-bot-off");
-        assert.equal(publishWarnings.length, 1, "initial failure is captured as a launcher warning");
+        assert.equal(publishWarnings.length, 1, `initial failure is captured as a launcher warning: ${JSON.stringify(publishWarnings)}`);
         assert.equal(peerTicker.handles.length, 1, "peer loop still started");
         // 164/ADR-006: the failed publish is owed in the journal and retried once its backoff has
         // elapsed — time passes for it here, so the next tick is the one that may retry it.

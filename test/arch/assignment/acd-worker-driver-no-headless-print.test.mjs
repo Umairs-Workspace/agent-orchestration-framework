@@ -467,7 +467,10 @@ export const archTests = [
       assert.deepEqual(forbidden, [], "no src module constructs a turn or budget bound for the model");
 
       const driver = stripComments(await readFile(DRIVER_SOURCE, "utf8"));
-      assert.match(driver, /startToCloseTimer\s*=\s*setTimeout/u);
+      // 2026-11-12 (052dc1df, chore 195) — start-to-close counts AWAKE time: the timer is taken from the
+      // driver's awake clock, so a host suspend re-arms it for what is left instead of killing the session.
+      // It still fires `stopForOutcome` and still kills through the held PTY (asserted below).
+      assert.match(driver, /startToCloseTimer\s*=\s*awakeClock\.setTimeout/u);
       assert.match(driver, /heartbeatTimer\s*=\s*setTimeout/u);
       assert.match(driver, /stopForOutcome\(\{\s*outcome:\s*["']failed["'],\s*failureReason:\s*["']timeout["']\s*\}\)/u);
       // The one release path calls the live handle as `term?.kill?.()` (2026-10-06, one release per PTY).

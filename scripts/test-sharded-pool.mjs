@@ -29,7 +29,11 @@ export function stdinIsPipe(stream = process.stdin, fstat = () => fstatSync(0)) 
   return !(stat.isCharacterDevice() || stat.isFile() || stat.isDirectory() || stat.isBlockDevice());
 }
 
-const EXECUTED_LINE = /^# executed (\d+) cases/m;
+// The unit's OWN count is its last `# executed` line: the shard entry prints it once, after every case. A case
+// whose failure message quotes a child run's stdout (FF-16008 runs a whole control as a child) carries that
+// child's `# executed` line earlier in the output, and reading the first match took the child's count for the
+// unit's — a red case misreported as a unit that lost cases ("executed 10 of 18 assigned cases").
+const EXECUTED_LINE = /^# executed (\d+) cases/gm;
 const FAILED_LINE = /^not ok - (.*)$/gm;
 
 // The keys a unit stands for in the report: each file a packed unit held, or the unit itself.
@@ -40,7 +44,7 @@ export const unitKeys = (unit) => (unit.files != null ? unit.files.map((entry) =
 // pool killed (`notFinished`) is neither ok nor failed: it names no failure, because a killed unit is
 // never a `not ok` line and what it printed before the kill is not a confirmed result.
 export function unitResult(unit, { code, output, seconds, notFinished = false }) {
-  const executed = Number(EXECUTED_LINE.exec(output)?.[1] ?? -1);
+  const executed = Number([...String(output).matchAll(EXECUTED_LINE)].at(-1)?.[1] ?? -1);
   if (notFinished) return { unit, ok: false, notFinished: true, code, seconds, executed, failed: [], output };
   const failed = [...output.matchAll(FAILED_LINE)].map((match) => match[1]);
   let lost = false;

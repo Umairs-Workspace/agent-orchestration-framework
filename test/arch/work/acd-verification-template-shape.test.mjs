@@ -609,16 +609,18 @@ export const archTests = [
       }
       assert.deepEqual(zero, [], "no term is still at the finding's measured zero");
 
-      // NON-VACUITY for the measurement itself: with the template's text blanked, the six terms only
-      // it carries fall back to zero. If they did not, the scan is not reading the file it claims to.
+      // NON-VACUITY for the measurement itself: with the template's text blanked, the terms only it
+      // carries fall back to zero. If they did not, the scan is not reading the file it claims to.
+      // Five since chore 196 (7eae267f): repair.md (and the codex workflow it renders into) names the
+      // grade halt code `report-vacuous`, so `vacuous` is no longer the template's alone.
       const blanked = new Map(texts);
       assert.ok(blanked.get(VERIFICATION_TEMPLATE).length > 0, "sanity: the template has content to blank");
       blanked.set(VERIFICATION_TEMPLATE, "");
       const fellBack = FALSIFIABILITY_TERMS.filter((term) => count(term.source, blanked).length === 0).map((term) => term.label);
       assert.deepEqual(
         fellBack.sort(),
-        ["falsifi*", "must fail", "observed failing", "positive control", "seen red", "vacuous"],
-        "the six template-only terms return to zero when the template is blanked — the scan reads the real file",
+        ["falsifi*", "must fail", "observed failing", "positive control", "seen red"],
+        "the five template-only terms return to zero when the template is blanked — the scan reads the real file",
       );
     },
   },

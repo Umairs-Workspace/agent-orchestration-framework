@@ -8,7 +8,7 @@ import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // hermetic v3 global store (AOF_GLOBAL_HOME) so the worker-side repo guard, the real
 // `git worktree add`/`remove`, and the run-store all exercise against one disposable
 // temp tree. Mirrors test/support/mesh-assign-fixture.mjs's shape for the store half.
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { repoFromTemplate, spawnSyncHardened } from "./cli-spawn.mjs";
@@ -34,7 +34,8 @@ function git(cwd, args) {
 // caller { root, home, workspace, workspaceId, itemRef, env, ctx, headSha }.
 // Cleanup removes the whole temp tree (repo + global home) unconditionally.
 export async function withMeshWorkerExecFixture(fn, { milestoneNumber = "35", storySlug = "demo", storyNumber = "00" } = {}) {
-  const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-mesh-worker-exec-"));
+  // realpath: macOS's tmpdir is a symlink, and git reports canonical worktree paths.
+  const tmp = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-mesh-worker-exec-")));
   const home = path.join(tmp, "home");
   const root = path.join(tmp, "repo");
   try {

@@ -309,8 +309,18 @@ export const gradeReadFaceNeverExecutesTests = [
       const bundleCommands = path.join(repoRoot, "packages", "core", "assets", "commands");
       const files = await readdir(bundleCommands);
       assert.ok(!files.some((name) => /grade/i.test(name)), "no new /aof:* wrapper file exists for the grade verb");
+      // The text scan stands in for "edited by THIS story" (54/01), so a later item's legitimate mention
+      // is recorded here by name and commit — closed: any other command file that names the verb fails.
+      //   repair.md — chore 196 (7eae267f): the loop repairs a grade halt, so repair's procedure names
+      //   the halt's `work:grade:<code>` reason and has the agent read `aof work grade <ref> --run --json`
+      //   for the runner's detail. It is a step inside /aof:repair, not a wrapper for the verb.
+      const NAMED_LATER = new Set(["repair.md"]);
       for (const name of files) {
         const text = await readFile(path.join(bundleCommands, name), "utf8");
+        if (NAMED_LATER.has(name)) {
+          assert.ok(text.includes("work:grade") || text.includes("aof work grade"), `${name} is recorded as naming the verb, and still does (the record is honest)`);
+          continue;
+        }
         assert.ok(!text.includes("work:grade"), `no file under packages/core/assets/commands/ was edited by this story (${name})`);
         assert.ok(!text.includes("aof work grade"), `…nor spells the verb in prose (${name})`);
       }

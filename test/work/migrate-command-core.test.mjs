@@ -37,7 +37,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // arch-test acd-migrate-read-only-source.
 import assert from "node:assert/strict";
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
-import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
+import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat, symlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -1225,6 +1225,26 @@ export const migrateCommandCoreTests = [
         assert.match(`${cli.stdout}${cli.stderr}`, /Move it outside the work directory/);
         assert.deepEqual(await readdir(workDir), before, "no item was minted past the source");
       } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    // The same guard, with the source named through a symlink to the repo: the containment check
+    // compares real paths, not spellings (macOS's tmpdir is such a link, and a CLI's cwd is canonical).
+    name: "migrate-core/170 a source inside the work stream is refused even when named through a symlink",
+    async run() {
+      const { repo, workDir } = await makeRepo(["00"]);
+      const linkParent = await mkdtemp(path.join(os.tmpdir(), "aof-migrate-link-"));
+      try {
+        const alias = path.join(linkParent, "alias");
+        await symlink(repo, alias, "junction");
+        const src = await makeHandNumberedSource(path.join(alias, "wiki", "work"));
+        const before = await readdir(workDir);
+        await assert.rejects(invoke("migrate:folder", { folder: src, dryRun: true }, await ctxFor(repo)), (error) => error.code === "source-in-work-dir");
+        assert.deepEqual(await readdir(workDir), before, "no item was minted past the source");
+      } finally {
+        await rm(linkParent, { recursive: true, force: true });
         await rm(repo, { recursive: true, force: true });
       }
     },

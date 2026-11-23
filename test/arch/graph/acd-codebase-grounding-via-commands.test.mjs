@@ -82,6 +82,14 @@ const GRAPH_REACHING_ALLOWLIST = new Set([
   // themselves import neither; they receive these from their bindings. Neither builds or spawns.
   path.join("packages/core/src/application/bindings/commands/graph/fetch.mjs"),
   path.join("packages/core/src/application/bindings/commands/graph/publish.mjs"),
+  // 190/ADR-008's amendment (ed8ee723) — the doctor's `test-layout-graph-fresh` check: config inspection
+  // imports the normalizer for the artifact's path and build instant (its mtime) alone, never its contents
+  // (FF-17904). It neither builds, queries nor spawns.
+  path.join("packages/core/src/application/bindings/config-inspect.mjs"),
+  // Chore 197 (8e85906b) — a dispatch lane opens with a copy of the primary's code graph: this binding
+  // imports the normalizer's `graphJsonPath` and hands it to work-loop's lane factory, which copies the
+  // file by that path. It neither builds, queries nor spawns.
+  path.join("packages/core/src/application/bindings/work/dispatch.mjs"),
 ]);
 
 // The exact 09 scanner: strip line + block comments AND string/template literals so

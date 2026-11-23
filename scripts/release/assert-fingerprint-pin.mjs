@@ -96,7 +96,7 @@ function ciKeyFingerprint(homedir) {
   return normalizeFingerprint(fpr);
 }
 
-// installShTrustGateFingerprint(installShPath) -> the normalized fingerprint
+// installShTrustGateFingerprint(installShPath, homedir) -> the normalized fingerprint
 // install.sh's RUNTIME trust gate actually compares against.
 //
 // install.sh's aof_verify_gpg_signature (confirmed by reading its source, not
@@ -114,7 +114,12 @@ function ciKeyFingerprint(homedir) {
 // but whose signer fingerprint the variable would then refuse) as a
 // separate, clearly-labelled failure, distinct from the CI-key mismatch this
 // script's main() checks.
-function installShTrustGateFingerprint(installShPath) {
+//
+// The embedded key is read in the SAME --homedir as the CI key, never gpg's default one: a show-only
+// import still opens the home's keyring and trustdb, so a bare call read the operator's own ~/.gnupg on
+// a workstation — waiting on its lock, checking its trustdb, and failing on its state (measured on macOS,
+// GnuPG 2.4.5: "database_open … waiting for lock", "keydb_search failed: Operation timed out").
+function installShTrustGateFingerprint(installShPath, homedir) {
   if (!existsSync(installShPath)) {
     throw new Error(`assert-fingerprint-pin.mjs: install.sh not found at ${installShPath}`);
   }
@@ -134,7 +139,7 @@ function installShTrustGateFingerprint(installShPath) {
   if (armorMatch) {
     const out = execFileSync(
       GPG_BIN,
-      ["--with-colons", "--import-options", "show-only", "--import"],
+      ["--homedir", toPosixGpgPath(homedir), "--with-colons", "--import-options", "show-only", "--import"],
       { input: armorMatch[0], encoding: "utf8" }
     );
     const fprLine = out.split("\n").find((l) => l.startsWith("fpr:"));
@@ -160,7 +165,7 @@ function installShTrustGateFingerprint(installShPath) {
 function main() {
   const options = parseArgs(process.argv.slice(2));
   const ciFpr = ciKeyFingerprint(options.homedir);
-  const pinnedFpr = installShTrustGateFingerprint(options.installSh);
+  const pinnedFpr = installShTrustGateFingerprint(options.installSh, options.homedir);
 
   console.log(`CI-imported release signing key fingerprint: ${ciFpr}`);
   console.log(`install.sh pinned fingerprint:                ${pinnedFpr}`);

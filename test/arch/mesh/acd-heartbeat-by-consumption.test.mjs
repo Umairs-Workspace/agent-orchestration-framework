@@ -72,7 +72,14 @@ export const archTests = [
       // and the ask's owner both call. The bytes are asserted in that one home, and nowhere else.
       assert.match(stripped, /enqueueHeartbeat\(waveRun\.item, waveRun\.record\.runId, at\)/u, "the wave beats through the one enqueue");
       assert.doesNotMatch(stripped, /JSON\.stringify\(\{ runId, at \}\)/u, "…and spells no copy of the hook's bytes");
-      assert.doesNotMatch(stripped, /setTimeout\(/u, "no self-ping by timeout either");
+      // 2026-11-12 (052dc1df, chore 195; made ref'd by 7eae267f, chore 196) — ONE timeout is admitted BY
+      // SHAPE, and it is not a beat: the spacing between the at-capacity halt's refused-cleanup retries,
+      // which only resolves the promise the loop awaits. Exactly one, exactly that spelling; any other
+      // setTimeout in wave.mjs (a self-ping by timeout) is still refused.
+      const timeouts = [...stripped.matchAll(/\bsetTimeout\(/gu)];
+      assert.equal(timeouts.length, 1, "one admitted timeout (the cleanup-retry spacing), no second");
+      assert.match(stripped, /await new Promise\(\(resolve\) => \{ setTimeout\(resolve, retryDelayMs\); \}\)/u, "…and it is the cleanup-retry spacing, resolving a wait and beating nothing");
+      assert.doesNotMatch(stripped.replace(/setTimeout\(resolve, retryDelayMs\)/u, ""), /setTimeout\(/u, "no self-ping by timeout either");
       const home = (await readFile(path.join(root, "packages/execution/src/heartbeats.mjs"), "utf8")).replace(/\/\/[^\n]*/gu, "");
       assert.match(home, /async function enqueueHeartbeat\(item, runId, at\)/u, "the one enqueue");
       assert.match(home, /HEARTBEAT_QUEUE/u, "…appends to the hook's queue");

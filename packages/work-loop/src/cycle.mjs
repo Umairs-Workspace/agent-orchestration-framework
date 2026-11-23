@@ -667,7 +667,7 @@ export function createStoryCycle({
     return file;
   }
 
-  // repairLaneHalt({ act, halt, loopRunId, declare, repairOn, diagLog, scope, now, narrate }, ctx)
+  // repairLaneHalt({ act, halt, loopRunId, declare, repairOn, diagLog, scope, now, narrate, worktreePath }, ctx)
   //   → { decision: "resume", runId } | { decision: "stop", facts }   (147/00, 147/01)
   //
   // ONE REPAIR PER HALT. The engine's pure `decideHaltRepair` is asked twice, cheap facts first: the
@@ -679,9 +679,24 @@ export function createStoryCycle({
   // `brief.halt`); a refused mint (`duplicate-run` …) is a stop naming the code. Then drive it through
   // `drivePhase` on that record — the child seam from the PRIMARY (Q5: merge-home and the reopen act
   // from there, and the lane may not exist), continue's flag lend, the hand-over written by the run —
-  // and settle it with the child's outcome; a session that asked a question cannot be served by a
-  // repair, so it settles failed. `facts` are what the shell appends to the halt line's Details.
-  async function repairLaneHalt({ act, halt = {}, loopRunId, declare, repairOn, diagLog = null, scope, now, narrate = NO_PRINT }, ctx) {
+  // and settle it with the child's outcome; a session that asked a question waits for its answer in
+  // place (2026-11-14, below). `facts` are what the shell appends to the halt line's Details.
+  //
+  // The repair is driven where `ctx` names (the primary, from the shell), and a question it asks is read
+  // from that same tree: `worktreePath` is handed like the ladder's, its sequential default the ctx's.
+  async function repairLaneHalt(options, ctx) {
+    const {
+      act,
+      halt = {},
+      loopRunId,
+      declare,
+      repairOn,
+      diagLog = null,
+      scope,
+      now,
+      narrate = NO_PRINT,
+      worktreePath = ctx.workspace.projectRoot,
+    } = options;
     if (decideHaltRepair({ stop: act.stop, repairOn }) !== "repair") return { decision: "stop", facts: null };
     const ref = act.ref ?? scope;
     const item = await resolveItemExact(ctx, ref);
@@ -723,6 +738,10 @@ export function createStoryCycle({
     };
     await narrate(`Driving ${ref} — repair of ${act.stop}, run ${record.runId}.`);
     let driven = await drivePhase({ ref, phase: "repair", cycle: 1, declaration, retryRecord: record, halt: handOver, now }, ctx);
+    // SETTLED BEFORE ANY RETURN (130/ADR-003 §3, FF-13002), the cross to verify's shape: a session that
+    // asked settles to itself (`settleDriven` passes `needs-input` through untouched), so the wait below
+    // starts from a settled binding and a parked question can return without leaving a drive unsettled.
+    driven = await settleDriven(driven, ctx, { now, narrate });
     // A REPAIR MAY ASK (2026-11-14). A decision or a permission only the operator can give — "may I
     // change the rubric?", "this dirty file is yours: commit it or leave it?" — is asked like any
     // driven session's question: the loop WAITS for the answer in this process (notified, answered
@@ -737,12 +756,11 @@ export function createStoryCycle({
         ref,
         phase: "repair",
         item: driven.item,
-        cwd: ctx.workspace.projectRoot,
+        cwd: worktreePath,
       }, ask.deps);
       if (waited.parked != null) return { decision: "stop", facts: { repair: record.runId, repairOutcome: "needs-input" } };
-      driven = waited.phaseRun;
+      driven = await settleDriven(waited.phaseRun, ctx, { now, narrate });
     }
-    driven = await settleDriven(driven, ctx, { now, narrate });
     const terminal = driven.record?.state ?? driven.outcome.outcome;
     return terminal === "done"
       ? { decision: "resume", runId: record.runId }

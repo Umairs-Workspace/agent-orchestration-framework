@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile, access } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile, access } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,7 +9,8 @@ import { spawnCliSync } from "../support/cli-spawn.mjs";
 const cliPath = fileURLToPath(new URL("../../packages/core/bin/aof.mjs", import.meta.url));
 const store = () => import("../../packages/core/src/issues.mjs");
 async function fixture(run) {
-  const dir = await mkdtemp(path.join(os.tmpdir(), "aof-issues-"));
+  // realpath: macOS's tmpdir is a symlink, and the CLI child reports the canonical cwd.
+  const dir = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-issues-")));
   const home = path.join(dir, "home");
   const cwd = path.join(dir, "first");
   const other = path.join(dir, "second");

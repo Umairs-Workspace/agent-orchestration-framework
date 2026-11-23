@@ -26,7 +26,7 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // they must keep green, and spread by test/work/stream/index.mjs. The textual halves of the story's
 // contracts (FF-12703 / FF-12704) live in test/arch/work.
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, writeFile, readFile, rm, readdir, rename, cp } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, rm, readdir, rename, cp, realpath } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -105,7 +105,8 @@ async function plantRow(work, relPath, extra = {}) {
 }
 
 async function withStream(paths, body, { config = {} } = {}) {
-  const root = await mkdtemp(path.join(os.tmpdir(), "aof-127-promote-"));
+  // realpath: macOS's tmpdir is a symlink, and the CLI child reports the canonical path.
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-127-promote-")));
   await mkdir(path.join(root, ".aof"), { recursive: true });
   await writeFile(
     path.join(root, ".aof", "aof.config.json"),

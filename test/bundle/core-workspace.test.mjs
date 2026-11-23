@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync, realpathSync } from 'node:fs';
 import { workspaceDirectory, dependencyDirectory } from '../../scripts/workspace-paths.mjs';
 import { generateAssetManifest } from '../../scripts/sea-asset-manifest.mjs';
 import { assertSeaBundle } from '../../scripts/build-sea.mjs';
@@ -17,7 +17,8 @@ import { suiteCaseChunks } from '../../scripts/test-harness.mjs';
 
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
 function ownershipFixture(run) {
-  const root = mkdtempSync(path.join(os.tmpdir(), 'aof workspace ownership '));
+  // realpath: macOS's tmpdir is a symlink, and the inventory reports canonical paths.
+  const root = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'aof workspace ownership ')));
   const write = (file, value) => {
     mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
     writeFileSync(path.join(root, file), typeof value === 'string' ? value : JSON.stringify(value));
@@ -273,7 +274,8 @@ export const coreWorkspaceTests = [
       const declaration = path.join(owners[0].directory, 'src/api.d.mts');
       writeFileSync(declaration, 'export type Public = import("@aof/leaf/entry").value;');
       const declaredFiles = sourceFiles(root, owners.map(owner => ({ owner: owner.manifest.name, directory: path.relative(root, path.join(owner.directory, 'src')).replaceAll('\\', '/') })));
-      assert.ok(declaredFiles.some(file => file.path === declaration), 'the actual source walker includes ESM type declarations');
+      // The walker answers canonical paths (it realpaths for its containment check); macOS's tmpdir is a symlink.
+      assert.ok(declaredFiles.some(file => file.path === realpathSync(declaration)), 'the actual source walker includes ESM type declarations');
       assert.deepEqual(inspectBoundaries(root, { owners, files: declaredFiles }).findings, [], 'public type imports pass through the same detector');
       writeFileSync(declaration, 'export type Private = import("@aof/leaf/private").Hidden;');
       assert.ok(inspectBoundaries(root, { owners, files: declaredFiles }).findings.some(finding => finding.includes('missing explicit export')), 'a planted private type import fails through the actual declaration census');

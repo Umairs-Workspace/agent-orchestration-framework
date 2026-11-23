@@ -439,7 +439,12 @@ export const archTests = [
         // before it is a candidate inside its heartbeat window (`ownerGone`, beside `isStale` in
         // contracts). Absent, the scan is the threshold's alone, byte for byte. No key, state edge or
         // writer changed: the reclaim is the one edge it was, and a waiting run is still exempt.
-        ["packages/execution/src/runs.mjs", "0ac87fc5a91a6e813d73e8a89abe5bc5b5ed949c57c597dcdd984c89f7cd3289"],
+        // RE-PINNED by the regression gate (2026-11-23): a MOVE, no byte of any body changed. Chore 195
+        // (052dc1df) put `suspendedSpansFor` inside the failure-classification section, between
+        // `RETRYABLE_REASONS` and `isRetryable`, which pushed the three exports the shipped loop records
+        // cite by line (`isRetryable`, `shouldRetry`, `createRunStore`; FF-5810) 19 lines down. It now
+        // sits below the store factory, so those citations hold again. Same exports, same call site.
+        ["packages/execution/src/runs.mjs", "82eeab5ad5c7b8e6a50d0486580fa7dd058470925dd38980f47beb3051ce9652"],
         // RE-PINNED by 126/01 (ADR-003 §4), and the invariant it belongs to is NARROWED in the
         // open rather than quietly worked around: `53/ADR-004`'s intent was that loop state needs
         // no new FACE — which remains true and is why the `--json` document is untouched by that

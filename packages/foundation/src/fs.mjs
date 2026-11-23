@@ -72,6 +72,7 @@ export function formatJson(value, previousText = null) {
     if (JSON.stringify(JSON.parse(text)) === JSON.stringify(plain)) return text;
   } catch {
     // A layout that does not parse is never written; the plain one is.
+    return fresh;
   }
   return fresh;
 }

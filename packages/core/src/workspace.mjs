@@ -1,5 +1,5 @@
 import path from "node:path";
-import { access, readFile } from "node:fs/promises";
+import { access, readFile, realpath } from "node:fs/promises";
 import { defaultGlobalWorkspaceDir } from "./paths.mjs";
 
 export function workspacePaths(projectDir = process.cwd()) {
@@ -85,7 +85,14 @@ export async function findProjectConfig(projectDir = process.cwd(), explicitConf
   // chore's own regression test: a fixture under `os.tmpdir()` resolved its work dir to
   // `~/wiki/work`. That is the isolation breach AOF_GLOBAL_HOME exists to prevent,
   // arriving through the back door.
-  const aofHomes = new Set([globalWorkspacePaths(options).workspaceDir, defaultGlobalWorkspaceDir({})]);
+  // Each is held in its CANONICAL spelling too, and every level is compared canonically: on macOS
+  // `os.tmpdir()` is `/var/…`, a symlink to `/private/var/…`, and a child process's cwd is always the
+  // canonical one — so a home named through the link never string-matched the walk, and was adopted.
+  const aofHomes = new Set();
+  for (const home of [globalWorkspacePaths(options).workspaceDir, defaultGlobalWorkspaceDir({})]) {
+    aofHomes.add(home);
+    aofHomes.add(await canonicalPath(home));
+  }
 
   let dir = start;
   for (;;) {
@@ -102,7 +109,8 @@ export async function findProjectConfig(projectDir = process.cwd(), explicitConf
     // adopts the wrong root twice over. `dir !== start` keeps a call made directly
     // against a `.aof` directory answering exactly as it did before.
     const aofStateDir = dir !== start && path.basename(dir) === ".aof";
-    if (!aofStateDir && !aofHomes.has(paths.workspaceDir)) {
+    const aofHome = aofHomes.has(paths.workspaceDir) || aofHomes.has(await canonicalPath(paths.workspaceDir));
+    if (!aofStateDir && !aofHome) {
       if (await exists(paths.configPath)) return paths.configPath;
 
       const legacyPath = legacyConfigPath(dir);
@@ -200,6 +208,23 @@ export async function readLocalConfig(aofDir) {
 export async function isLegacyConfigOnlyProject(projectDir = process.cwd()) {
   const paths = workspacePaths(projectDir);
   return (await exists(legacyConfigPath(projectDir))) && !(await exists(paths.configPath));
+}
+
+// The real path of the deepest existing ancestor, with the not-yet-existing tail re-appended, so a
+// comparison sees through a symlink even when the leaf (a `.aof` that is not there) is missing.
+async function canonicalPath(target) {
+  const tail = [];
+  let current = path.resolve(target);
+  for (;;) {
+    try {
+      return path.join(await realpath(current), ...tail.reverse());
+    } catch {
+      const parent = path.dirname(current);
+      if (parent === current) return path.resolve(target);
+      tail.push(path.basename(current));
+      current = parent;
+    }
+  }
 }
 
 async function exists(filePath) {

@@ -34,7 +34,7 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // (127/01) — it carries no `number` key, so the promoted row is asserted on `ref` and on the
 // ABSENCE of `backlog`, not on `number`.
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readdir, readFile, writeFile, copyFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, readdir, readFile, writeFile, copyFile, rm, realpath } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -161,7 +161,8 @@ async function walkShape(dir, out = []) {
 // `TECH_DEBT.md`, `ROADMAP.md`, `loops.md` included — copied byte-for-byte under a scratch project
 // with this repository's config. Nothing is renamed or renumbered; `runs/` is not shape.
 export async function buildShapeCopy() {
-  const root = await mkdtemp(path.join(os.tmpdir(), "aof-127-05-shape-"));
+  // realpath: macOS's tmpdir is a symlink, and the CLI child reports the canonical path.
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-127-05-shape-")));
   const work = path.join(root, "wiki", "work");
   let files = 0;
   for (const file of await walkShape(workRoot)) {

@@ -49,6 +49,21 @@ files:
   - test/arch/ui/acd-imported-mock-self-contained.test.mjs
   - test/arch/ui/index.mjs
   - test/arch/practices/acd-runtime-scoped-prose.test.mjs
+  - packages/core/assets/manifest.json
+  - .claude/agents/aof-designer.md
+  - .codex/agents/aof-designer.toml
+  - .opencode/agents/aof-designer.md
+  - .claude/commands/aof/refine.md
+  - .opencode/commands/aof/refine.md
+  - .agents/skills/aof-refine/SKILL.md
+  - .agents/skills/aof-refine/agents/openai.yaml
+  - .agents/skills/aof-refine/procedure.md
+  - .claude/commands/aof/verify.md
+  - .opencode/commands/aof/verify.md
+  - .agents/skills/aof-verify/SKILL.md
+  - .agents/skills/aof-verify/agents/openai.yaml
+  - .agents/skills/aof-verify/procedure.md
+  - .codex/aof/workflows/workflow-contract.md
 schema: 1
 aofVersion: 0.1.0
 ---

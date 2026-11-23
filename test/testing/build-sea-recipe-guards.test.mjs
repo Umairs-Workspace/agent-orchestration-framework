@@ -17,7 +17,7 @@
 //   subject is how the bin loads still measures the source.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { mkdtemp, rm, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -353,7 +353,9 @@ async function runBundle() {
   const named = process.env.AOF_TEST_CLI_BUNDLE;
   if (named && existsSync(named)) return named;
   ownBundle ??= (async () => {
-    const out = await mkdtemp(path.join(os.tmpdir(), "aof-160-07-bundle-"));
+    // Canonical, because the loader is: on macOS os.tmpdir() is under /var, a symlink to /private/var, and the
+    // bin's import of the bundle is recorded at its real path — the URL E1 and the outline compare against.
+    const out = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-160-07-bundle-")));
     const built = await buildTestCliBundle(out);
     assert.ok(built.bundle, `the test bundle built: ${built.unavailable}`);
     return built.bundle;

@@ -26,7 +26,7 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 //      non-zero exit, never a pass: an empty result and a clean result must stop
 //      rendering identically (78/RETROSPECTIVE R4).
 import assert from "node:assert/strict";
-import { mkdtemp, rm, mkdir, writeFile, utimes } from "node:fs/promises";
+import { mkdtemp, rm, mkdir, writeFile, utimes, symlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -244,6 +244,28 @@ export const doctorCwdIndependenceTests = [
           path.join(home, "wiki", "work"),
           "…and specifically NOT the global AOF home's stream",
         );
+      } finally {
+        await rm(home, { recursive: true, force: true });
+      }
+    },
+  },
+
+  {
+    name: "chore 103 — the walk stops short of the global AOF home even when the home is named through a symlink",
+    async run() {
+      // macOS's `os.tmpdir()` is `/var/…`, a symlink to `/private/var/…`, and a child's cwd is the
+      // canonical spelling — so the home boundary must compare real paths, not strings.
+      const home = await mkdtemp(path.join(os.tmpdir(), "aof-chore103-linked-home-"));
+      try {
+        const globalHome = path.join(home, "real", ".aof");
+        await mkdir(globalHome, { recursive: true });
+        await writeFile(path.join(globalHome, "aof.config.json"), JSON.stringify({ name: "the-global-home" }), "utf8");
+        const project = path.join(home, "real", "workspaces", "unconfigured");
+        await mkdir(project, { recursive: true });
+        await symlink(path.join(home, "real"), path.join(home, "alias"), "junction");
+
+        const found = await findProjectConfig(project, undefined, { env: { AOF_GLOBAL_HOME: path.join(home, "alias", ".aof") } });
+        assert.equal(found, workspacePaths(project).configPath, "the home, named through the link, is still not adopted");
       } finally {
         await rm(home, { recursive: true, force: true });
       }

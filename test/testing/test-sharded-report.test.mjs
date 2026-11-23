@@ -443,6 +443,18 @@ export const testShardedReportTests = [
     },
   },
   {
+    name: "160/09 A unit's count is its own last `# executed` line, not one a failure message quotes from a child run",
+    run: () => {
+      const unit = { key: "test/testing/build-sea-recipe-guards.test.mjs", positions: Array.from({ length: 18 }, (_, index) => index) };
+      const quoted = "not ok - the strip case\nAssertionError: a control handed the variable to a child\n# executed 10 cases; failures 1\n";
+      const result = unitResultOf(unit, { code: 1, output: `${quoted}# executed 18 cases; failures 1\n`, seconds: 2 });
+      assert.equal(result.executed, 18, "the unit executed every case it was assigned");
+      assert.deepEqual(result.failed, ["the strip case"], "the red case is named, and no lost-cases failure is invented");
+      const lost = unitResultOf(unit, { code: 1, output: `${quoted}# executed 12 cases; failures 1\n`, seconds: 2 });
+      assert.deepEqual(lost.failed, ["the strip case", lostUnitFailure(unit.key, 12, 18)], "a unit that did lose cases is still caught by its own line");
+    },
+  },
+  {
     name: "160/09 A failure in a packed unit names its case and is retried with its unit",
     run: async () => {
       const unit = packedUnit(["a", "b", "c"]);

@@ -172,6 +172,9 @@ export const releaseFingerprintPinTests = [
       try {
         const result = runAssertScript(unrelatedKey.homedir, realInstallSh);
         assert.doesNotMatch(result.stderr, /SELF-INCONSISTENT/, "the real, checked-in install.sh's embedded key and AOF_RELEASE_GPG_FINGERPRINT variable are NOT self-inconsistent");
+        // …and the script got as far as the comparison: without this, a gpg fault reading the embedded key
+        // (it once read the operator's default ~/.gnupg) also prints no SELF-INCONSISTENT and passed vacuously.
+        assert.match(result.stdout + result.stderr, /FINGERPRINT MISMATCH/, "the self-consistency half ran to completion and the unrelated CI key is reported as a mismatch");
       } finally {
         rmSync(unrelatedKey.homedir, { recursive: true, force: true });
       }

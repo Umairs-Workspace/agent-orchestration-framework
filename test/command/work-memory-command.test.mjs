@@ -57,7 +57,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { stripComments, functionBody } from "../support/source-slice.mjs";
-import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, writeFile, readFile, realpath } from "node:fs/promises";
 import { existsSync, realpathSync } from "node:fs";
 import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 import os from "node:os";
@@ -317,7 +317,8 @@ const JSON_GOLDENS = [
 // with `memory` absent, the `none` backend (05/ADR-002), which is what a bare fixture and the
 // bijection probe run over.
 async function makeRoot({ backend } = {}) {
-  const root = await mkdtemp(path.join(os.tmpdir(), "aof-work-memory-"));
+  // realpath: macOS's tmpdir is a symlink, and the CLI child reports the canonical path.
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-work-memory-")));
   await mkdir(path.join(root, ".aof"), { recursive: true });
   const milestone = path.join(root, "wiki", "work", "07_milestone_fixture");
   await mkdir(milestone, { recursive: true });

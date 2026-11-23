@@ -67,7 +67,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // ids), ADR-012 §4 (the shape one-liners, D5 — the face relativises `Node.path` too) and §5 (the
 // rendering's totality, E2 — `nodeCount` counts declared records, `edgeCount` every declared edge).
 import assert from "node:assert/strict";
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -180,13 +180,19 @@ function testCase(name, spawns, run) {
 const CONFIG_TEXT = `${JSON.stringify({ name: "loop-command-fixture", work: { dir: "./work" } }, null, 2)}\n`;
 
 async function dressWorkspace(fixture) {
-  const aofDir = path.join(fixture.temp, ".aof");
+  // realpath: macOS's tmpdir is a symlink, and the CLI child reports the canonical path.
+  const temp = await realpath(fixture.temp);
+  const rebase = (at) => path.join(temp, path.relative(fixture.temp, at));
+  const aofDir = path.join(temp, ".aof");
   await mkdir(aofDir, { recursive: true });
   const configPath = path.join(aofDir, "aof.config.json");
   await writeFile(configPath, CONFIG_TEXT, "utf8");
-  const nested = path.join(fixture.temp, "nested", "deeper");
+  const nested = path.join(temp, "nested", "deeper");
   await mkdir(nested, { recursive: true });
-  return { ...fixture, projectRoot: fixture.temp, configPath, nested };
+  return {
+    ...fixture, temp, workDir: rebase(fixture.workDir), loopsDir: rebase(fixture.loopsDir),
+    pathOf: (name) => rebase(fixture.pathOf(name)), projectRoot: temp, configPath, nested,
+  };
 }
 
 /** A temp workspace holding a `loops/` registry AND the `.aof/aof.config.json` beside it. */

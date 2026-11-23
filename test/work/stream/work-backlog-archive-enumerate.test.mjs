@@ -23,7 +23,7 @@ import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // suite is the behavioural half. Sections follow the task features in order (00 → 04, then
 // task 01's behavioural legs).
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, writeFile, rm, readFile, readdir } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm, readFile, readdir, realpath } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -95,7 +95,8 @@ export async function writeItem(work, rel, { type, number, slug, status = "not-s
 // scenario turns (task 02 sets `06` to `not-started`); everything else a scenario adds, it adds
 // through `writeItem` / `mkdir` on the returned `work` dir.
 export async function buildThreeRootFixture({ archiveEtaStatus = "done", betaDepends = "[05]" } = {}) {
-  const root = await mkdtemp(path.join(os.tmpdir(), "aof-127-three-roots-"));
+  // realpath: macOS's tmpdir is a symlink, and the CLI child reports the canonical path.
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-127-three-roots-")));
   await mkdir(path.join(root, ".aof"), { recursive: true });
   await writeFile(path.join(root, ".aof", "aof.config.json"), `${JSON.stringify({ name: "fixture", work: { dir: "./wiki/work" } }, null, 2)}\n`, "utf8");
   const work = path.join(root, "wiki", "work");

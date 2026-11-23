@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createDiagramSceneCommand } from "@aof/diagrams/commands/scene";
@@ -98,7 +98,8 @@ const MAX_RECORD_BYTES = 2 * 4 * 1024 * 1024 + 64 * 1024;
 
 export const diagramSceneReviewTests = [
   { name: "171/02 · the stamp names the scene, the review records and the directories to watch (the real CLI)", run: async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), "aof-stamp-cli-"));
+    // realpath: macOS's tmpdir is a symlink, and the CLI child reports the canonical path.
+    const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-stamp-cli-")));
     try {
       const project = path.join(root, "project");
       const item = path.join(project, "wiki/work/171_milestone_push");

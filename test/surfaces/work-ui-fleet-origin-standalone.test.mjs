@@ -38,7 +38,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // full suite.
 import assert from "node:assert/strict";
 import net from "node:net";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, writeFile, realpath } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -64,7 +64,8 @@ const ROUTE = "/api/fleet-origin";
 // A repo whose .aof/aof.config.json points work.dir at wiki/work, with one milestone so
 // the board's work stream is non-empty — work-ui-verb-rename.test.mjs's own fixture.
 async function makeFixture() {
-  const root = await mkdtemp(path.join(os.tmpdir(), "aof-work-ui-origin-"));
+  // realpath: macOS's tmpdir is a symlink, and the CLI child reports the canonical path.
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-work-ui-origin-")));
   const workDir = path.join(root, "wiki", "work");
   await mkdir(path.join(root, ".aof"), { recursive: true });
   await mkdir(path.join(workDir, "03_milestone_board"), { recursive: true });

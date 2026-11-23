@@ -17,7 +17,7 @@ import { processCostMeter } from "@aof/foundation/cost-meter";
 //        changes-no-files
 import assert from "node:assert/strict";
 import { assertFrozenShape, assertAnswersFrom } from "../support/answering-side.mjs";
-import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat, utimes } from "node:fs/promises";
+import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat, utimes, realpath } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
@@ -61,7 +61,8 @@ const THREE_ROOT_STREAM = {
 // --- fixture builders --------------------------------------------------------
 
 async function makeRepo() {
-  const repo = await mkdtemp(path.join(os.tmpdir(), "aof-board-"));
+  // realpath: macOS's tmpdir is a symlink, and the CLI child reports the canonical path.
+  const repo = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-board-")));
   const workDir = path.join(repo, "wiki", "work");
   await mkdir(path.join(repo, ".aof"), { recursive: true });
   await mkdir(workDir, { recursive: true });

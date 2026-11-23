@@ -1,11 +1,28 @@
 import { appendPosition } from "../promote/promotion.mjs";
 import path from "node:path";
-import { mkdir, writeFile, readFile, readdir, rm } from "node:fs/promises";
+import { mkdir, writeFile, readFile, readdir, rm, realpath } from "node:fs/promises";
 import { commandError } from "@aof/contracts/error";
 
 
 
 import { WORK_ITEM_SCHEMA_VERSION } from "../records.mjs";
+
+// The real path of the deepest existing ancestor, with the not-yet-existing tail re-appended, so the
+// containment check sees through a symlink even when the work dir has not been created yet.
+async function canonicalPath(target) {
+  const tail = [];
+  let current = path.resolve(target);
+  for (;;) {
+    try {
+      return path.join(await realpath(current), ...tail.reverse());
+    } catch {
+      const parent = path.dirname(current);
+      if (parent === current) return path.resolve(target);
+      tail.push(path.basename(current));
+      current = parent;
+    }
+  }
+}
 
 export function createMigrateFolderCommand({ resolveImportSource, recoverMilestone, listRecoverableMilestones, slugifySource, packageVersionString }) {
 
@@ -122,7 +139,10 @@ const migrateFolderCommand = {
     // twice. Migrate never moves or deletes its source, so it refuses before any read and says how
     // to proceed. A --dry-run refuses the same way, so its preview never names a number migrate
     // would not give.
-    const workRelative = path.relative(path.resolve(ctx.workspace.workDir), path.resolve(sourceDir));
+    // Both sides are compared CANONICALLY: on macOS `os.tmpdir()` is `/var/…`, a symlink to
+    // `/private/var/…`, and the CLI's cwd-derived work dir is always the canonical spelling — so a
+    // source named through the link read as "outside" and was minted.
+    const workRelative = path.relative(await canonicalPath(ctx.workspace.workDir), await canonicalPath(sourceDir));
     if (workRelative === "" || (!workRelative.startsWith("..") && !path.isAbsolute(workRelative))) {
       throw commandError(
         `"${folder}" is inside the work stream (${ctx.workspace.workDir}), so it is already managed work. Move it outside the work directory, then migrate it from there.`,

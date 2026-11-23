@@ -58,25 +58,6 @@ import { reduceRuntimeObservation, settleRuntimeReviews } from "./runtime-events
 // distinct precisely so the record can carry `resumeAfter` and the retry can WAIT.
 const RETRYABLE_REASONS = new Set(["runtime_offline", "timeout", "session_limit"]);
 
-// suspendedSpansFor(spans, createdAt, settledAt) — the caller's `[fromMs, toMs]` pairs (an awake
-// clock's own shape), clipped to the attempt's window and written as `{ from, to }` UTC-Z
-// instants. Anything unreadable is dropped; no spans answers `[]`.
-export function suspendedSpansFor(spans, createdAt, settledAt) {
-  if (!Array.isArray(spans)) return [];
-  const startMs = Date.parse(createdAt);
-  const endMs = Date.parse(settledAt);
-  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return [];
-  const out = [];
-  for (const span of spans) {
-    if (!Array.isArray(span) || span.length !== 2) continue;
-    const from = Math.max(Number(span[0]), startMs);
-    const to = Math.min(Number(span[1]), endMs);
-    if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) continue;
-    out.push({ from: new Date(from).toISOString(), to: new Date(to).toISOString() });
-  }
-  return out;
-}
-
 export function isRetryable(failureReason) {
   return RETRYABLE_REASONS.has(failureReason);
 }
@@ -1362,4 +1343,28 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   };
 
   return Object.freeze({ COST_SOURCES, DEFAULT_PARK_MINUTES, EXIT_REASONS, PRICE_TABLE_VERSION, SPEND_ENVELOPE_KEYS, TOKEN_BUCKET_KEYS, answerRunAsk: serialized(answerRunAsk), applyTransition: serialized(applyTransition), completeRun: serialized(completeRun), heartbeat: serialized(heartbeat), isLegalTransition, isRetryable, isRunning, isStale, mapVendorTokensToBuckets, openRunAsk: serialized(openRunAsk), parkRunAsk: serialized(parkRunAsk), parseResumeAfter, priceVendorTokens, pruneRun: serialized(pruneRun), readRun, readRuns, reclaimRun: serialized(reclaimRun), reclaimStaleRuns, recordAnchorReading: serialized(recordAnchorReading), recordAnswers: serialized(recordAnswers), recordSessionId: serialized(recordSessionId), recordRuntimeEvent: serialized(recordRuntimeEvent), retryReadiness, retryRun: serialized(retryRun), rewriteRunItemRef: serialized(rewriteRunItemRef), runNodeRecordPath, runRecordPath, runsDir, settleRun: serialized(settleRun), settleRunFromVendor: serialized(settleRunFromVendor), shouldRetry, staleRunningRuns, startRun: serialized(startRun) });
+}
+
+// ------------------------------------------------ settle helpers (195) ----
+
+// Kept below the store factory, outside the failure classification above: the shipped loop records
+// cite that section's exports by line (`isRetryable`, `shouldRetry`, `createRunStore`; FF-5810).
+//
+// suspendedSpansFor(spans, createdAt, settledAt) — the caller's `[fromMs, toMs]` pairs (an awake
+// clock's own shape), clipped to the attempt's window and written as `{ from, to }` UTC-Z
+// instants. Anything unreadable is dropped; no spans answers `[]`.
+export function suspendedSpansFor(spans, createdAt, settledAt) {
+  if (!Array.isArray(spans)) return [];
+  const startMs = Date.parse(createdAt);
+  const endMs = Date.parse(settledAt);
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return [];
+  const out = [];
+  for (const span of spans) {
+    if (!Array.isArray(span) || span.length !== 2) continue;
+    const from = Math.max(Number(span[0]), startMs);
+    const to = Math.min(Number(span[1]), endMs);
+    if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) continue;
+    out.push({ from: new Date(from).toISOString(), to: new Date(to).toISOString() });
+  }
+  return out;
 }

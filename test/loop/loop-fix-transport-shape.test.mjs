@@ -114,12 +114,14 @@ export const loopFixTransportShapeTests = [
       // still never enters the input. 131/03 (ADR-003 §7) adds `answer`, the PATH of an answered ask
       // file, by the same rule: a path across the boundary, never a payload. 141 adds `thinking`, a
       // level string — a scalar, not a transport. 147/02 adds `halt`, the PATH of a repair's hand-over file.
+      // 200 (b3cc77a7, 2026-11-17) RENAMED 143/01's `autonomous` boolean to `all` (refine's `--autonomous`
+      // became `--all`; `--autonomous` is no longer accepted): the same boolean, one key for one, no growth.
       assert.deepEqual(createPhaseDriverCommand("continue").input, {
         type: "object",
-        properties: { ref: { type: "string" }, dryRun: { type: "boolean" }, run: { type: "string" }, fix: { type: "string" }, answer: { type: "string" }, thinking: { type: "string" }, autonomous: { type: "boolean" }, model: { type: "string" }, runtime: { type: "string" }, halt: { type: "string" } },
+        properties: { ref: { type: "string" }, dryRun: { type: "boolean" }, run: { type: "string" }, fix: { type: "string" }, answer: { type: "string" }, thinking: { type: "string" }, all: { type: "boolean" }, model: { type: "string" }, runtime: { type: "string" }, halt: { type: "string" } },
         required: ["ref"],
         additionalProperties: false,
-      }, "the driver's registered input schema is 129/02's four keys plus 131/03's answer path, 141's thinking level, 143/01's autonomous boolean, 143/03's model and 147/02's halt path, and holds no transport");
+      }, "the driver's registered input schema is 129/02's four keys plus 131/03's answer path, 141's thinking level, 143/01's whole-item boolean (`all` since 200), 143/03's model and 147/02's halt path, and holds no transport");
     },
   },
 

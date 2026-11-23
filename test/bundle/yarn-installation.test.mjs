@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, symlinkSync, realpathSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,7 +13,8 @@ function write(dir, file, body) {
   writeFileSync(path.join(dir, file), typeof body === 'string' ? body : JSON.stringify(body));
 }
 async function fixture(run) {
-  const dir = mkdtempSync(path.join(os.tmpdir(), 'aof-yarn-'));
+  // realpath: macOS's tmpdir is a symlink, and the inventory reports canonical paths.
+  const dir = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'aof-yarn-')));
   try {
     write(dir, '.yarnrc.yml', 'enableScripts: false\nnpmRegistryServer: "https://registry.npmjs.org"\n');
     write(dir, 'package.json', { name: 'fixture', version: '1.0.0' });
@@ -260,10 +261,13 @@ export const yarnInstallationTests = [
         'progress.mjs': ['node:child_process', 'node:fs/promises', 'node:path', 'node:util', '@aof/contracts/loop-bounds'],
         'diagnostics.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path'],
         // 163: the lane-tree existence check moved with `runsBehindAsk` from cycle.mjs into ask.mjs.
-        'ask.mjs': ['node:fs', '@aof/contracts/loop-bounds'],
-        'stop.mjs': ['@aof/contracts/loop-bounds'],
+        // loop-reclaim (4cac6cd8, 2026-11-18): a resume reclaims a run whose owner is KNOWN gone. ask.mjs and
+        // wave.mjs read the one pure predicate, `ownerGone`, from the contract leaf beside `isStale`; stop.mjs
+        // reads this machine's boot instant (`os.uptime()`) for the horizon. One port per file, no more.
+        'ask.mjs': ['node:fs', '@aof/contracts/loop-bounds', '@aof/contracts/freshness'],
+        'stop.mjs': ['node:os', '@aof/contracts/loop-bounds'],
         'cycle.mjs': ['node:fs/promises', 'node:path', '@aof/contracts/loop-bounds', '@aof/foundation/awake-clock'],
-        'wave.mjs': ['node:fs/promises', 'node:fs', 'node:path'],
+        'wave.mjs': ['node:fs/promises', 'node:fs', 'node:path', '@aof/contracts/freshness'],
         // 155/00: the drive composes its mode flag from the session chain's contract leaf.
         'drive.mjs': ['node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error', '@aof/contracts/loop-bounds', '@aof/contracts/agent-mode'],
         'loop.mjs': ['node:crypto', 'node:child_process', 'node:fs/promises', 'node:os', 'node:path', 'node:util', '@aof/contracts/loop-bounds', '@aof/contracts/error'],
