@@ -3,10 +3,10 @@ type: milestone
 number: 208
 slug: work-item-store-seam
 title: "Work items are read and written through one store interface, with today's files as its first store"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-11-20
-updated: 2026-11-20
+updated: 2026-11-23
 depends: [205]
 schema: 1
 aofVersion: 0.1.0
@@ -63,7 +63,12 @@ Out of scope:
 
 ## Stories
 
-To be broken down by `aof:refine`.
+- [ ] `00_story_workspace-store` — A workspace selects the file store and exposes its tracking data.
+- [ ] `01_story_read-consumers` — Readers retain the same answers and source attribution.
+- [ ] `02_story_guarded-lifecycle` — Status moves and run effects use the selected store.
+- [ ] `03_story_placement-and-identity` — Promotion, insertion and moves preserve the work stream.
+- [ ] `04_story_mesh-observation` — Mesh refresh and publication observe the selected store.
+- [ ] `05_story_enforce-and-replay` — A registered control guards tracking and every 205 capture still matches.
 
 ## Dependencies
 
