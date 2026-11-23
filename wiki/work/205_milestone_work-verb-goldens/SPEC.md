@@ -3,7 +3,7 @@ type: milestone
 number: 205
 slug: work-verb-goldens
 title: "What the aof work verbs print and change in a work stream is held to baselines over a fixture stream"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-11-20
 updated: 2026-11-23
