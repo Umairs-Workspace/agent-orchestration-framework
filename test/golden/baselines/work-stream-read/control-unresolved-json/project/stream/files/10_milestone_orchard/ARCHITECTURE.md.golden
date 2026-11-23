@@ -1,0 +1,7 @@
+# Architecture
+
+## Fitness functions
+
+| id | invariant | enforced by (arch-test) | from |
+|---|---|---|---|
+| FF-1001 | Counts match | `test/arch/acd-orchard.test.mjs` | ADR-001 |

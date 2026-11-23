@@ -1,0 +1,614 @@
+[
+  {
+    "id": "find-miss",
+    "title": "E1 · A find miss differs across the two CLI formats",
+    "argv": [
+      "find",
+      "nonsense"
+    ],
+    "mode": "read",
+    "contains": [
+      "[]"
+    ],
+    "exit": {
+      "text": 1
+    }
+  },
+  {
+    "id": "list-live",
+    "title": "E2 · List exposes the archive on request and keeps nested parents",
+    "argv": [
+      "list"
+    ],
+    "mode": "read",
+    "contains": [
+      "queued",
+      "10/01"
+    ]
+  },
+  {
+    "id": "list-all",
+    "title": "E2 · List exposes the archive on request and keeps nested parents",
+    "argv": [
+      "list",
+      "--all"
+    ],
+    "mode": "read",
+    "contains": [
+      "queued",
+      "10/01",
+      "ledger"
+    ]
+  },
+  {
+    "id": "absent-outcome",
+    "title": "E3 · A missing document is an answer",
+    "argv": [
+      "doc",
+      "10/00",
+      "OUTCOME"
+    ],
+    "mode": "read",
+    "contains": [
+      "\"present\":false"
+    ]
+  },
+  {
+    "id": "scoped-list",
+    "title": "Each query keeps all of its output in both formats",
+    "argv": [
+      "list",
+      "10"
+    ],
+    "mode": "read",
+    "contains": [
+      "pick"
+    ]
+  },
+  {
+    "id": "find-child",
+    "title": "Each query keeps all of its output in both formats",
+    "argv": [
+      "find",
+      "10/00"
+    ],
+    "mode": "read",
+    "contains": [
+      "pick"
+    ]
+  },
+  {
+    "id": "find-backlog",
+    "title": "Each query keeps all of its output in both formats",
+    "argv": [
+      "find",
+      "queued"
+    ],
+    "mode": "read",
+    "contains": [
+      "queued"
+    ]
+  },
+  {
+    "id": "find-archive",
+    "title": "Each query keeps all of its output in both formats",
+    "argv": [
+      "find",
+      "30"
+    ],
+    "mode": "read",
+    "contains": [
+      "ledger"
+    ]
+  },
+  {
+    "id": "spec",
+    "title": "Each query keeps all of its output in both formats",
+    "argv": [
+      "doc",
+      "10",
+      "SPEC"
+    ],
+    "mode": "read",
+    "contains": [
+      "00_story_pick"
+    ]
+  },
+  {
+    "id": "task",
+    "title": "Each query keeps all of its output in both formats",
+    "argv": [
+      "doc",
+      "10/00",
+      "TASKS",
+      "00_pick.feature"
+    ],
+    "mode": "read",
+    "contains": [
+      "Record the pick result"
+    ]
+  },
+  {
+    "id": "ready-wave",
+    "title": "E4 · Readiness includes the ready story in the wave",
+    "argv": [
+      "next",
+      "10"
+    ],
+    "mode": "read",
+    "contains": [
+      "\"wave\"",
+      "10/00"
+    ]
+  },
+  {
+    "id": "blocked-story",
+    "title": "E5 · The scoped answer retains the unmet dependency",
+    "argv": [
+      "next",
+      "10/01"
+    ],
+    "mode": "read",
+    "contains": [
+      "\"blocked\"",
+      "10/00"
+    ]
+  },
+  {
+    "id": "blocked-uat",
+    "title": "E5 · The scoped answer retains the unmet dependency",
+    "argv": [
+      "next",
+      "13"
+    ],
+    "mode": "read",
+    "contains": [
+      "\"blocked\"",
+      "12"
+    ]
+  },
+  {
+    "id": "ready-chore",
+    "title": "Other readiness boundaries stay visible",
+    "argv": [
+      "next",
+      "11"
+    ],
+    "mode": "read"
+  },
+  {
+    "id": "delivered",
+    "title": "Other readiness boundaries stay visible",
+    "argv": [
+      "next",
+      "19"
+    ],
+    "mode": "read"
+  },
+  {
+    "id": "prototype",
+    "title": "Other readiness boundaries stay visible",
+    "argv": [
+      "next",
+      "15"
+    ],
+    "mode": "read"
+  },
+  {
+    "id": "valid",
+    "title": "E6 · Validation records both a clean and a failing item",
+    "argv": [
+      "validate",
+      "11"
+    ],
+    "mode": "read",
+    "contains": [
+      "[]"
+    ]
+  },
+  {
+    "id": "missing-dates",
+    "title": "E6 · Validation records both a clean and a failing item",
+    "argv": [
+      "validate",
+      "11"
+    ],
+    "mode": "read",
+    "contains": [
+      "created",
+      "updated"
+    ],
+    "variation": {
+      "items": {
+        "labels": {
+          "created": null,
+          "updated": null
+        }
+      }
+    },
+    "exit": {
+      "json": 1,
+      "text": 1
+    }
+  },
+  {
+    "id": "duplicate-number",
+    "title": "E7 · A duplicate number is visible as a stream-level error",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "duplicate-driver-number"
+    ],
+    "variation": {
+      "duplicate": true
+    },
+    "exit": {
+      "json": 1,
+      "text": 1
+    }
+  },
+  {
+    "id": "ordinary",
+    "title": "E8 · Strict mode changes the exit for a warning-only stream",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "\"errors\":0",
+      "numbering-gap"
+    ]
+  },
+  {
+    "id": "strict",
+    "title": "E8 · Strict mode changes the exit for a warning-only stream",
+    "argv": [
+      "doctor",
+      "--strict"
+    ],
+    "mode": "read",
+    "contains": [
+      "\"errors\":0",
+      "numbering-gap"
+    ],
+    "exit": {
+      "json": 1,
+      "text": 1
+    }
+  },
+  {
+    "id": "orphan-folder",
+    "title": "Each stream-reading diagnostic group has a nonempty witness",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "orphan-folder"
+    ],
+    "variation": {
+      "orphan": true
+    }
+  },
+  {
+    "id": "lying-parent",
+    "title": "Each stream-reading diagnostic group has a nonempty witness",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "lying-parent"
+    ],
+    "variation": {
+      "items": {
+        "orchard": {
+          "status": "done"
+        }
+      }
+    },
+    "exit": {
+      "json": 1,
+      "text": 1
+    }
+  },
+  {
+    "id": "started-story-no-tasks",
+    "title": "Each stream-reading diagnostic group has a nonempty witness",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "started-story-no-tasks"
+    ],
+    "variation": {
+      "items": {
+        "pack": {
+          "status": "in-progress"
+        }
+      }
+    }
+  },
+  {
+    "id": "updated-before-created",
+    "title": "Each stream-reading diagnostic group has a nonempty witness",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "updated-before-created"
+    ],
+    "variation": {
+      "items": {
+        "labels": {
+          "updated": "2025-12-01"
+        }
+      }
+    },
+    "exit": {
+      "json": 1,
+      "text": 1
+    }
+  },
+  {
+    "id": "numbering-gap",
+    "title": "Each stream-reading diagnostic group has a nonempty witness",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "numbering-gap"
+    ]
+  },
+  {
+    "id": "doc-over-budget",
+    "title": "Each stream-reading diagnostic group has a nonempty witness",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "doc-over-budget"
+    ],
+    "variation": {
+      "budget": true,
+      "items": {
+        "orchard": {
+          "documents": {
+            "ARCHITECTURE": "# Architecture\n\nThe stream uses numbered crates.\n"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "control-unresolved",
+    "title": "Each stream-reading diagnostic group has a nonempty witness",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "control-unresolved"
+    ],
+    "variation": {
+      "items": {
+        "orchard": {
+          "documents": {
+            "ARCHITECTURE": "# Architecture\n\n## Fitness functions\n\n| id | invariant | enforced by (arch-test) | from |\n|---|---|---|---|\n| FF-1001 | Counts match | `test/arch/acd-orchard.test.mjs` | ADR-001 |\n"
+          }
+        }
+      }
+    },
+    "exit": {
+      "json": 1,
+      "text": 1
+    }
+  },
+  {
+    "id": "scenario-unjoined",
+    "title": "Each stream-reading diagnostic group has a nonempty witness",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "scenario-unjoined"
+    ],
+    "variation": {
+      "rubric": true
+    }
+  },
+  {
+    "id": "loop-record-malformed",
+    "title": "Each stream-reading diagnostic group has a nonempty witness",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "loop-record-malformed"
+    ],
+    "variation": {
+      "items": {
+        "orchard": {
+          "documents": {
+            "EXECUTION": "# Execution\n\nNo sign-off table.\n"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "depends-edge-unwitnessed",
+    "title": "Each stream-reading diagnostic group has a nonempty witness",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "depends-edge-unwitnessed"
+    ]
+  },
+  {
+    "id": "lesson-meta-archived",
+    "title": "Each stream-reading diagnostic group has a nonempty witness",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "lesson-meta-archived"
+    ],
+    "variation": {
+      "items": {
+        "ledger": {
+          "documents": {
+            "RETROSPECTIVE": "# Retrospective\n\n## R1 — Count the apples\n\n- **Kind:** risk · **Area:** process · **Stage:** build · **Owner:** developer\n- **Promoted to:** none\n\nThe receipt omitted one apple.\n"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "memory-lesson-recurs",
+    "title": "Each stream-reading diagnostic group has a nonempty witness",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "memory-lesson-recurs"
+    ],
+    "variation": {
+      "items": {
+        "orchard": {
+          "documents": {
+            "RETROSPECTIVE": "# Retrospective\n\n## R1 — Count the apples\n\n- **Kind:** mistake · **Area:** process · **Stage:** build · **Owner:** developer\n- **Promoted to:** none\n\nThe receipt omitted one apple.\n"
+          }
+        },
+        "receipt": {
+          "documents": {
+            "RETROSPECTIVE": "# Retrospective\n\n## R1 — Count the apples\n\n- **Kind:** mistake · **Area:** process · **Stage:** build · **Owner:** developer\n- **Promoted to:** none\n- **Recurs:** 10/R1\n\nThe receipt omitted one apple.\n"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "diagram-link-missing",
+    "title": "Each stream-reading diagnostic group has a nonempty witness",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "diagram-link-missing"
+    ],
+    "variation": {
+      "items": {
+        "orchard": {
+          "documents": {
+            "ARCHITECTURE": "# Architecture\n\n![Harvest](diagrams/harvest.svg)\n"
+          }
+        }
+      }
+    },
+    "exit": {
+      "json": 1,
+      "text": 1
+    }
+  },
+  {
+    "id": "example-question-open",
+    "title": "Each stream-reading diagnostic group has a nonempty witness",
+    "argv": [
+      "doctor"
+    ],
+    "mode": "read",
+    "contains": [
+      "example-question-open"
+    ],
+    "variation": {
+      "examples": true,
+      "items": {
+        "pick": {
+          "documents": {
+            "EXAMPLES": "# Pick\n\n## R1 · Pick ripe fruit\n- E1 · A ripe apple fills the crate [confirmed]\n\n## Questions\n- Q1 · business · open · Who picks up the crate?\n"
+          }
+        }
+      }
+    },
+    "exit": {
+      "json": 1,
+      "text": 1
+    }
+  },
+  {
+    "id": "unknown-scope",
+    "title": "Scope and content errors have their own reports",
+    "argv": [
+      "validate",
+      "999"
+    ],
+    "mode": "read",
+    "contains": [
+      "scope-not-found"
+    ],
+    "exit": {
+      "json": 1,
+      "text": 1
+    }
+  },
+  {
+    "id": "record-slug",
+    "title": "Scope and content errors have their own reports",
+    "argv": [
+      "validate"
+    ],
+    "mode": "read",
+    "contains": [
+      "slug"
+    ],
+    "variation": {
+      "items": {
+        "labels": {
+          "recordSlug": "wrong"
+        }
+      }
+    },
+    "exit": {
+      "json": 1,
+      "text": 1
+    }
+  },
+  {
+    "id": "scoped-doctor",
+    "title": "Scope and content errors have their own reports",
+    "argv": [
+      "doctor",
+      "11"
+    ],
+    "mode": "read",
+    "contains": [
+      "duplicate-driver-number"
+    ],
+    "variation": {
+      "duplicate": true,
+      "items": {
+        "yield": {
+          "updated": "2025-01-01"
+        }
+      }
+    },
+    "exit": {
+      "json": 1,
+      "text": 1
+    }
+  }
+]

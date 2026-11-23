@@ -1,0 +1,8 @@
+{
+  "ref": "10/00",
+  "doc": "TASKS",
+  "member": "00_pick.feature",
+  "present": true,
+  "body": "@executable @cli @work @work-stream\nFeature: pick\n  Scenario: Record the pick result\n    Then the result is recorded\n",
+  "answeredFrom": "disk"
+}

@@ -1,0 +1,23 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-place",
+      "story-parent-text"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "insert-story",
+        "wash",
+        "--under",
+        "99",
+        "--at",
+        "0",
+        "--yes"
+      ],
+      "exit": 1
+    }
+  }
+]

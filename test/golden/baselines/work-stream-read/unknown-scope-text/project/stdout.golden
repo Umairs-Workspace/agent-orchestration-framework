@@ -1,0 +1,4 @@
+1 issue(s):
+  wiki/work — scope-not-found: "999" resolves to no work item — nothing was validated, so this is not a pass
+
+Note: test-traceability (@executable → green test; @manual/@uat → VERIFICATION rows) is not yet checked here.

@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "A target position (--at) is required and must be a non-negative integer.",
+  "code": "insert-invalid-at"
+}

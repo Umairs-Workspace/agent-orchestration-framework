@@ -1,0 +1,19 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-life",
+      "already-archived-json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "archive",
+        "30",
+        "--json"
+      ],
+      "exit": 1
+    }
+  }
+]

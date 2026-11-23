@@ -1,0 +1,9 @@
+{
+  "empty": [
+    "18-bad-folder",
+    "19_chore_receipt/evidence/empty"
+  ],
+  "binary": [
+    "19_chore_receipt/evidence/sample.bin"
+  ]
+}

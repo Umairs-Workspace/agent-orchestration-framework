@@ -1,0 +1,19 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-fixture",
+      "identity-archive"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "find",
+        "30",
+        "--json"
+      ],
+      "exit": 0
+    }
+  }
+]

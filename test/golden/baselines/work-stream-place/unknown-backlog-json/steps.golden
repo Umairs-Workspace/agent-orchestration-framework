@@ -1,0 +1,19 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-place",
+      "unknown-backlog-json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "promote",
+        "missing",
+        "--json"
+      ],
+      "exit": 1
+    }
+  }
+]

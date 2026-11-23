@@ -1,0 +1,11 @@
+{
+  "ok": false,
+  "error": "\"queued\" cannot be promoted as its `depends:` is written:\n- `99` resolves to no numbered item in the stream or the archive.",
+  "code": "promote-depends-unresolved",
+  "entries": [
+    {
+      "entry": "99",
+      "code": "promote-depends-unresolved"
+    }
+  ]
+}

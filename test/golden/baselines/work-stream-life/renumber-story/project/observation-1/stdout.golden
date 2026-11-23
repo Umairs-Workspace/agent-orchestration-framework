@@ -1,0 +1,12 @@
+[
+  {
+    "ref": "10/03",
+    "type": "story",
+    "slug": "pick",
+    "status": "not-started",
+    "title": "pick",
+    "parent": "10",
+    "dir": "wiki/work/10_milestone_orchard/stories/03_story_pick",
+    "answeredFrom": "disk"
+  }
+]

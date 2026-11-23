@@ -1,0 +1,13 @@
+[
+  {
+    "ref": "30",
+    "type": "chore",
+    "slug": "ledger",
+    "status": "done",
+    "title": "ledger",
+    "parent": null,
+    "dir": "wiki/work/archive/30_chore_ledger",
+    "archived": true,
+    "answeredFrom": "disk"
+  }
+]

@@ -1,0 +1,14 @@
+---
+type: chore
+slug: waiting
+title: waiting
+status: not-started
+depends: [31]
+owner: product-owner
+created: 2026-01-15
+updated: 2026-01-15
+schema: 1
+aofVersion: <version>
+---
+# waiting
+

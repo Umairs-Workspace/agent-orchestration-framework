@@ -1,0 +1,18 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-read",
+      "missing-dates-text"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "validate",
+        "11"
+      ],
+      "exit": 1
+    }
+  }
+]

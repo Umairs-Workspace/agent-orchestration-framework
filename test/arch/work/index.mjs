@@ -139,6 +139,7 @@ import { archTests as acdMemoryVocabularyOneHomeTests } from "./acd-memory-vocab
 import { archTests as acdRecordDocMapOneHomeTests } from "./acd-record-doc-map-one-home.test.mjs";
 import { archTests as acdPrototypeStaysLightTests } from "./acd-prototype-stays-light.test.mjs";
 
+import { workStreamBoundaryTests } from "./acd-work-stream-golden-boundary.test.mjs";
 export const tests = [
   ...acdPhaseDoorNotADriverTests,
   ...workContentFreeDiscoveryTests,
@@ -200,4 +201,5 @@ export const tests = [
   // milestone 168 / story 00 — FF-16801, FF-16802 and FF-16803 (see the import note).
   ...acdRecordDocMapOneHomeTests,
   ...acdPrototypeStaysLightTests,
+  ...workStreamBoundaryTests,
 ];

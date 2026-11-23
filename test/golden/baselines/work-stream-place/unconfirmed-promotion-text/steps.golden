@@ -1,0 +1,20 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-place",
+      "unconfirmed-promotion-text"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "promote",
+        "queued",
+        "--at",
+        "11"
+      ],
+      "exit": 1
+    }
+  }
+]

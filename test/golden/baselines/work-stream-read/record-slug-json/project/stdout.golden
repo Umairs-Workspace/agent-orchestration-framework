@@ -1,0 +1,98 @@
+[
+  {
+    "path": "wiki/work/10_milestone_orchard/stories/00_story_pick/tasks/00_pick.feature",
+    "problem": "unknown tag \"@cli\" (outside the closed vocabulary)"
+  },
+  {
+    "path": "wiki/work/10_milestone_orchard/stories/00_story_pick/tasks/00_pick.feature",
+    "problem": "unknown tag \"@work\" (outside the closed vocabulary)"
+  },
+  {
+    "path": "wiki/work/10_milestone_orchard/stories/00_story_pick/tasks/00_pick.feature",
+    "problem": "unknown tag \"@work-stream\" (outside the closed vocabulary)"
+  },
+  {
+    "path": "wiki/work/11_chore_labels/CHORE.md",
+    "problem": "frontmatter slug \"wrong\" ≠ folder \"labels\""
+  },
+  {
+    "path": "wiki/work/15_prototype_active/PROTOTYPE.md",
+    "problem": "a prototype carries no `depends:` — nothing waits on a prototype and it waits on nothing"
+  },
+  {
+    "path": "wiki/work/15_prototype_active/PROTOTYPE.md",
+    "problem": "missing the \"## Intent\" section"
+  },
+  {
+    "path": "wiki/work/15_prototype_active/PROTOTYPE.md",
+    "problem": "missing the \"## Wants\" section"
+  },
+  {
+    "path": "wiki/work/15_prototype_active/PROTOTYPE.md",
+    "problem": "missing the \"## Shortcuts\" section"
+  },
+  {
+    "path": "wiki/work/15_prototype_active/STATE.md",
+    "problem": "a prototype keeps a STATE.md beside its PROTOTYPE.md — it is missing"
+  },
+  {
+    "path": "wiki/work/16_prototype_paused/PROTOTYPE.md",
+    "problem": "a prototype carries no `depends:` — nothing waits on a prototype and it waits on nothing"
+  },
+  {
+    "path": "wiki/work/16_prototype_paused/PROTOTYPE.md",
+    "problem": "missing the \"## Intent\" section"
+  },
+  {
+    "path": "wiki/work/16_prototype_paused/PROTOTYPE.md",
+    "problem": "missing the \"## Wants\" section"
+  },
+  {
+    "path": "wiki/work/16_prototype_paused/PROTOTYPE.md",
+    "problem": "missing the \"## Shortcuts\" section"
+  },
+  {
+    "path": "wiki/work/16_prototype_paused/STATE.md",
+    "problem": "a prototype keeps a STATE.md beside its PROTOTYPE.md — it is missing"
+  },
+  {
+    "path": "wiki/work/17_prototype_done/PROTOTYPE.md",
+    "problem": "a prototype carries no `depends:` — nothing waits on a prototype and it waits on nothing"
+  },
+  {
+    "path": "wiki/work/17_prototype_done/PROTOTYPE.md",
+    "problem": "missing the \"## Intent\" section"
+  },
+  {
+    "path": "wiki/work/17_prototype_done/PROTOTYPE.md",
+    "problem": "missing the \"## Wants\" section"
+  },
+  {
+    "path": "wiki/work/17_prototype_done/PROTOTYPE.md",
+    "problem": "missing the \"## Shortcuts\" section"
+  },
+  {
+    "path": "wiki/work/17_prototype_done/STATE.md",
+    "problem": "a prototype keeps a STATE.md beside its PROTOTYPE.md — it is missing"
+  },
+  {
+    "path": "wiki/work/18_prototype_abandoned/PROTOTYPE.md",
+    "problem": "a prototype carries no `depends:` — nothing waits on a prototype and it waits on nothing"
+  },
+  {
+    "path": "wiki/work/18_prototype_abandoned/PROTOTYPE.md",
+    "problem": "missing the \"## Intent\" section"
+  },
+  {
+    "path": "wiki/work/18_prototype_abandoned/PROTOTYPE.md",
+    "problem": "missing the \"## Wants\" section"
+  },
+  {
+    "path": "wiki/work/18_prototype_abandoned/PROTOTYPE.md",
+    "problem": "missing the \"## Shortcuts\" section"
+  },
+  {
+    "path": "wiki/work/18_prototype_abandoned/STATE.md",
+    "problem": "a prototype keeps a STATE.md beside its PROTOTYPE.md — it is missing"
+  }
+]

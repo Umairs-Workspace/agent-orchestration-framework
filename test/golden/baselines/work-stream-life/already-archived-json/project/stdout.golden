@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "\"30\" is already archived at archive/30_chore_ledger.",
+  "code": "archive-already-archived"
+}

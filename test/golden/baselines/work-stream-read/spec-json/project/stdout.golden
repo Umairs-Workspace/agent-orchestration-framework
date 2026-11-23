@@ -1,0 +1,7 @@
+{
+  "ref": "10",
+  "doc": "SPEC",
+  "present": true,
+  "body": "---\ntype: milestone\nnumber: 10\nslug: orchard\ntitle: orchard\nstatus: in-progress\ndepends: []\nowner: product-owner\ncreated: 2026-01-15\nupdated: 2026-01-15\nschema: 1\naofVersion: <version>\n---\n# orchard\n\n## Stories\n\n- [ ] `00_story_pick` — pick\n- [ ] `01_story_pack` — pack\n",
+  "answeredFrom": "disk"
+}

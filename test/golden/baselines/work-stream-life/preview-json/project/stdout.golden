@@ -1,0 +1,29 @@
+{
+  "from": "10",
+  "to": "22",
+  "source": "<project>/subject/wiki/work/10_milestone_orchard",
+  "destination": "<project>/subject/wiki/work/22_milestone_orchard",
+  "remap": [
+    {
+      "from": "10",
+      "to": "22"
+    },
+    {
+      "from": "10/00",
+      "to": "22/00"
+    },
+    {
+      "from": "10/01",
+      "to": "22/01"
+    }
+  ],
+  "rewritten": [
+    "22_milestone_orchard/SPEC.md",
+    "22_milestone_orchard/stories/00_story_pick/STORY.md",
+    "22_milestone_orchard/stories/01_story_pack/STORY.md",
+    "11_chore_labels/CHORE.md"
+  ],
+  "moved": false,
+  "dryRun": true,
+  "effects": []
+}

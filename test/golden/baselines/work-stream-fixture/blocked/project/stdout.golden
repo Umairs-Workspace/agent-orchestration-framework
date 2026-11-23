@@ -1,0 +1,16 @@
+{
+  "state": "blocked",
+  "ref": "10/01",
+  "type": "story",
+  "slug": "pack",
+  "status": "not-started",
+  "path": "wiki/work/10_milestone_orchard/stories/01_story_pack",
+  "waitingOn": [
+    "10/00"
+  ],
+  "readySet": [],
+  "skipped": [],
+  "answeredFrom": "disk",
+  "wave": [],
+  "heldSet": []
+}

@@ -1,0 +1,21 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-place",
+      "milestone-confirm-json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "insert-milestone",
+        "grove",
+        "--at",
+        "11",
+        "--json"
+      ],
+      "exit": 1
+    }
+  }
+]

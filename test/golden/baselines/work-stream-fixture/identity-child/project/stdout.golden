@@ -1,0 +1,12 @@
+[
+  {
+    "ref": "10/01",
+    "type": "story",
+    "slug": "pack",
+    "status": "not-started",
+    "title": "pack",
+    "parent": "10",
+    "dir": "wiki/work/10_milestone_orchard/stories/01_story_pack",
+    "answeredFrom": "disk"
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-read",
+      "absent-outcome-json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "doc",
+        "10/00",
+        "OUTCOME",
+        "--json"
+      ],
+      "exit": 0
+    }
+  }
+]

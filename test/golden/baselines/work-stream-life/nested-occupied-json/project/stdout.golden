@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "Target number 01 is occupied; renumber never shifts another item.",
+  "code": "renumber-target-occupied"
+}

@@ -1,0 +1,21 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-life",
+      "renumber-story"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "renumber",
+        "10/00",
+        "--to",
+        "03",
+        "--json"
+      ],
+      "exit": 0
+    }
+  }
+]

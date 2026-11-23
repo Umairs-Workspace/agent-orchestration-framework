@@ -1,0 +1,20 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-life",
+      "nested-occupied-text"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "renumber",
+        "10/00",
+        "--to",
+        "01"
+      ],
+      "exit": 1
+    }
+  }
+]

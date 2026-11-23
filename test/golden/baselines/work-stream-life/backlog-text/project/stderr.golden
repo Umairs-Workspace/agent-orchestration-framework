@@ -1,0 +1,1 @@
+"queued" is a backlog item (backlog/chore_queued) — it has no number and is not in the stream. Promote it first: aof work promote queued.

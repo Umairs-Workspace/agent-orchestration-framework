@@ -1,0 +1,19 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-read",
+      "unknown-scope-json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "validate",
+        "999",
+        "--json"
+      ],
+      "exit": 1
+    }
+  }
+]

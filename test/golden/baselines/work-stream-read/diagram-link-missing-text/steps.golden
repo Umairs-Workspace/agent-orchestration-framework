@@ -1,0 +1,17 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-read",
+      "diagram-link-missing-text"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "doctor"
+      ],
+      "exit": 1
+    }
+  }
+]

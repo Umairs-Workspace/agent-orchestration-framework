@@ -84,6 +84,34 @@
           "why": "a workspace's native node:test files: its `test` script runs them through scripts/test-workspace.mjs (`node --test`), scripts/test.mjs registers only its *.suite.mjs array suites, and the per-file runner scripts/test-shard.mjs rejects a native file (\"exports no array\")"
         }
       ],
+      "couplings": [
+        {
+          "paths": ["test/golden/baselines/work-stream-*{,/**}"],
+          "suites": [
+            "test/golden/work-stream.test.mjs",
+            "test/arch/testing/acd-golden-baselines-eol-pinned.test.mjs"
+          ],
+          "why": "The work-stream suite compares these baselines and checks their inventory. The golden path control checks their suffix and line-ending attributes."
+        },
+        {
+          "paths": [
+            "test/golden/fixtures/work-stream/*.cases.json",
+            "test/golden/fixtures/work-stream/file-adapter.mjs"
+          ],
+          "via": ["test/golden/work-stream.lane.mjs"],
+          "suites": [
+            "test/golden/work-stream.test.mjs",
+            "test/golden/golden-harness.test.mjs",
+            "test/arch/work/acd-work-stream-golden-boundary.test.mjs"
+          ],
+          "why": "The golden suite and portability control import the lane, which discovers the manifests and validates their inputs with the file adapter. The harness also exercises the adapter when it updates every registered lane."
+        },
+        {
+          "paths": ["test/golden/fixtures/work-stream/{seed.json,clock.mjs,run-case.mjs}"],
+          "suites": ["test/golden/work-stream.test.mjs", "test/golden/golden-harness.test.mjs"],
+          "why": "The golden runner launches run-case with a preloaded clock and reads the seed from disk. The harness exercises that runner when it updates every registered lane in a scratch directory."
+        }
+      ],
       "deadlineMs": 7200000,
       "report": {
         "format": "tap"

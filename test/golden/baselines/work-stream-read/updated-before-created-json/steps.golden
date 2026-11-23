@@ -1,0 +1,18 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-read",
+      "updated-before-created-json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "doctor",
+        "--json"
+      ],
+      "exit": 1
+    }
+  }
+]

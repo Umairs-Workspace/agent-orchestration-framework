@@ -1,0 +1,2 @@
+"waiting" cannot be promoted as its `depends:` is written:
+- `queued` is still in the backlog — this item waits on it. Promote `queued` first, or drop the entry.

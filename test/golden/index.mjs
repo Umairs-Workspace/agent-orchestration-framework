@@ -31,6 +31,7 @@ import { assetsCleanTests } from "./assets-clean.test.mjs";
 // `--global` path writing only into the temp home (204/ADR-001 §4, ADR-005).
 import { projectInitTests } from "./project-init.test.mjs";
 
+import { workStreamTests } from "./work-stream.test.mjs";
 export const tests = [
   ...goldenHarnessTests,
   ...workInitTests,
@@ -39,4 +40,5 @@ export const tests = [
   ...assetsMergeTests,
   ...assetsCleanTests,
   ...projectInitTests,
+  ...workStreamTests,
 ];

@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "Choose a different number.",
+  "code": "renumber-same-number"
+}

@@ -1,0 +1,8 @@
+{
+  "argv": [
+    "work",
+    "list",
+    "--json"
+  ],
+  "exit": 0
+}

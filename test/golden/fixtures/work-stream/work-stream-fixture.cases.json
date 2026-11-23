@@ -1,0 +1,119 @@
+[
+  {
+    "id": "seed",
+    "title": "Seed export",
+    "mode": "seed",
+    "argv": [],
+    "formats": [
+      "json"
+    ]
+  },
+  {
+    "id": "inventory",
+    "title": "E1 \u00b7 A fresh seed exposes the live stream, backlog and archive",
+    "mode": "read",
+    "argv": [
+      "list",
+      "--all"
+    ],
+    "formats": [
+      "json"
+    ]
+  },
+  {
+    "id": "ready",
+    "title": "E3 \u00b7 The seed includes satisfied and outstanding dependencies",
+    "mode": "read",
+    "argv": [
+      "next",
+      "10"
+    ],
+    "formats": [
+      "json"
+    ]
+  },
+  {
+    "id": "blocked",
+    "title": "E3 \u00b7 The seed includes satisfied and outstanding dependencies",
+    "mode": "read",
+    "argv": [
+      "next",
+      "10/01"
+    ],
+    "formats": [
+      "json"
+    ]
+  },
+  {
+    "id": "tail",
+    "title": "E6 \u00b7 Replaying a mutation under a different work root preserves its delta",
+    "mode": "write",
+    "argv": [
+      "promote",
+      "queued"
+    ],
+    "formats": [
+      "json"
+    ]
+  },
+  {
+    "id": "relocated",
+    "title": "E6 \u00b7 Replaying a mutation under a different work root preserves its delta",
+    "mode": "write",
+    "argv": [
+      "promote",
+      "queued"
+    ],
+    "formats": [
+      "json"
+    ],
+    "relocated": true
+  },
+  {
+    "id": "identity-child",
+    "title": "Copies expose each numbered or unnumbered identity",
+    "mode": "read",
+    "argv": [
+      "find",
+      "10/01"
+    ],
+    "formats": [
+      "json"
+    ]
+  },
+  {
+    "id": "identity-backlog",
+    "title": "Copies expose each numbered or unnumbered identity",
+    "mode": "read",
+    "argv": [
+      "find",
+      "queued"
+    ],
+    "formats": [
+      "json"
+    ]
+  },
+  {
+    "id": "identity-archive",
+    "title": "Copies expose each numbered or unnumbered identity",
+    "mode": "read",
+    "argv": [
+      "find",
+      "30"
+    ],
+    "formats": [
+      "json"
+    ]
+  },
+  {
+    "id": "text-list",
+    "title": "E4 \u00b7 An unchanged capture reproduces the same baseline",
+    "mode": "read",
+    "argv": [
+      "list"
+    ],
+    "formats": [
+      "text"
+    ]
+  }
+]

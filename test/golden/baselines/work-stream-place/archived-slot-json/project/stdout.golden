@@ -1,0 +1,11 @@
+{
+  "ok": false,
+  "error": "promoting \"queued\" at 30 would write a number an archived item already holds: 30 (archive/30_chore_ledger). An archived number is never re-minted — choose another position.",
+  "code": "promote-number-archived",
+  "collisions": [
+    {
+      "number": "30",
+      "folder": "archive/30_chore_ledger"
+    }
+  ]
+}

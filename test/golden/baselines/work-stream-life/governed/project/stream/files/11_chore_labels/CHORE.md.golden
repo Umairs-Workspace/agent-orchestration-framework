@@ -1,0 +1,16 @@
+---
+type: chore
+number: 11
+slug: labels
+title: labels
+status: in-progress
+depends: [30]
+owner: product-owner
+created: 2026-01-15
+updated: 2026-01-16
+schema: 1
+aofVersion: <version>
+---
+# labels
+
+See [receipt](../19_chore_receipt/CHORE.md) and [orchard](../10_milestone_orchard/SPEC.md). The label weighs 10 grams.

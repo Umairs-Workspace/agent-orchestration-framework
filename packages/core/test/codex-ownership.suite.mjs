@@ -13,7 +13,7 @@ import { resolveExecutionResume } from "@aof/execution/runtime-selection";
 import assert from "node:assert/strict";
 import path from "node:path";
 import os from "node:os";
-import { mkdtemp, mkdir, readFile, writeFile, rm, stat, readdir, cp } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile, rm, stat, readdir, cp, realpath } from "node:fs/promises";
 import { writeText } from "@aof/foundation/fs";
 import { existsSync } from "node:fs";
 import { createRenderPlan, planApplyActions, executeApplyActions, createLockManifest, formatFriendlyApplyAction } from "../src/render-plan.mjs";
@@ -406,7 +406,8 @@ export const codexOwnershipTests = [
 const put = async (root, file, text) => { const target = path.join(root, file); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, text); };
 const read = (root, file) => readFile(path.join(root, file), "utf8");
 async function fixture(run) {
-  const dir = await mkdtemp(path.join(os.tmpdir(), "aof-native-lane-"));
+  // Git reports canonical worktree paths, including when the system temp directory is a symlink.
+  const dir = await mkdtemp(path.join(await realpath(os.tmpdir()), "aof-native-lane-"));
   const root = path.join(dir, "primary"), lane = path.join(dir, "lane");
   await mkdir(root); await mkdir(lane);
   try {

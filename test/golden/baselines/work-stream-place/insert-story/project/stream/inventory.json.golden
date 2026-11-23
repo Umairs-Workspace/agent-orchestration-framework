@@ -1,0 +1,9 @@
+{
+  "empty": [
+    "10_milestone_orchard/stories/00_story_wash/tasks",
+    "19_chore_receipt/evidence/empty"
+  ],
+  "binary": [
+    "19_chore_receipt/evidence/sample.bin"
+  ]
+}

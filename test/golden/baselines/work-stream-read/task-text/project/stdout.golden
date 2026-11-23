@@ -1,0 +1,5 @@
+@executable @cli @work @work-stream
+Feature: pick
+  Scenario: Record the pick result
+    Then the result is recorded
+

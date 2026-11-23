@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "no backlog item matches \"missing\". Nothing is born in the backlog under `work.intake: \"stream\"` — set it to \"backlog\", or add the item under backlog/ by hand.",
+  "code": "promote-not-found"
+}

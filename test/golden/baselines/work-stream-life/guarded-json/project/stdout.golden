@@ -1,0 +1,12 @@
+{
+  "ref": "11",
+  "status": "not-started",
+  "moved": false,
+  "code": "status-edge-not-applicable",
+  "reason": "item 11 is \"not-started\" — its legal moves are in-progress|blocked (asked for \"not-started\")",
+  "asked": "not-started",
+  "edges": [
+    "in-progress",
+    "blocked"
+  ]
+}

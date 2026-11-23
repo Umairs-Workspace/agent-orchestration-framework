@@ -1,0 +1,32 @@
+{
+  "state": "ready",
+  "ref": "11",
+  "type": "chore",
+  "slug": "labels",
+  "status": "not-started",
+  "path": "wiki/work/11_chore_labels",
+  "readySet": [
+    {
+      "state": "ready",
+      "ref": "11",
+      "type": "chore",
+      "slug": "labels",
+      "status": "not-started",
+      "path": "wiki/work/11_chore_labels",
+      "answeredFrom": "disk"
+    }
+  ],
+  "skipped": [],
+  "answeredFrom": "disk",
+  "wave": [
+    {
+      "state": "ready",
+      "ref": "11",
+      "type": "chore",
+      "slug": "labels",
+      "status": "not-started",
+      "answeredFrom": "disk"
+    }
+  ],
+  "heldSet": []
+}

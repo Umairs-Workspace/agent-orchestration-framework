@@ -1,0 +1,22 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-place",
+      "archived-slot-json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "promote",
+        "queued",
+        "--at",
+        "30",
+        "--yes",
+        "--json"
+      ],
+      "exit": 1
+    }
+  }
+]

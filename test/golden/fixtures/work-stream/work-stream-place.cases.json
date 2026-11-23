@@ -1,0 +1,203 @@
+[
+  {
+    "id": "tail",
+    "title": "E1 · A tail promotion rewrites the waiting edge",
+    "argv": [
+      "promote",
+      "queued"
+    ],
+    "mode": "write"
+  },
+  {
+    "id": "explicit-slot",
+    "title": "E2 · An explicit slot preserves archived numbers",
+    "argv": [
+      "promote",
+      "queued",
+      "--at",
+      "11",
+      "--yes"
+    ],
+    "mode": "write"
+  },
+  {
+    "id": "backlog-edge",
+    "title": "E3 · A backlog dependency refuses promotion",
+    "argv": [
+      "promote",
+      "waiting"
+    ],
+    "mode": "refuse",
+    "code": "promote-depends-backlog"
+  },
+  {
+    "id": "archived-slot",
+    "title": "Preconditions refuse before any stream change",
+    "argv": [
+      "promote",
+      "queued",
+      "--at",
+      "30",
+      "--yes"
+    ],
+    "mode": "refuse",
+    "code": "promote-number-archived"
+  },
+  {
+    "id": "unconfirmed-promotion",
+    "title": "Preconditions refuse before any stream change",
+    "argv": [
+      "promote",
+      "queued",
+      "--at",
+      "11"
+    ],
+    "mode": "refuse",
+    "code": "insert-confirm-required"
+  },
+  {
+    "id": "unresolved-edge",
+    "title": "Preconditions refuse before any stream change",
+    "argv": [
+      "promote",
+      "queued"
+    ],
+    "mode": "refuse",
+    "code": "promote-depends-unresolved",
+    "variation": {
+      "items": {
+        "queued": {
+          "depends": [
+            "99"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "id": "unknown-backlog",
+    "title": "Preconditions refuse before any stream change",
+    "argv": [
+      "promote",
+      "missing"
+    ],
+    "mode": "refuse",
+    "code": "promote-not-found"
+  },
+  {
+    "id": "insert-uat",
+    "title": "E4 · Inserting a UAT preserves the meaning of its supplied dependency",
+    "argv": [
+      "insert-uat",
+      "trial",
+      "--at",
+      "11",
+      "--depends",
+      "12",
+      "--yes"
+    ],
+    "mode": "write"
+  },
+  {
+    "id": "insert-story",
+    "title": "E5 · Inserting a story shifts siblings and updates the checklist",
+    "argv": [
+      "insert-story",
+      "wash",
+      "--under",
+      "10",
+      "--at",
+      "0",
+      "--yes"
+    ],
+    "mode": "write"
+  },
+  {
+    "id": "staged-leaf",
+    "title": "E6 · A refused insert leaves no staged leaf",
+    "argv": [
+      "insert-chore",
+      "labels2",
+      "--at",
+      "11"
+    ],
+    "mode": "refuse",
+    "code": "insert-confirm-required"
+  },
+  {
+    "id": "insert-milestone",
+    "title": "Top-level scaffolds match their own full deltas",
+    "argv": [
+      "insert-milestone",
+      "grove",
+      "--at",
+      "11",
+      "--yes"
+    ],
+    "mode": "write"
+  },
+  {
+    "id": "insert-chore",
+    "title": "Top-level scaffolds match their own full deltas",
+    "argv": [
+      "insert-chore",
+      "crate",
+      "--at",
+      "11",
+      "--yes"
+    ],
+    "mode": "write"
+  },
+  {
+    "id": "milestone-confirm",
+    "title": "Each insertion face has a refusal baseline",
+    "argv": [
+      "insert-milestone",
+      "grove",
+      "--at",
+      "11"
+    ],
+    "mode": "refuse",
+    "code": "insert-confirm-required"
+  },
+  {
+    "id": "chore-slot",
+    "title": "Each insertion face has a refusal baseline",
+    "argv": [
+      "insert-chore",
+      "crate"
+    ],
+    "mode": "refuse",
+    "code": "insert-invalid-at"
+  },
+  {
+    "id": "uat-dependency",
+    "title": "Each insertion face has a refusal baseline",
+    "argv": [
+      "insert-uat",
+      "trial",
+      "--at",
+      "11",
+      "--depends",
+      "99",
+      "--yes"
+    ],
+    "mode": "refuse",
+    "code": "promote-depends-unresolved"
+  },
+  {
+    "id": "story-parent",
+    "title": "Each insertion face has a refusal baseline",
+    "argv": [
+      "insert-story",
+      "wash",
+      "--under",
+      "99",
+      "--at",
+      "0",
+      "--yes"
+    ],
+    "mode": "refuse",
+    "code": "insert-parent-not-found"
+  }
+]

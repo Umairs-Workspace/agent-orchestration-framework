@@ -1,0 +1,4 @@
+@executable @cli @work @work-stream
+Feature: weigh
+  Scenario: Record the weigh result
+    Then the result is recorded

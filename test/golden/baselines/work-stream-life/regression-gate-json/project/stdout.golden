@@ -1,0 +1,7 @@
+{
+  "ok": false,
+  "error": "Acceptance refused for 10: no regression gate has run — there is no REGRESSION.md beside its records. Run aof work regression-gate <ref> on a clean checkout, or accept with --gate-override \"<reason>\" and say why the run cannot happen here.",
+  "code": "regression-gate-missing",
+  "ref": "10",
+  "record": null
+}

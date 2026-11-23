@@ -1,0 +1,17 @@
+[
+  {"ref":"10","type":"milestone","slug":"orchard","status":"in-progress","body":"## Stories\n\n- [ ] `00_story_pick` — pick\n- [ ] `01_story_pack` — pack\n"},
+  {"ref":"10/00","type":"story","slug":"pick","status":"not-started","feature":"pick"},
+  {"ref":"10/01","type":"story","slug":"pack","status":"not-started","depends":["00"]},
+  {"ref":"11","type":"chore","slug":"labels","status":"not-started","depends":["30"],"body":"See [receipt](../19_chore_receipt/CHORE.md) and [orchard](../10_milestone_orchard/SPEC.md). The label weighs 10 grams.\n"},
+  {"ref":"12","type":"spike","slug":"yield","status":"blocked"},
+  {"ref":"13","type":"uat","slug":"taste","status":"in-review","depends":["12"]},
+  {"ref":"14","type":"task","slug":"weigh","feature":"weigh"},
+  {"ref":"15","type":"prototype","slug":"active","status":"active"},
+  {"ref":"16","type":"prototype","slug":"paused","status":"paused"},
+  {"ref":"17","type":"prototype","slug":"done","status":"done"},
+  {"ref":"18","type":"prototype","slug":"abandoned","status":"abandoned"},
+  {"ref":"19","type":"chore","slug":"receipt","status":"done","attachments":true},
+  {"ref":"30","type":"chore","slug":"ledger","status":"done","location":"archive"},
+  {"type":"chore","slug":"queued","status":"not-started","location":"backlog"},
+  {"type":"chore","slug":"waiting","status":"not-started","location":"backlog","depends":["queued"]}
+]

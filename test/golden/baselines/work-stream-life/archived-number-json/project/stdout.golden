@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "Archived work cannot be renumbered.",
+  "code": "renumber-not-live"
+}

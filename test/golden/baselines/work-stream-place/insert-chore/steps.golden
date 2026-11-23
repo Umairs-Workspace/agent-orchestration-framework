@@ -1,0 +1,22 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-place",
+      "insert-chore"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "insert-chore",
+        "crate",
+        "--at",
+        "11",
+        "--yes",
+        "--json"
+      ],
+      "exit": 0
+    }
+  }
+]

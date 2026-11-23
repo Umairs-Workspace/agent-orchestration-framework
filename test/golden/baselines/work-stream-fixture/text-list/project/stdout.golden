@@ -1,0 +1,14 @@
+10      milestone in-progress  orchard
+  10/00   story     not-started  pick
+  10/01   story     not-started  pack
+11      chore     not-started  labels
+12      spike     blocked      yield
+13      uat       in-review    taste
+14      task      -            -
+15      prototype active       active
+16      prototype paused       paused
+17      prototype done         done
+18      prototype abandoned    abandoned
+19      chore     done         receipt
+queued  chore     not-started  queued
+waiting chore     not-started  waiting

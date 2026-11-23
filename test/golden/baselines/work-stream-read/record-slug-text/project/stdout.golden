@@ -1,0 +1,27 @@
+24 issue(s):
+  wiki/work/10_milestone_orchard/stories/00_story_pick/tasks/00_pick.feature — unknown tag "@cli" (outside the closed vocabulary)
+  wiki/work/10_milestone_orchard/stories/00_story_pick/tasks/00_pick.feature — unknown tag "@work" (outside the closed vocabulary)
+  wiki/work/10_milestone_orchard/stories/00_story_pick/tasks/00_pick.feature — unknown tag "@work-stream" (outside the closed vocabulary)
+  wiki/work/11_chore_labels/CHORE.md — frontmatter slug "wrong" ≠ folder "labels"
+  wiki/work/15_prototype_active/PROTOTYPE.md — a prototype carries no `depends:` — nothing waits on a prototype and it waits on nothing
+  wiki/work/15_prototype_active/PROTOTYPE.md — missing the "## Intent" section
+  wiki/work/15_prototype_active/PROTOTYPE.md — missing the "## Wants" section
+  wiki/work/15_prototype_active/PROTOTYPE.md — missing the "## Shortcuts" section
+  wiki/work/15_prototype_active/STATE.md — a prototype keeps a STATE.md beside its PROTOTYPE.md — it is missing
+  wiki/work/16_prototype_paused/PROTOTYPE.md — a prototype carries no `depends:` — nothing waits on a prototype and it waits on nothing
+  wiki/work/16_prototype_paused/PROTOTYPE.md — missing the "## Intent" section
+  wiki/work/16_prototype_paused/PROTOTYPE.md — missing the "## Wants" section
+  wiki/work/16_prototype_paused/PROTOTYPE.md — missing the "## Shortcuts" section
+  wiki/work/16_prototype_paused/STATE.md — a prototype keeps a STATE.md beside its PROTOTYPE.md — it is missing
+  wiki/work/17_prototype_done/PROTOTYPE.md — a prototype carries no `depends:` — nothing waits on a prototype and it waits on nothing
+  wiki/work/17_prototype_done/PROTOTYPE.md — missing the "## Intent" section
+  wiki/work/17_prototype_done/PROTOTYPE.md — missing the "## Wants" section
+  wiki/work/17_prototype_done/PROTOTYPE.md — missing the "## Shortcuts" section
+  wiki/work/17_prototype_done/STATE.md — a prototype keeps a STATE.md beside its PROTOTYPE.md — it is missing
+  wiki/work/18_prototype_abandoned/PROTOTYPE.md — a prototype carries no `depends:` — nothing waits on a prototype and it waits on nothing
+  wiki/work/18_prototype_abandoned/PROTOTYPE.md — missing the "## Intent" section
+  wiki/work/18_prototype_abandoned/PROTOTYPE.md — missing the "## Wants" section
+  wiki/work/18_prototype_abandoned/PROTOTYPE.md — missing the "## Shortcuts" section
+  wiki/work/18_prototype_abandoned/STATE.md — a prototype keeps a STATE.md beside its PROTOTYPE.md — it is missing
+
+Note: test-traceability (@executable → green test; @manual/@uat → VERIFICATION rows) is not yet checked here.

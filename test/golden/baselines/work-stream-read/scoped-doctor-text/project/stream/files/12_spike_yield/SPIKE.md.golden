@@ -1,0 +1,15 @@
+---
+type: spike
+number: 12
+slug: yield
+title: yield
+status: blocked
+depends: []
+owner: product-owner
+created: 2026-01-15
+updated: 2025-01-01
+schema: 1
+aofVersion: <version>
+---
+# yield
+

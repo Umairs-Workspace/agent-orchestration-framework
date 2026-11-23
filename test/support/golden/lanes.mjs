@@ -8,6 +8,7 @@
 // 203/00 proved the harness on a fixture lane its self-test declares in-test. 203/01 registered
 // the init lane, and 203/02 the update lane. 204/00 registered the assets-apply lane, 204/01 the assets-merge lane, and 204/02 the
 // assets-clean lane, and 204/03 the project-init lane.
+import { workStreamLanes } from "../../golden/work-stream.lane.mjs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import assetsApply from "../../golden/assets-apply.lane.mjs";
@@ -17,7 +18,7 @@ import projectInit from "../../golden/project-init.lane.mjs";
 import workInit from "../../golden/work-init.lane.mjs";
 import workUpdate from "../../golden/work-update.lane.mjs";
 
-export const LANES = Object.freeze([workInit, workUpdate, assetsApply, assetsMerge, assetsClean, projectInit]);
+export const LANES = Object.freeze([workInit, workUpdate, assetsApply, assetsMerge, assetsClean, projectInit, ...workStreamLanes]);
 
 // A lane outside the registry, by file — the self-test's door through `scripts/golden.mjs
 // --lane-module`. The module's default export is the lane.

@@ -1,0 +1,18 @@
+---
+type: story
+number: 01
+slug: pick
+title: pick
+status: not-started
+parent: 10
+depends: []
+owner: product-owner
+created: 2026-01-15
+updated: 2026-01-15
+schema: 1
+aofVersion: <version>
+reads: [README.md]
+files: []
+---
+# pick
+

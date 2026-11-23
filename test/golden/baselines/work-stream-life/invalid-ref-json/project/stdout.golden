@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "Renumber requires an exact numbered ref.",
+  "code": "renumber-invalid-ref"
+}

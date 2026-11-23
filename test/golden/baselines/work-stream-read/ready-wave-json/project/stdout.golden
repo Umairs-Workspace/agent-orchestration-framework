@@ -1,0 +1,32 @@
+{
+  "state": "ready",
+  "ref": "10/00",
+  "type": "story",
+  "slug": "pick",
+  "status": "not-started",
+  "path": "wiki/work/10_milestone_orchard/stories/00_story_pick",
+  "readySet": [
+    {
+      "state": "ready",
+      "ref": "10/00",
+      "type": "story",
+      "slug": "pick",
+      "status": "not-started",
+      "path": "wiki/work/10_milestone_orchard/stories/00_story_pick",
+      "answeredFrom": "disk"
+    }
+  ],
+  "skipped": [],
+  "answeredFrom": "disk",
+  "wave": [
+    {
+      "state": "ready",
+      "ref": "10/00",
+      "type": "story",
+      "slug": "pick",
+      "status": "not-started",
+      "answeredFrom": "disk"
+    }
+  ],
+  "heldSet": []
+}

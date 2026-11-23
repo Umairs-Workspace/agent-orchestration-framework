@@ -1,0 +1,23 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-place",
+      "uat-dependency-text"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "insert-uat",
+        "trial",
+        "--at",
+        "11",
+        "--depends",
+        "99",
+        "--yes"
+      ],
+      "exit": 1
+    }
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "path": "wiki/work",
+    "problem": "scope-not-found: \"999\" resolves to no work item — nothing was validated, so this is not a pass"
+  }
+]

@@ -3,10 +3,10 @@ type: milestone
 number: 205
 slug: work-verb-goldens
 title: "What the aof work verbs print and change in a work stream is held to baselines over a fixture stream"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-11-20
-updated: 2026-11-20
+updated: 2026-11-23
 depends: [203]
 schema: 1
 aofVersion: 0.1.0
@@ -49,7 +49,10 @@ Out of scope:
 
 ## Stories
 
-To be broken down by `aof:refine`.
+- [x] `00_story_portable-fixture` — One portable fixture exposes stream and CLI drift.
+- [x] `01_story_read-output` — Read verbs preserve their JSON and terminal output.
+- [x] `02_story_placement` — Promotion and insertion preserve the complete stream delta.
+- [x] `03_story_lifecycle-and-identity` — Archive, status and renumber preserve mutations and refusals.
 
 ## Dependencies
 

@@ -1,0 +1,18 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-read",
+      "scoped-list-text"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "list",
+        "10"
+      ],
+      "exit": 0
+    }
+  }
+]

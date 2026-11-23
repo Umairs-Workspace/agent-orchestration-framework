@@ -1,0 +1,6 @@
+{
+  "ok": false,
+  "error": "item 16 is \"paused\" — its legal moves are active|done|abandoned (asked for \"blocked\")",
+  "code": "status-edge-not-applicable",
+  "status": "paused"
+}

@@ -1,0 +1,21 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-place",
+      "staged-leaf-json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "insert-chore",
+        "labels2",
+        "--at",
+        "11",
+        "--json"
+      ],
+      "exit": 1
+    }
+  }
+]

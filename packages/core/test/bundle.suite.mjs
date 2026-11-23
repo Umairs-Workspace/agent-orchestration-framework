@@ -117,10 +117,10 @@ function descriptorMembers() {
   return readDescriptor().members;
 }
 
-// A `fragment` member (192/ADR-002 §2) is prose the loader composes INTO a member's text, never a
-// member it returns: the loaded set is every other kind.
+// Fragments compose resource text. Template variants supply a file on an existing template.
+// Both kinds contribute to another member's output (192/ADR-002 and ADR-004).
 function memberIds() {
-  return descriptorMembers().filter((member) => member.kind !== "fragment").map((member) => member.id);
+  return descriptorMembers().filter((member) => member.kind !== "fragment" && member.kind !== "template-variant").map((member) => member.id);
 }
 
 // ── 149/02 + 149/03 — aof:review joins the bundle and aof:code-review leaves it ──────────────────────
@@ -438,7 +438,7 @@ export const bundleTests = [
         // merge). It has been a real member kind since m43 and this list did not
         // admit it — the valid-kind list moves with the code (m46/ADR-006).
         // `fragment` is 192/ADR-002 §2's: a practice's prose for one slot of a target member.
-        assert.ok(["agent", "asset", "command", "fragment", "hook", "skill", "template"].includes(member.kind), `member ${member.id} has a valid kind`);
+        assert.ok(["agent", "asset", "command", "fragment", "hook", "skill", "template", "template-variant"].includes(member.kind), `member ${member.id} has a valid kind`);
       }
       assert.deepEqual(
         members.filter((m) => m.kind === "agent").map((m) => m.id).sort(),

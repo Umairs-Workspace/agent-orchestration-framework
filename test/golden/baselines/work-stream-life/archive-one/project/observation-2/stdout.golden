@@ -1,0 +1,123 @@
+[
+  {
+    "ref": "10",
+    "type": "milestone",
+    "slug": "orchard",
+    "status": "in-progress",
+    "title": "orchard",
+    "parent": null,
+    "dir": "<project>/subject/wiki/work/10_milestone_orchard"
+  },
+  {
+    "ref": "10/00",
+    "type": "story",
+    "slug": "pick",
+    "status": "not-started",
+    "title": "pick",
+    "parent": "10",
+    "dir": "<project>/subject/wiki/work/10_milestone_orchard/stories/00_story_pick"
+  },
+  {
+    "ref": "10/01",
+    "type": "story",
+    "slug": "pack",
+    "status": "not-started",
+    "title": "pack",
+    "parent": "10",
+    "dir": "<project>/subject/wiki/work/10_milestone_orchard/stories/01_story_pack"
+  },
+  {
+    "ref": "11",
+    "type": "chore",
+    "slug": "labels",
+    "status": "not-started",
+    "title": "labels",
+    "parent": null,
+    "dir": "<project>/subject/wiki/work/11_chore_labels"
+  },
+  {
+    "ref": "12",
+    "type": "spike",
+    "slug": "yield",
+    "status": "blocked",
+    "title": "yield",
+    "parent": null,
+    "dir": "<project>/subject/wiki/work/12_spike_yield"
+  },
+  {
+    "ref": "13",
+    "type": "uat",
+    "slug": "taste",
+    "status": "in-review",
+    "title": "taste",
+    "parent": null,
+    "dir": "<project>/subject/wiki/work/13_uat_taste"
+  },
+  {
+    "ref": "14",
+    "type": "task",
+    "slug": "weigh",
+    "status": null,
+    "title": null,
+    "parent": null,
+    "dir": "<project>/subject/wiki/work/14_task_weigh"
+  },
+  {
+    "ref": "15",
+    "type": "prototype",
+    "slug": "active",
+    "status": "active",
+    "title": "active",
+    "parent": null,
+    "dir": "<project>/subject/wiki/work/15_prototype_active"
+  },
+  {
+    "ref": "16",
+    "type": "prototype",
+    "slug": "paused",
+    "status": "paused",
+    "title": "paused",
+    "parent": null,
+    "dir": "<project>/subject/wiki/work/16_prototype_paused"
+  },
+  {
+    "ref": "17",
+    "type": "prototype",
+    "slug": "done",
+    "status": "done",
+    "title": "done",
+    "parent": null,
+    "dir": "<project>/subject/wiki/work/17_prototype_done"
+  },
+  {
+    "ref": "18",
+    "type": "prototype",
+    "slug": "abandoned",
+    "status": "abandoned",
+    "title": "abandoned",
+    "parent": null,
+    "dir": "<project>/subject/wiki/work/18_prototype_abandoned"
+  },
+  {
+    "ref": "queued",
+    "type": "chore",
+    "slug": "queued",
+    "status": "not-started",
+    "title": "queued",
+    "parent": null,
+    "dir": "<project>/subject/wiki/work/backlog/chore_queued",
+    "number": null,
+    "backlog": ""
+  },
+  {
+    "ref": "waiting",
+    "type": "chore",
+    "slug": "waiting",
+    "status": "not-started",
+    "title": "waiting",
+    "parent": null,
+    "dir": "<project>/subject/wiki/work/backlog/chore_waiting",
+    "number": null,
+    "backlog": ""
+  }
+]

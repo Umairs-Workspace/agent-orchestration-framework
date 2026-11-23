@@ -1,0 +1,20 @@
+[
+  {
+    "command": "test/golden/fixtures/work-stream/run-case.mjs",
+    "argv": [
+      "work-stream-life",
+      "prototype-edge-json"
+    ],
+    "exit": 0,
+    "envelope": {
+      "argv": [
+        "work",
+        "status",
+        "16",
+        "blocked",
+        "--json"
+      ],
+      "exit": 1
+    }
+  }
+]

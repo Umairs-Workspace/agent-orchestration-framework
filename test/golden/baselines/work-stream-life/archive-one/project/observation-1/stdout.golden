@@ -1,0 +1,13 @@
+[
+  {
+    "ref": "19",
+    "type": "chore",
+    "slug": "receipt",
+    "status": "done",
+    "title": "receipt",
+    "parent": null,
+    "dir": "wiki/work/archive/19_chore_receipt",
+    "archived": true,
+    "answeredFrom": "disk"
+  }
+]

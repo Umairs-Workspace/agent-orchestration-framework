@@ -1,0 +1,11 @@
+{
+  "ok": false,
+  "error": "\"waiting\" cannot be promoted as its `depends:` is written:\n- `queued` is still in the backlog — this item waits on it. Promote `queued` first, or drop the entry.",
+  "code": "promote-depends-backlog",
+  "entries": [
+    {
+      "entry": "queued",
+      "code": "promote-depends-backlog"
+    }
+  ]
+}

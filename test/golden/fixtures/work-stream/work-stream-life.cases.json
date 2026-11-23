@@ -1,0 +1,279 @@
+[
+  {
+    "id": "archive-one",
+    "title": "E1 · Archiving a single item preserves identity across the move",
+    "argv": [
+      "archive",
+      "19"
+    ],
+    "mode": "write",
+    "observe": [
+      "find 19",
+      "list"
+    ]
+  },
+  {
+    "id": "archive-done",
+    "title": "E2 · Bulk archive uses the delivered set from a fresh seed",
+    "argv": [
+      "archive",
+      "--done",
+      "--yes"
+    ],
+    "mode": "write"
+  },
+  {
+    "id": "unfinished",
+    "title": "E3 · An unfinished item cannot be archived",
+    "argv": [
+      "archive",
+      "13"
+    ],
+    "mode": "refuse",
+    "code": "archive-not-done"
+  },
+  {
+    "id": "bulk-confirm",
+    "title": "Archive refusals retain their diagnostics and before-image",
+    "argv": [
+      "archive",
+      "--done"
+    ],
+    "mode": "refuse",
+    "code": "archive-confirm-required"
+  },
+  {
+    "id": "already-archived",
+    "title": "Archive refusals retain their diagnostics and before-image",
+    "argv": [
+      "archive",
+      "30"
+    ],
+    "mode": "refuse",
+    "code": "archive-already-archived"
+  },
+  {
+    "id": "backlog",
+    "title": "Archive refusals retain their diagnostics and before-image",
+    "argv": [
+      "archive",
+      "queued"
+    ],
+    "mode": "refuse",
+    "code": "archive-backlog-ref"
+  },
+  {
+    "id": "nested",
+    "title": "Archive refusals retain their diagnostics and before-image",
+    "argv": [
+      "archive",
+      "10/00"
+    ],
+    "mode": "refuse",
+    "code": "archive-not-a-driver"
+  },
+  {
+    "id": "governed",
+    "title": "E4 · A legal governed move updates the item record",
+    "argv": [
+      "status",
+      "11",
+      "in-progress"
+    ],
+    "mode": "write",
+    "observe": [
+      "find 11"
+    ]
+  },
+  {
+    "id": "prototype",
+    "title": "E5 · A paused prototype can return to active",
+    "argv": [
+      "status",
+      "16",
+      "active"
+    ],
+    "mode": "write"
+  },
+  {
+    "id": "skip-edge",
+    "title": "E6 · Skipping from not-started to done is refused",
+    "argv": [
+      "status",
+      "11",
+      "done"
+    ],
+    "mode": "refuse",
+    "code": "status-edge-not-applicable"
+  },
+  {
+    "id": "prototype-edge",
+    "title": "Repeated, invalid and guarded moves keep their distinct results",
+    "argv": [
+      "status",
+      "16",
+      "blocked"
+    ],
+    "mode": "refuse",
+    "code": "status-edge-not-applicable"
+  },
+  {
+    "id": "guarded",
+    "title": "Repeated, invalid and guarded moves keep their distinct results",
+    "argv": [
+      "status",
+      "11",
+      "not-started",
+      "--if-applicable"
+    ],
+    "mode": "read"
+  },
+  {
+    "id": "regression-gate",
+    "title": "Repeated, invalid and guarded moves keep their distinct results",
+    "argv": [
+      "status",
+      "10",
+      "done"
+    ],
+    "mode": "refuse",
+    "code": "regression-gate-missing",
+    "variation": {
+      "items": {
+        "orchard": {
+          "status": "in-review"
+        }
+      }
+    }
+  },
+  {
+    "id": "invalid-status",
+    "title": "Repeated, invalid and guarded moves keep their distinct results",
+    "argv": [
+      "status",
+      "11",
+      "banana"
+    ],
+    "mode": "refuse",
+    "code": "invalid-status"
+  },
+  {
+    "id": "renumber-parent",
+    "title": "E7 · Renumbering a parent moves the entire subtree",
+    "argv": [
+      "renumber",
+      "10",
+      "--to",
+      "22"
+    ],
+    "mode": "write",
+    "variation": {
+      "items": {
+        "labels": {
+          "body": "Orchard [pick](../10_milestone_orchard/stories/00_story_pick/STORY.md) under [10](../10_milestone_orchard/SPEC.md). The label weighs 10 grams.\n"
+        },
+        "orchard": {
+          "documents": {
+            "RETROSPECTIVE": "# Retrospective\n\nThe original milestone was 10 and its first story was 10/00.\n"
+          },
+          "verificationCapture": "{\"milestone\":\"10\",\"story\":\"10/00\",\"measurement\":10}\n"
+        }
+      }
+    },
+    "observe": [
+      "find 22",
+      "find 22/00",
+      "find 22/01"
+    ]
+  },
+  {
+    "id": "renumber-story",
+    "title": "E8 · A nested renumber records the current bare dependency behavior",
+    "argv": [
+      "renumber",
+      "10/00",
+      "--to",
+      "03"
+    ],
+    "mode": "write",
+    "observe": [
+      "find 10/03"
+    ]
+  },
+  {
+    "id": "occupied",
+    "title": "E9 · An occupied target never shifts the incumbent",
+    "argv": [
+      "renumber",
+      "10",
+      "--to",
+      "11"
+    ],
+    "mode": "refuse",
+    "code": "renumber-target-occupied"
+  },
+  {
+    "id": "preview",
+    "title": "Preview and other rejected targets preserve every entry",
+    "argv": [
+      "renumber",
+      "10",
+      "--to",
+      "22",
+      "--dry-run"
+    ],
+    "mode": "preview",
+    "formats": [
+      "json",
+      "text"
+    ]
+  },
+  {
+    "id": "nested-occupied",
+    "title": "Preview and other rejected targets preserve every entry",
+    "argv": [
+      "renumber",
+      "10/00",
+      "--to",
+      "01"
+    ],
+    "mode": "refuse",
+    "code": "renumber-target-occupied"
+  },
+  {
+    "id": "same-number",
+    "title": "Preview and other rejected targets preserve every entry",
+    "argv": [
+      "renumber",
+      "10",
+      "--to",
+      "10"
+    ],
+    "mode": "refuse",
+    "code": "renumber-same-number"
+  },
+  {
+    "id": "archived-number",
+    "title": "Preview and other rejected targets preserve every entry",
+    "argv": [
+      "renumber",
+      "30",
+      "--to",
+      "24"
+    ],
+    "mode": "refuse",
+    "code": "renumber-not-live"
+  },
+  {
+    "id": "invalid-ref",
+    "title": "Preview and other rejected targets preserve every entry",
+    "argv": [
+      "renumber",
+      "orchard",
+      "--to",
+      "22"
+    ],
+    "mode": "refuse",
+    "code": "renumber-invalid-ref"
+  }
+]

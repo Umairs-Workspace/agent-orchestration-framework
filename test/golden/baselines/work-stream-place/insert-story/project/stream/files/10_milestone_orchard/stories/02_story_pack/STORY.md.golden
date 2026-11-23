@@ -1,0 +1,18 @@
+---
+type: story
+number: 02
+slug: pack
+title: pack
+status: not-started
+parent: 10
+depends: [00]
+owner: product-owner
+created: 2026-01-15
+updated: 2026-01-15
+schema: 1
+aofVersion: <version>
+reads: [README.md]
+files: []
+---
+# pack
+
