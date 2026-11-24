@@ -26,7 +26,7 @@ Each round took about 20 minutes. Several of these pins were found only after an
 
 **Lesson:** Before the first full gate on a story that touches a shared seam, run the architecture suites alone, which takes minutes, and repair every pin they name. At refine, name the census and ceiling controls such a story will move in its `files:`. A whole-tree round should find behaviour, not bookkeeping.
 
-**Refs:** ./STATE.md "Verification" (each story's build rounds); ./VERIFICATION.md "Story build and review".
+**Refs:** STATE.md at `d4b12bfa` "Verification" (each story's build rounds); ./VERIFICATION.md "Story build and review".
 
 ## R2 · The first build attempt stalled in full-suite verification and was abandoned
 
@@ -38,4 +38,4 @@ Each round took about 20 minutes. Several of these pins were found only after an
 
 **Lesson:** When a story's impacted gate widens to the whole tree, run it from the start through the sharded runner in a clean detached snapshot, with `AOF_GLOBAL_HOME` isolated. Do not add prerequisites the workflow does not name. A hang there costs one unit, not the attempt.
 
-**Refs:** ./STATE.md "Continue attempt on 2026-11-24"; ./STATE.md "Notes & decisions in flight" (the removed prerequisite).
+**Refs:** STATE.md at `d4b12bfa` "Continue attempt on 2026-11-24" and "Notes & decisions in flight" (the removed prerequisite).

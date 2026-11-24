@@ -3,7 +3,7 @@ type: milestone
 number: 208
 slug: work-item-store-seam
 title: "Work items are read and written through one store interface, with today's files as its first store"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-11-20
 updated: 2026-11-24
