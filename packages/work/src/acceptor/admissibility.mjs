@@ -103,7 +103,7 @@ const CONFIG_SCHEME = "config";
 export const HARNESS_KINDS = Object.freeze({ prompt: "prompt", code: "code" });
 export const HARNESS_OF_RECORD = Object.freeze({
   kind: HARNESS_KINDS.prompt,
-  document: "packages/core/assets/commands/continue.md",
+  document: "packages/acd/assets/commands/continue.md",
 });
 
 // The three conditions the fall-back can rest on. All three are the SAME ground — the
@@ -162,13 +162,14 @@ export function ceilingRecordsFor(model, key) {
 
 // ── READING THE PROGRAM ──────────────────────────────────────────────────────────────────
 //
-// `src/bundle/**` is shipped ASSETS — the loop records themselves, the prompts and the hook
-// bodies installed into a project. An asset naming a bound is not the running program acting
+// `src/bundle/**` is shipped ASSETS — the loop records themselves and the prompts (ACD's,
+// `packages/acd/assets/`), and the hook bodies (core's own, `packages/core/assets/`), installed
+// into a project. An asset naming a bound is not the running program acting
 // on it, and a check that counted one would be satisfied by the very declaration it exists
 // to test.
 export const isShippedAsset = (rel) => {
   const normalized = String(rel).replaceAll("\\", "/");
-  return normalized.includes("bundle/") || normalized.startsWith("packages/core/assets/");
+  return normalized.includes("bundle/") || normalized.startsWith("packages/acd/assets/") || normalized.startsWith("packages/core/assets/");
 };
 
 // COMMENTS AND STRING LITERALS ARE NOT CODE, and the mask preserves OFFSETS so a line number

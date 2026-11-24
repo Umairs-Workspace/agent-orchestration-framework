@@ -13,7 +13,7 @@
 //      import, and nothing else would notice.)
 //   3. NO BLANKET SUPPRESSION, TREE-WIDE: no `--no-warnings`, no `NODE_NO_WARNINGS`, no
 //      `--disable-warning` and no `NODE_OPTIONS` warning flag under `packages/core/src/`, `bin/`,
-//      `scripts/`, `packages/core/assets/` or `package.json`.
+//      `scripts/`, `packages/acd/assets/` or `package.json`.
 //
 // WHY `test/` IS DELIBERATELY EXCLUDED. Sixty files there already set `NODE_NO_WARNINGS` on
 // a CLI child's env, and three also pass `--no-warnings` — a harness suppressing its own
@@ -39,7 +39,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const LEAF = path.join(repoRoot, "packages", "foundation", "src", "sqlite-runtime.mjs");
 
 // The roots a blanket suppression may not appear in. `test/` is NOT among them, by decision.
-const SWEPT_ROOTS = ["packages/core/src", "packages/core/bin", "packages/core/assets", "bin", "scripts"];
+const SWEPT_ROOTS = ["packages/core/src", "packages/core/bin", "packages/core/assets", "packages/acd/assets", "bin", "scripts"];
 const SWEPT_FILES = ["package.json"];
 
 // Every form of the blanket, including the env-var twin a flag-only sweep would miss.
@@ -216,8 +216,8 @@ export const archTests = [
         { text: 'env.NODE_NO_WARNINGS = "1";', file: "packages/core/src/x.mjs", offender: true },
         { text: 'env.NODE_OPTIONS = "--max-old-space-size=4096";', file: "scripts/x.mjs", offender: false },
         { text: '// never pass --no-warnings here\nconst x = 1;', file: "packages/core/src/x.mjs", offender: false },
-        { text: "Run it:\n\n```sh\nnode --no-warnings x.mjs\n```\n", file: "packages/core/assets/commands/x.md", offender: true },
-        { text: "Never add --no-warnings to this command; it hides deprecations.\n", file: "packages/core/assets/commands/x.md", offender: false },
+        { text: "Run it:\n\n```sh\nnode --no-warnings x.mjs\n```\n", file: "packages/acd/assets/commands/x.md", offender: true },
+        { text: "Never add --no-warnings to this command; it hides deprecations.\n", file: "packages/acd/assets/commands/x.md", offender: false },
       ];
 
       for (const row of rows) {

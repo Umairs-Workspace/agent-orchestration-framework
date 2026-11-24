@@ -15,7 +15,7 @@ layer: operational
 ---
 # Mesh assignment reclaim
 
-Framework record source: `packages/core/assets/loops/mesh-assignment-reclaim.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
+Framework record source: `packages/acd/assets/loops/mesh-assignment-reclaim.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 The defining `reclaimStaleAssignments` scan at `packages/mesh/src/assignment-reclaim.mjs:156` controls non-terminal
 assignment state. Its reference and measurement are the same complete gate: the defining exported AND

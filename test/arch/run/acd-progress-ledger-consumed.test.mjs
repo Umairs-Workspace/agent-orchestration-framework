@@ -53,7 +53,7 @@ const root = process.cwd();
 const BOUND_DECLARING_HOME = "loop-bounds.mjs";
 const declaringHomeFor = (key) => (resolvesLoopBoundConfigKey(key) ? BOUND_DECLARING_HOME : null);
 
-// `packages/core/assets/**` is shipped ASSETS — the loop records themselves and the hook
+// `packages/acd/assets/**` is shipped ASSETS — the loop records themselves and the hook
 // bodies installed into a project. An asset mentioning a bound is not the
 // running program reading it.
 const isProductionUnit = (rel) => !rel.startsWith("bundle/");
@@ -289,7 +289,7 @@ export const archTests = [
   {
     name: "arch/69 F-69-V8 every framework config ceiling has a production reader outside the module that declares it",
     run: async () => {
-      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
+      const model = await loadLoops(path.join(root, "packages", "acd", "assets"));
       const ceilings = configCeilings(model);
       const units = await productionUnits();
 
@@ -323,7 +323,7 @@ export const archTests = [
   {
     name: "arch/69 F-69-V8 a ceiling that resolves but is read by nothing names itself unconsumed",
     run: async () => {
-      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
+      const model = await loadLoops(path.join(root, "packages", "acd", "assets"));
       const ceilings = configCeilings(model);
       const units = await productionUnits();
       const subject = "work.loop.buildNoProgressRounds";
@@ -383,7 +383,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6109 a READER is not a CONSUMER: the same tree that satisfies the reader leg fails the decision-site leg for every declared knob",
     run: async () => {
-      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
+      const model = await loadLoops(path.join(root, "packages", "acd", "assets"));
       const ceilings = configCeilings(model);
       const units = await productionUnits();
       assert.ok(units.length > 50, `the src tree was actually read: ${units.length} modules`);
@@ -412,7 +412,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6109 a knob given a decision-site consumer DROPS OUT, and the others are untouched — the ratchet points at fixing the tree",
     run: async () => {
-      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
+      const model = await loadLoops(path.join(root, "packages", "acd", "assets"));
       const ceilings = configCeilings(model);
       const units = await productionUnits();
       const before = unconsumedAtDecisionSites(ceilings, units, { model }).map((finding) => finding.key).sort();
@@ -446,7 +446,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6109 the harness switch is EVALUATED over the declared document: it refuses alike every declared knob that document does not name, and has already lifted for the ones it does",
     run: async () => {
-      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
+      const model = await loadLoops(path.join(root, "packages", "acd", "assets"));
       const declared = tunableSet(model).keys;
       assert.ok(declared.length >= 3, `the declaration is non-vacuous: ${declared.length} knobs`);
 

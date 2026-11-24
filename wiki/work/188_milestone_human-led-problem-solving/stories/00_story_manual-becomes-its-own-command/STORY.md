@@ -8,7 +8,7 @@ depends: []
 status: in-review
 owner: product-owner
 created: 2026-10-28
-updated: 2026-10-31
+updated: 2026-11-23
 adrs: [ADR-001, ADR-002, ADR-003]
 reads:
   - wiki/work/188_milestone_human-led-problem-solving/SPEC.md
@@ -26,12 +26,12 @@ reads:
   - scripts/generate-bundle-manifest.mjs
   - test/arch/bundle/acd-bundle-membership.test.mjs
 files:
-  - packages/core/assets/commands/manual.md
-  - packages/core/assets/commands/continue.md
-  - packages/core/assets/commands/review.md
-  - packages/core/assets/variants/codex/workflow.md
-  - packages/core/assets/bundle.json
-  - packages/core/assets/manifest.json
+  - packages/acd/assets/commands/manual.md
+  - packages/acd/assets/commands/continue.md
+  - packages/acd/assets/commands/review.md
+  - packages/acd/assets/variants/codex/workflow.md
+  - packages/acd/assets/bundle.json
+  - packages/acd/assets/manifest.json
   - packages/work/src/commands/continue.mjs
   - .claude/commands/aof/manual.md
   - .agents/skills/aof-manual/SKILL.md

@@ -34,7 +34,7 @@ const startRun = _aofApplication.execution.runs.startRun;
 const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const BUNDLE = path.join(root, "packages", "core", "assets");
+const BUNDLE = path.join(root, "packages", "acd", "assets");
 
 // The seventeen keys the store froze (131/ADR-003 §3 appended asks), in order — measured against a real record rather than believed.
 const RECORD_KEYS = Object.freeze([

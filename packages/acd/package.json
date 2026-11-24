@@ -1,0 +1,13 @@
+{
+  "name": "@aof/acd",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./contribution": "./src/contribution.mjs"
+  },
+  "files": [
+    "src",
+    "assets"
+  ]
+}

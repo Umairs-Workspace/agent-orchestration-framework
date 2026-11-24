@@ -12,7 +12,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const sourceDir = path.join(root, "packages", "core", "assets", "loops");
+const sourceDir = path.join(root, "packages", "acd", "assets", "loops");
 const installedDir = path.join(root, ".aof", "loops");
 
 async function sourceModules(dir) {

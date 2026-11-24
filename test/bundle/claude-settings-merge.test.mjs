@@ -152,7 +152,7 @@ const holdsOnce = (lines, entries, label) => {
   for (const entry of entries) assert.equal(lines.filter((line) => line === entry).length, 1, `${label} holds ${entry} once`);
 };
 const REPAIR_RENDERS = [".claude/commands/aof/repair.md", ".agents/skills/aof-repair/SKILL.md", ".opencode/commands/aof/repair.md"];
-const REPAIR_SOURCE = path.join(repoRoot, "packages", "core", "assets", "commands", "repair.md");
+const REPAIR_SOURCE = path.join(repoRoot, "packages", "acd", "assets", "commands", "repair.md");
 // The seven rules an unattended repair needs, as the feature's outline states them, each matched
 // against the command's prose (a line break inside a rule is whitespace).
 const REPAIR_RULES = [
@@ -231,7 +231,7 @@ export const claudeSettingsMergeTests = [
           assert.equal(action.action, "skip", `${rel}: ${action.action} (${action.reason ?? ""})`);
         }
         assert.ok(readDescriptor().members.some((member) => member.kind === "command" && member.id === "repair" && member.file === "commands/repair.md"), "the bundle descriptor lists commands/repair.md");
-        const manifest = JSON.parse(await readFile(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"));
+        const manifest = JSON.parse(await readFile(path.join(repoRoot, "packages", "acd", "assets", "manifest.json"), "utf8"));
         assert.ok(manifest.entries.some((entry) => entry.path === ".claude/commands/aof/repair.md" && entry.resource.id === "repair" && entry.resource.kind === "command"), "the shipped manifest carries the claude render");
         assert.ok(manifest.entries.some((entry) => entry.path === ".agents/skills/aof-repair/SKILL.md" && entry.resource.id === "aof-repair"), "…and the codex render");
       });

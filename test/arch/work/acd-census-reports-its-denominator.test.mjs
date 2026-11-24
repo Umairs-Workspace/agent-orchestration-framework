@@ -234,12 +234,12 @@ const frontmatterKeys = (text) => {
 };
 
 async function templateFiles() {
-  const base = path.join(repoRoot, "packages", "core", "assets", "templates");
+  const base = path.join(repoRoot, "packages", "acd", "assets", "templates");
   const found = [];
   for (const entry of await readdir(base, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
     for (const leaf of await readdir(path.join(base, entry.name))) {
-      found.push(path.join("packages", "core", "assets", "templates", entry.name, leaf));
+      found.push(path.join("packages", "acd", "assets", "templates", entry.name, leaf));
     }
   }
   return found;
@@ -431,7 +431,7 @@ export const archTests = [
       // live on, so its roster is frozen: a new authored field would arrive here first.
       const templates = await templateFiles();
       assert.ok(templates.length >= 10, `the template sweep is non-vacuous (${templates.length} files)`);
-      const storyTemplate = path.join("packages", "core", "assets", "templates", "story", "STORY.md");
+      const storyTemplate = path.join("packages", "acd", "assets", "templates", "story", "STORY.md");
       assert.ok(templates.includes(storyTemplate), "the story template is in the sweep");
       assert.deepEqual(
         frontmatterKeys(await readFile(path.join(repoRoot, storyTemplate), "utf8")).sort(),

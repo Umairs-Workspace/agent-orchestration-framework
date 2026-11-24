@@ -19,9 +19,9 @@ import { fileURLToPath } from "node:url";
 const recordDoc = _aofWorkspace.work.recordDoc;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const TEMPLATE_ROOT = path.join(repoRoot, "packages", "core", "assets", "templates");
-const VERIFY_PROMPT = path.join(repoRoot, "packages", "core", "assets", "commands", "verify.md");
-const DEVELOPER_AGENT = path.join(repoRoot, "packages", "core", "assets", "agents", "aof-developer.md");
+const TEMPLATE_ROOT = path.join(repoRoot, "packages", "acd", "assets", "templates");
+const VERIFY_PROMPT = path.join(repoRoot, "packages", "acd", "assets", "commands", "verify.md");
+const DEVELOPER_AGENT = path.join(repoRoot, "packages", "acd", "assets", "agents", "aof-developer.md");
 
 // Does any bundle template dir ship an OUTCOME.md (story 01's scaffold)?
 async function outcomeTemplateExists() {

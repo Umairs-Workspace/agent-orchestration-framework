@@ -1,14 +1,15 @@
 // milestone 28 / story 00 (ADR-001/ADR-003) — the asset-manifest generator.
 //
-// Walks the two runtime directory-asset trees (packages/core/assets/** — 41 files —
-// and ui/dist/**) into the flat file list the SEA sidecar build copies
+// Walks the runtime directory-asset trees (the methodology package's assets/** — chore 207:
+// packages/acd/assets — core's own assets/** — its hooks — and ui/dist/**) into the flat file
+// lists the SEA sidecar build copies
 // verbatim beside the binary (ADR-003: directory assets are not a SEA `assets`
 // map primitive — RESEARCH §1 — so the build recipe ships them as an on-disk
 // sidecar tree the asset-base seam's SEA branch reads with a plain
 // readdir/readFile, the SAME shape as its dev branch).
 //
 // A pure function over real trees: generateAssetManifest(repoRoot) returns
-// { bundle: string[], ui: string[] } — POSIX-style relative paths, sorted.
+// { bundle: string[], core: string[], ui: string[] } — POSIX-style relative paths, sorted.
 // Consumed by:
 //   - scripts/build-sea.mjs (copies every listed file into the sidecar dir)
 //   - test/bundle/bundle-asset-manifest-complete.test.mjs (fitness #4 — a set-equality
@@ -19,6 +20,7 @@ import path from "node:path";
 import { workspaceDirectory } from './workspace-paths.mjs';
 import { INTEGRATIONS } from 'aof/integrations';
 import { PRACTICES } from 'aof/practices';
+import { METHODOLOGY } from 'aof/methodology';
 
 // Recursively list every FILE under `dir`, returned as POSIX-style paths
 // relative to `dir`, sorted. Symlinks are treated as regular files/dirs via
@@ -41,18 +43,29 @@ function walkFiles(dir) {
   return out.sort();
 }
 
-// generateAssetManifest(repoRoot) -> { bundle: string[], ui: string[] }
-//   bundle — every file under the locked aof owner's assets/, relative to it
-//            (e.g. "bundle.json", "commands/next.md").
+// generateAssetManifest(repoRoot) -> { bundle: string[], core: string[], ui: string[] }
+//   bundle — every file under the methodology package's assets/, relative to it
+//            (e.g. "bundle.json", "commands/next.md"); the packaged `bundle/` sidecar.
+//   core   — every file under the locked aof owner's own assets/ (its hooks, chore 207);
+//            the packaged `assets/` sidecar.
 //   ui     — every file under the locked @aof/ui owner's dist/, relative to it
 //            (e.g. "index.html", "assets/index.js").
 export function generateAssetManifest(repoRoot) {
-  const bundleDir = path.join(workspaceDirectory(repoRoot, 'aof'), 'assets');
   const uiDistDir = path.join(workspaceDirectory(repoRoot, '@aof/ui'), 'dist');
   return {
-    bundle: walkFiles(bundleDir),
+    bundle: walkFiles(methodologyAssetDir(repoRoot)),
+    core: walkFiles(coreAssetDir(repoRoot)),
     ui: walkFiles(uiDistDir),
   };
+}
+
+// The two asset roots the manifest's `bundle` and `core` lists are relative to.
+export function methodologyAssetDir(repoRoot) {
+  return path.join(workspaceDirectory(repoRoot, METHODOLOGY.assets.package), 'assets');
+}
+
+export function coreAssetDir(repoRoot) {
+  return path.join(workspaceDirectory(repoRoot, 'aof'), 'assets');
 }
 
 // generatePackageAssetManifest(repoRoot, contributors?) -> [{ name, sidecar, from, files }]

@@ -232,7 +232,7 @@ export const declaredBoundsTests = [
 
       // THE REPOSITORY THAT IS ALREADY IN IT: two of its ceiling pointers name
       // `work.autonomous.maxAttempts`, which the bounds home does not hold.
-      const shipped = await loadLoops({ aofDir: path.join(repoRoot, "packages", "core", "assets"), projectRoot: repoRoot });
+      const shipped = await loadLoops({ aofDir: path.join(repoRoot, "packages", "acd", "assets"), projectRoot: repoRoot });
       const own = lane({ model: shipped });
       assert.equal(own.findings.filter((finding) => finding.severity === "error").length, 0, "this repository's own registry returns nothing at error");
       const limit = own.limits.find((entry) => entry.sweep === DECLARED_BOUNDS_SWEEPS[0].id);

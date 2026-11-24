@@ -47,10 +47,12 @@ function rendered(dir) {
   return [HYPERPLAN, ...HYPERAGENT_FILES].filter((file) => existsSync(path.join(dir, file)));
 }
 
-// A packaged install: core's bundle beside the exe, with `extra` laid out under bundle/.
+// A packaged install: the methodology's bundle and core's own assets beside the exe, with `extra`
+// laid out under bundle/.
 async function withSidecar(layout, fn) {
   return withTempRepo(async (anchor) => {
     await cp(assetPath("bundle"), path.join(anchor, "bundle"), { recursive: true });
+    await cp(assetPath("core"), path.join(anchor, "assets"), { recursive: true });
     await layout(path.join(anchor, "bundle"));
     setSeaSentinelForTest(true);
     setSidecarAnchorForTest(anchor);

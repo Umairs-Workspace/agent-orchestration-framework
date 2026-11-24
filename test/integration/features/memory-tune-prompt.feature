@@ -47,7 +47,7 @@ Feature: Tune proposes promoted prompt corrections — observed verdicts, explic
 
   Scenario: E3 · A prompt destination makes the replacement text computable
     Given a recurring lesson meets the existing proposal evidence floor
-    And its unambiguous target is "prompt:packages/core/assets/commands/refine.md"
+    And its unambiguous target is "prompt:packages/acd/assets/commands/refine.md"
     And its Lesson text is "Declare the existing counter's owning suite before drawing the write set."
     And the authored target contains a known byte sequence
     When tune forms the prompt revision proposal

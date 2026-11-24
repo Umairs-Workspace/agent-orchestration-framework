@@ -418,7 +418,7 @@ export const clampTests = [
   {
     name: "61/00/01 the key stays proposable — the declared tunable set still names it, and this task removes nothing from that set",
     async run() {
-      const record = await readFile(path.join(root, "packages", "core", "assets", "loops", "speed-thoroughness-autonomy.md"), "utf8");
+      const record = await readFile(path.join(root, "packages", "acd", "assets", "loops", "speed-thoroughness-autonomy.md"), "utf8");
       const declared = /^parameter-tuning:\s*\[([^\]]*)\]/mu.exec(record);
       assert.ok(declared != null, "the arbiter record declares a parameter-tuning edge");
       const keys = declared[1].split(",").map((entry) => entry.trim());

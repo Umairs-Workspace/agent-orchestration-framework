@@ -29,7 +29,7 @@ import { dependencySpecifiers } from "../../support/workspace/configured-source.
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcDir = path.join(repoRoot, "packages", "core", "src");
-const bundleDir = path.join(srcDir, "..", "assets");
+const bundleDir = path.join(srcDir, "..", "..", "acd", "assets");
 const DRIVER_REL = path.join("packages", "knowledge", "src/graphify.mjs");
 
 const SEAMS = {

@@ -6,12 +6,12 @@ title: "The Codex execution contract says `policy`, not `business`, in a project
 status: not-started
 owner: product-owner
 created: 2026-11-15
-updated: 2026-11-15
+updated: 2026-11-23
 schema: 1
 aofVersion: 0.1.0
 tags: [codex, discovery]
 reads:
-  - packages/core/assets/variants/codex/workflow.md
+  - packages/acd/assets/variants/codex/workflow.md
   - packages/specification-by-example/assets/bundle.json
   - wiki/work/193_milestone_operator-aware-discovery/ARCHITECTURE.md#ADR-006
   - test/arch/examples/acd-examples-off-is-today.test.mjs

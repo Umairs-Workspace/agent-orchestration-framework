@@ -42,7 +42,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // between values.
 //
 // WHY THE COMPATIBILITY LEG IS OVER THE CORPUS AND NOT OVER AN EXAMPLE — 58's reason, unchanged.
-// The sixteen records under `packages/core/assets/loops/` are the framework's own declaration of how it
+// The sixteen records under `packages/acd/assets/loops/` are the framework's own declaration of how it
 // improves itself, installed into every project that runs aof. The oracle is the signature milestone
 // 57 froze over ELEVEN of them and 58 re-used over fourteen, copied here rather than re-measured: an
 // oracle re-derived from the tree it is measuring proves nothing. The sixteen-record signature must
@@ -365,7 +365,7 @@ export const archTests = [
       // AN AUDITOR'S MEASUREMENT REFUSES EVERY `prose:` POINTER, while a loop and a watcher keep
       // theirs — the same value, three kinds, in ONE load, so the claim is a difference between
       // kinds. This is what stands in for the `determinism` enum the kind deliberately omits.
-      const document = "prose:packages/core/assets/commands/verify.md";
+      const document = "prose:packages/acd/assets/commands/verify.md";
       await overRegistry({
         "operator.md": actor("operator"),
         "alpha.md": loop("alpha", { measurement: `[${document}]` }),

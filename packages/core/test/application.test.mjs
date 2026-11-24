@@ -27,7 +27,7 @@ test('installed framework policy citations follow real public exports and stay c
   try {
     assert.equal(application.execution.runs.shouldRetry, shouldRetry);
     assert.equal(application.execution.runs.isRetryable, isRetryable);
-    const source = await readFile(new URL('../assets/loops/run-resilience.md', import.meta.url), 'utf8');
+    const source = await readFile(new URL('../../acd/assets/loops/run-resilience.md', import.meta.url), 'utf8');
     const registry = path.join(root, '.aof');
     await mkdir(path.join(registry, 'loops'), { recursive: true });
     const file = path.join(registry, 'loops/run-resilience.md');

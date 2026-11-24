@@ -514,7 +514,7 @@ export const promptLayerTests = [
         [".claude/skills", 1, "the Claude runtime's local root, under the skills kind"],
         [".codex/agents", 1, "the Codex runtime's local root, under the agents kind"],
         [".opencode/commands", 1, "the OpenCode runtime's local root, under the commands kind"],
-        ["packages/core/assets/agents", 0, "a packages/core/assets/agents directory in the same project"],
+        ["packages/acd/assets/agents", 0, "a packages/acd/assets/agents directory in the same project"],
         ["docs", 0, "a docs/ directory of ordinary project markdown"],
       ];
       for (const [location, expected, why] of rows) {
@@ -534,8 +534,8 @@ export const promptLayerTests = [
       await withProject({
         ".claude/commands/installed-one.md": "An installed document with nothing shared.",
         ".claude/commands/installed-two.md": "A second installed document, also unshared.",
-        "packages/core/assets/commands/installed-one.md": OVER_FLOOR,
-        "packages/core/assets/commands/installed-two.md": OVER_FLOOR,
+        "packages/acd/assets/commands/installed-one.md": OVER_FLOOR,
+        "packages/acd/assets/commands/installed-two.md": OVER_FLOOR,
       }, async (root) => {
         assert.deepEqual(duplication(await runPromptLayer({ root })), [], "no finding is returned for a duplicate that exists only in the bundle copy");
       });
@@ -543,7 +543,7 @@ export const promptLayerTests = [
       await withProject({
         ".claude/commands/installed-one.md": OVER_FLOOR,
         ".claude/commands/installed-two.md": OVER_FLOOR,
-        "packages/core/assets/commands/installed-one.md": OVER_FLOOR,
+        "packages/acd/assets/commands/installed-one.md": OVER_FLOOR,
       }, async (root) => {
         const found = duplication(await runPromptLayer({ root }));
         assert.equal(found.length, 1, "the same sentence appearing in two installed documents returns one finding");

@@ -777,7 +777,7 @@
         "id": "watcher-autonomous-cascade",
         "kind": "asset"
       },
-      "hash": "sha256:966af3956f271c2eedd003874caf6784b025c414e18f14a5fdb41c355542cf15"
+      "hash": "sha256:978dbe7dfbbc7127598276f77ba8d69e91673afc5b56ce0f8adeea9c6cc58fcc"
     },
     {
       "path": ".aof/loops/autonomous-cascade.md",
@@ -786,7 +786,7 @@
         "id": "loop-autonomous-cascade",
         "kind": "asset"
       },
-      "hash": "sha256:02bb0a3a949e82f2721c22cedab35a060e1b10d25a51b62c6fae57a8afdc3967"
+      "hash": "sha256:ac659cf703f5380886dfce8522b4ac42fa8cc7b310352ad8a001eaecf774ead8"
     },
     {
       "path": ".aof/loops/build-to-green-watcher.md",
@@ -795,7 +795,7 @@
         "id": "watcher-build-to-green",
         "kind": "asset"
       },
-      "hash": "sha256:60f51f767635618164b61dbccf6698ae40e0231619f3f007f2fa958065b938a9"
+      "hash": "sha256:2559ea21c653a66483dc998a48aedda58fb74c457cdeb6debc6c0265859b245f"
     },
     {
       "path": ".aof/loops/build-to-green.md",
@@ -804,7 +804,7 @@
         "id": "loop-build-to-green",
         "kind": "asset"
       },
-      "hash": "sha256:91f011d7e3d10474746b591151a4086ba50b56ce123fd0813ae9ecba98e4fb82"
+      "hash": "sha256:6b11783a607939ff99dbb751ffea3975136319550d4be02c30ee26dfb5991024"
     },
     {
       "path": ".aof/loops/instrument-audit.md",
@@ -813,7 +813,7 @@
         "id": "auditor-instrument-audit",
         "kind": "asset"
       },
-      "hash": "sha256:e941eac96456814e2935b00c40e99018a34284f1366846fc3d53cab4fe92f27f"
+      "hash": "sha256:0a2076695471df806de711d63d84bc783cf2dc7693e2615c7b9d6730d15f7a10"
     },
     {
       "path": ".aof/loops/mesh-assignment-reclaim.md",
@@ -822,7 +822,7 @@
         "id": "loop-mesh-assignment-reclaim",
         "kind": "asset"
       },
-      "hash": "sha256:4755ca418d7dad4329dfc591ce3253862fc0cfc4ca554b2b6dc0bc866420ef93"
+      "hash": "sha256:dd3b9c3f27541811db396e5008fbeff461d70bf9b91aaee53b341836619e782d"
     },
     {
       "path": ".aof/loops/operator.md",
@@ -831,7 +831,7 @@
         "id": "actor-operator",
         "kind": "asset"
       },
-      "hash": "sha256:d91c3dbacc95b067e55fb641ef9dafdbcdc4b729207a6d91f58bf5869048b562"
+      "hash": "sha256:1408aa30c2402283628eb7f7b2fc473d7395275c0feebe6b60f3b7e5fccfd634"
     },
     {
       "path": ".aof/loops/product-owner.md",
@@ -840,7 +840,7 @@
         "id": "actor-product-owner",
         "kind": "asset"
       },
-      "hash": "sha256:352d32232b646574c1faa7ab7b6cdf74905297e1a40045ad411303f115a70672"
+      "hash": "sha256:371c9965cdefaee475ac52eac8f8eeb0dcede6d397b8dcb75443aecdfe66e816"
     },
     {
       "path": ".aof/loops/retrospective-memory-ingest.md",
@@ -849,7 +849,7 @@
         "id": "loop-retrospective-memory-ingest",
         "kind": "asset"
       },
-      "hash": "sha256:e4eab92079ba72c90497bd6dc2ebc98a2e80e56c72a0dbebb160db15685eeed4"
+      "hash": "sha256:c60c0c3951632832751ae24c2d9ec46081f81e37498122182305828875421275"
     },
     {
       "path": ".aof/loops/review-fix-rereview-watcher.md",
@@ -858,7 +858,7 @@
         "id": "watcher-review-fix-rereview",
         "kind": "asset"
       },
-      "hash": "sha256:1db178353dbb1b033896debe2d8498ae763b93dae0803757da755d6bba3349d1"
+      "hash": "sha256:077a444459a2db8a4297f4efe49f55adde167cd98d1f82fb83539fbb129d81af"
     },
     {
       "path": ".aof/loops/review-fix-rereview.md",
@@ -867,7 +867,7 @@
         "id": "loop-review-fix-rereview",
         "kind": "asset"
       },
-      "hash": "sha256:8f3723460d50c93bbe90becf0caf887761413e7e0265c7fa61dc23fe6d5399c5"
+      "hash": "sha256:90e645edb09021624c5f8c7afe41d5b34062e1ef854ee9eb8b7c21aa12a44bdb"
     },
     {
       "path": ".aof/loops/rubric-process-exit.md",
@@ -876,7 +876,7 @@
         "id": "anchor-rubric-process-exit",
         "kind": "asset"
       },
-      "hash": "sha256:af1112bb9b2b7de0b782dbf040b9abb93e5004a460f116d29020c2f71007472e"
+      "hash": "sha256:19ddf318e6f5f858191c00996dbae417e81d4dd221a91ac4b5520bfafbcea87c"
     },
     {
       "path": ".aof/loops/run-lifecycle-policy.md",
@@ -885,7 +885,7 @@
         "id": "anchor-run-lifecycle-policy",
         "kind": "asset"
       },
-      "hash": "sha256:4523144a3c7467b6f92db024787c282c8c8d32081f2be40f345bfea2a41e4b06"
+      "hash": "sha256:9acd0345b1cd168af9109c7d5b475e5be78dfd12a80da2508cafdf5fd9cedbcf"
     },
     {
       "path": ".aof/loops/run-liveness.md",
@@ -894,7 +894,7 @@
         "id": "anchor-run-liveness",
         "kind": "asset"
       },
-      "hash": "sha256:1fb6c6f0aabc94a003db22a87be2816c22a121388e40b2ffe3a17381a7f0482f"
+      "hash": "sha256:2b2ebbef340dcfb86acaa292d8b24c5fe0771162bc2ce20a906247cb6bb0ce1a"
     },
     {
       "path": ".aof/loops/run-resilience.md",
@@ -903,7 +903,7 @@
         "id": "loop-run-resilience",
         "kind": "asset"
       },
-      "hash": "sha256:b3ffc3886c72a033b892e7d15ffca5d3c5e66b055e23f380a8fed6463f13f4b3"
+      "hash": "sha256:a5c28e87d7e35008229b75e106556388eed30b1b732828babc2930cbb30e6c40"
     },
     {
       "path": ".aof/loops/speed-thoroughness-autonomy.md",
@@ -912,7 +912,7 @@
         "id": "arbiter-speed-thoroughness-autonomy",
         "kind": "asset"
       },
-      "hash": "sha256:f37839fbd4fe51d595efb4791ca28a374209225dd6c1590c93aa19a0c6c7fcec"
+      "hash": "sha256:ca6741a7f3912c086d3784002857525eb0fa9fe909683a01020401325d6a1a94"
     },
     {
       "path": ".aof/loops/verify-triage-accept.md",
@@ -921,7 +921,7 @@
         "id": "loop-verify-triage-accept",
         "kind": "asset"
       },
-      "hash": "sha256:975559a3dff9d245eed6737dcc7170a251efc92dedcb4d1022fe53f96d798fac"
+      "hash": "sha256:2da50d0902a2e906027cd4816f1da6989786da21486fbb5c88a2527e562e9910"
     },
     {
       "path": ".aof/templates/work/chore/CHORE.md",

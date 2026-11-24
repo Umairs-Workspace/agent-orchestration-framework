@@ -13,7 +13,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // than trusting the resolution to be transitively correct". A resolver that is correct on every
 // example and one bad edge in the registry produce the same failure — a finding routed to a loop
 // that owns the instrument it is about — and only the second reading catches it. Measured on this
-// registry while building the resolver: `prose:packages/core/assets/agents/aof-developer.md` is the actuator
+// registry while building the resolver: `prose:packages/acd/assets/agents/aof-developer.md` is the actuator
 // of FOUR loops, one of which sets the reference of two of the others, so a naive union of the
 // reference-owners makes that loop the audience for news about an actuator it shares. The
 // subtraction in `resolveAddressees` is what fixes it and THIS is the leg that would have caught it.
@@ -55,11 +55,11 @@ const runAudit = _aofApplication.work.audit.report.runAudit;
 import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BUNDLE = path.join(root, "packages", "core", "assets");
+const BUNDLE = path.join(root, "packages", "acd", "assets");
 // Named explicitly so FF-5809's sweep SEES this file and classifies it. It reads the registry in
 // place and copies nothing, so it is that gate's lane 3 — but a suite that reaches the shipped
 // records by a spelling the sweep cannot detect is unclassified by accident rather than by rule.
-const SHIPPED_LOOPS = path.join(root, "packages", "core", "assets", "loops");
+const SHIPPED_LOOPS = path.join(root, "packages", "acd", "assets", "loops");
 const FAMILY = path.join(root, "packages", "work", "src", "audit");
 
 const shipped = () => loadLoops(BUNDLE);
@@ -95,7 +95,7 @@ export const archTests = [
       const model = await shipped();
       const onDisk = (await readdir(SHIPPED_LOOPS)).filter((name) => name.endsWith(".md"));
       assert.ok(onDisk.length > 0, `the sweep of ${SHIPPED_LOOPS} found no .md record — a walk whose subject set empties must FAIL naming the directory (119/ADR-003 §4)`);
-      assert.equal(model.nodes.length, onDisk.length, "every record on disk in packages/core/assets/loops/ parsed into a node");
+      assert.equal(model.nodes.length, onDisk.length, "every record on disk in packages/acd/assets/loops/ parsed into a node");
       assert.ok(model.nodes.length >= 16, `non-vacuous: ${model.nodes.length} shipped records were read`);
       const report = await runAudit({
         repoRoot: root,
@@ -157,7 +157,7 @@ export const archTests = [
       // only inside an assertion message, so both iterations executed an identical body and a
       // severity-keyed re-route planted at that site left the whole tier green.
       const model = await shipped();
-      const anchored = path.join(root, "packages", "core", "assets", "commands", "continue.md");
+      const anchored = path.join(root, "packages", "acd", "assets", "commands", "continue.md");
       const at = async (severity) => {
         const report = await runAudit({
           repoRoot: root,
@@ -179,7 +179,7 @@ export const archTests = [
       // every finding is addressed identically for a reason that has nothing to do with severity).
       assert.equal(warned.severity, "warn");
       assert.equal(errored.severity, "error");
-      assert.equal(warned.about, "prose:packages/core/assets/commands/continue.md", "the anchor resolved to a declared instrument");
+      assert.equal(warned.about, "prose:packages/acd/assets/commands/continue.md", "the anchor resolved to a declared instrument");
       assert.ok(ownersOfInstrument(warned.about, model).length >= 2, "…owned by more than one loop");
       assert.equal(resolveAddressees(warned.about, model, escalationActorOf(model)).via, "reference-owner", "…and resolving through a reference-owner");
 

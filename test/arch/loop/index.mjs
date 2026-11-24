@@ -31,7 +31,7 @@ import { archTests as acdLoopSuiteRegistrationTests } from "./acd-loop-suite-reg
 import { archTests as acdWatcherTaxonomyAdditiveTests } from "./acd-watcher-taxonomy-additive.test.mjs";
 // milestone 58 / story 00 — the FIFTH node kind and the timescale-layer axis: the arbiter's
 // frozen declaration vocabulary (FF-5801), and the endpoint-closed registry fixture every
-// subset copy of `packages/core/assets/loops/` now goes through (FF-5809). The story's behavioural
+// subset copy of `packages/acd/assets/loops/` now goes through (FF-5809). The story's behavioural
 // scenarios extend the loader's own record/value suites, already registered by milestone 52's
 // story-05 block above — 58/00 adds no behavioural suite of its own.
 import { archTests as acdArbiterTaxonomyAdditiveTests } from "./acd-arbiter-taxonomy-additive.test.mjs";

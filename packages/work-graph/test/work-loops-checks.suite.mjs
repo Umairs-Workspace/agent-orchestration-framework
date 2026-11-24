@@ -420,7 +420,7 @@ const UNPAIRED_ROWS = Object.freeze([
 const X = "command:work:run-retry";
 const Y = "command:work:run-complete";
 const Z = "module:src/run-store.mjs#reclaimStaleRuns";
-const PROSE = "prose:packages/core/assets/agents/aof-developer.md";
+const PROSE = "prose:packages/acd/assets/agents/aof-developer.md";
 const ARBITRATION_ROWS = Object.freeze([
   { row: "a:[x] b:[x] | none", loops: { "loop:a": [X], "loop:b": [X] }, vetoes: {}, expected: [{ actuator: X, contenders: "loop:a, loop:b" }] },
   { row: "a:[x] b:[x] | operator veto [a,b]", loops: { "loop:a": [X], "loop:b": [X] }, vetoes: { "actor:operator": ["loop:a", "loop:b"] }, expected: [{ actuator: X, contenders: "loop:a, loop:b" }], supersededBy58: "an ACTOR is not entitled to arbitrate" },

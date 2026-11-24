@@ -631,7 +631,7 @@ const renderTests = [
     run: () => {
       const classic = renderOf("CLASSIC");
       for (const [key, source] of [["examples", "story/EXAMPLES.md"], ["research", "milestone/RESEARCH.md"]]) {
-        const original = readFileSync(path.join(repoRoot, "packages", "core", "assets", "templates", source), "utf8").replace(/\r\n/gu, "\n");
+        const original = readFileSync(path.join(repoRoot, "packages", "acd", "assets", "templates", source), "utf8").replace(/\r\n/gu, "\n");
         assert.ok(classic[key].endsWith(original), `${key} is the default template`);
         assert.equal(classic[key], renderOf("NONE")[key], `${key} is what a project with discovery off is given`);
       }

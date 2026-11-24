@@ -521,7 +521,7 @@ export const workPromoteShowsCandidatesTests = [
   {
     name: "work/promote-shows-candidates: 02 the wrapper's argument hint names the three ways to call it",
     run: async () => {
-      const text = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "promote.md"), "utf8");
+      const text = await readFile(path.join(repoRoot, "packages", "acd", "assets", "commands", "promote.md"), "utf8");
       const hint = text.match(/^argument-hint:\s*"([^"]*)"/mu)?.[1];
       assert.equal(hint, "<backlog slug> [at <position P>] | --next-item [at <position P>] | --show-candidates");
     },
@@ -533,7 +533,7 @@ export const workPromoteShowsCandidatesTests = [
   ].map(({ command, what }) => ({
     name: `work/promote-shows-candidates: 02 each mode drives the verb on its machine face — ${command}`,
     run: async () => {
-      const text = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "promote.md"), "utf8");
+      const text = await readFile(path.join(repoRoot, "packages", "acd", "assets", "commands", "promote.md"), "utf8");
       assert.ok(text.includes(command), `the body names ${command}`);
       for (const phrase of what) assert.match(text, phrase);
     },
@@ -542,7 +542,7 @@ export const workPromoteShowsCandidatesTests = [
   {
     name: "work/promote-shows-candidates: 02 the wrapper chooses nothing by itself",
     run: async () => {
-      const text = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "promote.md"), "utf8");
+      const text = await readFile(path.join(repoRoot, "packages", "acd", "assets", "commands", "promote.md"), "utf8");
       assert.match(text, /Never choose a candidate by reading the backlog or its `depends:` lines/u);
       assert.match(text, /`promote-no-candidates` is a stop to report[^.]*never a reason to search the backlog/u);
       for (const phrase of [/\bmax\b/iu, /\+\s*1\b/u]) assert.doesNotMatch(text, phrase, "the wrapper computes no number of its own");
@@ -553,7 +553,7 @@ export const workPromoteShowsCandidatesTests = [
     name: "work/promote-shows-candidates: 02 the rendered runtime copies match the asset",
     run: async () => {
       const lock = JSON.parse(await readFile(path.join(bundleFixtureRoot(repoRoot), ".aof", "aof.lock.json"), "utf8"));
-      const manifest = JSON.parse(await readFile(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"));
+      const manifest = JSON.parse(await readFile(path.join(repoRoot, "packages", "acd", "assets", "manifest.json"), "utf8"));
       const { createHash } = await import("node:crypto");
       for (const copy of [".claude/commands/aof/promote.md", ".opencode/commands/aof/promote.md", ".agents/skills/aof-promote/SKILL.md"]) {
         const text = await readFile(installedBundlePath(copy, repoRoot), "utf8");

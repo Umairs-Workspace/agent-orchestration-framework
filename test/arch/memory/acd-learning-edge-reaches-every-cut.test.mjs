@@ -41,7 +41,7 @@ const root = fileURLToPath(new URL("../../../", import.meta.url));
 const slash = (value) => String(value).split("\\").join("/");
 const read = (rel) => readBundleProse(rel, root);
 
-const COMMANDS_DIR = "packages/core/assets/commands";
+const COMMANDS_DIR = "packages/acd/assets/commands";
 const SHATTER = `${COMMANDS_DIR}/shatter.md`;
 const REFINE = `${COMMANDS_DIR}/refine.md`;
 const RETROSPECTIVE = `${COMMANDS_DIR}/retrospective.md`;
@@ -764,7 +764,7 @@ export const archTests = [
   {
     name: "arch/124/02 FF-12405 leg 9 (task 03): the manifest is a true content address, and it agrees with the lock on every path they both name",
     run: async () => {
-      const manifest = JSON.parse(read("packages/core/assets/manifest.json"));
+      const manifest = JSON.parse(read("packages/acd/assets/manifest.json"));
       const bundle = await loadBundle();
       const rendered = new Map(
         renderBundleOutputs(bundle, { runtimes: manifest.runtimes }).map((output) => [slash(output.path), output]),
@@ -851,7 +851,7 @@ export const archTests = [
         ".claude/commands/aof/shatter.md",
         ".agents/skills/aof-shatter/SKILL.md",
         ".opencode/commands/aof/shatter.md",
-        "packages/core/assets/manifest.json",
+        "packages/acd/assets/manifest.json",
         ".aof/aof.lock.json",
       ];
       const attrs = execFileSync("git", ["check-attr", "text", "eol", "--", ...six], { cwd: root, encoding: "utf8", maxBuffer: 1 << 24 });
@@ -1084,7 +1084,7 @@ export const archTests = [
       // catalogues the canonical render. Each record is held to the render it describes.
       const own = new Map(renderBundleOutputs(await loadBundle({ config }), { runtimes }).map((output) => [slash(output.path), String(output.content)]));
       const canonical = new Map(renderBundleOutputs(await loadBundle(), { runtimes }).map((output) => [slash(output.path), String(output.content)]));
-      const manifest = new Map(JSON.parse(read("packages/core/assets/manifest.json")).entries.map((entry) => [slash(entry.path), entry.hash]));
+      const manifest = new Map(JSON.parse(read("packages/acd/assets/manifest.json")).entries.map((entry) => [slash(entry.path), entry.hash]));
       const lock = new Map();
       const walk = (node) => {
         if (Array.isArray(node)) return node.forEach(walk);

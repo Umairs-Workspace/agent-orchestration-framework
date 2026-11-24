@@ -52,6 +52,8 @@ function makeFixtureSeaOut(dir) {
   mkdirSync(path.join(dir, 'bundle'), { recursive: true });
   mkdirSync(path.join(dir, 'ui', 'dist'), { recursive: true });
   writeFileSync(path.join(dir, 'bundle', 'bundle.json'), '{}');
+  mkdirSync(path.join(dir, 'assets'), { recursive: true });
+  writeFileSync(path.join(dir, 'assets', 'bundle.json'), '{}');
   writeFileSync(path.join(dir, 'ui', 'dist', 'index.html'), '<main>release UI</main>');
   writeFileSync(path.join(dir, 'package.json'), '{"version":"0.1.0"}');
   mkdirSync(path.join(dir, 'src', 'work'), { recursive: true });

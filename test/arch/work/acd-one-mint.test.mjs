@@ -30,7 +30,7 @@
 //       strict subset. Four comment-only mentions of the path exist in the tree, which is exactly
 //       why this is a specifier sweep and not a grep. Non-vacuous: the resolver finds importers at
 //       all (today it finds the two).
-//   (e) no `packages/core/assets/commands/add-*.md` computes a number. Non-vacuous: it reads the five
+//   (e) no `packages/acd/assets/commands/add-*.md` computes a number. Non-vacuous: it reads the five
 //       scaffolding prompts (six files match the glob today — `add-task` is swept too, and the floor
 //       is a floor rather than a census).
 //
@@ -253,7 +253,7 @@ export const archTests = [
   {
     name: "arch/FF-12703 (acd-one-mint): no src/bundle/commands/add-*.md computes a top-level number",
     run: async () => {
-      const dir = path.join(repoRoot, "packages", "core", "assets", "commands");
+      const dir = path.join(repoRoot, "packages", "acd", "assets", "commands");
       const prompts = (await readdir(dir)).filter((name) => name.startsWith("add-") && name.endsWith(".md")).sort();
       assert.ok(
         prompts.length >= NAMED_ADD_PROMPTS.length,

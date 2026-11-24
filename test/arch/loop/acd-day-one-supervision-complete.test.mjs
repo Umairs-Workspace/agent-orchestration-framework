@@ -2,7 +2,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5806 — THE DAY-ONE SUPERVISION HIERARCHY IS COMPLETE, ADMISSIBLE AND CORROBORATED.
 //
 // Milestone 58 / story 01, from 58/ADR-001, ADR-002 and ADR-005. Over the records shipped in
-// `packages/core/assets/loops/`:
+// `packages/acd/assets/loops/`:
 //
 //   every `kind: loop` record has an inbound `target-setting` edge from another node; every
 //   `target-setting` edge's source is a `loop`, an `actor`, or an `anchor` whose `ground:` is
@@ -309,14 +309,14 @@ export const archTests = [
         .map(([actuator, set]) => [actuator, [...set].sort(compare)])
         .sort((left, right) => compare(left[0], right[0]));
       assert.deepEqual(shared, [
-        ["prose:packages/core/assets/agents/aof-developer.md", [
+        ["prose:packages/acd/assets/agents/aof-developer.md", [
           "loop:autonomous-cascade",
           "loop:build-to-green",
           "loop:review-fix-rereview",
           "loop:verify-triage-accept",
         ]],
-        ["prose:packages/core/assets/agents/aof-product-owner.md", ["loop:autonomous-cascade", "loop:verify-triage-accept"]],
-        ["prose:packages/core/assets/agents/aof-qa.md", ["loop:autonomous-cascade", "loop:verify-triage-accept"]],
+        ["prose:packages/acd/assets/agents/aof-product-owner.md", ["loop:autonomous-cascade", "loop:verify-triage-accept"]],
+        ["prose:packages/acd/assets/agents/aof-qa.md", ["loop:autonomous-cascade", "loop:verify-triage-accept"]],
       ], "three shared actuators and four distinct contenders");
 
       const vetoed = edgeRaws(arbiter, "veto");
@@ -451,7 +451,7 @@ export const archTests = [
   //       `<name>` is an EXPORTED symbol of that module, `<n>` is the line of its `export`.
   //
   // MEASURED AT 58/01's REVIEW, which is why this exists: three citations of
-  // `packages/core/assets/commands/autonomous.md` named lines 49-81 of a 47-line file, and twelve of
+  // `packages/acd/assets/commands/autonomous.md` named lines 49-81 of a 47-line file, and twelve of
   // fifteen `<symbol> at <module>:<line>` claims were off by +1 to +355 because the modules
   // grew underneath them — two records giving different lines for the SAME export inside one
   // milestone's diff. `TECH_DEBT` item 68 is the ledger; this is the guard that closes it.

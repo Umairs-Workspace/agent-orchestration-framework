@@ -821,7 +821,7 @@ export const workTestSelectTests = [
     name: "190/01 E8 · a coupling with suites selects them",
     run: async () => {
       const suite = "test/work/lifecycle/work-test-declared.test.mjs";
-      const out = await plantedSelector({}).selectSuites({ projectRoot: "fixture", changed: ["packages/core/assets/commands/continue.md"], allSuites: [suite], roots: ["test"], couplings: [{ paths: ["packages/core/assets/commands/*.md"], suites: [suite], why: "the prompt regions are asserted here" }] });
+      const out = await plantedSelector({}).selectSuites({ projectRoot: "fixture", changed: ["packages/acd/assets/commands/continue.md"], allSuites: [suite], roots: ["test"], couplings: [{ paths: ["packages/acd/assets/commands/*.md"], suites: [suite], why: "the prompt regions are asserted here" }] });
       assert.deepEqual([...out.selected], [suite]);
       assert.equal(out.resolutions[0].reason, "declared-coupling");
     },

@@ -29,7 +29,7 @@ const THE_WRITER = "packages/execution/src/runs.mjs";
 const WRITER_HEADER = "async function recordAnswers(";
 
 async function modules() {
-  return (await readRuntimeFiles(repoRoot)).filter(file => !file.rel.startsWith("packages/core/assets/")).map(file => file.path);
+  return (await readRuntimeFiles(repoRoot)).filter(file => !file.rel.startsWith("packages/acd/assets/")).map(file => file.path);
 }
 
 const readsToolUseResult = (code) => /\btoolUseResult\b/.test(code);

@@ -96,8 +96,8 @@ export const archTests = [
       assert.deepEqual(missingEntries(text.replace(/partial\s+scaffold/giu, "outline")), ["HELP_LADDER: partial scaffold"], "a dropped rung is named");
       assert.deepEqual(missingEntries("evaluate the implementation", { stages: ["implement"], ladder: [], traps: [] }), ["STAGES: implement"], "\"implementation\" does not satisfy the stage \"implement\"");
       assert.deepEqual(missingEntries(text, { stages: [...STAGES, "rubber-duck"] }), ["STAGES: rubber-duck"], "an entry the prompt lacks is named");
-      const planted = path.join(repoRoot, "packages", "core", "assets", "commands", "planted.md");
-      assert.deepEqual(strayTrapNames([planted, TEACH], (file) => (file === planted ? "beware the Dislodging trap" : text)), ["packages/core/assets/commands/planted.md: Dislodging"], "a stray trap name is named, teach.md is not");
+      const planted = path.join(repoRoot, "packages", "acd", "assets", "commands", "planted.md");
+      assert.deepEqual(strayTrapNames([planted, TEACH], (file) => (file === planted ? "beware the Dislodging trap" : text)), ["packages/acd/assets/commands/planted.md: Dislodging"], "a stray trap name is named, teach.md is not");
       assert.deepEqual(strayTrapNames([planted], () => "transforming the input"), [], "\"Forming\" inside a word is not the trap");
     },
   },

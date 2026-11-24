@@ -13,7 +13,7 @@ import { assets } from "./support/assets-services.mjs";
 // The faces themselves are the SHIPPED graphify face fragment authored in
 // packages/core/src/graph-faces.mjs (graphifyFacesConfig) — a config-SHAPED object consumed by
 // renderConfigOutputs unchanged (the work-bundle.mjs idiom). Homed there, NOT in
-// the frozen ACD packages/core/assets/ (whose membership is pinned by
+// the frozen ACD packages/acd/assets/ (whose membership is pinned by
 // acd-bundle-membership) — see the developer return.
 //
 // One test object per @executable scenario; Scenario-Outline rows folded into one

@@ -1,6 +1,6 @@
 // Fitness function FF-16502 for milestone 165 / ADR-002:
 // "Each cowork SKILL.md body contains its source command's body
-//  (packages/core/assets/commands/<id>.md) unchanged after the one cowork preamble;
+//  (packages/acd/assets/commands/<id>.md) unchanged after the one cowork preamble;
 //  codex's mapped skills render byte-identically to before the mapping was generalised."
 //
 // Proofs:

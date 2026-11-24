@@ -15,7 +15,7 @@ import { writeLock } from "../../packages/core/src/lock.mjs";
 import { withLoopRegistry } from "../support/loop-registry-fixture.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const loopsDir = path.join(root, "packages", "core", "assets", "loops");
+const loopsDir = path.join(root, "packages", "acd", "assets", "loops");
 
 const WATCHERS = Object.freeze([
   { file: "build-to-green-watcher.md", id: "watcher:build-to-green-watcher", watches: "loop:build-to-green", counter: "whether the acceptance criteria got smaller", command: "work:ratchet" },

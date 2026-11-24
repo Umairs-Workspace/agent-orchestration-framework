@@ -8,7 +8,7 @@ depends: []
 status: not-started
 owner: product-owner
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-23
 adrs: [ADR-005]
 reads:
   - wiki/work/189_milestone_human-understanding-checks/SPEC.md
@@ -16,7 +16,7 @@ reads:
   - wiki/planning/PRD-human-led-learning.md
   - wiki/planning/RESEARCH-human-led-learning.md
   - wiki/work/187_spike_guided-mode-boundary/SPIKE.md#finding
-  - packages/core/assets/commands/manual.md
+  - packages/acd/assets/commands/manual.md
   - packages/learning/assets/commands/teach.md
   - packages/learning/test/index.mjs
 files:

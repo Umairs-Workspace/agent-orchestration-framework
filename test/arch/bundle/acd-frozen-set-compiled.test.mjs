@@ -34,7 +34,7 @@ function jsLiteral(value) {
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SETTINGS_SOURCE = path.join(repoRoot, "packages", "core", "src", "claude-settings.mjs");
-const BUNDLE_DESCRIPTOR = path.join(repoRoot, "packages", "core", "assets", "bundle.json");
+const BUNDLE_DESCRIPTOR = path.join(repoRoot, "packages", "acd", "assets", "bundle.json");
 const MEMBER_CENSUS_SOURCE = path.join(repoRoot, "packages", "core", "test", "frozen-set-compiled.suite.mjs");
 const TREE_CENSUS_SOURCE = path.join(repoRoot, "test", "bundle", "bundle-asset-manifest-complete.test.mjs");
 

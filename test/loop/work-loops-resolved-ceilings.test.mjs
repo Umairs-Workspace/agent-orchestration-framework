@@ -11,7 +11,7 @@ const initWork = _aofApplication.assets.work.init.initWork;
 const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const bundleAof = path.join(root, "packages", "core", "assets");
+const bundleAof = path.join(root, "packages", "acd", "assets");
 
 function record(stem, ceiling) {
   return `---\nid: loop:${stem}\nkind: loop\ntitle: ${stem}\ncontrolled: state\nreference: [prose:README.md]\nmeasurement: [prose:README.md]\nactuator: [prose:README.md]\ncadence: event:per-item\nceiling: ${ceiling}\nowner: unknown\noptimizing: false\n---\n# ${stem}\n`;
@@ -59,7 +59,7 @@ export const workLoopsResolvedCeilingsTests = [
       const model = await loadLoops(bundleAof);
       const node = model.nodes.find((entry) => entry.id === "loop:build-to-green");
       assert.deepEqual(node.fields.ceiling.map((entry) => entry.raw), ["config:work.loop.buildNoProgressRounds"]);
-      const source = await readFile(path.join(root, "packages", "core", "assets", "loops", "build-to-green.md"), "utf8");
+      const source = await readFile(path.join(root, "packages", "acd", "assets", "loops", "build-to-green.md"), "utf8");
       const frontmatter = source.match(/^---\r?\n([\s\S]*?)\r?\n---/u)?.[1] ?? "";
       assert.doesNotMatch(frontmatter.match(/^ceiling:.*$/mu)?.[0] ?? "", /\d/u);
     },
@@ -71,7 +71,7 @@ export const workLoopsResolvedCeilingsTests = [
       const node = model.nodes.find((entry) => entry.id === "loop:review-fix-rereview");
       assert.deepEqual(node.fields.ceiling.map((entry) => entry.raw), ["config:work.loop.reviewRounds"]);
       assert.equal(DEFAULT_REVIEW_ROUNDS, 1);
-      const recordSource = await readFile(path.join(root, "packages", "core", "assets", "loops", "review-fix-rereview.md"), "utf8");
+      const recordSource = await readFile(path.join(root, "packages", "acd", "assets", "loops", "review-fix-rereview.md"), "utf8");
       assert.doesNotMatch(recordSource.match(/^ceiling:.*$/mu)?.[0] ?? "", /\b1\b/u);
     },
   },

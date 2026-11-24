@@ -8,14 +8,14 @@ depends: [00]
 status: in-review
 owner: product-owner
 created: 2026-10-28
-updated: 2026-10-31
+updated: 2026-11-23
 adrs: [ADR-002, ADR-004]
 reads:
   - wiki/work/188_milestone_human-led-problem-solving/SPEC.md
   - wiki/work/188_milestone_human-led-problem-solving/ARCHITECTURE.md#ADR-002
   - wiki/work/188_milestone_human-led-problem-solving/ARCHITECTURE.md#ADR-004
   - wiki/work/149_story_continue-manual-mode-guides-the-operator/tasks/01_manual-is-one-story-here-at-every-door.feature
-  - packages/core/assets/commands/manual.md
+  - packages/acd/assets/commands/manual.md
   - packages/specification-by-example/package.json
   - packages/specification-by-example/test/index.mjs
   - packages/specification-by-example/test/package-seams.suite.mjs

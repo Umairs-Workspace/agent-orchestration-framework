@@ -18,7 +18,7 @@ import { ensureWorkStream, workDir } from "../support/work-stream-fixture.mjs";
 const registry = createStepRegistry();
 registerCommonSteps(registry);
 
-const TARGET_REL = "packages/core/assets/commands/refine.md";
+const TARGET_REL = "packages/acd/assets/commands/refine.md";
 const PROMPT = `prompt:${TARGET_REL}`;
 const TARGET_BYTES = "# refine\nstep one\n";
 const LESSON = "Declare the existing counter's owning suite before drawing the write set.";
@@ -335,7 +335,7 @@ registry.define(/^its patch is not marked replacement-prose-not-computable$/, (c
 });
 registry.define(/^the target, configuration, retrospectives and ledgers remain byte-identical$/, (context) => {
   assert.deepEqual(context.after, context.before, "every byte under the project is unchanged by the command");
-  assert.equal(context.after.get(path.join("packages", "core", "assets", "commands", "refine.md")), TARGET_BYTES);
+  assert.equal(context.after.get(path.join("packages", "acd", "assets", "commands", "refine.md")), TARGET_BYTES);
 });
 
 registry.define(/^the target already contains the exact block for the canonical lesson ref and text$/, async (context) => {
@@ -389,7 +389,7 @@ registry.define(/^the outside target's contents are never read or included in ou
 const CONDITIONS = {
   "no promotion target": (fx) => { fx.lesson.promoted = "none"; },
   "a rule target": (fx) => { fx.lesson.promoted = "rule:.aof/rules/x.md"; },
-  "two conflicting prompt targets": (fx) => { fx.lesson.promoted = `${PROMPT} prompt:packages/core/assets/commands/other.md`; },
+  "two conflicting prompt targets": (fx) => { fx.lesson.promoted = `${PROMPT} prompt:packages/acd/assets/commands/other.md`; },
   "conflicting lesson text for one ref": (fx) => { fx.lesson.duplicate = "A different sentence for the same lesson."; },
   "an empty Lesson field": (fx) => { fx.lesson.lessonText = ""; },
   "a missing target file": (fx) => { fx.targetBytes = null; },

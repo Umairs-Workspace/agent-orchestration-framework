@@ -104,13 +104,13 @@ async function buildFixture() {
   await cp(path.join(repoRoot, ".aof", "templates", "work", "chore"), path.join(aofDir, "templates", "work", "chore"), { recursive: true });
   // milestone 168 / story 01 — `work:prototype` scaffolds from `.aof/templates/work/prototype/`; the
   // bundle's own pair is copied, since it is what `aof work update` renders there.
-  await cp(path.join(repoRoot, "packages", "core", "assets", "templates", "prototype"), path.join(aofDir, "templates", "work", "prototype"), { recursive: true });
+  await cp(path.join(repoRoot, "packages", "acd", "assets", "templates", "prototype"), path.join(aofDir, "templates", "work", "prototype"), { recursive: true });
   // milestone 63 / story 05 — `work:trigger` reads the INSTALLED trigger declaration (the copy
   // `aof work update` writes), and a workspace with none is a coded "nothing is armed" refusal at
   // exit 1. Copy the bundled source into the fixture exactly as the templates above are copied,
   // so this probe exercises the verb's real resolving path — four declared triggers resolving to
   // four `work:loop` argvs — rather than its missing-file refusal.
-  await cp(path.join(repoRoot, "packages", "core", "assets", "triggers.jsonc"), path.join(aofDir, "triggers.jsonc"));
+  await cp(path.join(repoRoot, "packages", "acd", "assets", "triggers.jsonc"), path.join(aofDir, "triggers.jsonc"));
   await writeFile(
     path.join(milestoneDir, "SPEC.md"),
     frontmatter({ type: "milestone", number: "03", slug: "board", status: "in-progress", title: '"Board"', created: "2026-06-19", updated: "2026-06-19" }),

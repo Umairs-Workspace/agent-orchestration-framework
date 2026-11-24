@@ -41,7 +41,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // scopes its files to that type — which is exactly what OUTCOME.md must NOT be.
 const WORK_ITEM_TYPES = ["milestone", "story", "task", "uat", "spike", "chore"];
 
-const SHARED_SOURCE = path.join(repoRoot, "packages", "core", "assets", "templates", "shared", "OUTCOME.md");
+const SHARED_SOURCE = path.join(repoRoot, "packages", "acd", "assets", "templates", "shared", "OUTCOME.md");
 const NEW_RENDER_PATH = ".aof/templates/work/shared/OUTCOME.md";
 const OLD_RENDER_PATH = ".aof/templates/work/milestone/OUTCOME.md";
 

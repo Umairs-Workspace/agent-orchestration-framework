@@ -91,7 +91,7 @@ const CLAUDE_SESSION_MEMBER_IDS = MEMBER_ROWS.map((row) => row.id);
 const CODEX_SESSION_MEMBER_IDS = MEMBER_ROWS.map((row) => row.codexSibling);
 
 // The codex members' own bundle files, pinned VERBATIM (scenario 3's "byte-identical
-// to before this story"). `.gitattributes` pins `packages/core/assets/** text eol=lf`, so this
+// to before this story"). `.gitattributes` pins `packages/acd/assets/** text eol=lf`, so this
 // is a true byte pin on every platform. It is shrink-only in effect: any edit to a
 // codex session hook file fails here naming m49/07, which is exactly the guard the
 // scenario asks for — this story does not touch them.

@@ -61,7 +61,7 @@ const context = (overrides = {}) => ({
 const emitted = (candidate, options = {}) => emitProposal(candidate, context(options)).proposal;
 
 // 153/05 — fixtures for a promoted lesson's prompt revision.
-const PROMPT = "prompt:packages/core/assets/commands/refine.md";
+const PROMPT = "prompt:packages/acd/assets/commands/refine.md";
 const LESSON_TEXT = "Declare the existing counter's owning suite before drawing the write set.";
 const TARGET_BYTES = "# refine\nstep one\n";
 const BLOCK = `<!-- aof:lesson 45/R13 -->\n${LESSON_TEXT}\n<!-- /aof:lesson 45/R13 -->\n`;

@@ -108,7 +108,7 @@ import { loadworkspaceHydrationTests } from "./loadworkspace-hydration.test.mjs"
 import { backcompatMigrateDoctorTests } from "./backcompat-migrate-doctor.test.mjs";
 // story 31 — migrate-claude-command (the /aof:migrate BUNDLE BODY — the inference
 // ceiling over the story-29 mechanical CLI). Task 00's @executable content pins over
-// the AUTHORED packages/core/assets/commands/migrate.md (grep-able marker facts + offset
+// the AUTHORED packages/acd/assets/commands/migrate.md (grep-able marker facts + offset
 // ordering, the acd-doctor-validate-keystone idiom) + task 03's distribution matrix
 // (descriptor member, derived-manifest byte-for-byte regeneration (ADR-002), work
 // update/init landing, never-inited refusal, idempotent skip, dry-run preview,
@@ -183,7 +183,7 @@ import { featureParseStrictTests } from "./feature-parse-strict.test.mjs";
 // shipped watcher records + FF-5707 (counter resolution) and FF-5708 (table complete).
 import { pairingTableTests } from "./pairing-table.test.mjs";
 // milestone 66 / story 03 — THE ASK (ADR-005, ADR-006, ADR-007 §1/§2, ADR-009/H+I, ADR-011/E).
-// A check with no ask is a trap: ACD's gates are met by agents reading `packages/core/assets/`, so every
+// A check with no ask is a trap: ACD's gates are met by agents reading `packages/acd/assets/`, so every
 // refusal 66/02 can raise ships its ask in the same milestone. Task 00 lands the
 // `VERIFICATION.md` template ACD has never had — four frozen headings and the fitness register
 // whose `red probe` cell records what was changed to make a control fail and the message
@@ -193,7 +193,7 @@ import { pairingTableTests } from "./pairing-table.test.mjs";
 // reports UNNUMBERED, the single writer allocates on landing, because a stale read looks exactly
 // like a fresh one. FF-6608 is the story's own fitness function (ADR-007 §1) and the literal
 // discharge of the finding's measured zero — eight falsifiability terms, 0 files each across
-// `packages/core/assets/` at HEAD; it holds the red-probe placeholder byte-equal across the JS/markdown
+// `packages/acd/assets/` at HEAD; it holds the red-probe placeholder byte-equal across the JS/markdown
 // boundary, which no import can do, and carries its own planted-defect lane per (ask, file).
 import { verificationTemplateTests } from "./verification-template.test.mjs";
 import { doctorLoopRecordLaneTests } from "./doctor-loop-record-lane.test.mjs";

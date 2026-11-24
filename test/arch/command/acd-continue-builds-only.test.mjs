@@ -13,8 +13,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const PROMPT = "packages/core/assets/commands/continue.md";
-const CODEX = "packages/core/assets/variants/codex/workflow.md";
+const PROMPT = "packages/acd/assets/commands/continue.md";
+const CODEX = "packages/acd/assets/variants/codex/workflow.md";
 const CODEX_SECTIONS = Object.freeze(["continue", "procedure-continue"]);
 
 // One Codex variant section, cut exactly as the bundle loader cuts it (`packages/core/src/work/bundle.mjs`):

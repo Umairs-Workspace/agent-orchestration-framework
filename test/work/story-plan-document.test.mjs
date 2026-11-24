@@ -45,7 +45,7 @@ let briefText = readAssetText;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-const TEMPLATE = path.join(repoRoot, "packages", "core", "assets", "templates", "story", "PLAN.md");
+const TEMPLATE = path.join(repoRoot, "packages", "acd", "assets", "templates", "story", "PLAN.md");
 const TEMPLATE_INSTALL_PATH = ".aof/templates/work/story/PLAN.md";
 const WORK_DIR = path.join(repoRoot, "wiki", "work");
 
@@ -262,7 +262,7 @@ export const storyPlanDocumentTests = [
   {
     name: "96/02-00 the story plan template is a declared member of the installed bundle, at its declared path and matching the shipped source",
     async run() {
-      const manifest = JSON.parse(await read(path.join("packages", "core", "assets", "manifest.json")));
+      const manifest = JSON.parse(await read(path.join("packages", "acd", "assets", "manifest.json")));
       const entry = manifest.entries.find((row) => row.path === TEMPLATE_INSTALL_PATH);
       assert.ok(entry, `the bundle manifest declares no entry at ${TEMPLATE_INSTALL_PATH}`);
       assert.equal(entry.resource.kind, "template");
@@ -398,7 +398,7 @@ export const storyPlanDocumentTests = [
   {
     name: "96/02-02 the developer's brief names the plan as an input, states it is advisory, and states that a plan found wrong is reported and the build continues",
     async run() {
-      const brief = await read(path.join("packages", "core", "assets", "agents", "aof-developer.md"));
+      const brief = await read(path.join("packages", "acd", "assets", "agents", "aof-developer.md"));
 
       assert.match(brief, /PLAN\.md/, "the developer's brief must name the plan document");
       assert.match(brief, /advisory/i, "the developer's brief must state that the plan is advisory");
@@ -414,7 +414,7 @@ export const storyPlanDocumentTests = [
     name: "96/02-02 the reviewer briefs do not instruct their role to read a plan document (Examples: the two review lanes the read contract made cheap)",
     async run() {
       for (const role of ["qa", "architect"]) {
-        const brief = await read(path.join("packages", "core", "assets", "agents", `aof-${role}.md`));
+        const brief = await read(path.join("packages", "acd", "assets", "agents", `aof-${role}.md`));
         assert.doesNotMatch(
           brief,
           /PLAN\.md/,
@@ -427,7 +427,7 @@ export const storyPlanDocumentTests = [
     name: "96/02-02 a deviation from the plan is not a finding, and the task feature is the contract",
     async run() {
       for (const role of ["qa", "architect"]) {
-        const brief = await read(path.join("packages", "core", "assets", "agents", `aof-${role}.md`));
+        const brief = await read(path.join("packages", "acd", "assets", "agents", `aof-${role}.md`));
         assert.match(
           brief,
           /A deviation from the story's build plan is not a finding/,

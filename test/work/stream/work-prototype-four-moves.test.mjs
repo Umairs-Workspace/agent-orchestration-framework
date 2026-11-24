@@ -18,7 +18,7 @@ const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 const validateWork = _aofWorkspace.work.validateWork;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const TEMPLATES = path.join(repoRoot, "packages", "core", "assets", "templates", "prototype");
+const TEMPLATES = path.join(repoRoot, "packages", "acd", "assets", "templates", "prototype");
 const HANDOFF = "Import works for Monzo CSV. Next: Starling.";
 
 async function withStream(body) {

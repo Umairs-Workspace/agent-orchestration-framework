@@ -24,9 +24,10 @@ function ownershipFixture(run) {
     writeFileSync(path.join(root, file), typeof value === 'string' ? value : JSON.stringify(value));
   };
   try {
-    write('yarn.lock', '__metadata:\n  version: 8\n"aof@workspace:packages/core":\n  version: 0.1.0\n  resolution: "aof@workspace:packages/core"\n"@aof/ui@workspace:apps/ui":\n  version: 0.1.0\n  resolution: "@aof/ui@workspace:apps/ui"\n"@aof/execution@workspace:packages/execution":\n  version: 0.1.0\n  resolution: "@aof/execution@workspace:packages/execution"\n');
+    write('yarn.lock', '__metadata:\n  version: 8\n"aof@workspace:packages/core":\n  version: 0.1.0\n  resolution: "aof@workspace:packages/core"\n"@aof/ui@workspace:apps/ui":\n  version: 0.1.0\n  resolution: "@aof/ui@workspace:apps/ui"\n"@aof/execution@workspace:packages/execution":\n  version: 0.1.0\n  resolution: "@aof/execution@workspace:packages/execution"\n"@aof/acd@workspace:packages/acd":\n  version: 0.1.0\n  resolution: "@aof/acd@workspace:packages/acd"\n');
     write('packages/core/package.json', { name: 'aof' });
     write('apps/ui/package.json', { name: '@aof/ui' });
+    write('packages/acd/package.json', { name: '@aof/acd' });
     write('packages/execution/package.json', { name: '@aof/execution', dependencies: { 'node-pty': '1.1.0' } });
     return run(root, write);
   } finally { rmSync(root, { recursive: true, force: true }); }
@@ -186,11 +187,12 @@ export const coreWorkspaceTests = [
   } },
 { name: 'distribution-workspaces/assets follow the relocated UI owner and ignore the old tree', run() {
     ownershipFixture((root, write) => {
-      write('packages/core/assets/command.md', 'asset');
+      write('packages/acd/assets/command.md', 'asset');
+      write('packages/core/assets/hooks/hook.json', '{}');
       write('apps/ui/dist/index.html', '<main>current</main>');
       write('ui/dist/stale.html', 'old');
       assert.equal(workspaceDirectory(root, '@aof/ui'), path.join(root, 'apps/ui'));
-      assert.deepEqual(generateAssetManifest(root), { bundle: ['command.md'], ui: ['index.html'] });
+      assert.deepEqual(generateAssetManifest(root), { bundle: ['command.md'], core: ['hooks/hook.json'], ui: ['index.html'] });
     });
   } },
   { name: 'distribution-workspaces/native resolution follows its owner without root hoisting', run() {
@@ -215,7 +217,7 @@ export const coreWorkspaceTests = [
     const root = path.resolve('fixture');
     const inputs = { 'packages/core/src/cli.mjs': {}, 'packages/core/src/application/assemble.mjs': {} };
     assertSeaBundle({ inputs }, root);
-    for (const forbidden of ['src/cli.mjs', 'apps/ui/src/main.jsx', 'ui/dist/index.html', 'packages/core/assets/bundle.json', 'node_modules/node-pty/lib/index.js', '../foreign.mjs']) {
+    for (const forbidden of ['src/cli.mjs', 'apps/ui/src/main.jsx', 'ui/dist/index.html', 'packages/acd/assets/bundle.json', 'packages/core/assets/bundle.json', 'node_modules/node-pty/lib/index.js', '../foreign.mjs']) {
       assert.throws(() => assertSeaBundle({ inputs: { ...inputs, [forbidden]: {} } }, root), /outside its runtime closure/u);
     }
     assert.throws(() => assertSeaBundle({ inputs: {} }, root), /missing core entry/u);
@@ -229,7 +231,7 @@ export const coreWorkspaceTests = [
     const report = inspectBoundaries(repoRoot, { runtimeAudit: audit });
     assert.deepEqual(report.findings, []);
     assert.ok(report.files >= 700, `${report.files} actual source and tooling files`);
-    assert.equal(Object.keys(report.covered).length, 20, 'all packages, UI and repository tooling are covered (@aof/diagrams and @aof/diagrams-ui are the seventeenth and eighteenth owners; @aof/integration-hyperagent the nineteenth; @aof/learning, 179/01, the twentieth)');
+    assert.equal(Object.keys(report.covered).length, 21, 'all packages, UI and repository tooling are covered (@aof/diagrams and @aof/diagrams-ui are the seventeenth and eighteenth owners; @aof/integration-hyperagent the nineteenth; @aof/learning, 179/01, the twentieth; @aof/acd, chore 207, the twenty-first)');
     assert.ok(Object.values(report.covered).every(count => count > 0));
     const { tests } = await import('../../scripts/test.mjs');
     const inventory = workspaceTestInventory(repoRoot);

@@ -383,7 +383,7 @@ export const loopDiagramCommandTests = [
   {
     name: "145/03: the command runs the plan, stops on a stop, and exports only after drawing",
     run: async () => {
-      const text = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "loop-diagram.md"), "utf8");
+      const text = await readFile(path.join(repoRoot, "packages", "acd", "assets", "commands", "loop-diagram.md"), "utf8");
       assert.match(text, /^argument-hint: "<milestone ref>"$/m);
       const plan = text.indexOf("aof diagram plan <ref> loop --json");
       const exported = text.indexOf("aof diagram export <ref> loop --json");

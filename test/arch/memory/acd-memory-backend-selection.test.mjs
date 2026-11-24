@@ -22,7 +22,7 @@ const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SRC_DIR = path.resolve(HERE, "..", "..", "..", "packages", "core", "src");
 const SCHEMA_URL = new URL("../../../schemas/aof.schema.json", import.meta.url);
-const BUNDLE_DIR = path.join(SRC_DIR, "..", "assets");
+const BUNDLE_DIR = path.join(SRC_DIR, "..", "..", "acd", "assets");
 
 // Strip line- and block-comments and string-quote noise enough that we test
 // CODE, not prose. (We only need to discount `// ...` and `/* ... */`, which is

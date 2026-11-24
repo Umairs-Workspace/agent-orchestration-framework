@@ -129,7 +129,7 @@ export const teachFrameTests = [
       const close = process.indexOf("Close it before this command's own turn ends");
       const opening = process.indexOf("**Open** (`<opening>`)");
       assert.ok(opening >= 0 && close > opening, "the close follows the opening, inside the command's own turn");
-      const review = flattened(readFileSync(new URL("../../core/assets/commands/review.md", import.meta.url), "utf8"));
+      const review = flattened(readFileSync(new URL("../../acd/assets/commands/review.md", import.meta.url), "utf8"));
       assert.match(review, /usually after `aof:manual <ref>` handed them a guide, or after `aof:teach <ref>` taught them through it/u);
       assert.match(review, /Either command may have made the story's run and status move\. Do not assume it was `aof:manual`/u);
     },

@@ -367,7 +367,7 @@ export const storyContractDeriveTests = [
   {
     name: "96/01/02 the refine command asks for a proposal and never for an application",
     run: async () => {
-      const refine = await readFile(new URL("../../packages/core/assets/commands/refine.md", import.meta.url), "utf8");
+      const refine = await readFile(new URL("../../packages/acd/assets/commands/refine.md", import.meta.url), "utf8");
       assert.match(refine, /derive/i, "the break-down instructions tell the author to derive a proposal");
       assert.match(refine, /subtract/i, "…and to subtract from it");
       // No instruction anywhere to apply, write or overwrite a declaration with a derived set.

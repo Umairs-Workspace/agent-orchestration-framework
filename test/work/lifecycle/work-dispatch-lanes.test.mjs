@@ -972,7 +972,7 @@ export const workDispatchLaneTests = [
   {
     name: "dispatch/02 the prompt fans out over the ready set instead of taking its head — continue.md asks for the ready set, dispatches its members together up to the bound, and no longer says the loop is one-at-a-time",
     run: async () => {
-      const prompt = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "continue.md"), "utf8");
+      const prompt = await readFile(path.join(repoRoot, "packages", "acd", "assets", "commands", "continue.md"), "utf8");
 
       // (a) It ASKS for the ready set, by the key the command actually answers with.
       assert.match(prompt, /aof work next[^\n]*--json/, "it asks `aof work next --json`");

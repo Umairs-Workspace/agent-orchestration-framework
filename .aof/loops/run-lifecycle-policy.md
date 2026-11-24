@@ -9,7 +9,7 @@ target-setting: [loop:run-resilience]
 ---
 # Run lifecycle policy
 
-Framework record source: `packages/core/assets/loops/run-lifecycle-policy.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
+Framework record source: `packages/acd/assets/loops/run-lifecycle-policy.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 **This edge is AUTHORED, not discovered — it is milestone 58's judgment and no citation is offered
 for it.** RESEARCH §Q1.5 opened `packages/execution/src/runs.mjs` and found that `loop:run-resilience`'s reference

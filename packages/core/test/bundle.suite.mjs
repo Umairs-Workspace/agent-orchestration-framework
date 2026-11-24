@@ -158,7 +158,7 @@ const reviewCommandBundleTests = [
       const { variants, ...common } = member;
       assert.deepEqual(common, { id: "review", kind: "command", file: "commands/review.md", runtimes: ["claude", "opencode"], commandNamespace: "aof" });
       assert.equal(variants.codex.section, "review", "154/05 adds a native variant without changing the common identity");
-      assert.equal(serializeBundleManifest(generateBundleManifest()), readFileSync(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"), "the shipped manifest is byte-identical to the generator's");
+      assert.equal(serializeBundleManifest(generateBundleManifest()), readFileSync(path.join(repoRoot, "packages", "acd", "assets", "manifest.json"), "utf8"), "the shipped manifest is byte-identical to the generator's");
       const edge = readFileSync(path.join(repoRoot, "test", "arch", "memory", "acd-learning-edge-reaches-every-cut.test.mjs"), "utf8");
       assert.ok(edge.includes(`"review.md": "reviews one story's build; cuts nothing"`), "the learning-edge control excludes review.md with its reason");
     },
@@ -192,12 +192,12 @@ const reviewCommandBundleTests = [
       assert.ok(!ids.includes("code-review"), "bundle.json lists no code-review member");
       assert.ok(ids.includes("review"), "…and lists review");
       assert.ok(readShippedManifest().entries.every((entry) => entry.resource.id !== "code-review" && entry.resource.id !== "aof-code-review"), "the manifest holds no entry for code-review");
-      assert.equal(existsSync(path.join(repoRoot, "packages", "core", "assets", "commands", "code-review.md")), false, "commands/code-review.md does not exist");
+      assert.equal(existsSync(path.join(repoRoot, "packages", "acd", "assets", "commands", "code-review.md")), false, "commands/code-review.md does not exist");
     },
   },
   ...[
-    "packages/core/assets/commands/assimilate-code.md",
-    "packages/core/assets/commands/autonomous.md",
+    "packages/acd/assets/commands/assimilate-code.md",
+    "packages/acd/assets/commands/autonomous.md",
     "README.md",
     "docs/acd.md",
     ".aof/aof.config.json",
@@ -212,7 +212,7 @@ const reviewCommandBundleTests = [
   {
     name: "149/03 assimilate-code hands its reviewed story to verify",
     run: () => {
-      const text = readFileSync(path.join(repoRoot, "packages", "core", "assets", "commands", "assimilate-code.md"), "utf8");
+      const text = readFileSync(path.join(repoRoot, "packages", "acd", "assets", "commands", "assimilate-code.md"), "utf8");
       const output = text.slice(text.indexOf("<output>"));
       assert.match(output, /Next: `aof:verify <ref>`/u, "the closing next step names aof:verify <ref>");
     },
@@ -256,7 +256,7 @@ const manualCommandBundleTests = [
       } finally {
         await rm(home, { recursive: true, force: true });
       }
-      assert.equal(serializeBundleManifest(generateBundleManifest()), readFileSync(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"), "the shipped manifest is byte-identical to the generator's");
+      assert.equal(serializeBundleManifest(generateBundleManifest()), readFileSync(path.join(repoRoot, "packages", "acd", "assets", "manifest.json"), "utf8"), "the shipped manifest is byte-identical to the generator's");
     },
   },
 ];
@@ -380,9 +380,9 @@ export const bundleTests = [
       }
       assert.equal(ignored, false, "bundle root is not matched by any git-ignore rule");
       // Tracked: the descriptor + a representative member are known to git.
-      const lsFiles = execFileSync("git", ["ls-files", "packages/core/assets"], { cwd: repoRoot, encoding: "utf8" });
-      assert.ok(lsFiles.includes("packages/core/assets/bundle.json"), "descriptor is git-tracked");
-      assert.ok(lsFiles.includes("packages/core/assets/agents/aof-architect.md"), "agents are git-tracked");
+      const lsFiles = execFileSync("git", ["ls-files", "packages/acd/assets"], { cwd: repoRoot, encoding: "utf8" });
+      assert.ok(lsFiles.includes("packages/acd/assets/bundle.json"), "descriptor is git-tracked");
+      assert.ok(lsFiles.includes("packages/acd/assets/agents/aof-architect.md"), "agents are git-tracked");
     }
   },
   // Scenario Outline: a declared ACD member is present in the bundle root.
@@ -569,7 +569,7 @@ export const bundleTests = [
       assert.equal(String(bundle.resources.find((member) => member.id === "add-diagram")?.argumentHint).replace(/^"|"$/g, ""), "<ref> [ADR-NNN]");
       // The manifest hashes the claude and codex renders (no opencode entry, as for every command);
       // that each hash is current is the manifest guards' claim, not this row's.
-      const { entries } = JSON.parse(readFileSync(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"));
+      const { entries } = JSON.parse(readFileSync(path.join(repoRoot, "packages", "acd", "assets", "manifest.json"), "utf8"));
       for (const expected of [".claude/commands/aof/add-diagram.md", ".agents/skills/aof-add-diagram/SKILL.md"]) {
         assert.match(String(entries.find((entry) => entry.path === expected)?.hash), /^sha256:[0-9a-f]{64}$/, `manifest.json carries ${expected}'s hash`);
       }
@@ -582,7 +582,7 @@ export const bundleTests = [
       const baseline = memberIds().slice().sort();
       const originalCwd = process.cwd();
       const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-bundle-cwd-"));
-      const nested = path.join(repoRoot, "packages", "core", "assets", "agents");
+      const nested = path.join(repoRoot, "packages", "acd", "assets", "agents");
       try {
         for (const cwd of [repoRoot, tmp, nested]) {
           process.chdir(cwd);

@@ -122,7 +122,7 @@ flowchart LR
 - controlled: items reaching done over a work range
 - reference: command:work:next
 - measurement: command:work:next
-- actuator: prose:packages/core/assets/agents/aof-product-owner.md, prose:packages/core/assets/agents/aof-developer.md, prose:packages/core/assets/agents/aof-qa.md
+- actuator: prose:packages/acd/assets/agents/aof-product-owner.md, prose:packages/acd/assets/agents/aof-developer.md, prose:packages/acd/assets/agents/aof-qa.md
 - cadence: event:per-item
 - ceiling: config:work.autonomous.maxAttempts
 - owner: unknown
@@ -133,9 +133,9 @@ flowchart LR
 
 - kind: loop
 - controlled: executable scenarios and fitness functions green
-- reference: prose:packages/core/assets/commands/continue.md
-- measurement: prose:packages/core/assets/commands/continue.md
-- actuator: prose:packages/core/assets/agents/aof-developer.md
+- reference: prose:packages/acd/assets/commands/continue.md
+- measurement: prose:packages/acd/assets/commands/continue.md
+- actuator: prose:packages/acd/assets/agents/aof-developer.md
 - cadence: event:per-phase
 - ceiling: config:work.loop.buildNoProgressRounds
 - owner: unknown
@@ -159,8 +159,8 @@ flowchart LR
 
 - kind: loop
 - controlled: milestone lessons made recallable
-- reference: prose:packages/core/assets/commands/retrospective.md
-- measurement: prose:packages/core/assets/commands/retrospective.md
+- reference: prose:packages/acd/assets/commands/retrospective.md
+- measurement: prose:packages/acd/assets/commands/retrospective.md
 - actuator: module:src/work/memory.mjs#runMemory
 - cadence: event:per-milestone
 - ceiling: none
@@ -172,9 +172,9 @@ flowchart LR
 
 - kind: loop
 - controlled: open review findings
-- reference: prose:packages/core/assets/commands/continue.md
-- measurement: prose:packages/core/assets/commands/continue.md
-- actuator: prose:packages/core/assets/agents/aof-developer.md
+- reference: prose:packages/acd/assets/commands/continue.md
+- measurement: prose:packages/acd/assets/commands/continue.md
+- actuator: prose:packages/acd/assets/agents/aof-developer.md
 - cadence: event:per-phase
 - ceiling: config:work.loop.reviewRounds
 - owner: unknown
@@ -198,9 +198,9 @@ flowchart LR
 
 - kind: loop
 - controlled: findings triaged and item accepted
-- reference: prose:packages/core/assets/commands/verify.md
-- measurement: prose:packages/core/assets/commands/verify.md
-- actuator: prose:packages/core/assets/agents/aof-developer.md, prose:packages/core/assets/agents/aof-qa.md, prose:packages/core/assets/agents/aof-product-owner.md
+- reference: prose:packages/acd/assets/commands/verify.md
+- measurement: prose:packages/acd/assets/commands/verify.md
+- actuator: prose:packages/acd/assets/agents/aof-developer.md, prose:packages/acd/assets/agents/aof-qa.md, prose:packages/acd/assets/agents/aof-product-owner.md
 - cadence: event:per-item
 - ceiling: none
 - owner: actor:product-owner

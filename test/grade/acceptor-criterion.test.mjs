@@ -504,7 +504,7 @@ export const acceptorCriterionTests = [
       // Nothing had to be installed for that to be true: the record is absent from the
       // project, and absent from the bundle that installs into it.
       await assert.rejects(readFile(path.join(dir, ...CRITERION_RELPATH.split("/")), "utf8"), { code: "ENOENT" });
-      const descriptor = JSON.parse(await readFile(path.join(repoRoot, "packages", "core", "assets", "bundle.json"), "utf8"));
+      const descriptor = JSON.parse(await readFile(path.join(repoRoot, "packages", "acd", "assets", "bundle.json"), "utf8"));
       assert.equal(
         descriptor.members.some((member) => String(member?.target ?? "").replaceAll("\\", "/") === CRITERION_RELPATH),
         false,

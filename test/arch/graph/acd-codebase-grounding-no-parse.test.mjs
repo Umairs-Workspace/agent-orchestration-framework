@@ -29,7 +29,7 @@ import { dependencySpecifiers } from "../../support/workspace/configured-source.
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const srcDir = path.join(repoRoot, "packages", "core", "src");
-const bundleDir = path.join(srcDir, "..", "assets");
+const bundleDir = path.join(srcDir, "..", "..", "acd", "assets");
 
 // The three wired 11 seams (ADR-002): the architect agent prompt (inherited by
 // continue + review), refine's break-down boundary grounding, and

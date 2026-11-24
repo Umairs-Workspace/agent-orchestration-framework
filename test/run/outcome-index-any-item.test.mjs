@@ -496,7 +496,7 @@ export const outcomeIndexAnyItemTests = [
       try {
         // The REAL shipped template, marker-stripped exactly as a scaffold would
         // instantiate it — not a hand-written stand-in that could drift from it.
-        const shipped = await readFile(path.join(repoRoot, "packages", "core", "assets", "templates", "shared", "OUTCOME.md"), "utf8");
+        const shipped = await readFile(path.join(repoRoot, "packages", "acd", "assets", "templates", "shared", "OUTCOME.md"), "utf8");
         const dir = path.join(workDir, `${number}_${type}_${slug}`);
         await mkdir(dir, { recursive: true });
         await writeFile(path.join(dir, "OUTCOME.md"), shipped, "utf8");

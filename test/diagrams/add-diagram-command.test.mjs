@@ -1,6 +1,6 @@
 // 151 — `/aof:add-diagram <ref> [ADR-NNN]`: refine's diagram step run after the fact, over the ADRs a
 // refine left undrawn. The command adds no CLI verb, so every scenario reads the command's prose
-// (`packages/core/assets/commands/add-diagram.md`), as 145/03 reads `/aof:loop-diagram`'s. The plan
+// (`packages/acd/assets/commands/add-diagram.md`), as 145/03 reads `/aof:loop-diagram`'s. The plan
 // and export answers it acts on are held by 133's and 145's suites; this one holds what the session
 // is told to do with them. Task 00's census rows live with the censuses they move.
 import assert from "node:assert/strict";
@@ -9,7 +9,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const COMMAND = path.join(repoRoot, "packages", "core", "assets", "commands", "add-diagram.md");
+const COMMAND = path.join(repoRoot, "packages", "acd", "assets", "commands", "add-diagram.md");
 
 // The prose with every run of whitespace collapsed to one space, so an assertion reads a sentence
 // the way a reader does, whatever column it wrapped at.
@@ -85,7 +85,7 @@ export const addDiagramCommandTests = [
       has(text, "Use the words refine's diagram step uses: why a picture helps, the view (architecture, sequence, state machine…), the components and the flows");
       has(text, "Plan that ADR only, whatever other ADRs are undrawn");
       // The words are refine's own: its diagram step names the same four parts of a brief.
-      const refine = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "refine.md"), "utf8");
+      const refine = await readFile(path.join(repoRoot, "packages", "acd", "assets", "commands", "refine.md"), "utf8");
       assert.match(refine.replace(/\s+/g, " "), /why a picture helps, the view, the components, the flows/);
     },
   },

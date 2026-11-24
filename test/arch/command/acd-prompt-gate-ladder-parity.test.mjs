@@ -21,7 +21,7 @@ import { markedRegion, matchedBraceBody, stripComments } from "../../support/sou
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
-const PROMPT = "packages/core/assets/commands/continue.md";
+const PROMPT = "packages/acd/assets/commands/continue.md";
 const LADDER_OPEN = "<gate_ladder>";
 const LADDER_CLOSE = "</gate_ladder>";
 
@@ -102,7 +102,7 @@ const read = (rel) => readFile(path.join(root, rel), "utf8");
 // 149/02 — `aof:review` walks continue's ladder and lanes by reference. A second copy of either region
 // would need a second parity control, so the single home is asserted instead: no region of its own,
 // and no review-round bound stated as a number (the bound's home is continue's `<review_rounds>`).
-const REVIEW_PROMPT = "packages/core/assets/commands/review.md";
+const REVIEW_PROMPT = "packages/acd/assets/commands/review.md";
 
 export function reviewSingleHomeProblems(text) {
   const problems = [];

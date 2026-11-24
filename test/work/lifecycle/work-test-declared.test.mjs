@@ -488,7 +488,7 @@ export const workTestDeclaredTests = [
   {
     name: "96/03-02 the build lane asks for the story's scope and names no individual suite files",
     async run() {
-      const doc = await readFile(new URL("../../../packages/core/assets/commands/continue.md", import.meta.url), "utf8");
+      const doc = await readFile(new URL("../../../packages/acd/assets/commands/continue.md", import.meta.url), "utf8");
       const build = doc.slice(doc.indexOf("<build_terminator>"), doc.indexOf("</build_terminator>"));
 
       assert.ok(build.length > 0, "the continue document carries a build terminator");
@@ -499,7 +499,7 @@ export const workTestDeclaredTests = [
   {
     name: "96/03-02 the review lane asks for the story's scope and states that a story-scoped green does not accept a milestone",
     async run() {
-      const doc = await readFile(new URL("../../../packages/core/assets/commands/continue.md", import.meta.url), "utf8");
+      const doc = await readFile(new URL("../../../packages/acd/assets/commands/continue.md", import.meta.url), "utf8");
       const review = doc.slice(doc.indexOf("<review_lanes>"), doc.indexOf("</review_lanes>"));
 
       assert.ok(review.length > 0, "the continue document carries the review lanes");
@@ -559,7 +559,7 @@ export const workTestDeclaredTests = [
   {
     name: "190/03 E4 · --fresh appears only beside a suspected flake",
     async run() {
-      const dir = new URL("../../../packages/core/assets/commands/", import.meta.url);
+      const dir = new URL("../../../packages/acd/assets/commands/", import.meta.url);
       const hits = [];
       for (const name of await readdir(dir)) {
         if (!name.endsWith(".md")) continue;
@@ -631,5 +631,5 @@ export const workTestDeclaredTests = [
 ];
 
 // ── 190/03 fixtures ─────────────────────────────────────────────────────────────────────────────
-const asset = (rel) => readFile(new URL(`../../../packages/core/assets/${rel}`, import.meta.url), "utf8");
+const asset = (rel) => readFile(new URL(`../../../packages/acd/assets/${rel}`, import.meta.url), "utf8");
 const region = (doc, open, close) => doc.slice(doc.indexOf(open), doc.indexOf(close));

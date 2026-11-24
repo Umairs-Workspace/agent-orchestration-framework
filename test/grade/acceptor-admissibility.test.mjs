@@ -139,7 +139,7 @@ const diagnosticOnly = () => ({
   ].join("\n"),
 });
 
-// A shipped ASSET that would be a consumer if it were running code. It is not: `packages/core/assets/**`
+// A shipped ASSET that would be a consumer if it were running code. It is not: `packages/acd/assets/**`
 // is what gets installed into a project, and an asset naming a bound is not the program.
 const shippedAsset = () => ({
   rel: "bundle/hooks/guard.mjs",
@@ -179,7 +179,7 @@ const declaration = (keys, { nodeId = "arbiter:fixture-trade-off" } = {}) => ({
 // is today: a policy stated in a sentence, with no configuration key in it.
 const prose = () => ({
   kind: HARNESS_KINDS.prompt,
-  document: "packages/core/assets/commands/continue.md",
+  document: "packages/acd/assets/commands/continue.md",
   text: "Review runs once by default. Three rounds is the hard cap; never start a fourth round.\n",
 });
 const namesTheKey = (key = KEY) => ({
@@ -187,7 +187,7 @@ const namesTheKey = (key = KEY) => ({
   text: `${prose().text}Read \`${key}\` and stop when the completed rounds reach it.\n`,
 });
 const readableCodePath = () => ({ kind: HARNESS_KINDS.code, document: "packages/work-loop/src/commands/loop.mjs" });
-const unreadable = () => ({ kind: HARNESS_KINDS.prompt, document: "packages/core/assets/commands/continue.md", text: null });
+const unreadable = () => ({ kind: HARNESS_KINDS.prompt, document: "packages/acd/assets/commands/continue.md", text: null });
 
 // The context the outline rows share: the knob IS declared tunable and the harness is one
 // whose decisions can be read, so the only thing that varies is what the program does.
@@ -206,7 +206,7 @@ async function repository() {
       rel: file.rel,
       code: await readFile(file.path, "utf8"),
     })));
-    const model = await loadLoops(path.join(root, "packages", "core", "assets"));
+    const model = await loadLoops(path.join(root, "packages", "acd", "assets"));
     const harness = {
       ...HARNESS_OF_RECORD,
       text: await readFile(path.join(root, ...HARNESS_OF_RECORD.document.split("/")), "utf8"),

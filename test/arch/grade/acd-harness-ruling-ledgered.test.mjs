@@ -389,7 +389,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6108: no module in src/ assigns at a DECLARED TUNABLE KNOB path — the set comes from the registry's parameter-tuning edge, and the sweep can see one that does",
     run: async () => {
-      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
+      const model = await loadLoops(path.join(root, "packages", "acd", "assets"));
       const declared = tunableSet(model).keys;
       assert.ok(declared.length >= 3, `the registry supplied the declared keys: ${declared.join(", ")}`);
 

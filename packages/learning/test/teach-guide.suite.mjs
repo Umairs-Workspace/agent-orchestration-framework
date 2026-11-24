@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { STAGES, HELP_LADDER, TRAPS } from "@aof/learning/vocabulary";
 
 const TEACH = new URL("../assets/commands/teach.md", import.meta.url);
-const MANUAL = new URL("../../core/assets/commands/manual.md", import.meta.url);
+const MANUAL = new URL("../../acd/assets/commands/manual.md", import.meta.url);
 
 const flattened = (value) => String(value).replace(/<!--[^]*?-->/gu, " ").replace(/\s+/gu, " ").trim();
 

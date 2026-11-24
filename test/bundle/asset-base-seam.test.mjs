@@ -22,12 +22,13 @@ import {
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-// Build a packaged-layout fixture: <tmp>/<execDirName>/{bundle/**, ui/dist/**, package.json}
-// mirroring the real packages/core/assets + ui/dist trees + a trimmed package.json, so the
+// Build a packaged-layout fixture: <tmp>/<execDirName>/{bundle/**, assets/**, ui/dist/**, package.json}
+// mirroring the real packages/acd/assets + packages/core/assets + ui/dist trees + a trimmed package.json, so the
 // SEA branch reads real bytes without a built binary.
 async function makePackagedFixture() {
   const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-sea-fixture-"));
-  await cp(path.join(repoRoot, "packages", "core", "assets"), path.join(tmp, "bundle"), { recursive: true });
+  await cp(path.join(repoRoot, "packages", "acd", "assets"), path.join(tmp, "bundle"), { recursive: true });
+  await cp(path.join(repoRoot, "packages", "core", "assets"), path.join(tmp, "assets"), { recursive: true });
   await mkdir(path.join(tmp, "ui"), { recursive: true });
   await cp(path.join(repoRoot, "apps", "ui", "dist"), path.join(tmp, "ui", "dist"), { recursive: true });
   await writeFile(path.join(tmp, "package.json"), JSON.stringify({ version: "9.9.9-fixture" }, null, 2), "utf8");
@@ -47,12 +48,13 @@ export const assetBaseSeamTests = [
       try {
         setSeaSentinelForTest(false);
         const resolved = assetBase("bundle");
-        const expected = path.join(repoRoot, "packages", "core", "assets");
-        assert.equal(resolved, expected, "the resolved base equals the pre-seam import.meta.url-derived bundle root exactly");
+        const expected = path.join(repoRoot, "packages", "acd", "assets");
+        assert.equal(resolved, expected, "the resolved base is the methodology package's assets (chore 207)");
+        assert.equal(assetBase("core"), path.join(repoRoot, "packages", "core", "assets"), "core's own class is core's assets/");
 
         const throughSeam = readAssetText("bundle", "bundle.json");
         const direct = readFileSync(path.join(expected, "bundle.json"), "utf8");
-        assert.equal(throughSeam, direct, "reading packages/core/assets/bundle.json through the seam returns the same bytes as reading it directly");
+        assert.equal(throughSeam, direct, "reading packages/acd/assets/bundle.json through the seam returns the same bytes as reading it directly");
 
         assert.equal(isPackaged(), false, "no SEA API is called on the dev path (isPackaged reports false with no throw)");
       } finally {
@@ -71,6 +73,7 @@ export const assetBaseSeamTests = [
         const resolved = assetBase("bundle");
         assert.ok(resolved.startsWith(fixture), "the resolved path is under the packaged exec dir, not a src/ path");
         assert.equal(readAssetText("bundle", "bundle.json"), readFileSync(path.join(fixture, "bundle", "bundle.json"), "utf8"), "reading bundle/bundle.json through the seam returns its packaged bytes");
+        assert.equal(readAssetText("core", "bundle.json"), readFileSync(path.join(fixture, "assets", "bundle.json"), "utf8"), "core's own descriptor is read from the packaged assets/ sidecar (chore 207)");
       } finally {
         resetSeam();
         await rm(fixture, { recursive: true, force: true });
@@ -210,7 +213,7 @@ export const assetBaseSeamTests = [
           readAssetText("bundle", "commands/does-not-exist.md");
           assert.fail("expected a throw");
         } catch (error) {
-          assert.ok(!error.message.includes(path.join(repoRoot, "packages", "core", "assets")), "the error does not reference a src/-tree fallback path");
+          assert.ok(!error.message.includes(path.join(repoRoot, "packages", "acd", "assets")), "the error does not reference a src/-tree fallback path");
         }
       } finally {
         resetSeam();

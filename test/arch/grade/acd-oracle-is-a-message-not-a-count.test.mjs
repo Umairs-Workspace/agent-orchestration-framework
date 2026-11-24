@@ -15,7 +15,7 @@ import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 //
 //   §1 — no module ADDED by this milestone may decide a gate's health by comparing a pass/fail
 //        tally. Its oracles compare dispositions and MESSAGES.
-//   §2 — no record in `packages/core/assets/loops/` may declare an arch-failure count as its `controlled:`
+//   §2 — no record in `packages/acd/assets/loops/` may declare an arch-failure count as its `controlled:`
 //        or its `counter:`, because a watcher measuring that number is measuring the one metric 56
 //        proved is improved by the gaming move it exists to catch.
 //
@@ -31,11 +31,11 @@ import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 // another file reads as landed while half of it is unguarded — the exact shape `F-57-03-2` found.
 //
 // OWNERSHIP. `F-57-03-4` established that FF-5706 cannot belong to 57/03: §1 spans 57/03's AND
-// 57/04's modules and §2 is over 57/05's `packages/core/assets/loops/`. It is a MILESTONE-level control, and
+// 57/04's modules and §2 is over 57/05's `packages/acd/assets/loops/`. It is a MILESTONE-level control, and
 // it lands here, at the milestone gate, in its own labelled registration block.
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const loopsDir = path.join(root, "packages", "core", "assets", "loops");
+const loopsDir = path.join(root, "packages", "acd", "assets", "loops");
 
 // ADR-007 §1: the modules milestone 57 ADDED. 57/03 owns the first two, 57/04 the second two.
 const ADDED_MODULES = Object.freeze([

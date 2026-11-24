@@ -8,7 +8,7 @@ depends: [00, 01]
 status: not-started
 owner: product-owner
 created: 2026-11-17
-updated: 2026-11-17
+updated: 2026-11-23
 adrs: [ADR-002, ADR-006]
 reads:
   - wiki/work/198_milestone_design-system/SPEC.md
@@ -21,22 +21,22 @@ reads:
   - wiki/work/198_milestone_design-system/RESEARCH.md#R7
   - wiki/work/archive/07_milestone_design-conformance/ARCHITECTURE.md
   - wiki/work/archive/47_milestone_fleet-repo-filter/mocks/README.md
-  - packages/core/assets/agents/aof-designer.md
-  - packages/core/assets/commands/refine.md
-  - packages/core/assets/commands/verify.md
+  - packages/acd/assets/agents/aof-designer.md
+  - packages/acd/assets/commands/refine.md
+  - packages/acd/assets/commands/verify.md
   - packages/core/src/work/bundle-compose.mjs
-  - packages/core/assets/variants/codex/workflow.md
-  - packages/core/assets/templates/milestone/DESIGN.md
+  - packages/acd/assets/variants/codex/workflow.md
+  - packages/acd/assets/templates/milestone/DESIGN.md
   - packages/design-system/assets/bundle.json
   - packages/design-system/src/commands.mjs
   - packages/execution/src/svg-rasterizer.mjs
   - test/arch/ui/acd-design-role-split.test.mjs
   - test/arch/ui/index.mjs
 files:
-  - packages/core/assets/agents/aof-designer.md
-  - packages/core/assets/commands/refine.md
-  - packages/core/assets/commands/verify.md
-  - packages/core/assets/variants/codex/workflow.md
+  - packages/acd/assets/agents/aof-designer.md
+  - packages/acd/assets/commands/refine.md
+  - packages/acd/assets/commands/verify.md
+  - packages/acd/assets/variants/codex/workflow.md
   - packages/design-system/assets/bundle.json
   - packages/design-system/assets/fragments/design-system/aof-designer.md
   - packages/design-system/assets/fragments/design-system/refine.md
@@ -49,7 +49,7 @@ files:
   - test/arch/ui/acd-imported-mock-self-contained.test.mjs
   - test/arch/ui/index.mjs
   - test/arch/practices/acd-runtime-scoped-prose.test.mjs
-  - packages/core/assets/manifest.json
+  - packages/acd/assets/manifest.json
   - .claude/agents/aof-designer.md
   - .codex/agents/aof-designer.toml
   - .opencode/agents/aof-designer.md

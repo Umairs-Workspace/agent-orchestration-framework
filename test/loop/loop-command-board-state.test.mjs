@@ -9,7 +9,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // shell needing no registry to mint one, and the report-only level still writing nothing. The two
 // registry-facing scenarios (the id is a loop the shipped registry declares; the drift check is
 // armed) are `test/arch/mesh/acd-shell-loop-id-is-declared.test.mjs`, because they are a check over
-// `packages/core/assets/loops/` rather than over a driven loop.
+// `packages/acd/assets/loops/` rather than over a driven loop.
 //
 // THE FIXTURE HAS NO `.aof/loops/` DIRECTORY AT ALL (`loopFixture` writes a work tree and a config
 // and nothing else), so every scenario in this file also witnesses the registry-blind claim rather

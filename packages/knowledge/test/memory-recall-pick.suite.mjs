@@ -441,7 +441,7 @@ export const memoryRecallPickTests = [
     run: async () => {
       const rows = [
         { type: "lesson", status: "rule:.claude/rules/build-deploy-restart.md", card: false },
-        { type: "lesson", status: "prompt:packages/core/assets/commands/verify.md", card: false },
+        { type: "lesson", status: "prompt:packages/acd/assets/commands/verify.md", card: false },
         { type: "lesson", status: "Control:171/FF-17104", card: false },
         { type: "lesson", status: "", card: true },
         { type: "lesson", status: "planned: a control next milestone", card: true },

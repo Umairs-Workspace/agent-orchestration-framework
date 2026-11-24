@@ -655,7 +655,7 @@ export const workInitTests = [
         // carrying its invocation), so the invariant is that no flag the bundle declares
         // is dropped in the rendering. Read the hint, require each token it declares.
         // A flag added to refine.md tomorrow is covered without touching this file.
-        const refineSource = await readFile(new URL("../assets/commands/refine.md", import.meta.url), "utf8");
+        const refineSource = await readFile(new URL("../../acd/assets/commands/refine.md", import.meta.url), "utf8");
         const refineHint = /^argument-hint:\s*(.+)$/m.exec(refineSource)?.[1] ?? "";
         assert.ok(refineHint.length > 0, "the bundle's refine command declares an argument-hint to map");
         const declaredFlags = refineHint.match(/\[--[a-z-]+\]/g) ?? [];

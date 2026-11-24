@@ -29,7 +29,7 @@ Repository observations are from `main` at `720254bb9047166c6529c3a346caa4a7affd
   refuses milestones and remote manual dispatch, and watches already-running work rather than
   starting a rival run. Preserve these bounds and its existing review/verify handoff.
 - **Preserve explanation-only semantics.** [Story 150](../work/150_story_explain-says-what-the-work-is-for/STORY.md)
-  and [explain.md](../../packages/core/assets/commands/explain.md) already provide short or verbose
+  and [explain.md](../../packages/acd/assets/commands/explain.md) already provide short or verbose
   purpose explanations. They do not save the explanation, mint runs, or move work status. Teaching
   must not silently turn this read-only act into a learning-record writer.
 - **Do not rebuild the harness.** [README](../../README.md)

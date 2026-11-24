@@ -23,7 +23,7 @@ const doctorWork = _aofApplication.work.doctor.doctorWork;
 const parseOutcome = _aofApplication.knowledge.memory.localIndexing.parseOutcome;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const BUNDLE = path.join(repoRoot, "packages", "core", "assets");
+const BUNDLE = path.join(repoRoot, "packages", "acd", "assets");
 const VERIFY_PROMPT = path.join(BUNDLE, "commands", "verify.md");
 const DEVELOPER_AGENT = path.join(BUNDLE, "agents", "aof-developer.md");
 

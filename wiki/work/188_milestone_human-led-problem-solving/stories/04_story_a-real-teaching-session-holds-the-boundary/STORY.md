@@ -8,7 +8,7 @@ depends: [00, 03]
 status: in-review
 owner: product-owner
 created: 2026-10-28
-updated: 2026-11-01
+updated: 2026-11-23
 adrs: [ADR-003, ADR-005, ADR-007]
 reads:
   - wiki/work/188_milestone_human-led-problem-solving/ARCHITECTURE.md#ADR-003
@@ -17,7 +17,7 @@ reads:
   - wiki/work/149_story_continue-manual-mode-guides-the-operator/tasks/04_a-real-manual-story-walks-guide-review-verify.feature
   - wiki/work/149_story_continue-manual-mode-guides-the-operator/RETROSPECTIVE.md
   - packages/learning/assets/commands/teach.md
-  - packages/core/assets/commands/manual.md
+  - packages/acd/assets/commands/manual.md
 files: []
 schema: 1
 aofVersion: 0.1.0

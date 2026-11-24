@@ -24,7 +24,7 @@
 // `readdir`, or a locally declared helper that reaches one, rooted at this repository's own
 // directory by the statement, by the helper's declaration, or by the call sites of the helper it
 // sits in), or from a READ handed a root-derived path as its first positional argument
-// (`readFile(path.join(root, …))`, `loadLoops(path.join(root, "packages", "core", "assets"))`), and then through
+// (`readFile(path.join(root, …))`, `loadLoops(path.join(root, "packages", "acd", "assets"))`), and then through
 // PURE SET-NARROWING and nothing else — `filter`, `map`, `sort`, `flat`, `slice`, a spread, `new Set`.
 // A CALL is not a narrowing: `check([...files, planted])` may add a plant, and the ~50 red probes
 // that assert "exactly one offender" over the real tree plus a plant are exact for good reason. A

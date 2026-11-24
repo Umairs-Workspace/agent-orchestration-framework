@@ -29,7 +29,7 @@ export const archTests = [
       }
       assert.match(command.cli.spec.unknownFlagMessage, /classification belongs to later triage/i);
 
-      const bundle = await readFile(path.join(root, "packages", "core", "assets", "commands", "feedback.md"), "utf8");
+      const bundle = await readFile(path.join(root, "packages", "acd", "assets", "commands", "feedback.md"), "utf8");
       // The YAML frontmatter block, cut through the ONE home (milestone 47's ledger, and
       // VERIFICATION F-55-M-4 which caught this file adding a new instance). The tempting cut
       // — `bundle.slice(0, bundle.indexOf("---", 4) + 3)` — is the SENTINEL_END shape: with the

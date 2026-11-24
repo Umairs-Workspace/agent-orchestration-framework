@@ -5,7 +5,7 @@ import { stripHtmlComments } from "@aof/foundation/markdown";
 // instantiates to a folder that validates clean".
 //
 // Every @executable scenario (and every Scenario Outline Examples row) below is
-// asserted against the REAL shipped template (packages/core/assets/templates/chore/CHORE.md)
+// asserted against the REAL shipped template (packages/acd/assets/templates/chore/CHORE.md)
 // — no fixture text is hand-authored here for the instantiated doc's shape.
 // Placeholders are filled by simple string substitution (the same substitution an
 // agent running /aof:add-chore performs), then the folder is validated with the
@@ -24,7 +24,7 @@ const WORK_ITEM_SCHEMA_VERSION = _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION;
 import { packageVersionString } from "../../../packages/core/src/asset-base.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const TEMPLATE_PATH = path.join(repoRoot, "packages", "core", "assets", "templates", "chore", "CHORE.md");
+const TEMPLATE_PATH = path.join(repoRoot, "packages", "acd", "assets", "templates", "chore", "CHORE.md");
 
 function instantiate(raw, overrides = {}) {
   const fields = {

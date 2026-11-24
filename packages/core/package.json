@@ -26,6 +26,7 @@
     "./session-hooks": "./src/application/default-session-hooks.mjs",
     "./integrations": "./src/integrations.mjs",
     "./practices": "./src/practices.mjs",
+    "./methodology": "./src/methodology.mjs",
     "./bundle-manifest": "./src/work/bundle-manifest.mjs",
     "./audit-probe": "./src/work/audit-probe.mjs",
     "./audit-drive": "./src/work/audit-drive.mjs"
@@ -36,6 +37,7 @@
     "assets"
   ],
   "dependencies": {
+    "@aof/acd": "workspace:*",
     "@aof/contracts": "workspace:*",
     "@aof/diagrams": "workspace:*",
     "@aof/effects": "workspace:*",

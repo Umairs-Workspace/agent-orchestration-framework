@@ -152,7 +152,8 @@ export function packSidecarArchive(seaOutDir, destArchivePath, { isWindows } = {
   // The existing extensionless archive name now carries ALL directory sidecars.
   // Node SEA does not embed directory assets, so PTY-only archives cannot run
   // init, work init, version or the UI after download.
-  const members = ['node-pty-sidecar', 'node_modules/node-pty', 'bundle', 'ui', 'package.json',
+  // `assets` is core's own runtime plumbing (its hooks, chore 207); `bundle` the methodology's.
+  const members = ['node-pty-sidecar', 'node_modules/node-pty', 'bundle', 'assets', 'ui', 'package.json',
     'src/work/audit-probe.mjs', 'src/work/audit-drive.mjs', 'node-runtime'];
   for (const member of members) {
     if (!existsSync(path.join(seaOutDir, member))) throw new Error(`Required release sidecar missing: ${member}`);

@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
-const SOURCE = "packages/core/assets/commands/explain.md";
+const SOURCE = "packages/acd/assets/commands/explain.md";
 const COPIES = [".claude/commands/aof/explain.md", ".opencode/commands/aof/explain.md", ".agents/skills/aof-explain/SKILL.md"];
 const WRITE_VERBS = ["aof work run-start", "aof work status", "aof work feedback", "aof work promote", "aof work archive"];
 
@@ -47,7 +47,7 @@ export const explainCommandTests = [
       const actions = new Map(JSON.parse(dry.stdout).actions.map((action) => [action.path, action.action]));
       for (const copy of COPIES) assert.equal(actions.get(copy), "skip", `${copy} is what a fresh render writes`);
 
-      const descriptor = JSON.parse(await read("packages/core/assets/bundle.json"));
+      const descriptor = JSON.parse(await read("packages/acd/assets/bundle.json"));
       const commands = descriptor.members.filter((member) => member.kind === "command").map((member) => member.id);
       assert.ok(commands.includes("explain"), "the bundle's command census names explain");
       assert.equal(field((await source()).frontmatter, "argument-hint"), '"<ref…> [--verbose]"');

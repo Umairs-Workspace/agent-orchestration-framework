@@ -29,7 +29,7 @@ const SHELL_TOKENS = Object.freeze(["Loop until", "aof work next", "aof work run
 const RANGE_DRIVERS = Object.freeze(["loop"]);
 const PROCESS_OPEN = "<process>";
 const PROCESS_CLOSE = "</process>";
-const AUTONOMOUS = "packages/core/assets/commands/autonomous.md";
+const AUTONOMOUS = "packages/acd/assets/commands/autonomous.md";
 
 async function modules(dir = path.join(root, "packages", "core", "src")) {
   const out = [];
@@ -299,7 +299,7 @@ const replacing = (units, rel, code) => [...without(units, rel), { rel, code }];
 // THE TUNABLE SET IS THE REGISTRY'S, never restated here: the keys are read from
 // the arbiter record's `parameter-tuning:` edge (ADR-008 §4), so a key added to or
 // removed from that record moves this census with it.
-const ARBITER = "packages/core/assets/loops/speed-thoroughness-autonomy.md";
+const ARBITER = "packages/acd/assets/loops/speed-thoroughness-autonomy.md";
 const CAP_KEY = "work.autonomous.maxAttempts";
 
 // The BOUND each cap resolution site actually resolves, keyed by the identifier the
@@ -639,7 +639,7 @@ export const archTests = [
   {
     name: "arch/53 FF-5310 (acd-loop-cap-single-home): bundle gains no loop/drive wrapper and retains autonomous",
     run: async () => {
-      const manifest = JSON.parse(await readFile(path.join(root, "packages", "core", "assets", "bundle.json"), "utf8"));
+      const manifest = JSON.parse(await readFile(path.join(root, "packages", "acd", "assets", "bundle.json"), "utf8"));
       const members = manifest.members ?? manifest;
       assert.ok(Array.isArray(members) && members.length > 20, `bundle manifest was actually read: ${members.length} members`);
       const commandIds = members.filter((member) => member.kind === "command").map((member) => member.id);
@@ -649,7 +649,7 @@ export const archTests = [
       assert.ok(manifestProblems([...commandIds, "drive-continue"]).some((problem) => problem.includes("drive-continue")), "a /aof:drive-continue member is named");
       assert.ok(manifestProblems(commandIds.filter((id) => id !== "autonomous")).some((problem) => problem.includes("autonomous")), "the removed door is named");
       for (const name of ["refine.md", "continue.md", "verify.md"]) {
-        const text = await readFile(path.join(root, "packages", "core", "assets", "commands", name), "utf8");
+        const text = await readFile(path.join(root, "packages", "acd", "assets", "commands", name), "utf8");
         assert.ok(text.length > 500, `${name} was actually read`);
       }
     },

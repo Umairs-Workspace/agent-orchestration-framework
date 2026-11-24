@@ -1,6 +1,6 @@
 // FF-13301 (milestone 133 / ADR-001 §3, ADR-002, ADR-008 §2) — THE GENERATOR IS NAMED ONCE.
 //
-// "In a comment-stripped sweep of `packages/core/src/**` (including `packages/core/assets/**`), the literal
+// "In a comment-stripped sweep of `packages/core/src/**` (including `packages/acd/assets/**`), the literal
 //  `diagram-design` appears only in `packages/core/src/diagrams/generator-diagram-design.mjs`.
 //  `packages/core/src/config-inspect.mjs` takes generator ids from `generatorIds()`, and the registry map is
 //  built from adapter `id`s. Every registered adapter carries the six contract keys, and
@@ -57,12 +57,12 @@ function filesNamingTheGenerator(entries) {
     .map(({ file }) => file);
 }
 
-// The bundle's prose moved from `packages/core/src/` to `packages/core/assets/` in 142, and the sweep
+// The bundle's prose moved from `packages/core/src/` to `packages/acd/assets/` in 142, and the sweep
 // stayed on the old root — the contract's "including the bundle" held by nothing. 145 re-anchors it:
 // both roots are swept, and the sweep must reach every command whose prose drives the generator
 // (151 added the second: `/aof:add-diagram`, refine's diagram step run after the fact).
-const BUNDLE_ROOT = path.join(repoRoot, "packages", "core", "assets");
-const DIAGRAM_COMMANDS = ["packages/core/assets/commands/loop-diagram.md", "packages/core/assets/commands/add-diagram.md"];
+const BUNDLE_ROOT = path.join(repoRoot, "packages", "acd", "assets");
+const DIAGRAM_COMMANDS = ["packages/acd/assets/commands/loop-diagram.md", "packages/acd/assets/commands/add-diagram.md"];
 
 // The adapter moved to @aof/diagrams with the rest of diagramming, so the sweep covers that package's
 // src too: the one home is there, and the registry beside it is the only module allowed to reach it.
@@ -117,14 +117,14 @@ export const archTests = [
       const planted = [
         { file: THE_ONE_HOME, text: `export const id = "${NEEDLE}";` },
         { file: "packages/core/src/application/bindings/config-inspect.mjs", text: `const legal = ["${NEEDLE}", "off"];` },
-        { file: "packages/core/assets/agents/aof-architect.md", text: `Draw with the ${NEEDLE} plugin.` },
+        { file: "packages/acd/assets/agents/aof-architect.md", text: `Draw with the ${NEEDLE} plugin.` },
         { file: "packages/core/src/application/bindings/work.mjs", text: `// the ${NEEDLE} plugin draws\nexport const x = 1;` },
         { file: "packages/diagrams/src/generators.mjs", text: `import { a } from "./generator-${NEEDLE}.mjs";` },
         { file: "packages/core/src/work/other.mjs", text: `import { a } from "./generator-${NEEDLE}.mjs";` },
       ];
       assert.deepEqual(
         filesNamingTheGenerator(planted),
-        [THE_ONE_HOME, "packages/core/src/application/bindings/config-inspect.mjs", "packages/core/assets/agents/aof-architect.md", "packages/core/src/work/other.mjs"],
+        [THE_ONE_HOME, "packages/core/src/application/bindings/config-inspect.mjs", "packages/acd/assets/agents/aof-architect.md", "packages/core/src/work/other.mjs"],
         "only the registry's import of the adapter file is not a naming",
       );
     },

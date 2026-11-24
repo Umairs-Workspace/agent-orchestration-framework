@@ -17,7 +17,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // wording (133/05's precedent). Byte-identity with a fresh render is read from
 // `aof work update --dry-run --json`, which answers `skip` for a copy that is exactly what the
 // current source renders. The contract names the sources under `src/bundle/`; since 142 they are
-// `packages/core/assets/`. The map's grammar and token are read through story 02's module, and
+// `packages/acd/assets/`. The map's grammar and token are read through story 02's module, and
 // nothing is imported from story 04: the doctor codes here are row data.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -55,12 +55,12 @@ const renderedSource = (id) => {
 const read = async (rel) => (SOURCE_MEMBERS.has(rel) ? renderedSource(SOURCE_MEMBERS.get(rel)) : readBundleProse(rel, repoRoot)).replace(/\r\n/g, "\n");
 const flat = (text) => text.replace(/\s+/g, " ");
 
-const REFINE = "packages/core/assets/commands/refine.md";
-const PO = "packages/core/assets/agents/aof-product-owner.md";
-const ARCHITECT = "packages/core/assets/agents/aof-architect.md";
-const QA = "packages/core/assets/agents/aof-qa.md";
+const REFINE = "packages/acd/assets/commands/refine.md";
+const PO = "packages/acd/assets/agents/aof-product-owner.md";
+const ARCHITECT = "packages/acd/assets/agents/aof-architect.md";
+const QA = "packages/acd/assets/agents/aof-qa.md";
 const SOURCE_MEMBERS = new Map([[REFINE, "refine"], [PO, "aof-product-owner"], [ARCHITECT, "aof-architect"], [QA, "aof-qa"]]);
-const TEMPLATE = "packages/core/assets/templates/story/EXAMPLES.md";
+const TEMPLATE = "packages/acd/assets/templates/story/EXAMPLES.md";
 const INSTALLED = ".aof/templates/work/story/EXAMPLES.md";
 const GUIDE = "wiki/acceptance-criteria.md";
 const REFINE_COPIES = [".claude/commands/aof/refine.md", ".agents/skills/aof-refine/SKILL.md", ".opencode/commands/aof/refine.md"];
@@ -501,7 +501,7 @@ export const refineDiscoveryBeatTests = [
     name: "examples/134-05 03 the installed template is refreshed by aof work update and catalogued in the manifest",
     run: async () => {
       assert.equal(freshRenderActions().get(INSTALLED), "skip", "byte-identical to a fresh render");
-      const manifest = JSON.parse(await read("packages/core/assets/manifest.json"));
+      const manifest = JSON.parse(await read("packages/acd/assets/manifest.json"));
       const entries = (manifest.files ?? manifest.entries ?? Object.values(manifest).find(Array.isArray) ?? []);
       const entry = entries.find((candidate) => candidate.path === INSTALLED);
       assert.ok(entry, "the manifest lists the installed template");

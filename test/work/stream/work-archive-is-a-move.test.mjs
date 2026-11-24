@@ -1108,7 +1108,7 @@ export const workArchiveIsAMoveTests = [
         const action = dry.actions.find((entry) => slash(entry.path) === file);
         assert.equal(action?.action, "skip", `${file} is current — the dry run reports nothing to write`);
       }
-      const manifest = JSON.parse(await readFile(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"));
+      const manifest = JSON.parse(await readFile(path.join(repoRoot, "packages", "acd", "assets", "manifest.json"), "utf8"));
       const lock = JSON.parse(await readFile(path.join(bundleFixtureRoot(repoRoot), ".aof", "aof.lock.json"), "utf8"));
       const manifestEntries = manifest.entries.filter((entry) => rendered.includes(slash(entry.path)));
       const lockEntries = (lock.work?.files ?? []).filter((entry) => rendered.includes(slash(entry.path)));
@@ -1120,7 +1120,7 @@ export const workArchiveIsAMoveTests = [
         const inLock = lockEntries.find((candidate) => slash(candidate.path) === slash(entry.path));
         assert.equal(inLock.hash, entry.hash, `${entry.path}: the lock carries the render's hash`);
       }
-      const text = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "archive.md"), "utf8");
+      const text = await readFile(path.join(repoRoot, "packages", "acd", "assets", "commands", "archive.md"), "utf8");
       for (const needle of ["aof work archive", "--json", "archive-confirm-required", "candidates"]) assert.ok(text.includes(needle), `archive.md contains ${needle}`);
       for (const phrase of [/rename\(/u, / mv /u, /git mv/u, /\.\.\/archive\//u]) assert.doesNotMatch(text, phrase);
     },
@@ -1136,7 +1136,7 @@ export const workArchiveIsAMoveTests = [
       await honesty.run();
       // The red probe, over a scratch copy of the wrapper: the honesty leg's own predicate fails
       // naming the phrase a hand-moving prompt would need.
-      const text = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "archive.md"), "utf8");
+      const text = await readFile(path.join(repoRoot, "packages", "acd", "assets", "commands", "archive.md"), "utf8");
       const probed = `${text}\nMove the folder with \`git mv <dir> <work.dir>/archive/\` when the verb refuses.\n`;
       assert.match(probed, /git mv/u, "the probe would be caught by the honesty leg's phrase list");
     },
@@ -1145,19 +1145,19 @@ export const workArchiveIsAMoveTests = [
     name: "work/archive-is-a-move: 04 verify.md gains one line and no prompt but archive.md runs the verb",
     run: async () => {
       const line = "Next, for a milestone just accepted: `aof work archive <NN>` moves its folder under `archive/` — the operator's act, never this ceremony's (127/ADR-004).";
-      const verify = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "verify.md"), "utf8");
+      const verify = await readFile(path.join(repoRoot, "packages", "acd", "assets", "commands", "verify.md"), "utf8");
       const output = verify.slice(verify.indexOf("<output>"), verify.indexOf("</output>"));
       assert.ok(output.includes(line), "the line sits inside <output>");
       assert.equal((verify.match(/aof work archive/g) ?? []).length, 1, "verify.md names the verb exactly once");
       for (const rendered of [".claude/commands/aof/verify.md", ".agents/skills/aof-verify/SKILL.md", ".opencode/commands/aof/verify.md"]) {
         assert.ok(readBundleProse(rendered, repoRoot).includes(line), `${rendered} and its own declared procedure carry the line`);
       }
-      const dir = path.join(repoRoot, "packages", "core", "assets", "commands");
+      const dir = path.join(repoRoot, "packages", "acd", "assets", "commands");
       const matches = [];
       // The walk is floored before it is narrowed (119/FF-11902; aof:verify 127): a prompt directory
       // that emptied would otherwise satisfy "exactly these two" over nothing.
       const prompts = (await readdir(dir)).filter((name) => name.endsWith(".md")).sort();
-      assert.ok(prompts.length >= 2, `packages/core/assets/commands was read and holds the prompts (${prompts.length})`);
+      assert.ok(prompts.length >= 2, `packages/acd/assets/commands was read and holds the prompts (${prompts.length})`);
       for (const file of prompts) {
         if ((await readFile(path.join(dir, file), "utf8")).includes("aof work archive")) matches.push(file);
       }
@@ -1167,7 +1167,7 @@ export const workArchiveIsAMoveTests = [
   {
     name: "work/archive-is-a-move: 04 the wrapper's text stops where the verb stops",
     run: async () => {
-      const text = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "archive.md"), "utf8");
+      const text = await readFile(path.join(repoRoot, "packages", "acd", "assets", "commands", "archive.md"), "utf8");
       const process_ = text.slice(text.indexOf("<process>"), text.indexOf("</process>"));
       for (const code of ["archive-not-done", "archive-not-a-driver", "archive-backlog-ref", "archive-already-archived"]) {
         assert.ok(process_.includes(code), `names ${code}`);

@@ -8,7 +8,7 @@ depends: []
 status: not-started
 owner: product-owner
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-23
 adrs: [ADR-001, ADR-002]
 reads:
   - wiki/work/189_milestone_human-understanding-checks/SPEC.md
@@ -18,7 +18,7 @@ reads:
   - wiki/work/188_milestone_human-led-problem-solving/ARCHITECTURE.md#ADR-007
   - packages/learning/assets/commands/teach.md
   - packages/learning/test/teach-frame.suite.mjs
-  - packages/core/assets/commands/explain.md
+  - packages/acd/assets/commands/explain.md
   - test/bundle/explain-command.test.mjs
   - test/arch/command/acd-continue-builds-only.test.mjs
   - packages/core/src/practices.mjs
@@ -36,7 +36,7 @@ files:
   - .claude/commands/aof/grill-me.md
   - .aof/aof.lock.json
   - .aof/aof.apply-journal.json
-  - packages/core/assets/manifest.json
+  - packages/acd/assets/manifest.json
   - README.md
   - docs/acd.md
   - wiki/prompt-audit.md

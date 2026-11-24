@@ -942,7 +942,7 @@ export const unattendedLaunchEnvelopeTests = [
     run: async () => {
       const [installed, shipped] = await Promise.all([
         readFile(path.join(repoRoot, ...FROZEN_SET_RELPATH.split("/"))),
-        readFile(path.join(repoRoot, "packages", "core", "assets", "frozen-set.jsonc")),
+        readFile(path.join(repoRoot, "packages", "acd", "assets", "frozen-set.jsonc")),
       ]);
       assert.deepEqual(installed, shipped, "the two are identical as bytes, line endings included");
 

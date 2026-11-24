@@ -4,7 +4,7 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // instantiates to a folder that validates clean".
 //
 // Every @executable scenario (and every Scenario Outline Examples row) below is
-// asserted against the REAL shipped template (packages/core/assets/templates/spike/SPIKE.md)
+// asserted against the REAL shipped template (packages/acd/assets/templates/spike/SPIKE.md)
 // — no fixture text is hand-authored here for the instantiated doc's shape.
 // Placeholders are filled by simple string substitution (the same substitution an
 // agent running /aof:add-spike performs), then the folder is validated with the
@@ -23,7 +23,7 @@ const WORK_ITEM_SCHEMA_VERSION = _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION;
 import { packageVersionString } from "../../../packages/core/src/asset-base.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const TEMPLATE_PATH = path.join(repoRoot, "packages", "core", "assets", "templates", "spike", "SPIKE.md");
+const TEMPLATE_PATH = path.join(repoRoot, "packages", "acd", "assets", "templates", "spike", "SPIKE.md");
 
 // Fill the template's placeholders exactly the way /aof:add-spike would: a real
 // number/slug/title/owner/dates/timebox, an empty depends list.

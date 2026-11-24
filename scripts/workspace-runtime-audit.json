@@ -460,7 +460,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"rev-parse\", \"--short\", \"HEAD\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "e5b76471fa26f27e749c4d4e89ff5e9767b86f8bfa43b4eee809429ea2fc160a",
-    "sourceDigest": "386f1a32ca0ebc9ffe02c440fe8cec04c73e50865cabee4b673494cc2fc0af57",
+    "sourceDigest": "b30e77db959abb6669738c838579e327c4faa45103e74856562a18cbd956e975",
     "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
   },
   {
@@ -468,7 +468,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"status\", \"--porcelain\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "bcb5d022dfff4ea486b70da39afee9842948e82b039add25aaf5b245376f5149",
-    "sourceDigest": "386f1a32ca0ebc9ffe02c440fe8cec04c73e50865cabee4b673494cc2fc0af57",
+    "sourceDigest": "b30e77db959abb6669738c838579e327c4faa45103e74856562a18cbd956e975",
     "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
   },
   {
@@ -476,7 +476,7 @@
     "kind": "child-process",
     "expression": "execFileSync(step.cmd, step.args, { stdio: \"inherit\" })",
     "digest": "e4a5a03d425cc23f4e865152f7ecc7fb9c068bb93e30fb085e553492cf9b5019",
-    "sourceDigest": "386f1a32ca0ebc9ffe02c440fe8cec04c73e50865cabee4b673494cc2fc0af57",
+    "sourceDigest": "b30e77db959abb6669738c838579e327c4faa45103e74856562a18cbd956e975",
     "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
   },
   {
@@ -484,7 +484,7 @@
     "kind": "child-process",
     "expression": "execFileSync(process.execPath, [\"--experimental-sea-config\", seaConfigPath], { cwd: outDir, stdio: \"inherit\" })",
     "digest": "520e9086f520a8a34f8f65e25dad7343342b674a6e2672b58d3a7c6bbc1598b2",
-    "sourceDigest": "386f1a32ca0ebc9ffe02c440fe8cec04c73e50865cabee4b673494cc2fc0af57",
+    "sourceDigest": "b30e77db959abb6669738c838579e327c4faa45103e74856562a18cbd956e975",
     "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
   },
   {
@@ -500,7 +500,7 @@
     "kind": "child-process",
     "expression": "execFileSync(cmd, args, { cwd: repoRoot, stdio: \"inherit\", ...(env ? { env } : {}) })",
     "digest": "6c0e065f874be5002eac80843f45791322d0432d5a88f5e898f1eaa7a2070255",
-    "sourceDigest": "839845a7c11efd008a57cdd24456a5fdb03350dcdaf06823fdf6ab822a172bfa",
+    "sourceDigest": "5896bcb6832eab99c61f12bd68e6e18e889a1d29696bda2f31fc44f3690ad0e9",
     "reason": "Installation orchestration executes explicit build steps (the UI build, the SEA build, the desktop cargo build and, on macOS, the ad-hoc codesign of its bundle — 175/ADR-002), Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -508,7 +508,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"rev-parse\", \"--short\", \"HEAD\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "e5b76471fa26f27e749c4d4e89ff5e9767b86f8bfa43b4eee809429ea2fc160a",
-    "sourceDigest": "839845a7c11efd008a57cdd24456a5fdb03350dcdaf06823fdf6ab822a172bfa",
+    "sourceDigest": "5896bcb6832eab99c61f12bd68e6e18e889a1d29696bda2f31fc44f3690ad0e9",
     "reason": "Installation orchestration executes explicit build steps (the UI build, the SEA build, the desktop cargo build and, on macOS, the ad-hoc codesign of its bundle — 175/ADR-002), Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -516,7 +516,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"status\", \"--porcelain\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "bcb5d022dfff4ea486b70da39afee9842948e82b039add25aaf5b245376f5149",
-    "sourceDigest": "839845a7c11efd008a57cdd24456a5fdb03350dcdaf06823fdf6ab822a172bfa",
+    "sourceDigest": "5896bcb6832eab99c61f12bd68e6e18e889a1d29696bda2f31fc44f3690ad0e9",
     "reason": "Installation orchestration executes explicit build steps (the UI build, the SEA build, the desktop cargo build and, on macOS, the ad-hoc codesign of its bundle — 175/ADR-002), Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -524,7 +524,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"wsl.exe\", args, { stdio: \"inherit\" })",
     "digest": "c677935b9ede259885b57613afb2c5e042050ce0246fa6020ececd1a38ecb1db",
-    "sourceDigest": "839845a7c11efd008a57cdd24456a5fdb03350dcdaf06823fdf6ab822a172bfa",
+    "sourceDigest": "5896bcb6832eab99c61f12bd68e6e18e889a1d29696bda2f31fc44f3690ad0e9",
     "reason": "Installation orchestration executes explicit build steps (the UI build, the SEA build, the desktop cargo build and, on macOS, the ad-hoc codesign of its bundle — 175/ADR-002), Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -628,7 +628,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"tar\", [\"--version\"], { encoding: \"utf8\" })",
     "digest": "b495c6a1a07a774c0026e3fa8ef079c54bd1ccbed153b76f3fae4f057d6e97de",
-    "sourceDigest": "c6d4a37fbbed86376a52201a30ce56e92d61b40ccf73a4f2293125144424bd05",
+    "sourceDigest": "79df2fe771b97ae3dced2f8caaeca6252b2113273bc9127b8acc2d168f285358",
     "reason": "Runs platform archivers over the owned staged payload; no application source entry is selected dynamically."
   },
   {
@@ -636,7 +636,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\n        \"powershell\",\n        [\n          \"-NoProfile\", \"-NonInteractive\", \"-Command\",\n          `Compress-Archive -Path '${path.join(stagingDir, \"*\").replaceAll(\"'\", \"''\")}' -DestinationPath '${zipTempPath.replaceAll(\"'\", \"''\")}' -Force`,\n        ],\n        { stdio: \"inherit\" }\n      )",
     "digest": "c6adb8365e503e29caae54590356dfe801491b696e0d71d01f9c30abc2323a25",
-    "sourceDigest": "c6d4a37fbbed86376a52201a30ce56e92d61b40ccf73a4f2293125144424bd05",
+    "sourceDigest": "79df2fe771b97ae3dced2f8caaeca6252b2113273bc9127b8acc2d168f285358",
     "reason": "Runs platform archivers over the owned staged payload; no application source entry is selected dynamically."
   },
   {
@@ -644,7 +644,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\n      \"tar\",\n      [\"-czf\", tarPath(destArchivePath), \"-C\", tarPath(seaOutDir), ...members],\n      { stdio: \"inherit\" }\n    )",
     "digest": "b62253009d31664b95fe214e189c4ef0cc783e91bea37e954286eb278bb6d660",
-    "sourceDigest": "c6d4a37fbbed86376a52201a30ce56e92d61b40ccf73a4f2293125144424bd05",
+    "sourceDigest": "79df2fe771b97ae3dced2f8caaeca6252b2113273bc9127b8acc2d168f285358",
     "reason": "Runs platform archivers over the owned staged payload; no application source entry is selected dynamically."
   },
   {

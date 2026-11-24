@@ -26,7 +26,7 @@ const readRuns = _aofApplication.execution.runs.readRuns;
 
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
 const cliPath = fileURLToPath(new URL("../../packages/core/bin/aof.mjs", import.meta.url));
-const promptPath = path.join(repoRoot, "packages", "core", "assets", "commands", "autonomous.md");
+const promptPath = path.join(repoRoot, "packages", "acd", "assets", "commands", "autonomous.md");
 const renderedPath = ".claude/commands/aof/autonomous.md";
 const mappedSkillPath = ".agents/skills/aof-autonomous/SKILL.md";
 const autonomousPreStoryHashes = new Map([
@@ -71,12 +71,12 @@ const commandIdsBeforeStory = [
   // was not updated with it, so the leg has been red on this branch since. It surfaced here
   // because 119/03 is the run that had to get the whole tree green, not because 119 touched it.
   // `promote` ADDED AT 127/02, WITH the diff that lands it — the one verb that mints a number
-  // (127/ADR-003 §1) ships `packages/core/assets/commands/promote.md` as a `/aof:promote` wrapper, so the
+  // (127/ADR-003 §1) ships `packages/acd/assets/commands/promote.md` as a `/aof:promote` wrapper, so the
   // pre-existing member set this leg calls COMPLETE grew by one. Recorded here the same way
   // `pay-debt` had to be, and for the same reason the residue pins above were retired: a literal
   // census only tells the truth if the diff that moves the tree moves it too.
   // `archive` ADDED AT 127/03, in the descriptor's own order (after `promote`), at the milestone door:
-  // `packages/core/assets/commands/archive.md` is the `/aof:archive` wrapper over the one move verb (127/ADR-004),
+  // `packages/acd/assets/commands/archive.md` is the `/aof:archive` wrapper over the one move verb (127/ADR-004),
   // and it landed outside the story's declared write set — the same species as `promote`, repaired
   // at `aof:verify 127`.
   // `repair` ADDED AT 147 (after `refine`, the descriptor's own order): the `/aof:repair` session a
@@ -920,7 +920,7 @@ function manualBody() {
 function continuePrompts() {
   const member = loadBundle().resources.find((entry) => entry.id === "continue");
   assert.ok(member, "continue is a bundle member");
-  const codex = readFileSync(path.join(repoRoot, "packages", "core", "assets", "variants", "codex", "workflow.md"), "utf8");
+  const codex = readFileSync(path.join(repoRoot, "packages", "acd", "assets", "variants", "codex", "workflow.md"), "utf8");
   const sections = ["continue", "procedure-continue"].map((section) => {
     const body = codexSection(codex, section);
     assert.ok(body != null, `workflow.md: NOT FOUND — the Codex \`${section}\` section could not be cut`);

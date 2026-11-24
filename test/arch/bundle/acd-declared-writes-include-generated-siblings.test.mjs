@@ -4,14 +4,14 @@
 //
 // Over every `STORY.md` under `wiki/work` whose item is OPEN (66/ADR-002's horizon — a `done` item
 // is immutable and therefore un-actionable): if `files:` names any path that is a MEMBER OF THE
-// RENDERED BUNDLE, then it must also name `packages/core/assets/manifest.json` AND every GIT-TRACKED rendered
+// RENDERED BUNDLE, then it must also name `packages/acd/assets/manifest.json` AND every GIT-TRACKED rendered
 // output of that member.
 //
 // WHY MEMBERSHIP IS DERIVED, NEVER PREFIXED. Membership comes from `loadBundle()`'s own descriptor
-// and the render set from `renderBundleOutputs()` — never from a `packages/core/assets/` string prefix. A
+// and the render set from `renderBundleOutputs()` — never from a `packages/acd/assets/` string prefix. A
 // prefix knows a file sits in the bundle tree and knows NOTHING about what it renders to:
-// `packages/core/assets/frozen-set.jsonc` renders to `.aof/frozen-set.jsonc`, and `packages/core/assets/manifest.json`
-// and `packages/core/assets/bundle.json` are machinery that render to nothing at all. Both facts are asserted
+// `packages/acd/assets/frozen-set.jsonc` renders to `.aof/frozen-set.jsonc`, and `packages/acd/assets/manifest.json`
+// and `packages/acd/assets/bundle.json` are machinery that render to nothing at all. Both facts are asserted
 // below, so a future prefix shortcut fails here rather than passing quietly.
 //
 // WHY THE RUNTIME SET IS DERIVED TOO (ADR-009 §3). The tracked render set is
@@ -20,8 +20,8 @@
 // fourth runtime is therefore covered with no edit to this file. (`renderBundleOutputs` defaults to
 // `["claude"]` alone when handed nothing, so passing the derived set is load-bearing, not tidiness.)
 //
-// THE MEASURED DEFECT THIS CLOSES. Commit `231ee134` moved `packages/core/assets/commands/continue.md`,
-// `packages/core/assets/manifest.json` and the three tracked runtime renders as ONE change. A control
+// THE MEASURED DEFECT THIS CLOSES. Commit `231ee134` moved `packages/acd/assets/commands/continue.md`,
+// `packages/acd/assets/manifest.json` and the three tracked runtime renders as ONE change. A control
 // stopping at the manifest would pass a story that left three tracked files stale — TECH_DEBT
 // item 54's drift one layer earlier. Milestone 71 verified those renders BY HAND at three separate
 // accepts because this control did not exist (71's VERIFICATION.md, F-71-A).
@@ -72,13 +72,13 @@ const workDir = path.join(root, "wiki", "work");
 // The one sibling every bundle-member change lands, and the one this control names by hand —
 // it is bundle MACHINERY (`readDescriptor` declares it a non-member), so it can never be derived
 // from the member set the way the renders are.
-const MANIFEST = "packages/core/assets/manifest.json";
+const MANIFEST = "packages/acd/assets/manifest.json";
 
 const slash = (value) => String(value).split("\\").join("/");
 
 // ── the tree, derived ────────────────────────────────────────────────────────────────────────────
 
-// Every path a member's change lands on disk under `packages/core/assets/`, mapped to that member's key.
+// Every path a member's change lands on disk under `packages/acd/assets/`, mapped to that member's key.
 // Templates declare a `dir` rather than a `file`, so their member files are the directory's own
 // contents — read the same way `acd-bundle-membership` reads them, so the two controls agree.
 // 169/ADR-004: each member is read from its own package's assets, so its source path is anchored there
@@ -122,7 +122,7 @@ function trackedFiles() {
 
 // What ONE member renders, asked of the render engine rather than pattern-matched off an output's
 // resource id. That distinction is load-bearing and was measured: the codex render of
-// `packages/core/assets/commands/continue.md` presents as `skill:aof-continue`, NOT `command:continue`, so a
+// `packages/acd/assets/commands/continue.md` presents as `skill:aof-continue`, NOT `command:continue`, so a
 // control keyed on the output's own resource id silently loses `.codex/skills/aof-continue/SKILL.md`
 // — one of the three tracked files commit `231ee134` moved — and would pass the very story this
 // control exists to catch. Rendering the member alone asks "what does THIS member produce?" and
@@ -256,7 +256,7 @@ export const archTests = [
     name: "arch/71 FF-7106: non-vacuity — an open story declaring a bundle member WITHOUT the manifest is reported, naming the story and the missing sibling",
     run: async () => {
       const { sources, renders } = await world();
-      const member = "packages/core/assets/commands/continue.md";
+      const member = "packages/acd/assets/commands/continue.md";
       assert.ok(sources.has(member), "the plant's subject really is a bundle member");
 
       const declared = [member, ...[...(renders.get(sources.get(member)) ?? [])]];
@@ -277,7 +277,7 @@ export const archTests = [
     name: "arch/71 FF-7106: non-vacuity — an open story declaring a bundle member without its TRACKED RENDERED copies is reported, one finding per missing render",
     run: async () => {
       const { sources, renders } = await world();
-      const member = "packages/core/assets/commands/continue.md";
+      const member = "packages/acd/assets/commands/continue.md";
       const key = sources.get(member);
       const expectedRenders = [...(renders.get(key) ?? [])].sort();
 
@@ -302,7 +302,7 @@ export const archTests = [
     name: "arch/71 FF-7106: the horizon really excludes a done item — including the CRLF checkout, the read whose first draft reported 33 false violations",
     run: async () => {
       const { sources, renders } = await world();
-      const member = "packages/core/assets/commands/continue.md";
+      const member = "packages/acd/assets/commands/continue.md";
       const violating = [member]; // no manifest, no renders — a violation if it were open
 
       assert.ok(siblingViolations([plant(violating)], sources, renders).length > 0, "the plant IS a violation while open");
@@ -337,17 +337,17 @@ export const archTests = [
 
       // (a) The case the register names: a member whose render leaves the bundle tree entirely. A
       // prefix test would know the source and could never know this.
-      const frozen = "packages/core/assets/frozen-set.jsonc";
+      const frozen = "packages/acd/assets/frozen-set.jsonc";
       assert.ok(sources.has(frozen), "frozen-set.jsonc is a MEMBER, derived from the descriptor");
       const frozenRenders = [...(renders.get(sources.get(frozen)) ?? [])];
       assert.ok(
         frozenRenders.includes(".aof/frozen-set.jsonc"),
-        `and it renders OUTSIDE packages/core/assets/, to .aof/frozen-set.jsonc (${frozenRenders.join(", ")})`,
+        `and it renders OUTSIDE packages/acd/assets/, to .aof/frozen-set.jsonc (${frozenRenders.join(", ")})`,
       );
 
       // (b) The other half of the same point: bundle MACHINERY sits under the prefix and is not a
       // member, so declaring the manifest never demands siblings of its own.
-      for (const machinery of [MANIFEST, "packages/core/assets/bundle.json"]) {
+      for (const machinery of [MANIFEST, "packages/acd/assets/bundle.json"]) {
         assert.equal(sources.has(machinery), false, `${machinery} is machinery, not a declared member`);
       }
       assert.deepEqual(siblingViolations([plant([MANIFEST])], sources, renders), [], "declaring the manifest alone is not a subject");
@@ -380,7 +380,7 @@ export const archTests = [
     name: "arch/71 FF-7106: the registration leg is DELIBERATELY ABSENT — a complete write set is not asked for the test runner it does not change",
     run: async () => {
       const { sources, renders } = await world();
-      const member = "packages/core/assets/commands/continue.md";
+      const member = "packages/acd/assets/commands/continue.md";
       const complete = [member, MANIFEST, ...[...(renders.get(sources.get(member)) ?? [])]];
 
       assert.deepEqual(

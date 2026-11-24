@@ -150,7 +150,11 @@ export const archTests = [
       // awake clock (a host suspend is not run time), a zero-import foundation leaf, so 41 -> 42 with no
       // lifecycle, provider or mesh edge.
       assert.ok(graph.seen.has(path.join(root, "packages/foundation/src/awake-clock.mjs")), "the awake clock is a zero-import foundation leaf");
-      assert.equal(graph.seen.size, 42, "the 31-module assembly plus seven explicitly owned Codex/policy and observation leaves, the cost meter, the byte gate, the phase-completion contract's module, and the awake clock");
+      // Chore 207: the asset seam resolves the methodology's assets through core's methodology
+      // registry, which reads @aof/acd's import-free contribution leaf, so 42 -> 44 with no
+      // lifecycle, provider or mesh edge.
+      assert.ok(graph.seen.has(path.join(root, "packages/acd/src/contribution.mjs")), "chore 207 adds the methodology's contribution leaf through the asset seam");
+      assert.equal(graph.seen.size, 44, "the 31-module assembly plus seven explicitly owned Codex/policy and observation leaves, the cost meter, the byte gate, the phase-completion contract's module, the awake clock, and the methodology registry with its contribution leaf");
       assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/otel-attribution", "@aof/execution/pty", "@aof/execution/session-driver", "@aof/work/phase-brief"], "the adapter uses only the two execution APIs");
       const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
       assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/contracts/src/tui-ready.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-executable.mjs", "packages/execution/src/codex-process-environment.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-events.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/runtime-session.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs", "packages/foundation/src/awake-clock.mjs"], "native transport and observation stay in execution (beside the zero-import awake clock); no work, mesh or core import is introduced");
@@ -383,7 +387,9 @@ export const archTests = [
       // per-person local config over the project's through `@aof/contracts/local-config`, a pure leaf
       // that imports only the operator profile (191 -> 192).
       for (const leaf of ["packages/contracts/src/operator-profile.mjs", "packages/knowledge/src/graph-normalize.mjs", "packages/contracts/src/local-config.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, leaf)), leaf);
-      assert.equal(sinkGraph.seen.size, 192, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, the integration registry's contributions, the awake clock, the operator profile, the graph path and the local config");
+      // Chore 207: the asset seam reads the methodology registry and @aof/acd's import-free
+      // contribution leaf (192 -> 194).
+      assert.equal(sinkGraph.seen.size, 194, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, the integration registry's contributions, the awake clock, the operator profile, the graph path, the local config and the methodology registry");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

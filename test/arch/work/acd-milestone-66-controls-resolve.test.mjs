@@ -165,7 +165,7 @@ async function snapshotFor(text) {
 // this milestone's own idiom (ADR-007 §1).
 //
 // THE ASK THAT GOES WITH IT is 66/03's (`verify.md` step 4 naming this precondition),
-// because ADR-007 §1 forbids a refusal no prompt asks for. `packages/core/assets/` is that
+// because ADR-007 §1 forbids a refusal no prompt asks for. `packages/acd/assets/` is that
 // story's exclusive territory and is untouched here.
 
 // The gate, as a PURE function of item rows so the planted fixture drives exactly the

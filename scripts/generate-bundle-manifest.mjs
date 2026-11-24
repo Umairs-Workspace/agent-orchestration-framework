@@ -1,4 +1,4 @@
-// Regenerates the shipped ACD bundle manifest (packages/core/assets/manifest.json).
+// Regenerates the shipped ACD bundle manifest (packages/acd/assets/manifest.json).
 //
 // The manifest is DERIVED from the bundle, never hand-maintained (ADR-002).
 // Run after changing any bundle body; a fitness function

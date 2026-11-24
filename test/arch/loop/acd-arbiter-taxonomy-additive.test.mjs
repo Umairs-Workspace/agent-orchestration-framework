@@ -15,7 +15,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //   of the FOURTEEN records shipped before 58 parses with zero new findings.
 //
 // WHY THE COMPATIBILITY LEG IS OVER THE CORPUS AND NOT OVER AN EXAMPLE. The fourteen records under
-// `packages/core/assets/loops/` are the framework's own declaration of how it improves itself, installed into
+// `packages/acd/assets/loops/` are the framework's own declaration of how it improves itself, installed into
 // every project that runs aof. A widening that re-classified one of them, or raised a single new
 // finding against one, would break the thing this milestone exists to make trustworthy while
 // claiming to strengthen it. The oracle is the signature milestone 57 froze over ELEVEN of them
@@ -269,7 +269,7 @@ export const archTests = [
         "module:": "module:src/work/loops.mjs#loadLoops",
         "command:": "command:work:next",
         "config:": "config:work.loop.reviewRounds",
-        "prose:": "prose:packages/core/assets/agents/aof-developer.md",
+        "prose:": "prose:packages/acd/assets/agents/aof-developer.md",
       })[prefix];
 
       const corpus = [

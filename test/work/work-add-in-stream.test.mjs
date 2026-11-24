@@ -6,7 +6,7 @@ import { bundleFixtureRoot, readBundleProse } from "../support/cli-spawn.mjs";
 // Task 01 is @manual: an agent following the rendered prompt in a scratch project, which no
 // assertion over the prose can stand in for.
 //
-// It reads the bundle SOURCES (`packages/core/assets/commands/`) and pins CONTENT, not wording —
+// It reads the bundle SOURCES (`packages/acd/assets/commands/`) and pins CONTENT, not wording —
 // refine-discovery-beat's precedent. Byte-identity with a fresh render is read from
 // `aof work update --dry-run --json`, which answers `skip` for a copy that is exactly what the
 // current source renders. The "no prompt works out a number" scenario runs FF-12703's own leg (e)
@@ -23,7 +23,7 @@ const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const read = async (rel) => readBundleProse(rel, repoRoot).replace(/\r\n/g, "\n");
 const flat = (text) => text.replace(/\s+/g, " ");
 
-const COMMANDS = "packages/core/assets/commands";
+const COMMANDS = "packages/acd/assets/commands";
 const DRIVERS = ["add-milestone", "add-story", "add-chore", "add-spike", "add-uat"];
 const PROMPTS = DRIVERS.map((name) => `${COMMANDS}/${name}.md`);
 const COPIES = DRIVERS.flatMap((name) => [

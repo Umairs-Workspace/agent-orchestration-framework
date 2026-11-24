@@ -42,8 +42,10 @@ const normalize = (text) => text.replace(/\r\n/gu, "\n");
 const digest = (text) => createHash("sha256").update(text
   .replaceAll("packages/core/src/", "src/")
   .replaceAll("packages/core/assets", "src/bundle")
+  .replaceAll("packages/acd/assets", "src/bundle")
   .replaceAll('"packages", "core", "src"', '"src"')
-  .replaceAll('"packages", "core", "assets"', '"src", "bundle"')).digest("hex");
+  .replaceAll('"packages", "core", "assets"', '"src", "bundle"')
+  .replaceAll('"packages", "acd", "assets"', '"src", "bundle"')).digest("hex");
 
 async function importArch(name) {
   return await import(pathToFileURL(path.join(root, "test", "arch", name)).href);

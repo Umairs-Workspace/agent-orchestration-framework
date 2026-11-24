@@ -151,7 +151,7 @@ function configBlocks(markdown) {
 
 async function phaseCommandsStopOnThinking() {
   for (const command of ["continue", "refine", "verify"]) {
-    const config = configBlocks(await readFile(path.join(REPO_ROOT, "packages", "core", "assets", "commands", `${command}.md`), "utf8"));
+    const config = configBlocks(await readFile(path.join(REPO_ROOT, "packages", "acd", "assets", "commands", `${command}.md`), "utf8"));
     const flat = config.replace(/\s+/gu, " ");
     assert.match(flat, /--thinking <level>/u, `${command}: names the flag`);
     assert.match(flat, /STOP before the run is minted and before any role runs/u, `${command}: stops before the mint and any role`);
@@ -170,7 +170,7 @@ async function phaseCommandsStopOnThinking() {
 async function rendersManifestAndLockAgree() {
   assert.equal(
     serializeBundleManifest(generateBundleManifest()),
-    await readFile(path.join(REPO_ROOT, "packages", "core", "assets", "manifest.json"), "utf8"),
+    await readFile(path.join(REPO_ROOT, "packages", "acd", "assets", "manifest.json"), "utf8"),
     "the shipped manifest is the regenerated one",
   );
   const home = await mkdtemp(path.join(os.tmpdir(), "aof-141-home-"));
@@ -196,7 +196,7 @@ async function rendersManifestAndLockAgree() {
     verify: [".claude/commands/aof/verify.md", ".agents/skills/aof-verify/SKILL.md", ".opencode/commands/aof/verify.md"],
   };
   for (const [command, files] of Object.entries(renders)) {
-    const source = await readFile(path.join(REPO_ROOT, "packages", "core", "assets", "commands", `${command}.md`), "utf8");
+    const source = await readFile(path.join(REPO_ROOT, "packages", "acd", "assets", "commands", `${command}.md`), "utf8");
     const paragraph = source.slice(source.indexOf(stop), source.indexOf("</config>", source.indexOf(stop))).trim();
     assert.ok(paragraph.length > stop.length, `${command}: the source carries the stop`);
     for (const file of files) {

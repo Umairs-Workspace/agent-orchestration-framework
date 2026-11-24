@@ -1,5 +1,6 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import { readAssetText, packageVersionString } from "../../../asset-base.mjs";
+import { methodologyFile } from "../../../methodology.mjs";
 import { parseDigestTemplate, renderDigestDocument as render, digestFindings as findings } from "@aof/work/digest";
 import * as api0 from "@aof/work/digest";
 
@@ -9,7 +10,7 @@ export function assembleWorkDigestTemplate({  } = {}) {
   let cached = null;
   function digestContract() {
     if (cached) return cached;
-    cached = parseDigestTemplate(readAssetText("bundle", "templates/milestone/AOF.md"));
+    cached = parseDigestTemplate(readAssetText("bundle", methodologyFile("digestTemplate")));
     return cached;
   }
   function renderDigestDocument(input, { schemaVersion }) {

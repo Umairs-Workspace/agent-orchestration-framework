@@ -175,7 +175,7 @@ const TASK_00 = [
     run: async () => {
       // Both homes: the SOURCE the bundle ships from (53/ADR-012's single source) and the INSTALLED
       // registry this repository runs on. A `checked:` date appearing in either is a real event.
-      for (const home of ["packages/core/assets", ".aof"]) {
+      for (const home of ["packages/acd/assets", ".aof"]) {
         const registry = await loadLoops({ aofDir: path.join(repoRoot, home) });
         assert.equal(registry.present, true, `${home}: the registry is present — the sweep is not over nothing`);
         const anchors = registry.nodes.filter((node) => node.kind === "anchor");
@@ -364,7 +364,7 @@ const TASK_00 = [
       // AND OVER THE REAL REGISTRY, where every anchor is undated: the windowed report is finding-for
       // -finding identical to the windowless one, so the audit cannot disagree with
       // `aof work loops groundedness` about the registry this repository actually ships.
-      const shipped = await loadLoops({ aofDir: path.join(repoRoot, "packages/core/assets") });
+      const shipped = await loadLoops({ aofDir: path.join(repoRoot, "packages/acd/assets") });
       const before = buildGroundednessReport(shipped, {});
       const after = buildGroundednessReport(shipped, {}, freshness());
       assert.deepEqual(after.findings.map(key), before.findings.map(key), "over the shipped registry the two calls report exactly the same findings");

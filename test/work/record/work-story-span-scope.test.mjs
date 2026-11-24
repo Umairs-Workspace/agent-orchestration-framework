@@ -48,7 +48,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //                about. These run over the ITEM-LOCK fixture, because held-ness is a
 //                store fact the pure work-layer fixture has no way to state.
 //   lanes 20-22  the PROMPT half of story 84's deliverable, which nothing asserted: the span
-//                branch of `packages/core/assets/commands/continue.md` could be deleted and every test
+//                branch of `packages/acd/assets/commands/continue.md` could be deleted and every test
 //                stayed green, because the bundle manifest hashes the file's CONTENT and so
 //                detects a change, never the absence of a claim within it.
 import assert from "node:assert/strict";
@@ -75,7 +75,7 @@ const EN_DASHED = "44/01\u201302";
 // ---------------------------------------------------------------------------
 // The shipped continue prompt, and the span branch it must carry (task 02).
 // ---------------------------------------------------------------------------
-const CONTINUE_PROMPT = path.join(repoRoot, "packages", "core", "assets", "commands", "continue.md");
+const CONTINUE_PROMPT = path.join(repoRoot, "packages", "acd", "assets", "commands", "continue.md");
 
 // The span branch's own region: its bullet, through to the next top-level branch bullet.
 // Used ONLY by the non-vacuity lane, to cut the claim out of a COPY.

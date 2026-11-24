@@ -19,7 +19,7 @@ const scaffoldBacklogDriver = _aofApplication.work.commandTools.insertShared.sca
 const BACKLOG_ROOT = _aofPublic_aof_work_identity.BACKLOG_ROOT;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const SOURCE = path.join(repoRoot, "packages", "core", "assets", "templates", "milestone", "AOF.md");
+const SOURCE = path.join(repoRoot, "packages", "acd", "assets", "templates", "milestone", "AOF.md");
 const RENDER_PATH = ".aof/templates/work/milestone/AOF.md";
 
 const normalize = (p) => String(p).replaceAll("\\", "/");

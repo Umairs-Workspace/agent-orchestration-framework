@@ -44,8 +44,11 @@ async function readSourceDirectory(srcDir) {
 export async function readRuntimeFiles(repoRoot, { runtime = "all" } = {}) {
   const files = runtimeFiles(sourceFiles(repoRoot, workspaceSourceRoots(repoRoot)), runtime);
   if (runtime === "browser") return files;
-  for (const file of await readSourceDirectory(path.join(repoRoot, "packages", "core", "assets"))) {
-    files.push({ ...file, rel: `packages/core/assets/${file.rel}` });
+  // The shipped assets: the methodology's (chore 207) and core's own hooks.
+  for (const assets of ["packages/acd/assets", "packages/core/assets"]) {
+    for (const file of await readSourceDirectory(path.join(repoRoot, ...assets.split("/")))) {
+      files.push({ ...file, rel: `${assets}/${file.rel}` });
+    }
   }
   return files;
 }

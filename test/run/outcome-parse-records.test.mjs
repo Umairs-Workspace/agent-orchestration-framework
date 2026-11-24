@@ -314,7 +314,7 @@ export const outcomeParseRecordsTests = [
   {
     name: "00/outcome: regression — parsing the shipped OUTCOME.md template produces zero delivery records",
     run: async () => {
-      const templatePath = path.join(repoRoot, "packages", "core", "assets", "templates", "shared", "OUTCOME.md");
+      const templatePath = path.join(repoRoot, "packages", "acd", "assets", "templates", "shared", "OUTCOME.md");
       const templateText = await readFile(templatePath, "utf8");
       const records = parseOutcome(templateText, META);
       assert.deepEqual(records, [], `the unauthored template yields zero records; got ${JSON.stringify(records)}`);

@@ -618,7 +618,7 @@ export const workBacklogArchiveEnumerateTests = [
   {
     name: "work/backlog-archive-enumerate: 02 recent enumerates through `aof work list --json`, not through its own NN_type_slug walk",
     run: async () => {
-      const recent = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "recent.md"), "utf8");
+      const recent = await readFile(path.join(repoRoot, "packages", "acd", "assets", "commands", "recent.md"), "utf8");
       const process = recent.slice(recent.indexOf("<process>"), recent.indexOf("</process>"));
       assert.match(process, /^1\.[\s\S]*aof work list --json/m, "step 1 runs the listing");
       assert.match(process, /--all/, "…and --all when the operator asks for the archive");

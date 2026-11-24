@@ -31,7 +31,7 @@ const validateConfig = _aofApplication.assets.configInspect.validateConfig;
 // which is true whatever the defaults happen to be. Reading them makes the check
 // independent of the values, so a future model change moves nothing here.
 function shippedDefaultModels() {
-  const agentsDir = new URL("../../packages/core/assets/agents/", import.meta.url);
+  const agentsDir = new URL("../../packages/acd/assets/agents/", import.meta.url);
   const roles = readdirSync(agentsDir)
     .filter((name) => name.startsWith("aof-") && name.endsWith(".md"))
     .map((name) => name.slice(0, -3));

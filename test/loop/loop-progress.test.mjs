@@ -199,7 +199,7 @@ export const loopProgressTests = [
   {
     name: "69/03 task02 the framework build loop points at the progress authority, not a numeric round count",
     run: async () => {
-      const record = await readFile(path.join(process.cwd(), "packages", "core", "assets", "loops", "build-to-green.md"), "utf8");
+      const record = await readFile(path.join(process.cwd(), "packages", "acd", "assets", "loops", "build-to-green.md"), "utf8");
       assert.match(record, /ceiling:\s*\[config:work\.loop\.buildNoProgressRounds\]/u);
       assert.doesNotMatch(record, /ceiling:\s*\[?\d/u);
     },

@@ -53,10 +53,10 @@ import { LIMIT_KEYS, limitRecord } from "@aof/work/audit/reads";
 import { withLoopRegistry } from "../support/loop-registry-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const BUNDLE = path.join(repoRoot, "packages", "core", "assets");
+const BUNDLE = path.join(repoRoot, "packages", "acd", "assets");
 // Named explicitly so FF-5809's sweep SEES this file and classifies it (lane 3 — it loads the
 // registry in place and copies nothing into a temp fixture).
-const SHIPPED_LOOPS = path.join(repoRoot, "packages", "core", "assets", "loops");
+const SHIPPED_LOOPS = path.join(repoRoot, "packages", "acd", "assets", "loops");
 const NOW = Date.UTC(2026, 7, 30);
 const WINDOW = 90 * 86_400_000;
 
@@ -379,7 +379,7 @@ export const auditCommandTests = [
       // so the culprit-subtraction was never reached and deleting it left the case green. This
       // instrument is owned by two loops whose reference is set by a third — read off the shipped
       // records here so the pin fails if the registry stops having that shape.
-      const OWNED = "prose:packages/core/assets/commands/continue.md";
+      const OWNED = "prose:packages/acd/assets/commands/continue.md";
       const owners = ownersOfInstrument(OWNED, model);
       assert.ok(owners.length >= 2, `non-vacuous: ${OWNED} is owned by ${owners.length} loops`);
       const audience = resolveAddressees(OWNED, model, escalationActorOf(model));
@@ -398,7 +398,7 @@ export const auditCommandTests = [
           finding("audit-suite-unregistered", "error", "test/arch/a.test.mjs"),
           // A NON-escalating census code, so the addressee set this leg compares is the pure
           // reference-owner resolution and not one the bypass has already widened.
-          finding("audit-baseline-unreasoned", "error", "packages/core/assets/commands/continue.md"),
+          finding("audit-baseline-unreasoned", "error", "packages/acd/assets/commands/continue.md"),
         ]),
         evidence: evidenceLane([]),
       });
@@ -807,8 +807,8 @@ export const auditCommandTests = [
 
         // …WHILE A FILE THE REGISTRY NAMES ONCE still resolves to that pointer, which is what lets
         // an owner be found at all — the ambiguity rule is a refusal, not a blanket fallback.
-        const single = instrumentFor({ path: path.join(repoRoot, "packages", "core", "assets", "commands", "continue.md") }, { model: await loadLoops(BUNDLE), repoRoot });
-        assert.equal(single, "prose:packages/core/assets/commands/continue.md");
+        const single = instrumentFor({ path: path.join(repoRoot, "packages", "acd", "assets", "commands", "continue.md") }, { model: await loadLoops(BUNDLE), repoRoot });
+        assert.equal(single, "prose:packages/acd/assets/commands/continue.md");
       });
     },
   },
@@ -860,7 +860,7 @@ export const auditCommandTests = [
       const model = await loadLoops(BUNDLE);
       const onDisk = (await readdir(SHIPPED_LOOPS)).filter((name) => name.endsWith(".md"));
       assert.ok(onDisk.length > 0, `the sweep of ${SHIPPED_LOOPS} found no .md record — a walk whose subject set empties must FAIL naming the directory (119/ADR-003 §4)`);
-      assert.equal(model.nodes.length, onDisk.length, `non-vacuous: all ${onDisk.length} records in packages/core/assets/loops/ were loaded`);
+      assert.equal(model.nodes.length, onDisk.length, `non-vacuous: all ${onDisk.length} records in packages/acd/assets/loops/ were loaded`);
       const auditors = model.nodes.filter((node) => node.kind === "auditor");
       assert.equal(auditors.length, 1, "exactly one of the shipped records declares the auditor kind");
       assert.equal(auditors[0].id, "auditor:instrument-audit");
@@ -1228,7 +1228,7 @@ export const auditCommandTests = [
 
       // (b) AN UNCAPPED OR UNKNOWN LOOP CEILING — held at zero by an existing gate over this
       // repository's own registry.
-      const framework = await loadLoops({ aofDir: path.join(repoRoot, "packages", "core", "assets"), projectRoot: repoRoot });
+      const framework = await loadLoops({ aofDir: path.join(repoRoot, "packages", "acd", "assets"), projectRoot: repoRoot });
       const bounds = runDeclaredBounds({ model: framework, declaredBounds: {}, now: Date.parse("2026-09-03T00:00:00.000Z") });
       assert.equal(bounds.findings.filter((entry) => entry.severity === "error").length, 0, "no loop declares an uncapped or unknown ceiling here");
       assert.ok(bounds.reads[0].count > 0, `…over a real registry (${bounds.reads[0].count} loops)`);
@@ -1246,7 +1246,7 @@ export const auditCommandTests = [
       const now = Date.parse("2026-09-03T00:00:00.000Z");
       const settings = JSON.parse(await readFile(path.join(repoRoot, ".claude", "settings.json"), "utf8"));
       const first = runHookWiring({ settings, markerKey: AOF_HOOK_MARKER, settingsPath: ".claude/settings.json", now });
-      const framework = await loadLoops({ aofDir: path.join(repoRoot, "packages", "core", "assets"), projectRoot: repoRoot });
+      const framework = await loadLoops({ aofDir: path.join(repoRoot, "packages", "acd", "assets"), projectRoot: repoRoot });
       const firstBounds = runDeclaredBounds({ model: framework, declaredBounds: {}, now });
       // Time passes between the two runs, and nothing about the answer may follow it.
       await new Promise((resolve) => { setTimeout(resolve, 5); });

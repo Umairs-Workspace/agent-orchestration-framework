@@ -15,7 +15,7 @@ const validateWork = _aofWorkspace.work.validateWork;
 const digestContract = _aofWorkspace.workDigestTemplate.digestContract;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const TEMPLATE = path.join(repoRoot, "packages", "core", "assets", "templates", "milestone", "AOF.md");
+const TEMPLATE = path.join(repoRoot, "packages", "acd", "assets", "templates", "milestone", "AOF.md");
 const CONFIG = { work: {} };
 const ORDER = "Intent, Scope, Decisions, Lessons";
 

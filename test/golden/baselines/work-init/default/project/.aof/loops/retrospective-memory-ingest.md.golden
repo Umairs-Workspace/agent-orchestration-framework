@@ -4,8 +4,8 @@ id: loop:retrospective-memory-ingest
 kind: loop
 title: Capture milestone lessons into memory
 controlled: milestone lessons made recallable
-reference: [prose:packages/core/assets/commands/retrospective.md]
-measurement: [prose:packages/core/assets/commands/retrospective.md]
+reference: [prose:packages/acd/assets/commands/retrospective.md]
+measurement: [prose:packages/acd/assets/commands/retrospective.md]
 actuator: [module:src/work/memory.mjs#runMemory]
 cadence: event:per-milestone
 ceiling: none
@@ -15,11 +15,11 @@ layer: governance
 ---
 # Retrospective memory ingest
 
-Framework record source: `packages/core/assets/loops/retrospective-memory-ingest.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
+Framework record source: `packages/acd/assets/loops/retrospective-memory-ingest.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 The controlled variable is milestone lessons made recallable. Feedback, verification evidence, and
-observability form the reference at `packages/core/assets/commands/retrospective.md:28-37`; agent triage is the
-measurement at `packages/core/assets/commands/retrospective.md:38-40`. Those two authorities are prose because no
+observability form the reference at `packages/acd/assets/commands/retrospective.md:28-37`; agent triage is the
+measurement at `packages/acd/assets/commands/retrospective.md:38-40`. Those two authorities are prose because no
 deterministic grader exists (RESEARCH §Q1.6).
 
 The ingest act is reached through `runMemory` at `packages/knowledge/src/memory.mjs:565`, composed by `createMemory` at
@@ -33,9 +33,9 @@ verb surface (recall, brief, ingest, reindex, status), and the act this record a
 alone, which `runMemory` reaches with `["ingest"]` and nothing wider. `module:src/work/memory.mjs#runMemory`
 is therefore still the narrowest real export; `command:work:memory` would be broader than the act.
 
-Verify invokes retrospective ingestion at milestone close (`packages/core/assets/commands/verify.md:95-99`), which
+Verify invokes retrospective ingestion at milestone close (`packages/acd/assets/commands/verify.md:95-99`), which
 defends `event:per-milestone`; a capture pass terminates by construction, so `ceiling` is `none`.
-`packages/core/assets/commands/retrospective.md:44` assigns an owner to each lesson, not to this loop, so the loop
+`packages/acd/assets/commands/retrospective.md:44` assigns an owner to each lesson, not to this loop, so the loop
 owner remains `unknown`. `optimizing: false` records a capture pass with no extremum to reach.
 
 **`layer: governance`, corroborated by its own cadence.** The trigger is `event:per-milestone`,
@@ -46,5 +46,5 @@ is an ordinal position, not a duration.
 labelled there as authored, because what counts as a lesson worth making recallable is a governance
 judgment with no declared revising cycle — written progressively by whichever role is active when a
 lesson surfaces, an aggregate with no single author. No artifact in this repository names an owner
-for it, and none is cited. `owner:` remains `unknown`: `packages/core/assets/commands/retrospective.md:44`
+for it, and none is cited. `owner:` remains `unknown`: `packages/acd/assets/commands/retrospective.md:44`
 assigns an owner to each lesson, not to this loop.

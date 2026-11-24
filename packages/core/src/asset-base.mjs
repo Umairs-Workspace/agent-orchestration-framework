@@ -31,6 +31,7 @@
 import { readFileSync, readdirSync, existsSync, realpathSync } from "node:fs";
 import path from "node:path";
 import { coreRoot } from "./application/core-root.mjs";
+import { METHODOLOGY } from "./methodology.mjs";
 
 // --- the injectable "in a SEA?" sentinel -------------------------------------
 
@@ -130,15 +131,17 @@ function devPackageAssets(packageName) {
       return dir;
     }
   }
-  throw new Error(`asset-base: integration package "${packageName}" is not installed`);
+  throw new Error(`asset-base: package "${packageName}" is not installed`);
 }
 
 // Per-class dev base — EXACTLY the pre-seam resolution for each of the 7 sites:
-//   bundle  -> <src>/bundle           (work-bundle.mjs's old bundleRoot())
+//   bundle  -> the methodology package's assets/ (chore 207: `@aof/acd`, named by methodology.mjs)
+//   core    -> <core package>/assets  (core's own runtime plumbing: the hooks, chore 207)
 //   ui      -> <repoRoot>/ui          (setup-ui.mjs's old uiRoot default)
 //   version -> <repoRoot>/package.json's directory (mesh-identity.mjs / work-bundle-manifest.mjs)
 function devClassBase(assetClass) {
-  if (assetClass === "bundle") return path.join(devRepoRoot(), "assets");
+  if (assetClass === "bundle") return devPackageAssets(METHODOLOGY.assets.package);
+  if (assetClass === "core") return path.join(devRepoRoot(), "assets");
   const packageName = classPackage(assetClass);
   if (packageName) return devPackageAssets(packageName);
   if (assetClass === "ui") {
@@ -174,7 +177,8 @@ function devClassBase(assetClass) {
 
 // Per-class sidecar base, anchored at the exec dir. The build recipe (ADR-001)
 // lays out the sidecar as:
-//   <execDir>/bundle/**      (src/bundle/** verbatim)
+//   <execDir>/bundle/**      (the methodology package's assets/** verbatim)
+//   <execDir>/assets/**      (core's own assets/** — the hooks, chore 207)
 //   <execDir>/ui/dist/**     (ui/dist/** verbatim — kept under ui/ so the class
 //                              base below matches the dev shape's <repoRoot>/ui)
 //   <execDir>/package.json   (a trimmed manifest carrying at least { version })
@@ -182,6 +186,7 @@ function devClassBase(assetClass) {
 function seaClassBase(assetClass) {
   const anchor = sidecarAnchor();
   if (assetClass === "bundle") return path.join(anchor, "bundle");
+  if (assetClass === "core") return path.join(anchor, "assets");
   const packageName = classPackage(assetClass);
   if (packageName) return path.join(anchor, "bundle", "packages", packageName.split("/").pop());
   if (assetClass === "ui") return path.join(anchor, "ui");
@@ -192,7 +197,7 @@ function seaClassBase(assetClass) {
 // --- the public seam -----------------------------------------------------------
 
 // assetBase(assetClass) — THE seam. Returns the resolved base directory for one
-// of the three runtime asset classes ("bundle" | "ui" | "version"). Dev: the
+// of the runtime asset classes ("bundle" | "core" | "ui" | "version", or a package's class). Dev: the
 // current import.meta.url-derived path, verbatim. SEA: the sidecar dir anchored
 // at process.execPath's directory. No SEA API is called by this function itself
 // (a plain path join) — only readAsset/listAssetMembers touch the filesystem.

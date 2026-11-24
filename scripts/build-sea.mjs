@@ -43,7 +43,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import esbuild from "esbuild";
 import { inject as postjectInject } from "postject";
-import { generateAssetManifest, generatePackageAssetManifest } from "./sea-asset-manifest.mjs";
+import { coreAssetDir, generateAssetManifest, generatePackageAssetManifest, methodologyAssetDir } from "./sea-asset-manifest.mjs";
 import { workspaceDirectory, dependencyDirectory } from './workspace-paths.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -266,7 +266,7 @@ export function assertSeaBundle(metafile, root = repoRoot, requiredEntries = ['p
   for (const required of requiredEntries) {
     if (!inputs.includes(required)) throw new Error(`SEA bundle is missing core entry ${required}`);
   }
-  const forbidden = inputs.filter(file => file.startsWith('../') || /^(src\/|apps\/|ui\/|packages\/core\/assets\/)/u.test(file) || /(?:^|\/)node-pty\//u.test(file));
+  const forbidden = inputs.filter(file => file.startsWith('../') || /^(src\/|apps\/|ui\/|packages\/(?:core|acd)\/assets\/)/u.test(file) || /(?:^|\/)node-pty\//u.test(file));
   if (forbidden.length) throw new Error(`SEA bundle contains inputs outside its runtime closure: ${forbidden.join(', ')}`);
 }
 
@@ -331,13 +331,19 @@ async function main() {
   });
 
   // --- 2. the sidecar layout ---
-  step("generate the sidecar asset tree (packages/core/assets/** + ui/dist/**)", () => {
+  step("generate the sidecar asset tree (packages/acd/assets/** + packages/acd/assets/** + ui/dist/**)", () => {
     const manifest = generateAssetManifest(repoRoot);
     for (const rel of manifest.bundle) {
-      const src = path.join(repoRoot, "packages", "core", "assets", rel);
+      const src = path.join(methodologyAssetDir(repoRoot), rel);
       const dest = path.join(outDir, "bundle", rel);
       mkdirSync(path.dirname(dest), { recursive: true });
       copyFileSync(src, dest);
+    }
+    // Core's own runtime plumbing (its hooks, chore 207) — the `core` asset class.
+    for (const rel of manifest.core) {
+      const dest = path.join(outDir, "assets", rel);
+      mkdirSync(path.dirname(dest), { recursive: true });
+      copyFileSync(path.join(coreAssetDir(repoRoot), rel), dest);
     }
     for (const rel of manifest.ui) {
       const src = path.join(workspaceDirectory(repoRoot, '@aof/ui'), "dist", rel);
@@ -354,7 +360,7 @@ async function main() {
       }
       console.log(`sidecar ${owned.name}: ${owned.files.length} files`);
     }
-    console.log(`sidecar bundle: ${manifest.bundle.length} files, ui/dist: ${manifest.ui.length} files`);
+    console.log(`sidecar bundle: ${manifest.bundle.length} files, assets: ${manifest.core.length} files, ui/dist: ${manifest.ui.length} files`);
   });
 
   step("write the trimmed sidecar package.json ({ version })", () => {

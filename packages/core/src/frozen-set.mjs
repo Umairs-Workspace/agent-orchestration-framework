@@ -23,6 +23,7 @@
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { readAssetText } from "./asset-base.mjs";
+import { methodologyFile } from "./methodology.mjs";
 
 export const FROZEN_SET_RELPATH = ".aof/frozen-set.jsonc";
 export const FROZEN_MEMBER_MARKER = "aofFrozen";
@@ -55,7 +56,7 @@ export class FrozenSetError extends Error {
 }
 
 export function bundledFrozenSet() {
-  return parseDeclaration(readAssetText("bundle", "frozen-set.jsonc"));
+  return parseDeclaration(readAssetText("bundle", methodologyFile("frozenSet")));
 }
 
 function parseDeclaration(text) {

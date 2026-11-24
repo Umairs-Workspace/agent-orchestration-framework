@@ -306,7 +306,7 @@ export const gradeReadFaceNeverExecutesTests = [
     run: async () => {
       // `53/ADR-008`'s ruling, unchanged: `/aof:continue` and `/aof:verify` ARE the wrappers,
       // and the prompt-layer wording is 71's.
-      const bundleCommands = path.join(repoRoot, "packages", "core", "assets", "commands");
+      const bundleCommands = path.join(repoRoot, "packages", "acd", "assets", "commands");
       const files = await readdir(bundleCommands);
       assert.ok(!files.some((name) => /grade/i.test(name)), "no new /aof:* wrapper file exists for the grade verb");
       // The text scan stands in for "edited by THIS story" (54/01), so a later item's legitimate mention
@@ -321,7 +321,7 @@ export const gradeReadFaceNeverExecutesTests = [
           assert.ok(text.includes("work:grade") || text.includes("aof work grade"), `${name} is recorded as naming the verb, and still does (the record is honest)`);
           continue;
         }
-        assert.ok(!text.includes("work:grade"), `no file under packages/core/assets/commands/ was edited by this story (${name})`);
+        assert.ok(!text.includes("work:grade"), `no file under packages/acd/assets/commands/ was edited by this story (${name})`);
         assert.ok(!text.includes("aof work grade"), `…nor spells the verb in prose (${name})`);
       }
     },

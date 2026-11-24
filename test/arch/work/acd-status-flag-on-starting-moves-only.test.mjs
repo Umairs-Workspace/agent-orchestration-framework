@@ -22,9 +22,9 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const BUNDLE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "core", "assets");
+const BUNDLE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "acd", "assets");
 
-// Every command surface under packages/core/assets/ (commands, and any other prose a runtime renders
+// Every command surface under packages/acd/assets/ (commands, and any other prose a runtime renders
 // verbatim — the sweep is directory-derived so a new surface is covered the day it lands).
 function bundleSurfaces(dir = BUNDLE_DIR, found = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {

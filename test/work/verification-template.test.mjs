@@ -3,7 +3,7 @@
 // never had", @executable).
 //
 // THE ROOT ITEM OF THE FINDING. ACD shipped NO `VERIFICATION.md` template at all — measured at HEAD
-// before this story, `packages/core/assets/templates/milestone/` held nine files (ARCHITECTURE, COMPLIANCE,
+// before this story, `packages/acd/assets/templates/milestone/` held nine files (ARCHITECTURE, COMPLIANCE,
 // DESIGN, OUTCOME, RESEARCH, SECURITY, SPEC, STATE, UAT) — while `work:doctor` checked only that the
 // file existed and was non-empty. You cannot add a "this control was observed failing" field to an
 // evidence model that has no fields.
@@ -34,7 +34,7 @@ import { severityFor } from "@aof/work/lifecycle";
 import { ADR_LITERALS } from "../arch/work/acd-verification-template-shape.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const TEMPLATE_DIR = path.join(repoRoot, "packages", "core", "assets", "templates", "milestone");
+const TEMPLATE_DIR = path.join(repoRoot, "packages", "acd", "assets", "templates", "milestone");
 const SOURCE = path.join(TEMPLATE_DIR, "VERIFICATION.md");
 const INSTALLED_PATH = ".aof/templates/work/milestone/VERIFICATION.md";
 
@@ -85,7 +85,7 @@ async function installBase(repo, bundle, runtimes = ["claude"], version = "1.0.0
 
 // The bundle as it shipped BEFORE this task: the same descriptor and the same template member, with
 // `VERIFICATION.md` dropped from the milestone template's file list. A structural edit to the loaded
-// object, never a mutation of `packages/core/assets/` — `updateWork`'s `bundleOverride` seam only chooses
+// object, never a mutation of `packages/acd/assets/` — `updateWork`'s `bundleOverride` seam only chooses
 // WHICH bundle is loaded; every create/update/skip/drift decision still flows through the engine.
 function bundleWithoutVerificationTemplate() {
   const bundle = loadBundle();
@@ -239,7 +239,7 @@ export const verificationTemplateTests = [
       assert.ok(body.split("\n").map((line) => line.trim()).includes(header));
       const columns = header.split("|").map((cell) => cell.trim()).filter(Boolean);
       assert.deepEqual(columns, ["id", "observed", "type", "severity", "triage", "routed-to", "status"]);
-      const verify = readFileSync(path.join(repoRoot, "packages", "core", "assets", "commands", "verify.md"), "utf8").replace(/\s+/g, " ");
+      const verify = readFileSync(path.join(repoRoot, "packages", "acd", "assets", "commands", "verify.md"), "utf8").replace(/\s+/g, " ");
       assert.ok(verify.includes(`(${columns.join(", ")})`), "the same seven, in the same order, as the shipped prompt's prose list");
       assert.ok(body.includes("id ALONE in the first cell"), "which is what makes the duplicate-id check buildable against it");
     },
@@ -435,7 +435,7 @@ export const verificationTemplateTests = [
       // The SAME sentence ships in `commands/verify.md`: one home for the honesty boundary, so the
       // prompt's copy cannot drift into an over-claim with nothing red.
       assert.ok(
-        readFileSync(path.join(repoRoot, "packages", "core", "assets", "commands", "verify.md"), "utf8").includes(ADR_LITERALS[ask]),
+        readFileSync(path.join(repoRoot, "packages", "acd", "assets", "commands", "verify.md"), "utf8").includes(ADR_LITERALS[ask]),
         "verify.md carries the identical sentence, not a second spelling",
       );
     },

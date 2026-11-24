@@ -40,10 +40,10 @@ const budgetsFromConfig = _aofApplication.work.doctor.budgetsFromConfig;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const TEMPLATE = "packages/core/assets/templates/story/PLAN.md";
+const TEMPLATE = "packages/acd/assets/templates/story/PLAN.md";
 // 192/ADR-005 §2, §7 — the build brief left refine's source for core's own `build-brief` practice:
 // its prose is read where it now lives, one body per runtime.
-const BRIEF_FRAGMENTS = Object.freeze(["packages/core/assets/fragments/build-brief/refine.md", "packages/core/assets/fragments/build-brief/refine.codex.md"]);
+const BRIEF_FRAGMENTS = Object.freeze(["packages/acd/assets/fragments/build-brief/refine.md", "packages/acd/assets/fragments/build-brief/refine.codex.md"]);
 const BUDGET_GROUP = "packages/work/src/doctor/budget.mjs";
 const BUDGET_DEFAULTS = "packages/work/src/doctor/index.mjs";
 const GATE_VALIDATOR = "packages/core/src/application/bindings/config-inspect.mjs";
@@ -182,7 +182,7 @@ export const archTests = [
         assert.deepEqual(violations, [], `${rel} restates a declared path: ${violations.map((v) => `${v.rule} @${v.line} (${v.evidence})`).join("; ")}`);
       }
       // The brief is no longer in refine's source, so a sweep of that source alone would judge nothing.
-      assert.doesNotMatch(await raw("packages/core/assets/commands/refine.md"), /It restates no declared path/u, "refine's source holds a slot where the brief stood");
+      assert.doesNotMatch(await raw("packages/acd/assets/commands/refine.md"), /It restates no declared path/u, "refine's source holds a slot where the brief stood");
     },
   },
 ];

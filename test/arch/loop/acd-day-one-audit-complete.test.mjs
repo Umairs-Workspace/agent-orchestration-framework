@@ -49,7 +49,7 @@ import {
 } from "@aof/work-graph/checks";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BUNDLE = path.join(root, "packages", "core", "assets");
+const BUNDLE = path.join(root, "packages", "acd", "assets");
 const LOOPS_DIR = path.join(BUNDLE, "loops");
 
 const CHECKS = Object.freeze([
@@ -100,7 +100,7 @@ export const archTests = [
     name: "arch/59 FF-5910: the framework ships exactly one auditor, and the whole registry still loads with no error",
     run: async () => {
       const names = (await readdir(LOOPS_DIR)).filter((name) => name.endsWith(".md"));
-      assert.ok(names.length >= 16, `non-vacuous: ${names.length} records ship in packages/core/assets/loops/`);
+      assert.ok(names.length >= 16, `non-vacuous: ${names.length} records ship in packages/acd/assets/loops/`);
 
       const { model, auditor } = await theAuditor();
       assert.equal(model.nodes.length, names.length, "every shipped record parsed into a node");

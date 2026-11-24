@@ -9,7 +9,7 @@ const getCommand = _aofApplication.getCommand;
 import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const loopsDir = path.join(root, "packages", "core", "assets", "loops");
+const loopsDir = path.join(root, "packages", "acd", "assets", "loops");
 
 // The three shipped watchers, and the registered command each measurement must resolve to.
 const WATCHERS = Object.freeze([

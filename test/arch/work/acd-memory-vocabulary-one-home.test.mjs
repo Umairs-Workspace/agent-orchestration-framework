@@ -86,7 +86,7 @@ export const archTests = [
   {
     name: "arch/FF-14802: the retrospective prompt names exactly the vocabulary's kinds, areas and stages",
     run: () => {
-      const prompt = readFileSync(path.join(REPO_ROOT, "packages/core/assets/commands/retrospective.md"), "utf8");
+      const prompt = readFileSync(path.join(REPO_ROOT, "packages/acd/assets/commands/retrospective.md"), "utf8");
       assert.deepEqual(promptList(prompt, "Kind"), [...LESSON_KINDS]);
       assert.deepEqual(promptList(prompt, "Area"), [...LESSON_AREAS]);
       assert.deepEqual(promptList(prompt, "Stage"), [...LESSON_STAGES]);
@@ -95,7 +95,7 @@ export const archTests = [
   {
     name: "arch/FF-14802: the OUTCOME template's status comment names exactly the vocabulary's gap statuses",
     run: () => {
-      for (const file of ["packages/core/assets/templates/shared/OUTCOME.md", ".aof/templates/work/shared/OUTCOME.md"]) {
+      for (const file of ["packages/acd/assets/templates/shared/OUTCOME.md", ".aof/templates/work/shared/OUTCOME.md"]) {
         assert.deepEqual(templateStatuses(file), [...GAP_STATUSES], file);
       }
     },

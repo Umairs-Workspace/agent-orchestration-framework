@@ -18,8 +18,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const read = async (rel) => readBundleProse(rel, repoRoot).replace(/\r\n/g, "\n");
 
-const ARCHITECT = "packages/core/assets/agents/aof-architect.md";
-const REFINE = "packages/core/assets/commands/refine.md";
+const ARCHITECT = "packages/acd/assets/agents/aof-architect.md";
+const REFINE = "packages/acd/assets/commands/refine.md";
 const COPIES = [
   ".claude/agents/aof-architect.md",
   ".claude/commands/aof/refine.md",
@@ -120,7 +120,7 @@ export const bundleArchitectDrawsTests = [
   {
     name: "133/05 task 00: the architect's tools are not widened to draw",
     run: async () => {
-      const frozen = await read("packages/core/assets/frozen-set.jsonc");
+      const frozen = await read("packages/acd/assets/frozen-set.jsonc");
       const pinned = /"aof-architect":\s*\[([^\]]*)\]/.exec(frozen)?.[1] ?? "";
       assert.deepEqual(pinned.split(",").map((tool) => tool.trim().replace(/"/g, "")), ["Read", "Grep", "Glob", "Bash", "Write", "Edit"]);
       const architect = await read(ARCHITECT);

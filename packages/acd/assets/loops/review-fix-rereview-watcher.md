@@ -10,7 +10,7 @@ monitoring: [loop:review-fix-rereview]
 ---
 # Review-fix-rereview — watcher
 
-Framework record source: `packages/core/assets/loops/review-fix-rereview-watcher.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
+Framework record source: `packages/acd/assets/loops/review-fix-rereview-watcher.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 This watcher pairs the `loop:review-fix-rereview` optimizer (ADR-007 §6). The review loop optimises *open review findings* down toward zero through an actuator that applies confirmed fixes. The counter-metric is the finding-escape rate: *findings raised after the item was accepted* — findings that survived the loop that was supposed to close them. It pulls the opposite way from the loop's own axis, which is the pair's point (57/STORY.md Notes; ADR-001 §4).
 

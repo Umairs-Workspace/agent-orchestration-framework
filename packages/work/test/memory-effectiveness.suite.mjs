@@ -139,7 +139,7 @@ export const memoryEffectivenessTests = [
       assert.match(found[0].message, /age 5/);
     }),
   },
-  ...["control:153/FF-15301", "rule:.aof/rules/cleanup.md", "prompt:packages/core/assets/commands/refine.md"].map((promotion) => ({
+  ...["control:153/FF-15301", "rule:.aof/rules/cleanup.md", "prompt:packages/acd/assets/commands/refine.md"].map((promotion) => ({
     name: `153/03: a recorded ${promotion.split(":")[0]} promotion removes the aged signal and keeps an independent recurrence`,
     run: () => scratch(async (root) => {
       const stream = await ageStream(root, {

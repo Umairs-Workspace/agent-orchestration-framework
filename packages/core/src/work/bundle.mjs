@@ -42,9 +42,14 @@ export function bundleRoot() {
 }
 
 // --- descriptor -------------------------------------------------------------
-// 169/ADR-004 — core's own bundle.json, with each integration's `assets/bundle.json` members
+// Chore 207 — core's own `assets/bundle.json` declares only runtime plumbing (its hooks, read from
+// the `core` asset class). The methodology's descriptor (`@aof/acd`, named by methodology.mjs) is
+// appended to it: its members, practices and references, read from the `bundle` asset class, which
+// is why its members carry no `assetClass` of their own.
+//
+// 169/ADR-004 — that descriptor, with each integration's `assets/bundle.json` members
 // appended. An appended member records its owning integration (`integration`, the id ADR-005 gates
-// on) and the asset class its text is read from (`assetClass`); core's members carry neither. A
+// on) and the asset class its text is read from (`assetClass`); the methodology's carry neither. A
 // contributed id that is already declared is refused here, at load, naming the member and package.
 //
 // 179/ADR-004 §4 — each practice's members are appended after the integrations', with an
@@ -54,14 +59,17 @@ export function bundleRoot() {
 // a test can hand in a fragment no installed package ships.
 const readPackageFragment = (assetClass) => JSON.parse(readAssetText(assetClass, "bundle.json"));
 
-export function readDescriptor({ integrations = INTEGRATIONS, practices = PRACTICES, readFragment = readPackageFragment } = {}) {
-  const descriptor = JSON.parse(readAssetText("bundle", "bundle.json"));
-  const declared = new Map(descriptor.members.map((member) => [member.id, "core"]));
+const readCoreDescriptor = () => JSON.parse(readAssetText("core", "bundle.json"));
+const readMethodologyDescriptor = () => JSON.parse(readAssetText("bundle", "bundle.json"));
+
+export function readDescriptor({ integrations = INTEGRATIONS, practices = PRACTICES, readFragment = readPackageFragment, readCore = readCoreDescriptor, readMethodology = readMethodologyDescriptor } = {}) {
+  const core = readCore();
+  const methodology = readMethodology();
+  const descriptor = { ...methodology, practices: [], members: [] };
+  const declared = new Map();
   // 192/ADR-002 §1 — a bundle fragment may declare practices: an id unique across every
   // contributor, and the keys that turn it on. Each carries the package that declared it.
   const declaredPractices = new Map();
-  const corePractices = descriptor.practices;
-  descriptor.practices = [];
   const declarePractices = (list, contributor) => {
     for (const practice of list ?? []) {
       if (declaredPractices.has(practice.id)) {
@@ -71,7 +79,23 @@ export function readDescriptor({ integrations = INTEGRATIONS, practices = PRACTI
       descriptor.practices.push({ ...practice, contributor });
     }
   };
-  declarePractices(corePractices, "core");
+  // The base (core and the methodology) may reuse an id across kinds among its own members, as
+  // `prototype` is both a command and a template; a contributed fragment may not.
+  const declareMembers = (list, contributor, stamp, { base = false } = {}) => {
+    for (const member of list ?? []) {
+      if (declared.has(member.id) && !(base && declared.get(member.id) === contributor)) {
+        throw new Error(`Bundle member "${member.id}" contributed by ${contributor} is already declared by ${declared.get(member.id)}.`);
+      }
+      declared.set(member.id, contributor);
+      descriptor.members.push({ ...member, ...stamp });
+    }
+  };
+  // The base is labelled `core` in every refusal, the methodology's members included: a contributed
+  // fragment collides with the base, and 192/02 E7 names the build brief "contributed by core".
+  declarePractices(core.practices, "core");
+  declareMembers(core.members, "core", { assetClass: "core" }, { base: true });
+  declarePractices(methodology.practices, "core");
+  declareMembers(methodology.members, "core", {}, { base: true });
   const contributors = [
     ...integrations.map((contribution) => ({ contribution, integration: contribution.id })),
     ...practices.map((contribution) => ({ contribution, integration: null })),
@@ -81,18 +105,13 @@ export function readDescriptor({ integrations = INTEGRATIONS, practices = PRACTI
     const assetClass = packageAssetClass(contribution.assets.package);
     const fragment = readFragment(assetClass);
     declarePractices(fragment.practices, contribution.name);
-    for (const member of fragment.members ?? []) {
-      if (declared.has(member.id)) {
-        throw new Error(`Bundle member "${member.id}" contributed by ${contribution.name} is already declared by ${declared.get(member.id)}.`);
-      }
-      declared.set(member.id, contribution.name);
-      descriptor.members.push({ ...member, ...(integration ? { integration } : {}), assetClass });
-    }
+    declareMembers(fragment.members, contribution.name, { ...(integration ? { integration } : {}), assetClass });
   }
   return descriptor;
 }
 
-// The asset class a member's own files are read from: its package's, or core's bundle.
+// The asset class a member's own files are read from: its package's, core's own (`core`), or the
+// methodology's (`bundle`).
 function memberClass(member) {
   return member.assetClass ?? "bundle";
 }

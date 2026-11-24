@@ -177,7 +177,7 @@ export const anchorTaxonomyTests = [
       const anchors = installed.nodes.filter((node) => node.kind === "anchor");
       assert.deepEqual(anchors.map((node) => path.basename(node.path)).sort(), expected);
       for (const filename of expected) {
-        const source = await readFile(path.join(root, "packages", "core", "assets", "loops", filename), "utf8");
+        const source = await readFile(path.join(root, "packages", "acd", "assets", "loops", filename), "utf8");
         const copy = await readFile(path.join(root, ".aof", "loops", filename), "utf8");
         assert.equal(copy, source);
         assert.match(source, /^---\r?\n# aof-generated: true/m);

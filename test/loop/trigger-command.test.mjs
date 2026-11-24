@@ -39,7 +39,7 @@ import { LOOP_LEVELS, LOOP_REFUSALS, decideLoopScope } from "../../packages/work
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
-const BUNDLED_DECLARATION = path.join(repoRoot, "packages", "core", "assets", "triggers.jsonc");
+const BUNDLED_DECLARATION = path.join(repoRoot, "packages", "acd", "assets", "triggers.jsonc");
 
 const LOOP_ID = "work:loop";
 const DOCTOR_ID = "work:doctor";

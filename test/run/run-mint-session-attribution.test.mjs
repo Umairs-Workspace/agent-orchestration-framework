@@ -176,7 +176,7 @@ async function writeRunRecord(dir, record) {
 
 // ── the shipped phase documents ──────────────────────────────────────────────
 
-const PHASE_DOCS = ["packages/core/assets/commands/refine.md", "packages/core/assets/commands/continue.md"];
+const PHASE_DOCS = ["packages/acd/assets/commands/refine.md", "packages/acd/assets/commands/continue.md"];
 const ROLE_AGENT = /aof-(developer|researcher|architect|qa|designer|product-owner)/;
 
 export const runMintSessionAttributionTests = [

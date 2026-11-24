@@ -15,7 +15,7 @@ layer: operational
 ---
 # Run resilience
 
-Framework record source: `packages/core/assets/loops/run-resilience.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
+Framework record source: `packages/acd/assets/loops/run-resilience.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 The controlled run records are read by `readRuns` at `packages/execution/src/runs.mjs:665`, a member of the store that
 `createRunStore` composes at `packages/execution/src/runs.mjs:79`; their

@@ -74,7 +74,7 @@ export const archTests = [
   {
     name: "arch/178/02 FF-17802 E3 red probe: a planted old spelling fails naming the file and line 4, however it is wrapped — `aof work\\n  memory recall`, `aof work memory ingest`, `` `aof  work  memory status` ``",
     run: () => {
-      const rel = "packages/core/assets/commands/planted.md";
+      const rel = "packages/acd/assets/commands/planted.md";
       for (const planted of ['aof work\n  memory recall "x" --block', "aof work memory ingest", "`aof  work  memory status`"]) {
         const text = `# planted\n\nline three\n${planted}\n`;
         assert.deepEqual(oldSpellings([...assetFiles(), { rel, text }]), [{ rel, line: 4 }], `${JSON.stringify(planted)} fails naming ${rel}:4`);
@@ -84,9 +84,9 @@ export const archTests = [
   {
     name: "arch/178/02 E1: refine's architect recall spells aof memory, and the codex workflow variant spells it wherever it spelled the alias",
     run: () => {
-      const refine = read("packages/core/assets/commands/refine.md").replace(/\n\s*/gu, " ");
+      const refine = read("packages/acd/assets/commands/refine.md").replace(/\n\s*/gu, " ");
       assert.ok(refine.includes('aof memory recall "<the decision in a few words>" --area architecture --block'), "refine's architect recall reads the canonical command");
-      const codex = read("packages/core/assets/variants/codex/workflow.md");
+      const codex = read("packages/acd/assets/variants/codex/workflow.md");
       assert.equal([...codex.matchAll(OLD)].length, 0, "the codex variant spells no aof work memory");
       assert.ok([...codex.matchAll(NEW)].length >= 21, "…and spells aof memory at least as often as it spelled the alias (21)");
     },

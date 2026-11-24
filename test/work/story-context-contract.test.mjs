@@ -48,7 +48,7 @@ const region = (text, open, close) => {
 };
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const bundle = path.join(root, "packages", "core", "assets");
+const bundle = path.join(root, "packages", "acd", "assets");
 const fm = (fields) => `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${value}`).join("\n")}\n---\n`;
 
 async function withStory({ reads = "[]", files = "[]" } = {}, body) {
@@ -395,7 +395,7 @@ const reviewCommandTests = [
   ...[
     ["README.md", /`\/aof:manual <ref>` hands you a guide/u],
     ["docs/acd.md", /`\/aof:manual <ref>` hands the operator a guide/u],
-    ["packages/core/assets/commands/review.md", /usually after `aof:manual <ref>` handed them a guide/u],
+    ["packages/acd/assets/commands/review.md", /usually after `aof:manual <ref>` handed them a guide/u],
   ].map(([file, names]) => ({
     name: `179/00 the docs and the review prompt name the manual command [${file}]`,
     async run() {

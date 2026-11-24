@@ -55,7 +55,7 @@ export const archTests = [
   {
     name: "arch/69 FF-6902 (acd-no-uncapped-framework-loop): every framework ceiling is none or a pointer to a real authority",
     run: async () => {
-      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
+      const model = await loadLoops(path.join(root, "packages", "acd", "assets"));
       assert.ok(model.nodes.filter((node) => node.kind === "loop").length >= 7);
       const configCeilings = loopBoundConfigPointers(model);
       assert.ok(configCeilings.length > 0, "the real registry supplied a nonzero floor of kind:pointer config ceilings");

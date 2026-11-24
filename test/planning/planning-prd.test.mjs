@@ -490,7 +490,7 @@ export const planningPrdTests = [
       assert.equal(
         hashContent(onDisk.replace(/\r\n/gu, "\n")),
         hashContent(String(rendered.content).replace(/\r\n/gu, "\n")),
-        `${rel} matches its re-render from packages/core/assets/commands/promote.md`,
+        `${rel} matches its re-render from packages/acd/assets/commands/promote.md`,
       );
     },
   })),
@@ -498,7 +498,7 @@ export const planningPrdTests = [
 
 // ── 139/03 helpers ───────────────────────────────────────────────────────────────────────────
 const REPO_ROOT = path.resolve(here, "..", "..");
-const readPrompt = (name) => readFile(path.join(REPO_ROOT, "packages", "core", "assets", "commands", name), "utf8");
+const readPrompt = (name) => readFile(path.join(REPO_ROOT, "packages", "acd", "assets", "commands", name), "utf8");
 // Markdown wraps prose mid-phrase, so a clause is read over the lines joined.
 const joined = (text) => text.replace(/\r?\n\s*/gu, " ");
 

@@ -10,7 +10,7 @@ monitoring: [loop:autonomous-cascade]
 ---
 # Autonomous cascade — watcher
 
-Framework record source: `packages/core/assets/loops/autonomous-cascade-watcher.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
+Framework record source: `packages/acd/assets/loops/autonomous-cascade-watcher.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 This watcher pairs the `loop:autonomous-cascade` optimizer (ADR-007 §6). The cascade optimises *items reaching done over a work range* upward through agents that change item state. The counter-metric is the intervention rate: *how often a run needed a retry or a hand*. It measures the autonomy that the optimizer claims by its own `command:work:next` measurement, from the `attempt`/`retryOf`/`outcome` lineage milestone 20 already writes — the opposite pull, which is the pair's point (57/STORY.md Notes; ADR-001 §4).
 

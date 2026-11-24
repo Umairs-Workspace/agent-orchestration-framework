@@ -141,7 +141,7 @@ export const tuneCorpusTests = [
         "## R1 — Trace the structured pointer",
         "- **Kind:** near-miss · **Area:** delivery · **Stage:** review · **Owner:** architect",
         "",
-        "**What happened.** `packages/core/assets/loops/review-fix-rereview.md` declares `ceiling: [config:work.loop.reviewRounds]`.",
+        "**What happened.** `packages/acd/assets/loops/review-fix-rereview.md` declares `ceiling: [config:work.loop.reviewRounds]`.",
         "",
         "**Lesson.** Structured pointers are source facts.",
         "",
@@ -153,12 +153,12 @@ export const tuneCorpusTests = [
         "**Lesson.** Larger-token substrings are prose, not structured pointers.",
         "",
       ].join("\n"));
-      await put(path.join(cwd, "packages", "core", "assets", "loops", "review-fix-rereview.md"), "# loop\n");
+      await put(path.join(cwd, "packages", "acd", "assets", "loops", "review-fix-rereview.md"), "# loop\n");
 
       const corpus = await assembleCorpus({ cwd, lanes: lowFloors() });
       const lessons = corpus.lanes.find((entry) => entry.lane === "lessons").contribution;
       assert.equal(lessons[0].target, "config:work.loop.reviewRounds");
-      assert.ok(lessons[0].citations.includes("packages/core/assets/loops/review-fix-rereview.md"));
+      assert.ok(lessons[0].citations.includes("packages/acd/assets/loops/review-fix-rereview.md"));
       assert.ok(lessons[0].citations.some((citation) => citation.startsWith("wiki/work/83_")));
       assert.equal(lessons[1].target, null, "embedded URL and larger-token text cannot promote a lesson target");
 
@@ -278,7 +278,7 @@ export const tuneCorpusTests = [
     run: () => fixture(async ({ cwd, workDir }) => {
       await addMilestone(workDir, "10", {
         retro: [
-          promotedLesson("R1", "- **Promoted to:** prompt:packages/core/assets/commands/refine.md"),
+          promotedLesson("R1", "- **Promoted to:** prompt:packages/acd/assets/commands/refine.md"),
           promotedLesson("R2", "- **Promoted to:** prompt:a.md prompt:b.md"),
           promotedLesson("R3", "- **Promoted to:** rule:.aof/rules/x.md"),
           promotedLesson("R4", "- **Promoted to:** none"),
@@ -289,7 +289,7 @@ export const tuneCorpusTests = [
         ].join("\n"),
       });
       const byId = Object.fromEntries(lessonsOf(await assembleCorpus({ cwd, lanes: lowFloors() })).map((lesson) => [lesson.id, lesson]));
-      assert.equal(byId.R1.target, "prompt:packages/core/assets/commands/refine.md");
+      assert.equal(byId.R1.target, "prompt:packages/acd/assets/commands/refine.md");
       assert.equal(byId.R2.target, null, "two destinations are ambiguous, not a pick");
       assert.equal(byId.R3.target, "rule:.aof/rules/x.md", "a rule destination is carried so it can be named, not mistaken for a prompt");
       assert.equal(byId.R4.target, null);
@@ -370,9 +370,9 @@ export const tuneCorpusTests = [
       await put(path.join(cwd, "docs", "incident.md"), "# an incident\n");
       await addMilestone(workDir, "10", {
         retro: [
-          promotedLesson("R1", "- **Promoted to:** prompt:packages/core/assets/commands/refine.md", "- **What happened:** see docs/incident.md and packages/core/assets/commands/refine.md"),
+          promotedLesson("R1", "- **Promoted to:** prompt:packages/acd/assets/commands/refine.md", "- **What happened:** see docs/incident.md and packages/acd/assets/commands/refine.md"),
           promotedLesson("R2", "- **Promoted to:** prompt:/etc/aof-refine.md"),
-          promotedLesson("R3", "- **Promoted to:** none", "- **What happened:** see docs/incident.md and packages/core/assets/commands/refine.md"),
+          promotedLesson("R3", "- **Promoted to:** none", "- **What happened:** see docs/incident.md and packages/acd/assets/commands/refine.md"),
         ].join("\n"),
       });
       const byId = Object.fromEntries(lessonsOf(await assembleCorpus({ cwd, lanes: lowFloors() })).map((lesson) => [lesson.id, lesson]));

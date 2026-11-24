@@ -103,7 +103,7 @@ function context(tune = {}) {
 const registry = { getCommand: (id) => (id === "work:acceptor" ? { id } : undefined) };
 
 // 153/05 — promoted prompt lessons through the registered face.
-const PROMPT_TARGET = "prompt:packages/core/assets/commands/refine.md";
+const PROMPT_TARGET = "prompt:packages/acd/assets/commands/refine.md";
 const LESSON_TEXT = "Declare the existing counter's owning suite before drawing the write set.";
 const TARGET_BYTES = "# refine\nstep one\n";
 const lessonRecord = (item, id, source, overrides = {}) => record(source, {
@@ -701,7 +701,7 @@ export const tuneCommandTests = [
       assert.equal(Object.prototype.hasOwnProperty.call(prompt, "verdict"), false, "the prompt candidate is never assessed");
       assert.equal(prompt.applier, null);
       assert.ok(prompt.patch, "and it still carries its computed patch");
-      assert.match(tuneCommand.cli.render(report), /^advisory packages\/core\/assets\/commands\/refine\.md: /mu);
+      assert.match(tuneCommand.cli.render(report), /^advisory packages\/acd\/assets\/commands\/refine\.md: /mu);
     },
   },
   {

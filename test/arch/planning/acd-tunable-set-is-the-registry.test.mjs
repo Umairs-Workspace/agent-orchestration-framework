@@ -84,7 +84,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6110 no acceptor module spells a tunable knob key in code, and the sweep can see one that does",
     run: async () => {
-      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
+      const model = await loadLoops(path.join(root, "packages", "acd", "assets"));
       const declared = tunableSet(model).keys;
       const modules = await acceptorModules();
       assert.ok(modules.length >= 3, `the acceptor surface was actually read: ${modules.length} modules`);
@@ -108,7 +108,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6110 the admitted set is resolved from the arbiter's parameter-tuning edge through loadLoops, and is identical to it",
     run: async () => {
-      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
+      const model = await loadLoops(path.join(root, "packages", "acd", "assets"));
       const declaring = arbiterDeclarations(model);
       // A FLOOR AND A DECLARED CEILING, never a retyped count (FF-11902): the registry was really
       // read (at least one declarer), and ONE declarer is the decision 61/ADR-008 §4 makes — the
@@ -132,7 +132,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6110 a key outside the declared edge is a CODED refusal, and an empty declaration admits nothing rather than falling back on a built-in set",
     run: async () => {
-      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
+      const model = await loadLoops(path.join(root, "packages", "acd", "assets"));
       const declared = tunableSet(model).keys;
 
       // A real bound the registry does not claim, and a key that names no bound at all.
@@ -162,7 +162,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6110 the set moves with the declaration in BOTH directions, with nothing else edited",
     run: async () => {
-      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
+      const model = await loadLoops(path.join(root, "packages", "acd", "assets"));
       const [record] = arbiterDeclarations(model);
       const added = "work.fixture.roundsAllowed";
       const context = { units: [], harness: null };
@@ -208,7 +208,7 @@ export const archTests = [
       // no knob is spelled in it under any reading. The sweep above stays code-only, because
       // ADR-008 §4 explicitly allows a later story to quote a key inside a diagnostic.
       const source = await readFile(path.join(root, "packages", "work", "src", "acceptor", "admissibility.mjs"), "utf8");
-      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
+      const model = await loadLoops(path.join(root, "packages", "acd", "assets"));
       for (const needle of [...FORBIDDEN_FAMILIES, ...tunableSet(model).keys]) {
         assert.equal(source.includes(needle), false, `the module that decides membership never spells ${needle}`);
       }

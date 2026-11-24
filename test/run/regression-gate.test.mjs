@@ -732,7 +732,7 @@ export const regressionGateTests = [
   {
     name: "96/04-02 the shipped verify command document names both paths, prefers the run, and rules out reporting the gate as passed",
     run: async () => {
-      const verify = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "verify.md"), "utf8");
+      const verify = await readFile(path.join(repoRoot, "packages", "acd", "assets", "commands", "verify.md"), "utf8");
       assert.match(verify, /aof work regression-gate/, "it names the gate command as the ordinary path");
       assert.match(verify, /--gate-override/, "…and the override as the escape");
       assert.match(
@@ -1128,7 +1128,7 @@ export const regressionGateTests = [
   {
     name: "160/05 The verify prose names the word",
     run: async () => {
-      const prose = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "verify.md"), "utf8");
+      const prose = await readFile(path.join(repoRoot, "packages", "acd", "assets", "commands", "verify.md"), "utf8");
       assert.match(prose, /A `not-finished` row is no verdict on the code/u);
       assert.match(prose, /re-run the gate, or to speed the run up/u, "it says a not-finished row is re-run or sped up");
       assert.match(prose, /Never route a not-finished row to a code repair/u, "and is never routed to a code repair");

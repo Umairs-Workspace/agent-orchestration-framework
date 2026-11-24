@@ -108,6 +108,8 @@ function buildSeaOutFixture(baseDir, ptyPlatformArch) {
   mkdirSync(path.join(seaOut, 'bundle'), { recursive: true });
   mkdirSync(path.join(seaOut, 'ui', 'dist'), { recursive: true });
   writeFileSync(path.join(seaOut, 'bundle', 'bundle.json'), '{}');
+  mkdirSync(path.join(seaOut, 'assets'), { recursive: true });
+  writeFileSync(path.join(seaOut, 'assets', 'bundle.json'), '{}');
   writeFileSync(path.join(seaOut, 'ui', 'dist', 'index.html'), '<main>installed UI</main>');
   writeFileSync(path.join(seaOut, 'package.json'), '{"version":"0.1.0"}');
   mkdirSync(path.join(seaOut, 'src', 'work'), { recursive: true });

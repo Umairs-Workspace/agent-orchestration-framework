@@ -2,8 +2,8 @@
 // "A bound stated in a bundled prompt names its home, and equals it."
 //
 // The complement of `acd-loop-cap-single-home`, which walks `packages/core/src/**/*.mjs` and never reads
-// `packages/core/assets/**`. Measured at HEAD before 71/00: `packages/core/assets/loops/*.md` named four `work.loop.*`
-// keys and all four resolved, while `packages/core/assets/commands/*.md` named ZERO keys and stated three
+// `packages/acd/assets/**`. Measured at HEAD before 71/00: `packages/acd/assets/loops/*.md` named four `work.loop.*`
+// keys and all four resolved, while `packages/acd/assets/commands/*.md` named ZERO keys and stated three
 // numerals — "Review runs once by default", "Three rounds is the hard cap" (×2). Three untethered
 // numerals, and nothing that failed when their one home changed.
 //
@@ -45,7 +45,7 @@ import * as loopBounds from "@aof/contracts/loop-bounds";
 import { PRACTICES } from "aof/practices";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BUNDLE = path.join(root, "packages", "core", "assets");
+const BUNDLE = path.join(root, "packages", "acd", "assets");
 
 // Generated indexes, not authored prose. `manifest.json` is a whole-bundle content address and
 // `bundle.json` is the member list; neither states a bound, and both would drag derived bytes into

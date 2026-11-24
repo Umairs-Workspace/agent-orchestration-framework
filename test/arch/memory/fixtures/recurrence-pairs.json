@@ -282,7 +282,7 @@
    "kind": "misunderstanding",
    "title": "The read-only contract checked the source asset, and the runtime copy drops the tool list",
    "source": "wiki/work/150_story_explain-says-what-the-work-is-for/RETROSPECTIVE.md:43",
-   "text": "The read-only contract checked the source asset, and the runtime copy drops the tool list \n task 01 E1 asserts `allowed-tools` is exactly `Read, Grep, Glob, Bash`, and reads `packages/core/assets/commands/explain.md` to check it. The Claude renderer drops `allowed-tools` and `argument-hint` from every command, so the copy a session loads carries neither. E1 is green, and it says nothing about what a live session can do. \n the contract named the asset as the thing read, without checking what the renderer keeps. \n a scenario about what a session can or cannot do reads the rendered copy under `.claude/commands/`, or names the renderer as part of the claim. Only the live `@manual` run (E2) measured read-only."
+   "text": "The read-only contract checked the source asset, and the runtime copy drops the tool list \n task 01 E1 asserts `allowed-tools` is exactly `Read, Grep, Glob, Bash`, and reads `packages/acd/assets/commands/explain.md` to check it. The Claude renderer drops `allowed-tools` and `argument-hint` from every command, so the copy a session loads carries neither. E1 is green, and it says nothing about what a live session can do. \n the contract named the asset as the thing read, without checking what the renderer keeps. \n a scenario about what a session can or cannot do reads the rendered copy under `.claude/commands/`, or names the renderer as part of the claim. Only the live `@manual` run (E2) measured read-only."
   },
   "4/R3": {
    "kind": "near-miss",

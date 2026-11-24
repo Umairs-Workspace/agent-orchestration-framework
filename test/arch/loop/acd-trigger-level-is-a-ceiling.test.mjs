@@ -282,7 +282,7 @@ export const archTests = [
         "preflight", "requestedLevel", "code", "failingHalves", "missing", "gate", "loopReady", "groundedness",
       ];
       const sets = [compileTriggerDeclaration({ version: 1, members: [member(), member({ id: "t-1", level: "L1" })] })];
-      if (existsSync(path.join(REPO_ROOT, "packages", "core", "assets", "triggers.jsonc"))) {
+      if (existsSync(path.join(REPO_ROOT, "packages", "acd", "assets", "triggers.jsonc"))) {
         sets.push(compileTriggerDeclaration(bundledTriggerDeclaration()));
       }
       let compiledCount = 0;

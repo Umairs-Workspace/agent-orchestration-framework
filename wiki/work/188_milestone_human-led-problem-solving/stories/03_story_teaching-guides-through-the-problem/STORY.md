@@ -8,13 +8,13 @@ depends: [02]
 status: in-review
 owner: product-owner
 created: 2026-10-28
-updated: 2026-11-01
+updated: 2026-11-23
 adrs: [ADR-006]
 reads:
   - wiki/work/188_milestone_human-led-problem-solving/SPEC.md
   - wiki/work/188_milestone_human-led-problem-solving/ARCHITECTURE.md#ADR-006
   - wiki/planning/RESEARCH-human-led-learning.md
-  - packages/core/assets/commands/manual.md
+  - packages/acd/assets/commands/manual.md
   - packages/specification-by-example/src/map.mjs
   - packages/learning/test/teach-frame.suite.mjs
 files:
@@ -29,7 +29,7 @@ files:
   - .claude/commands/aof/teach.md
   - .codex/aof/workflows/workflow-contract.md
   - .aof/aof.lock.json
-  - packages/core/assets/manifest.json
+  - packages/acd/assets/manifest.json
   - wiki/work/archive/142_milestone_yarn-workspace-modularization/plans/09-test-ledger.json
 schema: 1
 aofVersion: 0.1.0

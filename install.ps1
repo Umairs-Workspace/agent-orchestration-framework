@@ -289,7 +289,7 @@ function Expand-AofSidecar {
         Copy-Item -Path $moduleSrc -Destination (Join-Path (Join-Path $InstallDir "node_modules") "node-pty") -Recurse -Force
         # Older releases carried PTY files only. New archives also carry the
         # directory assets read by the SEA; preserve that layout when present.
-        foreach ($member in @("bundle", "ui", "package.json", "src", "node-runtime")) {
+        foreach ($member in @("bundle", "assets", "ui", "package.json", "src", "node-runtime")) {
             $assetSrc = Join-Path $stagingDir $member
             if (Test-Path -LiteralPath $assetSrc) {
                 Copy-Item -LiteralPath $assetSrc -Destination (Join-Path $InstallDir $member) -Recurse -Force
@@ -360,7 +360,7 @@ function Install-AofFiles {
                 "terminal sessions and re-run the installer.")
         }
 
-        foreach ($member in @("bundle", "ui", "package.json", "src", "node-runtime")) {
+        foreach ($member in @("bundle", "assets", "ui", "package.json", "src", "node-runtime")) {
             $assetSrc = Join-Path $stagingDir $member
             if (Test-Path -LiteralPath $assetSrc) {
                 $assetDest = Join-Path $InstallDir $member

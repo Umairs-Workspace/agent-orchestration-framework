@@ -14,6 +14,7 @@ import { loadBundle, renderBundleOutputs, bundleRoot } from "./bundle.mjs";
 // through the ONE SEA-safe asset-base seam instead of joining a path off a bare
 // import.meta.url — dev behaviour is byte-for-byte unchanged.
 import { packageVersionString, readAssetText } from "../asset-base.mjs";
+import { methodologyFile } from "../methodology.mjs";
 
 // The runtimes the shipped manifest is generated for. Claude keeps native slash
 // commands; Codex receives the ACD command procedures as mapped skills.
@@ -59,9 +60,9 @@ export function serializeBundleManifest(manifest) {
 }
 
 export function manifestPath() {
-  return path.join(bundleRoot(), "manifest.json");
+  return path.join(bundleRoot(), methodologyFile("manifest"));
 }
 
 export function readShippedManifest() {
-  return JSON.parse(readAssetText("bundle", "manifest.json"));
+  return JSON.parse(readAssetText("bundle", methodologyFile("manifest")));
 }

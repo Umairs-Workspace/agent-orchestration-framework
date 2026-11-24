@@ -15,7 +15,7 @@ import { generateBundleManifest, manifestPath, serializeBundleManifest } from "a
 
 const repo = (file) => new URL(`../../../${file}`, import.meta.url);
 const read = (file) => readFile(repo(file), "utf8");
-const SOURCE = "packages/core/assets/commands/map-tests.md";
+const SOURCE = "packages/acd/assets/commands/map-tests.md";
 
 function region(doc, open, close) {
   const start = doc.indexOf(open);
@@ -41,10 +41,10 @@ export const mapTestsCommandTests = [
   {
     name: "190/04-03 the command ships in the bundle and renders for every runtime",
     async run() {
-      const bundle = JSON.parse(await read("packages/core/assets/bundle.json"));
+      const bundle = JSON.parse(await read("packages/acd/assets/bundle.json"));
       const entry = bundle.members.find((item) => item.id === "map-tests");
       assert.equal(entry?.kind, "command");
-      assert.equal(`packages/core/assets/${entry.file}`, SOURCE);
+      assert.equal(`packages/acd/assets/${entry.file}`, SOURCE);
       const manifest = JSON.parse(await readFile(manifestPath(), "utf8"));
       assert.ok(manifest.entries.some((item) => item.resource.kind === "command" && item.resource.id === "map-tests"), "the manifest lists map-tests as a command");
       assert.equal(await readFile(manifestPath(), "utf8"), serializeBundleManifest(generateBundleManifest()), "the shipped manifest is the rendered bundle's");
@@ -136,7 +136,7 @@ export const mapTestsCommandTests = [
     name: "190/04-03 the Codex variant says the same",
     async run() {
       const source = flat(await read(SOURCE));
-      const codex = flat(codexSection(await read("packages/core/assets/variants/codex/workflow.md"), "map-tests"));
+      const codex = flat(codexSection(await read("packages/acd/assets/variants/codex/workflow.md"), "map-tests"));
       for (const clause of [
         REPLAY,
         "a newline-separated file list at `{files}`",
@@ -158,7 +158,7 @@ export const mapTestsCommandTests = [
     name: "190/ADR-009 · map-tests checks the graph, couples work dir, code reads and helpers, and reports runner fidelity",
     async run() {
       const source = flat(region(await read(SOURCE), "<process>", "</process>"));
-      const codex = flat(codexSection(await read("packages/core/assets/variants/codex/workflow.md"), "map-tests"));
+      const codex = flat(codexSection(await read("packages/acd/assets/variants/codex/workflow.md"), "map-tests"));
       const output = flat(region(await read(SOURCE), "<output>", "</output>"));
       for (const clause of [
         "say the graph is stale and stop",
@@ -188,7 +188,7 @@ export const mapTestsCommandTests = [
     name: "190/04-05 E3 · the skill declares noLanesArgs beside the resume templates, and excludes what the runner does not run",
     async run() {
       const source = flat(region(await read(SOURCE), "<process>", "</process>"));
-      const codex = flat(codexSection(await read("packages/core/assets/variants/codex/workflow.md"), "map-tests"));
+      const codex = flat(codexSection(await read("packages/acd/assets/variants/codex/workflow.md"), "map-tests"));
       for (const doc of [source, codex]) {
         assert.ok(doc.includes("When the gate program also takes a flag that skips its lanes"), "noLanesArgs is conditional on the program");
         assert.ok(doc.includes("declare that flag as `work.test.gate.noLanesArgs` too"));

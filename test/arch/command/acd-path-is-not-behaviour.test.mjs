@@ -147,7 +147,7 @@ async function read(rel) {
   return readFile(path.join(repoRoot, rel), "utf8");
 }
 
-// Every `.mjs` under `packages/core/src/`, recursively. `packages/core/assets/` is skipped: it is shipped PROSE and
+// Every `.mjs` under `packages/core/src/`, recursively. `packages/acd/assets/` is skipped: it is shipped PROSE and
 // template assets rather than modules this tree loads, and a template is allowed to spell
 // whatever a rendered file will need.
 async function sourceModules() {

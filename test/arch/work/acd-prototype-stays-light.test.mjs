@@ -11,7 +11,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //   FF-16803 — a well-formed prototype folder (PROTOTYPE.md and STATE.md, no `stories/`, `tasks/`,
 //              `.feature` or VERIFICATION) passes `validateWork` and draws no doctor finding in each
 //              of `active`, `paused`, `done` and `abandoned`.
-//   FF-16804 — `packages/core/assets/commands/prototype.md` does not list `Agent` in `allowed-tools`,
+//   FF-16804 — `packages/acd/assets/commands/prototype.md` does not list `Agent` in `allowed-tools`,
 //              and `packages/work/src/commands/prototype.mjs` imports no dispatch, worktree, lane or
 //              git module (168/01 adds this leg).
 //
@@ -31,7 +31,7 @@ import { PROTOTYPE_STATUS } from "@aof/work/lifecycle";
 
 const doctorWork = _aofApplication.work.doctor.doctorWork;
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const COMMAND = "packages/core/assets/commands/prototype.md";
+const COMMAND = "packages/acd/assets/commands/prototype.md";
 const VERB = "packages/work/src/commands/prototype.mjs";
 const FORBIDDEN_IMPORT = /dispatch|worktree|lane|(?:^|[/:])git(?:[-/.]|$)|child_process/u;
 

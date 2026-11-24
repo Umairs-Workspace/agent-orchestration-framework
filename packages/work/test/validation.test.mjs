@@ -124,8 +124,8 @@ test('a prototype missing a part it needs draws exactly one finding naming it', 
 }));
 
 test('the untouched prototype template is not a prototype yet', () => fixture(async root => {
-  const template = await readFile(new URL('../../core/assets/templates/prototype/PROTOTYPE.md', import.meta.url), 'utf8');
-  const state = await readFile(new URL('../../core/assets/templates/prototype/STATE.md', import.meta.url), 'utf8');
+  const template = await readFile(new URL('../../acd/assets/templates/prototype/PROTOTYPE.md', import.meta.url), 'utf8');
+  const state = await readFile(new URL('../../acd/assets/templates/prototype/STATE.md', import.meta.url), 'utf8');
   const filled = template.replace('number: NN', 'number: 169').replace('<kebab-slug>', 'csv-importer')
     .replaceAll('YYYY-MM-DD', '2026-10-22').replace('<schema-version>', String(WORK_ITEM_SCHEMA_VERSION)).replace('<aof-version>', '0.1.0');
   assert.ok(!/^<!--/.test(template) && !/^<!--/.test(state), 'neither template opens with a comment before its frontmatter');

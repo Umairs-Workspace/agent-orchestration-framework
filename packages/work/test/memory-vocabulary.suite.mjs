@@ -124,8 +124,8 @@ export const memoryVocabularyTests = [
   {
     name: "153/02 E3: Promoted to is kept verbatim as the record's status and Recurs becomes one canonical tag",
     run: () => {
-      const meta = readLessonMeta(["- **Kind:** near-miss (recurring) · **Promoted to:** prompt:packages/core/assets/commands/refine.md · **Recurs:** m45/R13"]);
-      assert.deepEqual(forwardLessonMeta(meta), { status: "prompt:packages/core/assets/commands/refine.md", recursTag: "recurs:45/R13" });
+      const meta = readLessonMeta(["- **Kind:** near-miss (recurring) · **Promoted to:** prompt:packages/acd/assets/commands/refine.md · **Recurs:** m45/R13"]);
+      assert.deepEqual(forwardLessonMeta(meta), { status: "prompt:packages/acd/assets/commands/refine.md", recursTag: "recurs:45/R13" });
       assert.deepEqual(forwardLessonMeta({}), { status: "", recursTag: null }, "a legacy lesson carries neither");
       assert.deepEqual(forwardLessonMeta({ recurs: "nonsense" }), { status: "", recursTag: null }, "a malformed reference is not indexed");
       assert.equal(canonicalRecurrence("45/R13"), "45/R13");
@@ -141,7 +141,7 @@ export const memoryVocabularyTests = [
         ["none", null, "conforming"],
         ["rule:.aof/rules/cleanup.md", "45/R13", "conforming"],
         ["control:153/FF-15301", "45/R13", "conforming"],
-        ["prompt:packages/core/assets/commands/continue.md", "45/R13", "conforming"],
+        ["prompt:packages/acd/assets/commands/continue.md", "45/R13", "conforming"],
         ["prompt:", null, "promotion"],
         ["invented:value", null, "promotion"],
         ["none", "nonsense", "recurs"],
@@ -186,8 +186,8 @@ export const memoryVocabularyTests = [
   {
     name: "153/05: promotionPointers names every destination a Promoted to value carries, distinct and in written order",
     run: () => {
-      assert.deepEqual(promotionPointers("prompt:packages/core/assets/commands/refine.md"), [
-        { kind: "prompt", path: "packages/core/assets/commands/refine.md", raw: "prompt:packages/core/assets/commands/refine.md" },
+      assert.deepEqual(promotionPointers("prompt:packages/acd/assets/commands/refine.md"), [
+        { kind: "prompt", path: "packages/acd/assets/commands/refine.md", raw: "prompt:packages/acd/assets/commands/refine.md" },
       ]);
       assert.deepEqual(promotionPointers("`rule:.aof/rules/x.md`").map((pointer) => pointer.raw), ["rule:.aof/rules/x.md"], "emphasis is stripped, as readPromotion strips it");
       assert.deepEqual(promotionPointers("prompt:a.md prompt:b.md prompt:a.md").map((pointer) => pointer.raw), ["prompt:a.md", "prompt:b.md"], "several destinations are returned, not chosen between; a repeat is one");

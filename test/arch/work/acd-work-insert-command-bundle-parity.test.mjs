@@ -3,7 +3,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // registry trio, R3's sibling): "Adding a work:* command IMPLIES its Claude command."
 //
 // m41 shipped `work:insert-milestone`/`-story`/`-uat` (later `-chore`) at the CLI +
-// engine layers and was accepted green — but packages/core/assets/commands/ carried only the
+// engine layers and was accepted green — but packages/acd/assets/commands/ carried only the
 // `add-*` docs, never `insert-*`. So `aof work update` rendered NOTHING for the new
 // commands: the feature existed in the CLI yet was undiscoverable/unusable through the
 // ACD command surface it is meant to be driven from. No existing guard caught it — the
@@ -11,7 +11,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // bundle wrapper ships.
 //
 // The guard, REGISTRY-DERIVED (no carve-out, 'no new door'): every `work:insert-*`
-// command in the registry must have a matching `packages/core/assets/commands/<sub>.md` bundle
+// command in the registry must have a matching `packages/acd/assets/commands/<sub>.md` bundle
 // command member under the `aof` namespace — so a future insert command cannot ship
 // CLI-only and silently skip its Claude command again. Scoped to the insert-* family
 // (the placement twins of the `add-*` scaffolders); low-level read ops like
@@ -75,7 +75,7 @@ export const archTests = [
         const member = members.get(sub);
         assert.ok(
           member != null,
-          `work:${sub} has a bundle command member "${sub}" (packages/core/assets/commands/${sub}.md) — a work:* command is not usable through the ACD command surface without its Claude command (m41 R5)`
+          `work:${sub} has a bundle command member "${sub}" (packages/acd/assets/commands/${sub}.md) — a work:* command is not usable through the ACD command surface without its Claude command (m41 R5)`
         );
         assert.equal(
           member.commandNamespace,
@@ -97,7 +97,7 @@ export const archTests = [
     run: async () => {
       const member = bundleCommandMembers().get("promote");
       assert.ok(member != null, "the promote bundle command member is declared (the leg above says why)");
-      const text = await readFile(path.join(repoRoot, "packages", "core", "assets", member.file), "utf8");
+      const text = await readFile(path.join(repoRoot, "packages", "acd", "assets", member.file), "utf8");
 
       assert.match(text, /aof work promote/u, "the prompt drives the verb");
       assert.match(text, /--json/u, "…on its machine face, so the created identity is read rather than guessed");
@@ -122,7 +122,7 @@ export const archTests = [
     run: async () => {
       const member = bundleCommandMembers().get("archive");
       assert.ok(member != null, "the archive bundle command member is declared (the first leg says why)");
-      const text = await readFile(path.join(repoRoot, "packages", "core", "assets", member.file), "utf8");
+      const text = await readFile(path.join(repoRoot, "packages", "acd", "assets", member.file), "utf8");
 
       assert.match(text, /aof work archive/u, "the prompt drives the verb");
       assert.match(text, /--json/u, "…on its machine face, so what moved is read rather than guessed");

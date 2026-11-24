@@ -144,9 +144,11 @@ export const frameworkStopsShippingGuardTests = [
       assert.equal(existsSync(GUARD_BODY), false, "the guard body is absent from the bundle's own hook tree");
 
       const manifest = generateAssetManifest(repoRoot);
-      const direct = listFilesDirect(path.join(repoRoot, "packages", "core", "assets"));
+      const direct = listFilesDirect(path.join(repoRoot, "packages", "acd", "assets"));
       assert.deepEqual(manifest.bundle, direct, "the generated asset census matches the real bundle tree exactly, in both directions");
-      assert.equal(direct.includes("hooks/guard-test-isolation.mjs"), false, "…and the withdrawn body is in neither");
+      const core = listFilesDirect(path.join(repoRoot, "packages", "core", "assets"));
+      assert.deepEqual(manifest.core, core, "…and core's own hook tree too (chore 207)");
+      assert.equal([...direct, ...core].includes("hooks/guard-test-isolation.mjs"), false, "…and the withdrawn body is in neither");
     },
   },
   {
@@ -210,6 +212,7 @@ export const frameworkStopsShippingGuardTests = [
       const declaration = bundledFrozenSet();
       const descriptor = readDescriptor();
       const compiled = compileFrozenSet(declaration);
+      // The hook tree is core's own since chore 207; the rest of the bundle is ACD's.
       const bundleTree = listFilesDirect(path.join(repoRoot, "packages", "core", "assets"));
       const censusSource = await readFile(path.join(repoRoot, "test", "bundle", "bundle-asset-manifest-complete.test.mjs"), "utf8");
 

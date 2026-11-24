@@ -398,7 +398,7 @@ const resumePointsAtQuestionsTests = [
 
 // ---- task 03 — the verb ships its /aof:questions wrapper -------------------------------------
 
-const BUNDLE_QUESTIONS = path.join(REPO_ROOT, "packages", "core", "assets", "commands", "questions.md");
+const BUNDLE_QUESTIONS = path.join(REPO_ROOT, "packages", "acd", "assets", "commands", "questions.md");
 const bodyOf = (text) => text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/u, "").trim();
 
 const bundleWrapperTests = [

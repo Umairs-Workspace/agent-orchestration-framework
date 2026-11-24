@@ -318,7 +318,7 @@ values and their source under `memory.recall.pick`.
 Memory is **built into the workflow**, not only callable: eight declared *decision-recall edges* recall at a
 moment a decision is about to be made, keep that result, and afterwards record what the decision did with
 it. Their authored sources are `shatter`, `refine`, `continue`, `verify` and `retrospective` in
-[packages/core/assets/commands](../packages/core/assets/commands/continue.md), rendered into each runtime;
+[packages/acd/assets/commands](../packages/acd/assets/commands/continue.md), rendered into each runtime;
 the roster and each edge's protocol are enforced by
 [test/arch/memory/acd-learning-edge-reaches-every-cut.test.mjs](../test/arch/memory/acd-learning-edge-reaches-every-cut.test.mjs)
 ([153/ADR-004](work/153_milestone_memory-closes-the-loop/ARCHITECTURE.md),
@@ -415,7 +415,7 @@ gates acceptance, and a lesson whose age cannot be established is reported as un
 ## Retrospective evidence
 
 A retrospective gathers its evidence through memory, in a fixed order
-([packages/core/assets/commands/retrospective.md](../packages/core/assets/commands/retrospective.md)):
+([packages/acd/assets/commands/retrospective.md](../packages/acd/assets/commands/retrospective.md)):
 
 1. `aof work observe` refreshes observability.
 2. `aof work memory ingest`, then **one** `recall "" --item <ref> --area delivery --all --json` — the

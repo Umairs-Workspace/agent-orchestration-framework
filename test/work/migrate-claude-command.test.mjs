@@ -4,7 +4,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //
 // Covered here:
 //   tasks/00_command-body-cli-first-handoff.feature — the two @executable
-//        content/shape pins over the AUTHORED body `packages/core/assets/commands/migrate.md`
+//        content/shape pins over the AUTHORED body `packages/acd/assets/commands/migrate.md`
 //        (grep-able marker facts + character-offset ordering, the proven
 //        acd-doctor-validate-keystone idiom). The AUTHORED file is asserted, not
 //        the render (the renderer re-emits frontmatter and injects aof-invocation —
@@ -48,7 +48,7 @@ const read = (rel) => readFileSync(fileURLToPath(new URL(rel, root)), "utf8");
 const runnerUrl = new URL("../../scripts/test.mjs", import.meta.url).href;
 
 // The authored deliverable (the doc IS the contract) and its rendered install path.
-const BODY = "packages/core/assets/commands/migrate.md";
+const BODY = "packages/acd/assets/commands/migrate.md";
 const MIGRATE_REL = ".claude/commands/aof/migrate.md";
 
 // The CLI-first invocation the body pins: `aof migrate` runs FIRST, --json, flags
@@ -155,7 +155,7 @@ function shippedMigrateEntry() {
 export const migrateClaudeCommandTests = [
   // ====================================================================
   // tasks/00_command-body-cli-first-handoff.feature — @executable pins
-  // over the AUTHORED packages/core/assets/commands/migrate.md
+  // over the AUTHORED packages/acd/assets/commands/migrate.md
   // ====================================================================
 
   {
@@ -334,7 +334,7 @@ export const migrateClaudeCommandTests = [
     run: async () => {
       // When the bundle manifest is regenerated from the descriptor
       const regenerated = serializeBundleManifest(generateBundleManifest());
-      // Then the regeneration reproduces the shipped packages/core/assets/manifest.json byte-for-byte
+      // Then the regeneration reproduces the shipped packages/acd/assets/manifest.json byte-for-byte
       const shipped = readFileSync(manifestPath(), "utf8");
       assert.equal(regenerated, shipped, "regeneration reproduces the shipped manifest byte-for-byte (ADR-002: derived, never hand-edited)");
       // And the manifest carries an entry for the rendered migrate command whose

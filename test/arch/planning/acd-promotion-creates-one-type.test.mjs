@@ -47,7 +47,7 @@ const PROMOTION_PATH = Object.freeze([
   GAP_FACE,
   FINDING_FACE,
 ]);
-const CONTINUE = "packages/core/assets/commands/continue.md";
+const CONTINUE = "packages/acd/assets/commands/continue.md";
 // The cost question (118/00) and the depth bound (118/01), located in the block by the claims they
 // make rather than by question NUMBER — the numbers shift whenever a question is inserted, and a
 // control keyed to them would red on a renumber that changed no rule.

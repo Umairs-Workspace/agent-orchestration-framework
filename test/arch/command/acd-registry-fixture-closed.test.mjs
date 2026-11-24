@@ -3,10 +3,10 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //
 // Milestone 58 / story 00, from 58/ADR-007 §3a. The invariant:
 //
-//   Every test that copies records out of `packages/core/assets/loops/` into a temp registry does so through
+//   Every test that copies records out of `packages/acd/assets/loops/` into a temp registry does so through
 //   the single helper in `test/support/registry-fixture.mjs`, which transitively adds every record
 //   named by a copied record's endpoint; no such fixture produces `loop-graph-dangling-endpoint`;
-//   and no test file reaches `packages/core/assets/loops/` to build a fixture by any other route.
+//   and no test file reaches `packages/acd/assets/loops/` to build a fixture by any other route.
 //
 // WHY IT IS A CONTROL AND NOT A FIX. Three suites carried hand-written subset lists — 55's
 // `acd-anchor-taxonomy-additive`, 57's `acd-watcher-taxonomy-additive` and `watcher-node` — and
@@ -23,7 +23,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // from source text without a heuristic, and a heuristic verdict over twelve files is how a gate
 // comes to be wrong about the TREE rather than about the rule. So every test file that reaches the
 // shipped registry is CLASSIFIED here, by name, into one of FOUR lanes with its reason, and the
-// sweep must equal the union: the next file to reach `packages/core/assets/loops/` fails this gate until
+// sweep must equal the union: the next file to reach `packages/acd/assets/loops/` fails this gate until
 // somebody says which lane it is in. That is `acd-test-suite-registration`'s shrink-only shape,
 // applied to a second species.
 //
@@ -106,7 +106,7 @@ const READS_WITHOUT_COPYING = Object.freeze([
   // either can have.
   "test/arch/loop/acd-loop-cap-single-home.test.mjs",
   "test/loop/loop-bounds.test.mjs",
-  // milestone 71 / story 00 — FF-7101 sweeps `packages/core/assets/**` IN PLACE to assert that every
+  // milestone 71 / story 00 — FF-7101 sweeps `packages/acd/assets/**` IN PLACE to assert that every
   // `work.loop.*` key a shipped asset names resolves and every value it states equals its bound's
   // own answer. Two of the bound facts it pins are the `ceiling:` lines of `loops/review-fix-
   // rereview.md` and `loops/build-to-green.md` — a cited bound read out of shipped record text,
@@ -125,7 +125,7 @@ const READS_WITHOUT_COPYING = Object.freeze([
 // neither the closure property lane 1 owns nor the reading property lane 3 owns.
 //
 // THE SAME PROXY ARTEFACT HAS A SECOND SPECIES (story 102, finding F-102-A): a suite that merely
-// CITES `packages/core/assets/loops/` in its own prose — a header comment pointing a reader at the sibling
+// CITES `packages/acd/assets/loops/` in its own prose — a header comment pointing a reader at the sibling
 // suite that does the registry-facing half — matches the text sweep while executing nothing over
 // the path at all. That is the artefact this lane already names, one step weaker: it does not even
 // plant the string in a fixture tree. Classifying it as a reader would be a false statement about
@@ -265,10 +265,10 @@ export const archTests = [
       for (const file of files) {
         const source = await readFile(path.join(root, file), "utf8");
         sources.set(file, source);
-        const names = /(?:src\/bundle|packages\/core\/assets)\/loops|"(?:bundle|assets)",\s*"loops"/u.test(fwd(source));
+        const names = /(?:src\/bundle|packages\/(?:core|acd)\/assets)\/loops|"(?:bundle|assets)",\s*"loops"/u.test(fwd(source));
         // AN INDEX IS NOT A TEST FILE THAT REACHES THE REGISTRY (119/ADR-010 §1). A directory's
         // `index.mjs` is its membership list — imports and spreads, nothing executable — and it
-        // names `packages/core/assets/loops/` only because the per-suite RATIONALE moved into it with the
+        // names `packages/acd/assets/loops/` only because the per-suite RATIONALE moved into it with the
         // suite it introduces. Classifying one into a lane would be a false statement about how it
         // reaches the shipped directory: it does not reach it at all.
         //
@@ -278,9 +278,9 @@ export const archTests = [
         // registry file could quietly acquire a route.
         if (names && path.posix.basename(file) === "index.mjs") {
           assert.equal(
-            /(?:src\/bundle|packages\/core\/assets)\/loops|"(?:bundle|assets)",\s*"loops"/u.test(fwd(stripComments(source))),
+            /(?:src\/bundle|packages\/(?:core|acd)\/assets)\/loops|"(?:bundle|assets)",\s*"loops"/u.test(fwd(stripComments(source))),
             false,
-            `${file}: an index names packages/core/assets/loops/ in CODE — it is no longer only carrying a suite's rationale, so it owes a lane like any other file that reaches the directory`,
+            `${file}: an index names packages/acd/assets/loops/ in CODE — it is no longer only carrying a suite's rationale, so it owes a lane like any other file that reaches the directory`,
           );
           continue;
         }
@@ -295,11 +295,11 @@ export const archTests = [
       assert.deepEqual(
         reaches,
         [...classified].sort(),
-        "every test file that reaches packages/core/assets/loops/ is classified into exactly one lane — a new one fails here until it is",
+        "every test file that reaches packages/acd/assets/loops/ is classified into exactly one lane — a new one fails here until it is",
       );
 
       // LANE 1 REALLY GOES THROUGH THE HELPER, and reaches the shipped directory by no other
-      // route: it builds no `packages/core/assets/loops` path of its own.
+      // route: it builds no `packages/acd/assets/loops` path of its own.
       assert.deepEqual([...usesTheHelper].sort(), [...THROUGH_THE_HELPER].sort(),
         "the helper's importers ARE lane 1 — a suite that imported it and was not classified here, or the reverse, is the drift this leg catches");
 
@@ -315,7 +315,7 @@ export const archTests = [
         for (const mention of mentions) {
           assert.match(
             mention,
-            /path\.join\(\s*cwd\s*,|(?:src\/bundle|packages\/core\/assets)\/loops\//u,
+            /path\.join\(\s*cwd\s*,|(?:src\/bundle|packages\/(?:core|acd)\/assets)\/loops\//u,
             `${file}: every mention must be a fixture-rooted join or the citation text it plants — "${mention.trim()}"`,
           );
           assert.doesNotMatch(
@@ -331,7 +331,7 @@ export const archTests = [
         assert.equal(
           /path\.join\([^)]*"bundle"[^)]*"loops"/u.test(source),
           false,
-          `${file}: reaches packages/core/assets/loops/ through the helper and by no other route`,
+          `${file}: reaches packages/acd/assets/loops/ through the helper and by no other route`,
         );
       }
 

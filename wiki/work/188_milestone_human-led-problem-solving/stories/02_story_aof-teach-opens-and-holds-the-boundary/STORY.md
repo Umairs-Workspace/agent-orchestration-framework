@@ -8,7 +8,7 @@ depends: [01]
 status: in-review
 owner: product-owner
 created: 2026-10-28
-updated: 2026-11-02
+updated: 2026-11-23
 adrs: [ADR-003, ADR-004, ADR-005, ADR-007]
 reads:
   - wiki/work/188_milestone_human-led-problem-solving/SPEC.md
@@ -18,7 +18,7 @@ reads:
   - wiki/work/188_milestone_human-led-problem-solving/ARCHITECTURE.md#ADR-007
   - wiki/work/187_spike_guided-mode-boundary/SPIKE.md#finding
   - packages/learning/src/mode.mjs
-  - packages/core/assets/commands/manual.md
+  - packages/acd/assets/commands/manual.md
   - packages/core/src/integrations.mjs
   - packages/core/src/asset-base.mjs
   - packages/core/src/work/bundle-synthesis.mjs
@@ -29,13 +29,13 @@ reads:
   - packages/integration-hyperagent/assets/bundle.json
   - packages/integration-hyperagent/src/contribution.mjs
   - packages/work/src/effects.mjs
-  - packages/core/assets/commands/review.md
+  - packages/acd/assets/commands/review.md
   - test/arch/command/acd-integration-registry-one-home.test.mjs
 files:
   - packages/core/src/practices.mjs
   - packages/core/src/work/bundle.mjs
   - scripts/sea-asset-manifest.mjs
-  - packages/core/assets/manifest.json
+  - packages/acd/assets/manifest.json
   - packages/learning/package.json
   - packages/learning/src/contribution.mjs
   - packages/learning/assets/bundle.json
@@ -66,7 +66,7 @@ files:
   - test/arch/planning/acd-cowork-skills-from-command-source.test.mjs
   - test/arch/command/acd-cli-entry-executes.test.mjs
   - test/bundle/yarn-installation.test.mjs
-  - packages/core/assets/commands/review.md
+  - packages/acd/assets/commands/review.md
   - .claude/commands/aof/review.md
   - .opencode/commands/aof/review.md
   - .agents/skills/aof-review/SKILL.md

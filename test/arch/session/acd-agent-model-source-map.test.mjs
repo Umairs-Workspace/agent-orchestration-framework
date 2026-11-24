@@ -2,7 +2,7 @@
 //
 // The task feature flagged two STRUCTURAL invariants as arch-tests (NOT Thens):
 //   (1) every one of the 8 frozen ACD roles declares a `model` in the bundle
-//       SOURCE (`packages/core/assets/agents/*.md` frontmatter) — no role un-mapped;
+//       SOURCE (`packages/acd/assets/agents/*.md` frontmatter) — no role un-mapped;
 //   (2) the declared SOURCE value is a family alias (lowercase `opus`/`sonnet`),
 //       never a dated/fully-pinned id (e.g. anything shaped like `claude-…-N-N`).
 //

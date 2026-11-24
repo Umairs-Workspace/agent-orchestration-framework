@@ -619,7 +619,7 @@ export const workThisTreeHoldsWhatIsLiveTests = [
 
         // `aof:recent` is a prompt over `work:list`'s default (127/01) — there is no `read` or
         // `recent` verb, so it sees no archived row either.
-        const recent = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "recent.md"), "utf8");
+        const recent = await readFile(path.join(repoRoot, "packages", "acd", "assets", "commands", "recent.md"), "utf8");
         assert.match(recent, /aof work list --json/, "the recent prompt reads through work list");
         assert.match(recent, /`--all` only when the operator asks for the archive/, "…and adds --all only on request");
       }),

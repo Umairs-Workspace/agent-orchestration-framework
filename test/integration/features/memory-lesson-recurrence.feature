@@ -31,9 +31,9 @@ Feature: Memory lesson recurrence — a new lesson names the lesson it repeats a
     And the retrospective is byte-identical to what was written
 
   Scenario: E3 · Promotion and recurrence are indexed into the frozen record fields, and ingest leaves the source alone
-    Given the local memory backend and a retrospective whose R4 has Promoted to "prompt:packages/core/assets/commands/refine.md", Recurs "m45/R13" and Kind "mistake (recurring)"
+    Given the local memory backend and a retrospective whose R4 has Promoted to "prompt:packages/acd/assets/commands/refine.md", Recurs "m45/R13" and Kind "mistake (recurring)"
     When the memory index is built and the lessons are recalled
-    Then the recalled R4 status is "prompt:packages/core/assets/commands/refine.md"
+    Then the recalled R4 status is "prompt:packages/acd/assets/commands/refine.md"
     And the recalled R4 tags are "recurring" and "recurs:45/R13"
     And the recalled legacy R1 status is empty and has no recurs tag
     And the retrospective is byte-identical to what was written

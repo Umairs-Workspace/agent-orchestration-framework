@@ -7,26 +7,26 @@ parent: 201
 status: in-review
 owner: product-owner
 created: 2026-11-17
-updated: 2026-11-17
+updated: 2026-11-23
 adrs: [ADR-006]
 reads:
   - wiki/work/201_milestone_memory-recall-pick/stories/02_story_every-recall-leaves-a-record-and-the-po-asks-by-title/EXAMPLES.md
   - wiki/work/201_milestone_memory-recall-pick/ARCHITECTURE.md#ADR-006
   - wiki/work/archive/153_milestone_memory-closes-the-loop/ARCHITECTURE.md#ADR-001
   - wiki/work/archive/157_milestone_episodic-memory-is-recallable/ARCHITECTURE.md#ADR-004
-  - packages/core/assets/commands/continue.md
-  - packages/core/assets/commands/verify.md
-  - packages/core/assets/commands/shatter.md
+  - packages/acd/assets/commands/continue.md
+  - packages/acd/assets/commands/verify.md
+  - packages/acd/assets/commands/shatter.md
   - packages/core/src/work/bundle.mjs
   - packages/work/src/feedback-records.mjs
   - packages/work/src/memory-accounting.mjs
   - test/support/cli-spawn.mjs
   - test/work/gate/work-audit-prompt-layer.test.mjs
 files:
-  - packages/core/assets/commands/refine.md
-  - packages/core/assets/commands/retrospective.md
-  - packages/core/assets/variants/codex/workflow.md
-  - packages/core/assets/manifest.json
+  - packages/acd/assets/commands/refine.md
+  - packages/acd/assets/commands/retrospective.md
+  - packages/acd/assets/variants/codex/workflow.md
+  - packages/acd/assets/manifest.json
   - .claude/commands/aof/refine.md
   - .claude/commands/aof/retrospective.md
   - .opencode/commands/aof/refine.md

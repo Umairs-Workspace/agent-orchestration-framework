@@ -1,10 +1,10 @@
 // Fitness function #4: bundle-asset-manifest-complete (milestone 28 / story 00,
 // ADR-001/ADR-003) — a BUILD-SCRIPT UNIT test (not an arch-grep): a set-equality
-// over the real packages/core/assets/** (37 files) + ui/dist/** trees vs. the generated
+// over the real packages/acd/assets/** (37 files) + ui/dist/** trees vs. the generated
 // assets map/sidecar file list (empty diff both directions), driven by the
 // manifest generator's OWN output.
 //
-// m03 non-vacuous self-check: planting an un-manifested file under packages/core/assets/
+// m03 non-vacuous self-check: planting an un-manifested file under packages/acd/assets/
 // (a fixture copy, never the real tree) fails the set-equality.
 import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, cp } from "node:fs/promises";
@@ -63,7 +63,7 @@ export const bundleAssetManifestCompleteTests = [
     name: "bundle-asset-manifest-complete/00 the generated manifest covers every file under src/bundle/** (the git-tracked set), empty diff both directions",
     run: async () => {
       const manifest = generateAssetManifest(repoRoot);
-      const direct = listFilesDirect(path.join(repoRoot, "packages", "core", "assets"));
+      const direct = listFilesDirect(path.join(repoRoot, "packages", "acd", "assets"));
 
       // THE TRIPWIRE IS DERIVED, NOT RETYPED (item 80, paid 2026-09-05). The set-equality
       // below compares two walkers of the same tree, so it cannot see a file BOTH walkers
@@ -74,14 +74,14 @@ export const bundleAssetManifestCompleteTests = [
       // outside their declared write set. It is now read from the GIT INDEX, a reader that is
       // independent of both walkers and that the author necessarily updates in the same commit
       // (a bundle file that is not `git add`ed does not ship). A stray, untracked or deleted
-      // file under packages/core/assets/ still makes the index and the walk disagree, which is the case
+      // file under packages/acd/assets/ still makes the index and the walk disagree, which is the case
       // the tripwire exists for — and nobody ever hand-edits a number again.
-      const indexed = execFileSync("git", ["ls-files", "-z", "--", "packages/core/assets"], { cwd: repoRoot, encoding: "utf8" })
+      const indexed = execFileSync("git", ["ls-files", "-z", "--", "packages/acd/assets"], { cwd: repoRoot, encoding: "utf8" })
         .split("\0")
         .filter(Boolean)
-        .map((f) => f.slice("packages/core/assets/".length))
+        .map((f) => f.slice("packages/acd/assets/".length))
         .sort();
-      assert.deepEqual(direct, indexed, "the real packages/core/assets/** tree is exactly what git tracks there — a file on disk that git does not track, or tracked and missing from disk, is a bundle file that will not ship as the manifest says");
+      assert.deepEqual(direct, indexed, "the real packages/acd/assets/** tree is exactly what git tracks there — a file on disk that git does not track, or tracked and missing from disk, is a bundle file that will not ship as the manifest says");
       assert.deepEqual(manifest.bundle, direct, "the generated bundle manifest is byte-identical (set + order) to the real tree's direct enumeration");
 
       const manifestSet = new Set(manifest.bundle);
@@ -90,6 +90,17 @@ export const bundleAssetManifestCompleteTests = [
       const extraInManifest = manifest.bundle.filter((f) => !directSet.has(f));
       assert.deepEqual(missingFromManifest, [], "no real bundle file is missing from the manifest");
       assert.deepEqual(extraInManifest, [], "the manifest lists no bundle file that does not exist on disk");
+
+      // Chore 207 — core's own assets (its hooks) are the packaged `assets/` sidecar, held the same way.
+      const coreDirect = listFilesDirect(path.join(repoRoot, "packages", "core", "assets"));
+      const coreIndexed = execFileSync("git", ["ls-files", "-z", "--", "packages/core/assets"], { cwd: repoRoot, encoding: "utf8" })
+        .split("\0")
+        .filter(Boolean)
+        .map((f) => f.slice("packages/core/assets/".length))
+        .sort();
+      assert.deepEqual(coreDirect, coreIndexed, "the real packages/core/assets/** tree is exactly what git tracks there");
+      assert.deepEqual(manifest.core, coreDirect, "the generated core manifest is byte-identical (set + order) to the real tree's direct enumeration");
+      assert.ok(coreDirect.includes("bundle.json") && coreDirect.every((f) => f === "bundle.json" || f.startsWith("hooks/")), "core's assets hold only its descriptor and its hooks");
     },
   },
   {
@@ -110,17 +121,19 @@ export const bundleAssetManifestCompleteTests = [
   {
     name: "bundle-asset-manifest-complete/02 (m03 non-vacuous self-check) planting an un-manifested file under a FIXTURE bundle tree fails the set-equality",
     run: async () => {
-      // A fixture copy of the real bundle tree — NEVER the real packages/core/assets/**
+      // A fixture copy of the real bundle tree — NEVER the real packages/acd/assets/**
       // (the self-check must not mutate the repo's shipped bundle).
       const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-arch-manifest-"));
       try {
         const fixtureRepo = path.join(tmp, "repo");
         await mkdir(path.join(fixtureRepo, "packages", "core", "src"), { recursive: true });
         await mkdir(path.join(fixtureRepo, "apps", "ui"), { recursive: true });
+        await cp(path.join(repoRoot, "packages", "acd", "assets"), path.join(fixtureRepo, "packages", "acd", "assets"), { recursive: true });
         await cp(path.join(repoRoot, "packages", "core", "assets"), path.join(fixtureRepo, "packages", "core", "assets"), { recursive: true });
         await cp(path.join(repoRoot, "apps", "ui", "dist"), path.join(fixtureRepo, "apps", "ui", "dist"), { recursive: true });
         await cp(path.join(repoRoot, 'yarn.lock'), path.join(fixtureRepo, 'yarn.lock'));
         await cp(path.join(repoRoot, 'packages/core/package.json'), path.join(fixtureRepo, 'packages/core/package.json'));
+        await cp(path.join(repoRoot, 'packages/acd/package.json'), path.join(fixtureRepo, 'packages/acd/package.json'));
         await cp(path.join(repoRoot, 'apps/ui/package.json'), path.join(fixtureRepo, 'apps/ui/package.json'));
 
         // Generate the manifest BEFORE planting the un-manifested file — it
@@ -130,9 +143,9 @@ export const bundleAssetManifestCompleteTests = [
 
         // Plant an un-manifested file directly on disk, after the manifest
         // was generated.
-        await writeFile(path.join(fixtureRepo, "packages", "core", "assets", "planted-unmanifested.md"), "# planted\n", "utf8");
+        await writeFile(path.join(fixtureRepo, "packages", "acd", "assets", "planted-unmanifested.md"), "# planted\n", "utf8");
 
-        const direct = listFilesDirect(path.join(fixtureRepo, "packages", "core", "assets"));
+        const direct = listFilesDirect(path.join(fixtureRepo, "packages", "acd", "assets"));
         const staleSet = new Set(staleManifest.bundle);
         const missingFromManifest = direct.filter((f) => !staleSet.has(f));
 

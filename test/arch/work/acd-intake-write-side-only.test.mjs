@@ -11,7 +11,7 @@
 //   (1) the token appears in `packages/core/src/**` only in `packages/core/src/work/init.mjs` (the one WRITER), in
 //       `packages/core/src/commands/init-update.mjs` (the face that projects `intakeWritten`), in
 //       `packages/core/src/commands/promote.mjs` (the one READER — its refusal text explains a stream-intake
-//       project) and in `packages/core/assets/commands/*.md` (the prompts, which are the scaffold path);
+//       project) and in `packages/acd/assets/commands/*.md` (the prompts, which are the scaffold path);
 //   (2) the NAMED readers contain it ZERO times, spelled out by path so the claim is legible at the
 //       place it matters rather than implied by leg (1)'s allow-list;
 //   (3) non-vacuity: `init.mjs` and `promote.mjs` each contain it at least once. Without this leg a
@@ -39,7 +39,7 @@ import { stripComments } from "../../support/source-slice.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const TOKEN = /intake/iu;
 
-// The WRITE side, by path. `packages/core/assets/commands/*.md` is a glob because the prompts are the scaffold
+// The WRITE side, by path. `packages/acd/assets/commands/*.md` is a glob because the prompts are the scaffold
 // path as a class — a new `aof:add-*` prompt reads the key the day it ships.
 const ALLOWED_FILES = Object.freeze(["packages/core/src/application/bindings/work/init.mjs", /* compatibility export of intake policy */ "packages/core/src/application/bindings/work/init.mjs", "packages/core/src/application/bindings/commands/init-update.mjs", "packages/work/src/commands/promote.mjs"]);
 const ALLOWED_GLOB = /^src\/bundle\/commands\/[^/]+\.md$/u;

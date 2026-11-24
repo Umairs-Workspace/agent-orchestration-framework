@@ -445,7 +445,7 @@ aof_install_files() {
   mv "$staging_dir/node_modules/node-pty" "$install_target_dir/node_modules/node-pty"
   # Older PTY-only archives remain installable. New archives also ship SEA
   # directory assets; replace each tree so deleted assets do not survive updates.
-  for member in bundle ui package.json src node-runtime; do
+  for member in bundle assets ui package.json src node-runtime; do
     if [ -e "$staging_dir/$member" ]; then
       rm -rf "$install_target_dir/$member"
       mv "$staging_dir/$member" "$install_target_dir/$member"

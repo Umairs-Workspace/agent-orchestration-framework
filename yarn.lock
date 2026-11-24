@@ -5,6 +5,12 @@ __metadata:
   version: 10
   cacheKey: 10c0
 
+"@aof/acd@workspace:*, @aof/acd@workspace:packages/acd":
+  version: 0.0.0-use.local
+  resolution: "@aof/acd@workspace:packages/acd"
+  languageName: unknown
+  linkType: soft
+
 "@aof/contracts@workspace:*, @aof/contracts@workspace:packages/contracts":
   version: 0.0.0-use.local
   resolution: "@aof/contracts@workspace:packages/contracts"
@@ -122,6 +128,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aof/repository@workspace:."
   dependencies:
+    "@aof/acd": "workspace:*"
     "@aof/contracts": "workspace:*"
     "@aof/diagrams": "workspace:*"
     "@aof/diagrams-ui": "workspace:*"
@@ -2633,6 +2640,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "aof@workspace:packages/core"
   dependencies:
+    "@aof/acd": "workspace:*"
     "@aof/contracts": "workspace:*"
     "@aof/diagrams": "workspace:*"
     "@aof/effects": "workspace:*"

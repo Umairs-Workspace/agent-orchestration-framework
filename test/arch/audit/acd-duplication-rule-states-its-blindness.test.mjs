@@ -28,7 +28,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //   (C) A SECOND SPELLING OF THE INSTALLED LAYER. The corpus is the prompt layer AS INSTALLED,
 //       discovered through the runtime local roots and resource-kind plurals the model already
 //       declares. A path literal here would be a second declaration that drifts from the first —
-//       and it would also quietly re-scope the rule, because `packages/core/assets/**` exists only in a
+//       and it would also quietly re-scope the rule, because `packages/acd/assets/**` exists only in a
 //       framework checkout while what actually runs is what is installed.
 //
 // ── WHAT THE CENSUS DELIBERATELY DOES NOT READ, AND WHY ──────────────────────────────────────
@@ -272,8 +272,8 @@ export const archTests = [
       const shared = sentenceOfBytes(SENTENCE_FLOOR + 40, "juliet");
       const bundleOnly = await laneOver({
         ".claude/commands/one.md": "An installed document sharing nothing.",
-        "packages/core/assets/commands/one.md": shared,
-        "packages/core/assets/commands/two.md": shared,
+        "packages/acd/assets/commands/one.md": shared,
+        "packages/acd/assets/commands/two.md": shared,
       });
       assert.deepEqual(bundleOnly.pairs, [], "a duplicate that exists only in a `packages/core/assets` copy is not reported — what runs is what is installed");
 

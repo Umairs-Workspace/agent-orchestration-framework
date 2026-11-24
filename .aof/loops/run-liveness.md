@@ -9,7 +9,7 @@ data-feed: [loop:run-resilience, loop:mesh-assignment-reclaim]
 ---
 # Run liveness observation
 
-Framework record source: `packages/core/assets/loops/run-liveness.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
+Framework record source: `packages/acd/assets/loops/run-liveness.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 `isStale` is the exported, clock-injected observation that compares a run's durable heartbeat with
 the liveness window (`packages/contracts/src/freshness.mjs:2-6`, composed into the run store by `createRunStore` at

@@ -9,7 +9,7 @@ data-feed: [loop:build-to-green]
 ---
 # Rubric process exit
 
-Framework record source: `packages/core/assets/loops/rubric-process-exit.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
+Framework record source: `packages/acd/assets/loops/rubric-process-exit.md`; installed by `aof work update` — edit it in aof, not here, and put per-project values in `.aof/aof.config.json` behind a `config:` pointer.
 
 `reportObservation` is the exported command-boundary seam that reads a completed rubric subprocess
 capture and retains its exit status (`packages/work/src/commands/grade.mjs:202-206`). `compileGrade` then

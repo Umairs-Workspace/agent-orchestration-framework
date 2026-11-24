@@ -89,11 +89,11 @@ export function coreSourceTexts(read = (file, section) => (section ? sectionOf(f
   const texts = [];
   for (const member of members) {
     const words = CORE_MEMBERS[member.id];
-    texts.push({ file: `packages/core/assets/${member.file}`, text: read(member.file), words, source: true });
+    texts.push({ file: `packages/acd/assets/${member.file}`, text: read(member.file), words, source: true });
     for (const variant of Object.values(member.variants ?? {})) {
       if (!variant?.file) continue;
       for (const { file, section } of [variant, ...(variant.associatedFiles ?? [])]) {
-        texts.push({ file: `packages/core/assets/${file}#${section}`, text: read(file, section), words, source: true });
+        texts.push({ file: `packages/acd/assets/${file}#${section}`, text: read(file, section), words, source: true });
       }
     }
   }
@@ -197,7 +197,7 @@ export const archTests = [
     },
   },
   ...[
-    ["the sentence \"write no EXAMPLES.md\" written back into core's refine source", "packages/core/assets/commands/refine.md", "EXAMPLES.md",
+    ["the sentence \"write no EXAMPLES.md\" written back into core's refine source", "packages/acd/assets/commands/refine.md", "EXAMPLES.md",
       () => coreSourceTexts((file, section) => {
         const text = section ? sectionOf(file, section) : readAssetText("bundle", file);
         return file === "commands/refine.md" ? text.replace("- **story — Contract (Three Amigos):**", "- **story — Contract (Three Amigos):** When it is off, write no EXAMPLES.md.") : text;
@@ -211,12 +211,12 @@ export const archTests = [
         const outputs = renderBundleOutputs(loadBundle({ descriptor, config: { work: { everywhere: true } } }), { runtimes: ["claude"] });
         return [{ file: ".claude/commands/aof/refine.md", text: outputs.find((output) => output.path.replaceAll("\\", "/") === ".claude/commands/aof/refine.md").content, words: BOTH_WORDS }];
       }],
-    ["the map bullet left in the Codex text of the PO brief", "packages/core/assets/variants/codex/workflow.md#aof-product-owner", "example map",
+    ["the map bullet left in the Codex text of the PO brief", "packages/acd/assets/variants/codex/workflow.md#aof-product-owner", "example map",
       () => coreSourceTexts((file, section) => {
         const text = section ? sectionOf(file, section) : readAssetText("bundle", file);
         return section === "aof-product-owner" ? text.replace("<!-- slot:ownership.examples -->", "- A story's `EXAMPLES.md` — its **example map**, drafted only when `work.examples.enabled` is on.") : text;
       })],
-    ["the build brief's paragraph left in the Codex refine procedure", "packages/core/assets/variants/codex/workflow.md#procedure-refine", "work.plan.enabled",
+    ["the build brief's paragraph left in the Codex refine procedure", "packages/acd/assets/variants/codex/workflow.md#procedure-refine", "work.plan.enabled",
       () => coreSourceTexts((file, section) => {
         const text = section ? sectionOf(file, section) : readAssetText("bundle", file);
         return section === "procedure-refine" ? text.replace("  <!-- slot:contract.brief -->", "  **The build brief — ONLY when the project has turned it on.** Read `work.plan.enabled` from\n  `.aof/aof.config.json`.") : text;

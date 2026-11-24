@@ -6,7 +6,7 @@ import { stripHtmlComments } from "@aof/foundation/markdown";
 //
 // Every scenario (and every Scenario Outline Examples row) below is asserted
 // against the REAL shipped templates:
-//   - packages/core/assets/templates/shared/OUTCOME.md (source, NO marker, NO frontmatter
+//   - packages/acd/assets/templates/shared/OUTCOME.md (source, NO marker, NO frontmatter
 //     — ADR-004: OUTCOME.md carries no identity)
 //   - .aof/templates/work/shared/OUTCOME.md (bundled, WITH the leading
 //     `<!-- aof-generated: bundle -->` marker, LF-pinned by .gitattributes)
@@ -21,7 +21,7 @@ const stripBundleMarker = _aofApplication.work.commandTools.insertShared.stripBu
 import { TEMPLATE_STAMP } from "../../packages/core/src/work/bundle.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const SOURCE_PATH = path.join(repoRoot, "packages", "core", "assets", "templates", "shared", "OUTCOME.md");
+const SOURCE_PATH = path.join(repoRoot, "packages", "acd", "assets", "templates", "shared", "OUTCOME.md");
 const BUNDLED_PATH = path.join(repoRoot, ".aof", "templates", "work", "shared", "OUTCOME.md");
 
 // The pinned grammar (SPEC.md `## Stories`): "# NN · <Item Title> — Outcome" —

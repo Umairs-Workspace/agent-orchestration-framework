@@ -446,7 +446,7 @@ export const memoryMetaNormalisedTests = [
         "- **What happened:** x", "- **Why:** y", "- **Lesson:** z", "",
         "## R2 — A new lesson", "",
         "- **Kind:** mistake (recurring) · **Area:** process · **Stage:** verify · **Owner:** verifier",
-        "- **Promoted to:** prompt:packages/core/assets/commands/refine.md",
+        "- **Promoted to:** prompt:packages/acd/assets/commands/refine.md",
         "- **Recurs:** m45/R13",
         "- **What happened:** x", "- **Why:** y", "- **Lesson:** z", "",
       ].join("\n");
@@ -455,7 +455,7 @@ export const memoryMetaNormalisedTests = [
       assert.equal(await readFile(file, "utf8"), authored, "ingest preserves the source bytes");
       const recalled = await s.backends[backend].recall("lesson", { }, { limit: Infinity }, s.ctx);
       const byId = Object.fromEntries(recalled.records.filter((r) => r.recordType === "lesson").map((r) => [r.id, r]));
-      assert.equal(byId.R2.status, "prompt:packages/core/assets/commands/refine.md");
+      assert.equal(byId.R2.status, "prompt:packages/acd/assets/commands/refine.md");
       assert.deepEqual(byId.R2.tags, ["recurring", "recurs:45/R13"], "the existing qualifier is retained and the recurrence appears exactly once");
       assert.equal(byId.R1.status, "", "a legacy lesson has no promotion");
       assert.deepEqual(byId.R1.tags, ["recurring"], "and no recurrence tag: its compact representation is unchanged");

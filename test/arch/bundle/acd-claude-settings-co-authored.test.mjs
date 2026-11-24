@@ -43,7 +43,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SETTINGS = path.join(repoRoot, ".claude", "settings.json");
-const MANIFEST = path.join(repoRoot, "packages", "core", "assets", "manifest.json");
+const MANIFEST = path.join(repoRoot, "packages", "acd", "assets", "manifest.json");
 const AOF_CONFIG = path.join(repoRoot, ".aof", "aof.config.json");
 const ADAPTERS = path.join(repoRoot, "packages", "core", "src", "adapters.mjs");
 

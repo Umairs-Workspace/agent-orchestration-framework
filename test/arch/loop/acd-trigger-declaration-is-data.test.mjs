@@ -62,7 +62,7 @@ const compileTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.c
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FAMILY_DIR = path.join(REPO_ROOT, "packages", "work-loop", "src", "trigger");
 const LOADER_PATH = path.join(REPO_ROOT, "packages/work-graph/src/registry.mjs");
-const BUNDLE_DESCRIPTOR = path.join(REPO_ROOT, "packages", "core", "assets", "bundle.json");
+const BUNDLE_DESCRIPTOR = path.join(REPO_ROOT, "packages", "acd", "assets", "bundle.json");
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const read = (file) => readFileSync(file, "utf8");
@@ -229,7 +229,7 @@ export const archTests = [
       assert.equal(declared.kind, "asset", "…of the asset kind, which installs its bytes verbatim");
       assert.equal(declared.file, "triggers.jsonc", "…from the bundled source");
 
-      const source = readFileSync(path.join(REPO_ROOT, "packages", "core", "assets", declared.file));
+      const source = readFileSync(path.join(REPO_ROOT, "packages", "acd", "assets", declared.file));
       const installed = readFileSync(path.join(REPO_ROOT, ...declared.target.split("/")));
       assert.ok(installed.equals(source), "the installed copy is byte-identical to the bundled source");
       assert.equal(sha256(installed), sha256(source), "…and so is its content address");
@@ -309,8 +309,8 @@ export const archTests = [
         const installed = readFileSync(target);
         assert.equal(installed.includes(0x0d), false, remedy(member.target));
         assert.ok(
-          installed.equals(readFileSync(path.join(REPO_ROOT, "packages", "core", "assets", member.file))),
-          `${member.target} is byte-identical to packages/core/assets/${member.file}\n${remedy(member.target)}`,
+          installed.equals(readFileSync(path.join(REPO_ROOT, "packages", "acd", "assets", member.file))),
+          `${member.target} is byte-identical to packages/acd/assets/${member.file}\n${remedy(member.target)}`,
         );
       }
 
