@@ -6,7 +6,7 @@ title: "A project can keep its work-item tracking in Azure DevOps, and the aof w
 status: not-started
 owner: product-owner
 created: 2026-11-20
-updated: 2026-11-20
+updated: 2026-11-24
 depends: [206, 208]
 schema: 1
 aofVersion: 0.1.0
@@ -15,33 +15,54 @@ aofVersion: 0.1.0
 
 ## Objective
 
-A team that runs its delivery in Azure DevOps should not have to keep a second tracker in the
-repo. This milestone adds an Azure DevOps store behind the interface from 208,
-driven through the `az` CLI. Azure DevOps then holds identity, title, status, parent, dependencies
-and order. The documents stay in the repo, in a folder keyed by the Azure DevOps id.
+A team can use its upstream board to see the work AOF is driving. AOF defines a manifest
+schema for upstream work boards and executes the selected board
+definition behind the `WorkItemStore` interface from 208. The project keeps that YAML file
+under `.aof/`. It can also keep a custom board adapter there and reference it from the YAML.
+The adapter exposes a small, high-level interface for reading board data and applying work-item
+changes. It owns the provider calls and their sequencing internally.
+
+Azure DevOps is the first worked example. AOF drives the tracked fields on the board, including
+title, status, parent, dependencies and order. An in-flight milestone keeps its durable local
+work folder throughout refinement, publication and execution. Once published, the local item
+is linked to its board ID. Marking the item done is the earliest point for local folder cleanup.
 
 It is met when:
 - a project that selects the Azure DevOps store can run the `aof work` verbs and the loop
   end to end;
-- the 205 suite passes against it through a fake `az` that replays recorded
-  responses;
+- the 205 suite passes against the Azure board definition using recorded HTTP responses;
+- a test project can configure a second board and supply a custom adapter under its own
+  `.aof/` without changing or rebuilding AOF;
+- an external change to a linked board item stops the running workflow, preserves the local
+  work and identifies the changed item. An explicit resync restores AOF's tracked values on
+  the board and verifies the result before work can resume;
 - one verified run against a real Azure DevOps project is recorded.
-
-The scope below is provisional. Spike 206 may reshape it, or replace it
-with a one-way mirror.
 
 ## Scope
 
 In scope:
-- **The store.** An implementation of the `WorkItemStore` interface over `az boards` (and
-  `az rest` where the CLI falls short), following the spike's mapping of types and states.
-- **Configuration.** The organisation, project, process template and area path live in config.
-  The store is opt-in, and a project without it changes nothing.
+- **Manifest and execution.** AOF owns the schema, validation and shared execution of board
+  operations. Each project's YAML declares its field and state mappings, how to perform the
+  required operations, and which optional capabilities its board supports. Provider-specific
+  executable code belongs to the consuming project and is loaded through an explicit reference
+  in the selected definition. Adding a board requires no provider-specific code in AOF.
+- **Optional uploads.** A board can declare attachment support and which files it accepts.
+  A board without upload support can still satisfy the tracking contract. An uploaded file is
+  a copy of a repository artifact.
+- **Azure example.** The opt-in definition supplies the organisation, project, process template
+  and area path. Use the HTTP operations measured in spike 206 and use `az` for authentication.
 - **Guarded status writes**, using the mechanism the spike found.
-- **Change detection.** Polling with a local cache, at a cadence the spike measured.
+- **Change detection and recovery.** Retain the last acknowledged board revision or equivalent
+  comparison data. Detect an intervening change even when the local item has no pending edit.
+  On detection, stop workflow progression and further ordinary board writes. Keep the conflict
+  visible across a restart. Resync runs from AOF to the board on operator request and updates
+  the acknowledged state after verification. An intervening edit during resync leaves the
+  workflow stopped. Use the polling measurements from spike 206 for the Azure example.
 - **Auth.** A preflight that checks `az` auth in the daemon's own environment, the way
   `daemon-claude-authenticated` checks `claude`.
-- **Conformance.** The 205 suite, run against this store through a fake `az`.
+- **Conformance.** Exercise the Azure definition through the work verbs against recorded responses,
+  including rejection of a stale status change. Exercise a project-owned adapter through the same
+  entry point.
 
 Out of scope:
 - Moving the documents (SPEC, ADRs, `.feature`, VERIFICATION) into Azure DevOps.
