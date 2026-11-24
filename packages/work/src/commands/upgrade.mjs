@@ -46,7 +46,7 @@ const upgradeCommand = {
     if (input?.changelog === true) {
       return { changelog: true, text: renderChangelog() };
     }
-    return await runUpgrade(ctx.workspace.workDir, { apply: input?.dryRun !== true });
+    return await runUpgrade(ctx.workspace, { apply: input?.dryRun !== true });
   },
 
   cli: {

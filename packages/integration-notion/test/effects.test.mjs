@@ -26,3 +26,12 @@ test('applicability uses matching context and sync forwards its milestone and in
   assert.equal(calls[1].milestone, '2'); assert.equal(calls[1].notionSpawn, spawn);
   assert.deepEqual(result.items, [{ ref: '2/1', action: 'updated' }]);
 });
+
+test('208 live Notion sync retains the selected workspace instance', async () => {
+  const workspace = { projectRoot: '/selected', workItemStore: {} };
+  const contribution = createNotionEffects(async () => ({
+    loadWorkspace: async () => assert.fail('matching live selection must not be reloaded'),
+    syncMilestoneWork: async selected => { assert.equal(selected, workspace); return { configured: true, items: [] }; },
+  }));
+  await contribution.integration.events['run.completed'][0].apply({ payload: { workspaceRoot: '/selected', ref: '1' } }, { workspace });
+});

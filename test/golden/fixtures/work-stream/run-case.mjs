@@ -25,7 +25,7 @@ mkdirSync(subject);
 try {
   mkdirSync(home);
   try {
-    const root = seedProject(subject, entry);
+    const root = seedProject(subject, { ...entry, store: process.env.AOF_WORK_STREAM_STORE });
     const before = exportStream(root);
     saveExport(project, "before", before);
     const argv = ["work", ...entry.argv, ...(format === "json" ? ["--json"] : [])];

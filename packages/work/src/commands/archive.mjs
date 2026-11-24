@@ -1,3 +1,4 @@
+import { resolveWorkItemStore } from "../store/work-item-store.mjs";
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { findWork, listItems, isLiveStreamRow } from "../discovery.mjs";
@@ -5,7 +6,7 @@ import { ARCHIVE_ROOT } from "../identity.mjs";
 import { commandError } from "@aof/contracts/error";
 
 // Application composition supplies shared runtime services and transition policy.
-export function createArchiveCommand({ transitionStreamArchived }) {
+export function createFileArchiveCommand({ transitionStreamArchived }) {
 // work:archive — THE VERBATIM MOVE (milestone 127 / ADR-004, story 03).
 //
 // An accepted item keeps its folder at the stream root beside the live ones, because its number
@@ -260,4 +261,20 @@ const archiveCommand = {
 };
 
 return { ARCHIVE_FLAGS, archiveCommand, renderArchive, runArchive };
+}
+
+// The public factory binds tracking operations to the caller's workspace. The file
+// implementation below remains the compatibility engine, entered by the adapter.
+export function createArchiveCommand(services) {
+  const face = createFileArchiveCommand(services);
+  const invoke = (ctx, operation, input, entry) => resolveWorkItemStore(ctx.workspace).mutate(
+    { operation, input, entry }, { ctx, services },
+  );
+  return {
+    ...face,
+    runArchive: async (ctx, input) => invoke(ctx, "archive", input, "run"),
+    archiveCommand: { ...face.archiveCommand,
+      run: async (input, ctx) => invoke(ctx, "archive", input, "command"),
+    },
+  };
 }

@@ -17,6 +17,7 @@ export function createNotionServices({
   commandError,
   parseFrontmatter,
   recordDoc,
+  readWorkItemView,
   listItemsCacheFirst,
   localItemsOnly,
   reportReachThroughSkips,
@@ -34,7 +35,7 @@ export function createNotionServices({
 
   // The board resolver is read from core's routing services, so the one descriptor reader serves both.
   const { defaultNotionSpawnFor, syncMilestoneWork } = createNotionSync({
-    commandError, parseFrontmatter, recordDoc, listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, readMapping, applyPlan, makeNotionSpawn,
+    commandError, parseFrontmatter, recordDoc, readWorkItemView, listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, readMapping, applyPlan, makeNotionSpawn,
     resolveNotionRouting: routing?.resolveNotionRouting, RoutingError, resolveMilestoneFolderByRef,
   });
   const syncWork = Object.freeze({ NOTION_SETUP_HINT, defaultNotionSpawnFor, syncMilestoneWork });

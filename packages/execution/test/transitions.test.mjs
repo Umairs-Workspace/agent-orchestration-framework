@@ -25,7 +25,8 @@ test('reconciliation heals only the latest unreported run after the journal birt
   const events = []; let closed = 0;
   const api = createRunReconciliation({
     openEffectsJournal: async () => ({ close: () => closed++ }),
-    oldestEventAt: () => '2026-02-01', listItems: async () => items,
+    oldestEventAt: () => '2026-02-01', readWorkItemView: async () => ({ items }),
+    listItems: async (_dir, { view }) => view.items,
     readRuns: async item => records[item.ref], hasEventForRun: (_journal, _name, runId) => runId === 'paid',
     applicableReactors: async () => ['publish'],
     appendEvent: (_journal, event) => { events.push(event); return { eventId: 'healed' }; },
@@ -35,4 +36,25 @@ test('reconciliation heals only the latest unreported run after the journal birt
   assert.deepEqual(result.appended, [{ ref: 'latest', runId: 'new', event: 'run.started', eventId: 'healed' }]);
   assert.equal(events[0].payload.reconciled, true);
   assert.equal(closed, 1);
+});
+
+test('208 tracking workspace reaches run reactors without enabling publication or changing lock scope', async () => {
+  const trackingWorkspace = { projectRoot: '/selected', workDir: '/selected/work' };
+  const record = { itemRef: '1', runId: 'run', attempt: 1 };
+  const contexts = [], payloads = [], loci = [], locks = [];
+  const api = createRunTransitions({
+    startRun: async () => record, completeRun: async () => record, reclaimRun: async () => record,
+    guardItemLock: async (_ref, options) => locks.push(options),
+    applicableReactors: async (_name, payload, ctx) => { payloads.push(payload); contexts.push(ctx); return []; },
+    reachableLoci: workspace => { loci.push(workspace); return []; },
+    openEffectsJournal: async () => null, runEffectsEphemeral: async () => [],
+  });
+  const item = { ref: '1', type: 'chore', dir: '/selected/work/1_chore_one' };
+  await api.transitionRunStart(item, {}, { trackingWorkspace });
+  await api.transitionRunComplete(item, { outcome: 'failed' }, { trackingWorkspace });
+  await api.transitionRunReclaimed(item, {}, { trackingWorkspace });
+  assert.ok(contexts.every(ctx => ctx.trackingWorkspace === trackingWorkspace));
+  assert.ok(payloads.every(payload => payload.workspaceRoot === null && !('trackingWorkspace' in payload)));
+  assert.deepEqual(loci, [null, null, null]);
+  assert.equal(locks[0].workspace, null);
 });

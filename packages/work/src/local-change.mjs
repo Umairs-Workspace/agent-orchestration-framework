@@ -36,7 +36,7 @@ export function projectedRow(item, meta, docName) {
     status: meta?.status ?? null,
     title: meta?.title ?? null,
     parent: item.parent,
-    sourcePath: normalizeSourcePath(path.join(item.dir, docName)),
+    sourcePath: item.dir == null || docName == null ? null : normalizeSourcePath(path.join(item.dir, docName)),
     // 127/04 — widened ONLY on a backlog or archived row (ADR-006 §1): a live row keeps its
     // seven keys byte-for-byte.
     ...itemLocationKeys(item),

@@ -1,3 +1,4 @@
+import { readWorkItemView } from "@aof/work/store/work-item-store";
 import { decideSupervisedDeclarations } from "@aof/work-loop/engine";
 import { heartbeatFromConfig, scheduleToCloseFromConfig } from "@aof/contracts/loop-bounds";
 import { argvFor } from "@aof/work-loop/argv";
@@ -131,8 +132,10 @@ async function supervisedDeclarations(ws, localId, nowIso, ctx) {
 
   const workspaces = [];
   for (const member of members) {
+    const memberWorkspace = member.projectRoot === ws.projectRoot ? ws : await loadWorkspace(member.projectRoot ?? member.workDir);
+    const selected = memberWorkspace.workDir === member.workDir ? memberWorkspace : { ...memberWorkspace, workDir: member.workDir };
     const items = [];
-    for (const item of await listItems(member.workDir)) {
+    for (const item of await listItems(member.workDir, { view: await readWorkItemView(selected) })) {
       items.push({ ref: item.ref, runs: await readRuns(item) });
     }
     // EACH MEMBER'S OWN COMPUTE CEILING (2026-09-11) — a declaration is measured for relaunch
@@ -145,7 +148,7 @@ async function supervisedDeclarations(ws, localId, nowIso, ctx) {
     // ceiling and the engine falls back to the node's, exactly as before.
     let ceilingMs = null;
     try {
-      const memberWs = member.projectRoot ? await loadWorkspace(member.projectRoot) : null;
+      const memberWs = memberWorkspace;
       if (memberWs != null) ceilingMs = scheduleToCloseFromConfig(memberWs);
     } catch {
       ceilingMs = null;

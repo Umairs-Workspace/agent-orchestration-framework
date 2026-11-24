@@ -20,7 +20,9 @@ export const archTests = [
       // (119/ADR-002) — the unit is the module, not the file, so splitting the leaf stays legal.
       await assertFamilyPurity(assert, root, "packages/work/src/counters");
       assert.doesNotMatch(engine, /\b(?:readFile|writeFile|appendFile|execFile|spawn|process\.|Date\.now)\b/u);
-      assert.match(command, /import\s*\{\s*readFile\s*\}\s*from\s*"node:fs\/promises"/u);
+      assert.match(command, /import\s*\{\s*readWorkItemView\s*\}\s*from\s*"\.\.\/store\/work-item-store\.mjs"/u);
+      assert.match(command, /await readWorkItemView\(workspace\)/u);
+      assert.match(command, /await view\.frontmatter\(item\)/u);
       assert.doesNotMatch(command, /\b(?:writeFile|appendFile|unlink|rename|mkdir|execFile|spawn)\b/u);
       assert.match(command, /readFeedbackRecords/u);
       assert.match(command, /readRuns/u);

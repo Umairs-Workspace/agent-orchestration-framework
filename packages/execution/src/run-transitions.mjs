@@ -51,7 +51,7 @@ export function createRunTransitions({ completeRun, startRun, retryRun, reclaimR
 //          held execution scope is refused `item-locked-by-assignment`.
 async function transitionRunStart(item, edge = {}, opts = {}) {
   const { mode = "start", runId, sessionId, brief, now, node = null, maxAttempts, force = false } = edge;
-  const { workspace = null, lock, publisherOptions = null, journalOptions = {}, drain = true } = opts;
+  const { workspace = null, trackingWorkspace = null, lock, publisherOptions = null, journalOptions = {}, drain = true } = opts;
 
   // (0) THE LOCK — the ONE enforcement door, in front of the fact. It outranks the
   // store's own refusals (duplicate-run, no-retryable-run …) because a held item's
@@ -80,7 +80,7 @@ async function transitionRunStart(item, edge = {}, opts = {}) {
     // lane, never work on the item, so it neither starts the item nor rolls its status back.
     phase: runPhase(record),
   };
-  return await raise("run.started", payload, record, { workspace, publisherOptions, journalOptions, drain, now });
+  return await raise("run.started", payload, record, { workspace, trackingWorkspace, publisherOptions, journalOptions, drain, now });
 }
 
 // transitionRunComplete(item, edge, opts) — complete the run fact, append
@@ -108,6 +108,7 @@ async function transitionRunStart(item, edge = {}, opts = {}) {
 async function transitionRunComplete(item, { runId, outcome, failureReason = null, resumeAfter = null, now, suspended = null } = {}, opts = {}) {
   const {
     workspace = null,
+    trackingWorkspace = null,
     projectsDir = undefined,
     spendSettled = false,
     env = process.env,
@@ -147,7 +148,7 @@ async function transitionRunComplete(item, { runId, outcome, failureReason = nul
     // 147/01 — the completed run's loop phase, as on `run.started` (the rollback reactor reads it).
     phase: runPhase(record),
   };
-  return await raise("run.completed", payload, record, { workspace, publisherOptions, journalOptions, drain, now });
+  return await raise("run.completed", payload, record, { workspace, trackingWorkspace, publisherOptions, journalOptions, drain, now });
 }
 
 // settleProjectsDir — the transcript directory a settle reads (134/ADR-003 §4, FF-13404). The
@@ -180,7 +181,7 @@ function settleProjectsDir({ projectsDir, workspace, env, home }) {
 //   edge — { runId, now }
 //   opts — { workspace, publisherOptions, journalOptions, drain = true }
 async function transitionRunReclaimed(item, { runId, now } = {}, opts = {}) {
-  const { workspace = null, publisherOptions = null, journalOptions = {}, drain = true } = opts;
+  const { workspace = null, trackingWorkspace = null, publisherOptions = null, journalOptions = {}, drain = true } = opts;
 
   // (1) The FACT — the store's ONE reclaim edge.
   const record = await reclaimRun(item, runId, { now });
@@ -201,7 +202,7 @@ async function transitionRunReclaimed(item, { runId, now } = {}, opts = {}) {
     // 147/01 — the completed run's loop phase, as on `run.started` (the rollback reactor reads it).
     phase: runPhase(record),
   };
-  return await raise("run.completed", payload, record, { workspace, publisherOptions, journalOptions, drain, now });
+  return await raise("run.completed", payload, record, { workspace, trackingWorkspace, publisherOptions, journalOptions, drain, now });
 }
 
 // transitionStaleRunsReclaimed(items, edge, opts) — the RESTART-SCAN half over the
@@ -245,10 +246,11 @@ function runPhase(record) {
   return typeof phase === "string" && phase.length > 0 ? phase : null;
 }
 
-async function raise(name, payload, record, { workspace, publisherOptions, journalOptions, drain, now }) {
+async function raise(name, payload, record, { workspace, trackingWorkspace, publisherOptions, journalOptions, drain, now }) {
   const reactorCtx = {
     ...(publisherOptions ? { publisherOptions } : {}),
     ...(workspace ? { workspace } : {}),
+    ...(trackingWorkspace ? { trackingWorkspace } : {}),
   };
   const reactors = await applicableReactors(name, payload, reactorCtx);
   const loci = reachableLoci(workspace);

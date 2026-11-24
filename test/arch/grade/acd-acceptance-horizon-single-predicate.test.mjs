@@ -10,7 +10,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //  EXISTING `.feature` for writing (create-only scaffolding is admitted)."
 //
 // MEASURED AT HEAD (ADR-009/A): ONE write site, create-only
-// (`packages/work/src/commands/migrate-folder.mjs:287-291` — ADR-009/A cited `:225-229`, which is
+// (`packages/work/src/commands/migrate-folder.mjs:288-292` — ADR-009/A cited `:225-229`, which is
 // where it sat before 66/00 declared the flag at that call, and `:231-235` until 119/02's
 // prose sweep moved this module's registry rationale into its header, 11 lines above the
 // call, and `:242-246` until 127/01 retired its private `ITEM_RE` + `nextFreeSlot` onto the one
@@ -105,7 +105,8 @@ const THE_NAMED_WRITE_SITE = "packages/work/src/commands/migrate-folder.mjs";
 // and reads the source SPEC's tags and sections, both before the scaffold.
 // …and twenty more, to :287: that refusal compares canonical paths (macOS's tmpdir is a symlink, so
 // a source named through it read as outside the stream), through a helper declared above the factory.
-const THE_NAMED_WRITE_LINE = 287;
+// …and 208/03 adds the selected-store import above the file implementation: :288.
+const THE_NAMED_WRITE_LINE = 288;
 
 // Write-shaped callees: every door under `packages/core/src/` through which bytes reach a path.
 const WRITE_CALLS = [

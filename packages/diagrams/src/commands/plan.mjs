@@ -6,8 +6,7 @@ import { commandError } from "@aof/contracts/error";
 
 
 import { assertAdrId, assertSlug, diagramPaths, diagramStem, hasAdrSection, LOOP_SUBJECT, loopDiagramPaths, prototypeDiagramStem, readDiagramBrief, readPrototypeBrief } from "../layout.mjs";
-import { listItems } from "@aof/work/discovery";
-import { readItemMeta } from "@aof/work/records";
+import { readWorkItemView } from "@aof/work/store/work-item-store";
 
 
 export function createDiagramPlanCommand({ resolveWorkDiagrams, generatorFor, requireLocalCheckout, resolveItemExact, planLoopWaves, loopLaneBound, loopConcurrency, refineFirst }) {
@@ -63,20 +62,22 @@ const toPosix = (value) => value.replace(/\\/g, "/");
 
 // The loop's own refined test (its `unrefinedStories`): every not-done story has at least one task,
 // read the way `work:tasks` reads them — the `.feature` files in the story's `tasks/`.
-async function unrefinedStories(workDir, milestone) {
+async function unrefinedStories(workspace, milestone) {
+  const view = await readWorkItemView(workspace);
   // A story's ref is its milestone's ref and its own number (`07/01`), and refs sort in stream order.
-  const stories = (await listItems(workDir))
+  const stories = view.items
     .filter((item) => item.type === "story" && String(item.ref).startsWith(`${milestone.ref}/`))
     .sort((a, b) => String(a.ref).localeCompare(String(b.ref)));
   const unrefined = [];
   for (const story of stories) {
-    if ((await readItemMeta(story)).status === "done") continue;
+    if ((await view.frontmatter(story)).status === "done") continue;
     if (!(await taskNames(story.dir)).some((name) => name.endsWith(".feature"))) unrefined.push(story.ref);
   }
   return { count: stories.length, unrefined };
 }
 
 async function taskNames(storyDir) {
+  if (storyDir == null) return [];
   try {
     return await readdir(path.join(storyDir, "tasks"));
   } catch (error) {
@@ -132,7 +133,7 @@ async function planLoop(item, ref, ctx) {
     );
   }
   requireLocalCheckout(item, ref);
-  const { count, unrefined } = await unrefinedStories(workDir, item);
+  const { count, unrefined } = await unrefinedStories(ctx.workspace, item);
   if (count === 0) {
     throw commandError(`${item.ref} has no stories, so it is not refined and has no waves to draw. Run aof:refine ${item.ref} first.`, "loop-not-refined", 409);
   }
@@ -144,7 +145,7 @@ async function planLoop(item, ref, ctx) {
     );
   }
 
-  const plan = await planLoopWaves(workDir, item.ref, { projectRoot, bound: loopLaneBound(ctx.workspace) });
+  const plan = await planLoopWaves(workDir, item.ref, { projectRoot, bound: loopLaneBound(ctx.workspace), workspace: ctx.workspace });
   const itemRel = toPosix(path.relative(projectRoot, item.dir));
   const planPath = loopDiagramPaths(itemRel, null).plan;
   await mkdir(path.dirname(path.resolve(projectRoot, planPath)), { recursive: true });

@@ -1,6 +1,6 @@
-import { listItems, findWork, listStream, readStreamSnapshot } from "./discovery.mjs";
+import { listItems, findWork, listStream } from "./discovery.mjs";
+import { readWorkItemView } from "./store/work-item-store.mjs";
 import { nextWork } from "./readiness.mjs";
-import { readItemMeta, recordDoc } from "./records.mjs";
 import { cacheAnswers, locallyChanged, projectedRow, reportedElsewhere, rowFingerprint } from "./local-change.mjs";
 import { processCostMeter } from "@aof/foundation/cost-meter";
 import path from "node:path";
@@ -208,14 +208,9 @@ async function buildStreamView(workspace, options = {}) {
   // 167/ADR-003 — the disk side comes off the remembered stream snapshot: an unchanged tree costs
   // one stat walk and parses nothing (the snapshot counts its own parse or memo answer). A work dir
   // that cannot be listed answers what the enumerator always answered — never a refused read.
-  let snapshot = null;
-  try {
-    snapshot = await readStreamSnapshot(workspace.workDir, { meter: costMeter, labels: labelled, reportDegrade });
-  } catch {
-    snapshot = null;
-  }
-  const diskItems = snapshot?.items ?? await listItems(workspace.workDir);
-  const frontmatterOf = snapshot ? snapshot.frontmatter : (item) => readItemMeta(item);
+  const localView = await readWorkItemView(workspace, { meter: costMeter, labels: labelled, reportDegrade });
+  const diskItems = localView.items;
+  const frontmatterOf = localView.frontmatter;
   const cache = worktree
     ? { rows: new Map(), provenance: new Map() }
     : await readCachedItemRows(workspace, {
@@ -247,9 +242,10 @@ async function buildStreamView(workspace, options = {}) {
     // The authorship clause first: a row this node reported never needs the record read.
     if (!cacheAnswers({ reportedBy }, { selfNodeId })) return false;
     const baseline = observations.get(item.ref);
-    const doc = baseline == null ? null : recordDoc(item);
-    if (doc == null) return true; // a missing baseline is never a change
-    const changed = locallyChanged(rowFingerprint(projectedRow(item, await frontmatterOf(item), doc)), baseline);
+    if (baseline == null) return true; // a missing baseline is never a change
+    const record = await localView.record(item);
+    if (record == null) return true;
+    const changed = locallyChanged(rowFingerprint(projectedRow(item, record.metadata, record.recordDocument)), baseline);
     return cacheAnswers({ reportedBy }, { selfNodeId, locallyChanged: changed });
   };
 
@@ -279,7 +275,6 @@ async function buildStreamView(workspace, options = {}) {
   // 167/ADR-001 — each read is COUNTED by the side that answered it, whether or not the degrade
   // line below survives its throttle. The disk parse itself is the snapshot's to count (a memo
   // answer parses nothing); a read the snapshot could not serve is a full disk read here.
-  if (snapshot == null) costMeter.count("full-disk-read", labelled);
   if (worktree) {
     // nothing to report; the per-row `answeredFrom: "disk"` is the honest statement
   } else if (unavailable) {
@@ -304,7 +299,7 @@ async function buildStreamView(workspace, options = {}) {
     costMeter.count("cache-hit", labelled);
   }
 
-  return { view: { items, meta, ...(snapshot ? { frontmatter: snapshot.frontmatter } : {}) }, answeredFrom, provenance };
+  return { view: { items, meta, frontmatter: frontmatterOf }, answeredFrom, provenance };
 }
 
 // stampRow(row, built) — rule 3, at ONE application point for every reader below. A

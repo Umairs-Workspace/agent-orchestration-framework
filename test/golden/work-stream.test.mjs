@@ -24,6 +24,18 @@ function scratch(run) {
 
 export const workStreamTests = [
   ...lanes.flatMap(lane => lane.scenarios.map(scenario => ({
+    name: `208/05 explicit files [${lane.id}/${scenario.id}]`,
+    run() {
+      const previous = process.env.AOF_WORK_STREAM_STORE;
+      process.env.AOF_WORK_STREAM_STORE = "files";
+      try { assertScenarioMatches({ lanes, laneId: lane.id, scenarioId: scenario.id }); }
+      finally {
+        if (previous === undefined) delete process.env.AOF_WORK_STREAM_STORE;
+        else process.env.AOF_WORK_STREAM_STORE = previous;
+      }
+    },
+  }))),
+  ...lanes.flatMap(lane => lane.scenarios.map(scenario => ({
     name: `205 ${scenario.entry.title} [${lane.id}/${scenario.id}]`,
     run() {
       const selected = { lanes, laneId: lane.id, scenarioId: scenario.id };

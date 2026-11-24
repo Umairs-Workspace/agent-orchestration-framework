@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { listItems } from "./discovery.mjs";
+import { readWorkItemView } from "./store/work-item-store.mjs";
 import { FEEDBACK_RECORD_FILE, FEEDBACK_RECORD_KINDS, RECALL_VERDICTS, compileRecallObservation } from "./feedback-records.mjs";
 import { canonicalRecurrence, lessonSections, readLessonMeta, readPromotion } from "./memory-vocabulary.mjs";
 
@@ -212,11 +212,11 @@ async function readSource(file, owner, workDir) {
 // Every item the stream enumerates — live, story and archived — with its ledger and retrospective
 // when it has them. A missing file is no evidence, not a defect. `items` narrows the read to the
 // ones a caller already selected (tune's scope): an unselected item's files are never opened.
-export async function readAccountingSources(workDir, { items = null } = {}) {
+export async function readAccountingSources(workDir, { items = null, workspace } = {}) {
   const ledgers = [];
   const retrospectives = [];
   const seen = new Set();
-  for (const item of items ?? await listItems(workDir)) {
+  for (const item of items ?? (await readWorkItemView(workspace ?? workDir)).items) {
     if (item.number == null || item.dir == null || seen.has(item.dir)) continue;
     seen.add(item.dir);
     const ledger = await readSource(path.join(item.dir, FEEDBACK_RECORD_FILE), item.ref, workDir);
@@ -229,8 +229,8 @@ export async function readAccountingSources(workDir, { items = null } = {}) {
 
 // accountMemory — read the stream and build the report. `indexed` is the current index's records
 // (lesson rows are picked from them); `null` when the backend has none to offer.
-export async function accountMemory(workDir, { indexed = null, lessons = false, items = null } = {}) {
-  const sources = await readAccountingSources(workDir, { items });
+export async function accountMemory(workDir, { indexed = null, lessons = false, items = null, workspace } = {}) {
+  const sources = await readAccountingSources(workDir, { items, workspace });
   const lessonRecords = Array.isArray(indexed) ? indexed.filter((record) => record?.recordType === "lesson") : null;
   return buildAccounting({ ...sources, indexed: lessonRecords, lessons });
 }

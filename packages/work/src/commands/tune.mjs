@@ -428,7 +428,7 @@ async function buildTuneReport(input = {}, ctx = {}) {
   const scope = typeof input.scope === "string" && input.scope.trim() !== "" ? input.scope.trim() : null;
   const model = deps.model ?? await loadLoops(workspace);
   const tunableKeys = tunableSet(model).keys;
-  const corpus = deps.corpus ?? await assembleCorpus({ cwd: workspace.projectRoot, scope });
+  const corpus = deps.corpus ?? await assembleCorpus({ cwd: workspace.projectRoot, scope, workspace });
   const records = corpusRecords(corpus).map((record) => freeze(record));
   const formed = (deps.formCandidates ?? formCandidates)(records, deps.formationOptions);
   const provenanceInput = formed.candidates.map((candidate) => ({

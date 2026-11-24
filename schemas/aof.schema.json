@@ -418,6 +418,10 @@
           "type": "string",
           "description": "Path, relative to the repo root, to the flat work-item stream (NN_type_slug folders)."
         },
+        "store": {
+          "enum": ["files"],
+          "description": "The workspace tracking provider. An omitted setting selects files."
+        },
         "agents": {
           "type": "object",
           "description": "How ACD role agents are orchestrated.",

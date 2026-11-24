@@ -1,3 +1,4 @@
+import { readWorkItemView } from "@aof/work/store/work-item-store";
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import { createRunReconciliation } from "@aof/execution/reconcile";
 import { hasEventForRun } from "@aof/execution/journal-queries";
@@ -15,7 +16,7 @@ export function assembleEffectsReconcile({ workServices, runStoreServices, effec
 
   const { reportDegrade } = degradeServices;
 
-  const { reconcileRunRecords } = createRunReconciliation({ listItems, readRuns, applicableReactors, openEffectsJournal, appendEvent, hasEventForRun, oldestEventAt, effectsJournalPath, reportDegrade });
+  const { reconcileRunRecords } = createRunReconciliation({ listItems, readWorkItemView, readRuns, applicableReactors, openEffectsJournal, appendEvent, hasEventForRun, oldestEventAt, effectsJournalPath, reportDegrade });
 
   return { reconcileRunRecords };
 }

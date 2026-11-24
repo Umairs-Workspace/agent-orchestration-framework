@@ -50,5 +50,5 @@ test('upgrade changelog bypasses the mutation port and dry-run/apply retain thei
   const calls=[];const {upgradeCommand}=createUpgradeCommand({renderChangelog:()=> 'changelog\n',runUpgrade:async(...args)=>{calls.push(args);return {fixture:true};}});
   assert.deepEqual(await upgradeCommand.run({changelog:true},{}),{changelog:true,text:'changelog\n'});assert.deepEqual(calls,[]);
   const ctx={workspace:{workDir:'fixture'}};await upgradeCommand.run({dryRun:true},ctx);await upgradeCommand.run({},ctx);
-  assert.deepEqual(calls,[['fixture',{apply:false}],['fixture',{apply:true}]]);
+  assert.deepEqual(calls,[[ctx.workspace,{apply:false}],[ctx.workspace,{apply:true}]]);
 });

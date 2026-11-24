@@ -20,11 +20,10 @@
 // It reads the file with `JSON.parse` ONLY — it has NO `parseFrontmatter` import or
 // dependency (R4 (m18): extending the shared frontmatter parser is a blast-radius
 // hazard, so routing is a discrete JSON file; FF-B enforces this). Its only imports
-// are `node:fs`, `node:path`, and `recordDoc` from `../work.mjs` — no Notion spawn
+// are `node:fs` and `node:path` — no Notion spawn
 // seam is imported (ADR-006, the no-read invariant holds by construction).
 import path from "node:path";
 import { readFileSync, writeFileSync, rmSync, existsSync } from "node:fs";
-import { recordDoc } from "./records.mjs";
 // m42 item 3 — every former silent catch reports a coded degrade event.
 
 
@@ -33,16 +32,8 @@ export const INTEGRATIONS_FILE = ".integrations.json";
 
 export function createIntegrationRouting({ reportDegrade }) {
 
-// Resolve the descriptor's absolute path: it lives in the item's RECORD-DOC folder
-// (recordDoc semantics — AOF.md-first for a converted milestone, else SPEC.md), so an
-// imported AOF.md-class milestone is first-class (the carried-forward BLOCKER fix).
-// The descriptor is folder-rooted, so in practice "the folder" is `item.dir`; tying it
-// to recordDoc keeps the doc-class first-classness explicit.
+// Routing is a repository attachment beside the item's document home.
 function descriptorPath(item) {
-  // recordDoc returns the record-doc FILENAME; the descriptor is its sibling. We only
-  // need the folder, which is item.dir — calling recordDoc keeps the tie honest and
-  // future-proofs a record doc that ever moves out of item.dir.
-  recordDoc(item);
   return path.join(item.dir, INTEGRATIONS_FILE);
 }
 

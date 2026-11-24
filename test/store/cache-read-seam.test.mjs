@@ -40,6 +40,8 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // misses 02 while the CHOKEPOINT already answers for it). Neither state can coexist with
 // stage 3 in one tree, which is why they are here rather than in a lane below.
 import assert from "node:assert/strict";
+import fsPromises from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -147,7 +149,93 @@ function cliJson(fx, argv) {
   return JSON.parse(result.stdout);
 }
 
+// 208/01: exercise the normally assembled command cores with a selected store.
+// The work directory is empty: a bypass to file discovery loses every identity.
+async function withSelectedStore(body) {
+  return withCacheReadFixture(async (fx) => {
+    const base = await loadWorkspace(fx.root, undefined, { env: fx.env });
+    const identities = [
+      { ref: "10", number: "10", type: "milestone", slug: "driver", parent: null, documentHome: "pear" },
+      { ref: "10/00", number: "00", type: "story", slug: "first", parent: "10", documentHome: "pear/plum" },
+      { ref: "10/01", number: "01", type: "story", slug: "second", parent: "10", documentHome: "pear/apple" },
+      { ref: "11", number: "11", type: "chore", slug: "one", parent: null },
+      { ref: "11", number: "11", type: "chore", slug: "two", parent: null },
+    ];
+    const metadata = new Map(identities.map(item => [item.ref, {
+      type: item.type, number: item.number, slug: item.slug, parent: item.parent,
+      title: item.slug, status: item.type === "milestone" ? "in-progress" : "not-started",
+      updated: "2026-11-24", schema: 1, files: [`src/${item.slug}.mjs`],
+      ...(item.ref === "10/01" ? { depends: ["00"] } : {}),
+    }]));
+    for (const home of ["pear/plum", "pear/apple"]) {
+      await mkdir(path.join(fx.workDir, home, "tasks"), { recursive: true });
+      await writeFile(path.join(fx.workDir, home, "tasks", "00_task.feature"), "Feature: Contract\n  @executable\n  Scenario: example\n    Given an example\n    When it runs\n    Then it works\n");
+    }
+    const workspace = { ...base, workItemStore: {
+      snapshot: async () => ({ items: identities, token: "selected", read: async ref => ({ metadata: metadata.get(ref), fault: null }) }),
+    }, config: { ...base.config, work: { ...base.config.work, loop: { concurrency: "refine_first" }, diagrams: { enabled: false } } } };
+    const invoke = (id, input) => _aofApplication.invoke(id, input, { workspace,
+      globalWorkStoreOptions: { env: fx.env }, effectsJournalOptions: { env: fx.env } });
+    return body({ fx, invoke });
+  });
+}
+
 export const cacheReadSeamTests = [
+  {
+    name: "work-store/208-01 doctor shares one file read between tracking metadata and document checks",
+    run: () => withCacheReadFixture(async fx => {
+      const dir = await writeRootItem(fx.workDir, "10_milestone_shared-read", { type: "milestone", number: "10", slug: "shared-read" });
+      const record = path.join(dir, "SPEC.md");
+      const original = fsPromises.readFile;
+      let reads = 0;
+      fsPromises.readFile = function (file, ...args) {
+        if (String(file) === record) reads += 1;
+        return original.call(this, file, ...args);
+      };
+      syncBuiltinESMExports();
+      try {
+        await runCommand(fx, "work:doctor", {});
+        assert.equal(reads, 1, "the record body and tracking metadata share a single open");
+      } finally {
+        fsPromises.readFile = original;
+        syncBuiltinESMExports();
+      }
+    }),
+  },
+  {
+    name: "work-store/208-01 assembled next reads the selected sibling dependency",
+    run: () => withSelectedStore(async ({ invoke }) => {
+      const ready = await invoke("work:next", { scope: "10" });
+      assert.equal(ready.state, "ready");
+      assert.equal(ready.ref, "10/00");
+      const result = await invoke("work:next", { scope: "10/01" });
+      assert.equal(result.state, "blocked");
+      assert.deepEqual(result.waitingOn, ["10/00"]);
+    }),
+  },
+  {
+    name: "work-store/208-01 assembled doctor diagnoses selected identities without document homes",
+    run: () => withSelectedStore(async ({ invoke }) => {
+      const result = await invoke("work:doctor", {});
+      assert.ok(result.findings.some(finding => finding.code === "duplicate-driver-number"));
+    }),
+  },
+  {
+    name: "work-store/208-01 assembled validate checks selected metadata without a record file",
+    run: () => withSelectedStore(async ({ invoke }) => {
+      const result = await invoke("work:validate", { scope: "11" });
+      assert.ok(result.findings.some(finding => finding.problem.includes("created")), JSON.stringify(result));
+      assert.ok(!result.findings.some(finding => finding.problem.includes("scope-not-found")));
+    }),
+  },
+  {
+    name: "work-store/208-01 assembled diagram planning reads selected driver and children",
+    run: () => withSelectedStore(async ({ invoke, fx }) => {
+      const result = await invoke("diagram:plan", { ref: "10", adr: "loop" });
+      const plan = JSON.parse(await readFile(path.join(fx.root, result.plan), "utf8"));
+      assert.deepEqual(plan.waves.map(wave => wave.members.map(item => item.ref)), [["10/00"], ["10/01"]]);
+    }),
+  },
   // ==========================================================================
   // HEADLINE, Scenario Outline ×4: each seam reader answers a cache-known ref
   // this node's disk has NEVER seen, stamped with its author

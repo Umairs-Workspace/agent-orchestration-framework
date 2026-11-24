@@ -6,7 +6,7 @@ title: "Work items are read and written through one store interface, with today'
 status: in-progress
 owner: product-owner
 created: 2026-11-20
-updated: 2026-11-23
+updated: 2026-11-24
 depends: [205]
 schema: 1
 aofVersion: 0.1.0
@@ -63,12 +63,12 @@ Out of scope:
 
 ## Stories
 
-- [ ] `00_story_workspace-store` — A workspace selects the file store and exposes its tracking data.
-- [ ] `01_story_read-consumers` — Readers retain the same answers and source attribution.
-- [ ] `02_story_guarded-lifecycle` — Status moves and run effects use the selected store.
-- [ ] `03_story_placement-and-identity` — Promotion, insertion and moves preserve the work stream.
-- [ ] `04_story_mesh-observation` — Mesh refresh and publication observe the selected store.
-- [ ] `05_story_enforce-and-replay` — A registered control guards tracking and every 205 capture still matches.
+- [x] `00_story_workspace-store` — A workspace selects the file store and exposes its tracking data.
+- [x] `01_story_read-consumers` — Readers retain the same answers and source attribution.
+- [x] `02_story_guarded-lifecycle` — Status moves and run effects use the selected store.
+- [x] `03_story_placement-and-identity` — Promotion, insertion and moves preserve the work stream.
+- [x] `04_story_mesh-observation` — Mesh refresh and publication observe the selected store.
+- [x] `05_story_enforce-and-replay` — A registered control guards tracking and every 205 capture still matches.
 
 ## Dependencies
 

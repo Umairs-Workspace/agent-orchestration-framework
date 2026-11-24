@@ -238,6 +238,7 @@ const doctorCommand = {
     // from, resolved at THIS edge as the settle seam resolves it, so the engine never reads the
     // environment. Both are data for the story probe, whose own gate decides whether it reads.
     const snapshot = await buildSnapshot(ctx.workspace.workDir, {
+      workspace: ctx.workspace,
       config: ctx.workspace.config ?? {},
       projectsDir: ctx.workspace.projectRoot
         ? claudeProjectsDir({ cwd: ctx.workspace.projectRoot, env: process.env })

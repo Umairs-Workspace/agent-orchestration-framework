@@ -68,7 +68,7 @@ function writeItem(item, dir) {
   }
 }
 
-export function seedProject(project, { variation = {}, relocated = false } = {}) {
+export function seedProject(project, { variation = {}, relocated = false, store } = {}) {
   validateVariant(variation);
   const work = { dir: relocated ? "alternate/stream" : "wiki/work" };
   if (variation.examples) work.examples = { enabled: true };
@@ -77,7 +77,7 @@ export function seedProject(project, { variation = {}, relocated = false } = {})
     write(path.join(project, "empty.tap"), "TAP version 13\n1..0\n");
   }
   if (variation.budget) work.doctor = { budgets: { architecture: 1 } };
-  write(path.join(project, ".aof", "aof.config.json"), JSON.stringify({ work }));
+  write(path.join(project, ".aof", "aof.config.json"), JSON.stringify({ work: { ...work, ...(store == null ? {} : { store }) } }));
   write(path.join(project, "README.md"), "Orchard\n");
   cpSync(templates, path.join(project, ".aof/templates/work"), { recursive: true });
   const root = path.join(project, work.dir);

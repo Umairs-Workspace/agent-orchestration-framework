@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { SWEEP_BASES, readRecord, sweepDeclarationProblems } from "../audit/reads.mjs";
 import { itemInScope } from "../ref-scope.mjs";
-import { listItems } from "../discovery.mjs";
+import { readWorkItemView } from "../store/work-item-store.mjs";
 import { pathCitationsIn, splitPathLocator } from "../audit/controls.mjs";
 import { buildAccounting, readAccountingSources, ACCOUNTING_BASIS } from "../memory-accounting.mjs";
 import { promotionPointers } from "../memory-vocabulary.mjs";
@@ -76,6 +76,7 @@ function workRelative(workDir, file) {
 async function readLessons(items, cwd) {
   const records = [];
   for (const item of items) {
+    if (item.dir == null) continue;
     const file = path.join(item.dir, "RETROSPECTIVE.md");
     if (!existsSync(file)) continue;
     const text = await readFile(file, "utf8");
@@ -138,6 +139,7 @@ async function readLessons(items, cwd) {
 async function readLineage(items, cwd) {
   const records = [];
   for (const item of items) {
+    if (item.dir == null) continue;
     for (const run of await readRuns(item)) {
       const file = run.node == null
         ? runRecordPath(item, run.runId)
@@ -240,19 +242,17 @@ function laneResult(declaration, count, root, raw) {
 // scope is a successful no-match report: no lane ran, so no lane can claim it read
 // nothing. Floors come only from the registry and never vary with scope.
 async function assembleCorpus(options = {}) {
-  // Every source reader must walk the SAME tree. `readLatestSnapshot` owns the
-  // canonical cwd/wiki/work join and accepts no alternate work root, so accepting
-  // one here would make lessons/lineage describe one tree while observations read
-  // another. Refuse the unsupported injection before any reader runs.
+  // The workspace supplies both the selected store and its document root. The
+  // legacy cwd entry remains supported; a bare workDir override is still refused.
   if (Object.hasOwn(options, "workDir")) {
     const error = new TypeError("work-tune: `workDir` is not an injectable corpus root; pass `cwd` and the corpus will read cwd/wiki/work through every source home");
     error.code = "work-tune-workdir-unsupported";
     throw error;
   }
-  const { cwd = process.cwd(), scope = null, lanes = CORPUS_LANES } = options;
-  const workDir = path.join(cwd, "wiki", "work");
+  const { cwd = process.cwd(), scope = null, lanes = CORPUS_LANES, workspace } = options;
+  const workDir = workspace?.workDir ?? path.join(cwd, "wiki", "work");
   assertCorpusLanesDeclared(lanes);
-  const allItems = await listItems(workDir);
+  const { items: allItems } = await readWorkItemView(workspace ?? workDir);
   const items = allItems.filter((item) => itemInScope(item, scope));
   const scopeLabel = scope == null || String(scope).trim() === "" ? null : String(scope).trim();
   if (items.length === 0) {

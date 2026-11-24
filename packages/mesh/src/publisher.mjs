@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { activeScopeHolders, executionScopeRef, restoreParkedAssignmentResume } from "./assignment-record.mjs";
 import { isMeshLaneTree } from "./worktrees.mjs";
 import { hasOwnWorkspaceConfig } from "./workspace-identity.mjs";
-import { workTreeStatDigest } from "@aof/work/discovery";
+import { resolveWorkItemStore } from "@aof/work/store/work-item-store";
 
 export const MESH_GLOBAL_DISABLED_CODE = "mesh-global-disabled";
 export const MESH_WORKSPACE_UNCONFIGURED_CODE = "mesh-workspace-unconfigured";
@@ -209,7 +209,7 @@ async function syncWorkspace(workspace, ctx = {}) {
   }
   // 167/ADR-003 — the stat gate asks the ONE fingerprint of a work tree, which the stream read's memo
   // asks too; the gate's behaviour is unchanged (164/ADR-002).
-  const digest = await workTreeStatDigest(workspace.workDir, { reportDegrade });
+  const digest = await resolveWorkItemStore(workspace).changeToken({ reportDegrade });
   const storeOptions = ctx.globalWorkStoreOptions ?? {};
   const paths = storeOptions.paths ?? globalMeshPaths(storeOptions);
   // `ctx.openStore` is a caller's shared handle for the detect read (the daemon tick shares one).
@@ -253,7 +253,7 @@ async function syncWorkspace(workspace, ctx = {}) {
     }
     const effects = ctx.drain === false
       ? []
-      : await drainEffects({ journal, eventId, now: ctx.now, ctx: { publisherOptions: { globalWorkStoreOptions: storeOptions, ...(ctx.publisherOptions ?? {}) } } });
+      : await drainEffects({ journal, eventId, now: ctx.now, ctx: { workspace, publisherOptions: { globalWorkStoreOptions: storeOptions, ...(ctx.publisherOptions ?? {}) } } });
     return { synced: true, changed: true, workspaceId, digest, owed, eventId, appended, effects, ...(held.length > 0 ? { held } : {}) };
   } finally {
     journal.close();

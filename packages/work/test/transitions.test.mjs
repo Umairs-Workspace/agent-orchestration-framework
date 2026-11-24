@@ -37,12 +37,41 @@ test('refused item facts owe no effects; an unavailable journal preserves the fa
 test('stream insertion checks every touched lock and a no-op remap owes no event', async () => {
   const calls = [], refs = ['142', '143'];
   const api = createStreamTransitions({
-    refsTouchedByInsert: async () => refs,
     lockContextFor: () => ({ workspaceId: 'workspace' }),
     guardItemLock: async (actual, { lock }) => { assert.strictEqual(actual, refs); assert.equal(lock.workspaceId, 'workspace'); calls.push('lock'); },
-    reindexForInsert: async () => { calls.push('reindex'); return { remap: [], shifted: 0 }; },
     openEffectsJournal: () => assert.fail('a no-op owes no event'),
   });
-  assert.deepEqual(await api.transitionStreamReindexed({ workDir: '/fixture' }, { at: 144 }), { remap: [], shifted: 0, eventId: null, effects: [] });
-  assert.deepEqual(calls, ['lock', 'reindex']);
+  const workspace = { workDir: '/fixture', workItemStore: {
+    async mutate(request) {
+      assert.equal(request.operation, 'reindex');
+      assert.equal(request.input.at, 144);
+      if (request.stage === 'plan') { calls.push('plan'); return { touched: refs }; }
+      calls.push('reindex'); return { remap: [], shifted: 0 };
+    },
+  } };
+  assert.deepEqual(await api.transitionStreamReindexed(workspace, { at: 144 }), { remap: [], shifted: 0, eventId: null, effects: [] });
+  assert.deepEqual(calls, ['plan', 'lock', 'reindex']);
+});
+
+
+test('208/03 a refused placement lock never reaches the selected apply operation or event journal', async () => {
+  for (const [method, input] of [['transitionStreamReindexed', { at: 12, space: 'top-level' }], ['transitionStreamArchived', { names: ['19_chore_receipt'] }], ['transitionStreamRenumbered', { ref: '10', to: '22' }]]) {
+    const requests = [], refusal = new Error('held');
+    const workspace = { workItemStore: { async mutate(request) {
+      requests.push(request);
+      assert.equal(request.stage, 'plan', 'the refused lock prevents every write');
+      return { touched: ['10'], handle: {}, description: {} };
+    } } };
+    const api = createStreamTransitions({ lockContextFor: () => ({}), guardItemLock: async () => { throw refusal; }, openEffectsJournal: () => assert.fail('refused moves owe no event') });
+    await assert.rejects(api[method](workspace, input), error => error === refusal);
+    assert.equal(requests.length, 1);
+  }
+});
+
+test('208/03 a renumber preview is the selected store plan and never applies or locks', async () => {
+  const description = { ref: '10', to: '22', changes: ['opaque move'] }, requests = [];
+  const workspace = { workItemStore: { async mutate(request) { requests.push(request); return { description }; } } };
+  const api = createStreamTransitions({ guardItemLock: () => assert.fail('preview does not lock'), openEffectsJournal: () => assert.fail('preview owes no event') });
+  assert.deepEqual(await api.transitionStreamRenumbered(workspace, { ref: '10', to: '22', dryRun: true }), { ...description, moved: false, dryRun: true, effects: [] });
+  assert.deepEqual(requests.map(({operation, stage}) => [operation, stage]), [['renumber', 'plan']]);
 });

@@ -58,6 +58,8 @@ const DISK_READERS = ["listItems", "findWork", "nextWork", "listStream", "readWo
 // RE-POINT the pin, not to delete it.
 const declares = (name) => new RegExp(`(?:function|const|let|class)\\s+${name}\\b|\\b${name}\\s*[:=]\\s*(?:async\\s*)?(?:function|\\()`);
 
+// 208/01: migrated content and doctor pins target the selected workspace store.
+// This is still the local authority; neither may enumerate the reporting cache.
 // (b) WORKER-side reads — a worker reading its OWN materialized worktree is the intended
 // behaviour (SPEC), and must survive the migration untouched.
 const WORKER_SIDE = [
@@ -68,14 +70,14 @@ const WORKER_SIDE = [
   // 43/03 and is re-pointed here at 43/06's review (ADR-016/G2). It is the read that turns
   // a worker's own worktree into the artifact bodies it streams: it must never be answered
   // by another node's copy of those bodies.
-  { file: path.join("packages", "work", "src", "content-read.mjs"), symbols: ["listItems"], subject: "readWorkspaceContentRecords", diskSource: "./discovery.mjs" },
+  { file: path.join("packages", "work", "src", "content-read.mjs"), symbols: ["readWorkItemView"], subject: "readWorkspaceContentRecords", diskSource: "./store/work-item-store.mjs" },
   // The dual-use self-report read (ADR-005: "how a node reads its own disk to report its own
   // state"). Not a reader that must migrate, and not a worker-side read either — it is the
   // publish path's own disk scan, and a cache-first version of it would make a node report
   // someone else's opinion as its own observation.
   // 167/01 (ADR-003): the read comes off discovery's remembered stream snapshot — still THIS node's
   // own disk, enumerated by `listItems` inside it, remembered by stat digest — so the pin follows it.
-  { file: path.join("packages", "mesh", "src", "projection-store.mjs"), symbols: ["readStreamSnapshot"], subject: "readWorkspaceProjectionItems", factory: "createGlobalWorkProjectionStore", adapter: "packages/core/src/application/bindings/global-work-store.mjs" },
+  { file: path.join("packages", "mesh", "src", "projection-store.mjs"), symbols: ["readWorkItemView"], subject: "readWorkspaceProjectionItems", diskSource: "@aof/work/store/work-item-store" },
   // FOUND at 43/06's review (ADR-016/G2): the launcher's stream tick reads the ACTIVE
   // WORKTREE's own items (`mesh-launcher.mjs:1532`) to build the frame it pushes. The
   // module's own comment already says the import "must stay" — a rule living in a comment
@@ -109,7 +111,7 @@ const STRUCTURAL = [
   // snapshot BUILDER (per-fact, ADR-010/R6.1) rather than splitting the snapshot's
   // source per check-group. The ITEM SET stays the disk's — that is what makes doctor's
   // findings claims about folders that are actually here.
-  { file: path.join("packages", "work", "src", "doctor", "index.mjs"), symbols: ["listItems"], subject: "buildSnapshot", diskSource: "../discovery.mjs" },
+  { file: path.join("packages", "work", "src", "doctor", "index.mjs"), symbols: ["readWorkItemView"], subject: "buildSnapshot", diskSource: "../store/work-item-store.mjs" },
   // ADR-010/R6.3 — RECLASSIFIED from control-side (a) to structural (c) at Three Amigos.
   // The read scans top-level items to choose the append position for a folder it then creates
   // on disk through the m41 reindex engine. A cache-derived answer would land the insert past
@@ -160,7 +162,7 @@ const CONTROL_SIDE = [
   // reach through neither a row's `dir` nor its `number`, which is exactly what separates it from
   // its two structural neighbours in `promotion.mjs`. The category is a property of the READ, not of
   // the module or the family: one function here makes all three, and they are classified apart.
-  { file: path.join("packages", "work", "src/commands/promote-finding-to-chore.mjs"), subject: "runPromoteFindingToChore", adapter: "packages/core/src/application/bindings/commands/promote-finding-to-chore.mjs" },
+  { file: path.join("packages", "work", "src/commands/promote-finding-to-chore.mjs"), subject: "runPromoteFindingToChore", factory: "createPromoteFindingCommand", engineFactory: "createFilePromoteFindingCommand", adapter: "packages/core/src/application/bindings/commands/promote-finding-to-chore.mjs" },
   { file: path.join("packages", "integration-notion", "src", "notion-associate.mjs"), subject: "notionAssociateCommand", adapter: "packages/core/src/application/bindings/integrations/services.mjs", via: "packages/integration-notion/src/contribution.mjs" },
   { file: path.join("packages", "integration-notion", "src", "sync-work.mjs"), subject: "syncMilestoneWork", adapter: "packages/core/src/application/bindings/integrations/services.mjs", via: "packages/integration-notion/src/services.mjs" },
   { file: path.join("packages", "knowledge", "src/memory/local-indexing.mjs"), subject: "buildRecords", adapter: "packages/core/src/application/bindings/memory/local-indexing.mjs", cacheSymbols: ["listItemsCacheFirst"], factory: "createLocalIndexing" },
@@ -271,7 +273,7 @@ export const archTests = [
       }
 
       const stragglers = [];
-      for (const { file, subject, adapter, via, cacheSymbols = ["listItemsCacheFirst"], factory = "create(?:Notion\\w+|PromoteFindingCommand)" } of CONTROL_SIDE) {
+      for (const { file, subject, adapter, via, cacheSymbols = ["listItemsCacheFirst"], factory = "create(?:Notion\\w+|PromoteFindingCommand)", engineFactory = factory } of CONTROL_SIDE) {
         const full = path.join(repoRoot, file);
         // A MISSING module is a re-point signal, not a skip. The positive pins have always treated
         // it as one (`assertPinned` just reads the file), and a `continue` here would let a deleted
@@ -298,7 +300,7 @@ export const archTests = [
             assert.match(source, new RegExp('\\b' + symbol + '\\s*\\(', 'u'), file + ': uses the cache-first service');
             assert.match(composition, new RegExp('const\\s*\\{[^}]*\\b' + symbol + '\\b[^}]*\\}\\s*= workReadServices', 'u'));
             assert.match(injector, new RegExp(factory + '\\(\\{[^}]*\\b' + symbol + '\\b', 'u'), (via ?? adapter) + ': injects the shared cache-first reader');
-            assert.match(source, new RegExp(factory + '\\(\\{[^}]*\\b' + symbol + '\\b', 'u'), file + ': accepts the cache-first port');
+            assert.match(source, new RegExp(engineFactory + '\\(\\{[^}]*\\b' + symbol + '\\b', 'u'), file + ': accepts the cache-first port');
           }
           for (const symbol of workImportBindings(composition)) bindings.add(symbol);
         }

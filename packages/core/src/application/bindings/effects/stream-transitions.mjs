@@ -1,8 +1,5 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import { createStreamTransitions } from "@aof/work/stream-transitions";
-import { reindexForInsert, refsTouchedByInsert } from "@aof/work/reindex";
-import { planRenumber, applyRenumber, describeRenumber } from "@aof/work/renumber";
-import { archiveItems, refsMovedByArchive } from "@aof/work/archive";
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
 export function assembleEffectsStreamTransitions({ itemLockServices, effectsTableServices, effectsJournalServices, effectsDispatchServices, degradeServices }) {
@@ -17,7 +14,7 @@ export function assembleEffectsStreamTransitions({ itemLockServices, effectsTabl
   const { runEffectsEphemeral } = effectsDispatchServices;
   const { reportDegrade } = degradeServices;
 
-  const { transitionStreamReindexed, transitionStreamArchived, transitionStreamRenumbered } = createStreamTransitions({ planRenumber, applyRenumber, describeRenumber, reindexForInsert, refsTouchedByInsert, archiveItems, refsMovedByArchive, resolveWorkspaceId, guardItemLock, lockContextFor, applicableReactors, openEffectsJournal, appendEvent, drainEffects, runEffectsEphemeral, reportDegrade });
+  const { transitionStreamReindexed, transitionStreamArchived, transitionStreamRenumbered } = createStreamTransitions({ resolveWorkspaceId, guardItemLock, lockContextFor, applicableReactors, openEffectsJournal, appendEvent, drainEffects, runEffectsEphemeral, reportDegrade });
 
   return { transitionStreamReindexed, transitionStreamArchived, transitionStreamRenumbered };
 }

@@ -1,3 +1,4 @@
+import { readWorkItemView } from "@aof/work/store/work-item-store";
 import os from "node:os";
 import path from "node:path";
 import { readFileSync } from "node:fs";
@@ -11,7 +12,7 @@ import { buildSessionSpawnAckEnvelope } from "./session-spawn-directive.mjs";
 import { intervalTicker } from "./presence-loop.mjs";
 import { readPresentedCredential } from "./relay.mjs";
 import { processCostMeter, startCostSnapshots } from "@aof/foundation/cost-meter";
-import { createWorkTreeWatches, workTreeStatDigest } from "@aof/work/discovery";
+import { createWorkItemObservations, resolveWorkItemStore } from "@aof/work/store/work-item-store";
 
 
 // Configured runtime services are supplied by core. Construction starts no I/O or timers.
@@ -629,7 +630,21 @@ async function resolveTickWorkspaces(ws, nodeId, options, openStore) {
     const key = normalizedWorkDirKey(entry.workDir);
     if (!roots.has(key) && typeof entry.projectRoot === "string") roots.set(key, entry.projectRoot);
   }
-  return { registryResult, workspaces, remaining, projectRootOf: (entry) => roots.get(normalizedWorkDirKey(entry.workDir)) ?? null };
+  const projectRootOf = entry => roots.get(normalizedWorkDirKey(entry.workDir)) ?? null;
+  const loaded = new Map([[normalizedWorkDirKey(ws.workDir), Promise.resolve(ws)]]);
+  const workspaceFor = entry => {
+    const key = normalizedWorkDirKey(entry.workDir);
+    if (!loaded.has(key)) {
+      const env = options?.globalWorkStoreOptions?.env;
+      loaded.set(key, loadWorkspace(projectRootOf(entry), undefined, env ? { env } : {}).then(workspace => {
+        if (!entry.workspaceId || workspace.config?.mesh?.workspaceId === entry.workspaceId) return workspace;
+        return { ...workspace, workItemStore: resolveWorkItemStore(workspace),
+          config: { ...workspace.config, mesh: { ...workspace.config?.mesh, workspaceId: entry.workspaceId } } };
+      }));
+    }
+    return loaded.get(key);
+  };
+  return { registryResult, workspaces, remaining, projectRootOf, workspaceFor };
 }
 
 // 167/ADR-005 — the sync failures that will not fix themselves, a CLOSED set declared here. Any other
@@ -683,7 +698,7 @@ function createFaultLedger(tickMs) {
 async function syncTickWorkspaces(ws, nodeId, options, warningsSink, tick) {
   const { tickSet, openStore, ledger, watches, notPropagating } = tick;
   const sync = typeof options?.syncWorkspace === "function" ? options.syncWorkspace : syncWorkspace;
-  const { registryResult, workspaces, remaining, projectRootOf } = tickSet;
+  const { registryResult, workspaces, remaining, projectRootOf, workspaceFor } = tickSet;
   const results = [];
   if (!registryResult.ok) {
     // The registry lives in the store this tick could not read: every registered workspace is
@@ -703,15 +718,16 @@ async function syncTickWorkspaces(ws, nodeId, options, warningsSink, tick) {
   const watchable = [];
   for (const entry of workspaces) {
     const isLaunch = normalizedWorkDirKey(entry.workDir) === launchKey;
-    const held = entry.workspaceId ? ledger.holding(entry.workspaceId, nowMs()) : null;
-    if (held != null && !(await workTreeMovedSince(entry.workDir, held.digest))) {
-      meter.count("sync-pass", labelled(entry, "backoff"));
-      watchable.push(entry.workDir);
-      continue;
-    }
+    let workspace;
     try {
+      workspace = await workspaceFor(entry);
+      const held = entry.workspaceId ? ledger.holding(entry.workspaceId, nowMs()) : null;
+      if (held != null && !(await workStoreMovedSince(workspace, held.digest))) {
+        meter.count("sync-pass", labelled(entry, "backoff"));
+        watchable.push(entry.workDir);
+        continue;
+      }
       const projectRoot = projectRootOf(entry);
-      const workspace = isLaunch ? ws : await loadWorkspace(projectRoot);
       const result = await sync(workspace, {
         globalWorkStoreOptions: options?.globalWorkStoreOptions ?? {},
         openStore,
@@ -743,7 +759,7 @@ async function syncTickWorkspaces(ws, nodeId, options, warningsSink, tick) {
       meter.count("sync-failure", labelled(entry, code));
       const permanent = Boolean(entry.workspaceId) && PERMANENT_SYNC_FAULT_CODES.has(code);
       // Said once: a repeat of a fault already said only lengthens its backoff.
-      if (permanent && !ledger.fail(entry.workspaceId, code, nowMs(), await workTreeStatDigest(entry.workDir, { reportDegrade }))) continue;
+      if (permanent && !ledger.fail(entry.workspaceId, code, nowMs(), await observationToken(workspace))) continue;
       emitWarning(warningsSink, {
         code: "global-work-propagation-failed",
         message: `Syncing workspace ${entry.workspaceId} failed${error?.code ? ` (${error.code})` : ""}: ${error?.message ?? error}${permanent ? " It will not fix itself, so it is said once and tried again only after a backoff or once the workspace's files change." : ""}`,
@@ -753,14 +769,20 @@ async function syncTickWorkspaces(ws, nodeId, options, warningsSink, tick) {
     }
   }
   // A tick that could not read the registry knows nothing about which trees exist: it changes no watch.
-  if (watches && registryResult.ok) watches.retain(watchable);
+  if (watches && registryResult.ok) await watches.retain(watchable);
   return results;
 }
 
 // A backed-off workspace whose files changed is tried at once: the change can be the fix. A tree
 // whose digest cannot be computed has not visibly moved.
-async function workTreeMovedSince(workDir, digest) {
-  const now = await workTreeStatDigest(workDir, { reportDegrade });
+async function observationToken(workspace) {
+  if (workspace == null) return null;
+  try { return await resolveWorkItemStore(workspace).changeToken({ reportDegrade }); }
+  catch (error) { reportDegrade("work-store-observation", error); return null; }
+}
+
+async function workStoreMovedSince(workspace, digest) {
+  const now = await observationToken(workspace);
   return now != null && now !== digest;
 }
 
@@ -839,12 +861,10 @@ async function assemblePresenceForTick(ws, nodeId, options, tickSet, openStore) 
   // carries no config, so the cache read derived an id from the path instead: on any workspace
   // with a pinned id it looked up rows nobody writes, and counted its cost under that id
   // (measured by 167/04's soak: `work-read-cache-unavailable` under a hash, not `ws-soak-167`).
-  const readWorkspace = (workDir, workspace) => (workspace?.workspaceId
-    ? { workDir, projectRoot: tickSet.projectRootOf(workspace) ?? workDir, config: { mesh: { workspaceId: workspace.workspaceId } } }
-    : workspace ?? { workDir, projectRoot: workDir });
+  const readWorkspace = (_workDir, workspace) => tickSet.workspaceFor(workspace);
   const listItemsFn = typeof options?.listItems === "function"
     ? options.listItems
-    : (workDir, workspace) => listItemsCacheFirst(readWorkspace(workDir, workspace), cacheOptions);
+    : async (workDir, workspace) => listItemsCacheFirst(await readWorkspace(workDir, workspace), cacheOptions);
   const { activeRuns, workspacesWithRuns, loops } = await assembleActiveRunsAndSubsumedWorkspaces(workspaces, listItemsFn, cacheOptions);
 
   // sessions is the union of this node's LIVE session records (ADR-001/002), stored
@@ -1080,7 +1100,7 @@ async function startLauncher(ws, options = {}) {
   // 167/ADR-009 — only `mesh serve` asks for work-tree watches. An object is the watch set's own
   // options (the tests' injected `watch` and clock).
   const workTreeWatches = options?.workTreeWatch
-    ? createWorkTreeWatches({ meter: options?.costMeter ?? processCostMeter, reportDegrade, ...(typeof options.workTreeWatch === "object" ? options.workTreeWatch : {}) })
+    ? createWorkItemObservations({ meter: options?.costMeter ?? processCostMeter, reportDegrade, ...(typeof options.workTreeWatch === "object" ? options.workTreeWatch : {}) })
     : null;
   // The work dirs a sync pass skipped as not propagating: never armed again in this daemon.
   const notPropagating = new Set();
@@ -1091,7 +1111,12 @@ async function startLauncher(ws, options = {}) {
       // 167/ADR-009 — armed BEFORE the tick walks, so the tick's own walk of a newly watched tree is
       // the one it remembers: a tree is walked once when first watched, never once more next tick.
       // The pass's end narrows the set to the trees it covers.
-      if (workTreeWatches && tickSet.registryResult.ok) workTreeWatches.arm(tickSet.workspaces.map((entry) => entry.workDir).filter((dir) => typeof dir === "string" && !notPropagating.has(path.resolve(dir))));
+      if (workTreeWatches && tickSet.registryResult.ok) {
+        const observed = await Promise.all(tickSet.workspaces
+          .filter(entry => typeof entry.workDir === "string" && !notPropagating.has(path.resolve(entry.workDir)))
+          .map(entry => tickSet.workspaceFor(entry).catch(() => null)));
+        await workTreeWatches.arm(observed.filter(Boolean));
+      }
       const nextRecord = await assemblePresenceForTick(ws, nodeId, options, tickSet, shared.openStore);
       await publishPresenceRecord(ws, nodeId, nextRecord);
       record = nextRecord;
@@ -2122,7 +2147,7 @@ async function startLauncher(ws, options = {}) {
           // mandates keeping — a `Bash`-written file is outside the hook's matcher and
           // must still converge on this same tick — and the CONTENT HASH is what keeps
           // the widened set affordable: only artifacts whose bytes moved ride the wire.
-          const worktreeItems = await listItems(worktreeWs.workDir);
+          const worktreeItems = await listItems(worktreeWs.workDir, { view: await readWorkItemView(worktreeWs) });
           const content = await readWorkspaceContentRecords(worktreeWs, { itemRef: active.itemRef, items: worktreeItems });
           // m42 (operator-forced rethink): the run-lifecycle bracket writes its run
           // records against the CHECKOUT's work dir, not the worktree's — a live run
@@ -2314,7 +2339,7 @@ async function startLauncher(ws, options = {}) {
   // also disposes the control node's loopback relay BROKER and its loopback push
   // transport, when either was started/constructed above.
   const stop = () => {
-    workTreeWatches?.close();
+    const observationsClosed = workTreeWatches?.close();
     peerPollTicker.stop(peerPollHandle);
     propagationTicker.stop(propagationHandle);
     if (streamSyncHandle != null) streamSyncTicker.stop(streamSyncHandle);
@@ -2345,7 +2370,7 @@ async function startLauncher(ws, options = {}) {
     terminalInputSubscriber?.stop?.();
     // 167/ADR-001 — the last snapshot of a clean stop. Returned, so a caller that awaits the stop
     // knows it landed; a caller that does not still frees the event loop (the ticker is stopped).
-    return costWriter?.stop() ?? Promise.resolve();
+    return Promise.all([observationsClosed, costWriter?.stop()]);
   };
 
   return {

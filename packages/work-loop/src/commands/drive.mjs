@@ -115,7 +115,7 @@ export function createPhaseDrivers({
         coldStartReason = "native-thread-unavailable";
       }
     }
-    const runRecord = recorded ?? (managedRunId == null ? (await transitionRunStart(item, { execution: selected, now: new Date().toISOString() })).record : { runId: managedRunId });
+    const runRecord = recorded ?? (managedRunId == null ? (await transitionRunStart(item, { execution: selected, now: new Date().toISOString() }, { trackingWorkspace: ctx.workspace })).record : { runId: managedRunId });
     const settlementContext = { runtime: "codex", projectsDir: null, transcriptBaseline: null, spendBaselineAvailable: false, reason: "runtime-spend-unavailable" };
     ctx.loopDrive?.recordSettlementContext?.(settlementContext);
     const dir = askRequests.loopAsksDir(nativeAsks.askEnvFor(ctx));
@@ -167,7 +167,7 @@ export function createPhaseDrivers({
       await askRequests.parkAsk(dir, runRecord.runId);
       await runs.parkRunAsk(item, runRecord.runId);
     }
-    if (managedRunId == null && result.outcome !== "needs-input") await transitionRunComplete(item, { runId: runRecord.runId, outcome: result.outcome, failureReason: result.failureReason ?? null, now: new Date().toISOString() }, { projectsDir: null, spendSettled: true });
+    if (managedRunId == null && result.outcome !== "needs-input") await transitionRunComplete(item, { runId: runRecord.runId, outcome: result.outcome, failureReason: result.failureReason ?? null, now: new Date().toISOString() }, { trackingWorkspace: ctx.workspace, projectsDir: null, spendSettled: true });
     return { ref: item.ref, phase, command, ...result, settlementContext };
   }
 
@@ -593,7 +593,7 @@ export function createPhaseDrivers({
             : null);
         const ownsRun = managedRunId == null;
         const runRecord = managedRunId == null
-          ? await transitionRunStart(item, { now: new Date().toISOString(), ...(selectedExecution == null ? {} : { execution: selectedExecution }) })
+          ? await transitionRunStart(item, { now: new Date().toISOString(), ...(selectedExecution == null ? {} : { execution: selectedExecution }) }, { trackingWorkspace: ctx.workspace })
             .then(({ record }) => record)
             .catch((error) => {
               reportDegrade("drive", error);
@@ -796,7 +796,7 @@ export function createPhaseDrivers({
             await transitionRunComplete(
               item,
               { runId: runRecord.runId, ...settled, now: new Date().toISOString() },
-              { projectsDir, spendSettled: true },
+              { trackingWorkspace: ctx.workspace, projectsDir, spendSettled: true },
             );
           } catch (error) {
             reportDegrade("drive", error);

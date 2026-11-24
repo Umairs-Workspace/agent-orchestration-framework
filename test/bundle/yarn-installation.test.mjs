@@ -58,7 +58,7 @@ export const yarnInstallationTests = [
         'scene-view.mjs': [],
         'generator-diagram-design.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
         'doctor-lane.mjs': ['node:path', '@aof/work/lifecycle'],
-        'commands/plan.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error', '@aof/work/discovery', '@aof/work/records'],
+        'commands/plan.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error', '@aof/work/store/work-item-store'],
         'commands/export.mjs': ['node:fs/promises', 'node:path', '@aof/contracts/error'],
         'commands/file.mjs': ['node:fs/promises', 'node:path', '@aof/contracts/error'],
         'commands/scene.mjs': ['node:fs/promises', 'node:fs', 'node:crypto', 'node:path', '@aof/contracts/error'],
@@ -181,6 +181,9 @@ export const yarnInstallationTests = [
         'worktrees.mjs': ['node:child_process', '@aof/foundation/git-args'],
         'bounded-process.mjs': ['node:child_process', 'node:fs', 'node:path', '@aof/foundation/awake-clock'],
       } : name === 'mesh' ? {
+        // 208: these tracking consumers receive the selected workspace view.
+        'effects.mjs': ['@aof/work/store/work-item-store'],
+        'park-resume.mjs': ['@aof/work/store/work-item-store'],
         "artifact-sync.mjs": ["node:fs/promises","node:path","@aof/work/artifacts"],
         "node-identity.mjs": ["node:path","node:crypto","@aof/foundation/fs","@aof/foundation/text","node:fs/promises"],
         "workspace-identity.mjs": ["node:crypto","node:fs","node:path"],
@@ -193,9 +196,9 @@ export const yarnInstallationTests = [
         'session-spawn-handler.mjs': ["node:path","node:fs"],
         // 191/02 (ADR-003 §1): the one start core mints the session id and probes locality.
         'session-start.mjs': ["node:crypto","node:fs"],
-        'worker-execution.mjs': ["node:path","node:child_process","node:fs/promises","node:os","@aof/contracts/loop-bounds"],
+        'worker-execution.mjs': ["@aof/work/store/work-item-store","node:path","node:child_process","node:fs/promises","node:os","@aof/contracts/loop-bounds"],
         // 167/03: a backed-off workspace whose files changed is tried at once — the one stat digest.
-        'launcher.mjs': ["node:os","node:path","node:fs","node:fs/promises","@aof/foundation/cost-meter","@aof/work/discovery"],
+        'launcher.mjs': ["node:os","node:path","node:fs","node:fs/promises","@aof/foundation/cost-meter","@aof/work/store/work-item-store"],
         'control-stream-server.mjs': ["ws","node:http"],
         'worker-stream-client.mjs': ["ws"],
         'ui-serve.mjs': ["node:http","node:fs","node:fs/promises","node:path","@aof/server/static-serve","ws","node:crypto","@aof/foundation/cost-meter"],
@@ -223,14 +226,14 @@ export const yarnInstallationTests = [
         'commands/terminal-resume.mjs': ["@aof/contracts/error"],
         'commands/ui.mjs': ["node:path","@aof/foundation/cost-meter"],
         'assignment-reclaim.mjs': ['node:fs', '@aof/contracts/loop-bounds'],
-        'declarations.mjs': ['@aof/contracts/loop-bounds', '@aof/work-loop/engine', '@aof/work-loop/argv'],
+        'declarations.mjs': ['@aof/work/store/work-item-store','@aof/contracts/loop-bounds', '@aof/work-loop/engine', '@aof/work-loop/argv'],
         'presence.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/fs', '@aof/work-loop/engine'],
         'global-node-registry.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/fs'],
         'global-query.mjs': [],
         // 164/00: the sync pass stat-walks the record files and digests what it saw.
-        'publisher.mjs': ['node:path', 'node:fs', '@aof/work/discovery'],
+        'publisher.mjs': ['node:path', 'node:fs', '@aof/work/store/work-item-store'],
         // 164/00: the store asks the one "changed since observed" predicate (FF-16401).
-        'projection-store.mjs': ['node:path', 'node:fs/promises', 'node:os', '@aof/work/item-row', '@aof/work/artifacts', '@aof/work/local-change', '@aof/work/discovery', '@aof/foundation/cost-meter'],
+        'projection-store.mjs': ['node:path', 'node:fs/promises', 'node:os', '@aof/work/item-row', '@aof/work/artifacts', '@aof/work/local-change', '@aof/work/discovery', '@aof/work/store/work-item-store', '@aof/foundation/cost-meter'],
         // 167/06: the store's board-face content reads, moved out under its line ratchet, key artifact docs as the store does.
         'content-reads.mjs': ['@aof/work/artifacts'],
         'assignment-record.mjs': ['node:crypto'],
@@ -293,6 +296,14 @@ export const yarnInstallationTests = [
         'fs.mjs': ['node:crypto', 'node:fs/promises', 'node:path'],
         'log.mjs': ['node:fs', 'node:path'],
       } : name === 'work' ? {
+        // 208/00: provider selection uses the shared coded error; the file adapter
+        // translates document homes with path operations and reuses local storage readers.
+        'store/work-item-store.mjs': ['node:path', '@aof/contracts/error'],
+        'store/file-store.mjs': ['node:fs/promises', 'node:path'],
+        // 208: replay checks which workspace owns the item before selecting its store.
+        'effects.mjs': ['node:path'],
+        'store/file-lifecycle.mjs': ['node:path', '@aof/contracts/error'],
+        'store/file-placement.mjs': ['@aof/contracts/error'],
         'citation-history.mjs': ['node:path', 'node:fs/promises'],
         "phase-brief-read.mjs": ["node:fs/promises","node:path"],
         "ready-wave.mjs": ["node:path","node:fs/promises"],

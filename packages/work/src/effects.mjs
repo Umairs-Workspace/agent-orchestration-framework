@@ -1,8 +1,29 @@
+import path from "node:path";
+import { readWorkItemView } from "./store/work-item-store.mjs";
+
 // Domain-owned effect handlers. Core supplies the services; this package imports no assembled application.
 export function createWorkEffects(getServices) {
   if (typeof getServices !== 'function') throw new TypeError('createWorkEffects requires a service provider.');
-  async function advanceStatusOnRunStart(event) {
-    const { setItemStatus, typeHasRecordDoc } = await getServices();
+  async function eventWorkspace(event, ctx, loadWorkspace) {
+    const root = event.payload?.workspaceRoot;
+    const candidates = [ctx.workspace, ctx.trackingWorkspace];
+    if (root != null) return candidates.find(workspace => workspace?.projectRoot === root) ?? await loadWorkspace(root);
+    // Old events omit the publication root. Recover tracking ownership from the item,
+    // never from the unrelated workspace currently draining this journal.
+    const itemDir = event.payload?.itemDir;
+    const owns = workspace => {
+      if (!workspace?.workDir || !itemDir) return false;
+      const relative = path.relative(workspace.workDir, itemDir);
+      return relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+    };
+    const live = candidates.find(owns);
+    if (live) return live;
+    const loaded = itemDir && typeof loadWorkspace === "function" ? await loadWorkspace(itemDir) : null;
+    return owns(loaded) ? loaded : null; // legacy standalone record fixtures have no workspace
+  }
+
+  async function advanceStatusOnRunStart(event, ctx = {}) {
+    const { setItemStatus, typeHasRecordDoc, loadWorkspace } = await getServices();
     const { ref, itemDir, itemType, phase } = event.payload ?? {};
     // A mint site with no local folder (the worker's no-workspace path) has no record doc
     // to move; nothing is owed rather than a fabricated path (the ADR-010/R6.4 reading).
@@ -20,7 +41,8 @@ export function createWorkEffects(getServices) {
     // reactor that was never owed the move.
     if (!typeHasRecordDoc(itemType)) return { skipped: true, reason: "type-has-no-record-doc" };
     try {
-      await setItemStatus({ ref, dir: itemDir, type: itemType }, "in-progress", { expectFrom: ["not-started", "blocked"] });
+      const workspace = await eventWorkspace(event, ctx, loadWorkspace);
+      await setItemStatus({ ref, dir: itemDir, type: itemType }, "in-progress", { expectFrom: ["not-started", "blocked"], ...(workspace ? { workspace } : {}) });
       return { advanced: true, status: "in-progress" };
     } catch (error) {
       if (error?.code === "status-edge-not-applicable") return { skipped: true, reason: "status-edge-not-applicable" };
@@ -28,8 +50,8 @@ export function createWorkEffects(getServices) {
     }
   }
 
-  async function rollbackStatusIfFailed(event) {
-    const { rollbackItemStatus, typeHasRecordDoc } = await getServices();
+  async function rollbackStatusIfFailed(event, ctx = {}) {
+    const { rollbackItemStatus, typeHasRecordDoc, loadWorkspace } = await getServices();
     const { outcome, ref, itemDir, itemType, phase } = event.payload ?? {};
     if (outcome !== "failed") return { skipped: true, reason: "outcome-not-failed" };
     // 147/01 — the mirror of the start: a repair run that failed did not start its item, so it has
@@ -39,7 +61,8 @@ export function createWorkEffects(getServices) {
     // rollback either, and must not be reported as a document fault.
     if (!typeHasRecordDoc(itemType)) return { skipped: true, reason: "type-has-no-record-doc" };
     try {
-      await rollbackItemStatus({ ref, dir: itemDir, type: itemType }, "not-started");
+      const workspace = await eventWorkspace(event, ctx, loadWorkspace);
+      await rollbackItemStatus({ ref, dir: itemDir, type: itemType }, "not-started", workspace ? { workspace } : undefined);
       return { rolledBack: true };
     } catch (error) {
       if (error?.code === "rollback-not-applicable") {
@@ -49,13 +72,13 @@ export function createWorkEffects(getServices) {
     }
   }
 
-  async function remapRunRecordRefs(event) {
+  async function remapRunRecordRefs(event, ctx = {}) {
     const { loadWorkspace, listItems, rewriteRunItemRef } = await getServices();
     const { workspaceRoot, remap } = event.payload ?? {};
     if (!workspaceRoot) return { skipped: true, reason: "no-workspace-root" };
     if (!Array.isArray(remap) || remap.length === 0) return { skipped: true, reason: "empty-remap" };
-    const workspace = await loadWorkspace(workspaceRoot);
-    const items = await listItems(workspace.workDir);
+    const workspace = await eventWorkspace(event, ctx, loadWorkspace);
+    const items = await listItems(workspace.workDir, { view: await readWorkItemView(workspace) });
     const byRef = new Map(items.map((item) => [item.ref, item]));
     let rewritten = 0;
     for (const { from, to } of remap) {

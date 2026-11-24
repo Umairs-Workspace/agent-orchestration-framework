@@ -77,7 +77,8 @@ test('tune command defers registry acquisition until tunable evidence needs the 
   const empty = await api.tuneCommand.run({ scope: ' 12 ' }, { workspace });
   assert.deepEqual(empty.proposals, []);
   assert.deepEqual(calls.map(call => call[0]), ['model', 'corpus']);
-  assert.deepEqual(calls[1][1], { cwd: root, scope: '12' });
+  assert.deepEqual(calls[1][1], { cwd: root, scope: '12', workspace });
+  assert.equal(calls[1][1].workspace, workspace, 'the selected store travels with its workspace');
   rows = records;
   calls.length = 0;
   const report = await api.buildTuneReport({}, { workspace });

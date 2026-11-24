@@ -438,7 +438,7 @@ export const archTests = [
       const legAAt = spine.indexOf("controlProbes[control] = (await stat(path.join(projectRoot, control))");
       const fallThroughAt = spine.indexOf("resolveCitedPath(control, { renameMap })");
       assert.ok(legAAt >= 0 && fallThroughAt > legAAt, "…and it is the FIRST branch, with the rename map consulted only on its miss");
-      assert.match(spine, /renameMap = null \} = \{\}\) \{/u, "the rename map reaches the snapshot as data supplied by the caller");
+      assert.match(spine, /async function buildSnapshot\(workDir, \{[^}]*\brenameMap = null(?:,|\s*\})/u, "the rename map reaches the snapshot as data supplied by the caller");
 
       const edge = stripComments(await readFile(path.join(root, EDGE), "utf8"));
       assert.match(edge, /execFileAsync\("git", args/u, `${EDGE} is the module that reads the repository's history`);

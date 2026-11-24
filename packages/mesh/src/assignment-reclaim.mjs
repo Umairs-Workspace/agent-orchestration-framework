@@ -233,7 +233,7 @@ async function reclaimStaleAssignments(store, workspace, workspaceId, options = 
       await transitionRunReclaimed(
         item,
         { runId: localRun.runId, now },
-        { journalOptions: options.globalWorkStoreOptions ?? {} },
+        { trackingWorkspace: workspace, journalOptions: options.globalWorkStoreOptions ?? {} },
       );
     }
 

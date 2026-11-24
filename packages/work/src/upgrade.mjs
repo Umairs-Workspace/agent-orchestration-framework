@@ -1,9 +1,10 @@
+import { resolveWorkItemStore } from "./store/work-item-store.mjs";
 import { listItems } from "./discovery.mjs";
 import { recordDoc, readItemSchema, applyItemFrontmatter, WORK_ITEM_SCHEMA_VERSION } from "./records.mjs";
 import { commandError } from "@aof/contracts/error";
 
 // Core supplies installed-product version policy. Construction performs no reads.
-export function createWorkUpgrade({ packageVersionString }) {
+export function createFileWorkUpgrade({ packageVersionString }) {
 // The migration registry + `aof upgrade` engine (milestone 40 / story 02,
 // ADR-005). Imports work-owned readers and the ADR-004 atomic writer; readers
 // never import the engine. Core supplies installed-product version policy.
@@ -260,4 +261,15 @@ async function runUpgrade(workDir, { apply = false, migrations = WORK_ITEM_MIGRA
 }
 
 return { WORK_ITEM_MIGRATIONS, changelogDrift, planTransforms, planUpgrade, renderChangelog, runUpgrade };
+}
+
+export function createWorkUpgrade(services) {
+  const engine = createFileWorkUpgrade(services);
+  return {
+    ...engine,
+    runUpgrade: async (workspaceOrDir, input) => {
+      const workspace = typeof workspaceOrDir === "string" ? { workDir: workspaceOrDir } : workspaceOrDir;
+      return resolveWorkItemStore(workspace).mutate({ operation: "upgrade", input }, { ctx: { workspace }, services });
+    },
+  };
 }

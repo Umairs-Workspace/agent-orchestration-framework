@@ -2,7 +2,7 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { listItems } from "./discovery.mjs";
+import { readWorkItemView } from "./store/work-item-store.mjs";
 import { BACKLOG_ROOT, ARCHIVE_ROOT } from "./identity.mjs";
 
 // Application composition supplies reporting and configuration services.
@@ -879,11 +879,11 @@ function tokenSplit(agents = []) {
 // story. A run whose own sessionId is null/absent contributes nothing (its session is
 // unknown). ENOENT/torn-file tolerant, the same "absence is benign" discipline as
 // readItemRuns.
-async function buildSessionItemIndex({ cwd = process.cwd() } = {}) {
+async function buildSessionItemIndex({ cwd = process.cwd(), workspace } = {}) {
   const index = new Map();
   // Every item the enumerator knows — the live root, the backlog and the archive alike — so
   // a run recorded under an item that has since been archived still resolves its session.
-  for (const row of await listItems(workDirOf(cwd))) {
+  for (const row of (await readWorkItemView(workspace ?? workDirOf(cwd))).items.filter((row) => row.dir != null)) {
     const ref = observeRefOf(row);
     for (const run of await readItemRuns(row)) {
       if (run.execution?.runtime !== "codex" && typeof run?.sessionId === "string" && run.sessionId.length > 0) {
@@ -1340,14 +1340,14 @@ function renderReportMarkdown({ id, folder, story = null, kind = "milestone", ag
 //   milestone → { folder: "NN_slug", id: "NN", story: null, kind: "milestone" }
 //   story     → { folder: "NN_slug/stories/SS_story_slug", id: "NN", story: "SS", kind: "story" }
 //   nothing   → null (the caller throws milestone-not-found naming the ref).
-async function resolveMilestoneFolder({ cwd = process.cwd(), ref } = {}) {
-  const workDir = workDirOf(cwd);
+async function resolveMilestoneFolder({ cwd = process.cwd(), ref, workspace } = {}) {
+  const workDir = workspace?.workDir ?? workDirOf(cwd);
   // milestone 127 / ADR-001 §5 — the rows, not a listing of our own. A top-level row is the
   // "milestone" kind this function has always answered with (it never asked the type — a
   // chore at the root resolved as `kind: "milestone"` before and still does); a nested row is
   // the "story" kind. An archived item resolves under `archive/…`, and a backlog leaf by its
   // exact folder name or slug — nothing here spells a root or a grammar.
-  const rows = await listItems(workDir);
+  const rows = (await readWorkItemView(workspace ?? workDir)).items.filter((row) => row.dir != null);
   const top = rows.filter((row) => row.parent == null);
   const asMilestone = (row) => ({ folder: relativeFolderOf(workDir, row), id: observeIdOf(row), story: null, kind: "milestone" });
   const asStory = (row) => ({ folder: relativeFolderOf(workDir, row), id: dropLeadingZeros(row.parent), story: observeIdOf(row), kind: "story" });
@@ -1609,15 +1609,15 @@ async function readItemRuns(item) {
 // `dir` is that folder, and the two roots are stepped over by their exported names. It used to
 // test `/^\d+_/`, which called any numbered folder "attributed" and could not tell a root
 // from a stray.
-async function countUnattributedRuns({ cwd }) {
-  const workDir = workDirOf(cwd);
+async function countUnattributedRuns({ cwd, workspace }) {
+  const workDir = workspace?.workDir ?? workDirOf(cwd);
   let top;
   try {
     top = await fsp.readdir(workDir, { withFileTypes: true });
   } catch {
     return 0;
   }
-  const itemDirs = new Set((await listItems(workDir)).map((row) => row.dir));
+  const itemDirs = new Set((await readWorkItemView(workspace ?? workDir)).items.map((row) => row.dir));
   let count = 0;
   const countJson = async (dir) => {
     let entries;
@@ -1768,10 +1768,12 @@ async function dirExists(p) {
 // The newest snapshot of one item, read by its `ref` or by its `item` — a row of the stream listing the caller
 // already holds (160/ADR-011 §2). Resolving a ref lists the whole stream, so a caller walking every item hands
 // the row and the stream is listed once per walk, not once per item. A ref that resolves to nothing reads null.
-async function readLatestSnapshot({ cwd, ref, item = null }) {
-  const folder = item != null ? relativeFolderOf(workDirOf(cwd), item) : (await resolveMilestoneFolder({ cwd, ref }))?.folder;
+async function readLatestSnapshot({ cwd, ref, item = null, workspace }) {
+  if (item != null && item.dir == null) return null;
+  const workDir = workspace?.workDir ?? workDirOf(cwd);
+  const folder = item != null ? relativeFolderOf(workDir, item) : (await resolveMilestoneFolder({ cwd, ref, workspace }))?.folder;
   if (folder == null) return null;
-  const obsDir = path.join(cwd, "wiki", "work", folder, "observability");
+  const obsDir = path.join(workDir, folder, "observability");
   const snapshotsDir = path.join(obsDir, "snapshots");
   let names;
   try {
@@ -1813,6 +1815,7 @@ async function readLatestSnapshot({ cwd, ref, item = null }) {
 // Top-level: analyze a milestone and (optionally) write its observability folder.
 async function observeMilestone({
   cwd = process.cwd(),
+  workspace,
   ref,
   home = os.homedir(),
   env = process.env,
@@ -1823,7 +1826,8 @@ async function observeMilestone({
   cacheRatioTarget = null,
   cacheRatioTargetConfigured = cacheRatioTarget != null,
 } = {}) {
-  const resolved = await resolveMilestoneFolder({ cwd, ref });
+  const workDir = workspace?.workDir ?? workDirOf(cwd);
+  const resolved = await resolveMilestoneFolder({ cwd, ref, workspace });
   if (!resolved) {
     const err = new Error(`No milestone or story folder under wiki/work matching "${ref}".`);
     err.code = "milestone-not-found";
@@ -1833,7 +1837,7 @@ async function observeMilestone({
   const projectsDir = claudeProjectsDir({ cwd, home, env });
   // Attribution resolves through the run record's sessionId (ADR-005): build the
   // stream-wide session → item index once, then join each session to its item.
-  const sessionToItem = await buildSessionItemIndex({ cwd });
+  const sessionToItem = await buildSessionItemIndex({ cwd, workspace });
   // The set of item refs this observe covers. A milestone observes itself PLUS its
   // stories — an agent run on story 68/03 appears in 68's report, attributed to that
   // story. A story observes only itself.
@@ -1844,8 +1848,8 @@ async function observeMilestone({
     targetItemRefs.add(id);
     // The milestone's stories are the enumerator's rows under its folder (127/ADR-001 §5) —
     // by containment, never by a listing of `stories/` with a grammar of this module's own.
-    const milestoneDir = path.join(workDirOf(cwd), ...folder.split("/"));
-    for (const row of await listItems(workDirOf(cwd))) {
+    const milestoneDir = path.join(workDir, ...folder.split("/"));
+    for (const row of (await readWorkItemView(workspace ?? workDirOf(cwd))).items.filter((row) => row.dir != null)) {
       if (row.parent != null && row.dir.startsWith(milestoneDir + path.sep)) targetItemRefs.add(observeRefOf(row));
     }
   }
@@ -1854,10 +1858,10 @@ async function observeMilestone({
 
   // The item's run records, rolled up by phase (68/04, ADR-002). Runs live under the
   // item's OWN folder — a story's runs under the story, never pooled at the milestone.
-  const item = { ref: kind === "story" ? `${id}/${story}` : id, dir: path.join(cwd, "wiki", "work", folder) };
+  const item = { ref: kind === "story" ? `${id}/${story}` : id, dir: path.join(workDir, folder) };
   const runs = await readItemRuns(item);
   const nativeRuns = [];
-  for (const row of await listItems(workDirOf(cwd))) {
+  for (const row of (await readWorkItemView(workspace ?? workDirOf(cwd))).items.filter((row) => row.dir != null)) {
     if (!targetItemRefs.has(observeRefOf(row))) continue;
     for (const run of await readItemRuns(row)) {
       if (run.execution?.runtime !== "codex") continue;
@@ -1872,7 +1876,7 @@ async function observeMilestone({
   }
   const phaseRollup = applyCacheTarget(rollupRunsByPhase(runs.filter(run => run.execution?.runtime !== "codex")), cacheRatioTarget, { configured: cacheRatioTargetConfigured });
   if (nativeRuns.length && phaseRollup.total.runCount === 0) Object.assign(phaseRollup.total, { costUsd: null, tokens: null, activeMs: null });
-  const unattributedCount = await countUnattributedRuns({ cwd });
+  const unattributedCount = await countUnattributedRuns({ cwd, workspace });
   const firsts = agents.map((a) => a.firstTs).filter((t) => t != null);
   const lasts = agents.map((a) => a.lastTs).filter((t) => t != null);
   const spanMs = firsts.length ? Math.max(...lasts) - Math.min(...firsts) : 0;
@@ -1980,7 +1984,7 @@ async function observeMilestone({
     // Append-only (68/05, ADR-007): this run writes a NEW timestamped snapshot under
     // `observability/snapshots/<ts>/` — it NEVER truncates or rewrites an existing
     // snapshot, so a retrospective's citation stays stable across later runs.
-    const obsDir = path.join(cwd, "wiki", "work", folder, "observability");
+    const obsDir = path.join(workDir, folder, "observability");
     await fsp.mkdir(obsDir, { recursive: true });
     let ts = snapshotTimestamp(generatedAt);
     let snapshotDir = path.join(obsDir, "snapshots", ts);

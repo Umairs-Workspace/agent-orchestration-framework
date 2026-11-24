@@ -140,7 +140,9 @@ import { archTests as acdRecordDocMapOneHomeTests } from "./acd-record-doc-map-o
 import { archTests as acdPrototypeStaysLightTests } from "./acd-prototype-stays-light.test.mjs";
 
 import { workStreamBoundaryTests } from "./acd-work-stream-golden-boundary.test.mjs";
+import { archTests as workItemStoreBoundaryTests } from "./acd-work-item-store-boundary.test.mjs";
 export const tests = [
+  ...workItemStoreBoundaryTests,
   ...acdPhaseDoorNotADriverTests,
   ...workContentFreeDiscoveryTests,
   ...acdStrictIsTwoPoliciesTests,

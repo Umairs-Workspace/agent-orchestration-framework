@@ -1,10 +1,7 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 import { readFeedbackRecords } from "../feedback-records.mjs";
 import { computeWorkCounters } from "../counters.mjs";
-import { listItems } from "../discovery.mjs";
-import { parseFrontmatter, recordDoc } from "../records.mjs";
+import { readWorkItemView } from "../store/work-item-store.mjs";
 
 // Core supplies execution, resolution and shared transition services.
 export function createCountersCommand({ isRetryable, readRuns, resolveItem, resolveAttemptCeiling }) {
@@ -26,16 +23,8 @@ export function createCountersCommand({ isRetryable, readRuns, resolveItem, reso
 // counter makes and the ceiling a retry actually spends on the same number, by
 // construction rather than by two modules agreeing.
 
-async function itemObservation(item) {
-  const doc = recordDoc(item);
-  let meta = {};
-  if (doc != null) {
-    try {
-      meta = parseFrontmatter(await readFile(path.join(item.dir, doc), "utf8"));
-    } catch (error) {
-      if (error?.code !== "ENOENT") throw error;
-    }
-  }
+async function itemObservation(item, view) {
+  const meta = await view.frontmatter(item);
   return {
     ref: item.ref,
     status: meta.status ?? null,
@@ -51,8 +40,9 @@ function withinScope(item, target) {
 }
 
 async function observeCounters(workspace, target) {
-  const localItems = (await listItems(workspace.workDir)).filter((item) => withinScope(item, target));
-  return await Promise.all(localItems.map(itemObservation));
+  const view = await readWorkItemView(workspace);
+  const localItems = view.items.filter((item) => item.dir != null && withinScope(item, target));
+  return await Promise.all(localItems.map(item => itemObservation(item, view)));
 }
 
 function renderCounter(counter, noun, denominator) {

@@ -412,8 +412,8 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, {\n      cwd: projectRoot,\n      encoding: \"utf8\",\n      timeout: 15_000,\n      maxBuffer: 16 * 1024 * 1024,\n      windowsHide: true,\n    })",
     "digest": "db8bfc9168ea05342d42883e266871b0d09482c06a6abd2901b7409da0371584",
-    "sourceDigest": "f7aeecd39876944fe087c7ef5e4a6dce4d12117cccefcec1c5703d506f8bdd9a",
-    "reason": "Bounded Git history reader supplies rename and deleted-forward source as data; it never imports project code."
+    "sourceDigest": "7e2c17285351db78ca746a5ff103d6c1244cdfd2b0485e85da5192354aacd53b",
+    "reason": "Bounded Git history reader supplies rename and deleted-forward source as data; it never imports project code. 208/01 re-review: the command passes its workspace to the selected-store snapshot; this Git call, its argument construction and its execution bounds are unchanged."
   },
   {
     "file": "packages/work/src/commands/grade.mjs",
@@ -900,56 +900,56 @@
     "kind": "child-process",
     "expression": "exec([\"rev-parse\", \"--git-common-dir\"], { cwd: projectRoot })",
     "digest": "121b87ce5897c0288b92e96e574c5d771dd690a02de99f2dab6497930bc922c7",
-    "sourceDigest": "ec4e4014a1f09b2d8910117593e0a1ce44c55ce65341a4e6ff05e495ed09b074",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged."
+    "sourceDigest": "bfd6ecc5977b8747746bc6aba11c79a87e689c13090614c88efac5790367c995",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
   },
   {
     "file": "packages/work-loop/src/dispatch.mjs",
     "kind": "child-process",
     "expression": "exec([\"check-ignore\", \"--\", ...relpaths], { cwd })",
     "digest": "617dfe9c249803c754753f02eddb043e06aecb30e1b02596e1f50a477980f86e",
-    "sourceDigest": "ec4e4014a1f09b2d8910117593e0a1ce44c55ce65341a4e6ff05e495ed09b074",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chore 197 moves the call into `ignoredPaths(exec, cwd, relpaths)`, which a lane's code-graph inheritance also asks; the argv is `check-ignore --` plus repository-relative paths, as before."
+    "sourceDigest": "bfd6ecc5977b8747746bc6aba11c79a87e689c13090614c88efac5790367c995",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chore 197 moves the call into `ignoredPaths(exec, cwd, relpaths)`, which a lane's code-graph inheritance also asks; the argv is `check-ignore --` plus repository-relative paths, as before. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
   },
   {
     "file": "packages/work-loop/src/dispatch.mjs",
     "kind": "child-process",
     "expression": "exec([\"status\", \"--porcelain\", \"--untracked-files=all\"], { cwd: worktreePath })",
     "digest": "e68e6401169425f7da5489d2f94a58cc4229b7fbc82bf0d6552be1ed21a6f8a3",
-    "sourceDigest": "ec4e4014a1f09b2d8910117593e0a1ce44c55ce65341a4e6ff05e495ed09b074",
-    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged."
+    "sourceDigest": "bfd6ecc5977b8747746bc6aba11c79a87e689c13090614c88efac5790367c995",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
   },
   {
     "file": "packages/work-loop/src/dispatch.mjs",
     "kind": "child-process",
     "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: options.primaryRoot })",
     "digest": "ab6bee4ca3a1877318b546b6b3d152bcdd0aa46fe5a12544778c9fc40118af2f",
-    "sourceDigest": "ec4e4014a1f09b2d8910117593e0a1ce44c55ce65341a4e6ff05e495ed09b074",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged."
+    "sourceDigest": "bfd6ecc5977b8747746bc6aba11c79a87e689c13090614c88efac5790367c995",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
   },
   {
     "file": "packages/work-loop/src/dispatch.mjs",
     "kind": "child-process",
     "expression": "exec([\"merge-base\", \"HEAD\", line], { cwd: lanePath })",
     "digest": "81e97e771f6ecd433f19d5d933592d3fa25fcad3234d00e92627eec9bbe8c398",
-    "sourceDigest": "ec4e4014a1f09b2d8910117593e0a1ce44c55ce65341a4e6ff05e495ed09b074",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged."
+    "sourceDigest": "bfd6ecc5977b8747746bc6aba11c79a87e689c13090614c88efac5790367c995",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
   },
   {
     "file": "packages/work-loop/src/dispatch.mjs",
     "kind": "child-process",
     "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: lanePath })",
     "digest": "4ee46cfe22e87fa7fe5a1a931f0737758700ac88b92fe44594fa3f071a30dfa8",
-    "sourceDigest": "ec4e4014a1f09b2d8910117593e0a1ce44c55ce65341a4e6ff05e495ed09b074",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged."
+    "sourceDigest": "bfd6ecc5977b8747746bc6aba11c79a87e689c13090614c88efac5790367c995",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
   },
   {
     "file": "packages/work-loop/src/dispatch.mjs",
     "kind": "child-process",
     "expression": "exec(args, { cwd: primaryRoot })",
     "digest": "b7d45f585dc9037d673e45d8a91b9d14d7b5714f2aadf9fb7346a1d20c57cfb2",
-    "sourceDigest": "ec4e4014a1f09b2d8910117593e0a1ce44c55ce65341a4e6ff05e495ed09b074",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged."
+    "sourceDigest": "bfd6ecc5977b8747746bc6aba11c79a87e689c13090614c88efac5790367c995",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
   },
   {
     "file": "packages/core/src/application/bindings/config-inspect.mjs",
@@ -988,16 +988,16 @@
     "kind": "child-process",
     "expression": "execFile(\"git\", args, { cwd, env, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) => {\n      if (error && (error.code === \"ENOENT\" || error.killed || error.signal)) {\n        reject(error);\n        return;\n      }\n      resolve({ stdout: String(stdout ?? \"\"), stderr: String(stderr ?? \"\"), status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0 });\n    })",
     "digest": "9ad28354e3ccdef15c04c6e9e272c1aa2a84311b4eb4902c9671f8f6552abae6",
-    "sourceDigest": "f7c51fc981854025101f287f1a4be1b8fa7b38b8bbc8b2dcc34b56caa6b8b552",
-    "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately."
+    "sourceDigest": "bb97604754542687fd94e916fdf21041b2ca10c40a31b7e29b0066a5cf2545f5",
+    "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
   },
   {
     "file": "packages/mesh/src/worker-execution.mjs",
     "kind": "child-process",
     "expression": "exec([\"-c\", \"credential.helper=\", \"push\", \"origin\", branch], { cwd: worktreePath, env: pushEnv })",
     "digest": "c394dc1a235712fd4874d2d8271378638a054af8b5dfa11aa9ef9a6d6a391f39",
-    "sourceDigest": "f7c51fc981854025101f287f1a4be1b8fa7b38b8bbc8b2dcc34b56caa6b8b552",
-    "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately."
+    "sourceDigest": "bb97604754542687fd94e916fdf21041b2ca10c40a31b7e29b0066a5cf2545f5",
+    "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
   },
   {
     "file": "packages/work-loop/src/commands/loop.mjs",

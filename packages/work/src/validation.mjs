@@ -4,11 +4,12 @@ import { readFile } from "node:fs/promises";
 import { stripHtmlComments } from "@aof/foundation/markdown";
 import { parseFeature } from "./feature-parse.mjs";
 import { VALID_STATUS, isOpen, statusVocabularyFor } from "./lifecycle.mjs";
-import { recordDoc, WORK_ITEM_SCHEMA_VERSION, readItemMeta as readMeta, coerceSchemaVersion } from "./records.mjs";
-import { BACKLOG_ROOT, sameNumber as sameNum } from "./identity.mjs";
-import { listItems, readWorkDirectory as readDirSafe } from "./discovery.mjs";
+import { WORK_ITEM_SCHEMA_VERSION, coerceSchemaVersion } from "./records.mjs";
+import { BACKLOG_ROOT, RECORD_DOC_BY_TYPE, sameNumber as sameNum } from "./identity.mjs";
+import { readWorkDirectory as readDirSafe } from "./discovery.mjs";
 import { isDriver, isDependTarget, asList, storiesByParent, siblingGate, siblingDependencyNumber, isDependNumber } from "./dependencies.mjs";
 import { digestFindings } from "./digest.mjs";
+import { readWorkItemView } from "./store/work-item-store.mjs";
 
 const UNIVERSAL_TAGS = new Set(["@executable", "@manual", "@uat", "@bug", "@wip"]);
 const FINDING_TAG_RE = /^@finding-[A-Za-z0-9-]+$/;
@@ -124,8 +125,9 @@ function findCycle(graph) {
 // Deterministic checks only — folder↔frontmatter, the closed tag vocabulary,
 // and the `depends` graph (resolves + acyclic). Test-traceability
 // (@executable→green test) is the language-aware layer still to come.
-export async function validateWork(workDir, config, scopeRef, { getDigestContract } = {}) {
-  const items = await listItems(workDir);
+export async function validateWork(workDir, config, scopeRef, { getDigestContract, workspace, view } = {}) {
+  view ??= await readWorkItemView(workspace ?? { workDir, config });
+  const items = view.items;
   const findings = [];
   const add = (target, problem) => findings.push({ path: target, problem });
 
@@ -212,7 +214,10 @@ export async function validateWork(workDir, config, scopeRef, { getDigestContrac
   const backlogEdges = [];
 
   for (const item of items) {
-    const meta = recordDoc(item) ? await readMeta(item) : {};
+    const record = await view.record(item);
+    const meta = record?.metadata ?? {};
+    const doc = record?.recordDocument ?? RECORD_DOC_BY_TYPE[item.type] ?? null;
+    const docPath = item.dir == null ? item.ref : doc == null ? item.dir : path.join(item.dir, doc);
 
     // A backlog driver is never a SOURCE either (127/ADR-003 §6): its `depends:` gates
     // nothing in the stream, so it enters no driver graph. Keying it here would put a node at
@@ -254,9 +259,7 @@ export async function validateWork(workDir, config, scopeRef, { getDigestContrac
     //    carries digest-shaped frontmatter (`milestone`/`slug`/`status`, the
     //    legacy SPEC left untouched), NOT the native record shape — so it is
     //    held to the digest schema, not the SPEC/STORY/SESSION one.
-    const doc = recordDoc(item);
     if (doc) {
-      const docPath = path.join(item.dir, doc);
       if (Object.keys(meta).length === 0) {
         add(docPath, `missing or empty record doc (${doc})`);
       } else if (meta.doc === "digest") {
@@ -271,7 +274,7 @@ export async function validateWork(workDir, config, scopeRef, { getDigestContrac
         // template's, read through its one contract module rather than listed again here.
         // The headings need the doc text; only a digest pays for this second read.
         if (typeof getDigestContract !== "function") throw new TypeError("validateWork requires getDigestContract to validate a digest record");
-        for (const problem of digestFindings(meta, await readFile(docPath, "utf8"), getDigestContract())) add(docPath, problem);
+        if (item.dir != null) for (const problem of digestFindings(meta, await readFile(docPath, "utf8"), getDigestContract())) add(docPath, problem);
       } else {
         if (meta.type !== item.type) add(docPath, `frontmatter type "${meta.type ?? ""}" ≠ folder type "${item.type}"`);
         // 127/ADR-005 §3 — a BACKLOG record doc carries no `number:` until `promote` mints
@@ -297,7 +300,7 @@ export async function validateWork(workDir, config, scopeRef, { getDigestContrac
         if (!meta.created) add(docPath, "missing created date");
         if (!meta.updated) add(docPath, "missing updated date");
         if (item.type === "prototype") {
-          await prototypeFindings(item, meta, docPath, add);
+          if (item.dir != null) await prototypeFindings(item, meta, docPath, add);
         } else if (meta.parent != null && meta.parent !== "" && !milestoneNumbers.has(Number.parseInt(meta.parent, 10))) {
           add(docPath, `parent "${meta.parent}" does not resolve to a milestone`);
         }
@@ -334,19 +337,19 @@ export async function validateWork(workDir, config, scopeRef, { getDigestContrac
           // while spikes and chores had long been admitted too, so an author reading the
           // finding was told a narrower rule than the one being applied — and the fix it
           // implied (re-point at a milestone) was wrong for four of the five kinds.
-          add(path.join(item.dir, recordDoc(item)), `depends "${dep}" does not resolve to a top-level item (a milestone, uat gate, spike, chore, or parentless story)`);
+          add(docPath, `depends "${dep}" does not resolve to a top-level item (a milestone, uat gate, spike, chore, or parentless story)`);
         }
       }
     }
 
     // 3a-ter. Story 139 — a backlog row's SLUG entry names a backlog item. Its numeric entries
     //     are not checked here (127/01 task 03's rows keep their answer).
-    if (item.number == null && recordDoc(item)) {
+    if (item.number == null && doc) {
       for (const dep of asList(meta.depends)) {
         if (isDependNumber(dep) || backlogSlugs.has(dep)) continue;
         const inStream = streamNumberBySlug.get(dep);
         add(
-          path.join(item.dir, recordDoc(item)),
+          docPath,
           inStream != null
             ? `depends "${dep}" names no backlog item — "${dep}" is ${inStream} in the stream, so the edge is written ${inStream}`
             : `depends "${dep}" names no backlog item — an edge to another backlog item is its slug, and an edge to a stream item is its number`,
@@ -360,10 +363,10 @@ export async function validateWork(workDir, config, scopeRef, { getDigestContrac
     // locked scenario "a story-level depends edge is not part of the graph"
     // (00/01/tasks/02_depends-graph.feature) — whose real intent, protecting a build from
     // a story's stray `depends`, now lives in that split rather than in blindness.
-    if (item.type === "story" && item.parent != null && item.parent !== "" && item.dir != null) {
+    if (item.type === "story" && item.parent != null && item.parent !== "") {
       const { unresolved } = siblingGate(meta.depends, item, siblingsOf(item));
       for (const dep of unresolved) {
-        add(path.join(item.dir, recordDoc(item)), `depends "${dep}" does not resolve to a sibling`);
+        add(docPath, `depends "${dep}" does not resolve to a sibling`);
       }
     }
 
@@ -374,7 +377,7 @@ export async function validateWork(workDir, config, scopeRef, { getDigestContrac
     //    on one is a permanent red no legal act can clear — and a gate nobody can clear
     //    is a gate that gets silenced. validate emits nothing at all against them, tag
     //    finding and parse finding alike.
-    if (item.type === "story" && isOpen(meta.status)) {
+    if (item.type === "story" && item.dir != null && isOpen(meta.status)) {
       const tasksDir = path.join(item.dir, "tasks");
       for (const file of await readDirSafe(tasksDir)) {
         if (!file.isFile() || !file.name.endsWith(".feature")) continue;

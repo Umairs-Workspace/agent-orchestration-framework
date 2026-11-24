@@ -544,8 +544,8 @@ async function readRecord(item) {
   try {
     const text = await readFile(path.join(item.dir, doc), "utf8");
     const fault = /^---\r?\n[\s\S]*?\r?\n---/.test(text) ? null : { kind: "unparseable" };
-    return { doc, meta: parseFrontmatter(text), fault };
+    return { doc, meta: parseFrontmatter(text), fault, text };
   } catch (error) {
-    return { doc, meta: {}, fault: { kind: "read", message: error.message, code: error.code ?? null } };
+    return { doc, meta: {}, fault: { kind: "read", message: error.message, code: error.code ?? null }, text: null };
   }
 }

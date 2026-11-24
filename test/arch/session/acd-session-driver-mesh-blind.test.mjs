@@ -154,7 +154,10 @@ export const archTests = [
       // registry, which reads @aof/acd's import-free contribution leaf, so 42 -> 44 with no
       // lifecycle, provider or mesh edge.
       assert.ok(graph.seen.has(path.join(root, "packages/acd/src/contribution.mjs")), "chore 207 adds the methodology's contribution leaf through the asset seam");
-      assert.equal(graph.seen.size, 44, "the 31-module assembly plus seven explicitly owned Codex/policy and observation leaves, the cost meter, the byte gate, the phase-completion contract's module, the awake clock, and the methodology registry with its contribution leaf");
+      // 208/01: observation reads the selected workspace store (44 -> 47).
+      // The two store modules and their coded-error leaf add no mesh or execution lifecycle edge.
+      for (const leaf of ["packages/work/src/store/work-item-store.mjs", "packages/work/src/store/file-store.mjs", "packages/contracts/src/error.mjs"]) assert.ok(graph.seen.has(path.join(root, leaf)), leaf);
+      assert.equal(graph.seen.size, 47, "the 31-module assembly plus seven explicitly owned Codex/policy and observation leaves, the cost meter, the byte gate, the phase-completion contract's module, the awake clock, and the methodology registry with its contribution leaf");
       assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/otel-attribution", "@aof/execution/pty", "@aof/execution/session-driver", "@aof/work/phase-brief"], "the adapter uses only the two execution APIs");
       const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
       assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/contracts/src/tui-ready.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-executable.mjs", "packages/execution/src/codex-process-environment.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-events.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/runtime-session.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs", "packages/foundation/src/awake-clock.mjs"], "native transport and observation stay in execution (beside the zero-import awake clock); no work, mesh or core import is introduced");
@@ -175,7 +178,7 @@ export const archTests = [
       // holds observe.mjs to the enumerator), for `aof:verify 127` to ratify.
       assert.deepEqual(incoming(graph, work), [], "the transcript service no longer reaches the core work facade");
       assert.ok(!graph.seen.has(work), "core work composition is absent from the driver closure");
-      assert.deepEqual(incoming(graph, path.join(root, "packages/work/src/discovery.mjs")), ["../../work/src/observe.mjs"], "only the work observer reaches disk discovery");
+      assert.deepEqual(incoming(graph, path.join(root, "packages/work/src/discovery.mjs")), ["../../work/src/store/file-store.mjs"], "the observer reaches disk discovery only through the selected file store");
       assert.deepEqual(incoming(graph, applicationLog), ["application/bindings/degrade.mjs"], "diagnostic path policy is reached only through the reporter adapter");
       assert.deepEqual(incoming(graph, workspace), ["application/paths.mjs"], "workspace.mjs is reached only through diagnostic path policy");
       assert.ok(!graph.seen.has(terminalWs), "local session execution never imports the WebSocket transport");
@@ -389,7 +392,9 @@ export const archTests = [
       for (const leaf of ["packages/contracts/src/operator-profile.mjs", "packages/knowledge/src/graph-normalize.mjs", "packages/contracts/src/local-config.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, leaf)), leaf);
       // Chore 207: the asset seam reads the methodology registry and @aof/acd's import-free
       // contribution leaf (192 -> 194).
-      assert.equal(sinkGraph.seen.size, 194, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, the integration registry's contributions, the awake clock, the operator profile, the graph path, the local config and the methodology registry");
+      // 208/00: workspace store selection adds its resolver and file adapter (194 -> 196).
+      for (const name of ["work-item-store", "file-store"]) assert.ok(sinkGraph.seen.has(path.join(root, `packages/work/src/store/${name}.mjs`)), name);
+      assert.equal(sinkGraph.seen.size, 196, "the configured worker facade includes the lane status transition alongside native phases and questions, the drive's loop-session ports, the integration registry's contributions, the awake clock, the operator profile, the graph path, the local config and the methodology registry");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

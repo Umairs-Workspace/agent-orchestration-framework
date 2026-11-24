@@ -45,7 +45,7 @@ Exercise the selected store through the real work verbs. Run all four milestone 
 
 | id | invariant | enforced by (arch-test) | from |
 |---|---|---|---|
-| FF-20801 | Production item tracking reaches the selected workspace store. Storage-specific item discovery, field mutation and file watches have a file-adapter owner. | pending `test/arch/work/acd-work-item-store-boundary.test.mjs` | ADR-001, ADR-002, ADR-003, ADR-004 |
+| FF-20801 | Production item tracking reaches the selected workspace store. Storage-specific item discovery, field mutation and file watches have a file-adapter owner. | `test/arch/work/acd-work-item-store-boundary.test.mjs` | ADR-001, ADR-002, ADR-003, ADR-004 |
 
 Register the control in `test/arch/work/index.mjs`. Its negative fixtures must fail on a launcher importing the file digest and a command reading status through a re-export. Include a positive control reading a SPEC body through its document home. At build, record the observed failing path and diagnostic in VERIFICATION.md, then the green run after removing the planted bypass.
 

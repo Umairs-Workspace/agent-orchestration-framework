@@ -1,3 +1,4 @@
+import { readWorkItemView } from "@aof/work/store/work-item-store";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { rename, readdir, stat } from "node:fs/promises";
@@ -1114,7 +1115,7 @@ function createMeshWorkerExecutionHandler(options = {}) {
       // worktree above already proved the ref resolves inside its own scoped checkout
       // (T3b) — this second resolve is the SAME enumerate-then-filter resolver,
       // applied to the primary tree, never a second path-construction strategy.
-      item = await findWork(ws.workDir, itemRef).then((matches) => matches.find((row) => row.ref === itemRef) ?? matches[0] ?? null);
+      item = await findWork(ws.workDir, itemRef, { view: await readWorkItemView(ws) }).then((matches) => matches.find((row) => row.ref === itemRef) ?? matches[0] ?? null);
       if (item == null) {
         reportAssignmentFailure(assignmentId, "assignment-ref-unresolved", `itemRef "${itemRef}" did not resolve in the primary checkout at ${ws.workDir}`);
         await reportSettled(assignmentId, "failed", { code: "assignment-ref-unresolved" });
@@ -1124,21 +1125,17 @@ function createMeshWorkerExecutionHandler(options = {}) {
 
       const nowIso = resolveNow();
       let nativePhase = null; if (execution != null) ({ phase: nativePhase, execution } = await nativeExecution.preparePhase({ item, worktreeItem, worktreePath, ws, execution, command: directiveCommand, launchDeclared }, options));
-      // The mint rides the transition seam (m42 wave (d) leg d4, port 1 — the
-      // sweep's second half, matching d2's completeRun sweep): `run.started` is
-      // journaled beside the fact. NO `workspace` is passed, exactly as the
-      // worker's completion sites pass none — worker-side projection publishing
-      // stays d3's settle-assignment territory, so the publish reactor skips on a
-      // null workspaceRoot and worker behaviour is byte-unchanged.
-      // m43 / ADR-003 — the mint names the assignment it is running UNDER, so the
-      // seam's item lock admits it BY IDENTITY (never by a "worker is exempt"
-      // branch): the assignment that holds this scope is the one minting. The id is
-      // already on the brief; `opts.lock` carries it plus the directive's own
-      // workspaceId — never a cwd-derived one (TECH_DEBT item 4).
+      // Journal run.started beside the fact (m42 wave d4). Tracking receives the
+      // selected workspace; publication keeps a null workspaceRoot because the
+      // worker publishes through settle-assignment (d3), as its completions do.
+      // m43/ADR-003: the item lock admits the assignment that owns this scope.
+      // Its identity and directive workspaceId travel through opts.lock, never
+      // through a cwd-derived workspace id (TECH_DEBT item 4).
       ({ record: runRecord } = await transitionRunStart(
         item,
         { now: nowIso, node: nodeId, brief: { assignmentId, itemRef, ...(execution == null ? {} : { phase: nativePhase }), ...(execution?.runtime !== "codex" ? {} : { nativeAskContext: { workspaceId } }) }, ...(execution == null ? {} : { execution }) },
         {
+          trackingWorkspace: ws,
           lock: { workspaceId, byAssignment: assignmentId, globalWorkStoreOptions: globalWorkStoreOptions ?? {} },
           journalOptions: { env: globalWorkStoreOptions?.env },
         },
@@ -1156,7 +1153,7 @@ function createMeshWorkerExecutionHandler(options = {}) {
           await transitionRunComplete(
             item,
             { runId: runRecord.runId, outcome: "cancelled", now: resolveNow() },
-            { journalOptions: { env: globalWorkStoreOptions?.env } },
+            { trackingWorkspace: ws, journalOptions: { env: globalWorkStoreOptions?.env } },
           );
         } catch (error) {
           reportDegrade("mesh-worker-execution", error);
@@ -1275,7 +1272,7 @@ function createMeshWorkerExecutionHandler(options = {}) {
           await transitionRunComplete(
             item,
             { runId: runRecord.runId, outcome: "cancelled", now: resolveNow() },
-            { journalOptions: { env: globalWorkStoreOptions?.env } },
+            { trackingWorkspace: ws, journalOptions: { env: globalWorkStoreOptions?.env } },
           );
         } catch (error) {
           reportDegrade("mesh-worker-execution", error);
@@ -1321,7 +1318,7 @@ function createMeshWorkerExecutionHandler(options = {}) {
           failureReason: outcome.failureReason ?? null,
           now: resolveNow(),
         },
-        { journalOptions: { env: globalWorkStoreOptions?.env } },
+        { trackingWorkspace: ws, journalOptions: { env: globalWorkStoreOptions?.env } },
       );
 
       // task 03/07 — cleanup on done, retain on failed; on a `done` AGENT outcome,
@@ -1451,7 +1448,7 @@ function createMeshWorkerWithdrawHandler(options = {}) {
       if (workspaceId !== resolveWorkspaceId(ws)) {
         ws = await loadWorkspace(meshCheckoutPath(workspaceId, globalWorkStoreOptions ?? {}), undefined, { env: globalWorkStoreOptions?.env });
       }
-      const item = await findWork(ws.workDir, itemRef).then((matches) => matches.find((row) => row.ref === itemRef) ?? matches[0] ?? null);
+      const item = await findWork(ws.workDir, itemRef, { view: await readWorkItemView(ws) }).then((matches) => matches.find((row) => row.ref === itemRef) ?? matches[0] ?? null);
       if (item == null) {
         log("warn", `assignment ${assignmentId}: itemRef "${itemRef}" does not resolve here — run ${runId} not settled`);
         return;
@@ -1468,7 +1465,7 @@ function createMeshWorkerWithdrawHandler(options = {}) {
       await transitionRunComplete(
         item,
         { runId, outcome: "cancelled", now: resolveNow() },
-        { journalOptions: { env: globalWorkStoreOptions?.env } },
+        { trackingWorkspace: ws, journalOptions: { env: globalWorkStoreOptions?.env } },
       );
       log("info", `assignment ${assignmentId}: run ${runId} settled cancelled (withdrawn by control) — the duplicate-run guard is clear`);
     } catch (error) {
@@ -1607,7 +1604,9 @@ function createMeshWorkerTerminalResumeHandler(options = {}) {
     resumeInFlight.add(assignmentId);
     let runRecord = null;
     let item = null;
+    let trackingWorkspace = null;
     const resume = createMeshParkResume({
+      getTrackingWorkspace: () => trackingWorkspace,
       assignmentId,
       sessionId,
       parkId, answer: frame.answer,
@@ -1636,7 +1635,8 @@ function createMeshWorkerTerminalResumeHandler(options = {}) {
         await resume.refuse(null, "terminal-resume-worktree-missing", "worktree is gone");
         return;
       }
-      item = await findWorkRecords(ws.workDir, itemRef).then((matches) => matches.find((row) => row.ref === itemRef) ?? matches[0] ?? null);
+      trackingWorkspace = ws;
+      item = await findWorkRecords(ws.workDir, itemRef, { view: await readWorkItemView(ws) }).then((matches) => matches.find((row) => row.ref === itemRef) ?? matches[0] ?? null);
       if (item == null) {
         log("warn", `session ${sessionId}: itemRef "${itemRef}" does not resolve in ${ws.workDir} — resume refused`);
         await resume.refuse(null, "terminal-resume-item-unresolved", "item does not resolve");

@@ -7,7 +7,7 @@ export function createNotionEffects(getServices) {
     if (!workspaceRoot) return { skipped: true, reason: "no-workspace-root" };
     const milestone = typeof ref === "string" && ref.length > 0 ? ref.split("/")[0] : null;
     if (!milestone) return { skipped: true, reason: "no-milestone-ref" };
-    const workspace = await loadWorkspace(workspaceRoot);
+    const workspace = ctx.workspace?.projectRoot === workspaceRoot ? ctx.workspace : await loadWorkspace(workspaceRoot);
     try {
       const result = await syncMilestoneWork(workspace, {
         milestone,

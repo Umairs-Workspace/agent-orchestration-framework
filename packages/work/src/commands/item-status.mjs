@@ -276,6 +276,7 @@ const itemStatusCommand = {
         groups: [budgetGroup],
         acceptingRef: item.ref,
         projectRoot: ctx.workspace.projectRoot,
+        workspace: ctx.workspace,
       });
       const refused = findings.filter((finding) => finding.code === "doc-over-budget" && finding.severity === "error");
       if (refused.length > 0) {

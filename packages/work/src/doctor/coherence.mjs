@@ -38,14 +38,22 @@ const statusOf = (item) => item?.meta?.status ?? null;
 // `<milestone.dir>/stories/<story>`), not merely by the `parent` NUMBER — so a
 // duplicate driver number (two milestones at the same number) does NOT cross-
 // attribute one milestone's stories to the other. Returns Map<milestone.dir, story[]>.
+const ownerKey = item => item.dir ?? item.ref;
+function ownerOfStory(story, milestones) {
+  const localOwner = story.dir == null ? null : milestones.find(m => m.dir != null && story.dir.startsWith(m.dir + path.sep));
+  if (localOwner != null) return localOwner;
+  const owners = milestones.filter(m => m.ref === story.parent || m.number === story.parent);
+  return owners.length === 1 ? owners[0] : null;
+}
+
 function childrenByMilestoneDir(snapshot) {
   const byDir = new Map();
   const milestones = snapshot.items.filter((item) => item.type === "milestone");
-  for (const milestone of milestones) byDir.set(milestone.dir, []);
+  for (const milestone of milestones) byDir.set(ownerKey(milestone), []);
   for (const item of snapshot.items) {
     if (item.parent == null || item.type !== "story") continue;
-    const owner = milestones.find((m) => item.dir.startsWith(m.dir + path.sep + "stories" + path.sep));
-    if (owner) byDir.get(owner.dir).push(item);
+    const owner = ownerOfStory(item, milestones);
+    if (owner) byDir.get(ownerKey(owner)).push(item);
   }
   return byDir;
 }
@@ -62,7 +70,7 @@ const recordDocFor = (item) => RECORD_DOC_BY_TYPE[item.type] ?? null;
 // natural anchor for a cross-item status fact (e.g. the lying parent's SPEC.md).
 function anchorPath(item) {
   const doc = recordDocFor(item);
-  return doc ? path.join(item.dir, doc) : item.dir;
+  return item.dir == null ? item.ref : doc ? path.join(item.dir, doc) : item.dir;
 }
 
 // ------------------------------------------------------- the cache overlay ----
@@ -160,7 +168,7 @@ export function statusCoherenceGroup(snapshot) {
   const childrenByDir = childrenByMilestoneDir(snapshot);
   // The milestone that physically OWNS a given story folder (for the inverse check).
   const milestones = snapshot.items.filter((item) => item.type === "milestone");
-  const ownerOf = (story) => milestones.find((m) => story.dir.startsWith(m.dir + path.sep + "stories" + path.sep));
+  const ownerOf = (story) => ownerOfStory(story, milestones);
 
   for (const item of snapshot.items) {
     // A prototype is outside the governed lifecycle (168/ADR-005 §3): no lane here reports on one.
@@ -169,7 +177,7 @@ export function statusCoherenceGroup(snapshot) {
 
     // Parent-vs-children contradictions (a milestone with child stories).
     if (item.type === "milestone") {
-      const children = childrenByDir.get(item.dir) ?? [];
+      const children = childrenByDir.get(ownerKey(item)) ?? [];
 
       // lying-parent (error): a done milestone with a child story that is not done —
       // a false claim of completion. Anchors on the lying parent.
@@ -275,7 +283,7 @@ export function lifecycleCompletenessGroup(snapshot) {
     if (item.type === "milestone") {
       const children = item.childrenFrom === "cache"
         ? (item.cachedChildRefs ?? [])
-        : (childrenByDir.get(item.dir) ?? []);
+        : (childrenByDir.get(ownerKey(item)) ?? []);
 
       // missing-verification (warn): in-review OR done with no NON-EMPTY VERIFICATION.md.
       if (!degraded("VERIFICATION.md") && (status === "in-review" || status === "done") && !item.docs?.["VERIFICATION.md"]?.nonEmpty) {

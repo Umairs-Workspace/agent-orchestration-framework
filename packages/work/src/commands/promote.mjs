@@ -1,3 +1,4 @@
+import { resolveWorkItemStore } from "../store/work-item-store.mjs";
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile, rename, rm } from "node:fs/promises";
@@ -11,7 +12,7 @@ import { writeText } from "@aof/foundation/fs";
 import { commandError } from "@aof/contracts/error";
 
 // Core supplies stream transitions, installed-version policy and composed insertion services.
-export function createPromoteCommand({ transitionStreamReindexed, INSERT_FLAGS, guardSlotOpenCount, normalizeSlug, parseDependsInput, parsePosition, scaffoldBacklogDriver }) {
+export function createFilePromoteCommand({ transitionStreamReindexed, INSERT_FLAGS, guardSlotOpenCount, normalizeSlug, parseDependsInput, parsePosition, scaffoldBacklogDriver }) {
 // work:promote — THE ONE MINT (milestone 127 / ADR-003, story 02).
 //
 // A backlog item is born with no number (ADR-001 §2: `number: null`, `ref: <slug>`,
@@ -662,4 +663,21 @@ function renderCandidates({ candidates, waiting }) {
 }
 
 return { archivedCollisions, classifyDepends, numbersWritten, prefixFirstHeading, promoteCommand, runInsertTopLevel, runPromote, stampNumber };
+}
+
+// The public factory binds tracking operations to the caller's workspace. The file
+// implementation below remains the compatibility engine, entered by the adapter.
+export function createPromoteCommand(services) {
+  const face = createFilePromoteCommand(services);
+  const invoke = (ctx, operation, input, entry) => resolveWorkItemStore(ctx.workspace).mutate(
+    { operation, input, entry }, { ctx, services },
+  );
+  return {
+    ...face,
+    runPromote: async (ctx, input) => invoke(ctx, "promote", input, "run"),
+    runInsertTopLevel: async (ctx, input) => invoke(ctx, "insert", input, "run"),
+    promoteCommand: { ...face.promoteCommand,
+      run: async (input, ctx) => invoke(ctx, "promote", input, "command"),
+    },
+  };
 }

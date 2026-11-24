@@ -1,9 +1,10 @@
+import { resolveWorkItemStore } from "../store/work-item-store.mjs";
 import { commandError } from "@aof/contracts/error";
 import { gapBackReference, NO_REGRESSION_ITEM } from "../promote/chore-seed.mjs";
 import { appendPosition, PROMOTED_TYPE, seedPromotedChore, slugifyTitle } from "../promote/promotion.mjs";
 
 // Core supplies shared insertion and cache-read collaborators.
-export function createPromoteGapCommand({ INSERT_FLAGS, runInsertTopLevel }) {
+export function createFilePromoteGapCommand({ INSERT_FLAGS, runInsertTopLevel }) {
 // work:promote-gap — milestone 39 / story 03 (gap-to-chore, SPEC "a gap is a
 // debt, not a note"; ARCHITECTURE ADR-001). Promotes a declared OPEN gap
 // (title + discharge condition) into a top-level `chore` (milestone 37) whose
@@ -140,4 +141,20 @@ const promoteGapToChoreCommand = {
 };
 
 return { promoteGapToChoreCommand, runPromoteGapToChore };
+}
+
+// The public factory binds tracking operations to the caller's workspace. The file
+// implementation below remains the compatibility engine, entered by the adapter.
+export function createPromoteGapCommand(services) {
+  const face = createFilePromoteGapCommand(services);
+  const invoke = (ctx, operation, input, entry) => resolveWorkItemStore(ctx.workspace).mutate(
+    { operation, input, entry }, { ctx, services },
+  );
+  return {
+    ...face,
+    runPromoteGapToChore: async (ctx, input) => invoke(ctx, "promote-gap", input, "run"),
+    promoteGapToChoreCommand: { ...face.promoteGapToChoreCommand,
+      run: async (input, ctx) => invoke(ctx, "promote-gap", input, "command"),
+    },
+  };
 }

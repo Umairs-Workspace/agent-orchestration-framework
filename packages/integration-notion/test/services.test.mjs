@@ -89,3 +89,27 @@ test('package command contribution preserves no-op and dry-run behavior without 
   assert.match(syncWork.cli.render(result), /not configured/);
   assert.deepEqual(contribution.commands({ commandError }).map(command => command.id), ['notion:sync-work', 'notion:associate'], 'the descriptors build before any service is composed');
 });
+
+test('208 Notion uses selected tracking metadata and keeps the repository document body', async () => {
+  const { writeFile } = await import('node:fs/promises');
+  const root = await mkdtemp(path.join(os.tmpdir(), 'selected-notion-'));
+  try {
+    await writeFile(path.join(root, 'SPEC.md'), '---\ntitle: Physical\nstatus: blocked\n---\n# Physical\n\nRepository body.\n');
+    const item = { ref: '1', number: '1', type: 'milestone', parent: null, dir: root, slug: 'one' };
+    const config = { dataSourceId: 'board', statusProperty: 'Status', statusMap: { done: 'Done' } };
+    const workspace = { projectRoot: root, config: { work: { integrations: { notion: config } } } };
+    let plan;
+    const api = createNotionSync({
+      readWorkItemView: async selected => { assert.equal(selected, workspace); return { frontmatter: async () => ({ title: 'Selected', status: 'done' }) }; },
+      listItemsCacheFirst: async () => [item], recordDoc: () => 'SPEC.md',
+      parseFrontmatter: () => assert.fail('tracked metadata must not be reparsed'),
+      localItemsOnly: items => ({ items, skipped: [] }), reportReachThroughSkips: () => {},
+      resolveNotionRouting: () => ({ board: config }), readMapping: async () => ({ entries: {} }),
+      applyPlan: async args => { plan = args.plan; return { items: [] }; },
+    });
+    await api.syncMilestoneWork(workspace, { milestone: '1', dryRun: true, notionSpawn: () => assert.fail('dry run') });
+    assert.equal(plan.ops[0].status, 'done');
+    assert.equal(plan.ops[0].properties.title, 'Selected');
+    assert.equal(plan.ops[0].content, 'Repository body.');
+  } finally { await rm(root, { recursive: true, force: true }); }
+});

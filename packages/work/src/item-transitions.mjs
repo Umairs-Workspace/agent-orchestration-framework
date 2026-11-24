@@ -39,7 +39,7 @@ async function transitionItemStatus(item, { toStatus, expectFrom = null, now } =
   const { workspace = null, publisherOptions = null, journalOptions = {}, drain = true } = opts;
 
   // (1) The FACT — work.mjs's lifecycle-guarded write. A refusal here means no event.
-  const record = await setItemStatus(item, toStatus, { expectFrom, now });
+  const record = await setItemStatus(item, toStatus, { expectFrom, now, ...(workspace ? { workspace } : {}) });
 
   // (2) The EVENT — past tense, carrying its own evidence (the from-state included, so a
   // reactor never has to re-read a doc that has already moved on).

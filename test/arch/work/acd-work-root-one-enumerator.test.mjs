@@ -160,7 +160,7 @@ export const archTests = [
       assert.ok(!/nextFreeSlot/.test(migrate), "nextFreeSlot is gone");
       assert.ok(importsFromWork("packages/work/src/tune/provenance.mjs", files.get("packages/work/src/tune/provenance.mjs").stripped, "ARCHIVE_ROOT"), "provenance imports the archive root's name from packages/core/src/work.mjs");
       const observe = files.get("packages/work/src/observe.mjs").stripped;
-      assert.ok(importsFromWork("packages/work/src/observe.mjs", observe, "listItems"), "observe.mjs takes its items from listItems");
+      assert.match(observe, /import \{ readWorkItemView \} from "\.\/store\/work-item-store\.mjs"/, "observe.mjs takes its items from the selected store view");
       assert.ok(!/\/\^\(\\d\+\)_/.test(observe), "observe.mjs holds no regex literal beginning /^(\\d+)_");
       assert.deepEqual(itemNameMatchesIn(observe), [], "observe.mjs holds no item-name match of its own");
       // The three retired scanners, per function. `buildSessionItemIndex` and `resolveMilestoneFolder`
@@ -173,11 +173,11 @@ export const archTests = [
       for (const header of ["async function buildSessionItemIndex(", "async function resolveMilestoneFolder("]) {
         const body = functionBody(observe, header);
         assert.ok(body, `${header} is declared`);
-        assert.ok(/listItems\(/.test(body), `${header} takes its items from listItems`);
+        assert.ok(/readWorkItemView\(/.test(body), `${header} takes its items from the selected store view`);
         assert.ok(!/readdir/.test(body), `${header} holds no readdir of the work root or of a milestone's stories/`);
       }
       const unattributed = functionBody(observe, "async function countUnattributedRuns(");
-      assert.ok(unattributed && /listItems\(/.test(unattributed), "countUnattributedRuns takes the item set from listItems");
+      assert.ok(unattributed && /readWorkItemView\(/.test(unattributed), "countUnattributedRuns takes the item set from the selected store view");
       assert.ok(/BACKLOG_ROOT/.test(unattributed) && /ARCHIVE_ROOT/.test(unattributed), "…and knows the two roots through their exported names");
       const observeMilestoneBody = functionBody(observe, "async function observeMilestone(");
       assert.ok(observeMilestoneBody && !/readdir\(storiesDir/.test(observeMilestoneBody), "observeMilestone lists no milestone's stories/ either — its story refs are the enumerator's rows by containment");

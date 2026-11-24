@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import { copyFile, mkdir, readFile, rm, stat, utimes } from "node:fs/promises";
 
 // Core supplies work discovery, configured worktrees, locking and effect delivery.
-export function createDispatchLanes({ meshDispatchWorktreePath, isUnderMeshDispatchWorktreesRoot, addDispatchWorktree, removeDispatchWorktree, meshItemBranchName, findItemWorktree, listWorktrees, advanceBranchToBase, commitWorktreeChanges, parsePorcelainStatus, isHeartbeatQueuePath, resolveExec, findWork, reportDegrade, acquireMeshLauncherLock, prepareRuntimeAssets, validateExecutionEnvelope, graphJsonPath }) {
+export function createDispatchLanes({ meshDispatchWorktreePath, isUnderMeshDispatchWorktreesRoot, addDispatchWorktree, removeDispatchWorktree, meshItemBranchName, findItemWorktree, listWorktrees, advanceBranchToBase, commitWorktreeChanges, parsePorcelainStatus, isHeartbeatQueuePath, resolveExec, findWork, readWorkItemView, loadWorkspace, reportDegrade, acquireMeshLauncherLock, prepareRuntimeAssets, validateExecutionEnvelope, graphJsonPath }) {
 // src/work/dispatch.mjs — THE LOCAL CONCURRENT-DISPATCH LANE (story 65 / task 02).
 //
 // WHAT THIS MODULE IS FOR, in one measured sentence. `aof work next` now answers with the
@@ -128,7 +128,8 @@ function worktreeWorkDir(projectRoot, workDir, worktreePath) {
 // module for the `findWork(rootedWorkDir, itemRef)` form.
 async function resolveRefInWorktree(projectRoot, workDir, worktreePath, itemRef) {
   const rootedWorkDir = worktreeWorkDir(projectRoot, workDir, worktreePath);
-  const matches = await findWork(rootedWorkDir, itemRef);
+  const workspace = { ...await loadWorkspace(worktreePath), workDir: rootedWorkDir };
+  const matches = await findWork(rootedWorkDir, itemRef, { view: await readWorkItemView(workspace) });
   return matches.find((row) => row.ref === itemRef) ?? matches[0] ?? null;
 }
 

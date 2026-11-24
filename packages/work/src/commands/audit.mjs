@@ -1,7 +1,6 @@
 import path from "node:path";
 import { readFile } from "node:fs/promises";
-import { listItems } from "../discovery.mjs";
-import { parseFrontmatter, recordDoc } from "../records.mjs";
+import { readWorkItemView } from "../store/work-item-store.mjs";
 import { limitRecord } from "../audit/reads.mjs";
 
 // Core supplies configured graph, audit and application policy services.
@@ -151,11 +150,13 @@ const REGISTER_DOCS = Object.freeze(["ARCHITECTURE.md", "VERIFICATION.md"]);
  * offered the 56 that carry a register, so "you named nothing" and "what you named declares no
  * register" are different sentences.
  */
-async function registerItems(workDir) {
+async function registerItems(workspaceOrDir) {
+  const view = await readWorkItemView(workspaceOrDir);
   const all = [];
   const offered = [];
-  for (const item of await listItems(workDir)) {
+  for (const item of view.items) {
     all.push(item);
+    if (item.dir == null) continue;
     const docTexts = {};
     for (const name of REGISTER_DOCS) {
       // ABSENT IS A FACT, NOT AN ERROR, and it is a fact the caller branches on — the missing
@@ -165,15 +166,7 @@ async function registerItems(workDir) {
       if (typeof text === "string") docTexts[name] = text;
     }
     if (typeof docTexts["ARCHITECTURE.md"] !== "string") continue;
-    let meta = {};
-    const doc = recordDoc(item);
-    if (doc != null) {
-      try {
-        meta = parseFrontmatter(await readFile(path.join(item.dir, doc), "utf8"));
-      } catch {
-        meta = {};
-      }
-    }
+    const meta = await view.frontmatter(item);
     offered.push({ ...item, meta, docTexts });
   }
   return { all, items: offered, considered: all.length };
@@ -199,7 +192,7 @@ const auditCommand = {
     const scope = typeof input?.scope === "string" && input.scope.trim() !== "" ? input.scope.trim() : null;
     const repoRoot = ctx.workspace.projectRoot;
     const model = await loadLoops(ctx.workspace);
-    const { all, items, considered } = await registerItems(ctx.workspace.workDir);
+    const { all, items, considered } = await registerItems(ctx.workspace);
     const { settings, settingsPath } = await readAuditedSettings(repoRoot);
 
     const report = await runAudit({

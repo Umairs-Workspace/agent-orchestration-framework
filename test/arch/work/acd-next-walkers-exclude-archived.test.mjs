@@ -60,6 +60,8 @@ const bodyOf = (code, name) => functionBody(code, `function ${name}(`) ?? functi
 // The store-boundary carriers (127/04, ADR-006 §1) — each reads the flag to carry it, never to
 // exclude on it. Named by path with the reason, exactly as FF-12701 names its keepers.
 const CARRIERS = Object.freeze({
+  "packages/work/src/store/work-item-store.mjs": "208/01 maps portable archive membership to the legacy view without filtering",
+  "packages/work/src/store/file-store.mjs": "208/00 carries archive membership from discovery into portable snapshot rows without filtering the population",
   "packages/work/src/item-row.mjs": "the work_items row's screen, bind mapping (true → 1) and stored-row widening — the store boundary in both directions",
   "packages/work/src/read.mjs": "cacheOnlyItem rebuilds a cache-only row in the enumerator's shape, archived: true included",
 });
@@ -105,7 +107,7 @@ export const archTests = [
     },
   },
   {
-    name: "arch/FF-12706 (acd-next-walkers-exclude-archived): the `.archived` token appears in src/** only in src/work.mjs — inside isLiveStreamRow, listItems, listStream and findWork — and in the two allow-listed store-boundary carriers, which filter on nothing",
+    name: "arch/FF-12706 (acd-next-walkers-exclude-archived): archive reads stay in discovery and the named store-boundary carriers, which filter on nothing",
     run: async () => {
       const outside = [];
       const carriersSeen = [];
@@ -126,8 +128,8 @@ export const archTests = [
         assert.ok(!ARCHIVED_FILTER_RE.test(stripped), `${rel} carries the flag and filters on neither \`archived\` nor a status standing in for it (${CARRIERS[rel]})`);
         assert.ok(!/\bisLiveStreamRow\b/.test(stripped), `${rel} applies no live-row filter of its own — the scheduling question has one home`);
       }
-      assert.deepEqual(outside, [], "no src module other than packages/core/src/work.mjs and the two named carriers reads `.archived`");
-      assert.deepEqual(carriersSeen.sort(), Object.keys(CARRIERS).sort(), "non-vacuous: both allow-listed carriers really read the flag (an allow-list entry nothing needs is a permission nobody asked for)");
+      assert.deepEqual(outside, [], "only discovery and the named carriers read `.archived`");
+      assert.deepEqual(carriersSeen.sort(), Object.keys(CARRIERS).sort(), "non-vacuous: every allow-listed carrier really reads the flag (an unused entry is a permission nobody asked for)");
       const work = stripComments(await readFile(WORK, "utf8"));
       const allowed = ["isLiveStreamRow", "listItems", "listStream", "findWork"].map((name) => bodyOf(work, name)).filter(Boolean);
       assert.equal(allowed.length, 4, "the four bodies are found");

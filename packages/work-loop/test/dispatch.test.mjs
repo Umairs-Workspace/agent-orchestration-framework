@@ -95,3 +95,15 @@ test("dispatch's bounded pool keeps processing after a lane fails", async () => 
   assert.equal(result.dispatched[1].error, failure);
   assert.equal(result.dispatched[3].value, 4);
 });
+
+test('208 lane resolution uses the lane selection and a scoped view without deriving a path from the ref', async () => {
+  const store = {}, calls = [];
+  const api = createDispatchLanes({
+    loadWorkspace: async root => { calls.push(root); return { projectRoot: root, workItemStore: store, workDir: '/wrong' }; },
+    readWorkItemView: async workspace => { assert.equal(workspace.workItemStore, store); assert.equal(workspace.workDir, '/lane/custom'); return { items: [{ ref: 'ticket:pear', dir: '/lane/custom/pear' }] }; },
+    findWork: async (root, ref, { view }) => { assert.equal(root, '/lane/custom'); return view.items.filter(item => item.ref === ref); },
+  });
+  assert.equal((await api.resolveRefInWorktree('/primary', '/primary/custom', '/lane', 'ticket:pear')).dir, '/lane/custom/pear');
+  assert.equal(await api.resolveRefInWorktree('/primary', '/primary/custom', '/lane', '../../escape'), null);
+  assert.deepEqual(calls, ['/lane', '/lane']);
+});

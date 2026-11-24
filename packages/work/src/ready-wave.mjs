@@ -8,8 +8,7 @@ import { readFile } from "node:fs/promises";
 // OWN — `collisionKey` below.
 import { contractSetCovers, resolveDeclaredSet } from "./story-contract.mjs";
 import { nextWork } from "./readiness.mjs";
-import { listItems } from "./discovery.mjs";
-import { readItemMeta } from "./records.mjs";
+import { readWorkItemView } from "./store/work-item-store.mjs";
 import { siblingGate, storiesByParent } from "./dependencies.mjs";
 
 function collisionKey(projectPath) {
@@ -127,10 +126,11 @@ export const LOOP_PLAN_ASSUMPTION = "The live loop asks again as each lane finis
 // `throughReview` reading), so an in-review story is drawn as built beside a done one.
 const isBuilt = (status) => status === "in-review" || status === "done";
 
-export async function planLoopWaves(workDir, driverRef, { projectRoot, bound = null, readText } = {}) {
+export async function planLoopWaves(workDir, driverRef, { projectRoot, bound = null, readText, workspace } = {}) {
   // The walk is over live rows (`isLiveStreamRow`, the one reader of the archive flag), so an
   // archived milestone plans no wave: its stories come back `unplanned`.
-  const items = await listItems(workDir);
+  const selected = await readWorkItemView(workspace ?? workDir);
+  const items = selected.items;
   const sameNumber = (a, b) => a != null && b != null && Number.parseInt(a, 10) === Number.parseInt(b, 10);
   const driver = items.find((item) => item.parent == null && item.number != null && String(item.ref) === String(driverRef));
   if (driver == null) return null;
@@ -139,10 +139,10 @@ export async function planLoopWaves(workDir, driverRef, { projectRoot, bound = n
   const byRef = new Map(stories.map((story) => [story.ref, story]));
 
   const real = new Map();
-  for (const story of stories) real.set(story.ref, await readItemMeta(story));
+  for (const story of stories) real.set(story.ref, await selected.frontmatter(story));
   const meta = new Map([[driver.ref, { status: "in-progress", depends: [] }]]);
   for (const story of stories) meta.set(story.ref, { status: "not-started" });
-  const view = { items, meta };
+  const view = { ...selected, meta };
   const scope = String(Number.parseInt(driver.number, 10));
 
   const memberOf = (story, index) => {

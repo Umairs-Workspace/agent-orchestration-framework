@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./store/work-item-store": "./src/store/work-item-store.mjs",
     "./effects": "./src/effects.mjs",
     "./records": "./src/records.mjs",
     "./lifecycle": "./src/lifecycle.mjs",

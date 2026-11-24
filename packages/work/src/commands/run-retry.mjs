@@ -104,7 +104,7 @@ const runRetryCommand = {
     const { record } = await transitionRunStart(
       item,
       { mode: "retry", runId: input.runId, maxAttempts, now: input.now, node: meshNodeId, force: Boolean(input.force) },
-      { lock: lockContextFor(ctx.workspace, ctx), journalOptions: ctx.effectsJournalOptions ?? {} },
+      { trackingWorkspace: ctx.workspace, lock: lockContextFor(ctx.workspace, ctx), journalOptions: ctx.effectsJournalOptions ?? {} },
     );
     return record;
   },

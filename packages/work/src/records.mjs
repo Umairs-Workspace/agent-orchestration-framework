@@ -1,4 +1,4 @@
-// Item record authority: accepts concrete items; no workspace discovery or mesh dependency.
+// File record authority and legacy compatibility: workspace-bearing mutations use its selected store.
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -86,20 +86,18 @@ function parseScalarOrCollection(value) {
 //     looking for one.
 export async function readItemMeta(item, view) {
   const overlay = view?.meta?.get?.(item.ref);
+  if (typeof view?.frontmatter === "function") {
+    const metadata = await view.frontmatter(item);
+    return overlay == null ? metadata : { ...metadata, ...overlay };
+  }
   if (item.dir == null) return overlay ?? {};
   const doc = recordDoc(item);
   if (!doc) return overlay ?? {};
   let meta = {};
-  if (typeof view?.frontmatter === "function") {
-    // 167/ADR-003 — a view built over a remembered stream snapshot hands in its own parse, so a read
-    // of an unchanged tree opens no record doc. Same answer: `{}` for a doc that cannot be read.
-    meta = await view.frontmatter(item);
-  } else {
-    try {
-      meta = parseFrontmatter(await readFile(path.join(item.dir, doc), "utf8"));
-    } catch {
-      meta = {};
-    }
+  try {
+    meta = parseFrontmatter(await readFile(path.join(item.dir, doc), "utf8"));
+  } catch {
+    meta = {};
   }
   return overlay == null ? meta : { ...meta, ...overlay };
 }
@@ -184,7 +182,8 @@ const ROLLBACK_TARGETS = new Set(["not-started", "blocked"]);
 // forbids the store writing any frontmatter; work.mjs is the item-frontmatter authority.
 // `now` is accepted for caller-API symmetry but deliberately NOT written (bumping
 // `updated` would violate the "only the status field changes" bound).
-export async function rollbackItemStatus(item, toStatus, { now } = {}) { // eslint-disable-line no-unused-vars
+export async function rollbackItemStatus(item, toStatus, { now, workspace } = {}) {
+  if (workspace != null) return mutateSelected(workspace, item, { operation: "rollback", toStatus, now });
   if (!ROLLBACK_TARGETS.has(toStatus)) {
     throw workError(`status rollback target must be not-started|blocked (got "${toStatus}")`, "forbidden-rollback", 400);
   }
@@ -226,7 +225,8 @@ export async function rollbackItemStatus(item, toStatus, { now } = {}) { // esli
 // Unlike the rollback face this DOES bump `updated:` (when the key exists), because a
 // lifecycle move is a real event in the item's history and `work doctor`'s stale-updated
 // check reads that field.
-export async function setItemStatus(item, toStatus, { expectFrom = null, now } = {}) {
+export async function setItemStatus(item, toStatus, { expectFrom = null, now, workspace } = {}) {
+  if (workspace != null) return mutateSelected(workspace, item, { operation: "status", toStatus, expectFrom, now });
   // The edges are the item's own type's (168/ADR-003): a prototype's four words and moves, every
   // other type's frozen five. A word another type owns reaches the edge check and is refused there
   // with the legal moves named; only a word no type owns is `invalid-status`.
@@ -319,6 +319,14 @@ async function writeItemStatusLine(item, toStatus, { from, code, notApplicable, 
   const updated = block[1] + rewritten + block[3] + text.slice(block[0].length);
   await writeText(docPath, updated);
   return { ref: item.ref, status: toStatus, from: status ?? null };
+}
+
+async function mutateSelected(workspace, item, request) {
+  const { resolveWorkItemStore } = await import("./store/work-item-store.mjs");
+  return resolveWorkItemStore(workspace).mutate({
+    ...request, ref: item.ref,
+    ...(item.dir == null ? {} : { documentHome: path.relative(workspace.workDir, item.dir).replaceAll("\\", "/") }),
+  });
 }
 
 // The record docs stamp DATES (`updated: 2026-06-30`), not timestamps — so an injected

@@ -100,4 +100,8 @@ test('integration descriptors preserve provider blocks and foreign milestone dis
   routing.writeRouting(item, {});
   assert.equal(routing.hasRouting(item), false);
   assert.equal(resolveMilestoneFolderByRef(root, '99'), null);
+  const tracked = path.join(root, '08_milestone_tracked');
+  await mkdir(tracked);
+  await writeFile(path.join(tracked, 'SPEC.md'), '---\ntitle: Tracked\n---\n');
+  assert.equal(resolveMilestoneFolderByRef(root, '08'), null, 'foreign fallback cannot resurrect an omitted selected-store item');
 });

@@ -249,12 +249,13 @@ async function withStream(count, body) {
 }
 
 // How many times the stream root is listed while `run` runs: every listing of the stream starts with one
-// `readdir` of its root, through the discovery seam the corpus declares.
+// `readdir` with directory entries of its root. The store also performs a recursive stat
+// digest walk and a bare existence probe; those are not repeated identity enumerations.
 async function countingListings(workDir, run) {
   const original = fsPromises.readdir;
   let listings = 0;
   fsPromises.readdir = function countedReaddir(dir, ...rest) {
-    if (path.resolve(String(dir)) === path.resolve(workDir)) listings += 1;
+    if (path.resolve(String(dir)) === path.resolve(workDir) && rest[0]?.withFileTypes === true && rest[0]?.recursive !== true) listings += 1;
     return original.call(this, dir, ...rest);
   };
   syncBuiltinESMExports();

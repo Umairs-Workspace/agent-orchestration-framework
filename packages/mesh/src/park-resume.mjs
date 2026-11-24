@@ -1,3 +1,4 @@
+import { readWorkItemView } from "@aof/work/store/work-item-store";
 
 
 
@@ -19,6 +20,7 @@ function createMeshParkResume({
   parkId,
   answer = null,
   reservation,
+  getTrackingWorkspace = () => null,
   globalWorkStoreOptions,
   sendAssignmentStatus,
   sendTerminalResumeRefusal,
@@ -164,7 +166,7 @@ function createMeshParkResume({
     }
     const settledOutcome = outcome.outcome === "done" ? "done" : "failed";
     try {
-      await transitionRunComplete(item, { runId: runRecord.runId, outcome: settledOutcome, now: now() }, { journalOptions });
+      await transitionRunComplete(item, { runId: runRecord.runId, outcome: settledOutcome, now: now() }, { trackingWorkspace: getTrackingWorkspace(), journalOptions });
     } catch (error) {
       reportDegrade("mesh-worker-execution", error);
       log("warn", `session ${sessionId}: run ${runRecord.runId} could not durably settle ${settledOutcome}; assignment left non-terminal because the run and assignment must agree`);
@@ -189,7 +191,7 @@ function createMeshParkResume({
     }
     if (runRecord == null || item == null) return;
     try {
-      await transitionRunComplete(item, { runId: runRecord.runId, outcome: "failed", now: now() }, { journalOptions });
+      await transitionRunComplete(item, { runId: runRecord.runId, outcome: "failed", now: now() }, { trackingWorkspace: getTrackingWorkspace(), journalOptions });
     } catch (settleError) {
       reportDegrade("mesh-worker-execution", settleError);
       log("warn", `session ${sessionId}: run ${runRecord.runId} also failed to settle after the resume fault; no terminal assignment report was emitted`);
@@ -319,7 +321,7 @@ async function settleStrandedRuns(stranded, options = {}) {
     try {
       const checkoutRoot = checkoutRootForWorktree(entry.worktreePath);
       const ws = await loadWorkspace(checkoutRoot, undefined, { env: globalWorkStoreOptions?.env });
-      const items = await listItems(ws.workDir);
+      const items = await listItems(ws.workDir, { view: await readWorkItemView(ws) });
       let settled = false;
       for (const item of items) {
         const ghost = (await readRuns(item)).find(
@@ -335,7 +337,7 @@ async function settleStrandedRuns(stranded, options = {}) {
         await transitionRunComplete(
           item,
           { runId: ghost.runId, outcome: "failed", failureReason: "runtime_offline", now: resolveNow() },
-          { journalOptions: { env: globalWorkStoreOptions?.env } },
+          { trackingWorkspace: ws, journalOptions: { env: globalWorkStoreOptions?.env } },
         );
         log("info", `stranded assignment ${assignmentId}: run ${ghost.runId} settled failed/runtime_offline (daemon restarted) — the duplicate-run guard is clear`);
         settled = true;

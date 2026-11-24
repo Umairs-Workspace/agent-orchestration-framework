@@ -347,7 +347,9 @@ export const workDoctorControlsTests = [
       );
       // The text really does ride those two reads: `docTexts` is assigned from the
       // record-doc read and from `fileState`'s own result, never from a fresh open.
-      assert.match(spine, /meta = parseFrontmatter\(text\);\s*\n\s*docTexts\[doc\] = text;/, "the record doc's text is kept from the frontmatter read that already happened");
+      assert.match(spine, /const tracking = await view\.record\(item, \{ diagnostics: true \}\);/, "tracking metadata comes from the selected store");
+      assert.match(spine, /let text = tracking\?\.recordText;\s*if \(text === undefined\)/, "the file store's already-read body is reused before the repository fallback");
+      assert.match(spine, /if \(text != null\) \{\s*docTexts\[doc\] = text;/, "the shared record body reaches the document lane");
       assert.match(spine, /if \(state\.present\) docTexts\[name\] = state\.text;/, "…and each convention doc's from the fileState read that already happened");
       // …and the new I/O is exactly the two the contract names.
       assert.deepEqual(

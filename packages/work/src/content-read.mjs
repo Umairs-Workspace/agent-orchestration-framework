@@ -1,6 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { listItems } from "./discovery.mjs";
+import { readWorkItemView } from "./store/work-item-store.mjs";
 import { WORK_ITEM_ARTIFACTS, hashArtifactBody, isArtifactMember } from "./artifacts.mjs";
 
 // Core supplies cache, execution and mesh collaborators explicitly.
@@ -40,7 +40,8 @@ async function readWorkspaceContentRecords(workspace, { itemRef, items } = {}) {
   const runs = [];
   const errors = [];
   const milestone = typeof itemRef === "string" && itemRef.length > 0 ? itemRef.split("/")[0] : null;
-  for (const item of items ?? await listItems(workspace.workDir)) {
+  for (const item of items ?? (await readWorkItemView(workspace)).items) {
+    if (item.dir == null) continue;
     if (milestone != null
       && item.ref !== itemRef
       && item.ref !== milestone

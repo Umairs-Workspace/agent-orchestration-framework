@@ -1,8 +1,9 @@
+import { resolveWorkItemStore } from "./store/work-item-store.mjs";
 
 
 
 // Domain transitions receive the configured effect runtime from core. Construction performs no I/O.
-export function createStreamTransitions({ planRenumber, applyRenumber, describeRenumber, reindexForInsert, refsTouchedByInsert, archiveItems, refsMovedByArchive, resolveWorkspaceId, guardItemLock, lockContextFor, applicableReactors, openEffectsJournal, appendEvent, drainEffects, runEffectsEphemeral, reportDegrade }) {
+export function createStreamTransitions({ resolveWorkspaceId, guardItemLock, lockContextFor, applicableReactors, openEffectsJournal, appendEvent, drainEffects, runEffectsEphemeral, reportDegrade }) {
 // src/effects/stream-transitions.mjs — the WORK STREAM's transition seam (m42 wave
 // (d) leg d4, port 3). The fourth seam, beside run-transitions.mjs (the run store),
 // assignment-transitions.mjs (the assignment store) and doc-transitions.mjs (the
@@ -61,12 +62,14 @@ async function transitionStreamReindexed(workspace, { at, space, parent } = {}, 
   // milestone, and a top-level insert that shifts a held milestone's own number, are
   // both refused with the ONE code naming the holder. The touched set comes from the
   // engine's OWN selection (refsTouchedByInsert), never a second derivation.
-  await guardItemLock(await refsTouchedByInsert(workspace.workDir, { at, space, parent }), {
+  const store = resolveWorkItemStore(workspace);
+  const plan = await store.mutate({ operation: "reindex", stage: "plan", input: { at, space, parent } });
+  await guardItemLock(plan.touched, {
     lock: lockContextFor(workspace, opts.publisherOptions ?? {}),
   });
 
   // (1) The FACT — the engine's own guarded renumber.
-  const result = await reindexForInsert(workspace.workDir, { at, space, parent });
+  const result = await store.mutate({ operation: "reindex", stage: "apply", input: { at, space, parent } });
   if (!Array.isArray(result.remap) || result.remap.length === 0) {
     return { ...result, eventId: null, effects: [] };
   }
@@ -153,12 +156,14 @@ async function transitionStreamArchived(workspace, { names = [] } = {}, opts = {
 
   // (0) THE LOCK — in front of the fact, so a refused archive renames not one folder. The
   // guarded set is the engine's OWN selection (refsMovedByArchive), never a second derivation.
-  await guardItemLock(await refsMovedByArchive(workspace.workDir, { names }), {
+  const store = resolveWorkItemStore(workspace);
+  const plan = await store.mutate({ operation: "archive-move", stage: "plan", input: { names } });
+  await guardItemLock(plan.touched, {
     lock: lockContextFor(workspace, opts.publisherOptions ?? {}),
   });
 
   // (1) The FACT — the engine's renames and rewrite.
-  const result = await archiveItems(workspace.workDir, { names });
+  const result = await store.mutate({ operation: "archive-move", stage: "apply", input: { names } });
   const { archived: moved, rewritten } = result;
   if (!Array.isArray(moved) || moved.length === 0) {
     return { ...result, eventId: null, effects: [] };
@@ -180,10 +185,11 @@ async function transitionStreamArchived(workspace, { names = [] } = {}, opts = {
 // Renumber one existing identity; reuse the established reindex cascade rather than
 // introducing a second run/Notion/mesh update policy.
 async function transitionStreamRenumbered(workspace, input, opts = {}) {
-  const plan = await planRenumber(workspace.workDir, input);
-  if (input.dryRun) return { ...describeRenumber(plan), moved: false, dryRun: true, effects: [] };
+  const store = resolveWorkItemStore(workspace);
+  const plan = await store.mutate({ operation: "renumber", stage: "plan", input });
+  if (input.dryRun) return { ...plan.description, moved: false, dryRun: true, effects: [] };
   await guardItemLock(plan.touched, { lock: lockContextFor(workspace, opts.publisherOptions ?? {}) });
-  const result = await applyRenumber(plan);
+  const result = await store.mutate({ operation: "renumber", stage: "apply", handle: plan.handle });
   const payload = { workspaceRoot: workspace.projectRoot, workspaceId: resolveWorkspaceId(workspace) ?? null,
     shifted: result.remap.length, remap: result.remap, operation: 'renumber' };
   try {

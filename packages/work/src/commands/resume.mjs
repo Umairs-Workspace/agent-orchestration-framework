@@ -149,7 +149,7 @@ const resumeCommand = {
     const maxAttempts = input.maxAttempts ?? ctx.workspace.config?.work?.autonomous?.maxAttempts ?? 3;
     const stalenessThreshold = heartbeatFromConfig(ctx.workspace);
     const ref = typeof input.ref === "string" ? input.ref.trim() : "";
-    const seamOpts = { lock: lockContextFor(ctx.workspace, ctx), journalOptions: ctx.effectsJournalOptions ?? {} };
+    const seamOpts = { trackingWorkspace: ctx.workspace, lock: lockContextFor(ctx.workspace, ctx), journalOptions: ctx.effectsJournalOptions ?? {} };
 
     // ---- ACT: a ref resumes that item's lineage -----------------------------
     if (ref) {

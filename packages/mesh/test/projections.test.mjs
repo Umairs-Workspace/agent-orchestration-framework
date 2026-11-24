@@ -1,3 +1,4 @@
+import { createWorkItemObservations, resolveWorkItemStore } from "@aof/work/store/work-item-store";
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
@@ -129,4 +130,78 @@ test('167/01 the projection reader of a work dir that cannot be listed is not au
     assert.equal(result.authoritative, false, `read ${read + 1}: the stream could not be read`);
     assert.equal(result.errors[0].code, 'ENOENT');
   }
+});
+
+
+test('208/04 E1 · selected metadata reaches publication without rewriting the local record', async t => {
+  const { workspace, services } = await fixture(t);
+  const dir = path.join(workspace.workDir, '11_chore_apples');
+  await mkdir(dir);
+  const text = '---\ntype: chore\nnumber: 11\nslug: apples\nstatus: not-started\ntitle: Apples\n---\n';
+  await writeFile(path.join(dir, 'CHORE.md'), text);
+  const files = resolveWorkItemStore(workspace);
+  let status = 'not-started';
+  const selected = { ...workspace, workItemStore: { snapshot: async options => {
+    const snapshot = await files.snapshot(options);
+    return { ...snapshot, read: async (...args) => {
+      const record = await snapshot.read(...args);
+      return { ...record, metadata: { ...record.metadata, status } };
+    } };
+  } } };
+  const store = await services.openGlobalWorkProjectionStore();
+  try {
+    await services.publishWorkspaceSnapshot(store, selected, { nodeId: 'peer' });
+    assert.equal(services.readWorkspaceItems(store, 'workspace')[0].status, 'not-started');
+    status = 'blocked';
+    await services.publishWorkspaceSnapshot(store, selected, { nodeId: 'peer' });
+    assert.equal(services.readWorkspaceItems(store, 'workspace')[0].status, 'blocked');
+    assert.equal(await readFile(path.join(dir, 'CHORE.md'), 'utf8'), text);
+  } finally { store.close(); }
+});
+
+test('208/04 E4 · retaining Grove releases only Orchard and shutdown disposes Grove once', async () => {
+  const closed = [], changes = new Map([['Orchard', 'A'], ['Grove', 'A']]);
+  const workspace = name => ({ workDir: `/unused/${name}`, workItemStore: {
+    changeToken: async () => changes.get(name),
+    observe: () => ({ dispose: () => closed.push(name) }),
+  } });
+  const orchard = workspace('Orchard'), grove = workspace('Grove');
+  const observers = createWorkItemObservations();
+  await observers.arm([orchard, grove]);
+  await observers.arm([grove]);
+  await observers.retain([grove]);
+  assert.deepEqual(closed, ['Orchard']);
+  changes.set('Grove', 'B');
+  assert.equal(await resolveWorkItemStore(grove).changeToken(), 'B');
+  await observers.close();
+  await observers.close();
+  assert.deepEqual(closed, ['Orchard', 'Grove']);
+});
+
+
+test('208/04 · shutdown waits for an observation still opening and releases it once', async () => {
+  let resolveHandle, disposed = 0;
+  const ready = new Promise(resolve => { resolveHandle = resolve; });
+  const observers = createWorkItemObservations();
+  const arming = observers.arm([{ workDir: '/unused/pending', workItemStore: { observe: () => ready } }]);
+  const closing = observers.close();
+  resolveHandle({ dispose() { disposed++; } });
+  await Promise.all([arming, closing]);
+  assert.equal(disposed, 1);
+});
+
+for (const type of ['chore', 'milestone']) test(`208/04 · a selected ${type} without a document home reports a fault and publishes no invented row`, async t => {
+  const { workspace, services } = await fixture(t);
+  const selected = { ...workspace, workItemStore: { snapshot: async () => ({
+    items: [{ ref: '11', number: '11', type, slug: 'apples', parent: null }],
+    read: async () => ({ metadata: { status: 'blocked' }, fault: null }),
+  }) } };
+  const read = await services.readWorkspaceProjectionItems(selected);
+  assert.deepEqual(read.rows, []);
+  assert.equal(read.errors[0].code, 'work-item-document-home-missing');
+  const store = await services.openGlobalWorkProjectionStore();
+  try {
+    await services.publishWorkspaceSnapshot(store, selected, { nodeId: 'peer' });
+    assert.deepEqual(services.readWorkspaceItems(store, 'workspace'), []);
+  } finally { store.close(); }
 });

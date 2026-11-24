@@ -1,3 +1,4 @@
+import { resolveWorkItemStore } from "../store/work-item-store.mjs";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { commandError } from "@aof/contracts/error";
@@ -7,7 +8,7 @@ import { listItems } from "../discovery.mjs";
 import { parseFrontmatter } from "../records.mjs";
 
 // Core supplies the one mint, exact ref resolution and the item-status transition seam.
-export function createPrototypeCommand({ runInsertTopLevel, resolveItemExact, requireLocalCheckout, transitionItemStatus }) {
+export function createFilePrototypeCommand({ runInsertTopLevel, resolveItemExact, requireLocalCheckout, transitionItemStatus }) {
 // work:prototype — THE MECHANICAL HALF OF A PROTOTYPE'S FOUR MOVES (milestone 168 / ADR-004). It
 // writes numbers, dates, status moves and Log lines; the `/aof:prototype` command writes the prose
 // (the intent's wording past the ask, the hand-off, the shortcuts) and builds (m41/ADR-002).
@@ -256,4 +257,19 @@ const prototypeCommand = {
 };
 
 return { prototypeCommand };
+}
+
+// The public factory binds tracking operations to the caller's workspace. The file
+// implementation below remains the compatibility engine, entered by the adapter.
+export function createPrototypeCommand(services) {
+  const face = createFilePrototypeCommand(services);
+  const invoke = (ctx, operation, input, entry) => resolveWorkItemStore(ctx.workspace).mutate(
+    { operation, input, entry }, { ctx, services },
+  );
+  return {
+    ...face,
+    prototypeCommand: { ...face.prototypeCommand,
+      run: async (input, ctx) => invoke(ctx, "prototype", input, "command"),
+    },
+  };
 }

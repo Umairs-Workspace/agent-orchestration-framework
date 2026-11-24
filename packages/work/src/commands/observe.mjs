@@ -37,11 +37,11 @@ const observeCommand = {
     additionalProperties: false,
   },
 
-  async run(input) {
+  async run(input, ctx) {
     // Load the workspace config ONCE — it answers both the opt-in gate and the
     // configured cache-ratio target (70/02, ADR-008). An absent/malformed config
     // degrades to {} exactly as the gate already tolerates today.
-    const workspace = await loadWorkspace(process.cwd(), input.config);
+    const workspace = ctx?.workspace ?? await loadWorkspace(process.cwd(), input.config);
     const config = workspace.config;
     if (input.ifEnabled && !observabilityEnabled(config)) {
       return { skipped: true };
@@ -57,7 +57,8 @@ const observeCommand = {
     const stallMs = input.stall != null ? Number(input.stall) * 60 * 1000 : undefined;
     const humanWaitMs = input.humanWait != null ? Number(input.humanWait) * 60 * 1000 : undefined;
     return await observeMilestone({
-      cwd: process.cwd(),
+      cwd: workspace.projectRoot ?? process.cwd(),
+      workspace,
       ref: input.ref,
       stallMs,
       humanWaitMs,

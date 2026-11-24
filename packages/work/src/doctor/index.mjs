@@ -1,7 +1,6 @@
 import path from "node:path";
 import { readdir, readFile, stat } from "node:fs/promises";
-import { listItems } from "../discovery.mjs";
-import { parseFrontmatter, readItemMeta, recordDoc as storeRecordDoc } from "../records.mjs";
+import { readWorkItemView } from "../store/work-item-store.mjs";
 import { isDriver, isDependTarget, siblingDependencyNumber } from "../dependencies.mjs";
 import { ITEM_RE, BACKLOG_ITEM_RE, BACKLOG_ROOT, ARCHIVE_ROOT, RECORD_DOC_BY_TYPE } from "../identity.mjs";
 import { statusCoherenceGroup, lifecycleCompletenessGroup, cacheAuthorityGroup } from "./coherence.mjs";
@@ -216,6 +215,7 @@ async function fileState(target) {
 // traceability lane needs each feature's `@executable` scenario names, and taking them off a
 // read that already happened is what keeps the lane a pure function of the snapshot.
 async function taskFilesState(dir) {
+  if (dir == null) return { hasTasks: false, sizes: {}, featureTexts: {} };
   const tasksDir = path.join(dir, "tasks");
   let hasTasks = false;
   const sizes = {};
@@ -277,7 +277,7 @@ async function taskFilesState(dir) {
 // fingerprints (164/ADR-002). A missing baseline is never a change.
 function changedSinceObserved(item, cache, diskMeta, docName) {
   const baseline = cache?.observations?.get?.(item.ref);
-  return baseline != null && docName != null && locallyChanged(rowFingerprint(projectedRow(item, diskMeta, docName)), baseline);
+  return baseline != null && locallyChanged(rowFingerprint(projectedRow(item, diskMeta, docName)), baseline);
 }
 
 function overlayFor(item, cache, diskMeta, diskDocs, { changed = false, selfNode = null } = {}) {
@@ -372,8 +372,9 @@ function storyContractSets(item, text, projectRoot) {
 // large stream never exhausts file handles.
 const SNAPSHOT_READ_CONCURRENCY = 16;
 
-async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRoot = null, runners = null, report = null, config = null, projectsDir = null, history = null, sync = null, renameMap = null } = {}) {
-  const items = await listItems(workDir);
+async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRoot = null, runners = null, report = null, config = null, projectsDir = null, history = null, sync = null, renameMap = null, workspace } = {}) {
+  const view = await readWorkItemView(workspace ?? { workDir, config });
+  const items = view.items;
 
   // A SNAPSHOT FACT GATHERED BY A RECURSIVE WALK BELONGS TO THE ITEM THAT OWNS THE PATH
   // (milestone 66 / ADR-011/D). `scanItemTree` walks a whole subtree, and a milestone's
@@ -389,7 +390,7 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
   //
   // The nearest owner is the LONGEST item dir that contains the path. `listItems`
   // already knows every one of them, so ownership costs no traversal.
-  const itemDirs = items.map((entry) => entry.dir);
+  const itemDirs = items.map((entry) => entry.dir).filter(dir => dir != null);
   const ownedBy = (dir, target) =>
     !itemDirs.some((other) => other.length > dir.length && target.startsWith(other + path.sep));
 
@@ -423,17 +424,24 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
     // ("the only new reads are one existence probe per cited control path and one read
     // per declared runner file").
     const docTexts = {};
-    let meta = {};
-    if (doc) {
-      try {
-        const text = await readFile(path.join(item.dir, doc), "utf8");
-        meta = parseFrontmatter(text);
+    const tracking = await view.record(item, { diagnostics: true });
+    const meta = tracking?.metadata ?? {};
+    if (doc && item.dir != null) {
+      // The file store retains the body from its metadata read. Other stores may
+      // leave document bodies to the repository, so only that case opens it here.
+      let text = tracking?.recordText;
+      if (text === undefined) {
+        try {
+          text = await readFile(path.join(item.dir, doc), "utf8");
+        } catch {
+          text = null;
+        }
+      }
+      if (text != null) {
         docTexts[doc] = text;
         // SPEC.md (milestone) / STORY.md (story) are budgeted context docs; measure
         // them from THIS read. SESSION.md (uat) is not budgeted — excluded.
         if (doc === "SPEC.md" || doc === "STORY.md") docSizes[doc] = { lines: splitLines(text).length };
-      } catch {
-        meta = {};
       }
     }
     // Additive snapshot DATA (ADR-003, the one allowed snapshot extension): the
@@ -441,7 +449,7 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
     // lifecycle-completeness group (story 01) reads, probed once here as pure data.
     const docs = {};
     for (const name of CONVENTION_DOCS) {
-      const state = await fileState(path.join(item.dir, name));
+      const state = await fileState(item.dir == null ? null : path.join(item.dir, name));
       // Preserve story 01's `docs` shape EXACTLY ({ present, nonEmpty }) — never leak
       // `lines` into it (milestone 16 / ADR-002). The ARCHITECTURE.md line count rides
       // the SAME fileState read into the separate docSizes map (no extra traversal).
@@ -467,7 +475,7 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
     // record. `loopEngagements` is the loop id of each engagement the item's runs now project, taken
     // through 78/00's pure leaf; `null` means "not looked at", which the lane reads as "no staleness
     // claim available" rather than as "nothing ran".
-    const executionRecord = await fileState(path.join(item.dir, EXECUTION_RECORD_BASENAME));
+    const executionRecord = await fileState(item.dir == null ? null : path.join(item.dir, EXECUTION_RECORD_BASENAME));
     let loopEngagements = null;
     if (executionRecord.present) {
       const projected = projectExecution({ registry: [], runs: await readRuns(item), config: {} });
@@ -485,7 +493,7 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
     // "a story with no plan document is silent, not short". Story-scoped, so it costs one stat per
     // story and nothing at all for a milestone, chore, spike or uat.
     if (item.type === "story") {
-      const plan = await fileState(path.join(item.dir, PLAN_BASENAME));
+      const plan = await fileState(item.dir == null ? null : path.join(item.dir, PLAN_BASENAME));
       if (plan.present) docSizes[PLAN_BASENAME] = { lines: plan.lines };
     }
     // milestone 135 / ADR-001 §3 — THE STORY PROBE, asked beside the plan and only for a story. It
@@ -497,7 +505,7 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
     // engine measured itself wins, as a built-in budget row wins in `budgetKeyFor`: a probe can add a
     // document and never re-measure one.
     let extensions = null;
-    if (typeof storyProbe === "function" && item.type === "story") {
+    if (typeof storyProbe === "function" && item.type === "story" && item.dir != null) {
       const probed = await storyProbe(item, { projectsDir, config: config ?? {}, fileState });
       for (const [docName, size] of Object.entries(probed?.docSizes ?? {})) {
         if (!(docName in docSizes)) docSizes[docName] = size;
@@ -513,9 +521,9 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
     // The row is judged over the record doc the STORE projects (`records.mjs`'s recordDoc, which
     // prefers an imported milestone's AOF.md), never this snapshot's by-type choice: two doc
     // resolutions would fingerprint two different rows and report a synced record as behind.
-    const projectedDoc = item.dir == null ? null : storeRecordDoc(item);
-    const changedSinceSync = cache?.observations?.has?.(item.ref) === true && projectedDoc != null
-      && changedSinceObserved(item, cache, projectedDoc === doc ? meta : await readItemMeta(item), projectedDoc);
+    const projected = cache?.observations?.has?.(item.ref) === true ? await view.record(item) : null;
+    const changedSinceSync = projected != null
+      && changedSinceObserved(item, cache, projected.metadata, projected.recordDocument);
     const overlaid = overlayFor(item, cache, meta, docs, { changed: changedSinceSync, selfNode });
     // ONE recursive pass, two answers (see `scanItemTree`).
     const tree = await scanItemTree(item.dir);
@@ -555,7 +563,7 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
       // (`diagramListing`, @aof/diagrams' own; the spine names no folder) and defaults to `null`
       // for an engine built without diagramming. The lane pairs it with
       // `docTexts["ARCHITECTURE.md"]`, which this snapshot already holds.
-      diagramListing: await diagramListing(item.dir),
+      diagramListing: item.dir == null ? null : await diagramListing(item.dir),
       // milestone 54 / story 04 — each task feature's TEXT, keyed `tasks/<name>`, off the
       // walk above. The traceability lane parses these through the ONE feature parser; it
       // holds no second copy of the Gherkin grammar and opens no file of its own.
@@ -837,7 +845,7 @@ function duplicateDriverNumberGroup(snapshot) {
   const findings = [];
   for (const [num, drivers] of [...byNumber].sort((a, b) => a[0] - b[0])) {
     if (drivers.length < 2) continue;
-    const names = drivers.map((driver) => driver.name).sort();
+    const names = drivers.map((driver) => driver.name ?? driver.slug ?? driver.ref).sort();
     findings.push({
       code: "duplicate-driver-number",
       severity: "error",
@@ -1028,7 +1036,7 @@ function inScope(item, scopeRef) {
 function filterFindingsToScope(findings, snapshot, scopeRef) {
   if (!scopeRef || scopeRef.trim() === "") return findings;
   const scoped = snapshot.items.filter((item) => inScope(item, scopeRef));
-  const dirs = scoped.map((item) => item.dir);
+  const dirs = scoped.map((item) => item.dir ?? item.ref);
   return findings.filter(
     (finding) =>
       finding.path === snapshot.workDir ||
@@ -1074,6 +1082,7 @@ async function doctorWork(workDir, config, scope, options = {}) {
   // it here also keeps `runnerTexts` a snapshot fact, which is what makes the lane's
   // answers reproducible from a literal snapshot with no filesystem.
   const snapshot = options.snapshot ?? await buildSnapshot(workDir, {
+    workspace: options.workspace,
     cache: cache ?? null,
     sync: sync ?? null,
     selfNode: selfNode ?? null,
@@ -1114,7 +1123,7 @@ async function doctorWork(workDir, config, scope, options = {}) {
   const all = [];
   for (const group of groups) {
     const produced = group(snapshot, ctx);
-    if (Array.isArray(produced)) all.push(...produced);
+    if (Array.isArray(produced)) all.push(...produced.map(finding => finding.path == null ? { ...finding, path: workDir } : finding));
   }
 
   return filterFindingsToScope(dedupe(all), snapshot, scope);

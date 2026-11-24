@@ -1,3 +1,4 @@
+import { readWorkItemView } from "@aof/work/store/work-item-store";
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import { createLoopStops } from "@aof/work-loop/stop";
 import { meshNodeIdOf } from "@aof/mesh/commands/gate";
@@ -25,7 +26,7 @@ export function assembleLoopStop({ workServices, runStoreServices, loopStopReque
   const { startRequestPath } = loopStopRequestServices;
 
   const implementation = createLoopStops({
-    work: { listItems },
+    work: { listItems, readWorkItemView },
     runs: { isRunning, isStale, readRuns },
     placement: { meshNodeIdOf, resolveWorkspaceId },
     stopRequests: { STOP_LEVELS, loopResumesDir, loopStopsDir, markStopHonoured, readResumeRequest, requestLoopResume, requestLoopStop, resumeRequestPath, stopRequestPath, loopStartsDir, requestLoopStart, startRequestPath },

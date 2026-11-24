@@ -1,3 +1,4 @@
+import { readWorkItemView } from "@aof/work/store/work-item-store";
 // Domain-owned effect handlers. Core supplies the services; this package imports no assembled application.
 export function createMeshEffects(getServices) {
   if (typeof getServices !== 'function') throw new TypeError('createMeshEffects requires a service provider.');
@@ -5,7 +6,9 @@ export function createMeshEffects(getServices) {
     const { loadWorkspace, publishGlobalWorkSnapshot } = await getServices();
     const { workspaceRoot } = event.payload ?? {};
     if (!workspaceRoot) return { skipped: true, reason: "no-workspace-root" };
-    const workspace = await loadWorkspace(workspaceRoot);
+    const workspace = ctx.workspace?.projectRoot === workspaceRoot
+      ? ctx.workspace
+      : await loadWorkspace(workspaceRoot);
     // A verb's event names the refs its operator touched; a `workspace.changed` mark names none
     // and carries the stat digest it noticed. Either way the publish itself asks which rows
     // changed since observed (164/ADR-001), so a verb and a mark land a local change identically.
@@ -55,7 +58,7 @@ export function createMeshEffects(getServices) {
     const { archived: moved = [] } = payload ?? {};
     if (!Array.isArray(moved) || moved.length === 0) return refs;
     const numbers = new Set(moved.map((entry) => entry?.ref).filter((ref) => typeof ref === "string" && ref.length > 0));
-    for (const item of await listItems(workspace.workDir)) {
+    for (const item of await listItems(workspace.workDir, { view: await readWorkItemView(workspace) })) {
       if (item.parent != null && !isLiveStreamRow(item) && numbers.has(item.parent)) refs.push(item.ref);
     }
     return refs;

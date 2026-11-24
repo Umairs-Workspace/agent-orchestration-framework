@@ -1,3 +1,4 @@
+import { resolveWorkItemStore } from "../store/work-item-store.mjs";
 import { appendPosition } from "../promote/promotion.mjs";
 import path from "node:path";
 import { mkdir, writeFile, readFile, readdir, rm, realpath } from "node:fs/promises";
@@ -24,7 +25,7 @@ async function canonicalPath(target) {
   }
 }
 
-export function createMigrateFolderCommand({ resolveImportSource, recoverMilestone, listRecoverableMilestones, slugifySource, packageVersionString }) {
+export function createFileMigrateFolderCommand({ resolveImportSource, recoverMilestone, listRecoverableMilestones, slugifySource, packageVersionString }) {
 
 // migrate:folder — convert a source folder INTO a managed aof work item
 // (story 29 / migrate-command). The load-bearing CONTRAST with import:milestone:
@@ -726,4 +727,19 @@ function renderTaskFeature({ task }) {
 }
 
 return { migrateFolderCommand };
+}
+
+// The public factory binds tracking operations to the caller's workspace. The file
+// implementation below remains the compatibility engine, entered by the adapter.
+export function createMigrateFolderCommand(services) {
+  const face = createFileMigrateFolderCommand(services);
+  const invoke = (ctx, operation, input, entry) => resolveWorkItemStore(ctx.workspace).mutate(
+    { operation, input, entry }, { ctx, services },
+  );
+  return {
+    ...face,
+    migrateFolderCommand: { ...face.migrateFolderCommand,
+      run: async (input, ctx) => invoke(ctx, "migrate", input, "command"),
+    },
+  };
 }

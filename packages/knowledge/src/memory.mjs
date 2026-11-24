@@ -550,7 +550,7 @@ async function executeMemoryVerb({ verb, query = "", only = null, exclude = null
     // 153/ADR-003 — observed effectiveness is the work-owned accounting reader's, over the ledgers and
     // retrospectives rather than the index, so every backend (and none) reports the same totals. The
     // index only decides which lessons exist and whether a counted lesson still resolves.
-    if (ctx.workDir) status.effectiveness = await accountMemory(ctx.workDir, { indexed: records, lessons });
+    if (ctx.workDir) status.effectiveness = await accountMemory(ctx.workDir, { indexed: records, lessons, workspace: ctx.workspace });
     return status;
   }
   return undefined;

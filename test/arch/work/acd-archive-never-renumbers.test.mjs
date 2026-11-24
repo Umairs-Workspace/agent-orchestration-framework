@@ -38,7 +38,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { stripComments } from "../../support/source-slice.mjs";
+import { stripComments, functionBody } from "../../support/source-slice.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { resolveSpecifier as resolveRuntimeSpecifier } from "../audit/acd-audit-never-imports-project-code.test.mjs";
@@ -51,11 +51,13 @@ const COMPOSITION = "packages/core/src/application/bindings/commands/archive.mjs
 const ENGINE = "packages/work/src/archive.mjs";
 const SEAM_COMPOSITION = "packages/core/src/application/bindings/effects/stream-transitions.mjs";
 const SEAM = "packages/work/src/stream-transitions.mjs";
+const STORE = "packages/work/src/store/work-item-store.mjs";
+const ADAPTER = "packages/work/src/store/file-placement.mjs";
 const REINDEX = "packages/work/src/reindex.mjs";
 const INSERT_SHARED = "packages/work/src/insertion/scaffold.mjs";
 const PROMOTION = "packages/work/src/promote/promotion.mjs";
 
-const FACE_ALLOWED = new Set(["packages/work/src/discovery.mjs", "packages/work/src/identity.mjs", "packages/contracts/src/error.mjs"]);
+const FACE_ALLOWED = new Set([STORE,"packages/work/src/discovery.mjs", "packages/work/src/identity.mjs", "packages/contracts/src/error.mjs"]);
 const ENGINE_ALLOWED = new Set(["packages/work/src/discovery.mjs", "packages/work/src/identity.mjs"]);
 
 // resolveSpecifier(specifier, fromRel) — a relative specifier resolved to a repo-relative posix
@@ -170,17 +172,22 @@ export const archTests = [
       const graph = await srcGraph();
       assert.ok(graph.has(FACE) && graph.has(ENGINE) && graph.has(SEAM), "the walk read the three files");
       assert.ok(graph.get(SEAM_COMPOSITION)?.includes(SEAM), "the configured stream seam reaches its implementation");
-      for (const rel of [SEAM, SEAM_COMPOSITION]) assert.match(stripComments(await readRel(rel)), /createStreamTransitions\(\{[^}]*reindexForInsert[^}]*archiveItems/su);
+      // 208/ADR-002: the operation dispatcher is now the storage boundary. A module
+      // graph contains all operations; the archive branch itself must select only
+      // archive-move, whose raw writer has exactly one adapter caller (leg e).
+      const seam = stripComments(await readRel(SEAM));
+      assert.match(seam, /resolveWorkItemStore\(workspace\)/u);
+      assert.match(seam, /operation: "archive-move", stage: "plan"/u);
+      assert.match(seam, /operation: "archive-move", stage: "apply"/u);
+      const archiveBody = functionBody(seam, "async function transitionStreamArchived");
+      assert.ok(archiveBody != null, "the archive transition body was found");
+      assert.match(archiveBody, /guardItemLock\(/u, "the archive transition locks its touched refs");
+      assert.ok(archiveBody.indexOf("guardItemLock(") < archiveBody.indexOf('stage: "apply"'), "the application locks before the store applies the move");
+      assert.doesNotMatch(archiveBody, /operation: "(?:reindex|renumber)"/u);
       const targets = new Set([REINDEX, INSERT_SHARED]);
-      const offending = [...chainsAvoiding(graph, FACE, targets, SEAM_COMPOSITION), ...chainsAvoiding(graph, ENGINE, targets, SEAM_COMPOSITION), ...chainsAvoiding(graph, COMPOSITION, targets, SEAM_COMPOSITION)];
-      assert.deepEqual(
-        offending.map((chain) => chain.join(" → ")),
-        [],
-        `a path reaches the reindex engine or insert-shared without crossing the seam:\n${offending.map((chain) => chain.join(" → ")).join("\n")}`,
-      );
-      // Non-vacuous: the sanctioned path exists and is the one excluded.
-      const seamPath = chainThrough(graph, COMPOSITION, REINDEX, SEAM_COMPOSITION);
-      assert.deepEqual(seamPath, [COMPOSITION, SEAM_COMPOSITION, REINDEX], `the seam and direct public import lead to the package engine (got ${seamPath?.join(" → ")})`);
+      const offending = [FACE, ENGINE, COMPOSITION].flatMap(from => chainsAvoiding(graph, from, targets, STORE));
+      assert.deepEqual(offending, [], "no path bypasses the selected store to reach a placement engine");
+      assert.ok(chainThrough(graph, COMPOSITION, REINDEX, STORE), "the selected store reaches its file implementation");
     },
   },
 
@@ -248,7 +255,7 @@ export const archTests = [
         const code = stripComments(await readFile(file.path, "utf8"));
         if (/\barchiveItems\s*\(/.test(code)) callers.push(rel);
       }
-      assert.deepEqual(callers, [SEAM], `archiveItems( is called from the seam and nowhere else (callers: ${callers.join(", ")})`);
+      assert.deepEqual(callers, [ADAPTER], `archiveItems( is called from the file adapter and nowhere else (callers: ${callers.join(", ")})`);
     },
   },
 ];

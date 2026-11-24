@@ -1,3 +1,4 @@
+import { resolveWorkItemStore } from "../store/work-item-store.mjs";
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile, mkdir } from "node:fs/promises";
@@ -23,7 +24,7 @@ export function findHeadingSection(lines, headingRe) {
 }
 
 // Core supplies stream transitions, installed-version policy and composed insertion services.
-export function createWorkInsertion({ transitionStreamReindexed, packageVersionString }) {
+export function createFileWorkInsertion({ transitionStreamReindexed, packageVersionString }) {
 // Shared mechanics for the milestone 41 insert-* command family. Originally
 // story 02's (`insert-top-level`) module — `work:insert-milestone` and
 // `work:insert-uat`, both placing a new TOP-LEVEL driver at a caller-named
@@ -637,4 +638,15 @@ async function runInsertStory(ctx, { slug: rawSlug, at: rawAt, under: rawUnder, 
 }
 
 return { INSERT_FLAGS, guardSlotOpenCount, normalizeSlug, parseDependsInput, parsePosition, renderBlankTemplate, runInsertStory, scaffoldBacklogDriver, stripBundleMarker };
+}
+
+export function createWorkInsertion(services) {
+  const helpers = createFileWorkInsertion(services);
+  return {
+    ...helpers,
+    runInsertStory: async (ctx, input) => resolveWorkItemStore(ctx.workspace).mutate(
+      { operation: "insert-story", input }, { ctx, services }),
+    scaffoldBacklogDriver: async (workspace, input) => resolveWorkItemStore(workspace).mutate(
+      { operation: "scaffold", input }, { ctx: { workspace }, services }),
+  };
 }

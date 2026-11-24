@@ -1,3 +1,4 @@
+import { ITEM_RE } from "./identity.mjs";
 import path from "node:path";
 import { readdirSync, existsSync } from "node:fs";
 
@@ -18,7 +19,7 @@ export function resolveMilestoneFolderByRef(workDir, ref) {
     return null;
   }
   for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
+    if (!entry.isDirectory() || ITEM_RE.test(entry.name)) continue;
     const match = entry.name.match(NUMBERED_FOLDER_RE);
     if (!match || match[1] !== String(ref)) continue;
     const dir = path.join(workDir, entry.name);

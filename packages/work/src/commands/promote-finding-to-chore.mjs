@@ -1,3 +1,4 @@
+import { resolveWorkItemStore } from "../store/work-item-store.mjs";
 import { commandError } from "@aof/contracts/error";
 import { findingBackReference, NO_REGRESSION_ITEM } from "../promote/chore-seed.mjs";
 import {
@@ -10,7 +11,7 @@ import {
 } from "../promote/promotion.mjs";
 
 // Core supplies shared insertion and cache-read collaborators.
-export function createPromoteFindingCommand({ runInsertTopLevel, listItemsCacheFirst }) {
+export function createFilePromoteFindingCommand({ runInsertTopLevel, listItemsCacheFirst }) {
 // work:promote-finding — milestone 71 / story 01 (ADR-003 + ADR-004).
 //
 // The second face on the one promotion engine. A review finding the loop declines to chase becomes a
@@ -238,4 +239,20 @@ const promoteFindingToChoreCommand = {
 for (const key of Object.keys(promoteFindingToChoreCommand.input.properties)) ACCEPTED_INPUTS.add(key);
 
 return { promoteFindingToChoreCommand, runPromoteFindingToChore };
+}
+
+// The public factory binds tracking operations to the caller's workspace. The file
+// implementation below remains the compatibility engine, entered by the adapter.
+export function createPromoteFindingCommand(services) {
+  const face = createFilePromoteFindingCommand(services);
+  const invoke = (ctx, operation, input, entry) => resolveWorkItemStore(ctx.workspace).mutate(
+    { operation, input, entry }, { ctx, services },
+  );
+  return {
+    ...face,
+    runPromoteFindingToChore: async (ctx, input) => invoke(ctx, "promote-finding", input, "run"),
+    promoteFindingToChoreCommand: { ...face.promoteFindingToChoreCommand,
+      run: async (input, ctx) => invoke(ctx, "promote-finding", input, "command"),
+    },
+  };
 }

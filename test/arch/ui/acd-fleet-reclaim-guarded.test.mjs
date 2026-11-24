@@ -173,8 +173,8 @@ export const archTests = [
       );
       const table = stripComments(await readFile(EFFECTS_TABLE, "utf8"));
       assert.ok(
-        /rollbackItemStatus\s*\(\s*\{[^}]*\}\s*,\s*["']not-started["']\s*\)/.test(table),
-        "the rollback-status reactor routes through rollbackItemStatus(…, 'not-started')"
+        /rollbackItemStatus\s*\(\s*\{[^}]*\}\s*,\s*["']not-started["']\s*(?:,|\))/.test(table),
+        "the rollback-status reactor retains the bounded not-started target (workspace options may follow)"
       );
       assert.ok(
         /key:\s*["']rollback-status["']/.test(table),

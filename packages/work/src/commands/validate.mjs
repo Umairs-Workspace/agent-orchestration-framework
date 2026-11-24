@@ -8,9 +8,9 @@ import {
 } from "../story-contract.mjs";
 import { archivedCitationOf, resolveCitedPath } from "../cited-path-resolve.mjs";
 import { itemInScope } from "../ref-scope.mjs";
-import { ARCHIVE_ROOT } from "../identity.mjs";
-import { isLiveStreamRow, listItems } from "../discovery.mjs";
-import { recordDoc } from "../records.mjs";
+import { ARCHIVE_ROOT, RECORD_DOC_BY_TYPE } from "../identity.mjs";
+import { isLiveStreamRow } from "../discovery.mjs";
+import { readWorkItemView } from "../store/work-item-store.mjs";
 import { LESSON_QUALIFIER_EXAMPLE, lessonMetaProblems } from "../memory-vocabulary.mjs";
 
 const RETROSPECTIVE = "RETROSPECTIVE.md";
@@ -46,15 +46,18 @@ export function createValidateCommand({ declaredAdrsInStory, extractAdrBlocks, r
 // is byte-frozen by m53/FF-5308. Keep the additive check on this existing validation
 // leaf: the core validator remains untouched, while every public validate command gets
 // the same combined findings. The controls lane and its frozen m66 envelope stay out.
-async function validateWork(workDir, config, scopeRef, { projectRoot, historyRoot } = {}) {
-  const findings = await validateCoreWork(workDir, config, scopeRef);
+async function validateWork(workDir, config, scopeRef, { projectRoot, historyRoot, workspace } = {}) {
+  const view = await readWorkItemView(workspace ?? { workDir, config });
+  const findings = workspace == null
+    ? await validateCoreWork(workDir, config, scopeRef)
+    : await validateCoreWork(workDir, config, scopeRef, { workspace, view });
   // A loader, built once for the whole run (160/ADR-007): the map is derived from git history, so it
   // is the same answer for every story. It is LOADED only below, where a reads entry misses on disk,
   // and at most once, so a stream whose every entry resolves spawns no git for history at all.
   // `historyRoot` (169/F-07): a tree extracted from a branch has no `.git`, so its history is read
   // from the repository it was extracted from, while its files are still read from the tree.
   const history = await readRenameMap(historyRoot ?? projectRoot ?? null);
-  const items = await listItems(workDir);
+  const items = view.items;
   const milestones = items.filter((item) => item.type === "milestone" && item.dir != null);
   const architectureReads = new Map();
 
@@ -97,7 +100,7 @@ async function validateWork(workDir, config, scopeRef, { projectRoot, historyRoo
         const claims = new Set();
         for (const sibling of items) {
           if (sibling.type !== "story" || sibling.dir == null || sibling.parent !== parent) continue;
-          const doc = await readFile(path.join(sibling.dir, recordDoc(sibling)), "utf8").catch(() => null);
+          const doc = await readFile(path.join(sibling.dir, RECORD_DOC_BY_TYPE.story), "utf8").catch(() => null);
           if (doc == null) continue;
           const declaration = storyContractList(doc, "files");
           if (!declaration.present || declaration.malformed) continue;
@@ -116,7 +119,7 @@ async function validateWork(workDir, config, scopeRef, { projectRoot, historyRoo
 
   for (const item of items) {
     if (item.type !== "story" || item.dir == null || !itemInScope(item, scopeRef)) continue;
-    const docPath = path.join(item.dir, recordDoc(item));
+    const docPath = path.join(item.dir, RECORD_DOC_BY_TYPE.story);
     const story = await readFile(docPath, "utf8").catch(() => null);
     if (story == null) continue; // the core validator owns missing record documents
 
@@ -268,6 +271,7 @@ const validateCommand = {
     const scope = scopeOf(input);
     const findings = await validateWork(ctx.workspace.workDir, ctx.workspace.config, scope, {
       projectRoot: ctx.workspace.projectRoot,
+      workspace: ctx.workspace,
     });
     // Raw absolute paths, OS-native, NO projection — the face relativises.
     return { findings: findings.map((finding) => ({ path: finding.path, problem: finding.problem })) };

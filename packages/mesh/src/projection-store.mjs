@@ -1,3 +1,4 @@
+import { readWorkItemView } from "@aof/work/store/work-item-store";
 import { mkdir, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { itemRowFault, archivedColumn, rowLocationKeys, wireLocationKeys } from "@aof/work/item-row";
@@ -16,7 +17,7 @@ export const UPSERT_AUTHORITIES = Object.freeze(["reported", "disk-derived"]);
 export const NODE_LOG_KEEP = 500;
 
 // Application policy enters explicitly; constructing the service opens no stores or timers.
-export function createGlobalWorkProjectionStore({ importSqliteRuntime, globalMeshPaths, readStreamSnapshot, recordDoc, workspaceIdFromPath, resolveWorkspaceId, reportDegrade, tableClass, refRemapTables, deriveNodeId, toWireProvenance }) {
+export function createGlobalWorkProjectionStore({ importSqliteRuntime, globalMeshPaths, recordDoc, workspaceIdFromPath, resolveWorkspaceId, reportDegrade, tableClass, refRemapTables, deriveNodeId, toWireProvenance }) {
 // Provenance of what this module reads rather than spells (the full history is in git): the
 // cache row's shape, screen and location widening come from `@aof/work/item-row` (127/04); the
 // artifact manifest from `@aof/work/artifacts` (43/ADR-007, re-exported above so the streamed set
@@ -985,32 +986,34 @@ function recordWorkspaceProjectionError(store, workspace, error, options = {}) {
 async function readWorkspaceProjectionItems(workspace) {
   const rows = [];
   const errors = [];
-  let authoritative = true;
-  let items = [];
   let snapshot;
   try {
-    // The stream-level probe listItems cannot make (the snapshot makes it): the enumerator swallows
-    // every fault into an empty list, so the read asks the directory itself whether it is there.
-    // 167/ADR-003 — through the remembered stream snapshot, so the tick's read of an unchanged tree
-    // costs one stat walk and parses no record doc; the snapshot counts its parse or its memo answer.
+    // A failed selected-store snapshot must retain existing rows, not retract them.
     const workspaceId = resolveWorkspaceId(workspace) ?? null;
-    snapshot = await readStreamSnapshot(workspace.workDir, { meter: processCostMeter, labels: workspaceId ? { workspaceId } : {}, reportDegrade });
-    items = snapshot.items;
+    snapshot = await readWorkItemView(workspace, { meter: processCostMeter, labels: workspaceId ? { workspaceId } : {}, reportDegrade });
+    if (snapshot.snapshot.authoritative === false) {
+      const fault = snapshot.snapshot.fault ?? {};
+      throw Object.assign(new Error(fault.message ?? "The selected work store could not be read."), { code: fault.code });
+    }
   } catch (error) {
-    authoritative = false;
     errors.push({
       ref: null,
       sourcePath: normalizeSourcePath(workspace.workDir),
       message: `The work stream could not be read: ${error.message}`,
       code: error.code ?? "work-stream-unreadable",
     });
-    return { rows, errors, authoritative };
+    return { rows, errors, authoritative: false };
   }
-  for (const item of items) {
-    const doc = recordDoc(item);
+  for (const item of snapshot.items) {
+    const record = await snapshot.record(item);
+    if (item.dir == null) {
+      errors.push({ ref: item.ref, sourcePath: normalizeSourcePath(workspace.workDir), message: "The item has no local document home.", code: "work-item-document-home-missing" });
+      continue;
+    }
+    const doc = record?.recordDocument ?? recordDoc(item);
     if (!doc) continue;
     const sourcePath = normalizeSourcePath(path.join(item.dir, doc));
-    const { meta, fault } = await snapshot.record(item);
+    const { metadata: meta, fault } = record ?? { metadata: {}, fault: { code: "work-item-missing", message: "The item disappeared from the selected snapshot." } };
     if (fault?.kind === "unparseable") {
       const error = globalStoreError(`Record doc has no parseable frontmatter: ${sourcePath}`, "frontmatter-unparseable", 422);
       errors.push({ ref: item.ref, sourcePath, message: error.message, code: error.code });
@@ -1020,7 +1023,7 @@ async function readWorkspaceProjectionItems(workspace) {
       rows.push(projectedRow(item, meta, doc));
     }
   }
-  return { rows, errors, authoritative };
+  return { rows, errors, authoritative: true };
 }
 
 // readWorkspaceItems(store, workspaceId) — a thin accessor over the work_items

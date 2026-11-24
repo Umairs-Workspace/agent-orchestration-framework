@@ -78,7 +78,7 @@ function stripCommentsAndStrings(source) {
 // onto a root path.
 function assertNoPathJoinFromRef(code) {
   const problems = [];
-  if (!/findWork\s*\(\s*rootedWorkDir\s*,\s*itemRef\s*\)/.test(code)) {
+  if (!/findWork\s*\(\s*rootedWorkDir\s*,\s*itemRef\s*,\s*\{\s*view:\s*await\s+readWorkItemView\(workspace\)\s*\}\s*\)/.test(code)) {
     problems.push("resolveRefInWorktree does not resolve via findWork(rootedWorkDir, itemRef) (enumerate-then-filter)");
   }
   // A violation shape: path.join(<root-ish>, itemRef) or path.join(<root-ish>, ref) —

@@ -1,3 +1,4 @@
+import { resolveWorkItemStore } from "@aof/work/store/work-item-store";
 import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
@@ -130,8 +131,9 @@ async function withMesh(body, { testRepoPropagates = true } = {}) {
     const launch = path.join(tmp, "launch");
     await mkdir(launch, { recursive: true });
     fx.launchDir = launch;
-    fx.start = async ({ from = launch, meshEnabled = true, ...extra } = {}) => {
-      const ws = await loadWorkspace(from, undefined, { env });
+    fx.start = async ({ from = launch, meshEnabled = true, selectStore = null, ...extra } = {}) => {
+      let ws = await loadWorkspace(from, undefined, { env });
+      if (selectStore) ws = { ...ws, workItemStore: selectStore(ws) };
       // The desktop's launch: the machine-wide mesh enable (what `aof mesh join` writes into the
       // global config) reaches a folder that has no aof config of its own. `meshEnabled: false` is
       // a control node that never joined, as a standalone Mac is (175/F-11).
@@ -597,7 +599,53 @@ const watchedTreeTests = [
   },
 ];
 
+
+const selectedStoreTests = [
+  {
+    name: "208/04 E3 · polling token changes reach normal launcher publication without a file event",
+    run: () => withMesh(async fx => {
+      let token = "A", status = "not-started";
+      const before = await readFile(storyPath(fx, AOF), "utf8");
+      const { tick } = await fx.start({ from: path.join(fx.tmp, AOF.dir), selectStore: ws => {
+        const files = resolveWorkItemStore(ws);
+        return { changeToken: async () => token, snapshot: async options => {
+          const snapshot = await files.snapshot(options);
+          return { ...snapshot, token, read: async (...args) => {
+            const record = await snapshot.read(...args);
+            return args[0] === "164/00" ? { ...record, metadata: { ...record.metadata, status } } : record;
+          } };
+        } };
+      } });
+      assert.equal(row(fx, AOF, "164/00").status, "not-started");
+      token = "B"; status = "blocked";
+      await tick();
+      assert.equal(row(fx, AOF, "164/00").status, "blocked");
+      assert.equal(await readFile(storyPath(fx, AOF), "utf8"), before);
+    }),
+  },
+  {
+    name: "208/04 R1 · an opaque token change releases permanent-fault backoff without a disk edit",
+    run: () => withMesh(async fx => {
+      let token = "A", attempts = 0;
+      const { tick } = await fx.start({ from: path.join(fx.tmp, AOF.dir), now: () => new Date(T0).toISOString(),
+        selectStore: ws => ({ ...resolveWorkItemStore(ws), changeToken: async () => token }),
+        syncWorkspace: async (ws, ctx) => {
+          if (ws.config.mesh.workspaceId === AOF.id) { attempts++; throw conflict(); }
+          return syncWorkspace(ws, ctx);
+        },
+      });
+      assert.equal(attempts, 1);
+      await tick();
+      assert.equal(attempts, 1);
+      token = "B";
+      await tick();
+      assert.equal(attempts, 2);
+    }),
+  },
+];
+
 export const meshLauncherSyncsEveryWorkspaceTests = [
+  ...selectedStoreTests,
   ...launcherCostTests,
   ...permanentFaultTests,
   ...goneRegistrationTests,

@@ -2,7 +2,7 @@ import { stat } from "node:fs/promises";
 
 
 // Domain transitions receive the configured effect runtime from core. Construction performs no I/O.
-export function createRunReconciliation({ listItems, readRuns, applicableReactors, openEffectsJournal, appendEvent, hasEventForRun, oldestEventAt, effectsJournalPath, reportDegrade }) {
+export function createRunReconciliation({ listItems, readWorkItemView, readRuns, applicableReactors, openEffectsJournal, appendEvent, hasEventForRun, oldestEventAt, effectsJournalPath, reportDegrade }) {
 // src/effects/reconcile.mjs — the FILE-STORE RECONCILER SCAN (m42 wave (d) leg
 // d5; PRD "the file-store reconciler scan closing the write-vs-append crash
 // window"). run-transitions.mjs is write-then-append by design — the fact first,
@@ -65,7 +65,7 @@ async function reconcileRunRecords(workspace, { journalOptions = {}, now } = {})
     }
     if (floor == null) return { scanned: 0, appended: [], skipped: true, reason: "no-ledger-birth" };
 
-    const items = await listItems(workspace.workDir);
+    const items = await listItems(workspace.workDir, { view: await readWorkItemView(workspace) });
     const appended = [];
     let scanned = 0;
     for (const item of items) {

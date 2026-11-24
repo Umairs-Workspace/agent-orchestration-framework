@@ -26,7 +26,7 @@ export function createLoopStops({
   placement,
   stopRequests
 }) {
-  const { listItems } = work;
+  const { listItems, readWorkItemView } = work;
   const { isRunning, isStale, readRuns } = runs;
   // `resolveWorkspaceId` is the mesh's ONE identity precedence (pinned `mesh.workspaceId`, then the id
   // derived from the project root), supplied by the core binding so a start names the id the mesh
@@ -124,7 +124,7 @@ export function createLoopStops({
     if (scoped?.admitted !== true) {
       return { refusal: refuse(codes.scope, scoped?.reason ?? `scope ${JSON.stringify(scope)} is not an admitted loop scope`) };
     }
-    const items = (await listItems(workspace.workDir)).filter((row) => loopScopeIncludes(scoped.scope, row.ref) && typeof row.dir === "string");
+    const items = (await listItems(workspace.workDir, { view: await readWorkItemView(workspace) })).filter((row) => loopScopeIncludes(scoped.scope, row.ref) && typeof row.dir === "string");
     const runs = [];
     for (const item of items) runs.push(...await readRuns(item));
     const declaration = readLoopDeclaration(runs);

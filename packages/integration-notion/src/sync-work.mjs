@@ -27,6 +27,7 @@ export function createNotionSync({
   commandError,
   parseFrontmatter,
   recordDoc,
+  readWorkItemView,
   listItemsCacheFirst,
   localItemsOnly,
   reportReachThroughSkips,
@@ -55,11 +56,8 @@ export function createNotionSync({
     return makeNotionSpawn({ config: notionConfig, env });
   }
 
-  // Read an item's record-doc frontmatter (SPEC.md for a milestone, STORY.md for a
-  // story) WITHOUT depending on work.mjs's private readMeta — the sync only needs the
-  // status, and the traversal contract is `listItems` + `parseFrontmatter` (both
-  // exported). Returns {} on any read failure (an absent/partial doc is not fatal).
-  async function readItemMeta(item) {
+  // Only foreign legacy milestones lack a selected-store record.
+  async function readForeignItemMeta(item) {
     // Read the item's RESOLVED record doc (AOF.md-first for a converted milestone —
     // work.mjs recordDoc), NOT a hardcoded SPEC.md, so a converted milestone's AOF.md
     // frontmatter (title/status) is read back here. Routing (board/parent) is NOT read
@@ -135,6 +133,7 @@ export function createNotionSync({
     // m43 / story 06 (ADR-005) — a STAGE-2 LEAF: the traversal is cache-first, so a milestone
     // a worker authored is syncable from the control node rather than dead-ending on
     // "milestone-not-found" because this checkout only ever held the scaffold.
+    const view = await readWorkItemView(workspace);
     const all = await listItemsCacheFirst(workspace, { globalWorkStoreOptions: options.globalWorkStoreOptions ?? {} });
     let milestoneItem = all.find(
       (item) => item.type === "milestone" && item.parent == null && item.ref === String(milestone)
@@ -143,6 +142,7 @@ export function createNotionSync({
     // is not in listItems; resolve it tolerantly so a GSD-managed repo is syncable
     // without a rename ([[aof-import-milestone-naming]]). It has no aof child stories
     // (its sub-work is a GSD `tasks/` dir), so the scope is the milestone row alone.
+    const foreign = milestoneItem == null;
     if (!milestoneItem) milestoneItem = resolveMilestoneFolderByRef(workspace.workDir, milestone);
     if (!milestoneItem) {
       throw commandError(
@@ -170,7 +170,7 @@ export function createNotionSync({
         ref: item.ref,
         type: item.type,
         slug: item.slug,
-        meta: await readItemMeta(item),
+        meta: foreign && item === milestoneItem ? await readForeignItemMeta(item) : await view.frontmatter(item),
         content: await readItemBody(item),
       }))
     );
