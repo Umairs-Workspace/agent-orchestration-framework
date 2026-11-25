@@ -26,7 +26,7 @@
 // achievable on Windows separators (ADR-002).
 import { createServerContribution } from "@aof/server/commands";
 import { createResyncContribution } from "@aof/mesh/commands";
-import { createWorkContribution } from "@aof/work/commands";
+import { boardPublishCommand, createWorkContribution } from "@aof/work/commands";
 import { createWorkLoopContribution, createTriggerContribution, createDispatchContribution } from "@aof/work-loop/commands";
 import { createWorkGraphContribution } from "@aof/work-graph/commands";
 import { createKnowledgeContribution } from "@aof/knowledge/commands";
@@ -295,6 +295,7 @@ export function assembleCommandCore({ commandsGraphImpactServices, commandsMeshC
     createWorkContribution([
       runStartCommand,
       runCompleteCommand,
+      boardPublishCommand,
       runStatusCommand,
       itemStatusCommand,
       regressionGateCommand,

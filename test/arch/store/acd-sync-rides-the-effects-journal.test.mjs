@@ -6,7 +6,7 @@
 // The operator's "global ledger" already exists — the effects journal — so a sync mark is an
 // event in it and a baseline is a table beside the rows (extend the existing surface, never add
 // a sibling). Measured, three claims:
-//   1. A SQLite database is constructed (`new …DatabaseSync(`) in exactly the two openers:
+//   1. A mesh database is constructed (`new …DatabaseSync(`) in exactly the two openers:
 //      the effects journal's and the projection store's.
 //   2. The only database file names runtime source spells are those two.
 //   3. The sync modules (the pass, the predicate leaf) construct no database and spell no
@@ -22,6 +22,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const OPENERS = ["packages/effects/src/journal-open.mjs", "packages/mesh/src/projection-store.mjs"];
 const DATABASE_NAMES = ["journal.sqlite", "projection.sqlite"];
 const SYNC_MODULES = ["packages/mesh/src/publisher.mjs", "packages/work/src/local-change.mjs"];
+const BOARD_LOCK = "packages/work/src/store/board-links.mjs";
 
 function stripComments(source) {
   // Line comments first, then blocks (TECH_DEBT item 24): a line comment holding a block opener
@@ -43,9 +44,16 @@ async function runtimeSources() {
 
 export const archTests = [
   {
-    name: "arch/164 FF-16403 (acd-sync-rides-the-effects-journal): a SQLite database is constructed only by the journal's and the projection store's openers",
+    name: "arch/164 FF-16403 (acd-sync-rides-the-effects-journal): mesh databases use the journal and projection openers and the board lock stores no data",
     async run() {
-      const constructors = (await runtimeSources()).filter(({ code }) => constructsDatabase(code)).map(({ rel }) => rel).sort();
+      const sources = await runtimeSources();
+      const constructorSources = sources.filter(({ code }) => constructsDatabase(code));
+      const boardLock = constructorSources.find(({ rel }) => rel === BOARD_LOCK)?.code;
+      assert.ok(boardLock, "the workspace board lock is scanned");
+      assert.ok(boardLock.includes('path.join(workspace.projectRoot, ".aof", "board-state")'), "lock location is scoped to the workspace");
+      assert.ok(boardLock.includes('new DatabaseSync(path.join(root, `${key}.lock.sqlite`))'), "SQLite opens only the keyed lock file");
+      assert.deepEqual(boardLock.match(/\bdb\.\w+\([^\n]*\)/g), ['db.exec("BEGIN IMMEDIATE")', "db.close()"], "the lock runs no queries and writes no data");
+      const constructors = constructorSources.filter(({ rel }) => rel !== BOARD_LOCK).map(({ rel }) => rel).sort();
       assert.deepEqual(constructors, [...OPENERS].sort());
     },
   },

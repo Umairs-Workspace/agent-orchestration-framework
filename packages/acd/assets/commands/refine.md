@@ -346,6 +346,12 @@ Still **doc-producing only**: stop before any build.
   usually made it already; both are bounded to the same starting edge, so a repeat is reported as not
   applicable and changes nothing. `aof work status <ref>` with no target reports the legal moves, and
   any other refusal still fails and still means stop and look.
+- **Publish a completed refinement.** After the refined scope has passed its contract gate, run
+  `aof work publish-board <ref> --refinement-complete --json` for the scope's concrete item refs
+  before closing their runs. Publish a parent before its refined children. Use `--descendants` for
+  a milestone only when every child was refined in that cascade. Local file mode reports a skip.
+  A pending board result keeps its journal and local documents available. Retry the same publication
+  before closing the run as done.
 - Close the run at the phase's close — `aof work run-complete <ref> --outcome done`. A phase that
   returns without completing its run turns the `duplicate-run` guard from a backstop into a wall for
   the next phase on that item. **Under a driving shell** (the session carries `AOF_RUN_ID`) both the

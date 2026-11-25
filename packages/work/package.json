@@ -141,6 +141,8 @@
   "dependencies": {
     "@aof/contracts": "workspace:*",
     "@aof/foundation": "workspace:*",
+    "ajv": "^8.20.0",
+    "js-yaml": "^4.3.0",
     "picomatch": "4.0.4"
   }
 }

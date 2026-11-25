@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
-import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { assertScenarioMatches, captureScenario, compareScenario } from "../support/golden/harness.mjs";
 import { DEFAULT_BASELINE_ROOT, materialise } from "../support/golden/baseline-store.mjs";
 import { workStreamLanes as lanes } from "./work-stream.lane.mjs";
+
+import { resolveWorkItemStore } from "@aof/work/store/work-item-store";
+import { defaultApplication } from "aof/default-application";
+import { azureItem, azureRecording, azureDefinition } from "./fixtures/work-stream/azure-adapter.test-support.mjs";
 
 const laneId = "work-stream-fixture";
 const fixture = lanes.find(lane => lane.id === laneId);
@@ -111,3 +115,182 @@ export const workStreamTests = [
     assert.match(result.report, /text-list.*has no baseline/);
   }); } },
 ];
+
+async function selectedAzureFixture(itemCount, run) {
+  const root = mkdtempSync(path.join(tmpdir(), "aof-selected-azure-"));
+  try {
+    const dir = path.join(root, ".aof", "boards");
+    mkdirSync(dir, { recursive: true });
+    const items = Array.from({ length: itemCount }, (_, i) => azureItem(i + 1));
+    items.push(azureItem(itemCount + 1));
+    items.at(-1).fields["System.AreaPath"] += "\\Neighbour";
+    const last = items.at(-2);
+    last.fields["System.WorkItemType"] = "User Story";
+    last.fields[azureDefinition().mappings.fields.ref] = "410/00";
+    last.relations = [];
+    const manifest = structuredClone(azureDefinition());
+    manifest.adapter = "./fixture.mjs";
+    writeFileSync(path.join(dir, "board.yaml"), JSON.stringify(manifest));
+    const config = { work: { store: { manifest: ".aof/boards/board.yaml" } } };
+    writeFileSync(path.join(root, ".aof/aof.config.json"), JSON.stringify(config));
+    const support = new URL("./fixtures/work-stream/azure-adapter.test-support.mjs", import.meta.url).href;
+    const edges = [
+      { source: { id: 410 }, target: { id: itemCount }, rel: "System.LinkTypes.Hierarchy-Forward" },
+      { source: { id: 1 }, target: { id: itemCount }, rel: "System.LinkTypes.Dependency-Forward" },
+    ];
+    writeFileSync(path.join(dir, "fixture.mjs"), `
+      import { azureRecording } from ${JSON.stringify(support)};
+      const { adapter } = await azureRecording({ items: ${JSON.stringify(items)}, edges: ${JSON.stringify(edges)} });
+      export const { readItems, readChanges, applyChanges, accessProbe, copyAttachment } = adapter;
+    `);
+    const env = { ...process.env, AOF_GLOBAL_HOME: path.join(root, "home") };
+    const workspace = await defaultApplication.loadWorkspace(root, undefined, { env });
+    await run(workspace, { workspace, globalWorkStoreOptions: { env } });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+workStreamTests.push(
+  { name: "209/01 task00 E1 and task01 E3 · Selected Azure board reports the whole area, ranks and cross-batch relations", async run() {
+    await selectedAzureFixture(2505, async (workspace, ctx) => {
+      const { rows } = await defaultApplication.invoke("work:find", { query: "410" }, ctx);
+      assert.equal(rows[0].type, "milestone");
+      assert.equal(rows[0].status, "in-progress");
+      const store = resolveWorkItemStore(workspace);
+      const full = await store.readItems({});
+      assert.equal(full.items.length, 2505);
+      assert.equal(new Set(full.items.map(item => item.id)).size, 2505);
+      assert.deepEqual(full.items.slice(-2).map(item => [item.id, item.rank]), [[2504, 2504], [2505, 2505]]);
+      assert.equal(full.items.at(-1).parent, "410");
+      assert.deepEqual(full.items.at(-1).depends, ["1"]);
+      const snapshot = await store.snapshot();
+      const feature = await snapshot.read("410");
+      assert.equal(feature.boardId, 410);
+      assert.equal(feature.revision, 8);
+    });
+  } },
+  { name: "209/01 task00 E2 · Missing Blocked state prevents a board mutation", async run() {
+    const { adapter, requests } = await azureRecording({ missingState: "Blocked" });
+    await assert.rejects(adapter.applyChanges({ changes: [{ id: 410, expectedRevision: 8 }] }), /User Story.*Blocked/);
+    assert.ok(requests.every(request => ["GET"].includes(request.method)));
+  } },
+  { name: "209/01 task00 E9 · Personal account header and token expiry reach the recorded HTTP boundary", async run() {
+    const fixture = await azureRecording();
+    const { adapter } = fixture;
+    await adapter.readItems({ ids: [410] });
+    fixture.advance(5);
+    await adapter.readItems({ ids: [410] });
+    assert.equal(fixture.mints(), 1);
+    fixture.advance(26);
+    const fresh = await adapter.readItems({ ids: [410] });
+    assert.equal(fixture.mints(), 2);
+    assert.doesNotMatch(JSON.stringify(fresh), /fixture-access/);
+    fixture.advance(31);
+    fixture.signOut();
+    const before = fixture.requests.length;
+    await assert.rejects(adapter.readItems({ ids: [410] }), error => error.code === "azure-board-auth" && !error.message.includes("fixture-access"));
+    assert.equal(fixture.requests.length, before);
+  } },
+  { name: "209/01 task01 E4 · A targeted read accounts for every missing ID without a whole-area query", async run() {
+    const { adapter, requests } = await azureRecording({ items: [azureItem(410)] });
+    const reply = await adapter.readItems({ ids: [410, 411] });
+    assert.deepEqual(reply.items.map(({ id, revision }) => [id, revision]), [[410, 8]]);
+    assert.deepEqual(reply.missingIds, [411]);
+    assert.equal(requests.filter(request => request.endpoint === "wit/wiql").length, 0);
+    assert.deepEqual(requests.find(request => request.endpoint === "wit/workitemsbatch").body.ids, [410, 411]);
+  } },
+  ...["milestone", "story", "task", "chore", "spike", "uat", "prototype"].map(type => ({
+    name: `209/01 task01 · ${type} round-trips each mapped state and membership`, async run() {
+      const values = Object.keys(azureDefinition().mappings.states[type]).flatMap(status =>
+        ["active", "backlog", "archived"].map(membership => ({ type, status, membership })));
+      const { adapter } = await azureRecording({ items: [] });
+      const changes = values.map((value, i) => ({ ...value, key: `k${i}`, ref: String(i + 1), title: `Case ${i}` }));
+      const { results } = await adapter.applyChanges({ changes });
+      assert.ok(results.every(result => result.outcome === "applied"));
+      const { items } = await adapter.readItems({ ids: results.map(result => result.id) });
+      assert.deepEqual(items.map(({ type, status, membership }) => ({ type, status, membership })), values);
+      assert.ok(items.every(item => item.fault == null));
+    },
+  })),
+  { name: "209/01 task01 · An unmapped board status identifies the affected item", async run() {
+    const { adapter } = await azureRecording({ items: [azureItem(410, { type: "story", status: "Foreign" })] });
+    const { items: [item] } = await adapter.readItems({ ids: [410] });
+    assert.equal(item.status, undefined);
+    assert.match(item.fault.message, /410.*Foreign/);
+  } },
+  { name: "209/01 task02 E5 and E6 · Each guarded update reports its own outcome", async run() {
+    const fixture = await azureRecording({ items: [azureItem(410), azureItem(411, { revision: 4 })] });
+    const { adapter } = fixture;
+    const result = await adapter.applyChanges({ changes: [
+      { key: "k1", id: 410, expectedRevision: 8, type: "milestone", status: "in-review", parentId: 411, rank: 40 },
+      { key: "k2", id: 411, expectedRevision: 3, type: "milestone", status: "done" },
+    ] });
+    assert.deepEqual(result.results, [
+      { key: "k1", id: 410, revision: 9, outcome: "applied" },
+      { key: "k2", id: 411, outcome: "refused", code: "azure-board-stale" },
+    ]);
+    const stale = await adapter.applyChanges({ changes: [{ key: "k3", id: 410, expectedRevision: 8, type: "milestone", status: "done" }] });
+    assert.equal(stale.results[0].code, "azure-board-stale");
+    const { items } = await adapter.readItems({ ids: [410, 411] });
+    assert.deepEqual(items.map(({ id, revision, status, parentId }) => [id, revision, status, parentId]),
+      [[410, 9, "in-review", 411], [411, 4, "in-progress", null]]);
+    assert.deepEqual(fixture.requests.filter(request => request.method === "PATCH").map(request => request.body[0].value), [8, 3, 8]);
+  } },
+  { name: "209/01 task02 · A lost create acknowledgement retains the caller's correlation key", async run() {
+    const { adapter, requests } = await azureRecording({ loseCreate: true });
+    const { results } = await adapter.applyChanges({ changes: [{ key: "draft-17", type: "milestone", ref: "17", title: "Created", status: "not-started", membership: "active" }] });
+    assert.deepEqual(results, [{ key: "draft-17", id: null, outcome: "unknown", code: "azure-board-transport" }]);
+    const create = requests.find(request => request.endpoint.startsWith("wit/workitems/$"));
+    assert.ok(create.body.some(entry => entry.path === "/fields/Custom.AofKey" && entry.value === "draft-17"));
+    const { items } = await adapter.readItems({ keys: ["draft-17"] });
+    assert.deepEqual(items.map(({ id, ref }) => [id, ref]), [[700, "17"]]);
+  } },
+  ...[false, true].map(hideAttachment => ({
+    name: `209/01 task02 E12 · Upload is acknowledged only with item relation [relation=${!hideAttachment}]`, async run() {
+      const { adapter, requests } = await azureRecording({ hideAttachment });
+      const bytes = Buffer.from("flow");
+      const result = await adapter.copyAttachment({ id: 410, name: "flow.png", bytes, contentKey: "hash", expectedRevision: 8 });
+      assert.equal(bytes.toString(), "flow");
+      assert.equal(result.outcome, hideAttachment ? "unknown" : "applied");
+      assert.equal(requests.filter(request => request.endpoint === "wit/workitems/410" && request.method === "GET").length, 2);
+      if (!hideAttachment) {
+        assert.match(result.url, /attachments\/flow$/);
+        const recovered = await adapter.copyAttachment({ id: 410, name: "flow.png", bytes, contentKey: "hash", expectedRevision: 8 });
+        assert.equal(recovered.url, result.url);
+        assert.equal(requests.filter(request => request.endpoint === "wit/attachments").length, 1);
+      }
+    },
+  })),
+  { name: "209/01 task03 E7 · Feed pagination preserves two revisions for one item and resumes", async run() {
+    const fixture = await azureRecording();
+    const reply = await fixture.adapter.readChanges({ cursor: "c17" });
+    assert.equal(reply.cursor, "c18");
+    assert.deepEqual(reply.changes.map(({ id, revision }) => [id, revision]), [[410, 9], [410, 10]]);
+    await fixture.adapter.readChanges({ cursor: reply.cursor });
+    const pages = fixture.requests.filter(request => request.endpoint === "wit/reporting/workitemrevisions");
+    assert.deepEqual(pages.map(page => page.query.continuationToken), ["c17", "p2", "c18"]);
+    assert.deepEqual(fixture.waits, [5_000]);
+  } },
+  { name: "209/01 task03 E8 · Expired cursors fail coverage and keep the operator's position", async run() {
+    const { adapter } = await azureRecording({ oldCursor: true });
+    assert.deepEqual(await adapter.readChanges({ cursor: "c17" }), { changes: [], cursor: "c17", coverage: false });
+  } },
+  ...[
+    ["quiet", [], []],
+    ["deletion", [{ id: 410, rev: 11, isDeleted: true }], [[410, 11, true]]],
+    ["edit", [{ id: 410, rev: 12, fields: { "System.Title": "Edited" } }], [[410, 12, false]]],
+  ].map(([state, feed, wanted]) => ({
+    name: `209/01 task03 · The next five-second poll observes ${state}`, async run() {
+      const fixture = await azureRecording();
+      await fixture.adapter.readChanges({ cursor: "c17" });
+      fixture.setFeed(feed.map(item => item.fields ? {
+        ...item, fields: { ...item.fields, "System.AreaPath": azureDefinition().board.area },
+      } : item));
+      const reply = await fixture.adapter.readChanges({ cursor: "c18" });
+      assert.deepEqual(fixture.waits, [5_000]);
+      assert.equal(reply.cursor, "c19");
+      assert.deepEqual(reply.changes.map(({ id, revision, deleted }) => [id, revision, deleted]), wanted);
+    },
+  })),
+);

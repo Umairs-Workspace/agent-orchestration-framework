@@ -37,6 +37,7 @@ export const WORK_COMMAND_IDS = Object.freeze([
   "work:prototype",
   "work:promote",
   "work:archive",
+  "work:publish-board",
   "work:renumber",
   "work:promote-gap",
   "work:promote-finding",
@@ -57,3 +58,44 @@ export function createWorkContribution(commands) {
   }
   return Object.freeze({ name: "@aof/work", commands: Object.freeze([...commands]) });
 }
+
+export const boardPublishCommand = {
+  id: "work:publish-board",
+  input: {
+    type: "object",
+    properties: {
+      ref: { type: "string", minLength: 1 },
+      refinementComplete: { type: "boolean" },
+      descendants: { type: "boolean" },
+    },
+    required: ["ref"],
+    additionalProperties: false,
+  },
+  async run(input, ctx) {
+    const { publishAtRefinementClose } = await import("./commands/board-publish.mjs");
+    return publishAtRefinementClose(input, ctx);
+  },
+  cli: {
+    route: ["work", "publish-board"],
+    spec: {
+      usage: "aof work publish-board <ref> --refinement-complete [--descendants] [--json]",
+      flags: {
+        refinementComplete: { type: "boolean", description: "publish after successful refinement, or retry that publication" },
+        descendants: { type: "boolean", description: "include children whose refinement completed in the same cascade" },
+      },
+    },
+    argv: (positionals, options) => ({
+      ref: positionals[0] ?? "",
+      refinementComplete: options.refinementComplete === true,
+      descendants: options.descendants === true,
+    }),
+    json: result => result,
+    render(result) {
+      if (result.skipped) return "Publication skipped in local file mode.";
+      return result.results.map(row => [
+        row.ref, row.outcome, row.id == null ? null : "board ID " + row.id, row.code,
+      ].filter(Boolean).join(" ")).join("\n");
+    },
+    exit: result => result.published || result.skipped ? 0 : 1,
+  },
+};

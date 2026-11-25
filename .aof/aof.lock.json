@@ -11,7 +11,7 @@
   "frameworks": [],
   "frameworkInstallAttempts": [],
   "work": {
-    "generatedAt": "2026-11-23T22:39:22.187Z",
+    "generatedAt": "2026-11-25T22:42:09.059Z",
     "bundle": {
       "version": "0.1.0"
     },
@@ -408,8 +408,8 @@
           "id": "refine",
           "kind": "command"
         },
-        "hash": "sha256:fac53bc7ed784098d5c457e7c45bf28f9aa41100faaa8d1f85d7c205983a94d7",
-        "generatedAt": "2026-11-23T22:39:22.187Z"
+        "hash": "sha256:73bf3a1f30e8bf1293a4f9ffbcf9a0edb7d5dea3ff5d5125312fc24435fba366",
+        "generatedAt": "2026-11-25T22:42:09.059Z"
       },
       {
         "path": ".claude/commands/aof/repair.md",
@@ -1360,8 +1360,8 @@
           "file": "procedure.md",
           "sourceFile": "procedure.md"
         },
-        "hash": "sha256:d21a39e5a2b7941f25e7641f6e2632451fd0511b2d0e4015d78a6688924c67af",
-        "generatedAt": "2026-11-23T22:39:22.187Z"
+        "hash": "sha256:fbe294441ebd3a23f857b2f4f9df8bbec5cb6fb106089c4746075f148b9c1a62",
+        "generatedAt": "2026-11-25T22:42:09.059Z"
       },
       {
         "path": ".agents/skills/aof-refine/agents/openai.yaml",
@@ -1976,8 +1976,8 @@
           "id": "refine",
           "kind": "command"
         },
-        "hash": "sha256:4d3b04b6df15ec538e6e3ccf8f50d6ec7d3b51ab51ff8f7c237ae33dd36f0a3a",
-        "generatedAt": "2026-11-23T22:39:22.187Z"
+        "hash": "sha256:05d9e6b9f4dee5e97f5d42fdf35891449d1d3fe679272f96d01f5eef753cd4bf",
+        "generatedAt": "2026-11-25T22:42:09.059Z"
       },
       {
         "path": ".opencode/commands/aof/repair.md",

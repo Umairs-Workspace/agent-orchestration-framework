@@ -1,0 +1,51 @@
+version: 1
+board:
+  organization: your-organization
+  project: Your Project
+  process: AOF Agile
+  area: Your Project\AOF
+adapter: ./adapter.mjs
+mappings:
+  types:
+    milestone: Feature
+    story: User Story
+    task: Task
+    chore: Chore
+    spike: Spike
+    uat: UAT
+    prototype: Prototype
+  fields:
+    ref: Custom.AofRef
+    title: System.Title
+    correlation: Custom.AofKey
+    membership: Custom.AofMembership
+  states:
+    milestone: &governed
+      not-started: New
+      in-progress: Active
+      blocked: Blocked
+      in-review: Resolved
+      done: Closed
+    story: *governed
+    task: *governed
+    chore: *governed
+    spike: *governed
+    uat: *governed
+    prototype:
+      active: Active
+      paused: Paused
+      done: Closed
+      abandoned: Abandoned
+  relations:
+    parent: System.LinkTypes.Hierarchy-Reverse
+    depends: System.LinkTypes.Dependency-Reverse
+  order: Microsoft.VSTS.Common.StackRank
+operations:
+  readItems: readItems
+  readChanges: readChanges
+  applyChanges: applyChanges
+capabilities:
+  accessProbe: accessProbe
+  attachments:
+    paths: ["diagrams/**/*.png"]
+    copy: copyAttachment

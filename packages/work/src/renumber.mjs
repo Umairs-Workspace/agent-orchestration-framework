@@ -1,8 +1,8 @@
 import path from 'node:path';
-import { readFile, readdir, rename, writeFile, lstat, realpath } from 'node:fs/promises';
+import { readFile, readdir, rename, writeFile, lstat, realpath, mkdir, rmdir } from 'node:fs/promises';
 import { listItems, isLiveStreamRow } from './discovery.mjs';
 import { recordDoc, parseFrontmatter } from './records.mjs';
-import { rewriteDependsEntries, rewriteRefEntry } from './dependencies.mjs';
+import { asList, siblingDependencyNumber, rewriteDependsEntries, rewriteRefEntry } from './dependencies.mjs';
 import { FEEDBACK_RECORD_FILE } from './feedback-records.mjs';
 import { commandError } from '@aof/contracts/error';
 
@@ -66,21 +66,30 @@ function rewriteLedger(text, remap) {
   }).join('\n');
 }
 
-export async function planRenumber(workDir, {ref,to}={}) {
+export async function planRenumber(workDir, {ref,to,allowReparent=false}={}) {
   if (typeof ref!=='string'||!/^\d+(?:\/\d+)?$/u.test(ref)) throw commandError('Renumber requires an exact numbered ref.','renumber-invalid-ref',400);
-  if (typeof to!=='string'||!/^\d+$/u.test(to)||!Number.isSafeInteger(Number(to))) throw commandError('The target number must be a non-negative safe integer.','renumber-invalid-target',400);
+  const target = allowReparent && typeof to === 'string' && /^\d+\/\d+$/u.test(to) ? to.split('/') : null;
+  const targetNumber = target?.[1] ?? to;
+  if (typeof targetNumber!=='string'||!/^\d+$/u.test(targetNumber)||!Number.isSafeInteger(Number(targetNumber))) throw commandError('The target number must be a non-negative safe integer.','renumber-invalid-target',400);
   const items=await listItems(workDir);
   const matches=items.filter(row=>row.number!=null&&normal(row.ref)===normal(ref));
   if (matches.length!==1) throw commandError('Renumber requires exactly one existing item: '+ref,'renumber-ref-not-found',404);
   const item=matches[0];
   if (!isLiveStreamRow(item)) throw commandError('Archived work cannot be renumbered.','renumber-not-live',409);
-  if (Number(item.number)===Number(to)) throw commandError('Choose a different number.','renumber-same-number',409);
-  const sameSpace=row=>item.parent==null?row.parent==null:row.parent!=null&&Number(row.parent)===Number(item.parent);
-  if (items.some(row=>row.number!=null&&sameSpace(row)&&Number(row.number)===Number(to))) throw commandError('Target number '+to+' is occupied; renumber never shifts another item.','renumber-target-occupied',409);
-  const number=String(Number(to)).padStart(item.number.length,'0');
-  const newRef=item.parent==null?number:item.parent+'/'+number;
+  const targetParent = target == null ? null : items.find(row =>
+    row.type === 'milestone' && row.parent == null && isLiveStreamRow(row) && normal(row.ref) === normal(target[0]));
+  if (target && (item.type !== 'story' || item.parent == null || !targetParent)) {
+    throw commandError('Reparent requires a nested story and a live destination milestone.', 'renumber-invalid-target', 400);
+  }
+  const parent = targetParent?.ref ?? item.parent;
+  const reparent = parent !== item.parent;
+  if (!reparent && Number(item.number)===Number(targetNumber)) throw commandError('Choose a different number.','renumber-same-number',409);
+  const sameSpace=row=>parent==null?row.parent==null:row.parent!=null&&Number(row.parent)===Number(parent);
+  if (items.some(row=>row.number!=null&&sameSpace(row)&&Number(row.number)===Number(targetNumber))) throw commandError('Target number '+to+' is occupied; renumber never shifts another item.','renumber-target-occupied',409);
+  const number=String(Number(targetNumber)).padStart(item.number.length,'0');
+  const newRef=parent==null?number:parent+'/'+number;
   const oldName=path.basename(item.dir), newName=number+'_'+item.type+'_'+item.slug;
-  const destination=path.join(path.dirname(item.dir),newName);
+  const destination=path.join(reparent ? path.join(targetParent.dir, 'stories') : path.dirname(item.dir), newName);
   const realRoot=await realpath(workDir);
   if (!inside(realRoot,await realpath(item.dir))||(await lstat(item.dir)).isSymbolicLink()) throw commandError('Renumber source must be inside the work directory.','renumber-outside-work',409);
   try { await lstat(destination); throw commandError('Destination already exists.','renumber-target-occupied',409); }
@@ -92,6 +101,31 @@ export async function planRenumber(workDir, {ref,to}={}) {
   const original=await readFile(record,'utf8');
   const meta=parseFrontmatter(original);
   if (meta.number==null||Number(meta.number)!==Number(item.number)||!/^---\r?\n[\s\S]*?^number:[^\r\n]+/m.test(original)) throw commandError('Identity document number is missing or disagrees with its folder.','renumber-record-unusable',409);
+  let createParent = false;
+  if (reparent) {
+    const destinationParent = path.dirname(destination);
+    let realDestinationParent;
+    try { realDestinationParent = await realpath(destinationParent); }
+    catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      realDestinationParent = path.join(await realpath(targetParent.dir), 'stories');
+      createParent = true;
+    }
+    if (!inside(realRoot, realDestinationParent)) {
+      throw commandError('The destination stories directory must be inside the work stream.', 'renumber-outside-work', 409);
+    }
+    const oldSiblings = items.filter(row => row.type === 'story' && row.ref !== item.ref && row.parent === item.parent);
+    if (asList(meta.depends).length > 0) throw commandError('Reparent would leave a dependency outside the new milestone.', 'renumber-reparent-depends', 409);
+    for (const sibling of oldSiblings) {
+      const siblingText = await readFile(path.join(sibling.dir, recordDoc(sibling)), 'utf8');
+      if (asList(parseFrontmatter(siblingText).depends).some(dep => {
+        const number = siblingDependencyNumber(dep, sibling.parent);
+        return number != null && Number(number) === Number(item.number);
+      })) {
+        throw commandError('Reparent would leave a dependent story outside the new milestone.', 'renumber-reparent-depends', 409);
+      }
+    }
+  }
   const remap=[{from:item.ref,to:newRef}];
   if(item.parent==null) for(const child of items.filter(row=>row.parent!=null&&Number(row.parent)===Number(item.number))) remap.push({from:child.ref,to:number+'/'+child.number});
   const changes=[];
@@ -100,11 +134,13 @@ export async function planRenumber(workDir, {ref,to}={}) {
     const moved=inside(item.dir,file);
     let after=path.basename(file)===FEEDBACK_RECORD_FILE ? rewriteLedger(before,remap) : rewriteCurrent(before,{item,remap,oldName,newName,moved});
     if(file===record) after=after.replace(/^(---\r?\n)([\s\S]*?)(\r?\n---)/u,(all,open,fm,close)=>open+fm.replace(/^(number:[ \t]*).*$/m,'$1'+number)+close);
+    if (file === record && reparent) after = after.replace(/^(---\r?\n)([\s\S]*?)(\r?\n---)/u,
+      (all, open, fm, close) => open + fm.replace(/^(parent:[ \t]*).*$/m, '$1' + parent) + close);
     if(item.parent==null) after=after.replace(/^(---\r?\n)([\s\S]*?)(\r?\n---)/u,(all,open,fm,close)=>open+fm.replace(/^(parent:[ \t]*)(.*)$/m,(whole,prefix,value)=>prefix+rewriteRefEntry(value,raw=>/^\d+$/u.test(raw)&&normal(raw)===normal(item.ref)?number:null).text)+close);
     if(before!==after) changes.push({file,target:moved?path.join(destination,path.relative(item.dir,file)):file,before,after});
   }
-  return {from:item.ref,to:newRef,source:item.dir,destination,remap,changes,
-    touched:[...new Set([...remap.flatMap(pair=>[pair.from,pair.to]),...(item.parent==null?[]:[item.parent])])],
+  return {from:item.ref,to:newRef,source:item.dir,destination,createParent,remap,changes,
+    touched:[...new Set([...remap.flatMap(pair=>[pair.from,pair.to]),...(item.parent==null?[]:[item.parent,parent])])],
     rewritten:changes.map(change=>slash(path.relative(workDir,change.target)))};
 }
 
@@ -117,7 +153,12 @@ export async function applyRenumber(plan, { write = writeFile } = {}) {
   for(const change of plan.changes) if(await readFile(change.file,'utf8')!==change.before) throw commandError('Work changed after the renumber preview; retry.','renumber-plan-stale',409);
   try { await lstat(plan.destination); throw commandError('Destination appeared after planning.','renumber-target-occupied',409); }
   catch(error) { if(error.code!=='ENOENT') throw error; }
-  await rename(plan.source,plan.destination);
+  if (plan.createParent) await mkdir(path.dirname(plan.destination));
+  try { await rename(plan.source, plan.destination); }
+  catch (error) {
+    if (plan.createParent) await rmdir(path.dirname(plan.destination));
+    throw error;
+  }
   const written=[];
   try {
     for(const change of plan.changes) { written.push(change); await write(change.target,change.after,'utf8'); }
@@ -126,6 +167,7 @@ export async function applyRenumber(plan, { write = writeFile } = {}) {
     try {
       for(const change of written.reverse()) await write(change.target,change.before,'utf8');
       await rename(plan.destination,plan.source);
+      if (plan.createParent) await rmdir(path.dirname(plan.destination));
     } catch(rollback) { throw commandError('Renumber failed and rollback needs repair: '+error.message+'; '+rollback.message,'renumber-rollback-failed',500); }
     throw error;
   }

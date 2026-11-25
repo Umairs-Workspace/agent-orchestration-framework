@@ -291,3 +291,452 @@ export const workItemStoreTests = [
     },
   },
 ];
+
+const selection = { manifest: ".aof/boards/team.yaml" };
+const definition = {
+  version: 1, board: { project: "Orchard" }, adapter: "./team.mjs",
+  mappings: {
+    types: { story: "Card" }, states: { story: { "not-started": "Ready" } },
+    fields: { ref: "ref", title: "title", correlation: "key", membership: "lane" },
+    relations: { parent: "parent", depends: "predecessor" }, order: "rank",
+  },
+  operations: { readItems: "listCards", readChanges: "getChanges", applyChanges: "apply" },
+};
+
+async function boardFixture(workspace, amend = value => value) {
+  const boards = path.join(workspace.projectRoot, ".aof/boards");
+  await mkdir(boards, { recursive: true });
+  const raw = amend(structuredClone(definition));
+  await writeFile(path.join(boards, "team.yaml"), typeof raw === "string" ? raw : JSON.stringify(raw));
+  const imported = path.join(boards, "imported");
+  await writeFile(path.join(boards, "team.mjs"), `
+    import { appendFile } from "node:fs/promises";
+    await appendFile(new URL("./imported", import.meta.url), "import\\n");
+    export function listCards({ ids }, { definition }) {
+      return {token:"c17", items: (!ids || ids.includes(71)) ? [{
+        ref:"17/00", number:"00", id:71, revision:8, type:"story", slug:"pack", parent:"17",
+        depends:["16"], title:definition.board.project, status:"not-started",
+      }] : []};
+    }
+    export function getChanges(input) { return {input, changes:[{id:71,revision:9}], cursor:"c18"}; }
+    export function apply(input) {
+      return {input, results: input.changes.map(change => change.expectedRevision === 8 ?
+        {id:71,revision:9,outcome:"applied"} : {id:71,outcome:"refused"})};
+    }
+  `);
+  await writeFile(path.join(workspace.projectRoot, ".aof/aof.config.json"), JSON.stringify({ work: { store: selection } }));
+  return { imported, boards, workspace: { ...workspace, config: { work: { store: selection } } } };
+}
+
+function publicBoardFind(workspace, ref) {
+  const cli = fileURLToPath(new URL("../../core/bin/aof.mjs", import.meta.url));
+  return spawnSync(process.execPath, [cli, "work", "find", ref, "--json"], {
+    cwd: workspace.projectRoot,
+    env: { ...process.env, AOF_GLOBAL_HOME: path.join(workspace.projectRoot, "home") },
+    encoding: "utf8",
+    timeout: 30_000,
+  });
+}
+
+workItemStoreTests.push(
+  { name: "209/00 task01 · The packaged validator uses the public board schema", async run() {
+    const publicSchema = new URL("../../../schemas/work-board.schema.json", import.meta.url);
+    const packagedSchema = new URL("../src/store/work-board.schema.json", import.meta.url);
+    assert.deepEqual(JSON.parse(await readFile(packagedSchema, "utf8")), JSON.parse(await readFile(publicSchema, "utf8")));
+  } },
+  { name: "209/00 task00 E1 · File selection does not execute an unselected board", run: () => orchard(async workspace => {
+    const fixture = await boardFixture(workspace);
+    const reads = [];
+    for (const work of [{}, { store: "files" }]) {
+      await writeFile(path.join(fixture.boards, "../aof.config.json"), JSON.stringify({ work }));
+      const result = publicBoardFind(workspace, "10");
+      assert.equal(result.status, 0, result.stderr + result.stdout);
+      reads.push(JSON.parse(result.stdout));
+    }
+    assert.deepEqual(reads[0], reads[1]);
+    assert.equal(reads[0][0].ref, "10");
+    await assert.rejects(readFile(fixture.imported), { code: "ENOENT" });
+  }) },
+  { name: "209/00 task00 E2 · Two workspaces select independently and load only on the first store operation", run: () => orchard(async first => {
+    const one = await boardFixture(first);
+    await orchard(async second => {
+      const two = await boardFixture(second, value => ({ ...value, board: { project: "Harbour" } }));
+      const a = await commandContext(first);
+      const b = await commandContext(second);
+      await assert.rejects(readFile(one.imported), { code: "ENOENT" });
+      await assert.rejects(readFile(two.imported), { code: "ENOENT" });
+      const lookup = async ctx => (await application.invoke("work:find", { query: "17/00" }, ctx)).rows[0].title;
+      assert.deepEqual([await lookup(a), await lookup(b), await lookup(a)], ["Orchard", "Harbour", "Orchard"]);
+      assert.equal(await readFile(one.imported, "utf8"), "import\n");
+      assert.equal(await readFile(two.imported, "utf8"), "import\n");
+    });
+  }) },
+  { name: "209/00 task01 E3 · Duplicate YAML keys fail before import", run: () => orchard(async workspace => {
+    const fixture = await boardFixture(workspace, () => "version: 1\nversion: 1\n");
+    const result = publicBoardFind(workspace, "17/00");
+    assert.equal(result.status, 1);
+    assert.match(JSON.parse(result.stdout).error, /duplicated mapping key.*\n[\s\S]*version/i);
+    await assert.rejects(readFile(fixture.imported), { code: "ENOENT" });
+  }) },
+  ...[
+    ["unsupported schema version", value => { value.version = 2; }, /version/],
+    ["missing relation", value => { delete value.mappings.relations.parent; }, /parent/],
+    ["missing operation", value => { delete value.operations.readChanges; }, /readChanges/],
+    ["attachment binding missing", value => { value.capabilities = { attachments: { paths: ["*.png"] } }; }, /copy/],
+  ].map(([label, edit, message]) => ({
+    name: `209/00 task01 · Reject ${label} before import`, run: () => orchard(async workspace => {
+      const fixture = await boardFixture(workspace, value => { edit(value); return value; });
+      await assert.rejects(resolveWorkItemStore(fixture.workspace).snapshot(), { code: "work-board-definition-invalid", message });
+      await assert.rejects(readFile(fixture.imported), { code: "ENOENT" });
+    }),
+  })),
+  ...["manifest", "adapter"].map(kind => ({
+    name: `209/00 task01 E4 · Refuse a ${kind} symlink outside .aof`, run: () => orchard(async workspace => {
+      const fixture = await boardFixture(workspace);
+      const name = kind === "manifest" ? "team.yaml" : "team.mjs";
+      const src = path.join(fixture.boards, name);
+      const outside = path.join(workspace.projectRoot, name);
+      const { rename, symlink } = await import("node:fs/promises");
+      await rename(src, outside);
+      await symlink(outside, src, "file");
+      await assert.rejects(resolveWorkItemStore(fixture.workspace).snapshot(), { code: "work-board-definition-invalid", message: new RegExp(kind + " path") });
+      await assert.rejects(readFile(fixture.imported), { code: "ENOENT" });
+    }),
+  })),
+  { name: "209/00 task01 · Missing callable export is named before any mutation", run: () => orchard(async workspace => {
+    const fixture = await boardFixture(workspace, value => { value.operations.applyChanges = "changeCards"; return value; });
+    const store = resolveWorkItemStore(fixture.workspace);
+    await assert.rejects(store.mutate({ operation: "status" }), { code: "work-board-definition-invalid", message: /applyChanges.*changeCards/ });
+  }) },
+  { name: "209/00 task02 E5 E6 · Public reads use project operation names and optional capabilities can be omitted", run: () => orchard(async workspace => {
+    const fixture = await boardFixture(workspace);
+    const result = publicBoardFind(workspace, "17/00");
+    assert.equal(result.status, 0, result.stderr + result.stdout);
+    const [row] = JSON.parse(result.stdout);
+    assert.equal(row.ref, "17/00");
+    assert.equal(row.title, "Orchard");
+    assert.equal(row.parent, "17");
+    const store = resolveWorkItemStore(fixture.workspace);
+    const snapshot = await store.snapshot();
+    const record = await snapshot.read("17/00");
+    assert.equal(record.boardId, 71);
+    assert.equal(record.revision, 8);
+    assert.deepEqual(record.metadata.depends, ["16"]);
+    assert.deepEqual(await store.boardCapabilities(), { attachments: undefined, accessProbe: undefined, copyAttachment: undefined });
+  }) },
+  { name: "209/00 task02 · Selected IDs, cursors, guarded changes and refusals cross the bindings", run: () => orchard(async workspace => {
+    const fixture = await boardFixture(workspace);
+    const store = resolveWorkItemStore(fixture.workspace);
+    assert.equal((await store.readItems({ ids: [71] })).items[0].revision, 8);
+    assert.deepEqual((await store.readItems({ ids: [72] })).items, []);
+    const changes = await store.readChanges({ cursor: "c17" });
+    assert.deepEqual(changes, { input: { cursor: "c17" }, changes: [{ id: 71, revision: 9 }], cursor: "c18" });
+    const input = { changes: [
+      { key: "k3", id: 71, expectedRevision: 8, title: "Changed", parent: "18" },
+      { key: "k4", id: 71, expectedRevision: 7 },
+    ] };
+    assert.deepEqual(await store.applyChanges(input), {
+      input, results: [{ id: 71, revision: 9, outcome: "applied" }, { id: 71, outcome: "refused" }],
+    });
+  }) },
+);
+
+function workDoc(type, number, slug, { parent, status = "in-progress", depends = [] } = {}) {
+  return [
+    "---", `type: ${type}`, `number: ${number}`, `slug: ${slug}`,
+    ...(parent == null ? [] : [`parent: ${parent}`]),
+    `status: ${status}`, `title: "${slug}"`, `depends: [${depends.join(", ")}]`, "schema: 1",
+    "created: 2026-11-24", "updated: 2026-11-24", "---", "", "Decision lives here.", "",
+  ].join("\n");
+}
+
+async function publicationFixture(run, { attachments = false, child = false, boardMode = true } = {}) {
+  const root = await mkdtemp(path.join(os.tmpdir(), "aof-publication-"));
+  const workspace = { projectRoot: root, workDir: path.join(root, "wiki/work") };
+  const boards = path.join(root, ".aof/boards");
+  const stateFile = path.join(boards, "remote.json");
+  const docHome = path.join(workspace.workDir, "17_milestone_orchard");
+  const childHome = path.join(docHome, "stories/00_story_packing");
+  try {
+    await mkdir(child ? childHome : docHome, { recursive: true });
+    await mkdir(boards, { recursive: true });
+    await writeFile(path.join(docHome, "SPEC.md"), workDoc("milestone", "17", "orchard"));
+    await writeFile(path.join(docHome, "ARCHITECTURE.md"), "Keep this decision.\n");
+    const template = path.join(root, ".aof/templates/work/milestone");
+    await mkdir(template, { recursive: true });
+    for (const name of ["SPEC.md", "STATE.md"]) {
+      const asset = new URL(`../../../.aof/templates/work/milestone/${name}`, import.meta.url);
+      await writeFile(path.join(template, name), await readFile(asset));
+    }
+    if (child) await writeFile(path.join(childHome, "STORY.md"), workDoc("story", "00", "packing", { parent: "17" }));
+    const manifest = structuredClone(definition);
+    if (attachments) manifest.capabilities = { attachments: { paths: ["diagrams/**/*.png"], copy: "attach" } };
+    await writeFile(path.join(boards, "team.yaml"), JSON.stringify(manifest));
+    await writeFile(path.join(root, ".aof/aof.config.json"), JSON.stringify({ work: { store: boardMode ? selection : "files" } }));
+    await writeFile(stateFile, JSON.stringify({ items: [], writes: [], copies: [], reads: [], mode: null }));
+    await writeFile(path.join(boards, "team.mjs"), `
+      import {readFile,writeFile} from "node:fs/promises";
+      import {setTimeout as sleep} from "node:timers/promises";
+      const file=new URL("./remote.json", import.meta.url);
+      const read=async()=>JSON.parse(await readFile(file,"utf8"));
+      const save=state=>writeFile(file,JSON.stringify(state));
+      export async function listCards({ids,keys}) {
+        const state=await read();
+        if (["read-timeout", "commit-unreadable"].includes(state.mode) && (ids || keys)) throw new Error("read timeout");
+        return {items:state.items.filter(item => (!ids || ids.includes(item.id)) && (!keys || keys.includes(item.key)))};
+      }
+      export function getChanges(){return {changes:[],cursor:"c1",coverage:true};}
+      export async function apply({changes}) {
+        const state=await read();
+        const results=[];
+        for (const change of changes) {
+          state.writes.push(change);
+          if (state.mode === "refuse-child" && change.ref === "17/00") {
+            results.push({key:change.key,outcome:"refused",code:"fixture-refused"});
+            continue;
+          }
+          const creating=change.id == null;
+          const item=creating ? {id:410+state.items.length,revision:7} : state.items.find(row=>row.id===change.id);
+          if (!creating && item.revision!==change.expectedRevision) {
+            results.push({key:change.key,id:change.id,outcome:"refused",code:"fixture-stale"});
+            continue;
+          }
+          const {expectedRevision,correlationKey,key,...values}=change;
+          Object.assign(item,values,{key:correlationKey ?? item.key,revision:item.revision+1});
+          item.number=item.ref.split("/").at(-1);
+          item.parent=state.items.find(row=>row.id===item.parentId)?.ref??null;
+          item.depends=item.dependsIds.map(id=>state.items.find(row=>row.id===id)?.ref);
+          item.slug=item.title;
+          if (creating) state.items.push(item);
+          if (state.mode === "wrong-values") item.title="unexpected";
+          if (state.mode === "slow-create") await sleep(4000);
+          if ((state.mode === "lose-child" && item.ref === "17/00") || (state.mode === "lose-status" && !creating)) {
+            if (state.mode === "lose-status") state.mode = "commit-unreadable";
+            await save(state);
+            throw new Error("reply lost");
+          }
+          results.push({key,id:item.id,revision:item.revision,outcome:"applied"});
+        }
+        await save(state);
+        return {results};
+      }
+      export async function attach({id,name,bytes,contentKey,expectedRevision}) {
+        const state=await read();
+        const item=state.items.find(row=>row.id===id);
+        const linked=state.copies.find(copy=>copy.id===id&&copy.contentKey===contentKey);
+        if (linked) return {outcome:"applied",id,revision:item.revision,url:linked.url};
+        if (item.revision!==expectedRevision || state.mode==="unlinked") return {outcome:"unknown",id};
+        const url="fixture:"+contentKey;
+        state.copies.push({id,name,contentKey,url,text:bytes.toString()});
+        item.revision++;
+        await save(state);
+        if (state.mode==="lose-attachment") throw new Error("attachment acknowledgement lost");
+        return {outcome:"applied",id,revision:item.revision,url};
+      }
+    `);
+    const state = async () => JSON.parse(await readFile(stateFile, "utf8"));
+    const adjust = async change => { const next = await state(); change(next); await writeFile(stateFile, JSON.stringify(next)); };
+    const context = async () => commandContext(workspace);
+    const invoke = async (id, input) => application.invoke(id, input, await context());
+    const publish = (ref = "17", descendants = false) => invoke("work:publish-board", { ref, refinementComplete: true, descendants });
+    await run({ root, workspace, docHome, childHome, state, adjust, context, invoke, publish });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+workItemStoreTests.push(
+  { name: "209/02 task00 E9 · Successful refine close publishes while unfinished refinement stays local", run: () => publicationFixture(async fixture => {
+    const { invoke, state, publish, docHome, workspace, adjust } = fixture;
+    const rows = (await invoke("work:find", { query: "17" })).rows;
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].dir, docHome);
+    await assert.rejects(invoke("work:publish-board", { ref: "17" }), { code: "work-board-refinement-required" });
+    assert.equal((await state()).writes.length, 0);
+    const source = new URL("../../../packages/acd/assets/commands/refine.md", import.meta.url);
+    const procedure = await readFile(source, "utf8");
+    const trigger = procedure.indexOf("aof work publish-board <ref> --refinement-complete");
+    assert.ok(trigger > procedure.indexOf("<progress_tracking>"));
+    assert.ok(trigger < procedure.lastIndexOf("aof work run-complete <ref> --outcome done"));
+    const reply = await publish();
+    assert.deepEqual(reply.results, [{ ref: "17", id: 410, outcome: "verified" }]);
+    assert.equal((await state()).writes.length, 1);
+    const result = publicBoardFind(workspace, "17");
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.equal(JSON.parse(result.stdout).length, 1);
+    assert.equal(await readFile(path.join(docHome, "ARCHITECTURE.md"), "utf8"), "Keep this decision.\n");
+    await adjust(state => { state.items = []; });
+    const missing = (await invoke("work:find", { query: "17" })).rows[0];
+    assert.equal(missing.boardId, 410);
+    assert.match(missing.fault.message, /410.*17/);
+    assert.equal(missing.dir, docHome);
+    assert.equal(await readFile(path.join(docHome, "ARCHITECTURE.md"), "utf8"), "Keep this decision.\n");
+  }) },
+  { name: "209/02 task00 · File-mode refinement and ordinary promotion create no board items", run: async () => {
+    await publicationFixture(async ({ publish, state }) => {
+      assert.equal((await publish()).skipped, "local-file-mode");
+      assert.equal((await state()).writes.length, 0);
+    }, { boardMode: false });
+    await publicationFixture(async ({ workspace, invoke, state }) => {
+      const backlog = path.join(workspace.workDir, "backlog/chore_queued");
+      await mkdir(backlog, { recursive: true });
+      await writeFile(path.join(backlog, "CHORE.md"), "---\ntype: chore\nslug: queued\ntitle: queued\nstatus: not-started\ndepends: []\n---\n");
+      await invoke("work:promote", { slug: "queued" });
+      assert.equal((await state()).writes.length, 0);
+    });
+  } },
+  { name: "209/02 task00 · The same board ID in two projects has two independent journals", run: () => publicationFixture(async a => {
+    await publicationFixture(async b => {
+      await a.publish();
+      await b.publish();
+      await a.invoke("work:status", { ref: "17", status: "in-review" });
+      assert.equal((await a.state()).items[0].id, (await b.state()).items[0].id);
+      assert.equal((await a.state()).items[0].status, "in-review");
+      assert.equal((await b.state()).items[0].status, "in-progress");
+    });
+  }) },
+  { name: "209/02 task01 E3 and E4 · A refused member resumes and a lost create response is read back once", run: () => publicationFixture(async fixture => {
+    const { publish, state, adjust, workspace } = fixture;
+    await adjust(state => { state.mode = "refuse-child"; });
+    const first = await publish("17", true);
+    assert.deepEqual(first.results.map(row => [row.ref, row.outcome]), [["17", "verified"], ["17/00", "pending"]]);
+    await adjust(state => { state.mode = "lose-child"; });
+    const result = spawnSync(process.execPath, [fileURLToPath(new URL("../../core/bin/aof.mjs", import.meta.url)), "work", "publish-board", "17", "--refinement-complete", "--descendants", "--json"], {
+      cwd: workspace.projectRoot, env: { ...process.env, AOF_GLOBAL_HOME: path.join(workspace.projectRoot, "home") }, encoding: "utf8", timeout: 30_000,
+    });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.equal(JSON.parse(result.stdout).published, true);
+    assert.deepEqual((await state()).items.map(({ id, parentId }) => [id, parentId]), [[410, null], [411, 410]]);
+    assert.equal((await state()).writes.filter(change => change.ref === "17").length, 1);
+    assert.equal((await state()).writes.filter(change => change.ref === "17/00").length, 2);
+  }, { child: true }) },
+  { name: "209/02 task01 · Timed-out readback and unexpected values keep publication pending", run: () => publicationFixture(async ({ publish, state, adjust, docHome }) => {
+    await adjust(state => { state.mode = "read-timeout"; });
+    assert.equal((await publish()).published, false);
+    assert.equal((await state()).writes.length, 0);
+    await adjust(state => { state.mode = "wrong-values"; });
+    assert.equal((await publish()).results[0].code, "work-board-values-unverified");
+    assert.equal((await publish()).published, false);
+    assert.equal((await state()).writes.length, 1);
+    assert.ok(await readFile(path.join(docHome, "ARCHITECTURE.md")));
+  }) },
+  { name: "209/02 task01 · Concurrent processes issue a single create", run: () => publicationFixture(async ({ workspace, state, adjust }) => {
+    await adjust(state => { state.mode = "slow-create"; });
+    const { execFile } = await import("node:child_process");
+    const cli = fileURLToPath(new URL("../../core/bin/aof.mjs", import.meta.url));
+    const run = () => new Promise((resolve, reject) => {
+      execFile(process.execPath, [cli, "work", "publish-board", "17", "--refinement-complete", "--json"], {
+        cwd: workspace.projectRoot, env: { ...process.env, AOF_GLOBAL_HOME: path.join(workspace.projectRoot, "home") }, timeout: 30_000,
+      }, (error, stdout) => {
+        try { resolve({ status: error?.code ?? 0, result: JSON.parse(stdout) }); }
+        catch (parseError) { reject(error ?? parseError); }
+      });
+    });
+    const responses = await Promise.all([run(), run()]);
+    assert.ok(responses.some(r => r.status === 0));
+    assert.ok(responses.every(r => r.status === 0 || r.result.code === "work-board-busy"));
+    assert.equal((await state()).writes.length, 1);
+  }) },
+  { name: "209/02 task02 E5 · Inserting before linked work preserves its ID, rank and local documents", run: () => publicationFixture(async ({ publish, invoke, state, workspace }) => {
+    await publish();
+    await invoke("work:insert-milestone", { slug: "new-driver", at: "17", yes: true });
+    const found = (await invoke("work:find", { query: "18" })).rows;
+    assert.equal(found.length, 1);
+    assert.equal(found[0].dir, path.join(workspace.workDir, "18_milestone_orchard"));
+    assert.equal(await readFile(path.join(found[0].dir, "ARCHITECTURE.md"), "utf8"), "Keep this decision.\n");
+    assert.deepEqual((await state()).items.map(({ id, ref, rank }) => [id, ref, rank]), [[410, "18", 18]]);
+  }) },
+  { name: "209/02 task02 E6 and E10 · Board lifecycle is guarded and archive belongs to files", run: () => publicationFixture(async ({ publish, invoke, state, adjust, context, docHome }) => {
+    await publish();
+    await invoke("work:status", { ref: "17", status: "in-review" });
+    assert.equal((await state()).writes.at(-1).expectedRevision, 8);
+    assert.match(await readFile(path.join(docHome, "SPEC.md"), "utf8"), /status: in-review.*Decision lives here\./s);
+    await assert.rejects(invoke("work:status", { ref: "17", status: "not-started" }), { code: "status-edge-not-applicable" });
+    const store = resolveWorkItemStore((await context()).workspace);
+    await assert.rejects(store.mutate({ operation: "rollback", ref: "17", toStatus: "not-started" }), { code: "rollback-not-applicable" });
+    await adjust(state => { state.mode = "lose-status"; });
+    await assert.rejects(store.mutate({ operation: "status", ref: "17", toStatus: "done" }), { code: "work-board-readback-pending" });
+    assert.match(await readFile(path.join(docHome, "SPEC.md"), "utf8"), /status: in-review/);
+    await adjust(state => { state.mode = null; });
+    assert.equal((await store.mutate({ operation: "status", ref: "17", toStatus: "done" })).status, "done");
+    assert.equal((await state()).writes.filter(change => change.status === "done").length, 1);
+    for (const args of [{ ref: "17" }, { done: true }, { done: true, yes: true }]) {
+      await assert.rejects(invoke("work:archive", args), { code: "work-board-archive-local-only" });
+    }
+    assert.equal((await state()).items[0].status, "done");
+    assert.equal(await readFile(path.join(docHome, "ARCHITECTURE.md"), "utf8"), "Keep this decision.\n");
+  }) },
+  { name: "209/02 task02 · An eligible local item still moves to archive", run: () => publicationFixture(async ({ invoke, workspace, docHome, state }) => {
+    await writeFile(path.join(docHome, "SPEC.md"), workDoc("milestone", "17", "orchard", { status: "done" }));
+    await invoke("work:archive", { ref: "17" });
+    assert.equal(await readFile(path.join(workspace.workDir, "archive/17_milestone_orchard/ARCHITECTURE.md"), "utf8"), "Keep this decision.\n");
+    assert.equal((await state()).writes.length, 0);
+  }, { boardMode: false }) },
+  { name: "209/02 task02 · A held item lock refuses file placement before its board writes", run: () => publicationFixture(async ({ root, publish, invoke, state, docHome }) => {
+    await publish();
+    const workspaceId = application.mesh.store.workspaceIdFor(root);
+    await writeFile(path.join(root, ".aof/aof.config.json"), JSON.stringify({
+      work: { store: selection }, mesh: { enabled: true, nodeId: "control-a", workspaceId },
+    }));
+    const { seedActive } = await import("../../../test/support/item-lock-fixture.mjs");
+    const env = { ...process.env, AOF_GLOBAL_HOME: path.join(root, "home") };
+    await seedActive({ home: env.AOF_GLOBAL_HOME, workspaceId, env }, { itemRef: "17", node: "board-worker" });
+    const count = (await state()).writes.length;
+    await assert.rejects(invoke("work:insert-milestone", { slug: "would-shift", at: "17", yes: true }), { code: "item-locked-by-assignment" });
+    assert.equal((await state()).writes.length, count);
+    assert.equal((await invoke("work:find", { query: "17" })).rows[0].dir, docHome);
+    assert.equal((await invoke("work:find", { query: "18" })).rows.length, 0);
+  }) },
+  { name: "209/02 task02 · Preview is inert and moving a child preserves its verified board ID", run: () => publicationFixture(async fixture => {
+    const { publish, invoke, state, workspace } = fixture;
+    const newHome = path.join(workspace.workDir, "18_milestone_destination");
+    await mkdir(newHome);
+    await writeFile(path.join(newHome, "SPEC.md"), workDoc("milestone", "18", "destination"));
+    await publish("17", true);
+    await publish("18");
+    const before = (await state()).writes.length;
+    const plan = await invoke("work:renumber", { ref: "17/00", to: "18/00", dryRun: true });
+    assert.equal(plan.to, "18/00");
+    assert.equal((await state()).writes.length, before);
+    assert.match(await readFile(path.join(fixture.childHome, "STORY.md"), "utf8"), /parent: 17/);
+    await invoke("work:renumber", { ref: "17/00", to: "18/00" });
+    const moved = (await state()).items.find(row => row.id === 411);
+    assert.equal(moved.parentId, 412);
+    assert.equal(moved.ref, "18/00");
+    assert.match(await readFile(path.join(newHome, "stories/00_story_packing/STORY.md"), "utf8"), /parent: 18/);
+  }, { child: true }) },
+  { name: "209/02 task03 E7 and E8 · Eligible copies recover by content and optional attachment support can be absent", run: async () => {
+    const seed = async ({ root, docHome }, withSymlink) => {
+      const diagrams = path.join(docHome, "diagrams");
+      await mkdir(diagrams);
+      await writeFile(path.join(diagrams, "flow.png"), "flow");
+      await writeFile(path.join(diagrams, "draft.txt"), "draft");
+      if (withSymlink) {
+        const { symlink } = await import("node:fs/promises");
+        const outside = path.join(root, "outside.png");
+        await writeFile(outside, "never copy");
+        await symlink(outside, path.join(diagrams, "escape.png"), "file");
+      }
+    };
+    await publicationFixture(async fixture => {
+      await seed(fixture, true);
+      await fixture.adjust(state => { state.mode = "lose-attachment"; });
+      await assert.rejects(fixture.publish(), /acknowledgement lost/);
+      const retry = await fixture.publish();
+      assert.equal(retry.published, true);
+      assert.deepEqual((await fixture.state()).copies.map(({ name, text }) => [name, text]), [["flow.png", "flow"]]);
+      assert.equal(await readFile(path.join(fixture.docHome, "diagrams/flow.png"), "utf8"), "flow");
+    }, { attachments: true });
+    await publicationFixture(async fixture => {
+      await seed(fixture, false);
+      assert.equal((await fixture.publish()).published, true);
+      assert.equal((await fixture.state()).copies.length, 0);
+    });
+  } },
+  { name: "209/02 task03 · An uploaded artifact without a verified relation stays pending", run: () => publicationFixture(async ({ docHome, publish, adjust }) => {
+    await mkdir(path.join(docHome, "diagrams"));
+    await writeFile(path.join(docHome, "diagrams/flow.png"), "flow");
+    await adjust(state => {state.mode = "unlinked";});
+    assert.equal((await publish()).results[0].code, "work-board-attachment-unverified");
+  }, { attachments: true }) },
+);

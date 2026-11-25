@@ -1,0 +1,38 @@
+{
+  "runId": "20261125T194753924Z-0000",
+  "itemRef": "209/02",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": null,
+  "brief": {},
+  "createdAt": "2026-11-25T19:47:53.924Z",
+  "updatedAt": "2026-11-25T19:58:17.305Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": null,
+  "asks": [
+    {
+      "question": "209/02 Q1 · What should first publish a local draft to the board?",
+      "phase": "refine",
+      "askedAt": "2026-11-25T19:55:59.841Z",
+      "parkedAt": null,
+      "answer": "When refinement completes",
+      "answeredAt": "2026-11-25T19:55:59.844Z",
+      "by": "operator via Codex chat (transcribed verbatim)"
+    },
+    {
+      "question": "209/02 Q2 · When a milestone is done, when should its local folder move to the archive?",
+      "phase": "refine",
+      "askedAt": "2026-11-25T19:55:59.848Z",
+      "parkedAt": null,
+      "answer": "archiving is for local mode. We do not archive when using a backing board",
+      "answeredAt": "2026-11-25T19:55:59.850Z",
+      "by": "operator via Codex chat (transcribed verbatim)"
+    }
+  ]
+}

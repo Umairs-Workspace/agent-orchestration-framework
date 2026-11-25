@@ -615,7 +615,7 @@
         "id": "aof-refine",
         "kind": "skill"
       },
-      "hash": "sha256:ed547e77ecfe0b5760150dc24dd89e1a23e8f23ec2536957cb464239f553757d"
+      "hash": "sha256:fdfe6548e0e1dc9bb424ca87b3c16e345b359b05a2d86419e89aa20cc89a342e"
     },
     {
       "path": ".agents/skills/aof-repair/SKILL.md",
@@ -1479,7 +1479,7 @@
         "id": "refine",
         "kind": "command"
       },
-      "hash": "sha256:b600b12d05ebc87cddb0784a4a9c6ba6b7a3c17a95168e0fc58bda9b88418fcf"
+      "hash": "sha256:8073daa3a50ddc568cdf395db71774673f9158bb8615ee24e0ffdbc2ef8c99e6"
     },
     {
       "path": ".claude/commands/aof/repair.md",

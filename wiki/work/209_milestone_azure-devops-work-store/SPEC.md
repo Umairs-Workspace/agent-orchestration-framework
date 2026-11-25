@@ -3,7 +3,7 @@ type: milestone
 number: 209
 slug: azure-devops-work-store
 title: "A project can keep its work-item tracking in Azure DevOps, and the aof work verbs behave as they do over files"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-11-20
 updated: 2026-11-24
@@ -24,13 +24,14 @@ changes. It owns the provider calls and their sequencing internally.
 
 Azure DevOps is the first worked example. AOF drives the tracked fields on the board, including
 title, status, parent, dependencies and order. An in-flight milestone keeps its durable local
-work folder throughout refinement, publication and execution. Once published, the local item
-is linked to its board ID. Marking the item done is the earliest point for local folder cleanup.
+work folder throughout refinement and execution. Completing refinement publishes the item and
+links it to its board ID. In board mode the documents stay in place after completion. Archiving
+is available only in local file mode.
 
 It is met when:
 - a project that selects the Azure DevOps store can run the `aof work` verbs and the loop
   end to end;
-- the 205 suite passes against the Azure board definition using recorded HTTP responses;
+- the 205 suite exercises the Azure board definition using recorded HTTP responses, with archive cases checking that archiving is available only in local file mode;
 - a test project can configure a second board and supply a custom adapter under its own
   `.aof/` without changing or rebuilding AOF;
 - an external change to a linked board item stops the running workflow, preserves the local
@@ -72,7 +73,12 @@ Out of scope:
 
 ## Stories
 
-To be broken down by `aof:refine`.
+- [ ] `00_story_board-definition` — A project selects a validated board definition.
+- [ ] `01_story_azure-board-adapter` — An Azure project supplies the mapped reads and guarded writes.
+- [ ] `02_story_linked-work-items` — An operator can publish and continue working in the local folder.
+- [ ] `03_story_conflict-and-resync` — A workflow detects an external edit and recovers on operator request.
+- [ ] `04_story_daemon-board-access` — A node checks board access in its own daemon environment.
+- [ ] `05_story_board-conformance` — The public work verbs and loop are verified against a board.
 
 ## Dependencies
 

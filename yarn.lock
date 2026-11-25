@@ -238,6 +238,8 @@ __metadata:
   dependencies:
     "@aof/contracts": "workspace:*"
     "@aof/foundation": "workspace:*"
+    ajv: "npm:^8.20.0"
+    js-yaml: "npm:^4.3.0"
     picomatch: "npm:4.0.4"
   languageName: unknown
   linkType: soft

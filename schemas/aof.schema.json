@@ -419,8 +419,16 @@
           "description": "Path, relative to the repo root, to the flat work-item stream (NN_type_slug folders)."
         },
         "store": {
-          "enum": ["files"],
-          "description": "The workspace tracking provider. An omitted setting selects files."
+          "oneOf": [
+            { "const": "files" },
+            {
+              "type": "object",
+              "required": ["manifest"],
+              "additionalProperties": false,
+              "properties": { "manifest": { "type": "string", "minLength": 1 } }
+            }
+          ],
+          "description": "The workspace tracking provider. Omit to select files or supply a project-relative board manifest."
         },
         "agents": {
           "type": "object",

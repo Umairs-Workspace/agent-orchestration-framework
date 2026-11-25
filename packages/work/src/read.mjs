@@ -209,6 +209,9 @@ async function buildStreamView(workspace, options = {}) {
   // one stat walk and parses nothing (the snapshot counts its own parse or memo answer). A work dir
   // that cannot be listed answers what the enumerator always answered — never a refused read.
   const localView = await readWorkItemView(workspace, { meter: costMeter, labels: labelled, reportDegrade });
+  if (localView.snapshot.source === "board") {
+    return { view: localView, answeredFrom: new Map(), provenance: new Map() };
+  }
   const diskItems = localView.items;
   const frontmatterOf = localView.frontmatter;
   const cache = worktree
@@ -356,7 +359,13 @@ async function listItemsCacheFirst(workspace, options = {}) {
 // story, anything else a slug/name substring — work.mjs's own, applied to the merged view.
 async function findWorkCacheFirst(workspace, query, options = {}) {
   const built = await buildStreamView(workspace, options);
-  return stampRows(await findWork(workspace.workDir, query, { view: built.view }), built);
+  const rows = stampRows(await findWork(workspace.workDir, query, { view: built.view }), built);
+  if (built.view.snapshot?.source !== "board") return rows;
+  return Promise.all(rows.map(async row => {
+    const item = built.view.items.find(item => item.ref === row.ref && item.dir === row.dir);
+    const record = item && await built.view.record(item);
+    return record?.fault && record.boardId != null ? { ...row, boardId: record.boardId, fault: record.fault } : row;
+  }));
 }
 
 // listStreamCacheFirst(workspace, options) — `listStream`'s cache-first equivalent: the whole

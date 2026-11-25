@@ -344,6 +344,7 @@ function argsFor(sub) {
     // `{ ok:false, error, code }` document at exit 1 — the same shape as `promote` above, and
     // deliberately so: an archive that SUCCEEDED would MOVE a folder the other probes read.
     case "archive": return ["work", "archive", "999", "--json"];
+    case "publish-board": return ["work", "publish-board", "03", "--refinement-complete", "--json"];
     // 182: preview the existing item; the probe must not move a shared fixture.
     case "renumber": return ["work", "renumber", "03", "--to", "999", "--dry-run", "--json"];
     // milestone 131 / story 04 — work:answer. The fixture holds no ask for 03/01 and no parked

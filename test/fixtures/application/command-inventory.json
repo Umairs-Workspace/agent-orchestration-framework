@@ -1626,6 +1626,47 @@
     }
   },
   {
+    "id": "work:publish-board",
+    "input": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "refinementComplete": {
+          "type": "boolean"
+        },
+        "descendants": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ref"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "work",
+        "publish-board"
+      ],
+      "spec": {
+        "usage": "aof work publish-board <ref> --refinement-complete [--descendants] [--json]",
+        "flags": {
+          "refinementComplete": {
+            "type": "boolean",
+            "description": "publish after successful refinement, or retry that publication"
+          },
+          "descendants": {
+            "type": "boolean",
+            "description": "include children whose refinement completed in the same cascade"
+          }
+        }
+      }
+    }
+  },
+  {
     "id": "work:run-status",
     "input": {
       "type": "object",

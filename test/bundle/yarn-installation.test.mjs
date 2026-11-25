@@ -299,6 +299,12 @@ export const yarnInstallationTests = [
         // 208/00: provider selection uses the shared coded error; the file adapter
         // translates document homes with path operations and reuses local storage readers.
         'store/work-item-store.mjs': ['node:path', '@aof/contracts/error'],
+        'store/board-definition.mjs': ['node:path', 'node:fs/promises', 'node:url', 'ajv', 'js-yaml', '@aof/contracts/error'],
+        'store/board-store.mjs': ['@aof/contracts/error'],
+        'store/board-links.mjs': ['node:crypto', 'node:fs/promises', 'node:path', '@aof/contracts/error', '@aof/foundation/fs', '@aof/foundation/sqlite-runtime'],
+        'store/board-publication.mjs': ['node:path', 'node:crypto', 'node:fs/promises', 'picomatch', '@aof/contracts/error'],
+        'store/board-placement.mjs': ['@aof/contracts/error'],
+        'commands/board-publish.mjs': ['@aof/contracts/error'],
         'store/file-store.mjs': ['node:fs/promises', 'node:path'],
         // 208: replay checks which workspace owns the item before selecting its store.
         'effects.mjs': ['node:path'],
@@ -422,7 +428,8 @@ export const yarnInstallationTests = [
       assert.deepEqual(report.computed, name === 'work' ? [
         { file: 'packages/work/src/programs/audit-drive.mjs', expression: 'pathToFileURL(control' },
         { file: 'packages/work/src/programs/audit-probe.mjs', expression: 'pathToFileURL(runner' },
-      ] : [], `${name}: only the declared audit children may compute a subject import`);
+        { file: 'packages/work/src/store/board-definition.mjs', expression: 'pathToFileURL(adapter' },
+      ] : [], `${name}: computed imports require a named, reviewed loading boundary`);
       const from = report.family.files[0];
       for (const code of [
         'import { invoke } from "../../../packages/core/src/command-core.mjs";',
@@ -436,7 +443,7 @@ export const yarnInstallationTests = [
       }
       assert.ok(computedDynamicImports('await import(variableName)').length > 0);
       const manifest = JSON.parse(readFileSync(path.join(root, 'packages', name, 'package.json'), 'utf8'));
-      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'server' ? ['@aof/execution', 'ws'] : name === 'knowledge' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'messaging' ? ['@aof/contracts', '@aof/foundation', '@inquirer/prompts', 'ws'] : name === 'execution' ? ['@aof/contracts', '@aof/foundation', '@xterm/headless', 'node-pty'] : name === 'mesh' ? ['@aof/contracts', '@aof/execution', '@aof/foundation', '@aof/server', '@aof/work', '@aof/work-loop', 'ws'] : name === 'work' ? ['@aof/contracts', '@aof/foundation', 'picomatch'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'specification-by-example' ? ['@aof/contracts', '@aof/work'] : name === 'learning' ? ['@aof/contracts'] : name === 'diagrams' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
+      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'server' ? ['@aof/execution', 'ws'] : name === 'knowledge' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'messaging' ? ['@aof/contracts', '@aof/foundation', '@inquirer/prompts', 'ws'] : name === 'execution' ? ['@aof/contracts', '@aof/foundation', '@xterm/headless', 'node-pty'] : name === 'mesh' ? ['@aof/contracts', '@aof/execution', '@aof/foundation', '@aof/server', '@aof/work', '@aof/work-loop', 'ws'] : name === 'work' ? ['@aof/contracts', '@aof/foundation', 'ajv', 'js-yaml', 'picomatch'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'specification-by-example' ? ['@aof/contracts', '@aof/work'] : name === 'learning' ? ['@aof/contracts'] : name === 'diagrams' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
       for (const target of Object.values(manifest.exports)) {
         assert.ok(target.startsWith('./src/') && !target.includes('..', 2));
         assert.ok(report.family.files.includes(`packages/${name}/${target.slice(2)}`), 'export points to scanned runtime source');

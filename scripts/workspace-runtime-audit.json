@@ -432,6 +432,14 @@
     "reason": "Bounded Git reader obtains historical comparisons as data."
   },
   {
+    "file": "packages/work/src/store/board-definition.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(adapter).href)",
+    "digest": "a52b2df54476ae8fa34caa054408653dc317bd82c56e99215c83e4d581d88596",
+    "sourceDigest": "dbdd6d8883e8640220927ff7632db20048ffc176276f6c2ceabaf917909d8e0f",
+    "reason": "209/ADR-001: the opted-in workspace loads its named project adapter only after validating the manifest and resolving that module inside the project's real .aof directory."
+  },
+  {
     "file": "packages/work/src/commands/regression-gate.mjs",
     "kind": "child-process",
     "expression": "execFile(\"git\", args, { cwd, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) =>\n      resolve({\n        stdout: String(stdout ?? \"\"),\n        stderr: String(stderr ?? \"\"),\n        status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0,\n      }))",

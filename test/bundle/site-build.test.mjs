@@ -361,7 +361,10 @@ async function staticImportClosure(entry) {
     const code = await readFile(file, "utf8");
     seen.set(file, code);
     for (const expression of computedDynamicImports(code)) computed.push(`${path.relative(repoRoot, file)}: import(${expression})`);
-    for (const { specifier } of importSpecifiers(code)) {
+    for (const { specifier, dynamic } of importSpecifiers(code)) {
+      // The site builder binds workspace services but never opens a board store.
+      const owner = path.relative(repoRoot, file).split(path.sep).join("/");
+      if (dynamic && owner === "packages/work/src/store/work-item-store.mjs" && specifier === "./board-store.mjs") continue;
       if (specifier.startsWith("node:")) { builtins.add(specifier); continue; }
       if (specifier.startsWith("@aof/") || specifier.startsWith("aof/")) {
         const [scope, name, ...subpath] = specifier.split("/");

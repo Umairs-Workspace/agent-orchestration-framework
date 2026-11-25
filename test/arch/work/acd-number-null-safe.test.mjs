@@ -5,7 +5,7 @@
 // reads. An unguarded site over a backlog row is therefore a SILENT mis-answer, never a crash,
 // which is exactly why a textual control holds it rather than a behavioural one.
 //
-// THE RULE, per site. For every `parseInt(<expr>.number …)` in the eleven files, the text of its
+// THE RULE, per site. For every `.number` parse in the tracked files, the text of its
 // enclosing TOP-LEVEL function — the outermost declaration, so a comparator or an arrow inside
 // it is judged by the function that owns it — from that declaration's opening line to the site
 // contains one of:
@@ -17,16 +17,11 @@
 // silently. An unguarded, un-allow-listed site fails the control with one finding naming
 // `file:line`.
 //
-// THE SET IS EXACTLY ELEVEN FILES, asserted by set-equality over a comment-stripped sweep of
-// `packages/core/src/**`: a twelfth file gaining a `.number` parse must be added here consciously, and a
-// file losing its last site must be removed — either way the control names the drift. The
-// contract named ten (task 04's preamble, measured at 2321dce8); 127/02 added the eleventh,
-// `packages/core/src/commands/promote.mjs` — the ONE mint (127/ADR-003) reads the stream's width and the
-// archived-collision set over rows, and every one of its sites is guarded by the rule.
+// A comment-stripped sweep of runtime source checks the exact set. Record any file that adds a
+// `.number` parse here and remove any file that loses its last parse.
 //
 // Non-vacuous: at least ten sites must be CLASSIFIED by the rule (allow-listed sites do not
-// count), so the control cannot pass over an empty or fully allow-listed sweep. (A site count,
-// not a file count — it did not move with the eleventh file.)
+// count), so the control cannot pass over an empty or fully allow-listed sweep.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -36,8 +31,6 @@ import { stripComments, classifySites } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-// The ten files, as the contract names them (task 04's preamble, measured at 2321dce8), plus the
-// one 127/02 added.
 export const NUMBER_CONSUMER_FILES = Object.freeze([
   "packages/work/src/validation.mjs",
   "packages/work/src/discovery.mjs",
@@ -69,6 +62,8 @@ export const NUMBER_CONSUMER_FILES = Object.freeze([
   // target over the same guard, and checks the identity record's own `number` before it moves
   // anything. Guarded; none is allow-listed.
   "packages/work/src/renumber.mjs",
+  // 209/02 maps the local number to board rank with an explicit null guard for backlog rows.
+  "packages/work/src/store/board-publication.mjs",
 ]);
 
 // The sites the rule cannot classify, each with the reason it is admitted. Keyed by file +
@@ -112,10 +107,10 @@ export async function sweepNumberSites() {
 
 export const archTests = [
   {
-    name: "arch/FF-12702 (acd-number-null-safe): the set of src files holding a `.number` parse is exactly the eleven named here — the contract's ten plus 127/02's promote.mjs",
+    name: "arch/FF-12702 (acd-number-null-safe): the inventory matches the source files that parse `.number`",
     run: async () => {
       const found = [...(await sweepNumberSites()).keys()].sort();
-      assert.deepEqual(found, [...NUMBER_CONSUMER_FILES].sort(), "set-equality: a twelfth file (or a file that lost its last site) is a conscious edit here");
+      assert.deepEqual(found, [...NUMBER_CONSUMER_FILES].sort(), "record every file that adds or loses its last `.number` parse");
     },
   },
   {

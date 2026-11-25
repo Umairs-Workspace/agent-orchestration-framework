@@ -43,14 +43,27 @@ export async function readWorkItemView(workspaceOrDir, options) {
   return { items, snapshot, record, frontmatter: async item => (await record(item))?.metadata ?? {} };
 }
 
+function lazyBoardStore(workspace, manifest) {
+  let selected;
+  const load = () => selected ??= import("./board-store.mjs")
+    .then(({ createBoardWorkItemStore }) => createBoardWorkItemStore(workspace, manifest));
+  const operations = ["snapshot", "changeToken", "readItems", "readChanges", "applyChanges", "boardCapabilities", "mutate"];
+  return Object.fromEntries(operations.map(operation =>
+    [operation, async (...args) => (await load())[operation](...args)]));
+}
+
 function workspaceStore(workspace) {
   let store = stores.get(workspace);
   if (store == null) {
     const selection = workspace.config?.work?.store;
-    if (selection !== undefined && selection !== "files") {
-      throw commandError(`Unsupported work.store ${JSON.stringify(selection)}. Supported value: files.`, "work-store-unsupported", 400);
+    if (selection === undefined || selection === "files") {
+      store = createFileWorkItemStore(workspace.workDir);
+    } else if (selection && Object.keys(selection).length === 1 &&
+        typeof selection.manifest === "string" && selection.manifest.trim() !== "") {
+      store = lazyBoardStore(workspace, selection.manifest);
+    } else {
+      throw commandError(`Unsupported work.store ${JSON.stringify(selection)}. Use files or a board manifest selection.`, "work-store-unsupported", 400);
     }
-    store = createFileWorkItemStore(workspace.workDir);
     stores.set(workspace, store);
   }
   return store;
