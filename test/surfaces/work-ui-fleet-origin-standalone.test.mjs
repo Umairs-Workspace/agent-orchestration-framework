@@ -142,7 +142,11 @@ function bindBusyPort(port) {
 // Launch `aof work ui …` and wait until it announces its board URL (the readiness line),
 // or until it EXITS (a refusal — returned as { exited } rather than thrown, because six
 // rows below are about exactly that outcome).
-function launchBoard(cwd, args, { timeoutMs = 20000 } = {}) {
+// The timeout is a hang fuse, never a speed assertion: a healthy launch resolves on its
+// readiness line in about two seconds. 20 s lost to whole-tree gate load on this Mac, alone
+// retry included (209/F-05), so the fuse is 90 s.
+const LAUNCH_FUSE_MS = 90_000;
+function launchBoard(cwd, args, { timeoutMs = LAUNCH_FUSE_MS } = {}) {
   return new Promise((resolve, reject) => {
     import("node:child_process").then(({ spawn }) => {
       const started = Date.now();
@@ -197,7 +201,7 @@ function launchBoard(cwd, args, { timeoutMs = 20000 } = {}) {
 }
 
 // `aof work ui --json` — the non-blocking probe. Runs to completion.
-function probeJson(cwd, args, { timeoutMs = 20000 } = {}) {
+function probeJson(cwd, args, { timeoutMs = LAUNCH_FUSE_MS } = {}) {
   return new Promise((resolve, reject) => {
     import("node:child_process").then(({ spawn }) => {
       const child = spawn(process.execPath, [cliPath, ...args, "--json"], {
