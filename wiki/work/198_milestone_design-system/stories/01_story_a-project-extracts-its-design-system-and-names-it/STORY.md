@@ -4,7 +4,7 @@ number: 01
 slug: a-project-extracts-its-design-system-and-names-it
 title: "A Claude project extracts its design system from its code tokens and exported mocks into a Design System artifact, and names it in config"
 parent: 198
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-11-17
 updated: 2026-11-26
@@ -31,22 +31,46 @@ reads:
   - test/command/config-inspect.test.mjs
   - test/arch/practices/index.mjs
   - package.json
+  - packages/core/package.json
+  - packages/core/src/application/bindings/command-core.mjs
+  - packages/core/src/work/bundle-compose.mjs
+  - packages/contracts/src/local-config.mjs
+  - packages/integration-hyperagent/src/commands.mjs
+  - packages/learning/assets/bundle.json
+  - packages/specification-by-example/test/index.mjs
+  - packages/foundation/src/fs.mjs
+  - scripts/test.mjs
+  - scripts/sea-asset-manifest.mjs
+  - scripts/generate-bundle-manifest.mjs
+  - test/command/application-assembly.test.mjs
+  - test/arch/command/acd-integration-registry-one-home.test.mjs
+  - wiki/work/198_milestone_design-system/stories/01_story_a-project-extracts-its-design-system-and-names-it/EXAMPLES.md
 files:
   - packages/design-system/package.json
   - packages/design-system/README.md
   - packages/design-system/src/contribution.mjs
   - packages/design-system/src/tokens.mjs
+  - packages/design-system/src/check.mjs
   - packages/design-system/src/config.mjs
   - packages/design-system/src/commands.mjs
   - packages/design-system/assets/bundle.json
   - packages/design-system/assets/commands/design-system.md
   - packages/design-system/test/index.mjs
   - packages/design-system/test/tokens.suite.mjs
+  - packages/design-system/test/check.suite.mjs
   - packages/design-system/test/config.suite.mjs
+  - packages/design-system/test/practice.suite.mjs
+  - packages/core/package.json
   - packages/core/src/practices.mjs
   - packages/core/src/cli.mjs
+  - packages/core/src/application/bindings/command-core.mjs
   - packages/core/src/application/bindings/config-inspect.mjs
+  - packages/acd/assets/manifest.json
+  - .claude/commands/aof/design-system.md
+  - scripts/test.mjs
   - test/command/config-inspect.test.mjs
+  - test/command/application-assembly.test.mjs
+  - test/fixtures/application/command-inventory.json
   - test/arch/practices/acd-design-system-verbs-offline.test.mjs
   - test/arch/practices/index.mjs
   - package.json
@@ -68,7 +92,12 @@ look, and the AOF look is captured before standalone Claude Design closes on 202
 
 ## Tasks
 
-To be authored (`aof:refine 198/01`).
+- [ ] `00_the-design-system-practice-is-registered` — R1: the `@aof/design-system` package, its practice on `work.ui.designSystem.enabled`, no render change
+- [ ] `01_the-extract-command-is-claude-only-and-always-installed` — R2: the `design-system` command member, Claude only, ungated
+- [ ] `02_tokens-reads-the-system-from-the-code` — R3: `aof design-system tokens`, `--mocks`; FF-19804
+- [ ] `03_check-reports-drift-between-a-system-and-the-code` — R4: `aof design-system check`
+- [ ] `04_use-names-one-system-and-the-validator-holds-it` — R5, R6: `aof design-system use` and the block's validator codes
+- [ ] `05_aof-extracts-its-own-design-system` — R7 (@manual): AOF's own extraction, the milestone's first outsider check
 
 ## Notes
 
@@ -91,3 +120,8 @@ To be authored (`aof:refine 198/01`).
   run time and never copied into the bundle.
 - **The first real run is AOF's own.** Its inputs are `apps/ui/src/index.css` and the exported AOF
   mocks. It is the @manual acceptance.
+- **Contract (2026-11-26).** Three engineering choices the ADRs left open were settled in the
+  example map as technical defaults, and the ADRs are unchanged:
+  - `tokens --mocks <dir>…` finds the mock-only values (Q5), because the prose holds no parsing.
+  - `check --source <file>…` lets the extraction's review run before `use` has written any config (Q7).
+  - A practice's contribution may carry `commands`, assembled like an integration's (Q11).

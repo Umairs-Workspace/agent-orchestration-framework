@@ -13,10 +13,47 @@ doc: state
 - 2026-11-26 — ADR-005 amended (operator): a system is named by `name` (its title) or by
   `artifact` (its link), exactly one. The session resolves a `name`, and a missing or duplicated
   title is a stop. ADR-003 `use`, ADR-004 §5, ADR-006 §2 and ADR-007 follow; stories 01–03 updated.
-- [ ] `00_story_a-fragment-can-be-for-claude-only` — not started (wave 1)
-- [ ] `01_story_a-project-extracts-its-design-system-and-names-it` — not started (wave 1)
-- [ ] `02_story_mocks-are-drawn-on-the-system-and-committed-as-the-baseline` — not started (wave 2)
-- [ ] `03_story_an-owned-system-stays-true-to-its-code` — not started (wave 3)
+- 2026-11-26 — 198/00 contract authored (solo): example map R1–R4 / E1–E11, no business question
+  (ADR-001 settles every rule; Q1–Q6 technical, defaulted), four tasks, PLAN.md. Write set grew by
+  `bundle-runtime.mjs`, `update.mjs` and `init-update.mjs`; no sibling writes them.
+- 2026-11-26 — 198/01 contract authored (solo): example map R1–R7 / E1–E21, no business question
+  (ADR-003–005 settle every rule; Q1–Q14 technical, defaulted), six tasks, PLAN.md. Three choices
+  were taken inside the contract, and no ADR changed: `tokens --mocks` lists mock-only values
+  (Q5), `check --source` runs before config exists (Q7), and a practice contribution may carry
+  `commands` (Q11). The write set grew by `command-core.mjs`, core's `package.json`, `scripts/test.mjs`,
+  the application count and inventory fixture, the manifest and the rendered Claude command. The
+  doctor warns: 7 rules (limit 4) and a 60-line map. The story stays whole because ADR-008 keeps
+  extraction in wave 1 for the 2026-12-14 deadline.
+- 2026-11-26 — 198/02 contract authored (solo): example map R1–R6 / E1–E20, no business question
+  (ADR-002, -005, -006, -007 and the story's Notes settle every rule; Q1–Q14 technical, defaulted),
+  four tasks, PLAN.md. Three choices were taken inside the contract, and no ADR changed:
+  - refine gets a new slot, `decide.designer`, mirrored in Codex's refine procedure (Q1);
+  - the approval ask offers Approve, Revise and Later, and Later is what verify's pull-back is for (Q9);
+  - capture reaches the browser through a page entry on the 133 rasterizer, which core injects (Q7).
+
+  The write set grew by `svg-rasterizer.mjs` and its suite, core's `diagrams/rasterize.mjs` and
+  `command-core.mjs`, the practices arch index and FF-19805's fixture. Every overlap is with 01
+  or 03, and both are already serialised against 02. The doctor warns: 6 rules (limit 4) and a
+  62-line map. The story stays whole because the verbs and the prose that calls them prove out
+  in one @manual run.
+- 2026-11-26 — 198/03 contract authored (solo): example map R1–R4 / E1–E18, no business question
+  (ADR-003, -005, -007 and the story's Notes settle every rule; Q1–Q14 technical, defaulted), four
+  tasks, PLAN.md. Two choices were taken inside the contract, and no ADR changed:
+  - the type's merge is a verb, `tokens --merge <tokens.json> --out <file>`, because merging two
+    token files is file assembly, which ADR-003 §2 keeps out of prose (Q2). It refuses an `--out`
+    that is a source file;
+  - verify's re-sync hangs on a new slot, `checks.design-system`, at the end of step 1, and runs
+    only at a milestone's accept (Q1, Q5).
+
+  The template variant also gives 02's `## Design-system gaps` its place. The write set grew by
+  verify's slot markers (`verify.md`, `workflow.md`), the manifest, FF-19802's file, the practice
+  suite and two rendered files. Every overlap is with 02, and 03 follows 02. The codebase graph was
+  not consulted: `@aof/design-system` is unbuilt, so no graph covers it. The sets come from the ADRs
+  and the siblings' contracts. The doctor warns that the map is 57 lines.
+- [ ] `00_story_a-fragment-can-be-for-claude-only` — contract authored (wave 1)
+- [ ] `01_story_a-project-extracts-its-design-system-and-names-it` — contract authored (wave 1, behind 00 on `test/arch/practices/index.mjs`)
+- [ ] `02_story_mocks-are-drawn-on-the-system-and-committed-as-the-baseline` — contract authored (wave 2)
+- [ ] `03_story_an-owned-system-stays-true-to-its-code` — contract authored (wave 3, behind 02 on `bundle.json` and the verify fragment)
 
 ## Notes & decisions in flight
 

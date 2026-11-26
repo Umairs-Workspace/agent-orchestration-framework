@@ -5,7 +5,7 @@ slug: mocks-are-drawn-on-the-system-and-committed-as-the-baseline
 title: "At refine a UI milestone's mocks are drawn as a Design canvas on the configured system, and once the operator approves them they are committed under mocks/ as the offline baseline"
 parent: 198
 depends: [00, 01]
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-11-17
 updated: 2026-11-26
@@ -33,6 +33,18 @@ reads:
   - packages/execution/src/svg-rasterizer.mjs
   - test/arch/ui/acd-design-role-split.test.mjs
   - test/arch/ui/index.mjs
+  - wiki/work/198_milestone_design-system/stories/02_story_mocks-are-drawn-on-the-system-and-committed-as-the-baseline/EXAMPLES.md
+  - wiki/work/192_milestone_buildable-commands/ARCHITECTURE.md#ADR-002
+  - packages/design-system/src/config.mjs
+  - packages/specification-by-example/assets/bundle.json
+  - packages/integration-hyperagent/src/commands.mjs
+  - packages/core/src/application/bindings/command-core.mjs
+  - packages/core/src/application/bindings/diagrams/rasterize.mjs
+  - packages/execution/test/diagram-rasterize.suite.mjs
+  - test/arch/diagrams/acd-diagram-export-no-playwright.test.mjs
+  - test/arch/practices/acd-slot-leaves-nothing-behind.test.mjs
+  - test/arch/practices/index.mjs
+  - wiki/work/archive/46_milestone_terminal-control-unification/mocks/Terminal Panel Spec.dc.html
 files:
   - packages/acd/assets/agents/aof-designer.md
   - packages/acd/assets/commands/refine.md
@@ -50,6 +62,15 @@ files:
   - test/arch/ui/acd-imported-mock-self-contained.test.mjs
   - test/arch/ui/index.mjs
   - test/arch/practices/acd-runtime-scoped-prose.test.mjs
+  - test/arch/practices/index.mjs
+  - test/fixtures/design-system/imported-mock/README.md
+  - test/fixtures/design-system/imported-mock/board.dc.html
+  - test/fixtures/design-system/imported-mock/support.js
+  - test/fixtures/design-system/imported-mock/ds/aof/tokens.json
+  - packages/execution/src/svg-rasterizer.mjs
+  - packages/execution/test/diagram-rasterize.suite.mjs
+  - packages/core/src/application/bindings/diagrams/rasterize.mjs
+  - packages/core/src/application/bindings/command-core.mjs
   - packages/acd/assets/manifest.json
   - .claude/agents/aof-designer.md
   - .codex/agents/aof-designer.toml
@@ -81,7 +102,10 @@ UI milestone, and the fidelity judge still has a local baseline it can trust**.
 
 ## Tasks
 
-To be authored (`aof:refine 198/02`).
+- [ ] `00_the-practice-prose-lands-on-claude-alone` — R1: the three Claude-only fragments and their slots; FF-19802, FF-19803
+- [ ] `01_import-commits-an-approved-canvas-with-its-provenance` — R4: `aof design-system mocks import`; FF-19805
+- [ ] `02_capture-frames-each-board-at-its-own-size` — R5: `aof design-system mocks capture`, and the rasterizer's page entry
+- [ ] `03_a-real-canvas-is-drawn-approved-and-judged` — R2, R3, R6 (@manual): one real canvas, judged CONFORMS; RESEARCH A1–A3
 
 ## Notes
 

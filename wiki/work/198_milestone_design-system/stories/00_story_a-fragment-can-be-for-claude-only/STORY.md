@@ -17,11 +17,17 @@ reads:
   - wiki/work/192_milestone_buildable-commands/ARCHITECTURE.md#ADR-007
   - packages/core/src/work/bundle.mjs
   - packages/core/src/work/bundle-compose.mjs
+  - packages/core/src/work/bundle-runtime.mjs
+  - packages/core/src/work/bundle-synthesis.mjs
+  - packages/core/src/work/orchestrator.mjs
   - packages/core/src/work/update.mjs
+  - packages/core/src/lock.mjs
   - packages/core/src/application/bindings/work/doctor-practices.mjs
   - packages/core/src/application/bindings/work/init.mjs
+  - packages/core/src/application/bindings/commands/init-update.mjs
   - packages/core/test/bundle-compose.suite.mjs
   - packages/core/test/practice-render-lane.suite.mjs
+  - packages/core/test/codex-native-assets.suite.mjs
   - test/arch/practices/acd-fragment-lands-on-every-runtime.test.mjs
   - test/arch/practices/acd-off-renders-no-practice-prose.test.mjs
   - test/arch/practices/acd-slot-leaves-nothing-behind.test.mjs
@@ -30,7 +36,10 @@ reads:
 files:
   - packages/core/src/work/bundle.mjs
   - packages/core/src/work/bundle-compose.mjs
+  - packages/core/src/work/bundle-runtime.mjs
+  - packages/core/src/work/update.mjs
   - packages/core/src/application/bindings/work/doctor-practices.mjs
+  - packages/core/src/application/bindings/commands/init-update.mjs
   - packages/core/test/bundle-compose.suite.mjs
   - packages/core/test/practice-render-lane.suite.mjs
   - test/arch/practices/acd-fragment-lands-on-every-runtime.test.mjs
@@ -53,7 +62,10 @@ needs no hollow placeholder bodies or hand-kept forks of core's sources to stay 
 
 ## Tasks
 
-To be authored (`aof:refine 198/00`).
+- [ ] `00_a-fragment-names-the-runtimes-it-is-for` — R1: the `runtimes` field and its load rule; FF-19801 (FF-19206's file, amended)
+- [ ] `01_a-scoped-fragment-lands-only-where-it-is-for` — R2, R3: per-runtime composition of a common text, today's bytes when nothing scoped is on; FF-19802
+- [ ] `02_the-list-and-the-doctor-say-where-a-scoped-practice-lands` — R4: the list names a scoped practice's runtimes; `practice-no-effect`
+- [ ] `03_the-reference-says-how-to-scope-a-fragment` — `wiki/reference/practice-prose.md`, within its 150-line cap
 
 ## Notes
 
@@ -63,3 +75,9 @@ To be authored (`aof:refine 198/00`).
 - Proved on a fixture bundle, as 192/00 proved slots: the shipped bundle declares no scoped
   fragment until 198/02, so FF-19802 must not pass vacuously meanwhile. Its fixture leg carries it
   (m193/04 R2).
+- Contract (2026-11-26): the example map holds no business question; ADR-001 settles every rule and
+  six technical questions take documented defaults (`EXAMPLES.md` Q1–Q6). The write set grew by
+  `bundle-runtime.mjs` (a common body resolved per runtime), `update.mjs` and `init-update.mjs` (the
+  list), found while authoring and ratified here (amendment rule: in the beat that raised it).
+- FF-19802's file lands here with its fixture leg and a generic shipped leg over every scoped
+  fragment. 198/02 extends it with the design-system practice's members (its `files:` names it too).
