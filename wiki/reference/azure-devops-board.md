@@ -1,8 +1,12 @@
 # Azure DevOps board definition for AOF
 
-Use a dedicated area of an Azure DevOps project on an inherited Agile process. Copy this
-directory into the project's `.aof/boards/` and set the organization, project, process name
-and full area path in `board.yaml`. Use the actual reference names for the fields and relation
+Use a dedicated area of an Azure DevOps project on an inherited Agile process. The definition
+and adapter are the three files in
+[`test/golden/fixtures/work-stream/azure-devops/`](../../test/golden/fixtures/work-stream/azure-devops/)
+(`board.yaml`, `adapter.mjs` and `http.mjs`), which the work-verb golden suite runs over
+recorded Azure responses. Copy them into the project's `.aof/boards/azure-devops/`, since AOF
+loads a selected definition only from under the project's own `.aof/`. Then set the
+organization, project, process name and full area path in `board.yaml`. Use the actual reference names for the fields and relation
 types provisioned in that process.
 
 ## Administrator setup

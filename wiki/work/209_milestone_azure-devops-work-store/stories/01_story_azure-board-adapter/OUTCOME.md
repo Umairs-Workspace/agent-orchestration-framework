@@ -2,8 +2,8 @@
 
 ## Delivered
 
-### An opt-in Azure DevOps board definition ships under `.aof/boards/azure-devops/`
-`board.yaml`, `adapter.mjs`, `http.mjs` and a setup guide. The guide covers an inherited Agile process: the reused and custom types, the five governed states including Blocked, Prototype's four states, the `Custom.AofRef`, `Custom.AofKey` and `Custom.AofMembership` fields, the `StackRank` order, and the hierarchy and dependency links.
+### An opt-in Azure DevOps board definition ships as test fixtures with a setup guide in the wiki
+`board.yaml`, `adapter.mjs` and `http.mjs` are in `test/golden/fixtures/work-stream/azure-devops/`, and the setup guide is `wiki/reference/azure-devops-board.md`. A project copies the three files into its own `.aof/boards/` (moved out of this repository's `.aof/` on 2026-11-26). The guide covers an inherited Agile process: the reused and custom types, the five governed states including Blocked, Prototype's four states, the `Custom.AofRef`, `Custom.AofKey` and `Custom.AofMembership` fields, the `StackRank` order, and the hierarchy and dependency links.
 
 ### The adapter checks the project before it reads or writes
 Once per adapter, it checks the project's process, the area, each mapped type's states and fields, and the relation types. A mismatch names the type, state or field, and no board write is made.

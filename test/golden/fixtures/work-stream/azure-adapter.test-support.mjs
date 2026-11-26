@@ -4,7 +4,7 @@ import yaml from "js-yaml";
 
 let selectedDefinition;
 export function azureDefinition() {
-  return selectedDefinition ??= yaml.load(readFileSync(new URL("../../../../.aof/boards/azure-devops/board.yaml", import.meta.url), "utf8"),
+  return selectedDefinition ??= yaml.load(readFileSync(new URL("./azure-devops/board.yaml", import.meta.url), "utf8"),
     { schema: yaml.JSON_SCHEMA });
 }
 const json = (value, status = 200) => new Response(JSON.stringify(value), { status });
@@ -26,7 +26,7 @@ export async function azureRecording({
   items = [azureItem(410), azureItem(411, { revision: 4 })], edges = [], missingState,
   oldCursor = false, loseCreate = false, hideAttachment = false,
 } = {}) {
-  const { createAzureAdapter } = await import("../../../../.aof/boards/azure-devops/adapter.mjs");
+  const { createAzureAdapter } = await import("./azure-devops/adapter.mjs");
   const definition = azureDefinition();
   const { board, mappings } = definition;
   const { parent, depends } = mappings.relations;

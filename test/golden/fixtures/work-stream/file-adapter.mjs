@@ -14,7 +14,7 @@ const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 // 209/05 — the board a case selects, named by AOF_WORK_STREAM_STORE. `azure` is the shipped Azure
 // definition over the recorded board; `alternate` is a second, project-owned in-memory board.
 const BOARD_STORES = Object.freeze({
-  azure: { definition: "../../../../.aof/boards/azure-devops/board.yaml", adapter: "./board-adapter.mjs", factory: "azure" },
+  azure: { definition: "./azure-devops/board.yaml", adapter: "./board-adapter.mjs", factory: "azure" },
   alternate: { definition: "./alternate-board.yaml", adapter: "./alternate-board.mjs", factory: "alternate" },
 });
 const BOARD_MANIFEST = ".aof/boards/board.yaml";
@@ -31,7 +31,7 @@ export function selectBoard(project, name) {
   const support = new URL(selected.adapter, import.meta.url).href;
   write(path.join(dir, "adapter.mjs"), selected.factory === "azure" ? `
 import { fileURLToPath } from "node:url";
-import { createAzureAdapter } from ${JSON.stringify(new URL("../../../../.aof/boards/azure-devops/adapter.mjs", import.meta.url).href)};
+import { createAzureAdapter } from ${JSON.stringify(new URL("./azure-devops/adapter.mjs", import.meta.url).href)};
 import { recordedTransport } from ${JSON.stringify(support)};
 const state = fileURLToPath(new URL("./recorded-board.json", import.meta.url));
 let selected;
