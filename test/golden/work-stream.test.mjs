@@ -23,6 +23,11 @@ const capture = id => captureScenario(fixture, fixture.scenarios.find(scenario =
 const rows = id => JSON.parse(expectation(id).tree.get("project/stdout"));
 const directories = dir => readdirSync(dir, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name).sort();
 
+// Every case seeds its own scratch project and restores AOF_WORK_STREAM_STORE, so the sharded run may split
+// this file across workers: as one unit, its three replays of the 150 captures ran past the gate's 45-minute
+// unit limit (209/F-04). Remove this export the moment a case starts relying on an earlier one's state.
+export const independentCases = true;
+
 function scratch(run) {
   const root = mkdtempSync(path.join(tmpdir(), "work-stream-drift-"));
   try {

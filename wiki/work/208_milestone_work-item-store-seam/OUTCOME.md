@@ -19,9 +19,9 @@ All 150 accepted 205 captures replay unchanged with `work.store` omitted and set
 ## Gaps
 
 ### A tracking store other than files
-- **Status:** open
+- **Status:** discharged
 - **Discharge condition:** a second production adapter selected through `work.store` passes the four 205 lanes through the real verbs (milestone 209).
-`work.store` accepts only `files`. Any other value is refused as `work-store-unsupported`.
+`work.store` accepts `files` and a board definition through `work.store.manifest`, and the 205 captures pass over the recorded Azure board and a second board (m209/05).
 
 ### ADR-001's diagram
 - **Status:** open

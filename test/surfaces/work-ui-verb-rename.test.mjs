@@ -298,8 +298,9 @@ export const workUiVerbRenameTests = [
           assert.ok(text.includes(lists), `${surface} usage arrives on ${channel} and lists "${lists}" (got: ${JSON.stringify(text.slice(0, 400))})`);
           // The renamed verb must not appear on the OTHER channel (channel is pinned).
           assert.ok(!otherChannel.includes(lists), `${surface} usage does not leak onto the other channel`);
-          // It does not mention the retired verb on the asserted channel.
-          assert.ok(!/aof work board\b/.test(text), `${surface} does not mention "aof work board"`);
+          // It does not mention the retired verb on the asserted channel. Only the bare verb: 209's
+          // `aof work board-access` is a different verb, and `\b` alone matches before its hyphen (209/F-03).
+          assert.ok(!/aof work board(?![\w-])/.test(text), `${surface} does not mention "aof work board"`);
         }
       } finally {
         await rm(root, { recursive: true, force: true });
