@@ -49,9 +49,9 @@
     }
   },
   "createdAt": "2026-11-26T21:37:59.461Z",
-  "updatedAt": "2026-11-26T21:37:59.461Z",
+  "updatedAt": "2026-11-26T23:18:10.256Z",
   "failureReason": null,
-  "heartbeatAt": null,
+  "heartbeatAt": "2026-11-26T23:18:10.256Z",
   "retryOf": null,
   "reclaimedAt": null,
   "node": "node-6eb3",
