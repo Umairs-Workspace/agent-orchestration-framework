@@ -542,6 +542,18 @@
                 "level": { "enum": ["A", "AA", "AAA"], "description": "WCAG conformance level; default AA when the lane is on. Enum-only (the work.headroom.mode precedent — no separate type:string)." }
               },
               "additionalProperties": false
+            },
+            "designSystem": {
+              "type": "object",
+              "description": "OPTIONAL — the project's one Design System (milestone 198, ADR-005). `enabled: true` turns the design-system practice on. Exactly one of `name` (the system's title) and `artifact` (its claude.ai link) names it; `mode` is \"owned\" (synced from `source`, the project's CSS files) or \"reference\" (someone else's, no `source`). Written by `aof design-system use`; authoritative validation is `aof project validate`. A project key, never per-person. Closed (additionalProperties:false).",
+              "properties": {
+                "enabled": { "type": "boolean", "description": "The design-system practice's one key: only the boolean true is on." },
+                "name": { "type": "string", "description": "The system's title, as the operator sees it. The session resolves it to a link on every run." },
+                "artifact": { "type": "string", "description": "The system's claude.ai link: https://claude.ai/artifact/<id> or https://claude.ai/code/artifact/<uuid>. Survives a rename." },
+                "mode": { "enum": ["owned", "reference"], "description": "owned: synced from this project's code. reference: someone else's system, read as published." },
+                "source": { "type": "array", "items": { "type": "string" }, "description": "Project-relative CSS files an owned system is synced from. Required when owned, refused when reference." }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false

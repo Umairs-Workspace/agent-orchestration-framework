@@ -41,6 +41,7 @@ import { describeOperatorProfile, operatorProfileDiagnostics, operatorProfileFro
 import { workDirFor } from "../../aof-gitignore.mjs";
 import { aofDirForConfig, readLocalConfig } from "../../workspace.mjs";
 import { perPersonSources } from "@aof/contracts/local-config";
+import { designSystemDiagnostics } from "@aof/design-system/config";
 export function assembleConfigInspect({ dslServices, fsServices, workspaceServices, degradeServices, workToolchainServices = null }) {
   const { loadConfig } = dslServices;
   const { loadProjectConfig } = dslServices;
@@ -1414,6 +1415,9 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     validateWorkDiagrams(work.diagrams, diagnostics);
     // 193/ADR-003 §2 — the operator profile, for the project file and the global one alike.
     for (const entry of operatorProfileDiagnostics({ work })) diagnostics.push(diagnostic("error", entry.path, entry.message, entry.code));
+    // 198/ADR-005 §3 — the design system's block, through the one shape check `aof design-system use` shares.
+    const ui = work.ui != null && typeof work.ui === "object" && !Array.isArray(work.ui) ? work.ui : {};
+    for (const entry of designSystemDiagnostics(ui.designSystem)) diagnostics.push(diagnostic("error", entry.path, entry.message, entry.code));
   }
 
   // --- work.diagrams — the diagram generator (milestone 133 / ADR-001) ------------

@@ -622,10 +622,11 @@ const HELP_FAMILY_TITLES = Object.freeze({
   graph: "Graph",
   memory: "Memory",
   diagram: "Diagram",
+  "design-system": "Design system",
   mesh: "Mesh",
   import: "Import",
 });
-const HELP_FAMILY_ORDER = ["usage", "project", "assets", "packages", "work", "planning", "graph", "memory", "diagram", "mesh", "import"];
+const HELP_FAMILY_ORDER = ["usage", "project", "assets", "packages", "work", "planning", "graph", "memory", "diagram", "design-system", "mesh", "import"];
 const HELP_USAGE_WORD_ORDER = ["init", "migrate"];
 
 // ASYNC, because the registry it derives from is now a dynamic import (72/ADR-005 §1). It is not

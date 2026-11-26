@@ -368,7 +368,7 @@ export const archTests = [
   {
     name: "192/02 02 the package is a registered practice",
     run: () => {
-      assert.deepEqual(PRACTICES.map((practice) => practice.name), ["@aof/learning", "@aof/specification-by-example"]);
+      assert.deepEqual(PRACTICES.map((practice) => practice.name), ["@aof/learning", "@aof/specification-by-example", "@aof/design-system"]); // 198/01 registers @aof/design-system last
       const offenders = [];
       const walk = (dir) => {
         for (const entry of readdirSync(dir, { withFileTypes: true })) {

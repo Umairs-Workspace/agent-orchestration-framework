@@ -13,6 +13,10 @@ import { archTests as acdOffRendersNoPracticeProseTests } from "./acd-off-render
 // milestone 198 / story 00 — FF-19802 (runtime-scoped prose lands on its own runtimes alone). FF-19801
 // is FF-19206's file, amended in place.
 import { archTests as acdRuntimeScopedProseTests } from "./acd-runtime-scoped-prose.test.mjs";
+// milestone 198 / story 01 — FF-19804 (the design-system verbs reach no network, and the package's
+// prose holds no token parsing), and the practice and extract command at the render.
+import { archTests as acdDesignSystemVerbsOfflineTests } from "./acd-design-system-verbs-offline.test.mjs";
+import { archTests as acdDesignSystemPracticeTests } from "./acd-design-system-practice.test.mjs";
 
 export const tests = [
   ...acdSlotLeavesNothingBehindTests,
@@ -20,4 +24,6 @@ export const tests = [
   ...acdRenderReadsProjectConfigOnlyTests,
   ...acdOffRendersNoPracticeProseTests,
   ...acdRuntimeScopedProseTests,
+  ...acdDesignSystemVerbsOfflineTests,
+  ...acdDesignSystemPracticeTests,
 ];

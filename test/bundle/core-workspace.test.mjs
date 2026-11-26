@@ -231,7 +231,7 @@ export const coreWorkspaceTests = [
     const report = inspectBoundaries(repoRoot, { runtimeAudit: audit });
     assert.deepEqual(report.findings, []);
     assert.ok(report.files >= 700, `${report.files} actual source and tooling files`);
-    assert.equal(Object.keys(report.covered).length, 21, 'all packages, UI and repository tooling are covered (@aof/diagrams and @aof/diagrams-ui are the seventeenth and eighteenth owners; @aof/integration-hyperagent the nineteenth; @aof/learning, 179/01, the twentieth; @aof/acd, chore 207, the twenty-first)');
+    assert.equal(Object.keys(report.covered).length, 22, 'all packages, UI and repository tooling are covered (@aof/diagrams and @aof/diagrams-ui are the seventeenth and eighteenth owners; @aof/integration-hyperagent the nineteenth; @aof/learning, 179/01, the twentieth; @aof/acd, chore 207, the twenty-first; @aof/design-system, 198/01, the twenty-second)');
     assert.ok(Object.values(report.covered).every(count => count > 0));
     const { tests } = await import('../../scripts/test.mjs');
     const inventory = workspaceTestInventory(repoRoot);

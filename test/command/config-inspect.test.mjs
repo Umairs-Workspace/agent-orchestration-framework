@@ -220,7 +220,83 @@ export const configInspectTests = [
   ...localConfigTests(),
   // A machine's mesh keys committed to the project config (see `machineMeshKeyTests`).
   ...machineMeshKeyTests(),
+  // 198/01 task 04 R6 — work.ui.designSystem's validator codes (see `designSystemBlockTests`).
+  ...designSystemBlockTests(),
 ];
+
+// 198/01 task 04 — "aof project validate" holds work.ui.designSystem to one named system, each defect
+// under its own code (R6), and the block is never a per-person setting. The validator here is the one
+// `aof project validate` runs (`validateConfig`, and `validateLocalConfig` for the local file).
+function designSystemBlockTests() {
+  const LINK = "https://claude.ai/artifact/5M7UeXXcx16TP3vzVFNDzd";
+  const ABSENT = Symbol("absent");
+  async function withBlock(block, body, { local = ABSENT } = {}) {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "aof-design-system-"));
+    const previous = process.env.AOF_GLOBAL_HOME;
+    process.env.AOF_GLOBAL_HOME = await mkdtemp(path.join(os.tmpdir(), "aof-design-system-home-"));
+    try {
+      const work = { dir: "./wiki/work", ...(block === ABSENT ? {} : { ui: { designSystem: block } }) };
+      await mkdir(path.join(dir, ".aof"), { recursive: true });
+      await writeFile(path.join(dir, ".aof", "aof.config.json"), `${JSON.stringify({ name: "demo", resources: [], work }, null, 2)}\n`, "utf8");
+      if (local !== ABSENT) await writeFile(path.join(dir, ".aof", "aof.config.local.json"), `${JSON.stringify(local, null, 2)}\n`, "utf8");
+      return await body(dir);
+    } finally {
+      await rm(process.env.AOF_GLOBAL_HOME, { recursive: true, force: true });
+      restoreEnv("AOF_GLOBAL_HOME", previous);
+      await rm(dir, { recursive: true, force: true });
+    }
+  }
+  const findings = async (dir) => (await validateConfig(dir)).filter((entry) => entry.code?.startsWith("design-system-")).map((entry) => [entry.code, entry.path]);
+  const t = (name, run) => ({ name: `198/01 04 ${name}`, run });
+  return [
+    t("E16 · both forms set is design-system-name-and-artifact", () => withBlock({ enabled: true, name: "AOF", artifact: LINK, mode: "reference" }, async (dir) => {
+      assert.deepEqual(await findings(dir), [["design-system-name-and-artifact", "work.ui.designSystem"]]);
+    })),
+    t("E17 · on with no system named is design-system-unnamed; off with none is clean", async () => {
+      await withBlock({ enabled: true, mode: "reference" }, async (dir) => {
+        assert.deepEqual(await findings(dir), [["design-system-unnamed", "work.ui.designSystem"]]);
+      });
+      await withBlock({ enabled: false }, async (dir) => assert.deepEqual(await findings(dir), []));
+    }),
+    t("E18 · the source follows the mode", async () => {
+      await withBlock({ enabled: true, name: "AOF", mode: "owned" }, async (dir) => {
+        assert.deepEqual(await findings(dir), [["design-system-source-missing", "work.ui.designSystem.source"]]);
+      });
+      await withBlock({ enabled: true, name: "AOF", mode: "reference", source: ["apps/ui/src/index.css"] }, async (dir) => {
+        assert.deepEqual(await findings(dir), [["design-system-source-stray", "work.ui.designSystem.source"]]);
+      });
+    }),
+    t("outline · each other defect has its own code, and no other design-system finding", async () => {
+      const rows = [
+        [{ enabled: true, name: "  ", mode: "reference" }, "design-system-empty-name", "work.ui.designSystem.name"],
+        [{ enabled: true, artifact: "claude.ai/artifact/x", mode: "reference" }, "design-system-bad-artifact", "work.ui.designSystem.artifact"],
+        [{ enabled: true, name: "AOF", mode: "shared" }, "design-system-bad-mode", "work.ui.designSystem.mode"],
+        [{ enabled: true, name: "AOF" }, "design-system-bad-mode", "work.ui.designSystem.mode"],
+        [{ enabled: true, name: "AOF", mode: "owned", source: [] }, "design-system-source-missing", "work.ui.designSystem.source"],
+        [{ enabled: true, name: "AOF", mode: "reference", colour: "teal" }, "design-system-unknown-key", "work.ui.designSystem.colour"],
+        ["on", "design-system-bad-value", "work.ui.designSystem"],
+      ];
+      for (const [block, code, at] of rows) {
+        await withBlock(block, async (dir) => assert.deepEqual(await findings(dir), [[code, at]], JSON.stringify(block)));
+      }
+    }),
+    t("a block use wrote validates clean, and no block raises nothing", async () => {
+      await withBlock({ enabled: true, name: "AOF", mode: "owned", source: ["apps/ui/src/index.css"] }, async (dir) => {
+        assert.deepEqual(await validateConfig(dir), []);
+      });
+      await withBlock({ enabled: true, artifact: LINK, mode: "reference" }, async (dir) => assert.deepEqual(await findings(dir), []));
+      await withBlock(ABSENT, async (dir) => assert.deepEqual(await findings(dir), []));
+    }),
+    t("the block is never a per-person setting: the local file's block is refused and not honoured", () => withBlock(ABSENT, async (dir) => {
+      const validateLocalConfig = _aofApplication.assets.configInspect.validateLocalConfig;
+      const refused = (await validateLocalConfig(dir)).map((entry) => [entry.code, entry.path]);
+      assert.ok(refused.length > 0, "the local block is reported");
+      assert.ok(refused.every(([code, at]) => code === "config-local-key-not-allowed" && at.startsWith("work.ui.designSystem")), JSON.stringify(refused));
+      const workspace = await _aofApplication.loadWorkspace(dir);
+      assert.equal(workspace.config.work?.ui?.designSystem, undefined, "the local block is not loaded");
+    }, { local: { work: { ui: { designSystem: { enabled: true, name: "Mine", mode: "reference" } } } } })),
+  ];
+}
 
 const DIAGRAMS_ID = generatorIds()[0];
 const DIAGRAMS_DEFAULT = { enabled: false, generator: "off", formats: ["svg", "png"], style: null, browser: null };

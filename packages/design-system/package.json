@@ -1,0 +1,23 @@
+{
+  "name": "@aof/design-system",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./contribution": "./src/contribution.mjs",
+    "./commands": "./src/commands.mjs",
+    "./tokens": "./src/tokens.mjs",
+    "./check": "./src/check.mjs",
+    "./config": "./src/config.mjs"
+  },
+  "files": [
+    "src",
+    "assets"
+  ],
+  "scripts": {
+    "test": "node ../../scripts/test-workspace.mjs @aof/design-system"
+  },
+  "dependencies": {
+    "@aof/foundation": "workspace:*"
+  }
+}
