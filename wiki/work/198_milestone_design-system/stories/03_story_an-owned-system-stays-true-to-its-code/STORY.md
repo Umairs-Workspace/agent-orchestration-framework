@@ -8,11 +8,12 @@ depends: [00, 01, 02]
 status: not-started
 owner: product-owner
 created: 2026-11-17
-updated: 2026-11-23
-adrs: [ADR-007]
+updated: 2026-11-26
+adrs: [ADR-005, ADR-007]
 reads:
   - wiki/work/198_milestone_design-system/SPEC.md
   - wiki/work/198_milestone_design-system/ARCHITECTURE.md#ADR-003
+  - wiki/work/198_milestone_design-system/ARCHITECTURE.md#ADR-005
   - wiki/work/198_milestone_design-system/ARCHITECTURE.md#ADR-007
   - wiki/work/198_milestone_design-system/RESEARCH.md#R3
   - packages/acd/assets/commands/verify.md

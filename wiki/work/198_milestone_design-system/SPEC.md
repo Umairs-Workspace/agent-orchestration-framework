@@ -6,7 +6,7 @@ title: "The designer draws a milestone's mocks on the project's design system, a
 status: in-progress
 owner: product-owner
 created: 2026-11-16
-updated: 2026-11-17
+updated: 2026-11-26
 schema: 1
 aofVersion: 0.1.0
 depends: [192]
@@ -49,8 +49,10 @@ An outsider can verify the result:
 
 In scope:
 - **The config.** `work.ui.designSystem`: `enabled` (the boolean that turns the practice on, per
-  192/ADR-003), `artifact` (the Design System artifact's URL), `mode` (`owned` or `reference`) and
-  `source` (the code files that hold the tokens, for `owned`).
+  192/ADR-003), the system as either `name` (its title, as the operator sees it under Settings →
+  Capabilities → Design systems) or `artifact` (its link), `mode` (`owned` or `reference`) and
+  `source` (the code files that hold the tokens, for `owned`). Only a Claude session can turn a
+  `name` into a link; no match, or more than one, is a stop.
 - **A Claude-only practice, delivered through 192's mechanism.**
   - Its prose is fragments in slots of the designer brief, `refine` and `verify`. Slots are added
     where a target has none, `verify` included, which 192 left out of scope.
@@ -65,7 +67,7 @@ In scope:
 - **Mock authoring at refine.** The designer draws the milestone's mocks as a Design artifact on
   the configured system, and the operator's review drives revisions. The approved artifact is then
   pulled back, expanded into a self-contained page and captured into frames, and committed under
-  `mocks/` with a README recording the artifact URL and version. The fidelity judge (07) is
+  `mocks/` with a README recording the canvas's and the design system's links and versions. The fidelity judge (07) is
   unchanged: it still reads only local files.
 - **The two modes.**
   - `reference`: the designer reads the system and never writes to it. A milestone that needs

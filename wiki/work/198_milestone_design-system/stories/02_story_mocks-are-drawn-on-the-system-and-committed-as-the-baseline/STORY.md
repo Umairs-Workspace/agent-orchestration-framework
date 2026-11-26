@@ -8,13 +8,14 @@ depends: [00, 01]
 status: not-started
 owner: product-owner
 created: 2026-11-17
-updated: 2026-11-23
-adrs: [ADR-002, ADR-006]
+updated: 2026-11-26
+adrs: [ADR-002, ADR-005, ADR-006]
 reads:
   - wiki/work/198_milestone_design-system/SPEC.md
   - wiki/work/198_milestone_design-system/ARCHITECTURE.md#ADR-001
   - wiki/work/198_milestone_design-system/ARCHITECTURE.md#ADR-002
   - wiki/work/198_milestone_design-system/ARCHITECTURE.md#ADR-003
+  - wiki/work/198_milestone_design-system/ARCHITECTURE.md#ADR-005
   - wiki/work/198_milestone_design-system/ARCHITECTURE.md#ADR-006
   - wiki/work/198_milestone_design-system/RESEARCH.md#R1
   - wiki/work/198_milestone_design-system/RESEARCH.md#R2

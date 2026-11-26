@@ -17,7 +17,7 @@ code at the cited lines; the committed mocks of milestones 21, 25, 46, 47 and 17
   auto mode). The built-in `Explore` and `Plan` agents exclude it by name, so it is an ordinary tool
   that a role receives through its `tools:` list.
 - **Finding:** `aof-designer` declares `tools: Read, Grep, Glob, Write, Edit, WebSearch, WebFetch`
-  (`packages/core/assets/agents/aof-designer.md:5`). 07's control
+  (`packages/acd/assets/agents/aof-designer.md:5`). 07's control
   `test/arch/ui/acd-design-role-split.test.mjs:45-51` holds it to those tools and no Bash, as "the
   structural read-only guarantee".
 - **Finding:** refine runs solo by default (`work.agents.mode` absent, or `"solo"` as in this
@@ -91,9 +91,9 @@ code at the cited lines; the committed mocks of milestones 21, 25, 46, 47 and 17
 ## R5 — How prose reaches each runtime today (192's composer)
 
 - **Finding:** a member's common source is composed ONCE: `resource.body = fill(COMMON)(resource.body)`
-  (`packages/core/src/work/bundle.mjs:325-326`). Only authored variants are composed per runtime
-  (`:327-331`). The single composed common body serves every runtime that renders from it. That is
-  Claude and opencode for `refine` and `verify` (`packages/core/assets/bundle.json:1053`, `:1202`),
+  (`packages/core/src/work/bundle.mjs:344-345`). Only authored variants are composed per runtime
+  (`:346-350`). The single composed common body serves every runtime that renders from it. That is
+  Claude and opencode for `refine` and `verify` (`packages/acd/assets/bundle.json:930`, `:1079`),
   and Claude, Codex and opencode for `aof-designer` (`:57-60`).
 - **Finding:** the load refuses a fragment without a body for every runtime whose text carries its
   slot (`packages/core/src/work/bundle-compose.mjs:155-161`). FF-19206
@@ -112,7 +112,7 @@ code at the cited lines; the committed mocks of milestones 21, 25, 46, 47 and 17
 
 - **Finding:** a practice package registers through `packages/core/src/practices.mjs:11` (as
   `@aof/specification-by-example/contribution` does) and is a workspace dependency of the root
-  `package.json:42`.
+  `package.json:43`.
 - **Finding:** `packages/execution/src/svg-rasterizer.mjs` (133/ADR-005) screenshots a local file
   through a Chromium-family browser that aof finds and never installs, with the spawn and clock
   injected. Playwright is policy-blocked on this machine (47's README, the rasterizer's header).

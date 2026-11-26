@@ -1,0 +1,54 @@
+{
+  "runId": "20261126T202717220Z-0000",
+  "itemRef": "198/00",
+  "state": "running",
+  "attempt": 1,
+  "outcome": null,
+  "sessionId": "aab6129d-4410-4e80-9d0c-f9352593ad20",
+  "brief": {
+    "loop": {
+      "loopRunId": "5eddf918-8b6a-458b-8b8d-85be84ad61a9",
+      "scope": "198",
+      "level": "L2",
+      "cap": 3,
+      "phase": "refine",
+      "cycle": 1,
+      "startedAt": "2026-11-26T20:27:13.762Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        }
+      }
+    }
+  },
+  "createdAt": "2026-11-26T20:27:17.220Z",
+  "updatedAt": "2026-11-26T20:27:17.220Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": null,
+  "asks": []
+}

@@ -137,8 +137,9 @@ Deterministic steps that live only in prose are the steps that drift (m07's whol
      `:root` and theme selectors declare. It also lists every value it could not place.
    - `check --tokens <tokens.json>` compares a system's tokens with the configured `source`. It
      reports what changed, what was added and what is missing, and exits non-zero on drift.
-   - `use --artifact <url> --mode owned|reference [--source <file>…]` writes `work.ui.designSystem`
-     with `enabled: true`, through the config writer's surgical merge.
+   - `use --name <title> | --artifact <url> --mode owned|reference [--source <file>…]` writes
+     `work.ui.designSystem` with `enabled: true`, through the config writer's surgical merge. It
+     takes exactly one of `--name` and `--artifact`, and writing one removes the other (ADR-005).
    - `mocks import <pulled-dir> --item <ref>` and `mocks capture --item <ref>` (ADR-006).
 2. **The prose only calls the tool and then the verb.** It holds no parsing, comparison or file
    assembly. A verb's `--json` answer is what the prose reads.
@@ -172,6 +173,9 @@ committed and exported `.dc.html` mocks hold the components and idioms (R4).
    from the type, with the inventory above as its input. It records `meta.source`, the repo, the
    ref and the paths. A system the project owns is marked `"editing": "code"`.
 5. **The operator reviews the inventory and the published system before `use` writes the config.**
+   `use` writes `--name` with the title the system was published under (ADR-005 §1). Before the
+   write, the session resolves that title as ADR-005 §4 says. A title that already matches another
+   system is a stop, so the config never names an ambiguous system from its first write.
 
 **Alternatives considered.** *Wait for a Claude Design connector, or a migration of standalone
 projects into artifacts.* Neither exists, and the deadline is fixed. Rejected.
@@ -182,23 +186,51 @@ depend on this milestone being built.
 
 ## ADR-005 — `work.ui.designSystem`: one boolean key turns the practice on, beside its data
 
-**Status:** Accepted
+**Status:** Accepted (amended 2026-11-26: a system is named by `name` or by `artifact`)
 **Date:** 2026-11-17
 
+**Context (amendment).** A Design System is an artifact of the Design System type, and the
+operator knows it by the title it shows under Settings → Capabilities → Design systems, not by its
+link. A title is neither unique (a system shared in the organization can carry the same title as
+one of the operator's own) nor fixed (the operator can rename it). The CLI cannot reach claude.ai,
+so only the session can turn a title into a link (ADR-003).
+
 **Decision.**
-1. **The block:** `work.ui.designSystem = { enabled, artifact, mode, source }`.
+1. **The block:** `work.ui.designSystem = { enabled, name | artifact, mode, source }`.
    - `enabled` is the practice's one key (192/ADR-003: only the boolean `true` is on).
-   - `artifact` is a `claude.ai/artifact/…` or `claude.ai/code/artifact/…` URL.
+   - **Exactly one of `name` and `artifact` names the system.**
+     - `name` is the system's title, as the operator sees it. It is the form the operator writes
+       and the form `extract` writes.
+     - `artifact` is a `claude.ai/artifact/…` or `claude.ai/code/artifact/…` URL, for an operator
+       who wants the link pinned. It survives a rename; `name` does not.
    - `mode` is `owned` or `reference`.
    - `source` is a list of paths relative to the project root. It is required when `owned` and
      refused when `reference`.
 2. **It is a project key,** read from the project's own config file. It names one shared system
    for everyone working in the repository, so it is never per-person (cf. 199).
-3. **The validator** reports a bad URL, a bad mode, a missing or stray `source`, and `enabled: true`
-   with no `artifact`, each as its own diagnostic code.
+3. **The validator** reports, each as its own diagnostic code: both `name` and `artifact` set;
+   `enabled: true` with neither; an empty `name`; a bad URL; a bad mode; a missing or stray
+   `source`.
+4. **The session resolves a `name`, and only the session.** Before any step that touches the
+   system (drawing a canvas, the extraction's review, the re-sync at verify), the session lists the
+   Design System artifacts the operator can open and takes the one whose title equals `name`
+   exactly. **No match, or more than one, is a stop** that names `name` and every candidate's title
+   and link; it never guesses. The CLI's verbs never resolve a name: `tokens`, `check` and `mocks`
+   work on local files and need no link.
+5. **Provenance records the link, never only the name.** A mock's README (ADR-006 §2) records the
+   resolved system's link and version beside the canvas's, so a baseline stays traceable after the
+   system is renamed.
 
-**Consequences.** Turning the practice on without an `artifact` is caught by the validator before
-any refine reads it.
+**Alternatives considered (amendment).**
+- *`artifact` only.* Exact and rename-proof, but the operator does not know a system by its link.
+  Kept as the second form, not the only one.
+- *`name` only.* Leaves no way to pin a system whose title collides with another. Rejected.
+- *Resolve `name` once and cache the link in config.* Two fields describing one system drift when
+  either changes. Rejected: the session resolves per run, which costs one list call.
+
+**Consequences.** Turning the practice on without naming a system is caught by the validator
+before any refine reads it. A renamed or duplicated title is caught at the first session step that
+resolves it, with the fix named, never silently drawn on the wrong system.
 
 ## ADR-006 — An approved canvas becomes the committed offline baseline, with its runtime and provenance
 
@@ -218,8 +250,8 @@ not (R6).
 2. **`mocks import`** copies them into the item's `mocks/`:
    - the runtime is saved as `support.js`;
    - the tokens keep their relative path;
-   - a `README.md` records the canvas URL, its version id, the date, and the approving answer's
-     reference.
+   - a `README.md` records the canvas URL, its version id, the date, the approving answer's
+     reference, and the design system's resolved link and version (ADR-005 §5).
 
    It refuses a path holding `..`, `\` or a leading `/`, and any file type outside the list above.
 3. **`mocks capture`** screenshots each artboard into `<stem>.png` through the rasterizer, at its
@@ -256,7 +288,8 @@ Only steps 1–3 cross to claude.ai.
 1. **`owned`.** The code is the source of truth.
    - A milestone that changes tokens or components records them in `DESIGN.md` under
      `## Design-system changes`.
-   - At accept, `aof:verify` re-syncs the system with the type's merge procedure, then runs
+   - At accept, `aof:verify` resolves the configured system (ADR-005 §4) and re-syncs it with the
+     type's merge procedure, then runs
      `aof design-system check` against the re-synced `tokens.json`. Drift after the re-sync is a
      finding; drift before it is the expected input.
    - Nothing writes from the system back to the code.

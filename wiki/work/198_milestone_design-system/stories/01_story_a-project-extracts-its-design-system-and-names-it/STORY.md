@@ -7,7 +7,7 @@ parent: 198
 status: not-started
 owner: product-owner
 created: 2026-11-17
-updated: 2026-11-17
+updated: 2026-11-26
 adrs: [ADR-003, ADR-004, ADR-005, ADR-008]
 reads:
   - wiki/work/198_milestone_design-system/SPEC.md
@@ -78,6 +78,14 @@ To be authored (`aof:refine 198/01`).
   - Adding a workspace package changes `yarn.lock`, so run `node scripts/supply-chain-audit.mjs`.
 - **CLI verbs** (ADR-003): `aof design-system tokens`, `check` and `use`. `check` lands here because
   the extraction's own review uses it. 03 wires it into verify.
+- **A system is named by `name` or by `artifact`, exactly one** (ADR-005, amended 2026-11-26).
+  - `use` takes `--name <title>` or `--artifact <url>`, and writing one removes the other.
+  - The validator's codes: both set, neither set while `enabled: true`, an empty `name`, a bad
+    URL, a bad mode, a missing or stray `source`.
+  - `extract` writes `--name` with the title it published under. It first resolves that title
+    (ADR-005 §4); a title that already matches another system is a stop, naming every candidate.
+  - The CLI never resolves a name. Resolution is the session's one `list` call, and its stop on
+    no match or several is @manual.
 - **The command `aof:design-system extract`** is a whole member with `runtimes: ["claude"]`, always
   installed, needing no 00. It follows the Design System type's `from-code.md`, read from the type at
   run time and never copied into the bundle.

@@ -4,10 +4,10 @@ number: 00
 slug: a-fragment-can-be-for-claude-only
 title: "A practice's fragment can name the runtimes it is for, and a render for any other runtime holds none of it"
 parent: 198
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-11-17
-updated: 2026-11-17
+updated: 2026-11-26
 adrs: [ADR-001]
 reads:
   - wiki/work/198_milestone_design-system/SPEC.md
