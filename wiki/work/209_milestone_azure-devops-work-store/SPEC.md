@@ -3,7 +3,7 @@ type: milestone
 number: 209
 slug: azure-devops-work-store
 title: "A project can keep its work-item tracking in Azure DevOps, and the aof work verbs behave as they do over files"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-11-20
 updated: 2026-11-26

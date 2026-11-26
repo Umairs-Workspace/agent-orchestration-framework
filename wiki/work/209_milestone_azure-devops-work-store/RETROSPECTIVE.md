@@ -27,3 +27,15 @@ promotionFrom: 1
 **Lesson:** Commit each story when its review closes, as 00–02 were, so the gate can run on any later pass and a red bisects to one story. At verify, ask for the commit as soon as the gate is the only thing left.
 
 **Refs:** commits 672446a2 and bc9776cb; VERIFICATION accept decisions (first and second pass).
+
+## R3 · Tripling a suite's cases was costed in minutes, not in gate units
+
+**Kind:** mistake · **Area:** process · **Stage:** build · **Owner:** developer · **Raised by:** product owner (verify) · **Promoted to:** none
+
+**What happened:** 209/05 ran the 150 captures three times in `work-stream.test.mjs` and recorded the cost as "about 8 minutes". The file did not declare `independentCases`, so the sharded gate ran its 636 cases as one unit. Under gate load that unit reached the 45-minute unit limit, and the first gate row was `not finished` (F-04). Once the file declared it, the same cases ran as 46 chunks in 2.8 minutes of wall time.
+
+**Why:** The cost was measured by running the file alone. The gate schedules by file, and only a file that declares independent cases can be split across workers.
+
+**Lesson:** When a story multiplies a suite's cases, check how the gate will schedule it: declare `independentCases` if every case builds its own state, or split the file. Run it once through `scripts/test-sharded.mjs --files` before review.
+
+**Refs:** VERIFICATION `@finding-F-04`; REGRESSION.md, first row.
