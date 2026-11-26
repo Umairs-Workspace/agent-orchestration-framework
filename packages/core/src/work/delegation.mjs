@@ -107,9 +107,17 @@ export function applyDelegationToResources(resources, delegation) {
 export function applyDelegationModelToResources(resources, model) {
   const resolved = typeof model === "string" && model.trim() !== "" ? model.trim() : DEFAULT_DELEGATION_MODEL;
   if (resolved === DEFAULT_DELEGATION_MODEL) return resources;
+  const swap = (text) => text.split(DEFAULT_DELEGATION_MODEL).join(resolved);
   return resources.map((resource) => {
-    if (typeof resource.body !== "string" || !resource.body.includes(DEFAULT_DELEGATION_MODEL)) return resource;
-    return { ...resource, body: resource.body.split(DEFAULT_DELEGATION_MODEL).join(resolved) };
+    // 198/ADR-001 §4 — a common body that differs by runtime is rewritten in each runtime's copy too.
+    const bodies = resource.commonBodies ? Object.entries(resource.commonBodies) : [];
+    const holds = (text) => typeof text === "string" && text.includes(DEFAULT_DELEGATION_MODEL);
+    if (!holds(resource.body) && !bodies.some(([, text]) => holds(text))) return resource;
+    return {
+      ...resource,
+      ...(typeof resource.body === "string" ? { body: swap(resource.body) } : {}),
+      ...(bodies.length > 0 ? { commonBodies: Object.fromEntries(bodies.map(([runtime, text]) => [runtime, typeof text === "string" ? swap(text) : text])) } : {}),
+    };
   });
 }
 

@@ -50,7 +50,7 @@ doc: state
   suite and two rendered files. Every overlap is with 02, and 03 follows 02. The codebase graph was
   not consulted: `@aof/design-system` is unbuilt, so no graph covers it. The sets come from the ADRs
   and the siblings' contracts. The doctor warns that the map is 57 lines.
-- [ ] `00_story_a-fragment-can-be-for-claude-only` — contract authored (wave 1)
+- [x] `00_story_a-fragment-can-be-for-claude-only` — built and reviewed (in-review, 2026-11-26)
 - [ ] `01_story_a-project-extracts-its-design-system-and-names-it` — contract authored (wave 1, behind 00 on `test/arch/practices/index.mjs`)
 - [ ] `02_story_mocks-are-drawn-on-the-system-and-committed-as-the-baseline` — contract authored (wave 2)
 - [ ] `03_story_an-owned-system-stays-true-to-its-code` — contract authored (wave 3, behind 02 on `bundle.json` and the verify fragment)
@@ -74,6 +74,39 @@ doc: state
   (`3f509ea2-4ad2-437a-b8c9-fb01e7e03abf`).
 - `work.examples.enabled` is on in this repository, so each story's Contract starts with its example
   map at `aof:refine 198/NN`.
+
+## Feedback (for retro)
+
+- 2026-11-26 · 198/00 build (solo) · the declared read set was incomplete: the build also read
+  `packages/core/src/model.mjs` (`RUNTIMES`, the matrix's names the loader hands the pure composer),
+  `packages/core/src/work/delegation.mjs` (a body rewrite after load), the work-doctor engine
+  (`packages/work/src/doctor/index.mjs`, to run a scoped doctor in-process over the fixture) and
+  `test/arch/testing/acd-source-directory-budget.test.mjs`.
+- 2026-11-26 · 198/00 build · `aof test --scope impacted --story 198/00` widens to all 1315
+  suites because `wiki/reference/practice-prose.md` is not in the graph; the affected suites were
+  run by file instead.
+- 2026-11-26 · 198/00 build · the near-miss recall ran after the build had started, not before it
+  (it returned nothing, so nothing it would have surfaced was missed).
+- 2026-11-26 · 198/00 review close (solo; architect, QA and craft lenses inline; 0 Blockers, one
+  round). Routed:
+  - **fixed** — `applyDelegationModelToResources` rewrote `body` but not the per-runtime
+    `commonBodies`, so with a scoped fragment on and a non-default delegation model, Claude's and
+    OpenCode's renders kept the default literal. Fixed in `packages/core/src/work/delegation.mjs`
+    (write set grew by that file), with a case in `bundle-compose.suite.mjs` that is red without it.
+  - **recorded** — `doctor-practices.mjs` repeats `update.mjs`'s legacy-lock fallback (no
+    `runtimes` → `["claude"]`); one home would be better.
+  - **recorded** — `acd-source-directory-budget`'s entry for `test/arch/practices` still says
+    "four members"; it now holds the index and five controls (under the threshold, so green).
+  - **recorded** — task 02's doctor scenarios run the work-doctor engine with the practice lane's
+    own binding over the NOTES fixture rather than the CLI, which cannot be handed a fixture bundle
+    (192/03's precedent for fixture practices).
+  - **recorded** — `bundle-compose.suite.mjs` is now about 1,000 lines; 198's cases could move to
+    a suite of their own.
+  - **recorded (not 00's)** — FF-7106 is red at the base commit and here: 198/03's `files:` names
+    `packages/acd/assets/commands/verify.md` without its tracked renders
+    (`.agents/skills/aof-verify/{SKILL.md,procedure.md,agents/openai.yaml}`,
+    `.codex/aof/workflows/workflow-contract.md`, `.opencode/commands/aof/verify.md`). For 03's
+    contract to carry.
 
 ## Verification
 

@@ -97,7 +97,8 @@ export function partitionByCapability(resources, runtimes) {
       }
 
       if (declaredRuntimes.includes(runtime)) {
-        if (resource.runtimeVariants || resource.overrides) {
+        // 198/ADR-001 §4 — a resource whose common body differs by runtime is never grouped.
+        if (resource.runtimeVariants || resource.overrides || resource.commonBodies) {
           installable.push({ ...resolveBundleVariant(resource, runtime), runtimes: [runtime] });
         } else renderRuntimes.push(runtime);
       }
@@ -111,13 +112,16 @@ export function partitionByCapability(resources, runtimes) {
 
 // Resolve logical identity before the adapter changes a command into a skill.
 // Common metadata/body → authored runtime variant → existing project override.
+// 198/ADR-001 §4 — the common body is the runtime's own (`commonBodies`) when its fill differs from
+// another runtime's; the resolved resource carries no other runtime's.
 export function resolveBundleVariant(resource, runtime) {
-  let resolved = resource;
+  const { commonBodies, ...rest } = resource;
+  let resolved = commonBodies && Object.hasOwn(commonBodies, runtime) ? { ...rest, body: commonBodies[runtime] } : rest;
   if (resource.runtimeVariants) {
     if (!Object.hasOwn(resource.runtimeVariants, runtime)) {
       throw new Error(`Missing bundle variant for ${resource.kind}:${resource.id} (${runtime}).`);
     }
-    resolved = mergeRuntimeOverride({ ...resource, overrides: resource.runtimeVariants }, runtime);
+    resolved = mergeRuntimeOverride({ ...resolved, overrides: resource.runtimeVariants }, runtime);
   }
   resolved = mergeRuntimeOverride({ ...resolved, overrides: resource.overrides }, runtime);
   return { ...resolved, overrides: undefined, _aofNativeVariant: Boolean(resource.runtimeVariants) };

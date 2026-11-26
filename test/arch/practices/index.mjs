@@ -10,10 +10,14 @@ import { archTests as acdRenderReadsProjectConfigOnlyTests } from "./acd-render-
 // milestone 192 / story 02 — FF-19208 (off renders no practice prose, and core holds none), with the
 // story's render-level cases.
 import { archTests as acdOffRendersNoPracticeProseTests } from "./acd-off-renders-no-practice-prose.test.mjs";
+// milestone 198 / story 00 — FF-19802 (runtime-scoped prose lands on its own runtimes alone). FF-19801
+// is FF-19206's file, amended in place.
+import { archTests as acdRuntimeScopedProseTests } from "./acd-runtime-scoped-prose.test.mjs";
 
 export const tests = [
   ...acdSlotLeavesNothingBehindTests,
   ...acdFragmentLandsOnEveryRuntimeTests,
   ...acdRenderReadsProjectConfigOnlyTests,
   ...acdOffRendersNoPracticeProseTests,
+  ...acdRuntimeScopedProseTests,
 ];

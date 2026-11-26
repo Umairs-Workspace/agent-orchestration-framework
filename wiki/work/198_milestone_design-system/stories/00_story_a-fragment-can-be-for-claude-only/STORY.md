@@ -4,7 +4,7 @@ number: 00
 slug: a-fragment-can-be-for-claude-only
 title: "A practice's fragment can name the runtimes it is for, and a render for any other runtime holds none of it"
 parent: 198
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-11-17
 updated: 2026-11-26
@@ -38,6 +38,7 @@ files:
   - packages/core/src/work/bundle-compose.mjs
   - packages/core/src/work/bundle-runtime.mjs
   - packages/core/src/work/update.mjs
+  - packages/core/src/work/delegation.mjs
   - packages/core/src/application/bindings/work/doctor-practices.mjs
   - packages/core/src/application/bindings/commands/init-update.mjs
   - packages/core/test/bundle-compose.suite.mjs
@@ -62,10 +63,10 @@ needs no hollow placeholder bodies or hand-kept forks of core's sources to stay 
 
 ## Tasks
 
-- [ ] `00_a-fragment-names-the-runtimes-it-is-for` — R1: the `runtimes` field and its load rule; FF-19801 (FF-19206's file, amended)
-- [ ] `01_a-scoped-fragment-lands-only-where-it-is-for` — R2, R3: per-runtime composition of a common text, today's bytes when nothing scoped is on; FF-19802
-- [ ] `02_the-list-and-the-doctor-say-where-a-scoped-practice-lands` — R4: the list names a scoped practice's runtimes; `practice-no-effect`
-- [ ] `03_the-reference-says-how-to-scope-a-fragment` — `wiki/reference/practice-prose.md`, within its 150-line cap
+- [x] `00_a-fragment-names-the-runtimes-it-is-for` — R1: the `runtimes` field and its load rule; FF-19801 (FF-19206's file, amended)
+- [x] `01_a-scoped-fragment-lands-only-where-it-is-for` — R2, R3: per-runtime composition of a common text, today's bytes when nothing scoped is on; FF-19802
+- [x] `02_the-list-and-the-doctor-say-where-a-scoped-practice-lands` — R4: the list names a scoped practice's runtimes; `practice-no-effect`
+- [x] `03_the-reference-says-how-to-scope-a-fragment` — `wiki/reference/practice-prose.md`, within its 150-line cap
 
 ## Notes
 

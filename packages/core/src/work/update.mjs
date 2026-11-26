@@ -30,7 +30,7 @@ import { createLockManifest, executeApplyActions, planApplyActions } from "../re
 import { RUNTIMES } from "../model.mjs";
 import { loadBundle } from "./bundle.mjs";
 import { bundleVersion, summarizeActions, synthesizeBundleConfig } from "./bundle-synthesis.mjs";
-import { practiceList, practiceRecord, practiceStates } from "./bundle-compose.mjs";
+import { practiceList, practiceRecord, practiceRuntimes, practiceStates } from "./bundle-compose.mjs";
 import { workspacePaths } from "../workspace.mjs";
 import { readConfig, writeConfig } from "./headroom.mjs";
 import { ensureAofGitignore, ensureWorkDirGitFiles, workDirFor } from "../aof-gitignore.mjs";
@@ -112,7 +112,8 @@ export async function updateWork(options = {}) {
   // config the bundle was composed for. Never asked again after the memory migration below, which
   // may rewrite the file: the list and the record are the answer the render used.
   const states = practiceStates(bundle.practices ?? [], project.config);
-  const practices = practiceList(bundle.practices ?? [], states);
+  // 198/ADR-001 §5 — a practice whose fragments are all runtime-scoped is listed with its runtimes.
+  const practices = practiceList(bundle.practices ?? [], states, practiceRuntimes(bundle.descriptor?.members, Object.keys(RUNTIMES)));
 
   // Update semantics: previousLock IS the install manifest (ADR-004). The engine
   // classifies create/update/skip/drift-warning/delete by comparing the desired

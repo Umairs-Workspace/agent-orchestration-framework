@@ -3,7 +3,10 @@
 //   tasks/00_update-lists-the-optional-practices.feature
 //   tasks/01_the-doctor-reports-a-key-changed-since-the-render.feature
 //   tasks/02_an-install-with-no-record-is-told-once-to-update.feature
-// is a case here, named by its task and scenario.
+// is a case here, named by its task and scenario. So is every @executable scenario and Examples row
+// of milestone 198 / story 00's
+//   tasks/02_the-list-and-the-doctor-say-where-a-scoped-practice-lands.feature
+// on its own fixture, "NOTES" (below).
 //
 // THE FIXTURES are the features' own. "NEW" is a scratch project initialised from this checkout's
 // shipped bundle (Claude, the cheapest render) with a config naming neither key; it is initialised
@@ -19,13 +22,15 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } f
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readDescriptor } from "../src/work/bundle.mjs";
-import { PRACTICE_RENDER_STALE, PRACTICE_RENDER_UNRECORDED, practiceList, practiceRenderFindings, practiceStates } from "../src/work/bundle-compose.mjs";
+import { createWorkDoctor } from "@aof/work/doctor";
+import { readAssetText } from "../src/asset-base.mjs";
+import { loadBundle, readDescriptor } from "../src/work/bundle.mjs";
+import { PRACTICE_NO_EFFECT, PRACTICE_RENDER_STALE, PRACTICE_RENDER_UNRECORDED, practiceList, practiceRenderFindings, practiceStates } from "../src/work/bundle-compose.mjs";
 import { updateWork } from "../src/work/update.mjs";
 import { PRACTICES } from "../src/practices.mjs";
 import { practiceLines } from "../src/application/bindings/commands/init-update.mjs";
 import { assembleWorkDoctorPractices } from "../src/application/bindings/work/doctor-practices.mjs";
-import { baseFixture, notesPractice, only } from "./bundle-compose.suite.mjs";
+import { FIRST, SCOPED_FILES, baseFixture, contribution, demoMember, fragment, notesPractice, only, variantMember } from "./bundle-compose.suite.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const CLI = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
@@ -475,5 +480,117 @@ const groupTests = [
   }),
 ];
 
-export const practiceRenderLaneTests = [...listTests, ...staleTests, ...unrecordedTests, ...groupTests];
+// ── 198/00 task 02 — the list and the doctor say where a scoped practice lands ───────────────────
+//
+// "NOTES" is a scratch project whose bundle is the shipped one with the fixture package FIRST
+// registered beside the shipped practice packages: the command "demo" and the practice "notes",
+// whose every fragment declares "runtimes": ["claude"]. Its lock records the runtimes it was
+// installed for. The update runs through its bundle seam; the doctor runs the work-doctor engine
+// over the project's work tree with the practice lane's own facts, read from the project.
+
+const scopedNote = (id, runtimes) => fragment(id, "notes", "demo.notes", { file: "fragments/notes/claude.md" }, { runtimes });
+const notesMembers = () => [demoMember(), scopedNote("notes-demo", ["claude"])];
+const NOTES_FILES = { ...SCOPED_FILES, "templates/notes/EXAMPLES.md": "# Notes map\n" };
+const FIRST_CLASS = `package:${FIRST}`;
+
+function notesDescriptor(members = notesMembers()) {
+  const doc = { practices: [notesPractice()], members };
+  const readFragment = (assetClass) => (assetClass === FIRST_CLASS ? structuredClone(doc) : JSON.parse(readAssetText(assetClass, "bundle.json")));
+  return readDescriptor({ practices: [...PRACTICES, contribution(FIRST)], readFragment });
+}
+function notesReadText(assetClass, file) {
+  if (assetClass !== FIRST_CLASS) return readAssetText(assetClass, file);
+  if (!Object.hasOwn(NOTES_FILES, file)) throw Object.assign(new Error(`ENOENT: ${file}`), { code: "ENOENT" });
+  return NOTES_FILES[file];
+}
+
+// NOTES, installed for `runtimes`, with `work` as its config's work section.
+function NOTES(runtimes = ["claude"], work = undefined) {
+  const where = scratch("notes");
+  setWork(where, work);
+  writeJson(lockPath(where), { work: { runtimes, files: [], practices: {} } });
+  return where;
+}
+const notesOn = { notes: { enabled: true } };
+
+async function notesUpdate(where, members) {
+  const descriptor = notesDescriptor(members);
+  const bundleOverride = (config) => only(loadBundle({ descriptor, config, readText: notesReadText }), "demo");
+  return updateWork({ targetDir: where.project, bundleOverride, dryRun: true });
+}
+
+// The work tree NOTES's scoped doctor runs walk: one milestone with one story.
+function notesWorkTree(where) {
+  const milestone = path.join(where.project, "wiki", "work", "01_milestone_first");
+  const story = path.join(milestone, "stories", "00_story_one");
+  mkdirSync(path.join(story, "tasks"), { recursive: true });
+  writeFileSync(path.join(milestone, "SPEC.md"), "---\ntype: milestone\nnumber: 01\nslug: first\ntitle: first\nstatus: not-started\ncreated: 2026-11-26\nupdated: 2026-11-26\n---\n# first\n");
+  writeFileSync(path.join(story, "STORY.md"), "---\ntype: story\nnumber: 00\nslug: one\ntitle: one\nparent: 01\nstatus: not-started\ncreated: 2026-11-26\nupdated: 2026-11-26\n---\n# one\n");
+  return path.join(where.project, "wiki", "work");
+}
+
+// The "practice-no-effect" findings of the doctor in NOTES, for the whole stream or `scope`.
+async function notesNoEffect(where, { scope = null, members } = {}) {
+  const descriptor = notesDescriptor(members);
+  const { readPracticeRenderFacts, practiceRenderGroup } = assembleWorkDoctorPractices({ descriptor: () => descriptor });
+  const facts = await readPracticeRenderFacts(where.project);
+  const { doctorWork } = createWorkDoctor({ projectExecution: () => ({}), readRuns: async () => [], diagramsGroup: () => [] });
+  const findings = await doctorWork(notesWorkTree(where), {}, scope, { groups: [practiceRenderGroup], extensions: { practiceRender: facts } });
+  return findings.filter((finding) => finding.code === PRACTICE_NO_EFFECT);
+}
+
+const t198 = (name, run) => ({ name: `198/00 task 02 · ${name}`, run });
+
+const scopedPracticeTests = [
+  t198("E9 · the list names the runtimes a scoped practice is for", async () => {
+    const { practices } = await notesUpdate(NOTES());
+    const text = practiceLines(practices).join("\n");
+    assert.ok(listed(text, "notes").line.endsWith("for claude"), listed(text, "notes").line);
+    assert.ok(listed(text, "discovery").line.endsWith(DISCOVERY_KEY), listed(text, "discovery").line);
+    const byId = new Map(practices.map((practice) => [practice.id, practice]));
+    assert.deepEqual(byId.get("notes").runtimes, ["claude"]);
+    assert.ok(!Object.hasOwn(byId.get("discovery"), "runtimes"), "the entry for discovery holds no runtimes");
+  }),
+  t198("E10 · the doctor says once that an on practice reaches none of the project's runtimes", async () => {
+    const findings = await notesNoEffect(NOTES(["codex"], notesOn));
+    assert.equal(findings.length, 1, JSON.stringify(findings));
+    const [finding] = findings;
+    assert.equal(finding.severity, "warn");
+    for (const named of ['"notes"', "claude", "codex", "reaches none of the runtimes this project renders"]) assert.ok(finding.message.includes(named), `names ${named}: ${finding.message}`);
+  }),
+  t198("E11 · a project that renders one of the practice's runtimes hears nothing", async () => {
+    assert.deepEqual(await notesNoEffect(NOTES(["claude", "codex"], notesOn)), []);
+  }),
+  ...[
+    ['one fragment for "claude" and one for "opencode"', () => [demoMember(), scopedNote("notes-demo", ["claude"]), scopedNote("notes-demo-oc", ["opencode"])], ["claude", "opencode"]],
+    ['one fragment for "opencode" and one for "claude", declared in that order', () => [demoMember(), scopedNote("notes-demo-oc", ["opencode"]), scopedNote("notes-demo", ["claude"])], ["claude", "opencode"]],
+    ["one Claude-only fragment and one unscoped fragment", () => [demoMember(), scopedNote("notes-demo", ["claude"]), fragment("notes-all", "notes", "demo.notes", { file: "one.md", variants: { codex: { file: "one.md" } } })], null],
+    ["one Claude-only fragment and a template variant", () => [demoMember(), scopedNote("notes-demo", ["claude"]), variantMember("notes")], null],
+  ].map(([members, declare, runtimes]) => t198(`which practices the list names runtimes for — ${members}`, async () => {
+    const { practices } = await notesUpdate(NOTES(), declare());
+    const notes = practices.find((practice) => practice.id === "notes");
+    if (runtimes) assert.deepEqual(notes.runtimes, runtimes);
+    else assert.ok(!Object.hasOwn(notes, "runtimes"), JSON.stringify(notes));
+  })),
+  ...[
+    [["codex"], false, 0],
+    [["codex", "opencode"], true, 1],
+    [["opencode"], true, 1],
+    [["claude"], true, 0],
+  ].map(([installed, state, count]) => t198(`the doctor stays quiet unless the practice is on and reaches none of the project's runtimes — installed for ${installed.join(", ")}, ${state}`, async () => {
+    assert.equal((await notesNoEffect(NOTES(installed, { notes: { enabled: state } }))).length, count);
+  })),
+  t198("the finding is told once for a scoped doctor run", async () => {
+    const where = NOTES(["codex"], notesOn);
+    assert.equal((await notesNoEffect(where, { scope: "01/00" })).length, 1, "a story's scope reports it once");
+    assert.equal((await notesNoEffect(where, { scope: "01" })).length, 1, "a milestone's scope reports it once");
+  }),
+  t198("an unscoped practice is never reported as having no effect", async () => {
+    const findings = await notesNoEffect(NOTES(["codex"], examplesSetTo(true)));
+    assert.deepEqual(findings.filter((finding) => finding.message.includes("discovery")), []);
+    assert.deepEqual(findings, []);
+  }),
+];
+
+export const practiceRenderLaneTests = [...listTests, ...staleTests, ...unrecordedTests, ...groupTests, ...scopedPracticeTests];
 

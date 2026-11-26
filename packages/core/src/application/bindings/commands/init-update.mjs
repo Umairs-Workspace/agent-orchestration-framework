@@ -425,10 +425,14 @@ function memoryConfigLines(memoryConfig) {
 
 // 192/ADR-007 §2 — the optional practices, one aligned row each: whether it is on, its id, its
 // summary and the keys that turn it on (several joined by ` + `). After the summary and before any
-// warning; a bundle that declares no practice prints nothing.
+// warning; a bundle that declares no practice prints nothing. 198/ADR-001 §5 — a practice that
+// names its runtimes ends its row with them ("for claude", "for claude and opencode").
 export function practiceLines(practices = []) {
   if (!Array.isArray(practices) || practices.length === 0) return [];
-  const rows = practices.map((practice) => [practice.on ? "on" : "off", practice.id, practice.summary ?? "", (practice.keys ?? []).join(" + ")]);
+  const forRuntimes = (runtimes) => (Array.isArray(runtimes) && runtimes.length > 0
+    ? `  for ${runtimes.length === 1 ? runtimes[0] : `${runtimes.slice(0, -1).join(", ")} and ${runtimes.at(-1)}`}`
+    : "");
+  const rows = practices.map((practice) => [practice.on ? "on" : "off", practice.id, practice.summary ?? "", `${(practice.keys ?? []).join(" + ")}${forRuntimes(practice.runtimes)}`]);
   const widths = [0, 1, 2].map((column) => Math.max(...rows.map((row) => row[column].length)));
   return [
     "Optional practices (set every key to true in .aof/aof.config.json, then run `aof work update`):",

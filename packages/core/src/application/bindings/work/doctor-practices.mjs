@@ -11,9 +11,10 @@
 //     the engine's `extensionGroups` seam. It reads only `ctx.extensions.practiceRender`, and the
 //     judgement is `practiceRenderFindings`, beside the one resolver of what is on (ADR-003 §3).
 import { readLock } from "../../../lock.mjs";
+import { RUNTIMES } from "../../../model.mjs";
 import { workspacePaths } from "../../../workspace.mjs";
 import { readDescriptor } from "../../../work/bundle.mjs";
-import { practiceList, practiceRenderFindings, practiceStates, practiceTargets } from "../../../work/bundle-compose.mjs";
+import { practiceList, practiceRenderFindings, practiceRuntimes, practiceStates, practiceTargets } from "../../../work/bundle-compose.mjs";
 import { readConfig } from "../../../work/headroom.mjs";
 
 export const PRACTICE_RENDER_FACTS = "practiceRender";
@@ -28,11 +29,15 @@ export function assembleWorkDoctorPractices({ descriptor = readDescriptor } = {}
     const declared = descriptor();
     const practices = declared.practices ?? [];
     const targets = practiceTargets(declared.members);
+    // 198/ADR-001 §5 — the runtimes this install renders, as the update reads them from the lock
+    // (Claude when a legacy lock names none), and the runtimes each scoped practice reaches.
+    const runtimes = Array.isArray(work.runtimes) && work.runtimes.length > 0 ? work.runtimes : ["claude"];
     return {
       installed: true,
       recorded: work.practices ?? null,
-      practices: practiceList(practices, practiceStates(practices, config))
-        .map(({ id, keys, on }) => ({ id, keys, on, targets: targets.get(id) ?? [] })),
+      runtimes,
+      practices: practiceList(practices, practiceStates(practices, config), practiceRuntimes(declared.members, Object.keys(RUNTIMES)))
+        .map(({ id, keys, on, runtimes: reaches }) => ({ id, keys, on, targets: targets.get(id) ?? [], ...(reaches ? { runtimes: reaches } : {}) })),
     };
   }
 
