@@ -28,6 +28,7 @@
   "devDependencies": {
     "@aof/acd": "workspace:*",
     "@aof/contracts": "workspace:*",
+    "@aof/design-system": "workspace:*",
     "@aof/diagrams": "workspace:*",
     "@aof/diagrams-ui": "workspace:*",
     "@aof/effects": "workspace:*",

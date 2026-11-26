@@ -4,7 +4,7 @@ number: 01
 slug: a-project-extracts-its-design-system-and-names-it
 title: "A Claude project extracts its design system from its code tokens and exported mocks into a Design System artifact, and names it in config"
 parent: 198
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-11-17
 updated: 2026-11-26
@@ -75,6 +75,19 @@ files:
   - test/arch/practices/index.mjs
   - package.json
   - yarn.lock
+  # Found at build (2026-11-26): each is a change the story could not land without.
+  - schemas/aof.schema.json
+  - scripts/workspace-runtime-audit.json
+  - test/arch/command/acd-cli-entry-executes.test.mjs
+  - test/arch/practices/acd-design-system-practice.test.mjs
+  - .aof/aof.lock.json
+  - .codex/aof/workflows/workflow-contract.md
+  - test/arch/testing/acd-source-directory-budget.test.mjs
+  - test/arch/practices/acd-off-renders-no-practice-prose.test.mjs
+  - test/bundle/core-workspace.test.mjs
+  - packages/core/test/bundle.suite.mjs
+  - packages/core/test/bundle-compose.suite.mjs
+  - packages/core/test/practice-render-lane.suite.mjs
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -92,11 +105,11 @@ look, and the AOF look is captured before standalone Claude Design closes on 202
 
 ## Tasks
 
-- [ ] `00_the-design-system-practice-is-registered` — R1: the `@aof/design-system` package, its practice on `work.ui.designSystem.enabled`, no render change
-- [ ] `01_the-extract-command-is-claude-only-and-always-installed` — R2: the `design-system` command member, Claude only, ungated
-- [ ] `02_tokens-reads-the-system-from-the-code` — R3: `aof design-system tokens`, `--mocks`; FF-19804
-- [ ] `03_check-reports-drift-between-a-system-and-the-code` — R4: `aof design-system check`
-- [ ] `04_use-names-one-system-and-the-validator-holds-it` — R5, R6: `aof design-system use` and the block's validator codes
+- [x] `00_the-design-system-practice-is-registered` — R1: the `@aof/design-system` package, its practice on `work.ui.designSystem.enabled`, no render change
+- [x] `01_the-extract-command-is-claude-only-and-always-installed` — R2: the `design-system` command member, Claude only, ungated
+- [x] `02_tokens-reads-the-system-from-the-code` — R3: `aof design-system tokens`, `--mocks`; FF-19804
+- [x] `03_check-reports-drift-between-a-system-and-the-code` — R4: `aof design-system check`
+- [x] `04_use-names-one-system-and-the-validator-holds-it` — R5, R6: `aof design-system use` and the block's validator codes
 - [ ] `05_aof-extracts-its-own-design-system` — R7 (@manual): AOF's own extraction, the milestone's first outsider check
 
 ## Notes

@@ -1302,6 +1302,15 @@
       "hash": "sha256:51f416292c95c600f5d220224b3bbb447529b7f9d731673a83136698d728aaa3"
     },
     {
+      "path": ".claude/commands/aof/design-system.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "design-system",
+        "kind": "command"
+      },
+      "hash": "sha256:ad9310bbc99b76b22e2b4ae69dca4b0e097faadfa8cecd4b7e26a0b2be1a97ac"
+    },
+    {
       "path": ".claude/commands/aof/diagram-review.md",
       "runtime": "claude",
       "resource": {

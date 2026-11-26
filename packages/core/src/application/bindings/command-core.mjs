@@ -41,6 +41,9 @@ import { createDiagramsContribution } from "@aof/diagrams/contribution";
 // The integrations' verbs — 169/ADR-003: each arrives through its contribution in the one registry,
 // built from the same injected services (git, the work validator, the error and JSON helpers).
 import { INTEGRATIONS } from "../../integrations.mjs";
+// 198/01 Q11 — a practice's contribution may carry verbs too (`@aof/design-system`'s three), assembled
+// exactly as an integration's are, from the same injected services.
+import { PRACTICES } from "../../practices.mjs";
 import { defaultGitExec } from "@aof/execution/worktrees";
 import { commandError as integrationCommandError } from "@aof/contracts/error";
 import { readJson as integrationReadJson } from "@aof/foundation/fs";
@@ -71,8 +74,9 @@ async function integrationZipFiles(fileMap) {
   return zipStored(fileMap);
 }
 
-// One command contribution per registered integration that ships verbs, named by its package. Each is
-// handed the shared services and, when it composes its own (chore 175), what its `services` built.
+// One command contribution per registered integration — or practice (198/01 Q11) — that ships verbs,
+// named by its package. Each is handed the shared services and, when it composes its own (chore 175),
+// what its `services` built.
 export function integrationContributions(services, integrations = INTEGRATIONS, built = {}) {
   return integrations
     .filter((integration) => typeof integration.commands === "function")
@@ -291,7 +295,7 @@ export function assembleCommandCore({ commandsGraphImpactServices, commandsMeshC
       importMilestoneCommand,
     ]),
     createWorkContribution([migrateFolderCommand]),
-    ...integrationContributions({ ...integrationCollaborators, commandError: integrationCommandError, gitExec: defaultGitExec, validateWork: commandsValidateServices.validateWork, readJson: integrationReadJson, aofHome: integrationAofHome, readPackageAsset: integrationReadPackageAsset, zipFiles: integrationZipFiles }, INTEGRATIONS, integrationsBuilt),
+    ...integrationContributions({ ...integrationCollaborators, commandError: integrationCommandError, gitExec: defaultGitExec, validateWork: commandsValidateServices.validateWork, readJson: integrationReadJson, aofHome: integrationAofHome, readPackageAsset: integrationReadPackageAsset, zipFiles: integrationZipFiles }, [...INTEGRATIONS, ...PRACTICES], integrationsBuilt),
     createWorkContribution([
       runStartCommand,
       runCompleteCommand,

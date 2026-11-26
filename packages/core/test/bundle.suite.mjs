@@ -54,6 +54,7 @@ const COMMAND_IDS = [
   "autonomous",
   "continue",
   "delegate",
+  "design-system",
   "diagram-review",
   "explain",
   "feedback",
@@ -271,7 +272,8 @@ const teachCommandBundleTests = [
       const { PRACTICES } = await import("../src/practices.mjs");
       assert.ok(Object.isFrozen(PRACTICES), "PRACTICES is frozen");
       // 192/02 (ADR-005 §1) registers @aof/specification-by-example second; learning stays first.
-      assert.equal(PRACTICES.length, 2, "two entries, in registration order");
+      // 198/01 registers @aof/design-system third (test/arch/practices/acd-design-system-practice.test.mjs).
+      assert.equal(PRACTICES.length, 3, "three entries, in registration order");
       const { contribution } = await import("@aof/learning/contribution");
       assert.equal(PRACTICES[0], contribution, "…the first is @aof/learning's contribution");
       assert.equal(PRACTICES[0].assets.package, "@aof/learning");
@@ -345,7 +347,7 @@ export const bundleTests = [
   // ====================================================================
 
   {
-    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 39 commands, 8 templates, 3 skills, 12 hooks)",
+    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 40 commands, 8 templates, 3 skills, 12 hooks)",
     run: async () => {
       const ids = new Set(memberIds());
       for (const id of AGENT_IDS) assert.ok(ids.has(id), `missing agent ${id}`);
@@ -355,7 +357,7 @@ export const bundleTests = [
       const byKind = (kind) => descriptorMembers().filter((m) => m.kind === kind).length;
       for (const id of HOOK_IDS) assert.ok(ids.has(id), `missing hook ${id}`);
       assert.equal(byKind("agent"), 8, "8 agents");
-      assert.equal(byKind("command"), 39, "39 commands (teach — teaching, contributed by @aof/learning through the practices registry since 179/02 — hyperplan — the Hyperagent planning delegation, contributed by @aof/integration-hyperagent since 169/01 — incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt, loop-diagram, 145 — repair, 147 — explain, 150 — add-diagram, 151 — diagram-review, PR #13 — questions, 163 — prototype, 168 — manual, 179/00 — and map-tests, 190/04)");
+      assert.equal(byKind("command"), 40, "40 commands (design-system — extraction, contributed by @aof/design-system through the practices registry since 198/01 — teach — teaching, contributed by @aof/learning through the practices registry since 179/02 — hyperplan — the Hyperagent planning delegation, contributed by @aof/integration-hyperagent since 169/01 — incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt, loop-diagram, 145 — repair, 147 — explain, 150 — add-diagram, 151 — diagram-review, PR #13 — questions, 163 — prototype, 168 — manual, 179/00 — and map-tests, 190/04)");
       assert.equal(byKind("skill"), 3, "3 codex delegation skills");
       assert.equal(byKind("template"), 8, "milestone/story/task/uat/spike/chore/prototype templates + the type-agnostic `shared` (OUTCOME.md)");
       assert.equal(byKind("hook"), 12, "12 hooks: 3 Codex session-presence + 3 Claude session-presence + 3 OpenCode session-presence + artifact-sync + run-heartbeat + ask-pending (136/03)");
@@ -471,7 +473,7 @@ export const bundleTests = [
     name: "bundle/descriptor: every resource member (agent + command) names one or more target runtimes",
     run: async () => {
       const resourceMembers = descriptorMembers().filter((m) => m.kind === "agent" || m.kind === "command");
-      assert.equal(resourceMembers.length, 47, "47 resource members (8 agents + 39 commands)");
+      assert.equal(resourceMembers.length, 48, "48 resource members (8 agents + 40 commands)");
       for (const member of resourceMembers) {
         assert.ok(Array.isArray(member.runtimes) && member.runtimes.length >= 1, `${member.id} declares >=1 runtime`);
       }
@@ -707,8 +709,9 @@ export const bundleTests = [
       const commands = outputs.filter((o) => o.resource.kind === "command" && String(o.path).replaceAll("\\", "/").startsWith(".opencode/commands/"));
       const agents = outputs.filter((o) => o.resource.kind === "agent" && String(o.path).replaceAll("\\", "/").startsWith(".opencode/agents/"));
       const plugins = outputs.filter((o) => o.resource.kind === "hooks" && String(o.path).replaceAll("\\", "/").startsWith(".opencode/plugins/"));
-      // 179/ADR-007 — teach is supported on Claude Code only, so OpenCode renders every command but it.
-      assert.equal(commands.length, COMMAND_IDS.length - 1, "one .opencode/commands output per command member, teach excepted");
+      // 179/ADR-007 — teach is supported on Claude Code only, and so is design-system (198/ADR-003: only
+      // a Claude session holds the Artifact tool), so OpenCode renders every command but those two.
+      assert.equal(commands.length, COMMAND_IDS.length - 2, "one .opencode/commands output per command member, teach and design-system excepted");
       assert.ok(!commands.some((o) => String(o.path).replaceAll("\\", "/") === ".opencode/commands/aof/teach.md"), "no .opencode teach command");
       assert.equal(agents.length, AGENT_IDS.length, "one .opencode/agents output per agent member");
       assert.equal(plugins.length, 3, "one .opencode/plugins output per opencode bundle hook");

@@ -1525,6 +1525,139 @@
     }
   },
   {
+    "id": "design-system:tokens",
+    "input": {
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mocks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "files"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "design-system",
+        "tokens"
+      ],
+      "spec": {
+        "usage": "aof design-system tokens <css-file>… [--mocks <dir>]… [--json]",
+        "flags": {
+          "mocks": {
+            "type": "string",
+            "repeatable": true,
+            "description": "a directory of exported .dc.html/.html mocks; lists the colours only a mock paints"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "design-system:check",
+    "input": {
+      "type": "object",
+      "properties": {
+        "tokens": {
+          "type": "string"
+        },
+        "source": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "tokens"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "design-system",
+        "check"
+      ],
+      "spec": {
+        "usage": "aof design-system check --tokens <tokens.json> [--source <css-file>]… [--json]",
+        "flags": {
+          "tokens": {
+            "type": "string",
+            "description": "the system's tokens.json, in the Design System's shape"
+          },
+          "source": {
+            "type": "string",
+            "repeatable": true,
+            "description": "a CSS file to compare with (default: work.ui.designSystem.source)"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "design-system:use",
+    "input": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "artifact": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "source": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "design-system",
+        "use"
+      ],
+      "spec": {
+        "usage": "aof design-system use --name <title> | --artifact <link> --mode owned|reference [--source <css-file>]… [--json]",
+        "flags": {
+          "name": {
+            "type": "string",
+            "description": "the system's title, as the operator sees it"
+          },
+          "artifact": {
+            "type": "string",
+            "description": "the system's claude.ai artifact link"
+          },
+          "mode": {
+            "type": "string",
+            "description": "owned or reference"
+          },
+          "source": {
+            "type": "string",
+            "repeatable": true,
+            "description": "a CSS file an owned system is synced from"
+          }
+        }
+      }
+    }
+  },
+  {
     "id": "work:run-start",
     "input": {
       "type": "object",

@@ -17,6 +17,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@aof/design-system@workspace:*, @aof/design-system@workspace:packages/design-system":
+  version: 0.0.0-use.local
+  resolution: "@aof/design-system@workspace:packages/design-system"
+  dependencies:
+    "@aof/foundation": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@aof/desktop@workspace:apps/desktop":
   version: 0.0.0-use.local
   resolution: "@aof/desktop@workspace:apps/desktop"
@@ -130,6 +138,7 @@ __metadata:
   dependencies:
     "@aof/acd": "workspace:*"
     "@aof/contracts": "workspace:*"
+    "@aof/design-system": "workspace:*"
     "@aof/diagrams": "workspace:*"
     "@aof/diagrams-ui": "workspace:*"
     "@aof/effects": "workspace:*"
@@ -2644,6 +2653,7 @@ __metadata:
   dependencies:
     "@aof/acd": "workspace:*"
     "@aof/contracts": "workspace:*"
+    "@aof/design-system": "workspace:*"
     "@aof/diagrams": "workspace:*"
     "@aof/effects": "workspace:*"
     "@aof/execution": "workspace:*"

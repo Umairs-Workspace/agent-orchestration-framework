@@ -39,6 +39,7 @@
   "dependencies": {
     "@aof/acd": "workspace:*",
     "@aof/contracts": "workspace:*",
+    "@aof/design-system": "workspace:*",
     "@aof/diagrams": "workspace:*",
     "@aof/effects": "workspace:*",
     "@aof/execution": "workspace:*",

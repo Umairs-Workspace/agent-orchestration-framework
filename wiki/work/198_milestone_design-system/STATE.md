@@ -74,6 +74,13 @@ doc: state
   (`3f509ea2-4ad2-437a-b8c9-fb01e7e03abf`).
 - `work.examples.enabled` is on in this repository, so each story's Contract starts with its example
   map at `aof:refine 198/NN`.
+- **198/01 continue, attempt 2** (run `20261126T230456349Z-0002`, retry of
+  `20261126T214539801Z-0001`, `failureReason: timeout`). The prior attempt built every task and
+  walked the gate ladder clean; the deadline stopped it inside the widened `aof test --scope
+  impacted --story 198/01`, which the manifests and `yarn.lock` widen to all 1,321 suites. The
+  recall returned no finding for the story, only that run and the refine run
+  (`20261126T203708652Z-0000`). This attempt keeps the build and runs the suites the change can
+  touch, by file; the full tree is the milestone's regression gate.
 
 ## Feedback (for retro)
 
@@ -107,6 +114,41 @@ doc: state
     (`.agents/skills/aof-verify/{SKILL.md,procedure.md,agents/openai.yaml}`,
     `.codex/aof/workflows/workflow-contract.md`, `.opencode/commands/aof/verify.md`). For 03's
     contract to carry.
+- **198/01 build (2026-11-26, solo)**
+  - **recorded** — the declared write set missed five files the story could not land without, now
+    added to its `files:`: `schemas/aof.schema.json` (`work.ui` is closed, so `designSystem` needs
+    a node), `scripts/workspace-runtime-audit.json` (editing `config-inspect.mjs` and
+    `scripts/test.mjs` re-keys their audited child-process entries; the expressions are unchanged,
+    only `sourceDigest` restamped), `test/arch/command/acd-cli-entry-executes.test.mjs` (FF-16004's
+    `work find` ceiling 763 → 766: the contribution, its verb descriptors and the config shape
+    check), the render-level control `test/arch/practices/acd-design-system-practice.test.mjs`
+    (a package suite may not import core, so tasks 00/01's render cases cannot live in the package),
+    and `.aof/aof.lock.json` from `aof work update`.
+  - **fixed** — the token scanner read a `:root` inside `@media (prefers-color-scheme: dark)` as the
+    light theme, silently overwriting light values; only `@layer` may now wrap a theme selector,
+    and anything else is unplaced with its reason.
+  - **recorded** — the near-miss recall ran after the build rather than before it (empty either
+    way; recall `eb487a54-5b34-4944-a0e4-cc140720140d`).
+  - **recorded** — five suites (`bundle-asset-manifest-complete` ×3, `core-workspace`'s copied core,
+    `application-assembly`'s HTTP close) need `apps/ui/dist`, which a dispatch worktree has not
+    built. With the UI built (`node scripts/ui-build.mjs`) all five are green.
+  - **fixed** (attempt 2) — the affected suites, run by file, named the counts a third practice
+    moves: the practices registry (2 → 3), the command members (39 → 40, `design-system` added to
+    `COMMAND_IDS`), OpenCode's render (teach and design-system both Claude-only), the practice list
+    (192/03 E2, E3), the shipped practices (192/00), the workspace owners (21 → 22), and FF-11904's
+    two new flat layers, `packages/design-system/{src,test}`, declared as size exemptions. All are
+    in the story's `files:` now. FF-7106 is green for 01 once `.codex/aof/workflows/workflow-contract.md`
+    is declared; its remaining lines are 03's, recorded above.
+  - **recorded** — the story's impacted run widens to every suite (1,321: the manifests and
+    `yarn.lock` have no registered dependent) and outlasts an attempt's time limit, which is what
+    stopped attempt 1. Attempt 2 ran the 18 suites the change can touch, by file, all green bar
+    03's FF-7106 lines (record on tree 3cd1000, then `bundle.suite` on d9cf1cc). The milestone's
+    regression gate still owes the whole tree.
+  - **recorded** — `tokens.json`'s exact shape (`type.groups[].styles`, `color.themes`) is this
+    story's reading of the Design System type; 05's real run against `from-code.md` is what
+    confirms it.
+  - Task 05 (@manual) is the operator's interactive run; its supply-chain-audit leg passed at build
+    (`node scripts/supply-chain-audit.mjs`: 0 warnings).
 
 ## Verification
 

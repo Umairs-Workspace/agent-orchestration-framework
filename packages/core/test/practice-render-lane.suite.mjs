@@ -171,11 +171,11 @@ const listTests = [
       assert.ok(row.line.includes(practice.summary), `${practice.id} is listed with its one-line summary`);
       assert.ok(row.line.endsWith(practice.keys.join(" + ")), `${practice.id} is listed with its key`);
     }
-    assert.deepEqual(declared().map((practice) => practice.id).sort(), ["build-brief", "discovery", "operator-aware"]);
+    assert.deepEqual(declared().map((practice) => practice.id).sort(), ["build-brief", "design-system", "discovery", "operator-aware"]); // 198/01 adds design-system
   }),
   t00("E3 · the list is in the JSON output", () => {
     const { practices } = updateJson(NEW());
-    assert.deepEqual(practices.map((practice) => practice.id).sort(), ["build-brief", "discovery", "operator-aware"]);
+    assert.deepEqual(practices.map((practice) => practice.id).sort(), ["build-brief", "design-system", "discovery", "operator-aware"]); // 198/01 adds design-system
     for (const practice of practices) {
       assert.deepEqual(Object.keys(practice).sort(), ["id", "keys", "on", "summary", "title"]);
       assert.equal(practice.on, false);

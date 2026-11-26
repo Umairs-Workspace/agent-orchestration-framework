@@ -1,0 +1,24 @@
+{
+  "practices": [
+    {
+      "id": "design-system",
+      "title": "Design system",
+      "summary": "Mocks are drawn on the project's one Design System, named in work.ui.designSystem.",
+      "keys": [
+        "work.ui.designSystem.enabled"
+      ]
+    }
+  ],
+  "members": [
+    {
+      "id": "design-system",
+      "kind": "command",
+      "file": "commands/design-system.md",
+      "runtimes": [
+        "claude"
+      ],
+      "commandNamespace": "aof",
+      "mapped": false
+    }
+  ]
+}
