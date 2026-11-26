@@ -112,19 +112,87 @@ export function practiceStates(practices, config) {
   ]));
 }
 
-// The fragments that fill one slot of one target, in declared order, with every replaced fragment
-// dropped while its replacer is on (ADR-002 §4, §5). `fragments` is already in declared order.
-export function selectFragments(fragments, states, { target, slot }) {
-  const on = fragments.filter((fragment) => fragment.target === target && fragment.slot === slot && states.get(fragment.practice) === true);
+// 198/ADR-001 §1 — a fragment that declares `runtimes` is for those runtimes alone; one that does
+// not is for every runtime, as before.
+export const isScoped = (fragment) => fragment?.runtimes !== undefined;
+const isFor = (fragment, runtime) => !isScoped(fragment) || (runtime != null && fragment.runtimes.includes(runtime));
+
+// The fragments that fill one slot of one target for one runtime, in declared order, with every
+// replaced fragment dropped while its replacer is on (ADR-002 §4, §5). `fragments` is already in
+// declared order. 198/ADR-001 §3 — a fragment not for `runtime` is dropped BEFORE the replacements
+// are worked out, so a scoped replacer replaces only in its own runtimes. A null `runtime` selects
+// the unscoped fragments alone: the body no runtime's own prose is in.
+export function selectFragments(fragments, states, { target, slot, runtime = null }) {
+  const on = fragments.filter((fragment) => fragment.target === target && fragment.slot === slot && states.get(fragment.practice) === true && isFor(fragment, runtime));
   const replaced = new Set(on.map((fragment) => fragment.replaces).filter(Boolean));
   return on.filter((fragment) => !replaced.has(fragment.id));
+}
+
+// 198/ADR-001 §1 — the faults in a `runtimes` list itself, checked before any body: a list, not
+// empty, and every name one the capability matrix holds (`runtimeNames`, handed in by the loader).
+function runtimesListFaults(label, runtimes, runtimeNames) {
+  const fix = "name the runtimes it is for, as [\"claude\"], or leave the field out for every runtime";
+  if (!Array.isArray(runtimes)) return [`${label} declares "runtimes" as ${JSON.stringify(runtimes)}, which is not a list: ${fix}.`];
+  if (runtimes.length === 0) return [`${label} declares an empty "runtimes", which names no runtime: ${fix}.`];
+  const unknown = runtimes.filter((runtime) => !runtimeNames.includes(runtime));
+  if (unknown.length === 0) return [];
+  const names = unknown.map((runtime) => JSON.stringify(runtime)).join(", ");
+  return [`${label} names the runtime${unknown.length > 1 ? "s" : ""} ${names} in its "runtimes", which the capability matrix does not hold: its runtimes are ${runtimeNames.map((runtime) => JSON.stringify(runtime)).join(", ")}.`];
+}
+
+// ADR-002 §6 — an unscoped fragment has a body for every runtime key whose texts carry its slot,
+// and none for a key whose texts do not.
+function unscopedBodyFaults(label, fragment, carriers) {
+  const faults = [];
+  for (const runtime of carriers) {
+    if (!fragment.bodies.has(runtime)) faults.push(`${label} has no ${runtime} body for the slot "${fragment.slot}", which the ${runtime} text of ${fragment.target} carries.`);
+  }
+  for (const [runtime, body] of fragment.bodies) {
+    if (!carriers.includes(runtime)) {
+      faults.push(`${label} has a ${runtime} body for the slot "${fragment.slot}", which no ${runtime} text of ${fragment.target} carries.`);
+    } else if (body == null) {
+      faults.push(`${label}: ${fragment.problems?.get(runtime) ?? `its ${runtime} body cannot be read`}.`);
+    }
+  }
+  return faults;
+}
+
+// 198/ADR-001 §2 — the body rule for a scoped fragment. A runtime it names renders the member from
+// its own authored text when it has one, and from the common source otherwise; the rule of
+// ADR-002 §6 runs over those keys alone, and a body under any other key is a contradiction.
+function scopedBodyFaults(label, fragment, member) {
+  const named = fragment.runtimes;
+  const keys = new Set(named.map((runtime) => (member.texts.has(runtime) ? runtime : COMMON)));
+  const carriers = runtimesCarrying(member, fragment.slot).filter((key) => keys.has(key));
+  const slot = `the slot "${fragment.slot}"`;
+  if (carriers.length === 0) {
+    return [`${label} is for ${joinAnd(named)}, but no text ${joinAnd(named)} ${named.length > 1 ? "render" : "renders"} of ${fragment.target} carries ${slot}.`];
+  }
+  const faults = [];
+  for (const key of carriers) {
+    if (!fragment.bodies.has(key)) faults.push(`${label} has no ${key} body for ${slot}, which the ${key} text of ${fragment.target} carries.`);
+  }
+  for (const [key, body] of fragment.bodies) {
+    if (key !== COMMON && !named.includes(key)) {
+      faults.push(`${label} has a ${key} body for ${slot}, but it does not name "${key}" in its runtimes (${JSON.stringify(named)}): a runtime it does not name needs no body. Remove the body, or add "${key}" to its runtimes.`);
+    } else if (key === COMMON && !keys.has(COMMON)) {
+      faults.push(`${label} has a common body for ${slot}, which no runtime it names renders: ${joinAnd(named)} ${named.length > 1 ? "render" : "renders"} ${fragment.target} from ${named.length > 1 ? "their" : "its"} own text. Remove the common body.`);
+    } else if (!carriers.includes(key)) {
+      faults.push(`${label} has a ${key} body for ${slot}, which no ${key} text of ${fragment.target} carries.`);
+    } else if (body == null) {
+      faults.push(`${label}: ${fragment.problems?.get(key) ?? `its ${key} body cannot be read`}.`);
+    }
+  }
+  return faults;
 }
 
 // The faults that stop a load (ADR-002 §6, §7). `practices` carry their `contributor`;
 // `members` map `<kind>:<id>` to `{ contributor, texts: Map<runtimeKey, string[]> }`; `fragments`
 // carry `contributor` and `bodies: Map<runtimeKey, string | null>` (null: the file or section is
 // missing, with `problems` saying which). Every fault names what failed and the package it came from.
-export function contributionFaults({ practices = [], members = new Map(), fragments = [] }) {
+// `runtimeNames` are the capability matrix's runtimes, which a fragment's `runtimes` must name
+// (198/ADR-001 §1); the loader hands them in, so this module imports nothing.
+export function contributionFaults({ practices = [], members = new Map(), fragments = [], runtimeNames = [] }) {
   const faults = [];
   const practiceIds = new Set();
   for (const practice of practices) {
@@ -157,15 +225,11 @@ export function contributionFaults({ practices = [], members = new Map(), fragme
       faults.push(`${label} names the slot "${fragment.slot}", which no text of ${fragment.target} carries.`);
       continue;
     }
-    for (const runtime of carriers) {
-      if (!fragment.bodies.has(runtime)) faults.push(`${label} has no ${runtime} body for the slot "${fragment.slot}", which the ${runtime} text of ${fragment.target} carries.`);
-    }
-    for (const [runtime, body] of fragment.bodies) {
-      if (!carriers.includes(runtime)) {
-        faults.push(`${label} has a ${runtime} body for the slot "${fragment.slot}", which no ${runtime} text of ${fragment.target} carries.`);
-      } else if (body == null) {
-        faults.push(`${label}: ${fragment.problems?.get(runtime) ?? `its ${runtime} body cannot be read`}.`);
-      }
+    if (isScoped(fragment)) {
+      const listFaults = runtimesListFaults(label, fragment.runtimes, runtimeNames);
+      faults.push(...(listFaults.length > 0 ? listFaults : scopedBodyFaults(label, fragment, member)));
+    } else {
+      faults.push(...unscopedBodyFaults(label, fragment, carriers));
     }
     if (fragment.replaces != null) {
       const other = byId.get(fragment.replaces);
@@ -241,11 +305,34 @@ export function memberSlotGaps(target, member) {
 // Each of these takes the answer `practiceStates` gave, so the list, the record and the doctor's
 // comparison can never decide "on" a second way (ADR-003 §3).
 
-// ADR-007 §1 — the declared practices, in declared order, each with whether it is on.
-export function practiceList(practices, states) {
+// ADR-007 §1 — the declared practices, in declared order, each with whether it is on. 198/ADR-001 §5
+// — a practice `runtimes` names (see `practiceRuntimes`) carries them; any other carries no field.
+export function practiceList(practices, states, runtimes = new Map()) {
   return (practices ?? []).map(({ id, title, summary, keys }) => ({
     id, title: title ?? id, summary: summary ?? "", keys: [...(keys ?? [])], on: states.get(id) === true,
+    ...(runtimes.has(id) ? { runtimes: [...runtimes.get(id)] } : {}),
   }));
+}
+
+// 198/ADR-001 §5 — the runtimes each scoped practice reaches: a practice with at least one fragment,
+// whose every fragment declares `runtimes` and which ships no template variant (a template reaches
+// every runtime). The union of its fragments' runtimes, in `order` (the capability matrix's).
+export function practiceRuntimes(members, order = []) {
+  const byPractice = new Map();
+  for (const member of members ?? []) {
+    if (member.practice == null || (member.kind !== "fragment" && member.kind !== "template-variant")) continue;
+    const entry = byPractice.get(member.practice) ?? { scoped: true, runtimes: new Set(), fragments: 0 };
+    if (member.kind === "template-variant" || !Array.isArray(member.runtimes)) entry.scoped = false;
+    else {
+      entry.fragments += 1;
+      for (const runtime of member.runtimes) entry.runtimes.add(runtime);
+    }
+    byPractice.set(member.practice, entry);
+  }
+  const rank = (runtime) => (order.includes(runtime) ? order.indexOf(runtime) : order.length);
+  return new Map([...byPractice]
+    .filter(([, entry]) => entry.scoped && entry.fragments > 0)
+    .map(([id, entry]) => [id, [...entry.runtimes].sort((a, b) => rank(a) - rank(b))]));
 }
 
 // ADR-006 §1 — the record a render writes into the lock's `work` section: one boolean per id.
@@ -271,6 +358,7 @@ export function practiceTargets(members) {
 
 export const PRACTICE_RENDER_STALE = "practice-render-stale";
 export const PRACTICE_RENDER_UNRECORDED = "practice-render-unrecorded";
+export const PRACTICE_NO_EFFECT = "practice-no-effect";
 const RUN_UPDATE = "Run `aof work update`.";
 
 // "a", "a and b", "a, b and c".
@@ -298,12 +386,28 @@ export function targetPhrase(targets) {
   return phrases.length === 0 ? "the rendered commands" : joinAnd(phrases);
 }
 
+// 198/ADR-001 §5 — a practice that is on, whose prose is for runtimes none of which this project
+// renders (`runtimes`: the ones its lock records), has no effect here. One warning per practice.
+function noEffectFindings(facts, anchor) {
+  const project = Array.isArray(facts.runtimes) ? facts.runtimes : [];
+  return (facts.practices ?? [])
+    .filter((practice) => practice.on === true && Array.isArray(practice.runtimes) && practice.runtimes.length > 0)
+    .filter((practice) => !practice.runtimes.some((runtime) => project.includes(runtime)))
+    .map((practice) => ({
+      code: PRACTICE_NO_EFFECT,
+      severity: "warn",
+      path: anchor,
+      message: `practice "${practice.id}" is on, but its prose is for ${joinAnd(practice.runtimes)} alone, and this project renders ${joinAnd(project)}: it reaches none of the runtimes this project renders, so it has no effect here. Turn it off, or install this project for ${practice.runtimes.length > 1 ? "one of them" : practice.runtimes[0]} as well.`,
+    }));
+}
+
 // ADR-006 §2, §3 — the lane's judgement, a pure function of the facts core read at the doctor's edge:
-//   { installed, recorded, practices: [{ id, keys, on, targets }] }
+//   { installed, recorded, runtimes, practices: [{ id, keys, on, targets, runtimes? }] }
 // `installed` false (no `work` section) is no install to judge; `recorded` null is an install that
 // predates the record, told once; otherwise each DECLARED practice is compared with the record, a
 // practice the record does not name counting as rendered off. Every finding is anchored at `anchor`
-// (the work directory), so a scoped doctor run reports it once.
+// (the work directory), so a scoped doctor run reports it once. 198/ADR-001 §5 — an on practice that
+// reaches none of the project's runtimes is told too, whether or not the install has a record.
 export function practiceRenderFindings(facts, anchor) {
   if (facts == null || facts.installed !== true) return [];
   const findings = [];
@@ -314,7 +418,7 @@ export function practiceRenderFindings(facts, anchor) {
       path: anchor,
       message: "this install does not record which practices its commands were rendered with (it was rendered before aof recorded them), so the doctor cannot tell whether a practice key has changed since. " + RUN_UPDATE,
     });
-    return findings;
+    return [...findings, ...noEffectFindings(facts, anchor)];
   }
   for (const practice of facts.practices ?? []) {
     const rendered = facts.recorded[practice.id] === true;
@@ -337,5 +441,5 @@ export function practiceRenderFindings(facts, anchor) {
         message: `practice "${practice.id}" is off (${keys} ${plural ? "are not all" : "is not"} true in .aof/aof.config.json), but the commands still hold its prose: ${where} were rendered with it on. ${RUN_UPDATE}`,
       });
   }
-  return findings;
+  return [...findings, ...noEffectFindings(facts, anchor)];
 }

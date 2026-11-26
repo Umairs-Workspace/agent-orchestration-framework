@@ -25,6 +25,8 @@ import { readAssetText } from "../src/asset-base.mjs";
 import { loadBundle, readDescriptor, renderBundleOutputs, renderBundleTemplateOutputs } from "../src/work/bundle.mjs";
 import { generateBundleManifest, readShippedManifest, serializeBundleManifest } from "../src/work/bundle-manifest.mjs";
 import { composeText, practiceStates, slotOnLine } from "../src/work/bundle-compose.mjs";
+import { resolveBundleVariant } from "../src/work/bundle-runtime.mjs";
+import { DEFAULT_DELEGATION_MODEL, applyDelegationModelToResources } from "../src/work/delegation.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -524,7 +526,9 @@ const referenceTests = [
         });
         const doc = { practices: specimen.practices ?? [], members: [...twins.values(), ...members] };
         const loaded = fixtureLoad([{ name: PLANTED, fragment: doc, files }]).load(practiceOn(doc.practices));
-        for (const twin of twins.keys()) assert.match(resource(loaded, twin).body, /Specimen body\./u, `the specimen fills ${twin}`);
+        // Resolved for Claude, the runtime every twin renders: a runtime-scoped specimen (198/00) fills
+        // only its own runtimes' text, so the body no runtime resolved holds none of it.
+        for (const twin of twins.keys()) assert.match(resolveBundleVariant(resource(loaded, twin), "claude").body, /Specimen body\./u, `the specimen fills ${twin}`);
       }
     },
   },
@@ -679,4 +683,282 @@ const variantReferenceTests = [
   },
 ];
 
-export const bundleComposeTests = [...slotTests, ...orderTests, ...runtimeTests, ...refusalTests, ...referenceTests, ...variantTests, ...variantReferenceTests];
+// --- 198/00 — a fragment names the runtimes it is for --------------------------------------------
+//
+// Covers the @executable scenarios of milestone 198 / story 00's
+//   tasks/00_a-fragment-names-the-runtimes-it-is-for.feature   (R1; FF-19801 is in test/arch/practices)
+//   tasks/01_a-scoped-fragment-lands-only-where-it-is-for.feature (R2, R3; FF-19802 likewise)
+//   tasks/03_the-reference-says-how-to-scope-a-fragment.feature
+// on 192/00's fixture, where "the Claude-only fragment" is "notes-demo" declared with
+// "runtimes": ["claude"], a common body "Use the Artifact tool." and no Codex body.
+
+export const ARTIFACT = "Use the Artifact tool.";
+export const SCOPED_FILES = {
+  ...BASE_FILES,
+  "fragments/notes/claude.md": `${ARTIFACT}\n`,
+  "fragments/notes/claude.codex.md": `${ARTIFACT}\n`,
+  "one.md": "Note one.\n",
+  "alpha.md": "Alpha.\n",
+  "alpha-plus.md": "Alpha plus.\n",
+};
+
+// The base fixture with "notes-demo" made the Claude-only fragment. `plant(doc, notesDemo)` edits the
+// package's descriptor before it is handed in; `files` adds to or replaces its texts.
+export function scopedFixture(plant = () => {}, files = {}) {
+  const doc = baseFragment();
+  const notes = doc.members.find((member) => member.id === "notes-demo");
+  notes.runtimes = ["claude"];
+  notes.file = "fragments/notes/claude.md";
+  delete notes.variants;
+  plant(doc, notes);
+  return fixtureLoad([{ name: FIRST, fragment: doc, files: { ...SCOPED_FILES, ...files } }]);
+}
+// The same fixture with the Claude-only fragment deleted from its descriptor.
+export const withoutScoped = () => scopedFixture((doc) => { doc.members = doc.members.filter((member) => member.id !== "notes-demo"); });
+
+const ALL = ["claude", "opencode", "codex"];
+const NOTES_ON = { work: { notes: { enabled: true } } };
+const RENDERED = Object.freeze({
+  claudeCommand: ".claude/commands/aof/demo.md",
+  opencodeCommand: ".opencode/commands/aof/demo.md",
+  claudeAgent: ".claude/agents/aof-demo.md",
+  opencodeAgent: ".opencode/agents/aof-demo.md",
+  codexAgent: ".codex/agents/aof-demo.toml",
+});
+const codexSkillFiles = (rendered) => [...rendered].filter(([file]) => file.startsWith(".agents/skills/aof-demo/"));
+function refusal(load) {
+  try {
+    load();
+  } catch (error) {
+    return error.message;
+  }
+  return assert.fail("the load is refused");
+}
+const assertNames = (message, ...names) => { for (const name of names) assert.ok(message.includes(name), `the refusal names ${name}: ${message}`); };
+const t198 = (task, name, run) => ({ name: `198/00 task ${task} · ${name}`, run });
+
+// ── task 00 — the field and its load rule ────────────────────────────────────────────────────
+
+const scopedLoadTests = [
+  t198("00", "E1 · a Claude-only fragment needs no Codex body", () => {
+    assert.ok(CODEX_VARIANTS.includes("<!-- variant:procedure-demo -->\nBefore.\n\n<!-- slot:demo.notes -->"), "the Codex procedure of demo carries the slot");
+    const bundle = scopedFixture().load(NOTES_ON);
+    assert.ok(resource(bundle, "demo"), "the load succeeds");
+  }),
+  t198("00", "E2 · a body for a runtime the fragment does not name is refused", () => {
+    const message = refusal(() => scopedFixture((doc, notes) => { notes.variants = { codex: { file: "fragments/notes/claude.codex.md" } }; }).load());
+    assertNames(message, '"notes-demo"', FIRST, "codex", '"demo.notes"', 'does not name "codex" in its runtimes');
+  }),
+  t198("00", "E3 · a runtime name outside the capability matrix is refused", () => {
+    const message = refusal(() => scopedFixture((doc, notes) => { notes.runtimes = ["claud"]; }).load());
+    assertNames(message, '"notes-demo"', '"claud"', '"claude", "codex", "opencode"');
+  }),
+  ...[
+    ['"runtimes": []', [], {}, "names no runtime"],
+    ['"runtimes": "claude"', "claude", {}, "which is not a list"],
+    ['"runtimes": ["codex"]', ["codex"], { variants: { codex: { file: "fragments/notes/claude.codex.md" } } }, "has a common body for the slot \"demo.notes\", which no runtime it names renders"],
+  ].map(([label, runtimes, bodies, named]) => t198("00", `each list that contradicts the fragment's bodies or slot is refused — ${label}`, () => {
+    const message = refusal(() => scopedFixture((doc, notes) => Object.assign(notes, { runtimes }, bodies)).load());
+    assertNames(message, '"notes-demo"', named);
+  })),
+  t198("00", "a scoped fragment whose named runtimes carry none of its slot is refused", () => {
+    const message = refusal(() => scopedFixture((doc) => {
+      const entry = doc.members.find((member) => member.id === "notes-entry");
+      Object.assign(entry, { runtimes: ["claude"], file: "fragments/notes/claude.md" });
+      delete entry.variants;
+    }).load());
+    assertNames(message, '"notes-entry"', '"entry.rules"', "no text claude renders of command:demo carries the slot");
+  }),
+  t198("00", "a scoped fragment still needs a body for each runtime it names whose text carries the slot", () => {
+    const message = refusal(() => scopedFixture((doc, notes) => { notes.runtimes = ["claude", "codex"]; }).load());
+    assertNames(message, '"notes-demo"', "has no codex body", '"demo.notes"');
+  }),
+  t198("00", "a runtime it names that renders from the common source takes the common body", () => {
+    const bundle = scopedFixture((doc, notes) => { notes.runtimes = ["opencode"]; }).load(NOTES_ON);
+    assert.ok(renderOf(bundle, ["opencode"], "demo").get(RENDERED.opencodeCommand).includes(ARTIFACT), "OpenCode's command holds the common body");
+  }),
+  t198("00", "an unscoped fragment is held to 192's rule, unchanged", () => {
+    const message = refusal(() => scopedFixture((doc, notes) => { delete notes.runtimes; }).load());
+    assertNames(message, `Fragment "notes-demo" contributed by ${FIRST} has no codex body for the slot "demo.notes", which the codex text of command:demo carries.`);
+  }),
+  t198("00", "the rule that a common slot is in every authored variant is unchanged", () => {
+    const message = refusal(() => scopedFixture((doc) => {
+      doc.members.push(fragment("notes-extra", "notes", "demo.extra", { file: "fragments/notes/claude.md" }, { runtimes: ["claude"] }));
+    }, { "commands/demo.md": DEMO_SOURCE.replace("After.", "After.\n\n<!-- slot:demo.extra -->") }).load());
+    assertNames(message, '"command:demo"', '"demo.extra"', "not in its codex text");
+  }),
+];
+
+// ── task 01 — a scoped fragment lands only where it is for ───────────────────────────────────
+
+const noMarkerIn = (rendered) => { for (const [file, content] of rendered) noMarker(content, file); };
+
+const scopedRenderTests = [
+  t198("01", "E4 · Claude's command holds the prose, and OpenCode's and Codex's do not", () => {
+    const rendered = renderOf(scopedFixture().load(NOTES_ON), ALL, "demo");
+    assert.ok(rendered.get(RENDERED.claudeCommand).includes(ARTIFACT), "the Claude command holds it");
+    assert.ok(!rendered.get(RENDERED.opencodeCommand).includes(ARTIFACT), "the OpenCode command does not");
+    const skill = codexSkillFiles(rendered);
+    assert.ok(skill.length > 0, "the Codex skill is rendered");
+    for (const [file, content] of skill) assert.ok(!content.includes(ARTIFACT), `${file} does not hold it`);
+    noMarkerIn(rendered);
+  }),
+  t198("01", "E5 · a scoped and an unscoped fragment share one slot", () => {
+    const bundle = scopedFixture((doc) => {
+      const at = doc.members.findIndex((member) => member.id === "notes-demo");
+      doc.members.splice(at, 0, fragment("notes-one", "notes", "demo.notes", { file: "one.md", variants: { codex: { file: "one.md" } } }));
+    }).load(NOTES_ON);
+    const rendered = renderOf(bundle, ["claude", "opencode"], "demo");
+    assert.ok(rendered.get(RENDERED.claudeCommand).includes(`Note one.\n\n${ARTIFACT}`), rendered.get(RENDERED.claudeCommand));
+    const opencode = rendered.get(RENDERED.opencodeCommand);
+    assert.ok(opencode.includes("Before.\n\nNote one.\n\nAfter."), opencode);
+    assert.ok(!opencode.includes(ARTIFACT), opencode);
+  }),
+  t198("01", "E6 · a scoped replacer replaces only in its own runtimes", () => {
+    const bundle = scopedFixture((doc) => {
+      doc.practices.push(notesPractice(["work.plus.enabled"], "plus"));
+      doc.members = doc.members.filter((member) => member.id !== "notes-demo");
+      doc.members.push(
+        fragment("alpha", "notes", "demo.notes", { file: "alpha.md", variants: { codex: { file: "alpha.md" } } }),
+        fragment("alpha-plus", "plus", "demo.notes", { file: "alpha-plus.md" }, { runtimes: ["claude"], replaces: "alpha" }),
+      );
+    }).load({ work: { notes: { enabled: true }, plus: { enabled: true } } });
+    const rendered = renderOf(bundle, ALL, "demo");
+    const claude = rendered.get(RENDERED.claudeCommand);
+    assert.ok(claude.includes("Alpha plus.") && !claude.includes("Alpha.\n"), claude);
+    const procedure = rendered.get(".agents/skills/aof-demo/procedure.md");
+    for (const [where, text] of [["OpenCode", rendered.get(RENDERED.opencodeCommand)], ["Codex", procedure]]) {
+      assert.ok(text.includes("Alpha.") && !text.includes("Alpha plus."), `${where}: ${text}`);
+    }
+  }),
+  ...[
+    [["claude"], [RENDERED.claudeAgent], [RENDERED.opencodeAgent, RENDERED.codexAgent]],
+    [["opencode"], [RENDERED.opencodeAgent], [RENDERED.claudeAgent, RENDERED.codexAgent]],
+    [["codex"], [RENDERED.codexAgent], [RENDERED.claudeAgent, RENDERED.opencodeAgent]],
+    [["claude", "codex"], [RENDERED.claudeAgent, RENDERED.codexAgent], [RENDERED.opencodeAgent]],
+  ].map(([runtimes, holds, lacks]) => t198("01", `an agent brief's scoped prose lands on its own runtimes alone — "runtimes": ${JSON.stringify(runtimes)}`, () => {
+    const bundle = scopedFixture((doc) => {
+      const agent = doc.members.find((member) => member.id === "notes-agent");
+      agent.runtimes = runtimes;
+      delete agent.file;
+      delete agent.variants;
+      if (runtimes.some((runtime) => runtime !== "codex")) agent.file = "fragments/notes/claude.md";
+      if (runtimes.includes("codex")) agent.variants = { codex: { file: "fragments/notes/claude.codex.md" } };
+    }).load(NOTES_ON);
+    const rendered = renderOf(bundle, ALL, "aof-demo");
+    for (const file of holds) assert.ok(rendered.get(file).includes(ARTIFACT), `${file} holds the body`);
+    for (const file of lacks) assert.ok(!rendered.get(file).includes(ARTIFACT), `${file} does not hold the body`);
+  })),
+  t198("01", "an inline slot the Claude-only fragment does not fill for OpenCode removes only its own line there", () => {
+    const inline = "---\ndescription: Demo\n---\nBefore.\n<!-- slot:demo.notes -->\nAfter.\n";
+    const rendered = renderOf(scopedFixture(() => {}, { "commands/demo.md": inline }).load(NOTES_ON), ["claude", "opencode"], "demo");
+    assert.ok(rendered.get(RENDERED.opencodeCommand).includes("Before.\nAfter.\n"), rendered.get(RENDERED.opencodeCommand));
+    assert.ok(rendered.get(RENDERED.claudeCommand).includes(`Before.\n${ARTIFACT}\nAfter.\n`), rendered.get(RENDERED.claudeCommand));
+  }),
+  t198("01", "a rendered Codex skill is unchanged by a Claude-only fragment", () => {
+    const withIt = renderOf(scopedFixture().load(NOTES_ON), ["codex"], "demo", "aof-demo");
+    const without = renderOf(withoutScoped().load(NOTES_ON), ["codex"], "demo", "aof-demo");
+    assert.deepEqual([...withIt], [...without]);
+  }),
+  t198("01", "the bundle a reader loads carries no runtime's prose into another's", () => {
+    const bundle = scopedFixture().load(NOTES_ON);
+    assert.ok(resource(bundle, "demo").commonBodies, "the demo command's common body differs by runtime, so the case is not vacuous");
+    assert.ok(!resource(bundle, "demo").body.includes(ARTIFACT), "the body no runtime resolved holds none of it");
+    for (const entry of bundle.resources) {
+      if (entry.runtimeVariants && !Object.hasOwn(entry.runtimeVariants, "opencode")) continue;
+      const resolved = resolveBundleVariant(entry, "opencode");
+      for (const text of [resolved.body, ...(resolved.associatedFiles ?? []).map((attachment) => attachment.content)]) {
+        assert.ok(!String(text).includes(ARTIFACT), `${entry.kind}:${entry.id} resolved for opencode holds no Claude-only prose`);
+      }
+    }
+  }),
+  t198("01", "a configured delegation model reaches each runtime's own common body", () => {
+    const source = DEMO_SOURCE.replace("After.", `Delegate with -m ${DEFAULT_DELEGATION_MODEL}.`);
+    const [demo] = applyDelegationModelToResources(only(scopedFixture(() => {}, { "commands/demo.md": source }).load(NOTES_ON), "demo").resources, "gpt-other");
+    assert.ok(demo.commonBodies, "the case has a per-runtime common body");
+    for (const runtime of ["claude", "opencode"]) {
+      const body = resolveBundleVariant(demo, runtime).body;
+      assert.ok(body.includes("-m gpt-other.") && !body.includes(DEFAULT_DELEGATION_MODEL), `${runtime}: ${body}`);
+    }
+  }),
+  t198("01", "E7 · a scoped fragment that is off renders as if it were not declared", () => {
+    const members = ["demo", "inline", "aof-demo"];
+    const off = renderOf(scopedFixture().load({}), ALL, ...members);
+    const deleted = renderOf(withoutScoped().load({}), ALL, ...members);
+    assert.deepEqual([...off], [...deleted]);
+  }),
+  t198("01", "E8 · the shipped bundle renders one body for Claude and OpenCode, as it does today", () => {
+    const bundle = loadBundle({ config: { work: { examples: { enabled: true }, plan: { enabled: true } } } });
+    assert.deepEqual(bundle.resources.filter((entry) => entry.commonBodies).map((entry) => entry.id), [], "no shipped resource has a per-runtime common body");
+    for (const [kind, id] of [["command", "refine"], ["command", "verify"], ["agent", "aof-designer"]]) {
+      const shipped = bundle.resources.find((entry) => entry.kind === kind && entry.id === id);
+      assert.equal(resolveBundleVariant(shipped, "claude").body, resolveBundleVariant(shipped, "opencode").body, `${kind}:${id}`);
+    }
+  }),
+  ...[["on", NOTES_ON, lines("Before.", "", "Note one.", "Note two.", "", "After.")], ["off", {}, lines("Before.", "", "After.")]].map(([state, config, composed]) => t198("01", `unscoped fragments still compose one common body for every runtime that renders it — ${state}`, () => {
+    const demo = resource(baseFixture().load(config), "demo");
+    assert.equal(demo.commonBodies, undefined);
+    assert.equal(resolveBundleVariant(demo, "claude").body, resolveBundleVariant(demo, "opencode").body);
+    assert.equal(demo.body, composed, "the body 192's composer renders for the same fixture");
+  })),
+];
+
+// ── task 03 — the reference says how to scope a fragment ─────────────────────────────────────
+
+const flat = () => page().replace(/\s+/gu, " ");
+const SCOPED_QUESTIONS = [
+  ['how a fragment names its runtimes with "runtimes", with one written out', /"kind": "fragment"[^}]*"runtimes": \["claude"\]/u],
+  ['that leaving "runtimes" out means every runtime, as before', /Leaving `runtimes` out means every runtime, as before/u],
+  ["that a scoped fragment needs a body only for the runtimes it names, and that a body for any other is refused", /needs a body only for the runtimes it names; a body for any other is refused/u],
+  ["that a runtime it names takes the common body when that runtime renders the member's common source", /A runtime it names takes the common body \(`file`\) when it renders the member's common source/u],
+  ["that OpenCode and Claude Code are given different texts when a scoped fragment is on for only one of them", /Claude Code and OpenCode, which share one common source, are given different texts while a scoped fragment is on for only one of them/u],
+  ["that a scoped replacer replaces only in its own runtimes", /scoped replacer replaces only in its own runtimes/u],
+  ["that the practice list names the runtimes of a practice whose fragments are all scoped", /`aof work update` names the runtimes of a practice whose fragments are all scoped/u],
+];
+const refusedSection = () => {
+  const text = page();
+  const start = text.search(/^## .*refused at load/mu);
+  assert.ok(start !== -1, "the page has a section on what is refused at load");
+  const rest = text.slice(start + 3);
+  return rest.slice(0, rest.search(/^## /mu)).replace(/\s+/gu, " ");
+};
+
+const scopedReferenceTests = [
+  ...SCOPED_QUESTIONS.map(([answer, pattern]) => t198("03", `the page answers each question about a scoped fragment — ${answer}`, () => assert.match(flat(), pattern))),
+  t198("03", "the page's refusals list names the scoped fragment's refusals", () => {
+    const section = refusedSection();
+    for (const pattern of [/a runtime outside the capability matrix/u, /an empty list/u, /a body for a runtime it does not name/u]) assert.match(section, pattern);
+  }),
+  t198("03", "the scoped specimen on the page is one the loader accepts", () => {
+    const found = specimens(page()).filter((doc) => (doc.members ?? []).some((member) => member.runtimes));
+    assert.ok(found.length > 0, "the page holds a scoped fragment specimen");
+    for (const specimen of found) {
+      const files = {};
+      const twins = [];
+      const members = specimen.members.filter((member) => member.kind === "fragment").map((member) => {
+        const twin = `specimen-${member.target.split(":")[1]}`;
+        files[`specimen/${twin}.md`] = `---\ndescription: Specimen\n---\nText.\n\n<!-- slot:${member.slot} -->\n`;
+        for (const body of [member.file, ...Object.values(member.variants ?? {}).map((variant) => variant.file)].filter(Boolean)) files[body] = "Specimen body.\n";
+        twins.push({ id: twin, kind: "command", file: `specimen/${twin}.md`, runtimes: ["claude", "opencode"], commandNamespace: "aof" });
+        return { ...member, target: `command:${twin}` };
+      });
+      const doc = { practices: specimen.practices, members: [...twins, ...members] };
+      const bundle = fixtureLoad([{ name: PLANTED, fragment: doc, files }]).load(practiceOn(doc.practices));
+      for (const [index, twin] of twins.entries()) {
+        const rendered = renderOf(bundle, ALL, twin.id);
+        const paths = { claude: `.claude/commands/aof/${twin.id}.md`, opencode: `.opencode/commands/aof/${twin.id}.md`, codex: `.agents/skills/aof-${twin.id}/SKILL.md` };
+        for (const runtime of ALL) {
+          const holds = rendered.get(paths[runtime]).includes("Specimen body.");
+          assert.equal(holds, members[index].runtimes.includes(runtime), `${runtime}'s render ${holds ? "holds" : "lacks"} the specimen's body`);
+        }
+      }
+    }
+  }),
+  t198("03", "the page stays within its budget", () => {
+    const count = page().split("\n").length;
+    assert.ok(count <= 150, `at most 150 lines (has ${count})`);
+    assert.doesNotMatch(page(), /^#+\s*Alternatives/imu, "no Alternatives section");
+  }),
+];
+
+export const bundleComposeTests = [...slotTests, ...orderTests, ...runtimeTests, ...refusalTests, ...referenceTests, ...variantTests, ...variantReferenceTests, ...scopedLoadTests, ...scopedRenderTests, ...scopedReferenceTests];

@@ -331,22 +331,37 @@ function fragmentBodies(fragment, readText, cache) {
 
 // 192/ADR-001 §3, §4 + ADR-002 §6 — refuse a contribution that cannot land, then fill every slot of
 // every text with the bodies of the fragments that are on for `config`, in declared order.
+//
+// 198/ADR-001 §4 — the common source is filled once for each runtime that renders it (every
+// runtime of the matrix without an authored variant of the member), with that runtime's own
+// selection. When every runtime's fill is the same, as it always is with no runtime-scoped fragment
+// on, `body` is that one text, byte-for-byte today's. When they differ, `commonBodies` holds each
+// runtime's, which `resolveBundleVariant` picks, and `body` is the fill with no scoped fragment in
+// it, so a reader that never resolves a runtime is handed no runtime's own prose.
 function composeResources(resources, authored, descriptor, { config, readText }) {
   const cache = new Map();
+  const runtimeNames = Object.keys(RUNTIMES);
   const members = new Map(resources.map((resource) => [`${resource.kind}:${resource.id}`, { resource, contributor: contributorOf(descriptor.members.find((member) => member.id === resource.id) ?? {}), texts: resourceTexts(resource, authored.get(resource)) }]));
   const fragments = descriptor.members.filter((member) => member.kind === "fragment").map((member) => ({
     ...member, contributor: contributorOf(member), ...fragmentBodies(member, readText, cache),
   }));
-  const faults = contributionFaults({ practices: descriptor.practices ?? [], members, fragments });
+  const faults = contributionFaults({ practices: descriptor.practices ?? [], members, fragments, runtimeNames });
   if (faults.length > 0) throw new Error(faults.join("\n"));
   const states = practiceStates(descriptor.practices ?? [], config);
   for (const [target, { resource }] of members) {
-    const fill = (runtime) => (text) => composeText(text, (slot) => selectFragments(fragments, states, { target, slot }).map((fragment) => fragment.bodies.get(runtime)));
-    resource.body = fill(COMMON)(resource.body);
-    for (const runtime of authored.get(resource) ?? []) {
+    const fill = (key, runtime) => (text) => composeText(text, (slot) => selectFragments(fragments, states, { target, slot, runtime }).map((fragment) => fragment.bodies.get(key)));
+    const own = authored.get(resource) ?? [];
+    const common = resource.body;
+    const filled = runtimeNames.filter((runtime) => !own.includes(runtime)).map((runtime) => [runtime, fill(COMMON, runtime)(common)]);
+    if (filled.length > 0 && filled.every(([, body]) => body === filled[0][1])) resource.body = filled[0][1];
+    else {
+      resource.body = fill(COMMON, null)(common);
+      if (filled.length > 0) resource.commonBodies = Object.fromEntries(filled);
+    }
+    for (const runtime of own) {
       const variant = resource.runtimeVariants[runtime];
-      variant.body = fill(runtime)(variant.body);
-      if (variant.associatedFiles) variant.associatedFiles = variant.associatedFiles.map((attachment) => ({ ...attachment, content: fill(runtime)(attachment.content) }));
+      variant.body = fill(runtime, runtime)(variant.body);
+      if (variant.associatedFiles) variant.associatedFiles = variant.associatedFiles.map((attachment) => ({ ...attachment, content: fill(runtime, runtime)(attachment.content) }));
     }
   }
 }

@@ -40,25 +40,10 @@ it on. The keys live here and nowhere else; a fragment names its practice, never
 
 ```json
 {
-  "practices": [
-    {
-      "id": "notes",
-      "title": "Notes",
-      "summary": "Adds a notes beat to refine.",
-      "keys": ["work.notes.enabled"]
-    }
-  ],
-  "members": [
-    {
-      "id": "notes-refine",
-      "kind": "fragment",
-      "practice": "notes",
-      "target": "command:refine",
-      "slot": "contract.notes",
-      "file": "fragments/notes/refine.md",
-      "variants": { "codex": { "file": "fragments/notes/refine.codex.md" } }
-    }
-  ]
+  "practices": [{ "id": "notes", "title": "Notes", "summary": "Adds a notes beat to refine.", "keys": ["work.notes.enabled"] }],
+  "members": [{ "id": "notes-refine", "kind": "fragment", "practice": "notes", "target": "command:refine",
+    "slot": "contract.notes", "file": "fragments/notes/refine.md",
+    "variants": { "codex": { "file": "fragments/notes/refine.codex.md" } } }]
 }
 ```
 
@@ -66,22 +51,17 @@ An id is unique across every package. A practice must name at least one key.
 
 ## 3. Declare a fragment
 
-A fragment is a member of kind `fragment`. It names its `practice`, its `target` as
-`<kind>:<id>` (`command:refine`, `agent:aof-qa`) and its `slot`, as in the specimen above.
-
-Its body lives in its own package, under `assets/`. The convention is
-`fragments/<practice>/<target>.md` for the common body and `<target>.codex.md` for Codex.
-
-- `file` is the common body, used by Claude Code and OpenCode.
-- `variants.codex.file` is the Codex body. A Codex body is written by hand, in that runtime's own
-  wording (the native question tool, not `AskUserQuestion`; `$aof-verify`, not `aof:verify`).
-
-One file may hold several slots' bodies, each under its own line:
+A fragment is a member of kind `fragment` naming its `practice`, its `target` as `<kind>:<id>`
+(`command:refine`, `agent:aof-qa`) and its `slot`, as in the specimen above. Its bodies live in its
+own package, under `assets/`: `file` is the common body (`fragments/<practice>/<target>.md`), used
+by Claude Code and OpenCode, and `variants.codex.file` the Codex body (`<target>.codex.md`).
+A Codex body is written by hand, in that runtime's own wording (the native question tool, not
+`AskUserQuestion`; `$aof-verify`, not `aof:verify`). One file may hold several slots' bodies, each
+under its own line:
 
 ```markdown
 <!-- fragment:contract.notes -->
 The notes beat, as it reads in refine.
-
 <!-- fragment:output.notes -->
   - One indented bullet, kept as written.
 ```
@@ -100,24 +80,45 @@ of its own package, in the same target and slot. When both are on, the replaced 
 the replacer stands at its own position. When the replacer is off, the original renders as if
 nothing replaced it.
 
-## 5. What is refused at load
+## 5. Scope a fragment to its runtimes
+
+A fragment for some runtimes only names them in `runtimes`, from `claude`, `codex` and `opencode`:
+
+```json
+{
+  "practices": [{ "id": "notes", "title": "Notes", "summary": "Adds a notes beat to refine.", "keys": ["work.notes.enabled"] }],
+  "members": [{ "id": "notes-refine-claude", "kind": "fragment", "practice": "notes", "target": "command:refine",
+    "slot": "contract.notes", "runtimes": ["claude"], "file": "fragments/notes/refine.claude.md" }]
+}
+```
+
+Leaving `runtimes` out means every runtime, as before. A scoped fragment needs a body only for the
+runtimes it names; a body for any other is refused. A runtime it names takes the common body
+(`file`) when it renders the member's common source, and its own variant body otherwise. So Claude
+Code and OpenCode, which share one common source, are given different texts while a scoped fragment
+is on for only one of them. A scoped replacer replaces only in its own runtimes. `aof work update`
+names the runtimes of a practice whose fragments are all scoped (`for claude`), and `aof work
+doctor` warns (`practice-no-effect`) when one is on and the project renders none of them.
+
+## 6. What is refused at load
 
 The bundle refuses to load, naming the member and its package, when:
 
 - a fragment names a practice, a target or a slot that nothing declares or carries;
-- a runtime's texts carry the slot and the fragment has no body for that runtime, or the fragment
-  has a body for a runtime whose texts do not carry it;
+- a runtime's texts carry the slot and the fragment has no body for it, or it has a body for a
+  runtime whose texts do not carry it;
+- a scoped fragment's `runtimes` is an empty list, not a list, or names a runtime outside the
+  capability matrix, or the fragment has a body for a runtime it does not name;
 - a body file or its section is missing;
 - a `replaces` names another package's fragment, another slot, or nothing;
 - a practice has no keys, or its id is declared twice;
 - a slot name is repeated in one text, or a common source's slot is missing from a Codex text.
 
-## 6. How a project turns a practice on
+## 7. How a project turns a practice on
 
 A key is on only when it holds the boolean `true` in the project's own config file,
-`.aof/aof.config.json`. `false`, `"true"`, `1`, an object and an absent key are all off. The
-machine-wide config is never asked, because rendered commands are committed and two clones of one
-commit must render the same commands. A practice with several keys is on only when every one is.
+`.aof/aof.config.json`. `false`, `"true"`, `1`, an object and an absent key are all off, and the
+machine-wide config is never asked. A practice with several keys is on only when every one is.
 
 After changing a key, the project runs `aof work update`. It re-renders the commands the change
 touches and reports each `updated`; a command a person has edited is a drift warning, left as is.
@@ -128,7 +129,7 @@ reports a key changed since the last update, naming the key and the commands: `p
 is an error for a practice on but rendered off and a warning the other way round, and an install
 with no record gets one `practice-render-unrecorded` warning. The update clears each.
 
-## 7. Ship a template variant
+## 8. Ship a template variant
 
 A practice that changes a document's form ships its own version of one template file: a member of
 kind `template-variant` naming its `practice`, the `template`, the file's `name` and its own `file`:

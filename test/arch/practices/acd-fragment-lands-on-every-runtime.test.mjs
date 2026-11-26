@@ -1,7 +1,15 @@
-// FF-19206 — every fragment lands on every runtime (milestone 192 / story 00, ADR-002 §6, §7).
+// FF-19206 — every fragment lands on every runtime (milestone 192 / story 00, ADR-002 §6, §7),
+// amended in place by FF-19801 (milestone 198 / story 00, 198/ADR-001 §1, §2).
 //
-// Covers the FF-19206 scenarios of
+// Covers the FF-19206 scenarios of 192/00's
 //   tasks/02_each-runtime-gets-the-body-written-for-it.feature
+// and the FF-19801 scenarios of 198/00's
+//   tasks/00_a-fragment-names-the-runtimes-it-is-for.feature
+//
+// FF-19801 — a fragment that declares `runtimes` names only runtimes the capability matrix holds,
+// has a body for each runtime it names whose texts carry the slot, and none for a runtime it does
+// not name. A named runtime's texts are its authored variant's, or the common source's when it has
+// none. A fragment that declares no `runtimes` is held to FF-19206's rule, unchanged.
 //
 // For each fragment: its practice, target and slot are declared; each runtime whose texts carry the
 // slot has a body for it. And every slot of a member's common source is in each authored variant's
@@ -10,9 +18,10 @@
 // so it is never empty while the shipped bundle declares no fragment.
 import assert from "node:assert/strict";
 import { readAssetText } from "../../../packages/core/src/asset-base.mjs";
+import { RUNTIMES } from "../../../packages/core/src/model.mjs";
 import { readDescriptor } from "../../../packages/core/src/work/bundle.mjs";
 import { slotsOf } from "../../../packages/core/src/work/bundle-compose.mjs";
-import { BASE_FILES, baseFixture } from "../../../packages/core/test/bundle-compose.suite.mjs";
+import { BASE_FILES, baseFixture, scopedFixture } from "../../../packages/core/test/bundle-compose.suite.mjs";
 
 const COMMON = "common";
 
@@ -38,6 +47,27 @@ function memberTexts(descriptor, readText) {
 
 const carriers = (texts, slot) => [...texts].filter(([, list]) => list.some((text) => slotsOf(text).includes(slot))).map(([runtime]) => runtime);
 
+// FF-19801 — the gaps of a fragment that declares `runtimes`.
+function scopedGaps(fragment, texts, bodies, carrying) {
+  const gap = (runtime, why) => ({ fragment: fragment.id, runtime, slot: fragment.slot, why });
+  const named = fragment.runtimes;
+  if (!Array.isArray(named) || named.length === 0) return [gap("-", "its runtimes are not a non-empty list")];
+  const unknown = named.filter((runtime) => !Object.hasOwn(RUNTIMES, runtime));
+  if (unknown.length > 0) return unknown.map((runtime) => gap(runtime, "the capability matrix holds no such runtime"));
+  const keyOf = (runtime) => (texts.has(runtime) ? runtime : COMMON);
+  const keys = new Set(named.map(keyOf));
+  const gaps = [];
+  if (!carrying.some((key) => keys.has(key))) gaps.push(gap(named.join(", "), "no text the runtimes it names render carries the slot"));
+  for (const runtime of named) {
+    if (carrying.includes(keyOf(runtime)) && !bodies.has(keyOf(runtime))) gaps.push(gap(runtime, `it names ${runtime}, whose text carries the slot, and has no ${keyOf(runtime)} body`));
+  }
+  for (const key of bodies) {
+    if (key !== COMMON && !named.includes(key)) gaps.push(gap(key, `it has a ${key} body and does not name ${key}`));
+    else if (key === COMMON && !keys.has(COMMON)) gaps.push(gap(COMMON, "it has a common body that no runtime it names renders"));
+  }
+  return gaps;
+}
+
 // Each gap, named by fragment, runtime and slot.
 export function landingGaps({ descriptor, readText }) {
   const members = memberTexts(descriptor, readText);
@@ -54,7 +84,8 @@ export function landingGaps({ descriptor, readText }) {
     }
     const carrying = carriers(texts, fragment.slot);
     if (carrying.length === 0) gaps.push({ fragment: fragment.id, runtime: "-", slot: fragment.slot, why: `no text of ${fragment.target} carries the slot` });
-    for (const runtime of carrying) if (!bodies.has(runtime)) gaps.push({ fragment: fragment.id, runtime, slot: fragment.slot, why: `the ${runtime} text carries the slot and the fragment has no ${runtime} body` });
+    else if (fragment.runtimes !== undefined) gaps.push(...scopedGaps(fragment, texts, bodies, carrying));
+    else for (const runtime of carrying) if (!bodies.has(runtime)) gaps.push({ fragment: fragment.id, runtime, slot: fragment.slot, why: `the ${runtime} text carries the slot and the fragment has no ${runtime} body` });
   }
   for (const [target, texts] of members) {
     const common = new Set((texts.get(COMMON) ?? []).flatMap(slotsOf));
@@ -75,6 +106,11 @@ const describe = (gaps) => gaps.map(({ fragment, runtime, slot, why }) => `fragm
 const assertLands = (gaps, what) => assert.deepEqual(gaps, [], `${what}: ${describe(gaps)}`);
 
 const shipped = () => ({ descriptor: readDescriptor(), readText: readAssetText });
+// FF-19801's fixture leg: 192/00's fixture with the Claude-only fragment ("notes-demo").
+const scoped = (plant = () => {}) => {
+  const load = scopedFixture(plant);
+  return { descriptor: load.descriptor(), readText: load.readText };
+};
 const fixture = (files = BASE_FILES, mutate = () => {}) => {
   const load = baseFixture({ files: { ...files } });
   const descriptor = load.descriptor();
@@ -95,6 +131,30 @@ export const archTests = [
       assertLands(landingGaps(subject), "the fixture bundle");
     },
   },
+  {
+    name: "arch/198 FF-19801 · a scoped fragment names real runtimes and has a body for exactly those that carry its slot — over the shipped bundle and a fixture bundle that declares a Claude-only fragment",
+    run: () => {
+      assertLands(landingGaps(shipped()), "the shipped bundle");
+      const subject = scoped();
+      assert.ok(subject.descriptor.members.some((member) => member.kind === "fragment" && Array.isArray(member.runtimes)), "the fixture declares a scoped fragment, so the scoped leg is never empty");
+      assertLands(landingGaps(subject), "the fixture bundle");
+    },
+  },
+  ...[
+    ["a Claude-only fragment given a Codex body",
+      () => scoped((doc, notes) => { notes.variants = { codex: { file: "fragments/notes/claude.codex.md" } }; }), { fragment: "notes-demo", runtime: "codex", slot: "demo.notes" }],
+    ['a fragment naming the runtime "claud"',
+      () => scoped((doc, notes) => { notes.runtimes = ["claud"]; }), { fragment: "notes-demo", runtime: "claud", slot: "demo.notes" }],
+    ['a fragment naming "claude" and "codex" with no Codex body, for a slot Codex carries',
+      () => scoped((doc, notes) => { notes.runtimes = ["claude", "codex"]; }), { fragment: "notes-demo", runtime: "codex", slot: "demo.notes" }],
+  ].map(([planted, subject, expected]) => ({
+    name: `arch/198 FF-19801 · each planted gap turns the control red — ${planted}`,
+    run: () => {
+      const gaps = landingGaps(subject());
+      assert.ok(gaps.some((gap) => gap.fragment === expected.fragment && gap.runtime === expected.runtime && gap.slot === expected.slot), `the control names the fragment, the runtime and the slot: ${describe(gaps)}`);
+      assert.throws(() => assertLands(gaps, "planted"), (error) => [expected.fragment, expected.runtime, expected.slot].every((name) => error.message.includes(name)));
+    },
+  })),
   ...[
     ["a slot added to a common source and not to its Codex procedure",
       () => fixture({ ...BASE_FILES, "commands/demo.md": BASE_FILES["commands/demo.md"].replace("After.", "After.\n\n<!-- slot:demo.extra -->") }, (descriptor) => {
