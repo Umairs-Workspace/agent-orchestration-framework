@@ -3,7 +3,7 @@ type: milestone
 number: 198
 slug: design-system
 title: "The designer draws a milestone's mocks on the project's design system, and a project can extract that system from the Claude Design mocks it already has"
-status: in-progress
+status: not-started
 owner: product-owner
 created: 2026-11-16
 updated: 2026-11-26

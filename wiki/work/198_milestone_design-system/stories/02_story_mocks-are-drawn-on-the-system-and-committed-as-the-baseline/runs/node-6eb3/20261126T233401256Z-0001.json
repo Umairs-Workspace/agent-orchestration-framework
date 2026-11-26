@@ -1,0 +1,58 @@
+{
+  "runId": "20261126T233401256Z-0001",
+  "itemRef": "198/02",
+  "state": "failed",
+  "attempt": 1,
+  "outcome": "failed",
+  "sessionId": null,
+  "brief": {
+    "loop": {
+      "loopRunId": "5eddf918-8b6a-458b-8b8d-85be84ad61a9",
+      "scope": "198",
+      "level": "L2",
+      "cap": 3,
+      "phase": "repair",
+      "cycle": 1,
+      "startedAt": "2026-11-26T20:27:13.762Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        }
+      }
+    },
+    "halt": {
+      "stop": "cap-exhausted",
+      "producer": "run-store:attempts-exhausted"
+    }
+  },
+  "createdAt": "2026-11-26T23:34:01.256Z",
+  "updatedAt": "2026-11-26T23:34:01.256Z",
+  "failureReason": "runtime_offline",
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": null,
+  "asks": []
+}
