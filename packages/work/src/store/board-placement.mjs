@@ -1,6 +1,7 @@
 import { commandError } from "@aof/contracts/error";
 import { localBoardItems } from "./board-links.mjs";
 import { desiredBoardValues, reconcileBoardItem } from "./board-publication.mjs";
+import { conflictError } from "./board-conflicts.mjs";
 
 export async function applyBoardPlacement(context, request, runtime) {
   const { workspace, file, board, links } = context;
@@ -19,6 +20,7 @@ export async function applyBoardPlacement(context, request, runtime) {
     const unsettled = [];
     for (const [key, item] of linkedBefore) {
       const entry = state.links[key];
+      if (entry.conflict != null) throw conflictError(entry);
       if (entry.id != null && entry.pending) unsettled.push(item.ref);
     }
     if (unsettled.length) {
@@ -37,7 +39,7 @@ export async function applyBoardPlacement(context, request, runtime) {
     for (const [key, item] of local) {
       const entry = state.links[key];
       if (entry.id == null) continue;
-      const desired = await desiredBoardValues(item, after, state.links);
+      const desired = await desiredBoardValues(item, after, state.links, { dependencies: "omit" });
       const outcome = await reconcileBoardItem(board, entry, desired, save);
       if (outcome.outcome !== "verified") pending.push(outcome);
     }

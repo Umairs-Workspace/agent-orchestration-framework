@@ -86,10 +86,11 @@ export const archTests = [
       // gate's, the progress halt's, the indeterminate grade's) moved with the ladder and are now
       // ONE site — the shell prints whatever `settleStoryCycle` answered — so the count fell by
       // three; the wave, the reconcile, the refine-end commit and the fresh gate each added one and
-      // the L1 / resume sites are unchanged. The account is printed HERE and nowhere in the family:
+      // the L1 / resume sites are unchanged. 209/03 adds one: the board-conflict halt before a gate or
+      // drive, an account line like every other halt. The account is printed HERE and nowhere in the family:
       // `packages/core/src/loop/` returns halts, it never prints them (the wave drains its lanes first).
       const reportLineCalls = [...shell.matchAll(/await reportLine\(\s*(\w+)/gu)].map((m) => m[1]);
-      assert.equal(reportLineCalls.length, 16, "sixteen reportLine call sites");
+      assert.equal(reportLineCalls.length, 17, "seventeen reportLine call sites");
       for (const rel of FAMILY.slice(1)) assert.doesNotMatch(await source(rel), /reportLine\(/u, `${rel} prints no account line`);
       for (const seam of reportLineCalls) {
         assert.equal(seam, "report", "every reportLine site is handed the account seam");

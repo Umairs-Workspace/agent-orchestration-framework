@@ -874,6 +874,25 @@ export function createStoryCycle({
     };
   }
 
+  // boardConflictHalt(ref, ctx) — 209/03 (ADR-003): the halt a phase for `ref` must stop on, or
+  // null. The store answers the conflicts under `ref`'s top-level ref, which hold the workflow that
+  // contains them; workflows under other refs carry on. A workspace that keeps its tracking in
+  // files has no such operation, so it answers null without a board read.
+  async function boardConflictHalt(ref, ctx) {
+    const [conflict] = await ctx.workspace?.workItemStore?.boardConflicts?.({ within: ref }) ?? [];
+    if (conflict == null) return null;
+    return {
+      act: { act: "halt", stop: "board-conflict", ref, producer: "work-store:work-board-conflict" },
+      details: {
+        conflict: conflict.ref,
+        boardId: conflict.id,
+        revision: conflict.revision,
+        ...(conflict.deleted ? { deleted: true } : {}),
+        resync: `aof work resync-board ${conflict.ref}`,
+      },
+    };
+  }
+
   function storeStop(error, haltDecision) {
     const mapped = mapStoreRefusal(error);
     return mapped == null ? null : haltDecision(mapped.stop, null, mapped.producer);
@@ -1355,6 +1374,7 @@ export function createStoryCycle({
     accumulatedRecord,
     admitResumeBuildRun,
     applyGradeBaseline,
+    boardConflictHalt,
     budgetElapsedMs,
     drivePhase,
     drivenRow,

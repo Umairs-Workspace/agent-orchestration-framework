@@ -11,6 +11,9 @@ export const PREFLIGHT_CHECKS = Object.freeze([
   // 191/ADR-001 amendment 2026-11-14 §5 — on every platform: the control's relay, derived or
   // configured, and the one configuration that makes it collide with the stream server.
   "control-relay-loopback",
+  // 209/04 (ADR-004) — on every platform: each registered workspace that selects a board, probed
+  // through the installed aof in the environment the daemons run in.
+  "board-access",
 ]);
 // What a Mac adds, appended after the four when the platform is `darwin` (175/ADR-004 §4). Its
 // own list, so `PREFLIGHT_CHECKS` and Windows' answer stay exactly what they were.
@@ -108,7 +111,7 @@ const OFFENDER_BUDGET = 400;
 function defaultRunner() {
   return async (file, args, spawnOptions) =>
     await new Promise((resolve) => {
-      const child = spawn(file, args, { windowsHide: true, ...(spawnOptions?.env ? { env: spawnOptions.env } : {}) });
+      const child = spawn(file, args, { windowsHide: true, ...(spawnOptions?.env ? { env: spawnOptions.env } : {}), ...(spawnOptions?.cwd ? { cwd: spawnOptions.cwd } : {}), ...(spawnOptions?.timeout ? { timeout: spawnOptions.timeout } : {}) });
       let stdout = "";
       let stderr = "";
       child.stdout?.on("data", (chunk) => {
@@ -118,7 +121,7 @@ function defaultRunner() {
         stderr += String(chunk);
       });
       child.on("error", () => resolve({ stdout: "", stderr: "", code: -1 }));
-      child.on("close", (code) => resolve({ stdout, stderr, code }));
+      child.on("close", (code, signal) => resolve({ stdout, stderr, code, ...(signal ? { signal } : {}) }));
     });
 }
 
@@ -338,6 +341,84 @@ async function defaultWorkspaceConfigFn(projectRoot) {
   if (typeof projectRoot !== "string" || projectRoot.length === 0) return null;
   const { configPath } = workspacePaths(projectRoot);
   return JSON.parse(await readFile(configPath, "utf8"));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// board-access
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 209/04 (ADR-004). A signed-in terminal says nothing about the account a daemon runs as, so the
+// probe is the installed aof's own read-only `work board-access`, started in each board
+// workspace under the daemons' environment: the LaunchAgent's PATH and per-user variables on a
+// Mac, the environment `mesh desktop run` itself was started from elsewhere (the supervisor
+// inherits it). The provider's credential command stays in the project adapter; this check
+// knows only the verb's answer. A workspace that keeps its tracking in files is never probed.
+const BOARD_ACCESS = "board-access";
+// A hung sign-in or board read must not hold `mesh desktop run`: the probe is ended at this bound
+// and reported as a failure naming it.
+const BOARD_PROBE_TIMEOUT_MS = 60_000;
+const BOARD_STAGES = Object.freeze({ definition: "its board definition did not load", "sign-in": "sign-in failed", board: "the board refused the read" });
+// Defence in depth: the verb redacts, and a check line is never the place a credential lands.
+const CREDENTIAL_SHAPES = [/authorization\s*[:=]\s*\S+(?:\s+\S+)?/giu, /bearer\s+[A-Za-z0-9._~+/=-]+/giu, /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/gu];
+const scrub = (text) => CREDENTIAL_SHAPES.reduce((value, pattern) => value.replace(pattern, "[redacted]"), String(text ?? ""));
+
+function selectsBoard(config) {
+  const store = config?.work?.store;
+  return store != null && typeof store === "object" && typeof store.manifest === "string" && store.manifest.trim() !== "";
+}
+
+async function daemonEnvironment({ platform, files, layout, home, user }) {
+  if (platform !== "darwin") return { env: null, where: "the environment `mesh desktop run` was started from" };
+  const xml = await files.read(layout.launchAgent);
+  if (xml == null) return { skip: "No login LaunchAgent is registered, so there is no daemon environment to probe — `aof mesh desktop install --autostart` registers one." };
+  const { readLaunchAgentPath } = await import("./desktop-launch-agent.mjs");
+  const PATH = readLaunchAgentPath(xml);
+  if (PATH == null) return { fail: `The LaunchAgent ${layout.launchAgent} carries no PATH this check can read — re-run \`aof mesh desktop install --autostart\`.` };
+  return { env: { PATH, HOME: home, USER: user, LOGNAME: user }, where: `the LaunchAgent's environment (PATH ${PATH})` };
+}
+
+async function checkBoardAccess({ roster, workspaceConfigFn, runner, aofBin, daemon }) {
+  if (!roster.ok) return unenumerable(BOARD_ACCESS, roster);
+  const boards = [];
+  for (const workspace of roster.workspaces) {
+    const root = workspaceRoot(workspace);
+    if (root == null) continue;
+    const config = await workspaceConfigFn(root).catch(() => null);
+    if (selectsBoard(config)) boards.push({ root, label: workspaceLabel(workspace), manifest: config.work.store.manifest });
+  }
+  if (boards.length === 0) return check(BOARD_ACCESS, "skip", "No registered workspace selects a board, so no board was probed.");
+  const environment = await daemon();
+  if (environment.skip) return check(BOARD_ACCESS, "skip", environment.skip);
+  if (environment.fail) return check(BOARD_ACCESS, "fail", environment.fail);
+  const failures = [];
+  const passed = [];
+  for (const board of boards) {
+    const answer = await runner(aofBin, ["work", "board-access", "--json"], { cwd: board.root, timeout: BOARD_PROBE_TIMEOUT_MS, ...(environment.env ? { env: environment.env } : {}) });
+    if (answer?.signal != null) {
+      failures.push(`${board.label}: the board probe did not finish within ${BOARD_PROBE_TIMEOUT_MS / 1000}s in ${environment.where}`);
+      continue;
+    }
+    if (answer?.code === -1 || answer?.code == null) {
+      failures.push(`${board.label}: the installed aof at ${aofBin} could not be started in ${environment.where}`);
+      continue;
+    }
+    let result;
+    try {
+      result = JSON.parse(String(answer.stdout ?? ""));
+    } catch {
+      failures.push(`${board.label}: \`aof work board-access\` exited ${answer.code} with no readable answer`);
+      continue;
+    }
+    if (result?.ok === true) {
+      passed.push(`${board.label} (${result.manifest ?? board.manifest}${result.skipped === "no-access-probe" ? ", which declares no access probe" : ""})`);
+      continue;
+    }
+    const stage = BOARD_STAGES[result?.stage] ?? "the probe failed";
+    const detail = [result?.code, Number.isInteger(result?.status) ? `HTTP ${result.status}` : null].filter(Boolean).join(", ");
+    failures.push(`${board.label} (${result?.manifest ?? board.manifest}): ${stage} in ${environment.where}${detail ? ` [${detail}]` : ""} — ${scrub(result?.message)}`);
+  }
+  if (failures.length > 0) return check(BOARD_ACCESS, "fail", `Board access failed — ${nameOffenders(failures)}.`);
+  return check(BOARD_ACCESS, "pass", `Board access verified in ${environment.where} for ${passed.join("; ")}.`);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -745,8 +826,8 @@ function preflightSeams(ctx = {}) {
   return seams;
 }
 
-// runPreflight(options) -> an ORDERED list of `{ code, status, message }`: the FIVE in
-// `PREFLIGHT_CHECKS`' order (191/08 appended `control-relay-loopback`), then — on darwin only — the four in `PREFLIGHT_CHECKS_DARWIN`'.
+// runPreflight(options) -> an ORDERED list of `{ code, status, message }`: the SIX in
+// `PREFLIGHT_CHECKS`' order (191/08 appended `control-relay-loopback`, 209/04 `board-access`), then — on darwin only — the four in `PREFLIGHT_CHECKS_DARWIN`'.
 // It rides the SUCCESS answer of a verb only, so a verb that refuses carries its
 // `{ ok, error, code }` envelope unchanged and no probe is spawned behind a refusal.
 async function runPreflight(options = {}) {
@@ -754,8 +835,14 @@ async function runPreflight(options = {}) {
   const claudeFn = typeof options.claudeFn === "function" ? options.claudeFn : defaultRunner();
   const buildInfoFn = typeof options.buildInfoFn === "function" ? options.buildInfoFn : readBuildInfo;
   const workspacesFn = typeof options.workspacesFn === "function" ? options.workspacesFn : resolveNodeWorkspaces;
-  const workspaceConfigFn =
-    typeof options.workspaceConfigFn === "function" ? options.workspaceConfigFn : defaultWorkspaceConfigFn;
+  // Each workspace's own config is read ONCE per preflight, however many checks ask (126/06's
+  // rule for the roster, held for what is read under it).
+  const readConfig = typeof options.workspaceConfigFn === "function" ? options.workspaceConfigFn : defaultWorkspaceConfigFn;
+  const configReads = new Map();
+  const workspaceConfigFn = (root) => {
+    if (!configReads.has(root)) configReads.set(root, Promise.resolve().then(() => readConfig(root)));
+    return configReads.get(root);
+  };
   const settingsFn = typeof options.settingsFn === "function" ? options.settingsFn : defaultSettingsFn;
   const hookFileFn = typeof options.hookFileFn === "function" ? options.hookFileFn : defaultHookFileFn;
   const bundleHookFn = typeof options.bundleHookFn === "function" ? options.bundleHookFn : defaultBundleHookFn;
@@ -783,21 +870,23 @@ async function runPreflight(options = {}) {
     await guarded("heartbeat-hook-installed", () => checkHeartbeatHookInstalled({ roster, settingsFn, hookFileFn, bundleHookFn })),
     await guarded("control-relay-loopback", () => checkControlRelayLoopback({ meshConfigFn, nodeId })),
   ];
-  if (platform !== "darwin") return checks;
 
   const home = options.home ?? os.homedir();
   const user = options.user ?? os.userInfo().username;
-  const layout = desktopLayout({ platform, installDir: resolveDesktopInstallDir({ installDir: options.installDir, env }), home });
-  return [
-    ...checks,
-    ...(await runDarwinChecks({
-      runner: typeof options.runner === "function" ? options.runner : defaultRunner(),
-      files: { ...defaultFiles, ...(options.files ?? {}) },
-      layout,
-      home,
-      user,
-    })),
-  ];
+  const installDir = resolveDesktopInstallDir({ installDir: options.installDir, env });
+  const layout = desktopLayout({ platform, installDir, home });
+  const runner = typeof options.runner === "function" ? options.runner : defaultRunner();
+  const files = { ...defaultFiles, ...(options.files ?? {}) };
+  checks.push(await guarded(BOARD_ACCESS, () => checkBoardAccess({
+    roster,
+    workspaceConfigFn,
+    runner,
+    aofBin: path.join(installDir, platform === "win32" ? "aof.exe" : "aof"),
+    daemon: () => daemonEnvironment({ platform, files, layout, home, user }),
+  })));
+  if (platform !== "darwin") return checks;
+
+  return [...checks, ...(await runDarwinChecks({ runner, files, layout, home, user }))];
 }
 
 // The preflight's render lines, shared by `install` and `run` so both say the same

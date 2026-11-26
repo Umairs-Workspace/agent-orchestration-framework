@@ -194,6 +194,8 @@ const WORK_IDS = [
   // milestone 168 / story 01 — work:prototype, the prototype verb (start, ask, log, hand-off).
   "work:prototype",
   "work:publish-board",
+  "work:resync-board",
+  "work:board-access",
   // milestone 54 / story 01 — work:grade, the declared rubric's ONE impure edge (the
   // milestone's only registering story, 54/ADR-003 §2). Its bare face is a READ (the plan
   // plus the last recorded grade, spawning nothing) and `--run` is the only door to

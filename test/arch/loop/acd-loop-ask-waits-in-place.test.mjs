@@ -102,6 +102,8 @@ const LOOP_STOPS_AT_130 = Object.freeze([
   "uat-gate", "dependency-blocked", "cap-exhausted", "deadline-exhausted", "progress-exhausted", "no-progress",
   "grade-indeterminate", "session-needs-input", "run-not-retryable", "retry-parked", "unmapped-item-type",
   "operator-interrupt", "lane-open-failed", "lane-merge-refused", "lane-merge-conflict",
+  // 209/03 appends the board conflict, a halt a waiting lane never raises.
+  "board-conflict",
 ]);
 
 function assertRead(what, count, floor, unit = "file(s)") {

@@ -107,3 +107,26 @@ test('208 lane resolution uses the lane selection and a scoped view without deri
   assert.equal(await api.resolveRefInWorktree('/primary', '/primary/custom', '/lane', '../../escape'), null);
   assert.deepEqual(calls, ['/lane', '/lane']);
 });
+
+test("209/03 a board conflict under the item's top-level ref refuses the lane before any tree is cut", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "board-dispatch-"));
+  const calls = [];
+  const conflicts = [{ ref: "17/02", id: 412, revision: 9, deleted: false }];
+  // The store answers only the conflicts under the asked ref's top-level ref.
+  const workspace = { workItemStore: { boardConflicts: async ({ within } = {}) => conflicts.filter(row => within == null || row.ref.split("/")[0] === String(within).split("/")[0]) } };
+  const api = createDispatchLanes({ validateExecutionEnvelope, meshItemBranchName: () => "item", meshDispatchWorktreePath: () => root,
+    findItemWorktree: async () => { calls.push("open"); return root; }, prepareRuntimeAssets: async () => {},
+    advanceBranchToBase: async () => ({ outcome: "already-current" }),
+    resolveExec: () => { throw Error("Claude ignored-file/consent lookup reached"); },
+  });
+  try {
+    const execution = resolveExecution({}, { runtime: "codex", capabilities: { codex: { models: [{ id: "native", model: "native", isDefault: true, supportedReasoningEfforts: ["high"] }] } } });
+    await assert.rejects(api.resolveDispatchLane(root, "17/03", { workspace, execution }), error =>
+      error.code === "work-board-conflict" && error.message.includes("17/02") && error.message.includes("aof work resync-board 17/02"));
+    assert.deepEqual(calls, [], "no lane door was opened");
+    const lane = await api.resolveDispatchLane(root, "18/00", { workspace, execution, advanceTo: "a".repeat(40) });
+    assert.equal(lane.reused, true);
+    const files = { workItemStore: {} };
+    assert.equal((await api.resolveDispatchLane(root, "17/03", { workspace: files, execution, advanceTo: "a".repeat(40) })).reused, true, "a store with no board answers no conflict");
+  } finally { await rm(root, { recursive: true, force: true }); }
+});

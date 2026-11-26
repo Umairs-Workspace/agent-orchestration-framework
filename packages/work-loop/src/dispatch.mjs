@@ -237,6 +237,19 @@ const nativePath = (value) => (typeof value === "string" && value.length > 0 ? p
 // prevent. A caller passes `git rev-parse HEAD` from the primary, never the words.
 const OBJECT_NAME = /^[0-9a-f]{7,64}$/iu;
 
+// 209/03 (ADR-003) — a lane is workflow progression, so a board conflict under the item's top-level
+// ref refuses it before any tree is cut. The workspace's own store answers from its journal; a
+// workspace that keeps its tracking in files has no conflicts to read.
+async function refuseBoardConflict(projectRoot, itemRef, options) {
+  const workspace = options.workspace ?? (typeof loadWorkspace === "function" ? await loadWorkspace(projectRoot) : null);
+  const [conflict] = await workspace?.workItemStore?.boardConflicts?.({ within: itemRef }) ?? [];
+  if (conflict == null) return;
+  const error = new Error(`Dispatch of ${itemRef} is held: board item ${conflict.id} linked to ${conflict.ref} ${conflict.deleted ? "was deleted on the board" : `changed on the board at revision ${conflict.revision}`}. Run "aof work resync-board ${conflict.ref}".`);
+  error.code = "work-board-conflict";
+  error.detail = { ref: itemRef, conflict };
+  throw error;
+}
+
 async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
   const execution = options.execution == null ? null : validateExecutionEnvelope(options.execution);
   const advanceTo = typeof options.advanceTo === "string" && options.advanceTo.length > 0 ? options.advanceTo : null;
@@ -246,6 +259,7 @@ async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
     error.advanceTo = advanceTo;
     throw error;
   }
+  await refuseBoardConflict(projectRoot, itemRef, options);
   const lane = await openDispatchLane(projectRoot, itemRef, options);
   const prepareNative = async () => {
     if (typeof prepareRuntimeAssets !== "function") throw Object.assign(new Error("Codex lane asset preparation is unavailable"), { code: "runtime-assets-unavailable" });

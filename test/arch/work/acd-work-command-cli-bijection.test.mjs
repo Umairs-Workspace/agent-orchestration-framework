@@ -345,6 +345,10 @@ function argsFor(sub) {
     // deliberately so: an archive that SUCCEEDED would MOVE a folder the other probes read.
     case "archive": return ["work", "archive", "999", "--json"];
     case "publish-board": return ["work", "publish-board", "03", "--refinement-complete", "--json"];
+    // 209/03: the fixture keeps its tracking in files, so resync answers its local-file-mode skip.
+    case "resync-board": return ["work", "resync-board", "03", "--json"];
+    // 209/04: the fixture keeps its tracking in files, so the probe answers its local-file-mode skip.
+    case "board-access": return ["work", "board-access", "--json"];
     // 182: preview the existing item; the probe must not move a shared fixture.
     case "renumber": return ["work", "renumber", "03", "--to", "999", "--dry-run", "--json"];
     // milestone 131 / story 04 — work:answer. The fixture holds no ask for 03/01 and no parked

@@ -6,7 +6,7 @@ title: "A project can keep its work-item tracking in Azure DevOps, and the aof w
 status: in-progress
 owner: product-owner
 created: 2026-11-20
-updated: 2026-11-24
+updated: 2026-11-26
 depends: [206, 208]
 schema: 1
 aofVersion: 0.1.0
@@ -73,12 +73,12 @@ Out of scope:
 
 ## Stories
 
-- [ ] `00_story_board-definition` — A project selects a validated board definition.
-- [ ] `01_story_azure-board-adapter` — An Azure project supplies the mapped reads and guarded writes.
-- [ ] `02_story_linked-work-items` — An operator can publish and continue working in the local folder.
-- [ ] `03_story_conflict-and-resync` — A workflow detects an external edit and recovers on operator request.
-- [ ] `04_story_daemon-board-access` — A node checks board access in its own daemon environment.
-- [ ] `05_story_board-conformance` — The public work verbs and loop are verified against a board.
+- [x] `00_story_board-definition` — A project selects a validated board definition.
+- [x] `01_story_azure-board-adapter` — An Azure project supplies the mapped reads and guarded writes.
+- [x] `02_story_linked-work-items` — An operator can publish and continue working in the local folder.
+- [x] `03_story_conflict-and-resync` — A workflow detects an external edit and recovers on operator request.
+- [x] `04_story_daemon-board-access` — A node checks board access in its own daemon environment.
+- [x] `05_story_board-conformance` — The public work verbs and loop are verified against a board.
 
 ## Dependencies
 

@@ -68,6 +68,7 @@ export function assembleLoopCycle({ commandsResolveServices, loopChildDriveServi
   const accumulatedRecord = implementation.accumulatedRecord;
   const admitResumeBuildRun = implementation.admitResumeBuildRun;
   const applyGradeBaseline = implementation.applyGradeBaseline;
+  const boardConflictHalt = implementation.boardConflictHalt;
   const budgetElapsedMs = implementation.budgetElapsedMs;
   const drivePhase = implementation.drivePhase;
   const drivenRow = implementation.drivenRow;
@@ -91,5 +92,5 @@ export function assembleLoopCycle({ commandsResolveServices, loopChildDriveServi
   const settleStoryCycle = implementation.settleStoryCycle;
   const transitionOptionsFor = implementation.transitionOptionsFor;
 
-  return { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, reenterPrimaryAsks, repairLaneHalt, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor };
+  return { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, boardConflictHalt, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, reenterPrimaryAsks, repairLaneHalt, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor };
 }

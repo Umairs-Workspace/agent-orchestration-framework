@@ -5,8 +5,9 @@ import picomatch from "picomatch";
 import { commandError } from "@aof/contracts/error";
 import { asList } from "../dependencies.mjs";
 import { isLiveStreamRow } from "../discovery.mjs";
-import { isStatusWord, itemStatusEdges } from "../lifecycle.mjs";
+import { statusMoveRefusal } from "../records.mjs";
 import { inside, itemBoardKey } from "./board-links.mjs";
+import { classifyObserved, conflictError } from "./board-conflicts.mjs";
 
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const sortIds = ids => [...(ids ?? [])].sort((a, b) => String(a).localeCompare(String(b)));
@@ -15,8 +16,8 @@ function resultOf(entry, outcome, code) {
   return { ref: entry.ref, id: entry.id ?? null, outcome, ...(code && { code }) };
 }
 
-function matches(actual, desired) {
-  if (!actual || actual.id == null || actual.revision == null || actual.fault) return false;
+export function matchesTracked(actual, desired) {
+  if (!actual || actual.id == null || actual.revision == null || actual.fault || desired == null) return false;
   return Object.entries(desired).every(([key, value]) => {
     if (key === "dependsIds") return equal(sortIds(actual[key]), sortIds(value));
     if (key === "parentId") return (actual[key] ?? null) === value;
@@ -32,7 +33,10 @@ function lookupRef(links, ref) {
   return Object.values(links).find(entry => entry.id != null && normalizedRef(entry.ref) === normalizedRef(ref));
 }
 
-export async function desiredBoardValues(item, local, links) {
+// `dependencies: "omit"` is placement's: a move can leave a sibling's `depends:` naming a ref
+// nothing holds any more (file mode keeps it as written), and the board then carries only the
+// relations it can name. Publication stays strict, so a dependency is linked before its dependent.
+export async function desiredBoardValues(item, local, links, { dependencies = "require" } = {}) {
   const record = await local.read(item.ref, { documentHome: item.documentHome });
   if (record?.fault) throw commandError(`The local document for ${item.ref} is unusable.`, "work-board-document-unusable", 409);
   const meta = record?.metadata ?? {};
@@ -42,10 +46,11 @@ export async function desiredBoardValues(item, local, links) {
   });
   const parent = item.parent == null ? null : lookupRef(links, item.parent);
   if (item.parent != null && !parent) throw commandError(`Publish parent ${item.parent} before ${item.ref}.`, "work-board-parent-unpublished", 409);
-  const dependsIds = dependencyRefs.map(ref => {
+  const dependsIds = dependencyRefs.flatMap(ref => {
     const dependency = lookupRef(links, ref);
-    if (!dependency) throw commandError(`Publish dependency ${ref} before ${item.ref}.`, "work-board-dependency-unpublished", 409);
-    return dependency.id;
+    if (dependency) return [dependency.id];
+    if (dependencies === "omit") return [];
+    throw commandError(`Publish dependency ${ref} before ${item.ref}.`, "work-board-dependency-unpublished", 409);
   });
   return {
     type: item.type, ref: item.ref, title: meta.title ?? item.slug, status: meta.status ?? "not-started",
@@ -73,7 +78,8 @@ function acknowledge(entry, record, desired) {
   return resultOf(entry, "verified");
 }
 
-export async function reconcileBoardItem(board, entry, desired, save, { verifyExisting = false } = {}) {
+export async function reconcileBoardItem(board, entry, desired, save, { verifyExisting = false, retried = false } = {}) {
+  if (entry.conflict != null) return resultOf(entry, "pending", "work-board-conflict");
   if (entry.pending && !equal(entry.pending.desired, desired)) {
     return resultOf(entry, "pending", "work-board-other-intent");
   }
@@ -81,7 +87,7 @@ export async function reconcileBoardItem(board, entry, desired, save, { verifyEx
   const alreadyAcknowledged = entry.id != null && equal(entry.acknowledged, desired);
   if (entry.pending || entry.id == null || (verifyExisting && alreadyAcknowledged)) {
     const observed = await readEntry(board, entry).catch(() => null);
-    if (matches(observed, desired)) {
+    if (matchesTracked(observed, desired)) {
       const result = acknowledge(entry, observed, desired);
       await save();
       return result;
@@ -111,6 +117,19 @@ export async function reconcileBoardItem(board, entry, desired, save, { verifyEx
   if (write?.outcome === "refused") {
     entry.pending.uncertain = false;
     await save();
+    if (entry.id != null && entry.acknowledged) {
+      // A refusal of a guarded write means the board moved. Classify what moved it before
+      // anything else is attempted: a change AOF does not track is acknowledged and the write
+      // retried once under the new revision; any other change latches the conflict.
+      // undefined: the readback could not answer, so nothing is classified.
+      const observed = await readEntry(board, entry).then(item => item ?? null, () => undefined);
+      if (observed !== undefined && classifyObserved(entry, observed)) {
+        entry.pending = null;
+        await save();
+        if (entry.conflict != null) return resultOf(entry, "pending", "work-board-conflict");
+        if (!retried) return reconcileBoardItem(board, entry, desired, save, { verifyExisting, retried: true });
+      }
+    }
     return resultOf(entry, "pending", write.code ?? "work-board-refused");
   }
   if (write?.outcome === "applied" && write.id != null) {
@@ -118,7 +137,7 @@ export async function reconcileBoardItem(board, entry, desired, save, { verifyEx
     await save();
   }
   const observed = await readEntry(board, entry).catch(() => null);
-  if (!matches(observed, desired)) {
+  if (!matchesTracked(observed, desired)) {
     const pending = resultOf(entry, "pending", observed ? "work-board-values-unverified" : "work-board-readback-pending");
     return reply?.writeCode == null ? pending : { ...pending, writeCode: reply.writeCode };
   }
@@ -178,6 +197,10 @@ export async function publishRefined({ workspace, board, file, links }, { ref, d
       const entry = state.links[key] ??= { key };
       Object.assign(entry, { ref: item.ref, documentHome: item.documentHome });
       await save();
+      if (entry.conflict != null) {
+        results.push(resultOf(entry, "pending", "work-board-conflict"));
+        break;
+      }
       const desired = await desiredBoardValues(item, local, state.links);
       const outcome = await reconcileBoardItem(board, entry, desired, save, { verifyExisting: true });
       if (outcome.outcome === "verified" && !await copyArtifacts(board, entry, workspace.workDir, save)) {
@@ -191,10 +214,6 @@ export async function publishRefined({ workspace, board, file, links }, { ref, d
   });
 }
 
-function statusRefusal(request, message) {
-  return commandError(message, request.operation === "rollback" ? "rollback-not-applicable" : "status-edge-not-applicable", 409);
-}
-
 export async function mutateBoardLifecycle({ workspace, board, file, links }, request) {
   return links.claim(async (state, save) => {
     const local = await file.snapshot();
@@ -202,20 +221,17 @@ export async function mutateBoardLifecycle({ workspace, board, file, links }, re
     const key = await itemBoardKey(workspace.workDir, item?.documentHome);
     const entry = key == null ? null : state.links[key];
     if (!entry || entry.id == null) return file.mutate(request);
+    if (entry.conflict != null) throw conflictError(entry);
     const { toStatus, expectFrom } = request;
     const record = await local.read(item.ref, { documentHome: item.documentHome });
     if (record?.fault) throw commandError(`The local document for ${item.ref} is unusable.`, "record-doc-unusable", 422);
     const from = record?.metadata?.status;
-    if (request.operation === "rollback" && !["not-started", "blocked"].includes(toStatus)) {
-      throw commandError("The rollback target must be not-started or blocked.", "forbidden-rollback", 400);
-    }
-    if (!isStatusWord(toStatus)) throw commandError("Invalid work item status " + toStatus, "invalid-status", 400);
-    const allowed = expectFrom == null ? null : [expectFrom].flat();
-    const permitted = request.operation === "rollback" ? from === "in-progress"
-      : itemStatusEdges(from, item.type).includes(toStatus) && (allowed == null || allowed.includes(from));
-    if (!permitted) throw statusRefusal(request, `Item ${item.ref} cannot move from ${from} to ${toStatus}.`);
+    // The file store's own refusal, so a refused move reads the same in either store (209/05).
+    const refusal = statusMoveRefusal(item, from, toStatus, { operation: request.operation, expectFrom });
+    if (refusal != null) throw refusal;
     const desired = { ...entry.acknowledged, status: toStatus };
     const outcome = await reconcileBoardItem(board, entry, desired, save);
+    if (outcome.code === "work-board-conflict") throw conflictError(entry);
     if (outcome.outcome !== "verified") {
       throw commandError(`Board update pending for ${item.ref} (board ID ${entry.id}). Retry the same status change.`, outcome.code, 409);
     }

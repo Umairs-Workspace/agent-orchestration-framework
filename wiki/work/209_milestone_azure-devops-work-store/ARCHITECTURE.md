@@ -50,7 +50,7 @@ Check daemon access via the selected definition in the actual daemon environment
 
 | id | invariant | enforced by (arch-test) | from |
 |---|---|---|---|
-| FF-20901 | Provider-specific imports, URLs, auth and command invocations stay in the selected project adapter. Work commands and daemon consumers use the shared store or capability. | `test/arch/work/acd-board-provider-boundary.test.mjs` (pending) | ADR-001, ADR-004 |
+| FF-20901 | Provider-specific imports, URLs, auth and command invocations stay in the selected project adapter. Work commands and daemon consumers use the shared store or capability. | `test/arch/work/acd-board-provider-boundary.test.mjs` | ADR-001, ADR-004 |
 
 Register the control in `test/arch/work/index.mjs`. Plant a provider import and a provider-specific call in shared code and record the failing caller and diagnostic in VERIFICATION when the control lands. Exercise the same calls inside the project example as the positive control. Keep the delivered 208/FF-20801 store boundary in force.
 

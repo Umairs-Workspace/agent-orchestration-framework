@@ -5,10 +5,10 @@ slug: linked-work-items
 title: "An operator can publish and continue working in the local folder"
 parent: 209
 depends: [00]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-11-24
-updated: 2026-11-25
+updated: 2026-11-26
 schema: 1
 aofVersion: 0.1.0
 adrs: [ADR-001, ADR-002]

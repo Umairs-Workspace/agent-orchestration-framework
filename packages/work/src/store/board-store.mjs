@@ -3,6 +3,7 @@ import { createFileWorkItemStore } from "./file-store.mjs";
 import { createBoardLinks, localBoardItems } from "./board-links.mjs";
 import { mutateBoardLifecycle, publishRefined } from "./board-publication.mjs";
 import { applyBoardPlacement } from "./board-placement.mjs";
+import { BOARD_POLL_INTERVAL_MS, listConflicts, pollBoardChanges, resyncBoardItem } from "./board-conflicts.mjs";
 
 function projectedRecord(item) {
   return {
@@ -15,6 +16,15 @@ function projectedRecord(item) {
     recordDocument: null,
     recordText: null,
   };
+}
+
+// The board answers for the tracked values a record carries, and only those: a record with no
+// title or status of its own (a task's .feature) reads as it does over files, never as the
+// defaults publication had to give the board item (209/05).
+function overlay(local, remote) {
+  const merged = { ...local };
+  for (const key of ["title", "status"]) if (Object.hasOwn(local, key)) merged[key] = remote[key];
+  return merged;
 }
 
 async function makeSnapshot({ workspace, board, file, links }, options) {
@@ -33,6 +43,8 @@ async function makeSnapshot({ workspace, board, file, links }, options) {
     tracked.set(item.documentHome, {
       record: remote && projectedRecord(remote),
       fault, boardId: entry.id, revision: entry.revision,
+      // A conflicted item answers with the values AOF intends until a resync restores them.
+      conflicted: entry.conflict != null,
     });
   }
   const items = [...local.items];
@@ -65,7 +77,7 @@ async function makeSnapshot({ workspace, board, file, links }, options) {
       if (!entry || localRecord.fault) return localRecord;
       return {
         ...localRecord,
-        metadata: entry.fault ? localRecord.metadata : { ...localRecord.metadata, title: entry.record.metadata.title, status: entry.record.metadata.status },
+        metadata: entry.fault || entry.conflicted ? localRecord.metadata : overlay(localRecord.metadata, entry.record.metadata),
         boardId: entry.boardId,
         revision: entry.record?.revision ?? entry.revision,
         fault: entry.fault,
@@ -96,6 +108,30 @@ export function createBoardWorkItemStore(workspace, manifest) {
     async boardCapabilities() {
       const { board: { definition, accessProbe, copyAttachment } } = await board();
       return { attachments: definition.capabilities?.attachments, accessProbe, copyAttachment };
+    },
+    async boardConflicts(options) {
+      return listConflicts(await (await board()).links.read(), options);
+    },
+    async pollChanges() {
+      return pollBoardChanges(await board());
+    },
+    async resync(input) {
+      return resyncBoardItem(await board(), input);
+    },
+    // The launcher arms one observation per workspace. Polls never overlap, and a poll that finds
+    // the journal claimed by a writer waits for the next interval.
+    observe(options = {}) {
+      const intervalMs = options.boardPollIntervalMs ?? BOARD_POLL_INTERVAL_MS;
+      let running = null;
+      const tick = () => {
+        running ??= this.pollChanges()
+          .catch(error => { if (error?.code !== "work-board-busy") options.reportDegrade?.("work-board-poll", error); })
+          .finally(() => { running = null; });
+      };
+      const timer = setInterval(tick, intervalMs);
+      timer.unref?.();
+      tick();
+      return { dispose() { clearInterval(timer); } };
     },
     async mutate(request, runtime) {
       const context = await board();

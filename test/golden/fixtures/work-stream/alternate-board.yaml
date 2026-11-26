@@ -1,0 +1,45 @@
+# 209/05 — a second board a project supplies under its own .aof: an in-memory card board with no
+# provider code in AOF, selected through the same work.store manifest as the Azure example.
+version: 1
+board:
+  project: Orchard cards
+adapter: ./alternate-board.mjs
+mappings:
+  types:
+    milestone: Epic
+    story: Card
+    task: Step
+    chore: Chore
+    spike: Probe
+    uat: Review
+    prototype: Sketch
+  fields:
+    ref: ref
+    title: title
+    correlation: key
+    membership: lane
+  states:
+    milestone: &governed
+      not-started: Todo
+      in-progress: Doing
+      blocked: Stuck
+      in-review: Checking
+      done: Finished
+    story: *governed
+    task: *governed
+    chore: *governed
+    spike: *governed
+    uat: *governed
+    prototype:
+      active: Live
+      paused: Parked
+      done: Finished
+      abandoned: Dropped
+  relations:
+    parent: parent
+    depends: after
+  order: rank
+operations:
+  readItems: readItems
+  readChanges: readChanges
+  applyChanges: applyChanges

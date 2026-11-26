@@ -182,6 +182,38 @@ const ROLLBACK_TARGETS = new Set(["not-started", "blocked"]);
 // forbids the store writing any frontmatter; work.mjs is the item-frontmatter authority.
 // `now` is accepted for caller-API symmetry but deliberately NOT written (bumping
 // `updated` would violate the "only the status field changes" bound).
+// statusMoveRefusal(item, status, toStatus, { operation, expectFrom }) — the refusal a status move
+// from `status` answers, or null when the move is legal. The ONE wording both stores give (209/05):
+// the file writer below asks it after reading the record doc, and a board store asks it before
+// writing the board, so a refused move reads the same whichever store refused it.
+export function statusMoveRefusal(item, status, toStatus, { operation = "status", expectFrom = null } = {}) {
+  let error;
+  if (operation === "rollback") {
+    if (!ROLLBACK_TARGETS.has(toStatus)) return workError(`status rollback target must be not-started|blocked (got "${toStatus}")`, "forbidden-rollback", 400);
+    if (status === "in-progress") return null;
+    error = workError(`status rollback applies only from in-progress (item is "${status ?? "none"}")`, "rollback-not-applicable", 409);
+  } else {
+    if (!isStatusWord(toStatus)) {
+      return workError(`status must be one of ${[...statusVocabularyFor(item.type)].join("|")} (got "${toStatus}")`, "invalid-status", 400);
+    }
+    const allowed = expectFrom == null ? null : (Array.isArray(expectFrom) ? expectFrom : [expectFrom]);
+    if (itemStatusEdges(status, item.type).includes(toStatus) && (allowed == null || allowed.includes(status))) return null;
+    error = workError(forwardRefusal(item, status, toStatus, allowed), "status-edge-not-applicable", 409);
+  }
+  error.detail = { status: status ?? null };
+  return error;
+}
+
+function forwardRefusal(item, status, toStatus, allowed) {
+  if (allowed != null && !allowed.includes(status)) {
+    return `item ${item.ref} is "${status ?? "none"}" — this act moves an item to "${toStatus}" only from ${allowed.join("|")}`;
+  }
+  const edges = itemStatusEdges(status, item.type);
+  return edges.length === 0
+    ? `item ${item.ref} is "${status ?? "none"}" — it has no legal status move (asked for "${toStatus}")`
+    : `item ${item.ref} is "${status ?? "none"}" — its legal moves are ${edges.join("|")} (asked for "${toStatus}")`;
+}
+
 export async function rollbackItemStatus(item, toStatus, { now, workspace } = {}) {
   if (workspace != null) return mutateSelected(workspace, item, { operation: "rollback", toStatus, now });
   if (!ROLLBACK_TARGETS.has(toStatus)) {
@@ -238,15 +270,7 @@ export async function setItemStatus(item, toStatus, { expectFrom = null, now, wo
   return await writeItemStatusLine(item, toStatus, {
     code: "status-edge-not-applicable",
     from: (status) => itemStatusEdges(status, item.type).includes(toStatus) && (allowed == null || allowed.includes(status)),
-    notApplicable: (status) => {
-      if (allowed != null && !allowed.includes(status)) {
-        return `item ${item.ref} is "${status ?? "none"}" — this act moves an item to "${toStatus}" only from ${allowed.join("|")}`;
-      }
-      const edges = itemStatusEdges(status, item.type);
-      return edges.length === 0
-        ? `item ${item.ref} is "${status ?? "none"}" — it has no legal status move (asked for "${toStatus}")`
-        : `item ${item.ref} is "${status ?? "none"}" — its legal moves are ${edges.join("|")} (asked for "${toStatus}")`;
-    },
+    notApplicable: (status) => forwardRefusal(item, status, toStatus, allowed),
     bumpUpdated: true,
     now,
   });

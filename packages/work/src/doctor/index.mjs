@@ -2,7 +2,7 @@ import path from "node:path";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { readWorkItemView } from "../store/work-item-store.mjs";
 import { isDriver, isDependTarget, siblingDependencyNumber } from "../dependencies.mjs";
-import { ITEM_RE, BACKLOG_ITEM_RE, BACKLOG_ROOT, ARCHIVE_ROOT, RECORD_DOC_BY_TYPE } from "../identity.mjs";
+import { ITEM_RE, BACKLOG_ITEM_RE, BACKLOG_ROOT, ARCHIVE_ROOT, BOARD_KEY_FILE, RECORD_DOC_BY_TYPE } from "../identity.mjs";
 import { statusCoherenceGroup, lifecycleCompletenessGroup, cacheAuthorityGroup } from "./coherence.mjs";
 import { freshnessGroup, structuralIntegrityGroup } from "./freshness.mjs";
 import { budgetGroup, PLAN_BASENAME } from "./budget.mjs";
@@ -145,6 +145,9 @@ async function scanItemTree(dir) {
     // reported as a directory, and a cyclic link would recurse to a stack overflow.
     // A symlink is not a content file of this item's tree — skip it entirely.
     if (entry.isSymbolicLink()) continue;
+    // 209/05 — the board store's link key is its bookkeeping, not the item's content: writing it
+    // at publication is not an edit the record's `updated` owes.
+    if (entry.name === BOARD_KEY_FILE) continue;
     if (entry.isDirectory()) {
       const sub = await scanItemTree(child);
       if (sub.newest != null && (newest == null || sub.newest > newest)) newest = sub.newest;

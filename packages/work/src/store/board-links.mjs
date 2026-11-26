@@ -5,6 +5,9 @@ import { commandError } from "@aof/contracts/error";
 import { readJson, writeText } from "@aof/foundation/fs";
 import { importSqliteRuntime } from "@aof/foundation/sqlite-runtime";
 import { isLiveStreamRow } from "../discovery.mjs";
+import { BOARD_KEY_FILE } from "../identity.mjs";
+
+export { BOARD_KEY_FILE };
 
 export function inside(root, candidate) {
   const relative = path.relative(root, candidate);
@@ -64,7 +67,7 @@ export async function itemBoardKey(workDir, documentHome, { create = false } = {
   if (!documentHome) return null;
   const candidate = path.resolve(workDir, documentHome);
   if (!inside(workDir, candidate)) throw commandError("Invalid board document home.", "work-board-home-invalid", 409);
-  const file = path.join(candidate, ".aof-board-key");
+  const file = path.join(candidate, BOARD_KEY_FILE);
   async function read() {
     const key = (await readFile(file, "utf8")).trim();
     if (!/^[0-9a-f-]{36}$/.test(key)) throw commandError("Invalid board key for " + documentHome, "work-board-key-invalid", 409);

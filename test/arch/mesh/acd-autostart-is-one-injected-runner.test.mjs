@@ -203,8 +203,9 @@ export const archTests = [
         // literal is matched loosely on whitespace because the frozen list is now spread
         // over several lines; what is pinned is the ORDER and that there is ONE such site.
         // 191/08 (191/ADR-001 amendment 2026-11-14 §5) appended a FIFTH, `control-relay-loopback`, last.
-        /PREFLIGHT_CHECKS = Object\.freeze\(\[\s*"claude-authenticated",\s*"payload-build",\s*"workspace-identity-pinned",\s*"heartbeat-hook-installed",\s*"control-relay-loopback",?\s*\]\)/,
-        "the five checks are named by code, in one order, in one place",
+        // 209/04 (209/ADR-004) appended a SIXTH, `board-access`, last.
+        /PREFLIGHT_CHECKS = Object\.freeze\(\[\s*"claude-authenticated",\s*"payload-build",\s*"workspace-identity-pinned",\s*"heartbeat-hook-installed",\s*"control-relay-loopback",\s*"board-access",?\s*\]\)/,
+        "the six checks are named by code, in one order, in one place",
       );
 
       // THE TRAP: `claude auth status` exits 0 whether or not the account is logged in, so

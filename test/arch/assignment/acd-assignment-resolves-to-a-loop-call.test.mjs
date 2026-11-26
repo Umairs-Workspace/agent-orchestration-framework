@@ -474,19 +474,19 @@ export const archTests = [
     },
   },
   {
-    name: "arch/63 FF-6306 (ADR-006 §4): LOOP_STOPS is 53's frozen twelve plus only the three lane stops 129/01 appended after them — 63 added none, and no completion signal means \"a loop finished\"",
+    name: "arch/63 FF-6306 (ADR-006 §4): LOOP_STOPS is 53's frozen twelve plus only the three lane stops 129/01 and the board conflict 209/03 appended after them — 63 added none, and no completion signal means \"a loop finished\"",
     run: async () => {
       // 129/01 (129/ADR-008 §5) appended three LANE stops as members 13-15 in the loop's own
       // home. The count is pinned WITH its provenance: 63's twelve are the first twelve, unrenamed
       // and in order, and every member past them is one of 129's three — so a stop the mesh
       // needed and smuggled in would still be a red here, which is what this control is for.
-      assert.equal(LOOP_STOPS.length, 15, "the halt vocabulary is 63's twelve plus 129/01's three lane stops");
+      assert.equal(LOOP_STOPS.length, 16, "the halt vocabulary is 63's twelve plus 129/01's three lane stops and 209/03's board conflict");
       assert.deepEqual(LOOP_STOPS.slice(0, 12), [
         "uat-gate", "dependency-blocked", "cap-exhausted", "deadline-exhausted",
         "progress-exhausted", "no-progress", "grade-indeterminate", "session-needs-input",
         "run-not-retryable", "retry-parked", "unmapped-item-type", "operator-interrupt",
       ], "the twelve frozen before 63 are the first twelve, unrenamed and in order");
-      assert.deepEqual(LOOP_STOPS.slice(12), ["lane-open-failed", "lane-merge-refused", "lane-merge-conflict"], "…and the only members past them are 129/01's three lane stops");
+      assert.deepEqual(LOOP_STOPS.slice(12), ["lane-open-failed", "lane-merge-refused", "lane-merge-conflict", "board-conflict"], "…and the only members past them are 129/01's three lane stops and 209/03's board conflict");
       assert.ok(Object.isFrozen(LOOP_STOPS), "…and it is frozen");
       const sources = await meshSources();
       for (const { rel, code } of sources) {

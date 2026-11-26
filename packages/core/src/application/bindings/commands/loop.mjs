@@ -26,6 +26,7 @@ export function assembleCommandsLoop({ runtimeSessionServices, workServices, loo
   const { accumulatedRecord } = loopCycleServices;
   const { admitResumeBuildRun } = loopCycleServices;
   const { applyGradeBaseline } = loopCycleServices;
+  const { boardConflictHalt } = loopCycleServices;
   const { budgetElapsedMs } = loopCycleServices;
   const { drivePhase } = loopCycleServices;
   const { drivenRow } = loopCycleServices;
@@ -97,7 +98,7 @@ export function assembleCommandsLoop({ runtimeSessionServices, workServices, loo
     work: { loadWorkspace },
     progress: { decideBuildProgress, evaluateProgressPolicy, readProgressSamples },
     doctor: { CONTROL_FINDING_CODES },
-    cycle: { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks, repairLaneHalt },
+    cycle: { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, boardConflictHalt, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks, repairLaneHalt },
     sessions: { claudeModelFamily, configuredSessionModels, normalizeEffort, parseSessionChoices, resolveSessionTable, SESSION_PHASES, sessionTableLine, resolveExecution, resolveExecutionResume, runtimeSession: runtimeSessionServices },
     items: { resolveItemExact },
     gradeCommand: { declaredRubric, usableCommand },

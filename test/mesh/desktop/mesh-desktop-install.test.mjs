@@ -332,11 +332,12 @@ export const meshDesktopInstallTests = [
       );
       assert.deepEqual(
         [...PREFLIGHT_CHECKS],
-        ["claude-authenticated", "payload-build", "workspace-identity-pinned", "heartbeat-hook-installed", "control-relay-loopback"],
-        "126/06: four checks, the fourth appended last so the three that shipped keep their order — and 191/08's fifth, last again",
+        ["claude-authenticated", "payload-build", "workspace-identity-pinned", "heartbeat-hook-installed", "control-relay-loopback", "board-access"],
+        "126/06: four checks, the fourth appended last so the three that shipped keep their order — and 191/08's fifth and 209/04's sixth, last again",
       );
       for (const entry of preflight) {
-        assert.ok(["pass", "fail"].includes(entry.status), `${entry.code} carries a status of pass or fail`);
+        // 209/04 — `skip` (rendered `--`, 175/03) is what board-access answers on a node with no board.
+        assert.ok(["pass", "fail", "skip"].includes(entry.status), `${entry.code} carries a status of pass, fail or skip`);
         assert.ok(typeof entry.message === "string" && entry.message.trim().length > 0, `${entry.code} carries a one-sentence message`);
       }
     },
@@ -560,8 +561,11 @@ export const meshDesktopInstallTests = [
         // seam, and this module has none.
         workspaceConfigFn: async (root) => {
           touched.push(root);
-          return {};
+          // 209/04 — it selects a board, so `board-access` probes it too, and fails: the runner
+          // cannot start the installed aof. Still unpinned for `workspace-identity-pinned`.
+          return { work: { store: { manifest: ".aof/boards/team.yaml" } } };
         },
+        runner: async () => ({ stdout: "", stderr: "", code: -1 }),
         nodeId: "fixture-node",
         env: {},
         // 191/08 — `control-relay-loopback` fails too: a URL set on a loopback-bound control.

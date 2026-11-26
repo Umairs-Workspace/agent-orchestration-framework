@@ -26,7 +26,7 @@ const base = {
 // a repair session EXCEPT the operator's own five — a UAT sign-off, a question already waiting on
 // the operator, the operator's Stop, a retry parked on a session limit, and the operator's time
 // budget. The engine declares both sets as exports and decides the hand-over purely; `LOOP_STOPS`
-// is unchanged by them. The fifteen-row outline covers every stop.
+// is unchanged by them. The sixteen-row outline covers every stop.
 const REPAIR_ROWS = Object.freeze([
   ["lane-open-failed", "repair"],
   ["lane-merge-refused", "repair"],
@@ -43,24 +43,26 @@ const REPAIR_ROWS = Object.freeze([
   ["retry-parked", "stop"],
   ["unmapped-item-type", "repair"],
   ["operator-interrupt", "stop"],
+  // 209/03 — resync is the operator's request, so a board conflict is never handed to a repair.
+  ["board-conflict", "stop"],
 ]);
 
 export const workLoopStopSetTests = [
   {
-    name: "147/00 R1 (widened) — REPAIRABLE_STOPS is every loop stop that is not one of the operator's five, both frozen, and LOOP_STOPS is unchanged by them",
+    name: "147/00 R1 (widened) — REPAIRABLE_STOPS is every loop stop that is not one of the operator's six, both frozen, and LOOP_STOPS is unchanged by them",
     run() {
       assert.equal(Object.isFrozen(REPAIRABLE_STOPS), true);
       assert.equal(Object.isFrozen(OPERATOR_STOPS), true);
-      assert.deepEqual([...OPERATOR_STOPS].sort(), ["deadline-exhausted", "operator-interrupt", "retry-parked", "session-needs-input", "uat-gate"]);
+      assert.deepEqual([...OPERATOR_STOPS].sort(), ["board-conflict", "deadline-exhausted", "operator-interrupt", "retry-parked", "session-needs-input", "uat-gate"]);
       assert.deepEqual([...REPAIRABLE_STOPS], LOOP_STOPS.filter((stop) => !OPERATOR_STOPS.includes(stop)), "every non-operator stop, in LOOP_STOPS' order");
-      assert.deepEqual([...LANE_STOPS], LOOP_STOPS.slice(12), "the lane stops are LOOP_STOPS' members 13-15, in their order");
+      assert.deepEqual([...LANE_STOPS], LOOP_STOPS.slice(12, 15), "the lane stops are LOOP_STOPS' members 13-15, in their order");
       for (const stop of LANE_STOPS) assert.ok(REPAIRABLE_STOPS.includes(stop), `${stop} is still repairable`);
-      assert.equal(LOOP_STOPS.length, 15, "LOOP_STOPS gains no member");
+      assert.equal(LOOP_STOPS.length, 16, "LOOP_STOPS gains only 209/03's board-conflict");
       for (const stop of OPERATOR_STOPS) assert.ok(LOOP_STOPS.includes(stop), `${stop} is a loop stop`);
     },
   },
   {
-    name: "147/00 R2 (widened) [outline] the engine hands over every stop but the operator's — decideHaltRepair over every stop with repair on and no earlier repair (15 rows)",
+    name: "147/00 R2 (widened) [outline] the engine hands over every stop but the operator's — decideHaltRepair over every stop with repair on and no earlier repair (16 rows)",
     run() {
       assert.equal(REPAIR_ROWS.length, LOOP_STOPS.length, "the outline covers every stop");
       assert.deepEqual(REPAIR_ROWS.map(([stop]) => stop).sort(), [...LOOP_STOPS].sort(), "…and names each exactly once");
@@ -113,8 +115,8 @@ export const workLoopStopSetTests = [
     run() {
       assert.equal(Object.isFrozen(LOOP_STOPS), true);
       // 129/01 (ADR-008 §5) — the three lane stops, APPENDED LAST: the twelve before them keep
-      // their names and their order.
-      assert.deepEqual(LOOP_STOPS, ["uat-gate", "dependency-blocked", "cap-exhausted", "deadline-exhausted", "progress-exhausted", "no-progress", "grade-indeterminate", "session-needs-input", "run-not-retryable", "retry-parked", "unmapped-item-type", "operator-interrupt", "lane-open-failed", "lane-merge-refused", "lane-merge-conflict"]);
+      // their names and their order. 209/03 appends the board conflict after them.
+      assert.deepEqual(LOOP_STOPS, ["uat-gate", "dependency-blocked", "cap-exhausted", "deadline-exhausted", "progress-exhausted", "no-progress", "grade-indeterminate", "session-needs-input", "run-not-retryable", "retry-parked", "unmapped-item-type", "operator-interrupt", "lane-open-failed", "lane-merge-refused", "lane-merge-conflict", "board-conflict"]);
       // 102/00 — the sixth member, APPENDED LAST: the five prior codes keep their order.
       assert.deepEqual(LOOP_REFUSALS, ["loop-scope-unsupported", "loop-level-locked", "loop-level-gate", "loop-level-unknown", "loop-bound-unresolved", "loop-id-missing"]);
       assert.deepEqual(LOOP_REFUSALS.slice(0, 5), ["loop-scope-unsupported", "loop-level-locked", "loop-level-gate", "loop-level-unknown", "loop-bound-unresolved"]);
@@ -245,9 +247,10 @@ export const workLoopStopSetTests = [
   {
     name: "129/01/03 the three lane stops are the closed set's last three members, the twelve before them are unrenamed, and the refusals are untouched",
     run() {
-      assert.equal(LOOP_STOPS.length, 15);
+      assert.equal(LOOP_STOPS.length, 16);
       assert.equal(Object.isFrozen(LOOP_STOPS), true);
-      assert.deepEqual(LOOP_STOPS.slice(12), ["lane-open-failed", "lane-merge-refused", "lane-merge-conflict"], "members 13, 14 and 15, in that order");
+      assert.deepEqual(LOOP_STOPS.slice(12, 15), ["lane-open-failed", "lane-merge-refused", "lane-merge-conflict"], "members 13, 14 and 15, in that order");
+      assert.equal(LOOP_STOPS[15], "board-conflict", "209/03 appends the board conflict as member 16");
       assert.deepEqual(LOOP_STOPS.slice(0, 12), [
         "uat-gate", "dependency-blocked", "cap-exhausted", "deadline-exhausted", "progress-exhausted", "no-progress",
         "grade-indeterminate", "session-needs-input", "run-not-retryable", "retry-parked", "unmapped-item-type", "operator-interrupt",

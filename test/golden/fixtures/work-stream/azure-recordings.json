@@ -1,0 +1,310 @@
+{
+  "note": "Sanitized process-metadata replies the recorded board serves: organization, project and area are the shipped example names, and no reply carries a credential. Shapes as 209/01 measured them; refresh from the live test project at 209/05 verify.",
+  "board": {
+    "organization": "your-organization",
+    "project": "Your Project",
+    "process": "AOF Agile",
+    "area": "Your Project\\AOF"
+  },
+  "replies": {
+    "project": {
+      "capabilities": {
+        "processTemplate": {
+          "templateName": "AOF Agile"
+        }
+      }
+    },
+    "area": {
+      "name": "AOF"
+    },
+    "relationTypes": {
+      "value": [
+        {
+          "referenceName": "System.LinkTypes.Hierarchy-Reverse"
+        },
+        {
+          "referenceName": "System.LinkTypes.Dependency-Reverse"
+        }
+      ]
+    },
+    "workItemTypes": {
+      "Feature": {
+        "states": {
+          "value": [
+            {
+              "name": "New"
+            },
+            {
+              "name": "Active"
+            },
+            {
+              "name": "Blocked"
+            },
+            {
+              "name": "Resolved"
+            },
+            {
+              "name": "Closed"
+            }
+          ]
+        },
+        "fields": {
+          "value": [
+            {
+              "referenceName": "Custom.AofRef"
+            },
+            {
+              "referenceName": "System.Title"
+            },
+            {
+              "referenceName": "Custom.AofKey"
+            },
+            {
+              "referenceName": "Custom.AofMembership"
+            },
+            {
+              "referenceName": "Microsoft.VSTS.Common.StackRank"
+            }
+          ]
+        }
+      },
+      "User Story": {
+        "states": {
+          "value": [
+            {
+              "name": "New"
+            },
+            {
+              "name": "Active"
+            },
+            {
+              "name": "Blocked"
+            },
+            {
+              "name": "Resolved"
+            },
+            {
+              "name": "Closed"
+            }
+          ]
+        },
+        "fields": {
+          "value": [
+            {
+              "referenceName": "Custom.AofRef"
+            },
+            {
+              "referenceName": "System.Title"
+            },
+            {
+              "referenceName": "Custom.AofKey"
+            },
+            {
+              "referenceName": "Custom.AofMembership"
+            },
+            {
+              "referenceName": "Microsoft.VSTS.Common.StackRank"
+            }
+          ]
+        }
+      },
+      "Task": {
+        "states": {
+          "value": [
+            {
+              "name": "New"
+            },
+            {
+              "name": "Active"
+            },
+            {
+              "name": "Blocked"
+            },
+            {
+              "name": "Resolved"
+            },
+            {
+              "name": "Closed"
+            }
+          ]
+        },
+        "fields": {
+          "value": [
+            {
+              "referenceName": "Custom.AofRef"
+            },
+            {
+              "referenceName": "System.Title"
+            },
+            {
+              "referenceName": "Custom.AofKey"
+            },
+            {
+              "referenceName": "Custom.AofMembership"
+            },
+            {
+              "referenceName": "Microsoft.VSTS.Common.StackRank"
+            }
+          ]
+        }
+      },
+      "Chore": {
+        "states": {
+          "value": [
+            {
+              "name": "New"
+            },
+            {
+              "name": "Active"
+            },
+            {
+              "name": "Blocked"
+            },
+            {
+              "name": "Resolved"
+            },
+            {
+              "name": "Closed"
+            }
+          ]
+        },
+        "fields": {
+          "value": [
+            {
+              "referenceName": "Custom.AofRef"
+            },
+            {
+              "referenceName": "System.Title"
+            },
+            {
+              "referenceName": "Custom.AofKey"
+            },
+            {
+              "referenceName": "Custom.AofMembership"
+            },
+            {
+              "referenceName": "Microsoft.VSTS.Common.StackRank"
+            }
+          ]
+        }
+      },
+      "Spike": {
+        "states": {
+          "value": [
+            {
+              "name": "New"
+            },
+            {
+              "name": "Active"
+            },
+            {
+              "name": "Blocked"
+            },
+            {
+              "name": "Resolved"
+            },
+            {
+              "name": "Closed"
+            }
+          ]
+        },
+        "fields": {
+          "value": [
+            {
+              "referenceName": "Custom.AofRef"
+            },
+            {
+              "referenceName": "System.Title"
+            },
+            {
+              "referenceName": "Custom.AofKey"
+            },
+            {
+              "referenceName": "Custom.AofMembership"
+            },
+            {
+              "referenceName": "Microsoft.VSTS.Common.StackRank"
+            }
+          ]
+        }
+      },
+      "UAT": {
+        "states": {
+          "value": [
+            {
+              "name": "New"
+            },
+            {
+              "name": "Active"
+            },
+            {
+              "name": "Blocked"
+            },
+            {
+              "name": "Resolved"
+            },
+            {
+              "name": "Closed"
+            }
+          ]
+        },
+        "fields": {
+          "value": [
+            {
+              "referenceName": "Custom.AofRef"
+            },
+            {
+              "referenceName": "System.Title"
+            },
+            {
+              "referenceName": "Custom.AofKey"
+            },
+            {
+              "referenceName": "Custom.AofMembership"
+            },
+            {
+              "referenceName": "Microsoft.VSTS.Common.StackRank"
+            }
+          ]
+        }
+      },
+      "Prototype": {
+        "states": {
+          "value": [
+            {
+              "name": "Active"
+            },
+            {
+              "name": "Paused"
+            },
+            {
+              "name": "Closed"
+            },
+            {
+              "name": "Abandoned"
+            }
+          ]
+        },
+        "fields": {
+          "value": [
+            {
+              "referenceName": "Custom.AofRef"
+            },
+            {
+              "referenceName": "System.Title"
+            },
+            {
+              "referenceName": "Custom.AofKey"
+            },
+            {
+              "referenceName": "Custom.AofMembership"
+            },
+            {
+              "referenceName": "Microsoft.VSTS.Common.StackRank"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

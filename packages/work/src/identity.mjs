@@ -47,6 +47,11 @@ export const RECORD_DOC_BY_TYPE = Object.freeze({
 // sweep in FF-12701 can hold "no other module carries the string".
 export const BACKLOG_ROOT = "backlog";
 export const ARCHIVE_ROOT = "archive";
+// The board store's bookkeeping file in a document home: the stable key that links the home to
+// its board item (209/02). It is not a document, so the stream's readers and exports pass over it.
+// Its name lives here, beside the roots, so a reader that only skips it (doctor's tree scan) never
+// loads the board store to learn it (209/05, FF-16004).
+export const BOARD_KEY_FILE = ".aof-board-key";
 export const sameNumber = (a, b) => Number.parseInt(a, 10) === Number.parseInt(b, 10);
 
 // THE STORY-GRAINED SCOPE — `NN/MM-PP`, the stories MM..PP (inclusive) of driver NN, and

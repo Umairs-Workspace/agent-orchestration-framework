@@ -430,6 +430,16 @@ export function createWaveOrchestration({
       return await resolveDispatchLane(primaryRoot, ref, { ...(advance ? { advanceTo: baseCommit } : {}), ...(execution == null ? {} : { execution }), exec });
     }
 
+    // 209/03 (ADR-003) — dispatch refuses a lane under a board conflict. That is the operator's
+    // stop, never `lane-open-failed`, which a repair session could clear by resyncing on its own.
+    function boardConflictLaneHalt(ref, error) {
+      const conflict = error.detail?.conflict ?? {};
+      return {
+        act: haltDecision("board-conflict", ref, "work-store:work-board-conflict"),
+        details: { conflict: conflict.ref, boardId: conflict.id, revision: conflict.revision, ...(conflict.deleted ? { deleted: true } : {}), resync: `aof work resync-board ${conflict.ref}` },
+      };
+    }
+
     // ---- one lane, open → mint → child → settle → ladder → commit ----
     async function runLane(open, member, lane) {
       const ref = open.ref;
@@ -924,6 +934,7 @@ export function createWaveOrchestration({
       try {
         dispatched = await invokeRegistered("work:dispatch", { refs: wave.dispatch, ...laneBoundAsk }, dispatchCtx);
       } catch (error) {
+        if (error?.code === "work-board-conflict") return { halt: boardConflictLaneHalt(wave.dispatch[0], error) };
         const producer = error?.code === "duplicate-run" ? "run-store:duplicate-run" : `work:dispatch:${error?.code ?? "dispatch-lane-open-error"}`;
         return { halt: { act: haltDecision("lane-open-failed", wave.dispatch[0], producer), details: { error: String(error?.message ?? error) } } };
       }
@@ -935,6 +946,7 @@ export function createWaveOrchestration({
       await narrate(`Wave ${waveOrdinal} — dispatching ${admitted.map((entry) => entry.ref).join(", ") || "nothing"} (bound ${bound})${wave.hold.length > 0 ? `; held: ${wave.hold.join(", ")}` : ""}.`);
       for (const entry of entries) {
         if (!entry.ok) {
+          if (entry.error?.code === "work-board-conflict") return { halt: boardConflictLaneHalt(entry.ref, entry.error) };
           const producer = entry.error?.code === "duplicate-run" ? "run-store:duplicate-run" : `work:dispatch:${entry.error?.code ?? "dispatch-lane-open-error"}`;
           return { halt: { act: haltDecision("lane-open-failed", entry.ref, producer), details: { error: String(entry.error?.message ?? entry.error) } } };
         }

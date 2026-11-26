@@ -1,14 +1,19 @@
 import assert from "node:assert/strict";
-import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { assertScenarioMatches, captureScenario, compareScenario } from "../support/golden/harness.mjs";
 import { DEFAULT_BASELINE_ROOT, materialise } from "../support/golden/baseline-store.mjs";
 import { workStreamLanes as lanes } from "./work-stream.lane.mjs";
 
-import { resolveWorkItemStore } from "@aof/work/store/work-item-store";
+import { bindWorkItemStore, resolveWorkItemStore } from "@aof/work/store/work-item-store";
 import { defaultApplication } from "aof/default-application";
 import { azureItem, azureRecording, azureDefinition } from "./fixtures/work-stream/azure-adapter.test-support.mjs";
+import { exportStream, publishSeed, seedProject, selectBoard } from "./fixtures/work-stream/file-adapter.mjs";
+import { boardState, exportBoard } from "./fixtures/work-stream/board-adapter.mjs";
+import { spawnCliSync } from "../support/cli-spawn.mjs";
+import { completingDriver, loopFixture, runCollected } from "../loop/loop-command-probe.test.mjs";
 
 const laneId = "work-stream-fixture";
 const fixture = lanes.find(lane => lane.id === laneId);
@@ -53,6 +58,26 @@ export const workStreamTests = [
       }
     },
   }))),
+  // 209/05 — the same accepted captures over a selected board: the shipped Azure definition over
+  // the recorded board, and a project's own second board. Every case but archive matches its
+  // file baseline byte for byte; archive is refused as local-only and leaves the stream unchanged.
+  ...["azure", "alternate"].flatMap(store => lanes.flatMap(lane => lane.scenarios.map(scenario => ({
+    name: `209/05 ${store} board [${lane.id}/${scenario.id}]`,
+    run() {
+      const previous = process.env.AOF_WORK_STREAM_STORE;
+      process.env.AOF_WORK_STREAM_STORE = store;
+      try {
+        if (scenario.entry.argv[0] !== "archive") return assertScenarioMatches({ lanes, laneId: lane.id, scenarioId: scenario.id });
+        const { tree } = captureScenario(lane, scenario);
+        const answer = scenario.format === "json" ? tree.get("project/stdout") : tree.get("project/stderr");
+        assert.match(answer, scenario.format === "json" ? /work-board-archive-local-only/ : /only in local file mode/);
+        assert.deepEqual(tree.get("project/stream/inventory.json"), tree.get("project/before/inventory.json"));
+      } finally {
+        if (previous === undefined) delete process.env.AOF_WORK_STREAM_STORE;
+        else process.env.AOF_WORK_STREAM_STORE = previous;
+      }
+    },
+  })))),
   { name: "205/00 · family and case registration agrees with the baseline inventory", run() {
     assert.deepEqual(directories(DEFAULT_BASELINE_ROOT).filter(id => id.startsWith("work-stream-")), lanes.map(lane => lane.id).sort());
     for (const lane of lanes) assert.deepEqual(directories(path.join(DEFAULT_BASELINE_ROOT, lane.id)), lane.scenarios.map(s => s.id).sort());
@@ -293,4 +318,139 @@ workStreamTests.push(
       assert.deepEqual(reply.changes.map(({ id, revision, deleted }) => [id, revision, deleted]), wanted);
     },
   })),
+);
+
+// milestone 209 / story 05 — the board conformance outside the replay: the recorded board observed
+// beside the repository, the second adapter's boundary, and the loop driven end to end over a
+// board, through a conflict and its resync. These cases run this lane's verbs, so they live in its
+// suite rather than a sibling (209/F-02).
+const repo = fileURLToPath(new URL("../../", import.meta.url));
+const cli = path.join(repo, "packages/core/bin/aof.mjs");
+const recordedBoard = project => path.join(project, ".aof/boards/recorded-board.json");
+const boardDefinition = project => JSON.parse(readFileSync(path.join(project, ".aof/boards/board.yaml"), "utf8"));
+
+async function project(store, run) {
+  const root = mkdtempSync(path.join(tmpdir(), "aof-board-workflow-"));
+  try {
+    const home = path.join(root, "home");
+    const work = seedProject(root, { store });
+    return await run({ root, home, work, aof: (...argv) => spawnCliSync(process.execPath, [cli, "work", ...argv], {
+      cwd: root, encoding: "utf8", windowsHide: true, env: { ...process.env, AOF_GLOBAL_HOME: home, NODE_NO_WARNINGS: "1" },
+    }) });
+  } finally { rmSync(root, { recursive: true, force: true }); }
+}
+
+function filesUnder(dir) {
+  const files = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === "node_modules") continue;
+    const target = path.join(dir, entry.name);
+    if (entry.isDirectory()) files.push(...filesUnder(target));
+    else files.push([target, statSync(target).mtimeMs]);
+  }
+  return files;
+}
+
+workStreamTests.push(
+  { name: "209/05 task00 E2 · A status change is observed on the recorded board and in the repository", async run() {
+    await project("azure", async ({ root, home, work, aof }) => {
+      const published = await publishSeed(root, home);
+      assert.ok(published.includes("16"), "the seed's prototypes are linked");
+      const before = exportStream(work);
+      const moved = aof("status", "16", "active", "--json");
+      assert.equal(moved.status, 0, moved.stderr);
+      const items = exportBoard(recordedBoard(root), boardDefinition(root)).filter(item => item.ref === "16");
+      assert.equal(items.length, 1, "one board item for 16");
+      assert.equal(items[0].status, "active");
+      const after = exportStream(work);
+      const record = [...after.files].find(([name, text]) => name.startsWith("16_") && /^status:/m.test(text));
+      assert.match(record[1], /status: active/, "the local record moved with the board");
+      assert.notDeepEqual(after, before);
+    });
+  } },
+  { name: "209/05 task00 · The file-mode lanes still run beside the board lanes", run() {
+    const count = prefix => workStreamTests.filter(test => test.name.startsWith(prefix)).length;
+    assert.equal(count("205 "), 150, "the 150 accepted 205 captures still run over files");
+    assert.equal(count("208/05 explicit files "), 150);
+    assert.equal(count("209/05 azure board "), 150);
+    assert.equal(count("209/05 alternate board "), 150);
+  } },
+  { name: "209/05 task00 · The recordings carry no credentials", async run() {
+    await project("azure", async ({ root, home, aof }) => {
+      await publishSeed(root, home);
+      assert.equal(aof("list", "--json").status, 0);
+      const texts = [readFileSync(new URL("./fixtures/work-stream/azure-recordings.json", import.meta.url), "utf8"), readFileSync(recordedBoard(root), "utf8")];
+      for (const text of texts) {
+        assert.doesNotMatch(text, /authorization|bearer|accessToken|recorded-access/i);
+      }
+      assert.ok(boardState(recordedBoard(root)).requests.length > 0, "the board answered recorded requests");
+    });
+  } },
+  { name: "209/05 task01 · The alternate adapter needs no provider code in AOF and changes nothing under packages/", async run() {
+    const before = filesUnder(path.join(repo, "packages"));
+    await project("alternate", async ({ root, home, aof }) => {
+      const shim = readFileSync(path.join(root, ".aof/boards/adapter.mjs"), "utf8");
+      const adapter = readFileSync(new URL("./fixtures/work-stream/alternate-board.mjs", import.meta.url), "utf8");
+      const specifiers = [...(shim + adapter).matchAll(/\bfrom\s+("[^"]+"|'[^']+')/g)].map(match => match[1]);
+      assert.ok(specifiers.length > 0);
+      assert.ok(specifiers.every(specifier => !/azure/i.test(specifier)), `nothing from the Azure example is imported: ${specifiers.join(", ")}`);
+      const exported = Object.keys(await import(path.join(root, ".aof/boards/adapter.mjs"))).sort();
+      assert.deepEqual(exported, ["applyChanges", "readChanges", "readItems"]);
+      await publishSeed(root, home);
+      const listed = aof("list", "--json");
+      assert.equal(listed.status, 0, listed.stderr);
+      assert.ok(JSON.parse(readFileSync(path.join(root, ".aof/boards/alternate-board.json"), "utf8")).cards.length > 0, "the second board holds the published cards");
+    });
+    assert.deepEqual(filesUnder(path.join(repo, "packages")), before, "no file under packages/ was written or rebuilt");
+  } },
+  { name: "209/05 task02 E4 and E5 · The loop drives a story over the board, halts on a competing edit and resumes after resync", async run() {
+    const fx = await loopFixture({ storyStatus: "not-started" });
+    try {
+      const selection = selectBoard(fx.projectRoot, "azure");
+      fx.workspace.config.work.store = selection;
+      writeFileSync(fx.workspace.configPath, JSON.stringify(fx.workspace.config));
+      const workspace = bindWorkItemStore(fx.workspace);
+      const ctx = { ...fx.ctx, workspace };
+      const published = await defaultApplication.invoke("work:publish-board", { ref: "03", refinementComplete: true, descendants: true }, ctx);
+      assert.equal(published.published, true);
+      const env = { ...process.env, AOF_GLOBAL_HOME: process.env.AOF_GLOBAL_HOME, NODE_NO_WARNINGS: "1" };
+      const session = (status) => spawnCliSync(process.execPath, [cli, "work", "status", "03/01", status], { cwd: fx.projectRoot, encoding: "utf8", env });
+      const storyId = () => exportBoard(recordedBoard(fx.projectRoot), boardDefinition(fx.projectRoot)).find(item => item.ref === "03/01").id;
+      const states = () => boardState(recordedBoard(fx.projectRoot)).requests
+        .filter(request => request.method === "PATCH" && request.endpoint === `wit/workitems/${storyId()}` && request.state).map(request => request.state);
+
+      // E5 first half: a teammate's edit lands before the build writes, so the build's guarded
+      // status write is stale, the conflict is recorded, and the loop halts before its next phase.
+      const state = boardState(recordedBoard(fx.projectRoot));
+      state.edits = [{ id: storyId(), fields: { "System.Title": "Renamed upstream" } }];
+      writeFileSync(recordedBoard(fx.projectRoot), JSON.stringify(state));
+      const halted = await runCollected({ scope: "03" }, { ...ctx, agentSessionDriverOptions: completingDriver(fx).options });
+      assert.equal(halted.state.act.stop, "board-conflict", halted.lines.join("\n"));
+      assert.equal(halted.state.act.producer, "work-store:work-board-conflict");
+      const stale = session("in-review");
+      assert.notEqual(stale.status, 0);
+      assert.match(stale.stdout + stale.stderr, /changed on the board at revision \d+\. Run "aof work resync-board 03\/01"/);
+
+      const resynced = await defaultApplication.invoke("work:resync-board", { ref: "03/01" }, ctx);
+      assert.equal(resynced.resynced, true);
+      assert.equal(exportBoard(recordedBoard(fx.projectRoot), boardDefinition(fx.projectRoot)).find(item => item.ref === "03/01").title, "Ready");
+
+      // E4 and E5's second half: resumed, the loop drives the story through build and review, and
+      // each status change the run and its sessions make reaches the board in that order.
+      const driver = completingDriver(fx, { onCommand: (command) => {
+        if (command.startsWith("/aof:continue")) session("in-review");
+        if (command.startsWith("/aof:verify")) session("done");
+      } });
+      const resumed = await runCollected({ scope: "03" }, { ...ctx, agentSessionDriverOptions: driver.options });
+      assert.notEqual(resumed.state.act.stop, "board-conflict", resumed.lines.join("\n"));
+      assert.ok(driver.typed.some(command => command.startsWith("/aof:continue")), "the loop drove the next phase");
+      const mapped = boardDefinition(fx.projectRoot).mappings.states.story;
+      const sequence = states();
+      assert.deepEqual(sequence.slice(-2), [mapped["in-review"], mapped.done], `the board saw ${sequence.join(" → ")}`);
+      assert.ok(sequence.includes(mapped["in-progress"]), "the build's start reached the board");
+      assert.match(readFileSync(path.join(fx.storyDir, "STORY.md"), "utf8"), /status: done/, "the local record moved with it");
+    } finally {
+      await fx.cleanup();
+    }
+  } },
 );

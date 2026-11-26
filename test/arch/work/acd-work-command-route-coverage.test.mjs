@@ -122,6 +122,11 @@ const BOARD_DEFERRED = new Set([
   "archive",
   // 209/02: the refinement procedure owns publication and retry on the CLI.
   "publish-board",
+  // 209/03 (ADR-003): resync is an explicit operator request on the CLI; no board-host write route.
+  "resync-board",
+  // 209/04 (ADR-004): the probe answers for the account and environment it runs in, so a served
+  // route would report the board host's sign-in, never the daemon's or the operator's.
+  "board-access",
   // 182/ADR-001: renumber mutates the operator checkout; no board-host write route.
   "renumber",
   // milestone 168 / story 01 (168/ADR-004 §1, ADR-001 §4) — `prototype` inherits `promote`'s carve-out:

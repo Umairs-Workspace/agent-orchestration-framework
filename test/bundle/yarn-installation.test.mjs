@@ -304,6 +304,7 @@ export const yarnInstallationTests = [
         'store/board-links.mjs': ['node:crypto', 'node:fs/promises', 'node:path', '@aof/contracts/error', '@aof/foundation/fs', '@aof/foundation/sqlite-runtime'],
         'store/board-publication.mjs': ['node:path', 'node:crypto', 'node:fs/promises', 'picomatch', '@aof/contracts/error'],
         'store/board-placement.mjs': ['@aof/contracts/error'],
+        'store/board-conflicts.mjs': ['node:crypto', '@aof/contracts/error'],
         'commands/board-publish.mjs': ['@aof/contracts/error'],
         'store/file-store.mjs': ['node:fs/promises', 'node:path'],
         // 208: replay checks which workspace owns the item before selecting its store.

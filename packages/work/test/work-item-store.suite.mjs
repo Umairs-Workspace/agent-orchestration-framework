@@ -450,7 +450,7 @@ function workDoc(type, number, slug, { parent, status = "in-progress", depends =
   ].join("\n");
 }
 
-async function publicationFixture(run, { attachments = false, child = false, boardMode = true } = {}) {
+async function publicationFixture(run, { attachments = false, child = false, boardMode = true, accessProbe = false } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-publication-"));
   const workspace = { projectRoot: root, workDir: path.join(root, "wiki/work") };
   const boards = path.join(root, ".aof/boards");
@@ -471,6 +471,7 @@ async function publicationFixture(run, { attachments = false, child = false, boa
     if (child) await writeFile(path.join(childHome, "STORY.md"), workDoc("story", "00", "packing", { parent: "17" }));
     const manifest = structuredClone(definition);
     if (attachments) manifest.capabilities = { attachments: { paths: ["diagrams/**/*.png"], copy: "attach" } };
+    if (accessProbe) manifest.capabilities = { ...manifest.capabilities, accessProbe: "probe" };
     await writeFile(path.join(boards, "team.yaml"), JSON.stringify(manifest));
     await writeFile(path.join(root, ".aof/aof.config.json"), JSON.stringify({ work: { store: boardMode ? selection : "files" } }));
     await writeFile(stateFile, JSON.stringify({ items: [], writes: [], copies: [], reads: [], mode: null }));
@@ -483,13 +484,41 @@ async function publicationFixture(run, { attachments = false, child = false, boa
       export async function listCards({ids,keys}) {
         const state=await read();
         if (["read-timeout", "commit-unreadable"].includes(state.mode) && (ids || keys)) throw new Error("read timeout");
-        return {items:state.items.filter(item => (!ids || ids.includes(item.id)) && (!keys || keys.includes(item.key)))};
+        const items=structuredClone(state.items.filter(item => (!ids || ids.includes(item.id)) && (!keys || keys.includes(item.key))));
+        if (state.afterRead && ids) {
+          const {id, values}=state.afterRead;
+          state.afterRead=null;
+          const item=state.items.find(row=>row.id===id);
+          Object.assign(item, values, {revision:item.revision+1});
+          (state.events??=[]).push({seq:(state.events.at(-1)?.seq??0)+1,id,revision:item.revision});
+          await save(state);
+        }
+        return {items};
       }
-      export function getChanges(){return {changes:[],cursor:"c1",coverage:true};}
+      export async function getChanges({cursor}={}){
+        const state=await read();
+        (state.feedCursors??=[]).push(cursor??null);
+        await save(state);
+        if (state.mode === "slow-feed") await sleep(300);
+        if (state.rejectCursor != null && cursor === state.rejectCursor) {
+          state.rejectCursor=null;
+          await save(state);
+          return {changes:[],cursor,coverage:false};
+        }
+        const events=state.events??[];
+        const after=cursor==null ? -1 : Number(String(cursor).slice(1));
+        const position="c"+(events.length ? events.at(-1).seq : 0);
+        return {changes:events.filter(event=>event.seq>after).map(({id,revision,deleted})=>({id,revision,deleted})),cursor:position,coverage:true};
+      }
       export async function apply({changes}) {
         const state=await read();
         const results=[];
         for (const change of changes) {
+          if (state.mode === "drop-write") {
+            state.mode = null;
+            await save(state);
+            throw new Error("no reply");
+          }
           state.writes.push(change);
           if (state.mode === "refuse-child" && change.ref === "17/00") {
             results.push({key:change.key,outcome:"refused",code:"fixture-refused"});
@@ -510,6 +539,11 @@ async function publicationFixture(run, { attachments = false, child = false, boa
           if (creating) state.items.push(item);
           if (state.mode === "wrong-values") item.title="unexpected";
           if (state.mode === "slow-create") await sleep(4000);
+          if (state.mode === "lose-reply" && !creating) {
+            state.mode = null;
+            await save(state);
+            throw new Error("reply lost");
+          }
           if ((state.mode === "lose-child" && item.ref === "17/00") || (state.mode === "lose-status" && !creating)) {
             if (state.mode === "lose-status") state.mode = "commit-unreadable";
             await save(state);
@@ -519,6 +553,13 @@ async function publicationFixture(run, { attachments = false, child = false, boa
         }
         await save(state);
         return {results};
+      }
+      export async function probe() {
+        const state=await read();
+        const refuse=(message,code,status)=>{ throw Object.assign(new Error(message),{code,status}); };
+        if (state.mode==="probe-auth") refuse("Sign-in is unavailable; the request carried Authorization: Bearer eyJ0eXAiOiJKV1QifQ.eyJzdWIiOiJ1In0.c2ln", "azure-board-auth", 401);
+        if (state.mode==="probe-403") refuse("GET returned HTTP 403.", "azure-board-http", 403);
+        return {ok:true};
       }
       export async function attach({id,name,bytes,contentKey,expectedRevision}) {
         const state=await read();
@@ -739,4 +780,362 @@ workItemStoreTests.push(
     await adjust(state => {state.mode = "unlinked";});
     assert.equal((await publish()).results[0].code, "work-board-attachment-unverified");
   }, { attachments: true }) },
+);
+
+// 209/03 — a linked milestone 17 with stories 17/01 and 17/02, and an independent milestone 18
+// with story 18/00, all published to the fixture board. `teammate` edits the board outside AOF and
+// appends the revision to the fixture's change feed.
+async function conflictFixture(run, { primed = true, ...options } = {}) {
+  return publicationFixture(async fixture => {
+    const { workspace, docHome, publish, state, adjust, context } = fixture;
+    for (const [number, slug] of [["01", "sorting"], ["02", "packing"]]) {
+      const dir = path.join(docHome, `stories/${number}_story_${slug}`);
+      await mkdir(dir, { recursive: true });
+      await writeFile(path.join(dir, "STORY.md"), workDoc("story", number, slug, { parent: "17" }));
+    }
+    const harbour = path.join(workspace.workDir, "18_milestone_harbour");
+    await mkdir(path.join(harbour, "stories/00_story_crates"), { recursive: true });
+    await writeFile(path.join(harbour, "SPEC.md"), workDoc("milestone", "18", "harbour"));
+    await writeFile(path.join(harbour, "stories/00_story_crates/STORY.md"), workDoc("story", "00", "crates", { parent: "18" }));
+    assert.equal((await publish("17", true)).published, true);
+    assert.equal((await publish("18", true)).published, true);
+    const item = async ref => (await state()).items.find(row => row.ref === ref);
+    const teammate = (ref, values = {}, { deleted = false, feed = true } = {}) => adjust(next => {
+      const target = next.items.find(row => row.ref === ref);
+      const seq = (next.events?.at(-1)?.seq ?? 0) + 1;
+      if (deleted) {
+        next.items = next.items.filter(row => row !== target);
+        if (feed) (next.events ??= []).push({ seq, id: target.id, revision: target.revision + 1, deleted: true });
+        return;
+      }
+      Object.assign(target, values);
+      target.revision += 1;
+      if (feed) (next.events ??= []).push({ seq, id: target.id, revision: target.revision });
+    });
+    // Each call loads the workspace afresh, as a restarted daemon or a new CLI process would.
+    const store = async () => resolveWorkItemStore((await context()).workspace);
+    const poll = async () => (await store()).pollChanges();
+    const conflicts = async () => (await store()).boardConflicts();
+    const journal = async () => {
+      const dir = path.join(workspace.projectRoot, ".aof/board-state");
+      const { readdir } = await import("node:fs/promises");
+      const name = (await readdir(dir)).find(file => file.endsWith(".json"));
+      return JSON.parse(await readFile(path.join(dir, name), "utf8"));
+    };
+    const halt = async ref => application.loop.cycle.boardConflictHalt(ref, await context());
+    if (primed) await poll();
+    await run({ ...fixture, item, teammate, store, poll, conflicts, journal, halt });
+  }, options);
+}
+
+const resyncCommand = 'aof work resync-board 17/02';
+
+workItemStoreTests.push(
+  { name: "209/03 task00 E1 · A state change with no pending edit records a stop", run: () => conflictFixture(async ({ item, teammate, poll, conflicts, invoke }) => {
+    const before = await item("17/02");
+    await teammate("17/02", { status: "done" });
+    const result = await poll();
+    assert.deepEqual(result.conflicts, [{ ref: "17/02", id: before.id, revision: before.revision + 1, deleted: false }]);
+    assert.deepEqual(await conflicts(), result.conflicts);
+    await assert.rejects(invoke("work:status", { ref: "17/02", status: "in-review" }), error =>
+      error.code === "work-board-conflict" && error.message.includes(resyncCommand) && error.message.includes(String(before.id)));
+  }) },
+  { name: "209/03 task00 E2 · AOF's own acknowledged write is not an external edit", run: () => conflictFixture(async ({ item, invoke, adjust, poll, journal, halt }) => {
+    await invoke("work:status", { ref: "17/02", status: "in-review" });
+    const written = await item("17/02");
+    await adjust(next => { (next.events ??= []).push({ seq: (next.events.at(-1)?.seq ?? 0) + 1, id: written.id, revision: written.revision }); });
+    assert.deepEqual((await poll()).conflicts, []);
+    assert.equal(Object.values((await journal()).links).find(entry => entry.ref === "17/02").revision, written.revision);
+    assert.equal(await halt("17"), null);
+  }) },
+  { name: "209/03 task00 E3 · A comment on a linked item does not stop the workflow", run: () => conflictFixture(async ({ item, teammate, poll, journal }) => {
+    await teammate("17/02", { comment: "Looks good" });
+    assert.deepEqual((await poll()).conflicts, []);
+    assert.equal(Object.values((await journal()).links).find(entry => entry.ref === "17/02").revision, (await item("17/02")).revision);
+  }) },
+  { name: "209/03 task00 E13 · A reorder on the board stops the workflow", run: () => conflictFixture(async ({ item, teammate, poll }) => {
+    await teammate("17/02", { rank: 99 });
+    const { id, revision } = await item("17/02");
+    assert.deepEqual((await poll()).conflicts, [{ ref: "17/02", id, revision, deleted: false }]);
+  }) },
+  { name: "209/03 task00 E4 · A repeated observation keeps the one stop", run: () => conflictFixture(async ({ item, teammate, adjust, poll, conflicts }) => {
+    await teammate("17/02", { status: "done" });
+    await poll();
+    const { id, revision } = await item("17/02");
+    await adjust(next => { next.events.push({ seq: next.events.at(-1).seq + 1, id, revision }); });
+    await poll();
+    assert.deepEqual(await conflicts(), [{ ref: "17/02", id, revision, deleted: false }]);
+  }) },
+  ...[
+    ["the title", () => ({ title: "renamed" }), true],
+    ["the state", () => ({ status: "done" }), true],
+    ["the parent link", async item => ({ parentId: (await item("18")).id }), true],
+    ["a dependency link", async item => ({ dependsIds: [(await item("17/01")).id] }), true],
+    ["the order", () => ({ rank: 99 }), true],
+    ["a tag", () => ({ tags: ["urgent"] }), false],
+    ["a field AOF does not map", () => ({ colour: "red" }), false],
+    ["an attachment", () => ({ attachments: ["photo.png"] }), false],
+    ["the state, to the value AOF already intends", async item => ({ status: (await item("17/02")).status }), false],
+  ].map(([change, values, recorded]) => ({
+    name: `209/03 task00 [outline] a teammate changing ${change} is ${recorded ? "recorded" : "not recorded"} as a stop`,
+    run: () => conflictFixture(async ({ item, teammate, poll }) => {
+      await teammate("17/02", await values(item));
+      assert.equal((await poll()).conflicts.length, recorded ? 1 : 0);
+    }),
+  })),
+  { name: "209/03 task00 · The feed position advances only after its observations are saved", run: () => conflictFixture(async ({ teammate, adjust, poll, state, journal }) => {
+    const saved = (await journal()).feed.cursor;
+    await teammate("17/02", { status: "done" });
+    await adjust(next => { next.mode = "read-timeout"; });
+    await assert.rejects(poll());
+    assert.equal((await journal()).feed.cursor, saved);
+    await adjust(next => { next.mode = null; });
+    assert.equal((await poll()).conflicts.length, 1);
+    assert.deepEqual((await state()).feedCursors.slice(-2), [saved, saved]);
+  }) },
+
+  { name: "209/03 task01 E5 · The stop survives a restart and refuses the next status change", run: () => conflictFixture(async ({ item, teammate, poll, invoke, state, docHome }) => {
+    await teammate("17/02", { status: "done" });
+    await poll();
+    const { id, revision } = await item("17/02");
+    const writes = (await state()).writes.length;
+    const story = path.join(docHome, "stories/02_story_packing/STORY.md");
+    await assert.rejects(invoke("work:status", { ref: "17/02", status: "in-review" }), error =>
+      error.code === "work-board-conflict" && error.message.includes("17/02") &&
+      error.message.includes(String(id)) && error.message.includes(`revision ${revision}`));
+    assert.equal((await state()).writes.length, writes);
+    assert.match(await readFile(story, "utf8"), /status: in-progress/);
+  }) },
+  { name: "209/03 task01 E6 · A stale write is classified and recorded as a stop", run: () => conflictFixture(async ({ item, teammate, invoke, conflicts, docHome }) => {
+    await teammate("17/02", { status: "done" }, { feed: false });
+    const { id, revision } = await item("17/02");
+    await assert.rejects(invoke("work:status", { ref: "17/02", status: "in-review" }), { code: "work-board-conflict" });
+    assert.deepEqual(await conflicts(), [{ ref: "17/02", id, revision, deleted: false }]);
+    assert.match(await readFile(path.join(docHome, "stories/02_story_packing/STORY.md"), "utf8"), /status: in-progress/);
+  }) },
+  { name: "209/03 task01 · A stale write caused by an untracked change is retried under the new revision", run: () => conflictFixture(async ({ item, teammate, invoke, conflicts }) => {
+    await teammate("17/02", { comment: "Noted" }, { feed: false });
+    await invoke("work:status", { ref: "17/02", status: "in-review" });
+    assert.equal((await item("17/02")).status, "in-review");
+    assert.equal((await item("17/02")).comment, "Noted");
+    assert.deepEqual(await conflicts(), []);
+  }) },
+  { name: "209/03 task01 E7 · Only the workflows that contain the item halt", run: () => conflictFixture(async ({ item, teammate, poll, halt, invoke }) => {
+    await teammate("17/02", { status: "done" });
+    await poll();
+    const { id, revision } = await item("17/02");
+    const held = await halt("17");
+    assert.deepEqual(held.act, { act: "halt", stop: "board-conflict", ref: "17", producer: "work-store:work-board-conflict" });
+    assert.deepEqual(held.details, { conflict: "17/02", boardId: id, revision, resync: resyncCommand });
+    assert.equal(await halt("18"), null);
+    await invoke("work:status", { ref: "18/00", status: "in-review" });
+    assert.equal((await item("18/00")).status, "in-review");
+  }) },
+  { name: "209/03 task01 · A board conflict is the operator's stop", async run() {
+    const { OPERATOR_STOPS, REPAIRABLE_STOPS, decideHaltRepair, mapStoreRefusal } = await import("@aof/work-loop/engine");
+    assert.ok(OPERATOR_STOPS.includes("board-conflict"));
+    assert.ok(!REPAIRABLE_STOPS.includes("board-conflict"));
+    assert.equal(decideHaltRepair({ stop: "board-conflict", repairOn: true, priorRepair: null }), "stop");
+    assert.deepEqual(mapStoreRefusal({ code: "work-board-conflict" }), { stop: "board-conflict", producer: "work-store:work-board-conflict" });
+  } },
+  { name: "209/03 task01 [outline] The stop is checked at each door into the workflow", run: () => conflictFixture(async ({ teammate, poll, halt, invoke, item, context, workspace }) => {
+    await teammate("17/02", { title: "renamed upstream" });
+    await poll();
+    await assert.rejects(invoke("work:status", { ref: "17/02", status: "in-review" }), { code: "work-board-conflict" });
+    await invoke("work:status", { ref: "17/01", status: "in-review" });
+    assert.equal((await item("17/01")).status, "in-review");
+    assert.equal((await halt("17")).act.stop, "board-conflict");
+    assert.equal((await halt("17/02")).act.stop, "board-conflict");
+    assert.equal(await halt("18"), null);
+    const ctx = await context();
+    await assert.rejects(application.loop.work.dispatch.resolveDispatchLane(workspace.projectRoot, "17/03", { workspace: ctx.workspace }),
+      error => error.code === "work-board-conflict" && error.message.includes("17/02"));
+    assert.equal((await invoke("work:find", { query: "17/02" })).rows.length, 1);
+    assert.equal((await (await resolveWorkItemStore(ctx.workspace).snapshot()).read("17/02")).metadata.title, "packing");
+  }) },
+
+  { name: "209/03 task02 E8 · An unchanged board resumes polling without a stop", run: () => conflictFixture(async ({ adjust, poll, journal, state }) => {
+    const saved = (await journal()).feed.cursor;
+    await adjust(next => { next.rejectCursor = saved; });
+    assert.deepEqual((await poll()).conflicts, []);
+    assert.deepEqual((await state()).feedCursors.slice(-2), [saved, null], "the rejected position is replaced by a fresh read");
+    await poll();
+    assert.equal((await state()).feedCursors.at(-1), (await journal()).feed.cursor);
+  }) },
+  { name: "209/03 task02 E9 · A change made while the feed was lost is still found", run: () => conflictFixture(async ({ adjust, teammate, poll, journal, item }) => {
+    const saved = (await journal()).feed.cursor;
+    await adjust(next => { next.rejectCursor = saved; });
+    await teammate("17/01", { title: "retitled" }, { feed: false });
+    const { id, revision } = await item("17/01");
+    assert.deepEqual((await poll()).conflicts, [{ ref: "17/01", id, revision, deleted: false }]);
+  }) },
+  { name: "209/03 task02 · A change between the startup comparison and the next poll is not missed", run: () => conflictFixture(async ({ adjust, poll, item, journal }) => {
+    assert.equal((await journal()).feed, undefined, "no usable feed position yet");
+    const { id } = await item("17/01");
+    // The edit lands after the comparison has read 17/01 and after the feed position was taken.
+    await adjust(next => { next.afterRead = { id, values: { title: "late" } }; });
+    assert.deepEqual((await poll()).conflicts, []);
+    const { revision } = await item("17/01");
+    assert.deepEqual((await poll()).conflicts, [{ ref: "17/01", id, revision, deleted: false }]);
+  }, { primed: false }) },
+  { name: "209/03 task02 · A deleted linked item seen in the feed is a stop", run: () => conflictFixture(async ({ item, teammate, poll, docHome }) => {
+    const { id } = await item("17/02");
+    await teammate("17/02", {}, { deleted: true });
+    const [conflict] = (await poll()).conflicts;
+    assert.deepEqual({ ref: conflict.ref, id: conflict.id, deleted: conflict.deleted }, { ref: "17/02", id, deleted: true });
+    assert.match(await readFile(path.join(docHome, "stories/02_story_packing/STORY.md"), "utf8"), /Decision lives here\./);
+  }) },
+
+  { name: "209/03 task03 E10 · Resync restores tracked values and leaves other board content alone", run: () => conflictFixture(async ({ item, teammate, poll, invoke, state, conflicts, halt }) => {
+    await teammate("17/02", { status: "done", title: "renamed", comment: "Keep this", colour: "red" });
+    await poll();
+    const before = await item("17/02");
+    const result = await invoke("work:resync-board", { ref: "17/02" });
+    const after = await item("17/02");
+    assert.deepEqual(result, { ref: "17/02", id: before.id, revision: before.revision + 1, resynced: true });
+    assert.equal((await state()).writes.at(-1).expectedRevision, before.revision);
+    assert.deepEqual([after.status, after.title, after.rank, after.parentId], ["in-progress", "packing", 2, (await item("17")).id]);
+    assert.deepEqual([after.comment, after.colour], ["Keep this", "red"]);
+    assert.deepEqual(await conflicts(), []);
+    assert.equal(await halt("17"), null);
+  }) },
+  { name: "209/03 task03 E11 · A second edit during resync leaves the workflow stopped", run: () => conflictFixture(async ({ item, teammate, poll, invoke, adjust, conflicts }) => {
+    await teammate("17/02", { status: "done" });
+    await poll();
+    const { id } = await item("17/02");
+    await adjust(next => { next.afterRead = { id, values: { title: "edited mid-resync" } }; });
+    await assert.rejects(invoke("work:resync-board", { ref: "17/02" }), { code: "work-board-conflict" });
+    assert.deepEqual(await conflicts(), [{ ref: "17/02", id, revision: (await item("17/02")).revision, deleted: false }]);
+    assert.equal((await item("17/02")).title, "edited mid-resync");
+  }) },
+  { name: "209/03 task03 E12 · A deleted item is not recreated by resync", run: () => conflictFixture(async ({ teammate, poll, invoke, state, conflicts }) => {
+    await teammate("17/02", {}, { deleted: true });
+    await poll();
+    const writes = (await state()).writes.length;
+    await assert.rejects(invoke("work:resync-board", { ref: "17/02" }), error =>
+      error.code === "work-board-conflict" && /recycle bin/.test(error.message) && error.message.includes(resyncCommand));
+    assert.equal((await state()).writes.length, writes);
+    assert.equal((await conflicts())[0].deleted, true);
+  }) },
+  { name: "209/03 task03 · The workflow continues after a verified resync", run: () => conflictFixture(async ({ teammate, poll, invoke, halt }) => {
+    await teammate("17/02", { status: "done" });
+    await poll();
+    assert.equal((await halt("17")).act.stop, "board-conflict");
+    await invoke("work:resync-board", { ref: "17/02" });
+    assert.equal(await halt("17"), null);
+    await invoke("work:status", { ref: "17/02", status: "in-review" });
+  }) },
+  ...[
+    ["is applied", "revision 8 with AOF's values", null, "cleared"],
+    ["is applied", "revision 8 with a different title", "wrong-values", "kept"],
+    ["gets no reply", "revision 8 with AOF's values", "lose-reply", "cleared"],
+    ["gets no reply", "revision 7 unchanged", "drop-write", "kept"],
+  ].map(([write, readback, mode, outcome]) => ({
+    name: `209/03 task03 [outline] a resync write that ${write} with a readback of ${readback} leaves the stop ${outcome}`,
+    run: () => conflictFixture(async ({ teammate, poll, invoke, adjust, conflicts }) => {
+      await teammate("17/02", { status: "done" });
+      await poll();
+      await adjust(next => { next.mode = mode; });
+      const resync = invoke("work:resync-board", { ref: "17/02" });
+      if (outcome === "cleared") assert.equal((await resync).resynced, true);
+      else await assert.rejects(resync, { code: "work-board-conflict" });
+      await adjust(next => { next.mode = null; });
+      assert.equal((await conflicts()).length, outcome === "cleared" ? 0 : 1);
+    }),
+  })),
+  { name: "209/03 task03 [outline] Resync refuses when there is nothing to recover", run: () => conflictFixture(async ({ invoke, state }) => {
+    const writes = (await state()).writes.length;
+    assert.deepEqual(await invoke("work:resync-board", { ref: "17/01" }), { ref: "17/01", id: (await state()).items.find(row => row.ref === "17/01").id, resynced: false, reason: "no-conflict" });
+    assert.equal((await state()).writes.length, writes);
+    await assert.rejects(invoke("work:resync-board", { ref: "99" }), { code: "ref-not-found" });
+  }) },
+  { name: "209/03 task03 [outline] Resync is a skip in local file mode", run: () => publicationFixture(async ({ invoke }) => {
+    assert.deepEqual(await invoke("work:resync-board", { ref: "17" }), { ref: "17", resynced: false, skipped: "local-file-mode" });
+  }, { boardMode: false }) },
+);
+
+workItemStoreTests.push(
+  { name: "209/03 task00 · The armed observation polls the board without a pending edit", run: () => conflictFixture(async ({ teammate, context, conflicts }) => {
+    const { setTimeout: sleep } = await import("node:timers/promises");
+    const reports = [];
+    const handle = resolveWorkItemStore((await context()).workspace).observe({ boardPollIntervalMs: 20, reportDegrade: (...args) => reports.push(args) });
+    try {
+      await teammate("17/02", { status: "done" });
+      for (let tries = 0; tries < 100 && (await conflicts()).length === 0; tries++) await sleep(20);
+      assert.equal((await conflicts())[0]?.ref, "17/02");
+      assert.deepEqual(reports, []);
+    } finally {
+      await handle.dispose();
+    }
+  }) },
+  { name: "209/03 task00 · A status change made while a poll reads the board is applied and is not a conflict", run: () => conflictFixture(async ({ adjust, poll, invoke, item, conflicts }) => {
+    await adjust(next => { next.mode = "slow-feed"; });
+    const polling = poll();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    await invoke("work:status", { ref: "17/02", status: "in-review" });
+    await polling;
+    await adjust(next => { next.mode = null; });
+    assert.equal((await item("17/02")).status, "in-review");
+    assert.deepEqual(await conflicts(), []);
+    await poll();
+    assert.deepEqual(await conflicts(), []);
+  }) },
+  { name: "209/03 task03 · The public CLI refuses the conflicted status change and resyncs the item", run: () => conflictFixture(async ({ teammate, poll, workspace }) => {
+    await teammate("17/02", { status: "done" });
+    await poll();
+    const cli = fileURLToPath(new URL("../../core/bin/aof.mjs", import.meta.url));
+    const aof = (...args) => spawnSync(process.execPath, [cli, "work", ...args, "--json"], {
+      cwd: workspace.projectRoot, encoding: "utf8", timeout: 30_000,
+      env: { ...process.env, AOF_GLOBAL_HOME: path.join(workspace.projectRoot, "home") },
+    });
+    const refused = aof("status", "17/02", "in-review");
+    assert.notEqual(refused.status, 0);
+    assert.match(refused.stdout + refused.stderr, /work-board-conflict/);
+    assert.match(refused.stdout + refused.stderr, /aof work resync-board 17\/02/);
+    const resynced = aof("resync-board", "17/02");
+    assert.equal(resynced.status, 0, resynced.stderr);
+    assert.equal(JSON.parse(resynced.stdout).resynced, true);
+    assert.equal(aof("status", "17/02", "in-review").status, 0);
+  }) },
+);
+
+workItemStoreTests.push(
+  ...[
+    [null, { ok: true, stage: "board", manifest: ".aof/boards/team.yaml" }, 0],
+    ["probe-auth", { ok: false, stage: "sign-in", code: "azure-board-auth", status: 401 }, 1],
+    ["probe-403", { ok: false, stage: "board", code: "azure-board-http", status: 403 }, 1],
+  ].map(([mode, expected, exit]) => ({
+    name: `209/04 [outline] board-access answers ${expected.stage} ${expected.ok ? "ok" : "failed"} and exits ${exit} when the probe ${mode ?? "passes"}`,
+    run: () => publicationFixture(async ({ adjust, invoke, workspace }) => {
+      await adjust(next => { next.mode = mode; });
+      const result = await invoke("work:board-access", {});
+      for (const [key, value] of Object.entries(expected)) assert.equal(result[key], value, key);
+      assert.doesNotMatch(JSON.stringify(result), /eyJ0eXAi|Bearer eyJ/, "no credential in the answer");
+      const cli = fileURLToPath(new URL("../../core/bin/aof.mjs", import.meta.url));
+      const spawned = spawnSync(process.execPath, [cli, "work", "board-access", "--json"], {
+        cwd: workspace.projectRoot, encoding: "utf8", timeout: 30_000,
+        env: { ...process.env, AOF_GLOBAL_HOME: path.join(workspace.projectRoot, "home") },
+      });
+      assert.equal(spawned.status, exit, spawned.stderr);
+      assert.equal(JSON.parse(spawned.stdout).stage, expected.stage);
+      assert.doesNotMatch(spawned.stdout + spawned.stderr, /eyJ0eXAi/);
+    }, { accessProbe: true }),
+  })),
+  { name: "209/04 [outline] board-access skips a definition that declares no access probe", run: () => publicationFixture(async ({ invoke }) => {
+    assert.deepEqual(await invoke("work:board-access", {}), { ok: true, skipped: "no-access-probe", manifest: ".aof/boards/team.yaml" });
+  }) },
+  { name: "209/04 [outline] board-access fails at the definition, naming its key, when the manifest is invalid", run: () => publicationFixture(async ({ invoke, root }) => {
+    const file = path.join(root, ".aof/boards/team.yaml");
+    const manifest = JSON.parse(await readFile(file, "utf8"));
+    delete manifest.operations;
+    await writeFile(file, JSON.stringify(manifest));
+    const result = await invoke("work:board-access", {});
+    assert.equal(result.ok, false);
+    assert.equal(result.stage, "definition");
+    assert.equal(result.code, "work-board-definition-invalid");
+    assert.match(result.message, /operations/);
+  }) },
+  { name: "209/04 [outline] board-access is a skip in local file mode", run: () => publicationFixture(async ({ invoke }) => {
+    assert.deepEqual(await invoke("work:board-access", {}), { ok: true, skipped: "local-file-mode" });
+  }, { boardMode: false }) },
 );

@@ -322,10 +322,10 @@
   {
     "file": "packages/mesh/src/commands/desktop-preflight.mjs",
     "kind": "child-process",
-    "expression": "spawn(file, args, { windowsHide: true, ...(spawnOptions?.env ? { env: spawnOptions.env } : {}) })",
-    "digest": "5d30e9e3a26063a12637d6a2691dc9a2146bf2d0681763f22b946fab3cc9cddf",
-    "sourceDigest": "b7d8db594b4a8ca2e1f496f7a0e6f3eb02843f06b8cd8c0edfd81f16955ffe91",
-    "reason": "Preflight process port probes the desktop executable selected by the desktop resolver. Native app paths remain Plan 04 current layout. 175/03 re-reviewed: still the one injected runner, spawning only the file and argv it is handed with no shell; an optional env is passed through so the darwin daemon probe runs `claude auth status` with exactly the LaunchAgent PATH and HOME. 175/F-09 re-reviewed at PR #22: the probe's env gained USER and LOGNAME (launchd's per-user set); the call is the same injected runner over the file and argv it is handed, with no shell. 191/08 re-reviewed: the module gained the `control-relay-loopback` check, a pure config read that spawns nothing; the audited call is byte-identical (same digest)."
+    "expression": "spawn(file, args, { windowsHide: true, ...(spawnOptions?.env ? { env: spawnOptions.env } : {}), ...(spawnOptions?.cwd ? { cwd: spawnOptions.cwd } : {}), ...(spawnOptions?.timeout ? { timeout: spawnOptions.timeout } : {}) })",
+    "digest": "b23fe7988434a94fc8d7e7e921827486b24b3fe8888f8c9e17eb9fbf166a4325",
+    "sourceDigest": "2d47530eac1b27701df66254a8da9b31ecfb56974c36a71e82088e2463ef4fa0",
+    "reason": "Preflight process port probes the desktop executable selected by the desktop resolver. Native app paths remain Plan 04 current layout. 175/03 re-reviewed: still the one injected runner, spawning only the file and argv it is handed with no shell; an optional env is passed through so the darwin daemon probe runs `claude auth status` with exactly the LaunchAgent PATH and HOME. 175/F-09 re-reviewed at PR #22: the probe's env gained USER and LOGNAME (launchd's per-user set); the call is the same injected runner over the file and argv it is handed, with no shell. 191/08 re-reviewed: the module gained the `control-relay-loopback` check, a pure config read that spawns nothing; the audited call is byte-identical (same digest). 209/04 (ADR-004), re-reviewed at 209/05 (2026-11-26): the injected default runner now also forwards a caller's cwd and timeout, which only the board-access check passes (each board workspace's root, and its 60 s BOARD_PROBE_TIMEOUT_MS), and resolves the killing signal so a timed-out probe is reported as one; the file and argv still come from the caller, and no shell is used."
   },
   {
     "file": "packages/mesh/src/fabric.mjs",
@@ -908,56 +908,56 @@
     "kind": "child-process",
     "expression": "exec([\"rev-parse\", \"--git-common-dir\"], { cwd: projectRoot })",
     "digest": "121b87ce5897c0288b92e96e574c5d771dd690a02de99f2dab6497930bc922c7",
-    "sourceDigest": "bfd6ecc5977b8747746bc6aba11c79a87e689c13090614c88efac5790367c995",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
+    "sourceDigest": "d90e94022cc896a4f62d50e684e13b9744e8bc7842d096dd381361c8cae0446f",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged. Re-stamped at 209/05 (2026-11-26): 209/03 edits this file around it (the board-conflict stop at each door into the workflow) and left this stamp stale; the call and its argv are byte-identical (expression digest unchanged)."
   },
   {
     "file": "packages/work-loop/src/dispatch.mjs",
     "kind": "child-process",
     "expression": "exec([\"check-ignore\", \"--\", ...relpaths], { cwd })",
     "digest": "617dfe9c249803c754753f02eddb043e06aecb30e1b02596e1f50a477980f86e",
-    "sourceDigest": "bfd6ecc5977b8747746bc6aba11c79a87e689c13090614c88efac5790367c995",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chore 197 moves the call into `ignoredPaths(exec, cwd, relpaths)`, which a lane's code-graph inheritance also asks; the argv is `check-ignore --` plus repository-relative paths, as before. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
+    "sourceDigest": "d90e94022cc896a4f62d50e684e13b9744e8bc7842d096dd381361c8cae0446f",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chore 197 moves the call into `ignoredPaths(exec, cwd, relpaths)`, which a lane's code-graph inheritance also asks; the argv is `check-ignore --` plus repository-relative paths, as before. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged. Re-stamped at 209/05 (2026-11-26): 209/03 edits this file around it (the board-conflict stop at each door into the workflow) and left this stamp stale; the call and its argv are byte-identical (expression digest unchanged)."
   },
   {
     "file": "packages/work-loop/src/dispatch.mjs",
     "kind": "child-process",
     "expression": "exec([\"status\", \"--porcelain\", \"--untracked-files=all\"], { cwd: worktreePath })",
     "digest": "e68e6401169425f7da5489d2f94a58cc4229b7fbc82bf0d6552be1ed21a6f8a3",
-    "sourceDigest": "bfd6ecc5977b8747746bc6aba11c79a87e689c13090614c88efac5790367c995",
-    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
+    "sourceDigest": "d90e94022cc896a4f62d50e684e13b9744e8bc7842d096dd381361c8cae0446f",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged. Re-stamped at 209/05 (2026-11-26): 209/03 edits this file around it (the board-conflict stop at each door into the workflow) and left this stamp stale; the call and its argv are byte-identical (expression digest unchanged)."
   },
   {
     "file": "packages/work-loop/src/dispatch.mjs",
     "kind": "child-process",
     "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: options.primaryRoot })",
     "digest": "ab6bee4ca3a1877318b546b6b3d152bcdd0aa46fe5a12544778c9fc40118af2f",
-    "sourceDigest": "bfd6ecc5977b8747746bc6aba11c79a87e689c13090614c88efac5790367c995",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
+    "sourceDigest": "d90e94022cc896a4f62d50e684e13b9744e8bc7842d096dd381361c8cae0446f",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged. Re-stamped at 209/05 (2026-11-26): 209/03 edits this file around it (the board-conflict stop at each door into the workflow) and left this stamp stale; the call and its argv are byte-identical (expression digest unchanged)."
   },
   {
     "file": "packages/work-loop/src/dispatch.mjs",
     "kind": "child-process",
     "expression": "exec([\"merge-base\", \"HEAD\", line], { cwd: lanePath })",
     "digest": "81e97e771f6ecd433f19d5d933592d3fa25fcad3234d00e92627eec9bbe8c398",
-    "sourceDigest": "bfd6ecc5977b8747746bc6aba11c79a87e689c13090614c88efac5790367c995",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
+    "sourceDigest": "d90e94022cc896a4f62d50e684e13b9744e8bc7842d096dd381361c8cae0446f",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged. Re-stamped at 209/05 (2026-11-26): 209/03 edits this file around it (the board-conflict stop at each door into the workflow) and left this stamp stale; the call and its argv are byte-identical (expression digest unchanged)."
   },
   {
     "file": "packages/work-loop/src/dispatch.mjs",
     "kind": "child-process",
     "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: lanePath })",
     "digest": "4ee46cfe22e87fa7fe5a1a931f0737758700ac88b92fe44594fa3f071a30dfa8",
-    "sourceDigest": "bfd6ecc5977b8747746bc6aba11c79a87e689c13090614c88efac5790367c995",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
+    "sourceDigest": "d90e94022cc896a4f62d50e684e13b9744e8bc7842d096dd381361c8cae0446f",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged. Re-stamped at 209/05 (2026-11-26): 209/03 edits this file around it (the board-conflict stop at each door into the workflow) and left this stamp stale; the call and its argv are byte-identical (expression digest unchanged)."
   },
   {
     "file": "packages/work-loop/src/dispatch.mjs",
     "kind": "child-process",
     "expression": "exec(args, { cwd: primaryRoot })",
     "digest": "b7d45f585dc9037d673e45d8a91b9d14d7b5714f2aadf9fb7346a1d20c57cfb2",
-    "sourceDigest": "bfd6ecc5977b8747746bc6aba11c79a87e689c13090614c88efac5790367c995",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged."
+    "sourceDigest": "d90e94022cc896a4f62d50e684e13b9744e8bc7842d096dd381361c8cae0446f",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 208 routes tracking reads through the workspace store; this Git call and its argv are unchanged. Re-stamped at 209/05 (2026-11-26): 209/03 edits this file around it (the board-conflict stop at each door into the workflow) and left this stamp stale; the call and its argv are byte-identical (expression digest unchanged)."
   },
   {
     "file": "packages/core/src/application/bindings/config-inspect.mjs",
@@ -1012,8 +1012,8 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, { cwd, env, timeout: 10_000, windowsHide: true, encoding: \"utf8\" })",
     "digest": "a71c6610e4891eb53258a408a9c0a696c644478047edea1f55e8f5c65809de8d",
-    "sourceDigest": "bb70a92a5db392a4647ef2eaf706c40527619c7bfd2b44ba3ed56d04bcc89352",
-    "reason": "Git-only process wrapper for loop repository operations, with bounded execution. 181 re-reviewed at the main merge: the loop now refuses an unusable work.rubric.command (rubric-command-unusable) before it starts anything; the audited git call is unchanged. 191/04 task 03 (F-14) re-stamped: the start spend resolves its workspace id through the injected resolveWorkspaceId; the audited git call is byte-identical. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. Re-stamped at the regression gate (2026-11-23): 7eae267f (chore 196, a halt's repair) and 4cac6cd8 (loop-reclaim: --resume --reclaim and the boot horizon) edit this file around it and left this stamp stale; the call, its argv and its 10 s bound are byte-identical (expression digest unchanged)."
+    "sourceDigest": "731cdac1a1ff34b574df60618bc734ad01ed52988f61e2184cf8bb18193bcf1c",
+    "reason": "Git-only process wrapper for loop repository operations, with bounded execution. 181 re-reviewed at the main merge: the loop now refuses an unusable work.rubric.command (rubric-command-unusable) before it starts anything; the audited git call is unchanged. 191/04 task 03 (F-14) re-stamped: the start spend resolves its workspace id through the injected resolveWorkspaceId; the audited git call is byte-identical. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. Re-stamped at the regression gate (2026-11-23): 7eae267f (chore 196, a halt's repair) and 4cac6cd8 (loop-reclaim: --resume --reclaim and the boot horizon) edit this file around it and left this stamp stale; the call, its argv and its 10 s bound are byte-identical (expression digest unchanged). Re-stamped at 209/05 (2026-11-26): 209/03 edits this file around it (the board-conflict stop at each door into the workflow) and left this stamp stale; the call and its argv are byte-identical (expression digest unchanged)."
   },
   {
     "file": "packages/work-loop/src/progress.mjs",

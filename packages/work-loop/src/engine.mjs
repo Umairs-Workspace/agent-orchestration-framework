@@ -47,6 +47,9 @@ export const LOOP_STOPS = Object.freeze([
   "lane-open-failed",
   "lane-merge-refused",
   "lane-merge-conflict",
+  // 209/03 (ADR-003) — a linked board item changed outside AOF, appended last as member 16. The
+  // halt names the item, its board ID and revision, and the resync that restores AOF's values.
+  "board-conflict",
 ]);
 
 // THE OPERATOR'S STOPS — the halts that ARE the operator's answer, or wait on it, and so are
@@ -59,6 +62,8 @@ export const OPERATOR_STOPS = Object.freeze([
   "operator-interrupt",
   "retry-parked",
   "deadline-exhausted",
+  // 209/03 (ADR-003) — resync is an explicit operator request, so no repair session may clear it.
+  "board-conflict",
 ]);
 
 // THE REPAIRABLE STOPS — every stop that is not the operator's (2026-11-14, widening 147's three
@@ -1253,6 +1258,9 @@ export function mapLoopStoreRefusal(answer) {
   }
   if (code === "not-retryable") {
     return { stop: "run-not-retryable", producer: "run-store:not-retryable" };
+  }
+  if (code === "work-board-conflict") {
+    return { stop: "board-conflict", producer: "work-store:work-board-conflict" };
   }
   return {
     stop: "run-not-retryable",

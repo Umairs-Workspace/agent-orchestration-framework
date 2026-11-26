@@ -425,7 +425,10 @@ export const loopCommandWaveTests = [
       // each liveness site (the scan, the reclaim, the lanes, the re-entry). What the horizon IS, the
       // sentence a reclaim it admitted is narrated with, and the lines for what a reclaim left running
       // were extracted to stop.mjs at build; what stays is the passing, which only the shell can do.
-      assert.ok(lines <= 2278, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2278 it was at --reclaim — extract, or raise this bound with a reason`);
+      // 2278 -> 2286 is 209/03 (ADR-003): the board-conflict halt before any gate, drive or retry mint,
+      // and its one destructured name. What a conflict holds and the halt it names live in the cycle
+      // (`boardConflictHalt`); what stays is the return, which only the shell can make.
+      assert.ok(lines <= 2286, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2286 it was at 209/03's board-conflict halt — extract, or raise this bound with a reason`);
     },
   },
 
@@ -1595,6 +1598,31 @@ export const loopCommandWaveTests = [
         assert.equal(state.act.stop, "lane-open-failed");
         assert.match(report.lines.at(-1), /disk full/u);
       }, { git: "fake", stories: [{ number: "04" }], milestone: "27" });
+    },
+  },
+  {
+    // 209/03 task01 — a lane refused under a board conflict halts the wave on the operator's
+    // board-conflict stop, never the repairable lane-open-failed, at either refusal site.
+    name: "209/03 task01 a dispatch refused for a board conflict halts the wave board-conflict, thrown or per entry",
+    run: async () => {
+      const conflict = Object.assign(new Error("Dispatch of 27/04 is held: board item 412 linked to 27/02 changed on the board at revision 9."), {
+        code: "work-board-conflict", detail: { ref: "27/04", conflict: { ref: "27/02", id: 412, revision: 9, deleted: false } },
+      });
+      for (const refuse of [
+        async () => { throw conflict; },
+        // The many-ref answer shape, with the member refused by the lane door.
+        async (input) => ({ action: "dispatch", bound: 3, dispatched: input.refs.map((ref) => ({ ref, ok: false, error: conflict })) }),
+      ]) {
+        await withLaneRepo(async (fx) => {
+          const registry = scriptedRegistry({ dispatch: async (input, ctx, real) => input.refs ? refuse(input, ctx, real) : await real() });
+          const child = fakeLaneChild(fx);
+          const { state, report } = await runWave(fx, { child, rubric: stubRubric(emits(passingTap())), registry });
+          assert.equal(state.act?.stop, "board-conflict");
+          assert.equal(state.act.producer, "work-store:work-board-conflict");
+          assert.equal(child.calls.length, 0, "no lane was driven");
+          assert.match(report.lines.join("\n"), /board-conflict/u);
+        }, { git: "fake", stories: [{ number: "04" }], milestone: "27" });
+      }
     },
   },
   {

@@ -91,8 +91,8 @@ export const meshDesktopPreflightHeartbeatTests = [
       // feature's record; the list it pinned is now this one.
       assert.deepEqual(
         [...PREFLIGHT_CHECKS],
-        ["claude-authenticated", "payload-build", "workspace-identity-pinned", "heartbeat-hook-installed", "control-relay-loopback"],
-        "four codes, the new one LAST so the three that shipped keep their order — then 191/08's fifth",
+        ["claude-authenticated", "payload-build", "workspace-identity-pinned", "heartbeat-hook-installed", "control-relay-loopback", "board-access"],
+        "four codes, the new one LAST so the three that shipped keep their order — then 191/08's fifth and 209/04's sixth",
       );
 
       const preflight = await runPreflight(probes({ workspaces: { ok: true, workspaces: [{ projectRoot: "/ws/a" }], skipped: [] } }));
@@ -884,3 +884,139 @@ export const meshDesktopPreflightMacosTests = [
     },
   },
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 209/04 — board-access: the installed aof's own `work board-access`, started in each board
+// workspace under the daemons' environment. Nothing here reaches a board or the real machine.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const probeLine = (platform = "darwin") => `${path.join(INSTALL_DIR, platform === "win32" ? "aof.exe" : "aof")} work board-access --json`;
+const PROBE = probeLine();
+const BOARD_ROSTER = [
+  { workspaceId: "orchard", projectRoot: "/p/orchard" },
+  { workspaceId: "harbour", projectRoot: "/p/harbour" },
+];
+const BOARD_CONFIGS = {
+  "/p/orchard": { mesh: { workspaceId: "orchard" }, work: { store: { manifest: ".aof/boards/team.yaml" } } },
+  "/p/harbour": { mesh: { workspaceId: "harbour" } },
+};
+const probeAnswer = (value, code = value.ok ? 0 : 1) => ({ stdout: JSON.stringify(value), stderr: "", code });
+
+function boardProbes({ answer, platform = "darwin", roster = BOARD_ROSTER, configs = BOARD_CONFIGS, files } = {}) {
+  const runner = fakeRunner({ [probeLine(platform)]: answer ?? probeAnswer({ ok: true, stage: "board", manifest: ".aof/boards/team.yaml" }) });
+  return {
+    runner,
+    options: {
+      ...darwinProbes({ platform, runner, ...(files ? { files } : {}) }),
+      workspacesFn: async () => ({ ok: true, workspaces: roster, skipped: [] }),
+      workspaceConfigFn: async (root) => configs[root] ?? {},
+    },
+  };
+}
+
+meshDesktopPreflightMacosTests.push(
+  {
+    name: "209/04 E1 · A signed-in terminal does not hide a daemon that cannot sign in",
+    async run() {
+      const { runner, options } = boardProbes({ answer: probeAnswer({
+        ok: false, stage: "sign-in", manifest: ".aof/boards/team.yaml", code: "azure-board-auth", status: 401,
+        message: "Azure DevOps sign-in is unavailable. Run az login as the account executing AOF.",
+      }) });
+      const entry = find(await runPreflight(options), "board-access");
+      assert.equal(entry.status, "fail");
+      assert.match(entry.message, /orchard/);
+      assert.match(entry.message, /sign-in failed in the LaunchAgent's environment \(PATH \/Users\/u\/\.local\/bin:\/usr\/bin:\/bin\)/);
+      const probe = runner.calls.find((call) => call.line === PROBE);
+      assert.deepEqual(probe.env, { PATH: "/Users/u/.local/bin:/usr/bin:/bin", HOME: HOME, USER: "u", LOGNAME: "u" }, "probed with the daemon's environment, not the terminal's");
+    },
+  },
+  {
+    name: "209/04 E2 · A refused board read is reported as board access, not sign-in",
+    async run() {
+      const { options } = boardProbes({ answer: probeAnswer({
+        ok: false, stage: "board", manifest: ".aof/boards/team.yaml", code: "azure-board-http", status: 403, message: "Azure DevOps GET returned HTTP 403.",
+      }) });
+      const entry = find(await runPreflight(options), "board-access");
+      assert.equal(entry.status, "fail");
+      assert.match(entry.message, /the board refused the read/);
+      assert.match(entry.message, /HTTP 403/);
+      assert.doesNotMatch(entry.message, /sign-in|az login/);
+    },
+  },
+  {
+    name: "209/04 E3 · A daemon that can sign in and read the board passes",
+    async run() {
+      const entry = find(await runPreflight(boardProbes().options), "board-access");
+      assert.equal(entry.status, "pass");
+      assert.match(entry.message, /orchard \(\.aof\/boards\/team\.yaml\)/);
+      assert.match(entry.message, /LaunchAgent's environment/);
+    },
+  },
+  {
+    name: "209/04 E4 · A file-only node skips the check without probing",
+    async run() {
+      const { runner, options } = boardProbes({ roster: [BOARD_ROSTER[1]] });
+      const entry = find(await runPreflight(options), "board-access");
+      assert.equal(entry.status, "skip");
+      assert.equal(renderPreflight([entry])[0].startsWith("  --  board-access"), true);
+      assert.equal(runner.calls.some((call) => call.line === PROBE), false, "no board probe was started");
+    },
+  },
+  {
+    name: "209/04 E5 · Only the board workspace is probed",
+    async run() {
+      const cwds = [];
+      const { runner, options } = boardProbes({ answer: (spawnOptions) => { cwds.push(spawnOptions.cwd); return probeAnswer({ ok: true, stage: "board", manifest: ".aof/boards/team.yaml" }); } });
+      const entry = find(await runPreflight(options), "board-access");
+      assert.deepEqual(cwds, ["/p/orchard"], "one probe, run in the board workspace's own folder");
+      assert.equal(runner.calls.filter((call) => call.line === PROBE).length, 1);
+      assert.doesNotMatch(entry.message, /harbour/);
+    },
+  },
+  {
+    name: "209/04 · A probe that does not finish is ended at its bound and reported, never awaited forever",
+    async run() {
+      let handed;
+      const { options } = boardProbes({ answer: (spawnOptions) => { handed = spawnOptions.timeout; return { stdout: "", stderr: "", code: null, signal: "SIGTERM" }; } });
+      const entry = find(await runPreflight(options), "board-access");
+      assert.equal(handed, 60_000);
+      assert.equal(entry.status, "fail");
+      assert.match(entry.message, /did not finish within 60s/);
+    },
+  },
+  {
+    name: "209/04 · No credential appears in the check's output",
+    async run() {
+      const token = "eyJ0eXAiOiJKV1QifQ.eyJzdWIiOiJ1In0.c2lnbmF0dXJl";
+      const { options } = boardProbes({ answer: probeAnswer({
+        ok: false, stage: "sign-in", manifest: ".aof/boards/team.yaml", code: "azure-board-auth", message: `request carried Authorization: Bearer ${token}`,
+      }) });
+      const preflight = await runPreflight(options);
+      const text = renderPreflight(preflight).join("\n");
+      assert.doesNotMatch(text, new RegExp(token.slice(0, 20)));
+      assert.doesNotMatch(text, /Bearer eyJ/);
+    },
+  },
+  ...[
+    ["darwin", true, "with the LaunchAgent's PATH, HOME, USER and LOGNAME"],
+    ["darwin", false, "not at all, and board-access shows --"],
+    ["win32", null, "with the environment mesh desktop run was started in"],
+    ["linux", null, "with the environment mesh desktop run was started in"],
+  ].map(([platform, registered, environment]) => ({
+    name: `209/04 [outline] on ${platform}${registered == null ? "" : registered ? " with a LaunchAgent" : " without a LaunchAgent"} the probe runs ${environment}`,
+    async run() {
+      const { runner, options } = boardProbes({ platform, ...(registered === false ? { files: fakeFiles() } : {}) });
+      const entry = find(await runPreflight(options), "board-access");
+      const probe = runner.calls.find((call) => call.line === probeLine(platform));
+      if (registered === false) {
+        assert.equal(entry.status, "skip");
+        assert.equal(probe, undefined);
+      } else if (registered === true) {
+        assert.deepEqual(Object.keys(probe.env).sort(), ["HOME", "LOGNAME", "PATH", "USER"]);
+      } else {
+        assert.equal(probe.env, undefined, "the current environment is inherited");
+        assert.match(entry.message, /the environment `mesh desktop run` was started from/);
+      }
+    },
+  })),
+);

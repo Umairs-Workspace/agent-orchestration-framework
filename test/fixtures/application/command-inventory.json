@@ -1667,6 +1667,50 @@
     }
   },
   {
+    "id": "work:resync-board",
+    "input": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "ref"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "work",
+        "resync-board"
+      ],
+      "spec": {
+        "usage": "aof work resync-board <ref> [--json]",
+        "flags": {}
+      }
+    }
+  },
+  {
+    "id": "work:board-access",
+    "input": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "work",
+        "board-access"
+      ],
+      "spec": {
+        "usage": "aof work board-access [--json]",
+        "flags": {}
+      }
+    }
+  },
+  {
     "id": "work:run-status",
     "input": {
       "type": "object",

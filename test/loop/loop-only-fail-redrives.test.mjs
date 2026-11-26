@@ -56,6 +56,8 @@ const STOP_FROM_54 = "grade-indeterminate";
 // The three that 129/01 appended LAST (129/ADR-008 §5) — the lane stops, named with the same
 // provenance so "54 contributes exactly one" stays a measurement over a set of known origin.
 const STOPS_FROM_129 = Object.freeze(["lane-open-failed", "lane-merge-refused", "lane-merge-conflict"]);
+// 209/03 appends the board conflict after 129's lane stops.
+const STOPS_FROM_209 = Object.freeze(["board-conflict"]);
 
 // A story is graded on the DELTA from a baseline the shell measures before its first drive
 // (2026-09-12): every spawn count below is that one measurement plus the grades the contract
@@ -456,10 +458,10 @@ export const loopOnlyFailRedrivesTests = [
           // that 54 adds exactly ONE, which is what is measured here.)
           assert.deepEqual(
             [...stops].sort(),
-            [...STOPS_BEFORE_54, ...STOPS_FROM_69, STOP_FROM_54, ...STOPS_FROM_129].sort(),
-            `${label} reports the eight, 69's three, 54's one and 129's three — and no other`,
+            [...STOPS_BEFORE_54, ...STOPS_FROM_69, STOP_FROM_54, ...STOPS_FROM_129, ...STOPS_FROM_209].sort(),
+            `${label} reports the eight, 69's three, 54's one, 129's three and 209/03's one — and no other`,
           );
-          const contributedBy54 = stops.filter((stop) => !STOPS_BEFORE_54.includes(stop) && !STOPS_FROM_69.includes(stop) && !STOPS_FROM_129.includes(stop));
+          const contributedBy54 = stops.filter((stop) => !STOPS_BEFORE_54.includes(stop) && !STOPS_FROM_69.includes(stop) && !STOPS_FROM_129.includes(stop) && !STOPS_FROM_209.includes(stop));
           assert.deepEqual(contributedBy54, [STOP_FROM_54], "milestone 54 contributes exactly one member");
           assert.deepEqual([...stops], [...LOOP_STOPS], `${label} reports the closed set in full`);
         }

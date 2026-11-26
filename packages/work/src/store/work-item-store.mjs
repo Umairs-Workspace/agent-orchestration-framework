@@ -47,9 +47,19 @@ function lazyBoardStore(workspace, manifest) {
   let selected;
   const load = () => selected ??= import("./board-store.mjs")
     .then(({ createBoardWorkItemStore }) => createBoardWorkItemStore(workspace, manifest));
-  const operations = ["snapshot", "changeToken", "readItems", "readChanges", "applyChanges", "boardCapabilities", "mutate"];
-  return Object.fromEntries(operations.map(operation =>
+  const operations = ["snapshot", "changeToken", "readItems", "readChanges", "applyChanges", "boardCapabilities", "boardConflicts", "pollChanges", "resync", "mutate"];
+  const store = Object.fromEntries(operations.map(operation =>
     [operation, async (...args) => (await load())[operation](...args)]));
+  // Observation is synchronous at the launcher's door, so the handle forwards a dispose that
+  // settles once the selected store has armed its own.
+  store.observe = options => {
+    const handle = load().then(selected => selected.observe(options)).catch(error => {
+      options?.reportDegrade?.("work-store-observation-unavailable", error);
+      return null;
+    });
+    return { dispose: () => handle.then(armed => armed?.dispose()) };
+  };
+  return store;
 }
 
 function workspaceStore(workspace) {

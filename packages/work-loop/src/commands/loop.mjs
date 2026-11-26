@@ -117,7 +117,7 @@ export function createLoopShell({
   const { loadWorkspace } = work;
   const { decideBuildProgress, evaluateProgressPolicy, readProgressSamples } = progress;
   const { CONTROL_FINDING_CODES } = doctor;
-  const { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks, repairLaneHalt } = cycle;
+  const { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, boardConflictHalt, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks, repairLaneHalt } = cycle;
   const { resolveSessionTable, SESSION_PHASES, sessionTableLine } = sessions;
   const { requestedSessions, requestedRuntimeSessions, resolveRuntimeInvocation } = createRuntimeInvocation(sessions);
   const { resolveItemExact } = items;
@@ -1756,6 +1756,14 @@ export function createLoopShell({
           return state;
         }
 
+        // ---- 209/03 (ADR-003) — a board conflict under the act's top-level ref halts BEFORE any gate,
+        // drive or retry mint, so the halt leaves no run open; the cycle names what it holds ----
+        const boardHalt = act.ref == null ? null : await boardConflictHalt?.(act.ref, ctx);
+        if (boardHalt != null) {
+          const state = endState({ ...resolved, loopRunId, next, act: boardHalt.act, resumable: { stranded: resolved.resume.stranded, lastDeclaration: resolved.resume.lastDeclaration }, driven });
+          await reportLine(report, state, boardHalt.details);
+          return state;
+        }
         // ---- 129/04 (ADR-001 §4) — A FRESH `gate` ACT IS HONOURED, not halted. The engine routes
         // an `in-review` story to the gate whatever `lastPhase` says (127's restart defect); the
         // shell runs validate + doctor and reads the RECORDED grade — `work:grade` WITHOUT `run`,

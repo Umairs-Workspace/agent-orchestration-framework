@@ -231,6 +231,36 @@ function failingDriver() {
 
 export const loopCommandStopsTests = [
   {
+    // 209/03 task01 E7 — the loop shell asks the workspace's store for board conflicts before any
+    // gate or drive: one under the scope's top-level ref halts board-conflict with no phase typed;
+    // one under another ref leaves the walk to proceed.
+    name: "209/03 task01 E7 — a board conflict under the loop's top-level ref halts it before any phase; one under another ref does not",
+    async run() {
+      const { createFileWorkItemStore } = await import("../../packages/work/src/store/file-store.mjs");
+      for (const [conflictRef, halts] of [["03/02", true], ["18/00", false]]) {
+        const fx = await loopFixture();
+        try {
+          const conflicts = [{ ref: conflictRef, id: 412, revision: 9, deleted: false }];
+          const workspace = { ...fx.workspace, workItemStore: { ...createFileWorkItemStore(fx.workDir), boardConflicts: async ({ within } = {}) => conflicts.filter((row) => within == null || row.ref.split("/")[0] === String(within).split("/")[0]) } };
+          const driver = completingDriver(fx);
+          const { state, lines } = await runCollected({ scope: "03" }, { ...fx.ctx, workspace, agentSessionDriverOptions: driver.options });
+          if (halts) {
+            assert.equal(state.act.act, "halt");
+            assert.equal(state.act.stop, "board-conflict");
+            assert.equal(state.act.producer, "work-store:work-board-conflict");
+            assert.deepEqual(driver.typed, [], "no phase session was started");
+            assert.match(lines.join("\n"), /board-conflict/);
+          } else {
+            assert.notEqual(state.act.stop, "board-conflict");
+            assert.ok(driver.typed.length > 0, "the walk drove a phase");
+          }
+        } finally {
+          await fx.cleanup();
+        }
+      }
+    },
+  },
+  {
     name: "loop command stops — driver needs-input and non-retryable failure halt with producer and exact resume command",
     async run() {
       const fx = await loopFixture();
@@ -958,10 +988,10 @@ aofVersion: 0.1.0
   {
     name: "130/02 task02 LoopState and the stop vocabulary are unchanged — the frozen literal, operator-interrupt its twelfth member, the halt act's four keys",
     async run() {
-      // 129 gate (2026-09-22): the frozen fifteen-member literal is pinned ONCE, by
+      // 129 gate (2026-09-22), 209/03: the frozen sixteen-member literal is pinned ONCE, by
       // test/arch/loop/acd-loop-probe-contract (its STOPS); a loop suite that spelled it would name the
       // grade stop, which grade/01 (test/grade/grade-unconfigured-no-op) forbids of loop/loop-command-stops.
-      assert.equal(LOOP_STOPS.length, 15, "the vocabulary is the pinned fifteen; the literal itself lives in acd-loop-probe-contract");
+      assert.equal(LOOP_STOPS.length, 16, "the vocabulary is the pinned sixteen; the literal itself lives in acd-loop-probe-contract");
       assert.equal(LOOP_STOPS[11], "operator-interrupt");
       const fx = await loopFixture();
       try {

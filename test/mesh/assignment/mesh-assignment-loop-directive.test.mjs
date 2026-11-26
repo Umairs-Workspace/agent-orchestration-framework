@@ -951,9 +951,9 @@ export const meshAssignmentLoopDirectiveTests = [
         "uat-gate", "dependency-blocked", "cap-exhausted", "deadline-exhausted",
         "progress-exhausted", "no-progress", "grade-indeterminate", "session-needs-input",
         "run-not-retryable", "retry-parked", "unmapped-item-type", "operator-interrupt",
-        "lane-open-failed", "lane-merge-refused", "lane-merge-conflict",
-      ], "the loop's stops are 53's twelve, member for member and in order, then 129's three lane stops");
-      assert.equal(LOOP_STOPS.length, 15, "fifteen: 63 added none, 129/01 appended three");
+        "lane-open-failed", "lane-merge-refused", "lane-merge-conflict", "board-conflict",
+      ], "the loop's stops are 53's twelve, member for member and in order, then 129's three lane stops and 209/03's board conflict");
+      assert.equal(LOOP_STOPS.length, 16, "sixteen: 63 added none, 129/01 appended three, 209/03 one");
       for (const stop of ["uat-gate", "cap-exhausted", "deadline-exhausted", "session-needs-input", "operator-interrupt"]) {
         assert.ok(LOOP_STOPS.includes(stop), `the halt named by this story's own outline (${stop}) is a member of the frozen set`);
       }

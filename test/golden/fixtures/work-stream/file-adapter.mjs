@@ -1,7 +1,9 @@
 import { cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync, utimesSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import yaml from "js-yaml";
 import { RECORD_DOC_BY_TYPE } from "../../../../packages/work/src/identity.mjs";
+import { BOARD_KEY_FILE } from "../../../../packages/work/src/store/board-links.mjs";
 
 const seed = JSON.parse(readFileSync(new URL("./seed.json", import.meta.url)));
 const templates = fileURLToPath(new URL("../../../../.aof/templates/work/", import.meta.url));
@@ -9,6 +11,46 @@ const seedDate = "2026-01-15";
 const seedTime = new Date(seedDate);
 const docs = new Set(["ARCHITECTURE", "RETROSPECTIVE", "VERIFICATION", "EXECUTION", "EXAMPLES", "OUTCOME", "STATE"]);
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
+// 209/05 — the board a case selects, named by AOF_WORK_STREAM_STORE. `azure` is the shipped Azure
+// definition over the recorded board; `alternate` is a second, project-owned in-memory board.
+const BOARD_STORES = Object.freeze({
+  azure: { definition: "../../../../.aof/boards/azure-devops/board.yaml", adapter: "./board-adapter.mjs", factory: "azure" },
+  alternate: { definition: "./alternate-board.yaml", adapter: "./alternate-board.mjs", factory: "alternate" },
+});
+const BOARD_MANIFEST = ".aof/boards/board.yaml";
+// The board store's own bookkeeping in a document home. It is not a document, so the portable
+// view leaves it out and a board-backed run exports the same tree as a file-backed one.
+const BOARD_KEY = BOARD_KEY_FILE;
+
+export function selectBoard(project, name) {
+  const selected = BOARD_STORES[name];
+  const dir = path.join(project, ".aof", "boards");
+  const definition = JSON.parse(JSON.stringify(yaml.load(readFileSync(new URL(selected.definition, import.meta.url), "utf8"), { schema: yaml.JSON_SCHEMA })));
+  definition.adapter = "./adapter.mjs";
+  write(path.join(dir, "board.yaml"), JSON.stringify(definition, null, 2) + "\n");
+  const support = new URL(selected.adapter, import.meta.url).href;
+  write(path.join(dir, "adapter.mjs"), selected.factory === "azure" ? `
+import { fileURLToPath } from "node:url";
+import { createAzureAdapter } from ${JSON.stringify(new URL("../../../../.aof/boards/azure-devops/adapter.mjs", import.meta.url).href)};
+import { recordedTransport } from ${JSON.stringify(support)};
+const state = fileURLToPath(new URL("./recorded-board.json", import.meta.url));
+let selected;
+const adapter = ({ definition }) => selected ??= createAzureAdapter(definition, recordedTransport(state, definition));
+export const readItems = (input, context) => adapter(context).readItems(input);
+export const readChanges = (input, context) => adapter(context).readChanges(input);
+export const applyChanges = (input, context) => adapter(context).applyChanges(input);
+export const accessProbe = (input, context) => adapter(context).accessProbe(input);
+export const copyAttachment = (input, context) => adapter(context).copyAttachment(input);
+` : `
+import { fileURLToPath } from "node:url";
+import { createAlternateBoard } from ${JSON.stringify(support)};
+const board = createAlternateBoard(fileURLToPath(new URL("./alternate-board.json", import.meta.url)));
+export const readItems = input => board.readItems(input);
+export const readChanges = input => board.readChanges(input);
+export const applyChanges = input => board.applyChanges(input);
+`);
+  return { manifest: BOARD_MANIFEST };
+}
 
 function write(file, content) {
   mkdirSync(path.dirname(file), { recursive: true });
@@ -77,7 +119,8 @@ export function seedProject(project, { variation = {}, relocated = false, store 
     write(path.join(project, "empty.tap"), "TAP version 13\n1..0\n");
   }
   if (variation.budget) work.doctor = { budgets: { architecture: 1 } };
-  write(path.join(project, ".aof", "aof.config.json"), JSON.stringify({ work: { ...work, ...(store == null ? {} : { store }) } }));
+  const selection = store != null && Object.hasOwn(BOARD_STORES, store) ? selectBoard(project, store) : store;
+  write(path.join(project, ".aof", "aof.config.json"), JSON.stringify({ work: { ...work, ...(selection == null ? {} : { store: selection }) } }));
   write(path.join(project, "README.md"), "Orchard\n");
   cpSync(templates, path.join(project, ".aof/templates/work"), { recursive: true });
   const root = path.join(project, work.dir);
@@ -108,6 +151,7 @@ export function exportStream(root) {
     for (const entry of entries) {
       const name = rel ? rel + "/" + entry.name : entry.name;
       const target = path.join(dir, entry.name);
+      if (entry.name === BOARD_KEY) continue;
       if (entry.isDirectory()) walk(target, name);
       else if (entry.isFile()) {
         const bytes = readFileSync(target);
@@ -127,4 +171,28 @@ export function exportStream(root) {
 export function saveExport(project, label, snapshot) {
   for (const [key, body] of snapshot.files) write(path.join(project, label, "files", key), body);
   write(path.join(project, label, "inventory.json"), JSON.stringify({ empty: snapshot.empty, binary: snapshot.binary }, null, 2) + "\n");
+}
+
+export function isBoardStore(store) {
+  return store != null && Object.hasOwn(BOARD_STORES, store);
+}
+
+// Publish every live, numbered top-level item with its children, in stream order, through the
+// public publication verb. An item publication refuses — one that depends on archived work, say —
+// stays a local draft, which is the state a refinement that could not publish leaves.
+export async function publishSeed(project, home) {
+  const { defaultApplication } = await import("aof/default-application");
+  const env = { ...process.env, AOF_GLOBAL_HOME: home };
+  const ctx = async () => ({ workspace: await defaultApplication.loadWorkspace(project, undefined, { env }), globalWorkStoreOptions: { env }, effectsJournalOptions: { env } });
+  const published = [];
+  for (const item of seed) {
+    if (item.ref == null || item.ref.includes("/") || item.location != null) continue;
+    try {
+      const answer = await defaultApplication.invoke("work:publish-board", { ref: item.ref, refinementComplete: true, descendants: true }, await ctx());
+      if (answer.published) published.push(item.ref);
+    } catch {
+      // A refused publication leaves the item local; the case reads it from its folder.
+    }
+  }
+  return published;
 }

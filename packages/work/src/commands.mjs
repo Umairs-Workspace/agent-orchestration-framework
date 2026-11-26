@@ -38,6 +38,8 @@ export const WORK_COMMAND_IDS = Object.freeze([
   "work:promote",
   "work:archive",
   "work:publish-board",
+  "work:resync-board",
+  "work:board-access",
   "work:renumber",
   "work:promote-gap",
   "work:promote-finding",
@@ -97,5 +99,60 @@ export const boardPublishCommand = {
       ].filter(Boolean).join(" ")).join("\n");
     },
     exit: result => result.published || result.skipped ? 0 : 1,
+  },
+};
+
+export const boardResyncCommand = {
+  id: "work:resync-board",
+  input: {
+    type: "object",
+    properties: { ref: { type: "string", minLength: 1 } },
+    required: ["ref"],
+    additionalProperties: false,
+  },
+  async run(input, ctx) {
+    const { resyncBoardOnRequest } = await import("./commands/board-resync.mjs");
+    return resyncBoardOnRequest(input, ctx);
+  },
+  cli: {
+    route: ["work", "resync-board"],
+    spec: {
+      usage: "aof work resync-board <ref> [--json]",
+      flags: {},
+    },
+    argv: positionals => ({ ref: positionals[0] ?? "" }),
+    json: result => result,
+    render(result) {
+      if (result.skipped) return "Resync skipped in local file mode.";
+      if (result.reason === "no-conflict") return `${result.ref} has no recorded board conflict; nothing was written.`;
+      if (result.reason === "not-linked") return `${result.ref} is not linked to a board item; nothing was written.`;
+      return `${result.ref} resynced: board ID ${result.id} verified at revision ${result.revision}.`;
+    },
+    exit: () => 0,
+  },
+};
+
+export const boardAccessCommand = {
+  id: "work:board-access",
+  input: { type: "object", properties: {}, additionalProperties: false },
+  async run(input, ctx) {
+    const { probeBoardAccess } = await import("./commands/board-access.mjs");
+    return probeBoardAccess(input, ctx);
+  },
+  cli: {
+    route: ["work", "board-access"],
+    spec: {
+      usage: "aof work board-access [--json]",
+      flags: {},
+    },
+    argv: () => ({}),
+    json: result => result,
+    render(result) {
+      if (result.skipped === "local-file-mode") return "Board access not checked: this workspace keeps its tracking in files.";
+      if (result.skipped === "no-access-probe") return `Board access not checked: ${result.manifest} declares no access probe.`;
+      if (result.ok) return `Board access verified for ${result.manifest}.`;
+      return `Board access failed at ${result.stage} for ${result.manifest ?? "the selected board"}${result.code ? ` (${result.code})` : ""}: ${result.message}`;
+    },
+    exit: result => result.ok ? 0 : 1,
   },
 };

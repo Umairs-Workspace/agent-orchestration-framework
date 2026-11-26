@@ -186,7 +186,8 @@ export const archTests = [
         "no-progress", "grade-indeterminate", "session-needs-input", "run-not-retryable", "retry-parked",
         "unmapped-item-type", "operator-interrupt",
         "lane-open-failed", "lane-merge-refused", "lane-merge-conflict",
-      ], "the vocabulary is 124's 12 members in the same order, then 129's 3 lane stops");
+        "board-conflict",
+      ], "the vocabulary is 124's 12 members in the same order, then 129's 3 lane stops, then 209/03's board conflict");
 
       // NO ACT KIND OUTSIDE `{done, drive, gate, halt}` — over every act this story's deciders
       // can mint, plus the exhausted-ready-set terminus.
@@ -295,7 +296,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/124/01 FF-12404 leg 9 (task 03): every other stop — the fourteen — still ENDS the range — one return site, and the hand-off is the single exception",
+    name: "arch/124/01 FF-12404 leg 9 (task 03): every other stop — the fifteen — still ENDS the range — one return site, and the hand-off is the single exception",
     run: async () => {
       // A STOP VOCABULARY IN WHICH ONE MEMBER QUIETLY BEHAVES DIFFERENTLY IS WORSE THAN AN OPEN
       // ONE, so the others are asserted rather than assumed — and asserted as a CLASS, which is
@@ -322,11 +323,11 @@ export const archTests = [
       assert.ok(/if \(cycle > resolved\.cap\) \{/u.test(walk), "…entered on the shell's own cycle count, not on a stop name");
       assert.equal(/setAside\.add\([\s\S]{0,200}?stop/u.test(walk), false, "the hand-off never reads a stop's name");
 
-      // THE FOURTEEN, NAMED. Each is a member of the vocabulary and none of them is the one this
+      // THE FIFTEEN, NAMED. Each is a member of the vocabulary and none of them is the one this
       // story changed — so "the others" is a computed set rather than a list that can drift; the
       // count is pinned so a member added without a home here is noticed.
       const others = LOOP_STOPS.filter((stop) => stop !== "cap-exhausted");
-      assert.equal(others.length, 14, "fourteen other stops — 124's eleven and 129's three lane stops");
+      assert.equal(others.length, 15, "fifteen other stops — 124's eleven, 129's three lane stops and 209/03's board conflict");
       for (const stop of others) {
         assert.ok(LOOP_STOPS.includes(stop));
         // None of them is spelled at the hand-off, in either module.

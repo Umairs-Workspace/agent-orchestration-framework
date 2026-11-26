@@ -266,6 +266,8 @@ const MOVED = Object.freeze([
   ["test/loop/loop-command-wave.test.mjs", "129/04 task05 [outline] admission is the bound against the wave, in wave order; the refused wait for a lane to close (6 rows)"],
   ["test/loop/loop-command-wave.test.mjs", "129/04 task05 foreign holders count against the bound; only a fully foreign capacity halts, naming the holders and the remedy"],
   ["test/loop/loop-command-wave.test.mjs", "129/04 task05 a wave of one still gets a lane, read off the open answer; a throwing single open halts lane-open-failed naming the error"],
+  // 209/03 — a lane refused for a board conflict halts on the operator's stop, on the same model.
+  ["test/loop/loop-command-wave.test.mjs", "209/03 task01 a dispatch refused for a board conflict halts the wave board-conflict, thrown or per entry"],
   ["test/loop/loop-command-wave.test.mjs", "129/04 task05 an empty dispatch with held members is dependency-blocked with nothing in flight, and waits for the merge with a lane in flight"],
   ["test/loop/loop-command-wave.test.mjs", "129/04 task05 the bound is narrated from dispatch's answer, never read from config, and wave.mjs holds no concurrency literal"],
   ["test/loop/loop-command-wave.test.mjs", "129/04 two lanes whose first runs share a run id each keep their own graded, merged row"],

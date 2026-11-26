@@ -25,7 +25,7 @@ const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "
 // 129/01 (ADR-008 §5) appended the THREE LANE STOPS as members 13-15 — `lane-open-failed`,
 // `lane-merge-refused`, `lane-merge-conflict`, in that order, at the end. The twelve before them
 // keep their names and their order; this literal grows by exactly those three and no other.
-const STOPS = Object.freeze(["uat-gate", "dependency-blocked", "cap-exhausted", "deadline-exhausted", "progress-exhausted", "no-progress", "grade-indeterminate", "session-needs-input", "run-not-retryable", "retry-parked", "unmapped-item-type", "operator-interrupt", "lane-open-failed", "lane-merge-refused", "lane-merge-conflict"]);
+const STOPS = Object.freeze(["uat-gate", "dependency-blocked", "cap-exhausted", "deadline-exhausted", "progress-exhausted", "no-progress", "grade-indeterminate", "session-needs-input", "run-not-retryable", "retry-parked", "unmapped-item-type", "operator-interrupt", "lane-open-failed", "lane-merge-refused", "lane-merge-conflict", "board-conflict"]);
 // 102/00 appended the SIXTH member, `loop-id-missing`: a declaration built without the loop id
 // is refused rather than carried, so a later edit that drops the id is a red seam instead of a
 // silent return to zero join coverage. The five before it keep their names and their order.
