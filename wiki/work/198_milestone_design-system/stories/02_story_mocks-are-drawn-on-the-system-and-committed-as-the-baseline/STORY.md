@@ -5,7 +5,7 @@ slug: mocks-are-drawn-on-the-system-and-committed-as-the-baseline
 title: "At refine a UI milestone's mocks are drawn as a Design canvas on the configured system, and once the operator approves them they are committed under mocks/ as the offline baseline"
 parent: 198
 depends: [00, 01]
-status: in-progress
+status: not-started
 owner: product-owner
 created: 2026-11-17
 updated: 2026-11-26

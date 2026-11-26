@@ -1,0 +1,67 @@
+{
+  "runId": "20261126T233358774Z-0002",
+  "itemRef": "198/02",
+  "state": "failed",
+  "attempt": 2,
+  "outcome": "failed",
+  "sessionId": null,
+  "brief": {
+    "loop": {
+      "loopRunId": "5eddf918-8b6a-458b-8b8d-85be84ad61a9",
+      "scope": "198",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-11-26T20:27:13.762Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "config",
+          "model": null,
+          "modelSource": null
+        }
+      }
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-11-26T23:25:18.561Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/71 FF-7106: every OPEN story declaring a bundle member also declares the manifest and every git-tracked render of that member"
+      ],
+      "baseCommit": "5f51e8464d40e7c9c9833bdca8b56362f07715fe"
+    },
+    "lane": {
+      "worktree": "/Users/umairbutt/Source/umair/agent-orchestration-framework/.aof/mesh/dispatch-worktrees/dispatch-198-02",
+      "branch": "aof/mesh/198-02",
+      "baseCommit": "5f51e8464d40e7c9c9833bdca8b56362f07715fe"
+    }
+  },
+  "createdAt": "2026-11-26T23:33:58.774Z",
+  "updatedAt": "2026-11-26T23:33:59.202Z",
+  "failureReason": "runtime_offline",
+  "heartbeatAt": null,
+  "retryOf": "20261126T233358061Z-0001",
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": null,
+  "asks": []
+}
