@@ -61,7 +61,7 @@ export const tokensTests = [
       assert.equal(result.color.tokens.at(-1).name, "color-ring", "declaration order");
       assert.deepEqual(result.radius.tokens, [{ name: "radius", value: "0.5rem", usage: "" }]);
       assert.deepEqual(result.unplaced, []);
-      const every = [...result.color.tokens, ...result.radius.tokens, ...result.spacing.tokens, ...result.shadow.tokens, ...result.type.families];
+      const every = [...result.color.tokens, ...result.radius.tokens, ...result.spacing.tokens, ...result.shadow.tokens];
       assert.ok(every.every((token) => token.usage === ""), "every token carries an empty usage for the session to fill");
       assert.equal(result.mockOnly, undefined, "no --mocks, no mock-only list");
     }),
@@ -109,7 +109,7 @@ export const tokensTests = [
       assert.deepEqual(inTheme("--spacing: 0.25rem").spacing.tokens, [{ name: "spacing", value: "0.25rem", usage: "" }]);
       assert.deepEqual(inTheme("--radius-lg: 0.75rem").radius.tokens, [{ name: "radius-lg", value: "0.75rem", usage: "" }]);
       assert.deepEqual(inTheme("--shadow-card: 0 1px 2px hsl(0 0% 0% / 0.1)").shadow.tokens.map((token) => token.name), ["shadow-card"]);
-      assert.deepEqual(inTheme("--font-mono: \"JetBrains Mono\", monospace").type.families, [{ name: "mono", value: "\"JetBrains Mono\", monospace", usage: "" }]);
+      assert.deepEqual(inTheme("--font-mono: \"JetBrains Mono\", monospace").type.families, { mono: "\"JetBrains Mono\", monospace" }, "the type's shape: a map of family key to font stack (198 F-02)");
       const text = inTheme("--text-sm: 0.875rem", "--text-sm--line-height: 1.25rem").type.groups;
       assert.deepEqual(text, [{ name: "Text", styles: [{ name: "sm", fontSize: "0.875rem", lineHeight: "1.25rem", usage: "" }] }]);
       assert.match(unplacedOf(inTheme("--animate-spin: spin 1s linear infinite"), "--animate-spin").reason, /no family/);
@@ -167,6 +167,31 @@ export const tokensTests = [
       assert.match(text, /^ {2}radius {2}0\.5rem$/m);
       assert.match(text, /Not placed \(0\):\n {2}\(none\)$/, "the last section, empty here");
     }),
+  },
+  // 198 F-03 — found by the live extract on ai-workforce-platform's dashboard: names outside
+  // Tailwind's namespaces, with its light and dark themes as data-theme selectors.
+  {
+    name: "198 F-03 · a name outside Tailwind's namespaces is placed by its value, and a --text-* colour is a colour",
+    run: () => {
+      const result = over([
+        '[data-theme="light"] {\n  --bg: #f3f4f7;\n  --text-2: #444b5c;\n  --agent: #2343c4;\n  --focus: var(--agent);\n}',
+        '[data-theme="dark"] {\n  --bg: #0e1117;\n  --text-2: #aeb4c2;\n  --agent: #8ea2ff;\n  --focus: var(--agent);\n}',
+        ":root {\n  --space-1: 4px;\n  --radius-md: 8px;\n  --pop-shadow: 0 8px 24px rgba(20, 24, 36, 0.14);\n  --font-sans: Inter, sans-serif;\n  --z-top: 10;\n}\n",
+      ].join("\n"));
+      assert.deepEqual(result.color.themes.map((theme) => theme.id), ["light", "dark"]);
+      assert.deepEqual(result.color.tokens, [
+        { name: "bg", value: { light: "#f3f4f7", dark: "#0e1117" }, usage: "" },
+        { name: "text-2", value: { light: "#444b5c", dark: "#aeb4c2" }, usage: "" },
+        { name: "agent", value: { light: "#2343c4", dark: "#8ea2ff" }, usage: "" },
+        { name: "focus", value: { light: "{agent}", dark: "{agent}" }, usage: "" },
+      ]);
+      assert.deepEqual(result.type.groups, [], "--text-2 holds a colour, so it is no font size");
+      assert.deepEqual(result.spacing.tokens.map((token) => token.name), ["space-1"]);
+      assert.deepEqual(result.radius.tokens.map((token) => token.name), ["radius-md"]);
+      assert.deepEqual(result.shadow.tokens.map((token) => token.name), ["pop-shadow"]);
+      assert.deepEqual(result.type.families, { sans: "Inter, sans-serif" });
+      assert.match(unplacedOf(result, "--z-top").reason, /no family/);
+    },
   },
   ...mergeTests(),
 ];

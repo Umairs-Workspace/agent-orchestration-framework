@@ -111,24 +111,39 @@ function themeOf(context) {
 
 const TEXT_PARTS = Object.freeze({ "line-height": "lineHeight", "letter-spacing": "letterSpacing", "font-weight": "fontWeight" });
 
-// The family a property belongs to (Q2), or null.
-function familyOf(property) {
+const VAR_ONLY = /^var\(\s*--([\w-]+)\s*\)$/;
+// A value that is one colour and nothing else: a hex, or one colour function with no function inside.
+const COLOUR_VALUE = /^(?:#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})|(?:rgba?|hsla?|oklch|oklab|lab|lch|color)\([^()]*\))$/i;
+// The name hints the Design System type's from-code step reads a length by.
+const LENGTH_HINTS = Object.freeze([
+  [/(?:^|-)(?:space|spacing|gap|pad|padding)(?:-|$)/, "spacing"],
+  [/(?:^|-)(?:radius|rounded)(?:-|$)/, "radius"],
+  [/(?:^|-)shadow(?:-|$)/, "shadow"],
+]);
+
+// The family a property belongs to (Q2, amended by 198 F-03), or null. Tailwind's namespaces place
+// first, so `--color-*` and `--text-*` read as they always have; `--text-*` holding a colour is a
+// colour. Any other name is read as the type's from-code step reads it: a colour by its value, a
+// length by its name, and a bare `var()` as a colour alias that placement keeps only if it resolves.
+function familyOf(property, value) {
   const name = property.slice(2);
   if (name.startsWith("color-")) return { family: "color", name };
   if (name === "radius" || name.startsWith("radius-")) return { family: "radius", name };
   if (name === "spacing" || name.startsWith("spacing-")) return { family: "spacing", name };
   if (name.startsWith("shadow-")) return { family: "shadow", name };
   if (name.startsWith("font-")) return { family: "font", name: name.slice("font-".length) };
-  if (name.startsWith("text-")) {
+  if (name.startsWith("text-") && !COLOUR_VALUE.test(value)) {
     const [style, part] = name.slice("text-".length).split("--");
     if (part === undefined) return { family: "text", name: style, field: "fontSize" };
     if (Object.hasOwn(TEXT_PARTS, part)) return { family: "text", name: style, field: TEXT_PARTS[part] };
     return null;
   }
+  if (COLOUR_VALUE.test(value)) return { family: "color", name };
+  for (const [hint, family] of LENGTH_HINTS) if (hint.test(name)) return { family, name };
+  if (VAR_ONLY.test(value)) return { family: "color", name };
   return null;
 }
 
-const VAR_ONLY = /^var\(\s*--([\w-]+)\s*\)$/;
 const NAMED_COLOUR = /^[a-z]+$/i;
 
 /**
@@ -147,7 +162,7 @@ export function readTokens(files) {
     for (const entry of declarations(text)) {
       const located = { ...entry, file };
       if (entry.property.includes("*")) { drop(located, "a namespace reset, which declares no token"); continue; }
-      const family = familyOf(entry.property);
+      const family = familyOf(entry.property, entry.value);
       if (family == null) { drop(located, "it has no family the Design System reads"); continue; }
       const theme = themeOf(entry.context);
       if (theme == null) { drop(located, `it is declared under no theme: "${entry.context.join(" ") || "no rule"}" is not a theme selector`); continue; }
@@ -217,7 +232,8 @@ export function readTokens(files) {
       tokens: [...placed.color.values()].map((token) => ({ name: token.name, value: ordered(token.values), usage: "" })),
     },
     type: {
-      families: list(placed.font),
+      // The type's shape: a map of family key to font stack (198 F-02), never a token list.
+      families: Object.fromEntries(list(placed.font).map((token) => [token.name, token.value])),
       groups: styles.length > 0 ? [{ name: "Text", styles }] : [],
     },
     spacing: { tokens: list(placed.spacing) },
@@ -343,7 +359,8 @@ const VALUE_FAMILIES = Object.freeze([
   ["spacing", (set) => set?.spacing?.tokens],
   ["radius", (set) => set?.radius?.tokens],
   ["shadow", (set) => set?.shadow?.tokens],
-  ["type.families", (set) => set?.type?.families],
+  // The type keeps families as a map of key to stack; the merge reads it as a list and writes it back.
+  ["type.families", (set) => (isObject(set?.type?.families) ? Object.entries(set.type.families).map(([name, value]) => ({ name, value })) : undefined)],
 ]);
 const STYLE_FIELDS = Object.freeze(["fontSize", "lineHeight", "letterSpacing", "fontWeight"]);
 const isObject = (value) => value != null && typeof value === "object" && !Array.isArray(value);
@@ -421,7 +438,7 @@ export function mergeTokens(system, code, { ref, paths } = {}) {
       kept.push({ name: token.name, value: token.value, usage: "" });
       added.push({ family, name: token.name });
     }
-    if (family === "type.families") { document.type ??= {}; document.type.families = kept; }
+    if (family === "type.families") { document.type ??= {}; document.type.families = Object.fromEntries(kept.map((token) => [token.name, token.value])); }
     else document[family] = { ...(isObject(document[family]) ? document[family] : {}), tokens: kept };
   }
 

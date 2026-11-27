@@ -144,6 +144,18 @@ export const checkTests = [
       await refusedWith(await saveSystem({ color: { brand: { $value: "#f00" } } }, "dtcg.json"), /family "color" is not a list/);
     }),
   },
+  // 198 F-02 — the type keeps `type.families` as a map of key to font stack, and `check` reads that.
+  {
+    name: "198 F-02 · type.families is the type's map: a matching map has no drift, a changed stack is drift, and a list is refused",
+    run: () => withProject({ extra: { "fonts.css": "@theme {\n  --font-sans: Inter, sans-serif;\n}\n" } }, async ({ saveSystem, check }) => {
+      const run = async (families, file) => check({ tokens: await saveSystem({ type: { families, groups: [] } }, file), source: ["fonts.css"] });
+      assert.equal((await run({ sans: "Inter, sans-serif" }, "same.json")).exit, 0);
+      const { result, exit } = await run({ sans: "Roboto, sans-serif" }, "changed.json");
+      assert.notEqual(exit, 0);
+      assert.deepEqual(result.changed, [{ family: "type.families", name: "sans", system: "Roboto, sans-serif", code: "Inter, sans-serif" }]);
+      await assert.rejects(run([{ name: "sans", value: "Inter, sans-serif" }], "list.json"), /"type.families" is not a map of family keys to font stacks/);
+    }),
+  },
   {
     name: "198/01 03 without --json it prints the drift as three sections",
     run: () => withProject({}, async ({ root, printed, saveSystem, check }) => {
@@ -164,7 +176,7 @@ export const checkTests = [
 // A system and a code that differ only in a type style's lineHeight; answers the check's exit.
 async function withStyle(saveSystem, check) {
   const css = "@theme {\n  --text-sm: 0.875rem;\n  --text-sm--line-height: 1.25rem;\n}\n";
-  const system = { type: { families: [], groups: [{ name: "Text", styles: [{ name: "sm", fontSize: "0.875rem", lineHeight: "1.5rem", usage: "" }] }] } };
+  const system = { type: { families: {}, groups: [{ name: "Text", styles: [{ name: "sm", fontSize: "0.875rem", lineHeight: "1.5rem", usage: "" }] }] } };
   await saveSystem(css, "type.css");
   return (await check({ tokens: await saveSystem(system, "type.json"), source: ["type.css"] })).exit;
 }

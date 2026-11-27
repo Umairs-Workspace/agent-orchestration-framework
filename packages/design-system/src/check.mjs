@@ -34,7 +34,10 @@ export function tokenFaults(system) {
   if (system.type !== undefined) {
     if (!isPlainObject(system.type)) faults.push(`the family "type" is not a list of {name, value, usage} entries`);
     else {
-      if (system.type.families !== undefined) listAt("type.families", system.type.families);
+      // The type's shape (198 F-02): a map of family key to font stack, as the page reads it.
+      if (system.type.families !== undefined && !(isPlainObject(system.type.families) && Object.values(system.type.families).every((stack) => typeof stack === "string"))) {
+        faults.push(`the family "type.families" is not a map of family keys to font stacks`);
+      }
       if (system.type.groups !== undefined) {
         if (!Array.isArray(system.type.groups)) faults.push(`the family "type.groups" is not a list of groups`);
         else system.type.groups.forEach((group, index) => listAt(`type.groups[${index}].styles`, isPlainObject(group) ? group.styles : undefined));
@@ -65,7 +68,7 @@ function entriesOf(tokens) {
   for (const family of ["spacing", "radius", "shadow"]) {
     for (const token of tokens?.[family]?.tokens ?? []) add(family, token.name, "value", token.value);
   }
-  for (const token of tokens?.type?.families ?? []) add("type.families", token.name, "value", token.value);
+  for (const [key, stack] of Object.entries(isPlainObject(tokens?.type?.families) ? tokens.type.families : {})) add("type.families", key, "value", stack);
   for (const group of tokens?.type?.groups ?? []) {
     for (const style of group?.styles ?? []) {
       add("type.styles", style.name, null);

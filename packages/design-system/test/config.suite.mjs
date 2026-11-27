@@ -31,9 +31,13 @@ async function withRepoConfig(body, { block } = {}) {
     await mkdir(path.join(root, "apps", "ui", "src"), { recursive: true });
     await writeFile(path.join(root, INDEX_CSS), await readFile(path.join(REPO, INDEX_CSS), "utf8"), "utf8");
     let text = await readFile(path.join(REPO, ".aof", "aof.config.json"), "utf8");
-    if (block !== undefined) {
-      const config = JSON.parse(text);
-      config.work.ui = { ...(config.work.ui ?? {}), designSystem: block };
+    // The fixture starts from this repository's config with the block this case asks for, and with
+    // none when it asks for none: the repository's own config may already name a system.
+    const config = JSON.parse(text);
+    if (block !== undefined || config.work?.ui?.designSystem !== undefined) {
+      const { designSystem: _named, ...ui } = config.work.ui ?? {};
+      config.work.ui = block !== undefined ? { ...ui, designSystem: block } : ui;
+      if (Object.keys(config.work.ui).length === 0) delete config.work.ui;
       text = `${JSON.stringify(config, null, 2)}\n`;
     }
     await writeFile(configPath, text, "utf8");

@@ -535,7 +535,7 @@ function renderTokens(result) {
   const colour = (value) => themes.filter((theme) => value[theme] !== undefined).map((theme) => (themes.length > 1 ? `${theme} ${value[theme]}` : value[theme])).join(" · ");
   const sections = [
     section(`Colour (${result.color.tokens.length}; themes ${themes.join(", ") || "none"})`, result.color.tokens.map((token) => `  ${token.name}  ${colour(token.value)}`)),
-    section(`Type families (${result.type.families.length})`, result.type.families.map((token) => `  ${token.name}  ${token.value}`)),
+    section(`Type families (${Object.keys(result.type.families).length})`, Object.entries(result.type.families).map(([key, stack]) => `  ${key}  ${stack}`)),
     section(`Type styles (${result.type.groups.reduce((sum, group) => sum + group.styles.length, 0)})`, result.type.groups.flatMap((group) => group.styles.map((style) => `  ${group.name} / ${style.name}  ${["fontSize", "lineHeight", "letterSpacing", "fontWeight"].filter((field) => style[field] !== undefined).map((field) => `${field} ${style[field]}`).join(", ")}`))),
     section(`Spacing (${result.spacing.tokens.length})`, result.spacing.tokens.map((token) => `  ${token.name}  ${token.value}`)),
     section(`Radius (${result.radius.tokens.length})`, result.radius.tokens.map((token) => `  ${token.name}  ${token.value}`)),
