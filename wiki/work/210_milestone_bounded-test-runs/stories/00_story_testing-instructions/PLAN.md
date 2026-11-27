@@ -25,7 +25,7 @@ and pre-existing reds go to `## Feedback (for retro)`. Write it once in `continu
 file". It reads the roots, the runner scripts, the native `node:test` packages and the known machine
 hazards, writes the file, sets the key, and asks the operator to edit the draft.
 
-`wiki/TESTING.md` is this repo's instance. Its content is already on record: the memory notes on
+This repo's own testing instructions file is the first instance. Its content is already on record: the memory notes on
 by-file runs, the `:4182` hazard, native `node --test` packages and pre-existing reds, plus the
 STATE measurement. Keep it to the five headings ADR-001 lists.
 
@@ -34,7 +34,7 @@ STATE measurement. Keep it to the five headings ADR-001 lists.
 Point a temporary project at a missing instructions path and run `aof test` (refused, path named)
 and `aof work doctor` (one warning naming `/aof:map-tests`). Then run `aof work update` here and
 grep every render for `never name suite files`, `--scope` and `wearing prose`. There must be zero
-hits outside `wiki/work/`. `node scripts/golden.mjs` must report no diff after `--update`.
+hits outside the work stream. `node scripts/golden.mjs` must report no diff after `--update`.
 
 ## Out of scope
 
