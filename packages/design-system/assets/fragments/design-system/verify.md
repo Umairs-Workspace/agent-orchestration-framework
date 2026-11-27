@@ -1,15 +1,15 @@
 <!-- fragment:conformance.baseline -->
    - **An approved canvas first (198/ADR-006).** Before the precondition below, read `DESIGN.md`
-     for a canvas link it names as **awaiting approval**. Put each one to the operator before the
+     for a canvas page link (`<canvas link>#page-m<NN>`) it names as **awaiting approval**. Put each one to the operator before the
      fidelity judge runs, as one question that carries the link, "Approve these mocks?", answered
      **Approve** or **Later** (one question per ask in a driven session).
      - **On Approve,** resolve the system `work.ui.designSystem` names (an `artifact` link is the
        system; a `name` is the one Design System you can open with exactly that title, and no
        match or more than one is a stop naming every candidate's title and link). Read back the
-       canvas's `project/canvas.json`, every board it names, `project/ds/*/tokens.json` and the
-       type's `artifact-type/dc-runtime.js` into one scratchpad directory, keeping their published
-       paths. Then run `aof design-system mocks import <pulled-dir> --item <NN> --canvas <link>
-       --canvas-version <version> --system <link> --system-version <version> --approval
+       canvas's `project/canvas.json`, every board on the milestone's page, `project/ds/*/tokens.json`
+       and the type's `artifact-type/dc-runtime.js` into one scratchpad directory, keeping their
+       published paths. Then run `aof design-system mocks import <pulled-dir> --item <NN> --canvas
+       <link> --canvas-version <version> --page m<NN> --system <link> --system-version <version> --approval
        "<reference>" --json`, then `aof design-system mocks capture --item <NN> --json`, and name
        the frames in `DESIGN.md`. **Those frames are the baseline handed to the judge.** A refusal
        from either verb is a stop: report it.

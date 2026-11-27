@@ -57,6 +57,10 @@ doc: state
 - 2026-11-27 — aof:verify 198: 198/00 accepted. 01–03 stay in-review, awaiting the operator's
   Claude Design `@manual` runs. The milestone is not accepted: no regression gate yet (the 02/03
   builds are uncommitted, and FF-7106 is red on 210/00, VERIFICATION F-01).
+- 2026-11-27 — F-04 fixed inline (operator's go), from the portal's live extract: the block holds
+  the project's one canvas (`canvas`, `use --canvas`), mocks are drawn on a page per milestone of
+  that one canvas (`mocks import --page`), and the extract asks first and answers questions without
+  acting. ADR-005 and ADR-006 amended. The live 02/03 run now draws on a page, not a new canvas.
 
 ## Notes & decisions in flight
 

@@ -32,13 +32,17 @@ takes the default it names.
 - E13 · "use --name AOF --mode owned --source apps/ui/src/index.css" on this repository's config: the block is {"enabled": true, "name": "AOF", "mode": "owned", "source": ["apps/ui/src/index.css"]}, and every other key in the file is unchanged [proposed]
 - E14 · Then "use --artifact https://claude.ai/artifact/5M7UeXXcx16TP3vzVFNDzd --mode reference": the block holds "artifact" and "mode": "reference", and no "name" or "source" [proposed]
 - E15 · "use --name AOF --artifact https://claude.ai/artifact/5M7UeXXcx16TP3vzVFNDzd --mode owned --source apps/ui/src/index.css": refused, and the file is not written [proposed]
+- E22 · Amended 2026-11-27 (ADR-005, F-04). "use --canvas https://claude.ai/artifact/NeFyvPA4cnuBx9CXwD8Fpb" on the block of E13: the block gains "canvas" and keeps the system. Naming the system again keeps the canvas; a "--canvas" given with it replaces it [proposed]
+- E23 · "use --canvas <link>" with no system named, a canvas that is not an artifact link, or the system's own link as the canvas: refused, and the file is not written [proposed]
 
 ## R6 · The validator reports each defect of the block under its own code
 - E16 · "name" and "artifact" both set: "design-system-name-and-artifact" [proposed]
 - E17 · "enabled": true with neither: "design-system-unnamed". The same block with "enabled": false: no finding [proposed]
 - E18 · "mode": "owned" with no "source": "design-system-source-missing". "mode": "reference" with a "source": "design-system-source-stray" [proposed]
+- E24 · Amended 2026-11-27. "canvas": "claude.ai/artifact/x": "design-system-bad-canvas". "canvas" equal to "artifact": "design-system-canvas-is-system" [proposed]
 
 ## R7 · Extract builds the system from the code and the mocks, publishes it only after the operator agrees, and names it only when its title is unambiguous
+- E25 · Amended 2026-11-27 (F-04). Before reading any token, the run lists the Design Systems and canvases the operator can open, says the system and the canvas are two artifacts, and asks once: build from the code, name an existing system, or stop, and which canvas holds the mocks. A question in reply is answered and the same question asked again; nothing is published, deleted or written on it [proposed]
 - E19 · AOF's own run: the inventory lists 20 colours, 1 radius, and the bar, nav, scope segment, pills, cards and terminal pane. The operator agrees. A Design System titled "AOF", marked "editing": "code", exists, and .aof/aof.config.json names it as "name": "AOF" [proposed]
 - E20 · A system titled "AOF" is already among those the operator can open: the run stops before publishing, naming every candidate's title and link, and the config is not written [proposed]
 - E21 · The operator declines the inventory: nothing is published, and the config is unchanged [proposed]
@@ -58,3 +62,4 @@ takes the default it names.
 - Q12 · technical · defaulted ARCHITECTURE.md#ADR-004§4 · Which mode does extract write? Always "owned", with the CSS files it read as "source". A system someone else owns is named by hand, through "use --mode reference".
 - Q13 · technical · defaulted ARCHITECTURE.md#ADR-004§5 · Which title does extract publish under? The one the operator agrees to at the inventory review. The session proposes the project's name.
 - Q14 · technical · defaulted ARCHITECTURE.md#ADR-001§5 · Does the practice list name runtimes for "design-system"? No. It has no fragment yet, and a practice with no fragment names none.
+- Q15 · technical · defaulted ARCHITECTURE.md#ADR-005§1 · How many artifacts hold a project's design, and which one does the config name? Settled by the operator 2026-11-27 in conversation, and recorded in ADR-005's amendment (198 VERIFICATION F-04): two: the Design System and one canvas for every milestone's mocks. The block names both, the canvas by its link in "canvas", "so it knows which artifact to edit/maintain".

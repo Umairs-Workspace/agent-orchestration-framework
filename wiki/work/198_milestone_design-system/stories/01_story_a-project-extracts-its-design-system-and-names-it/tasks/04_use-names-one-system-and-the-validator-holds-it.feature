@@ -1,7 +1,11 @@
 @executable @cli @design
 Feature: "aof design-system use" names exactly one system in the config, and the validator holds the block to that
 
-  WHY. A system is named by its title, `name`, which is how the operator knows it, or by its link,
+  WHY (amended 2026-11-27, F-04). The block also holds `canvas`, the link of the project's one Design
+  canvas, so every session knows which artifact the mocks are drawn on. The canvas is not the system:
+  each is set without disturbing the other.
+
+  A system is named by its title, `name`, which is how the operator knows it, or by its link,
   `artifact`, which survives a rename. Exactly one of the two names it (ADR-005, amended
   2026-11-26). `use` is the one writer of the block, through a surgical merge that leaves every
   other key as it was (ADR-003). The validator catches a block nobody wrote through `use` before
@@ -63,6 +67,22 @@ Feature: "aof design-system use" names exactly one system in the config, and the
       When "aof design-system use --name AOF --mode owned --source apps\ui\src\index.css" runs
       Then the block's "source" is ["apps/ui/src/index.css"]
 
+    Scenario: E22 · "--canvas" alone names the project's canvas and keeps the system
+      Given the block of E13
+      When "aof design-system use --canvas https://claude.ai/artifact/NeFyvPA4cnuBx9CXwD8Fpb" runs
+      Then the block is the block of E13 with "canvas": "https://claude.ai/artifact/NeFyvPA4cnuBx9CXwD8Fpb"
+      When "aof design-system use --artifact <the link> --mode reference" runs
+      Then the block still holds that "canvas"
+      When "aof design-system use --name AOF --mode owned --source apps/ui/src/index.css --canvas https://claude.ai/artifact/9Qm2LrT4vWx8YbN3cK7pZd" runs
+      Then the block's "canvas" is "https://claude.ai/artifact/9Qm2LrT4vWx8YbN3cK7pZd"
+
+    Scenario: E23 · a canvas use cannot take is refused, and nothing is written
+      When "aof design-system use --canvas https://claude.ai/artifact/NeFyvPA4cnuBx9CXwD8Fpb" runs with no block
+      Then it is refused as "design-system-unnamed", saying to name the system first
+      And given the block of E13, "use --canvas https://example.com/x" is refused as "design-system-bad-canvas"
+      And "use --artifact <the link> --mode reference --canvas <the link>/" is refused as "design-system-canvas-is-system"
+      And the config is byte-identical to before
+
   Rule: R6 · The validator reports each defect of the block under its own code
 
     Scenario: E16 · both forms set
@@ -97,6 +117,8 @@ Feature: "aof design-system use" names exactly one system in the config, and the
         | {"enabled": true, "name": "AOF", "mode": "owned", "source": []}          | "design-system-source-missing" | "work.ui.designSystem.source"       |
         | {"enabled": true, "name": "AOF", "mode": "reference", "colour": "teal"}  | "design-system-unknown-key"  | "work.ui.designSystem.colour"         |
         | "on"                                                                     | "design-system-bad-value"    | "work.ui.designSystem"                |
+        | {"enabled": true, "name": "AOF", "mode": "reference", "canvas": "claude.ai/artifact/x"} | "design-system-bad-canvas" | "work.ui.designSystem.canvas" |
+        | {"enabled": true, "artifact": "<the link>", "mode": "reference", "canvas": "<the link>"} | "design-system-canvas-is-system" | "work.ui.designSystem.canvas" |
 
     Scenario: a block use wrote validates clean
       Given the block of E13

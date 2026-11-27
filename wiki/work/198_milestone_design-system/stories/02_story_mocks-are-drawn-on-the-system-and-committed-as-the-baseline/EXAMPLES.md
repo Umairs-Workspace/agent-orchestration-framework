@@ -19,7 +19,8 @@ takes the default it names.
 - E3 · In every runtime's render of aof-designer, with the practice on and with it off, "tools" is Read, Grep, Glob, Write, Edit, WebSearch, WebFetch [proposed]
 
 ## R2 · Refine offers a canvas drawn on the resolved system, and nothing becomes a baseline until the operator approves it
-- E4 · "name": "AOF", and exactly one Design System titled "AOF": the session draws the milestone's surfaces as one canvas with the system installed, and asks "Approve these mocks?" with the canvas link, offering Approve, Revise and Later [proposed]
+- E4 · "name": "AOF", and exactly one Design System titled "AOF": the session draws the milestone's surfaces on the milestone's page of the project's canvas, with the system installed, and asks "Approve these mocks?" with the page's link, offering Approve, Revise and Later. Amended 2026-11-27 (ADR-006 §0): the page, not a canvas of its own [proposed]
+- E24 · Amended 2026-11-27. The block names no "canvas": the session creates one, records it with "use --canvas", and draws on page "m<NN>". The block names a canvas holding 60 boards and no pages: a page "earlier" is added first for them, then "m<NN>", and no board of theirs moves or changes [proposed]
 - E5 · Two Design Systems titled "AOF": the session stops before drawing, naming "AOF" and both titles and links. No canvas is created [proposed]
 - E6 · The operator answers Revise, "the chip row is too tall": the same canvas is revised and asked about again, at its new version. mocks/ is untouched until Approve [proposed]
 - E7 · The operator answers Later: refine ends with DESIGN.md naming the canvas link as awaiting approval, and the surface's binding checklist is its baseline. mocks/ is untouched [proposed]
@@ -34,6 +35,9 @@ takes the default it names.
 - E12 · A pulled file "project/../../.aof/aof.config.json", or "project/notes.md": refused, naming the file, and nothing is written [proposed]
 - E13 · No "--approval": refused, and nothing is written [proposed]
 - E14 · Version 5, which drops "fleet-filter-390.dc.html", is imported over version 4: the previous import's files are replaced whole, so that board and its frame are gone, and "PROMPT.md" beside them is untouched [proposed]
+- E21 · Amended 2026-11-27. A canvas with pages "earlier" and "m12", imported with "--page m12": mocks/ holds only m12's boards, its canvas.json names only them and that page, README.md has "Page: m12 (12 Fleet filter)", and capture frames only them [proposed]
+- E22 · A board with no "page" is on the first page: "--page m12" refuses it as on another page, and "--page earlier" imports it [proposed]
+- E23 · "--page m12" on a canvas without that page, or with no boards on it: refused, naming the canvas's pages [proposed]
 - E15 · An imported board loads "./support.js", "ds/aof/tokens.json" and a Google Fonts css2 link: the self-contained control passes. One that loads "https://cdn.example.com/x.js": the control fails, naming the board [proposed]
 
 ## R5 · "mocks capture" frames each imported board at its own size, and records the frames
@@ -55,7 +59,7 @@ takes the default it names.
 - Q7 · technical · defaulted ARCHITECTURE.md#ADR-003§2 · How does capture reach a browser while the package spawns nothing (FF-19804)? Core injects the rasterizer through the practice's command services, as it injects the Hyperagent verbs' collaborators. The rasterizer gains a page entry beside rasterizeSvg. That entry shares the one argv builder (FF-13303) and the done-poll.
 - Q8 · technical · defaulted wiki/work/archive/47_milestone_fleet-repo-filter/mocks/README.md · At what scale? 2, as milestone 47's frames were taken.
 - Q9 · technical · defaulted STORY.md#Notes · Which answers does the approval ask offer? Approve, Revise (with the change in the answer's text) and Later. Later is what verify's pull-back exists for.
-- Q10 · technical · defaulted ARCHITECTURE.md#ADR-006§1 · How many canvases? One per milestone, with one board per surface, state and breakpoint, as milestone 47's frames were split.
+- Q10 · technical · defaulted ARCHITECTURE.md#ADR-006§0 · How many canvases? Settled by the operator 2026-11-27 in conversation, and recorded in ADR-006 §0 (198 VERIFICATION F-04): ONE for the project, named in "work.ui.designSystem.canvas", with a page per milestone (id "m<NN>") and one board per surface, state and breakpoint. It replaces the default of one canvas per milestone, which would have left a growing list of design files (198 VERIFICATION F-04).
 - Q11 · technical · defaulted ARCHITECTURE.md#ADR-007§2 · Where is a reference-mode gap recorded? Under "## Design-system gaps" in DESIGN.md. The designer can write it, and refine's hand-back lists the gaps for the operator to pass to the system's owner.
 - Q12 · technical · defaulted ARCHITECTURE.md#ADR-006§2 · How does FF-19805 find an imported mock? README.md's "Canvas:" line, which only import writes.
 - Q13 · technical · defaulted wiki/work/archive/07_milestone_design-conformance/ARCHITECTURE.md · Do the verbs commit? No. They write the files, and the phase's own commit carries them.

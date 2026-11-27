@@ -4,7 +4,8 @@
 // Covers EVERY @executable scenario in
 //   tasks/01_import-commits-an-approved-canvas-with-its-provenance.feature — E11, the E12 outline, the
 //     "cannot render offline" outline, E13, the bad-provenance outline, E14, the hand-written README
-//     and the same-version re-import (E15 is FF-19805, test/arch/ui/acd-imported-mock-self-contained)
+//     and the same-version re-import, and R4a's E21–E23 (a page per milestone, amended 2026-11-27)
+//     (E15 is FF-19805, test/arch/ui/acd-imported-mock-self-contained)
 //   tasks/02_capture-frames-each-board-at-its-own-size.feature — E16, the re-capture, E17, the failing
 //     board, E18, the size outline, and "the package spawns nothing" (the rasterizer's own rules are
 //     packages/execution/test/diagram-rasterize.suite.mjs; FF-13303 is its arch control)
@@ -331,6 +332,72 @@ export const mocksTests = [
         const text = await readFile(path.join(dir, name), "utf8");
         assert.equal(/["'](?:node:)?child_process["']/u.test(text), false, `${name} reaches no child process`);
       }
+    },
+  },
+  // ── 198 amended 2026-11-27 · one canvas, a page per milestone ─────────────────────────────────
+  {
+    name: "198/02 01 E21 · --page imports that page's boards alone, and capture frames only them",
+    run: async () => {
+      const boards = {
+        "other.dc.html": { x: 0, y: 0, w: 800, h: 600 },
+        "fleet-filter.dc.html": { x: 0, y: 0, w: 1280, h: 884, page: "m12" },
+        "fleet-filter-390.dc.html": { x: 1340, y: 0, w: 390, h: 274, page: "m12" },
+      };
+      const pulled = pulledFiles(boards);
+      const canvas = JSON.parse(pulled["project/canvas.json"]);
+      canvas.pages = [{ id: "earlier", name: "Portal" }, { id: "m12", name: "12 Fleet filter" }];
+      canvas.notes = { a: { x: 0, y: -300, text: "Earlier" }, b: { x: 0, y: -300, text: "Filter", page: "m12" } };
+      pulled["project/canvas.json"] = `${JSON.stringify(canvas, null, 2)}\n`;
+      delete pulled["project/other.dc.html"];
+      await withProject({ pulled }, async ({ mocksDir, importIt, capture, readme }) => {
+        const answer = await importIt({ ...FLAGS, page: "m12" });
+        assert.equal(answer.canvas.page, "m12");
+        const written = JSON.parse(await readFile(path.join(mocksDir, "canvas.json"), "utf8"));
+        assert.deepEqual(Object.keys(written.boards), ["fleet-filter.dc.html", "fleet-filter-390.dc.html"], "only the page's boards");
+        assert.deepEqual(written.order, ["fleet-filter.dc.html", "fleet-filter-390.dc.html"]);
+        assert.deepEqual(written.pages, [{ id: "m12", name: "12 Fleet filter" }]);
+        assert.deepEqual(Object.keys(written.notes), ["b"], "only the page's notes");
+        assert.ok((await readme()).split("\n").includes("Page: m12 (12 Fleet filter)"));
+        const again = await importIt({ ...FLAGS, page: "m12" });
+        assert.equal(again.changed, false, "the same page at the same version is unchanged");
+        const framed = await capture();
+        assert.deepEqual(framed.frames.map((frame) => frame.board), ["fleet-filter.dc.html", "fleet-filter-390.dc.html"]);
+      });
+    },
+  },
+  {
+    name: "198/02 01 E22 · a board with no page is on the first page, and a board from another page is refused",
+    run: async () => {
+      const boards = { "old.dc.html": { x: 0, y: 0, w: 800, h: 600 }, "new.dc.html": { x: 0, y: 0, w: 800, h: 600, page: "m12" } };
+      const pulled = pulledFiles(boards);
+      const canvas = JSON.parse(pulled["project/canvas.json"]);
+      canvas.pages = [{ id: "earlier", name: "Portal" }, { id: "m12", name: "12 Fleet filter" }];
+      pulled["project/canvas.json"] = `${JSON.stringify(canvas, null, 2)}\n`;
+      await withProject({ pulled }, async ({ importIt, snapshot }) => {
+        const before = await snapshot();
+        await assert.rejects(importIt({ ...FLAGS, page: "m12" }), refusedWith("project/old.dc.html", "another page"));
+        assert.deepEqual(await snapshot(), before, "nothing is written");
+      });
+      const earlier = pulledFiles(boards);
+      earlier["project/canvas.json"] = pulled["project/canvas.json"];
+      delete earlier["project/new.dc.html"];
+      await withProject({ pulled: earlier }, async ({ mocksDir, importIt }) => {
+        await importIt({ ...FLAGS, page: "earlier" });
+        assert.deepEqual(Object.keys(JSON.parse(await readFile(path.join(mocksDir, "canvas.json"), "utf8")).boards), ["old.dc.html"]);
+      });
+    },
+  },
+  {
+    name: "198/02 01 E23 · a page the canvas does not hold, or one with no boards, is refused, naming the pages",
+    run: async () => {
+      const pulled = pulledFiles();
+      const canvas = JSON.parse(pulled["project/canvas.json"]);
+      canvas.pages = [{ id: "earlier", name: "Portal" }, { id: "m13", name: "13 Next" }];
+      pulled["project/canvas.json"] = `${JSON.stringify(canvas, null, 2)}\n`;
+      await withProject({ pulled }, async ({ importIt }) => {
+        await assert.rejects(importIt({ ...FLAGS, page: "m12" }), refusedWith('no page "m12"', '"earlier", "m13"'));
+        await assert.rejects(importIt({ ...FLAGS, page: "m13" }), refusedWith('no boards on the page "m13"'));
+      });
     },
   },
 ];

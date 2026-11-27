@@ -186,8 +186,23 @@ depend on this milestone being built.
 
 ## ADR-005 — `work.ui.designSystem`: one boolean key turns the practice on, beside its data
 
-**Status:** Accepted (amended 2026-11-26: a system is named by `name` or by `artifact`)
+**Status:** Accepted (amended 2026-11-26: a system is named by `name` or by `artifact`; amended
+2026-11-27: the block also holds the project's one canvas)
 **Date:** 2026-11-17
+
+**Amendment 2026-11-27 — the block holds the canvas (198 VERIFICATION F-04).** An artifact has one
+type, so a Design System cannot also be a Design canvas. A project's design is therefore exactly two
+artifacts: the system, and ONE canvas on which every milestone's mocks are drawn (ADR-006 §0). The
+operator decided that the block names both, so every session knows which artifact to draw on and
+which to keep in step:
+- `canvas` is the canvas's claude.ai link. It is never a title: canvases are not unique by name.
+  It is optional, because the first refine that draws creates the canvas and records it.
+- `use --canvas <link>` names it. Given alone, it changes only the canvas and needs a block that
+  already names a system. Naming the system again keeps the canvas, unless `--canvas` gives a new
+  one: the canvas is not the system.
+- The validator adds `design-system-bad-canvas` (not an artifact link) and
+  `design-system-canvas-is-system` (the system's own link given as the canvas, the confusion
+  F-04 records).
 
 **Context (amendment).** A Design System is an artifact of the Design System type, and the
 operator knows it by the title it shows under Settings → Capabilities → Design systems, not by its
@@ -196,7 +211,7 @@ one of the operator's own) nor fixed (the operator can rename it). The CLI canno
 so only the session can turn a title into a link (ADR-003).
 
 **Decision.**
-1. **The block:** `work.ui.designSystem = { enabled, name | artifact, mode, source }`.
+1. **The block:** `work.ui.designSystem = { enabled, name | artifact, mode, source, canvas }`.
    - `enabled` is the practice's one key (192/ADR-003: only the boolean `true` is on).
    - **Exactly one of `name` and `artifact` names the system.**
      - `name` is the system's title, as the operator sees it. It is the form the operator writes
@@ -234,7 +249,7 @@ resolves it, with the fix named, never silently drawn on the wrong system.
 
 ## ADR-006 — An approved canvas becomes the committed offline baseline, with its runtime and provenance
 
-**Status:** Accepted
+**Status:** Accepted (amended 2026-11-27: one canvas per project, a page per milestone)
 **Date:** 2026-11-17
 
 **Context.** The judge reads local files only (m07/ADR-003). A canvas's artboards need their
@@ -242,9 +257,21 @@ runtime and any installed tokens in order to render (R2). Playwright is blocked;
 not (R6).
 
 **Decision.**
+0. **One canvas, a page per milestone** (amended 2026-11-27, 198 VERIFICATION F-04, the operator's
+   decision; it replaces 02's defaulted Q10, one canvas per milestone). The project draws every
+   milestone's mocks on the one canvas `work.ui.designSystem.canvas` names (ADR-005), each on its
+   own page: id `m<NN>`, name `<NN> <milestone title>`, every board of it carrying `"page":
+   "m<NN>"`. A board with no `page` is on the canvas's first page, as the Design type reads it, so a
+   canvas that holds boards but no `pages` first gets a page for them (id `earlier`), and the
+   milestone's page comes after it. Refine never moves, changes or removes a board on another page.
+   The type allows 40 pages; a full canvas is a stop, and the operator names a new one.
+   - *Rejected: a canvas per milestone.* It is what the operator does not want: a growing list of
+     design files beside the one system.
+   - *Cost:* two milestones refined at once publish to one artifact, and the second publish is
+     refused until it builds on the first's version. That is a re-read and a retry, never lost work.
 1. **Pull.** After approval, the session reads the canvas's files back into the scratchpad:
    - `project/canvas.json`;
-   - every approved `.dc.html`;
+   - every approved `.dc.html` on the milestone's page;
    - `project/ds/*/tokens.json`;
    - the type's `artifact-type/dc-runtime.js`.
 2. **`mocks import`** copies them into the item's `mocks/`:
@@ -254,6 +281,9 @@ not (R6).
      reference, and the design system's resolved link and version (ADR-005 §5).
 
    It refuses a path holding `..`, `\` or a leading `/`, and any file type outside the list above.
+   With `--page <id>` it takes that page's boards alone, refuses a board from another page, and
+   writes a `canvas.json` cut to the page, so capture frames exactly what was imported; the README
+   records the page.
 3. **`mocks capture`** screenshots each artboard into `<stem>.png` through the rasterizer, at its
    `boards` `w×h`, and adds the frame table to the README.
 4. **`DESIGN.md` names the frames** as the conformance source of truth. A re-approved canvas is

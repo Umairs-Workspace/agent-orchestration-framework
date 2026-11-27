@@ -275,6 +275,8 @@ function designSystemBlockTests() {
         [{ enabled: true, name: "AOF", mode: "owned", source: [] }, "design-system-source-missing", "work.ui.designSystem.source"],
         [{ enabled: true, name: "AOF", mode: "reference", colour: "teal" }, "design-system-unknown-key", "work.ui.designSystem.colour"],
         ["on", "design-system-bad-value", "work.ui.designSystem"],
+        [{ enabled: true, name: "AOF", mode: "reference", canvas: "claude.ai/artifact/x" }, "design-system-bad-canvas", "work.ui.designSystem.canvas"],
+        [{ enabled: true, artifact: LINK, mode: "reference", canvas: LINK }, "design-system-canvas-is-system", "work.ui.designSystem.canvas"],
       ];
       for (const [block, code, at] of rows) {
         await withBlock(block, async (dir) => assert.deepEqual(await findings(dir), [[code, at]], JSON.stringify(block)));
@@ -285,6 +287,7 @@ function designSystemBlockTests() {
         assert.deepEqual(await validateConfig(dir), []);
       });
       await withBlock({ enabled: true, artifact: LINK, mode: "reference" }, async (dir) => assert.deepEqual(await findings(dir), []));
+      await withBlock({ enabled: true, name: "AOF", mode: "reference", canvas: "https://claude.ai/artifact/NeFyvPA4cnuBx9CXwD8Fpb" }, async (dir) => assert.deepEqual(await findings(dir), []));
       await withBlock(ABSENT, async (dir) => assert.deepEqual(await findings(dir), []));
     }),
     t("the block is never a per-person setting: the local file's block is refused and not honoured", () => withBlock(ABSENT, async (dir) => {
@@ -1750,7 +1753,8 @@ function localConfigTests() {
     t("04 config-inspect's audited calls are re-stamped, their reasons naming 199", async () => {
       const { audit, report } = await runtimeAudit();
       const rows = audit.filter((row) => row.file === AUDITED_199[0] && row.kind === "child-process");
-      assert.equal(rows.length, 3, rows.map((row) => row.expression).join("\n"));
+      // Two, not three: 210/00 removed the graph-freshness `git log` probe with its doctor check (210/ADR-008).
+      assert.equal(rows.length, 2, rows.map((row) => row.expression).join("\n"));
       const live = new Set(report.runtime.filter((row) => row.file === AUDITED_199[0]).map((row) => `${row.digest}:${row.sourceDigest}`));
       for (const row of rows) {
         assert.ok(live.has(`${row.digest}:${row.sourceDigest}`), `matches the file as it now stands: ${row.expression}`);

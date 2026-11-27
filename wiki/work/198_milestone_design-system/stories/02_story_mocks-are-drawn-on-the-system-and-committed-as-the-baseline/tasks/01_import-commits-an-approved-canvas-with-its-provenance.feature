@@ -92,6 +92,31 @@ Feature: "aof design-system mocks import" commits a pulled, approved canvas unde
       When the same import runs again with "--json"
       Then it reports the import unchanged, and every file in mocks/ is byte-identical
 
+  Rule: R4a · One canvas holds every milestone's mocks, a page each, and import takes the milestone's page alone (ADR-006 §0, amended 2026-11-27)
+
+    Scenario: E21 · "--page" imports that page's boards alone, and capture frames only them
+      Given the pulled canvas has the pages "earlier" (named "Portal") and "m12" (named "12 Fleet filter")
+      And "fleet-filter.dc.html" and "fleet-filter-390.dc.html" carry "page": "m12"
+      When the import runs with the provenance flags and "--page m12"
+      Then mocks/canvas.json names only those two boards, in canvas order, and only the page "m12" and its notes
+      And mocks/README.md holds the line "Page: m12 (12 Fleet filter)"
+      And the same import again reports the import unchanged
+      And "mocks capture" frames only those two boards
+
+    Scenario: E22 · a board with no page is on the first page
+      Given the pulled canvas has the pages "earlier" and "m12", and "old.dc.html" carries no "page"
+      When the import runs with "--page m12" and "old.dc.html" is in the pulled dir
+      Then it is refused, naming "project/old.dc.html" as on another page, and nothing is written
+      When the import runs with "--page earlier"
+      Then mocks/canvas.json names "old.dc.html" alone
+
+    Scenario: E23 · a page the canvas lacks, or one with no boards, is refused
+      Given the pulled canvas has the pages "earlier" and "m13", and no board on "m13"
+      When the import runs with "--page m12"
+      Then it is refused, saying the canvas has no page "m12" and naming "earlier" and "m13"
+      When the import runs with "--page m13"
+      Then it is refused, saying the canvas names no boards on the page "m13"
+
   Scenario: E15 · an imported mock is self-contained, and the control proves it can fail
     Given "test/arch/ui/acd-imported-mock-self-contained.test.mjs" (FF-19805) is registered in "test/arch/ui/index.mjs"
     And it sweeps every mocks/ dir in the work tree whose README.md has a "Canvas:" line, and a fixture import

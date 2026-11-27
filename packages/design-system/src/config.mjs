@@ -1,9 +1,11 @@
 // packages/design-system/src/config.mjs — the ONE shape check of `work.ui.designSystem` (198/ADR-005).
 //
-// `work.ui.designSystem = { enabled, name | artifact, mode, source }` names the Design System a
-// project draws on. Exactly one of `name` (the title the operator sees) and `artifact` (a claude.ai
+// `work.ui.designSystem = { enabled, name | artifact, mode, source, canvas }` names the Design System
+// a project draws on. Exactly one of `name` (the title the operator sees) and `artifact` (a claude.ai
 // artifact link) names it; `mode` is `owned` or `reference`; `source` lists the CSS files an owned
-// system is synced from, and a referenced one takes none.
+// system is synced from, and a referenced one takes none. `canvas` is the link of the project's one
+// Design canvas, where every milestone's mocks are drawn on a page of their own (ADR-005 §1, amended
+// 2026-11-27): optional, because the first refine that draws creates it.
 //
 // Two callers share this module, so the rule is written once: the config validator
 // (`config-inspect.mjs`'s `validateWork`) reports `designSystemDiagnostics`, and `aof design-system
@@ -13,7 +15,7 @@
 
 export const DESIGN_SYSTEM_PATH = "work.ui.designSystem";
 export const DESIGN_SYSTEM_MODES = Object.freeze(["owned", "reference"]);
-export const DESIGN_SYSTEM_KEYS = Object.freeze(["enabled", "name", "artifact", "mode", "source"]);
+export const DESIGN_SYSTEM_KEYS = Object.freeze(["enabled", "name", "artifact", "mode", "source", "canvas"]);
 
 // Every code the validator can report, one per defect (198/01 Q9).
 export const DESIGN_SYSTEM_CODES = Object.freeze({
@@ -24,6 +26,8 @@ export const DESIGN_SYSTEM_CODES = Object.freeze({
   badMode: "design-system-bad-mode",
   sourceMissing: "design-system-source-missing",
   sourceStray: "design-system-source-stray",
+  badCanvas: "design-system-bad-canvas",
+  canvasIsSystem: "design-system-canvas-is-system",
   unknownKey: "design-system-unknown-key",
   badValue: "design-system-bad-value",
 });
@@ -93,8 +97,17 @@ export function designSystemDiagnostics(block) {
   } else if (source !== undefined && !isSourceList(source)) {
     entries.push(entry(`${P}.source`, C.badValue, `${P}.source must be a list of project-relative paths.`));
   }
+  if (block.canvas !== undefined) {
+    if (!isArtifactLink(block.canvas)) {
+      entries.push(entry(`${P}.canvas`, C.badCanvas, `${P}.canvas must be the canvas's claude.ai artifact link: https://claude.ai/artifact/<id> or https://claude.ai/code/artifact/<uuid>.`));
+    } else if (hasArtifact && sameLink(block.canvas, block.artifact)) {
+      entries.push(entry(`${P}.canvas`, C.canvasIsSystem, `${P}.canvas names the system's own artifact: the system and the canvas are two artifacts, a Design System and a Design canvas, so give each its own link.`));
+    }
+  }
   return entries;
 }
+
+const sameLink = (a, b) => String(a).replace(/\/$/u, "") === String(b).replace(/\/$/u, "");
 
 const isSourceList = (source) => Array.isArray(source) && source.every((item) => typeof item === "string" && item.trim() !== "");
 
@@ -105,15 +118,17 @@ export function normaliseSourcePath(value) {
 
 /**
  * The block `use` writes for its flags: `enabled: true`, exactly the naming form given, the mode,
- * and the sources (normalised) only for an owned system. Every other key the old block held is
- * dropped: `use` names the system whole, so writing one form removes the other.
+ * the sources (normalised) only for an owned system, and the canvas. Every other key the old block
+ * held is dropped: `use` names the system whole, so writing one form removes the other. The canvas
+ * is not the system, so the verb carries the old block's canvas over unless it is given a new one.
  */
-export function designSystemBlock({ name, artifact, mode, source } = {}) {
+export function designSystemBlock({ name, artifact, mode, source, canvas } = {}) {
   return {
     enabled: true,
     ...(name !== undefined ? { name } : {}),
     ...(artifact !== undefined ? { artifact } : {}),
     ...(mode !== undefined ? { mode } : {}),
     ...(source !== undefined ? { source: source.map(normaliseSourcePath) } : {}),
+    ...(canvas !== undefined ? { canvas } : {}),
   };
 }

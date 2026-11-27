@@ -6,6 +6,11 @@
 // re-import replaces, what the README says, which boards are framed at what size — is here, so the
 // suites drive every rule with plain data.
 //
+// ONE CANVAS, A PAGE PER MILESTONE (ADR-006 §0, amended 2026-11-27). The project draws every
+// milestone's mocks on one canvas, each on a page of its own, so `--page <id>` imports that page's
+// boards alone and writes a `canvas.json` that names only them: capture then frames exactly what was
+// imported. A board with no `page` is on the canvas's first page, as the Design type reads it.
+//
 // THE README IS THE RECORD. Only `import` writes its `Canvas:` line, which is how a later import
 // tells its own files from a person's (Q5), how capture knows there is an import (E18) and how
 // FF-19805 finds an imported mock (Q12). It lists the files the import wrote and, once captured,
@@ -30,18 +35,29 @@ export function pathFault(rel) {
   return null;
 }
 
-// `canvas.json`'s boards in canvas order: `order` first, then any board it leaves out, by name.
-// Answers `{ boards: [{ name, frame }] }` or `{ fault }`.
-export function canvasBoards(text) {
+// `canvas.json`'s boards in canvas order: `order` first, then any board it leaves out, by name. With
+// a `page` id, only the boards on that page. Answers `{ boards: [{ name, frame }], canvas, page }` or
+// `{ fault }`; `page` is the `{ id, name }` entry when one was asked for.
+export function canvasBoards(text, pageId) {
   let canvas;
   try {
     canvas = JSON.parse(text);
   } catch {
     return { fault: `"${CANVAS}" is not JSON` };
   }
-  const boards = canvas?.boards;
-  if (boards == null || typeof boards !== "object" || Array.isArray(boards) || Object.keys(boards).length === 0) {
+  const all = canvas?.boards;
+  if (all == null || typeof all !== "object" || Array.isArray(all) || Object.keys(all).length === 0) {
     return { fault: `"${CANVAS}" names no boards` };
+  }
+  let boards = all;
+  let page;
+  if (pageId !== undefined) {
+    const pages = Array.isArray(canvas.pages) ? canvas.pages : [];
+    page = pages.find((entry) => entry?.id === pageId);
+    if (page == null) return { fault: `"${CANVAS}" has no page "${pageId}"${pages.length > 0 ? `: its pages are ${pages.map((entry) => `"${entry?.id}"`).join(", ")}` : ""}` };
+    const first = pages[0]?.id;
+    boards = Object.fromEntries(Object.entries(all).filter(([, frame]) => (frame?.page ?? first) === pageId));
+    if (Object.keys(boards).length === 0) return { fault: `"${CANVAS}" names no boards on the page "${pageId}"` };
   }
   const names = Object.keys(boards);
   const order = Array.isArray(canvas.order) ? canvas.order.filter((name) => names.includes(name)) : [];
@@ -51,7 +67,24 @@ export function canvasBoards(text) {
     if (fault) return { fault: `"${CANVAS}" names the board "${name}": ${fault}` };
     if (!name.endsWith(BOARD_SUFFIX)) return { fault: `"${CANVAS}" names the board "${name}", which is not a ${BOARD_SUFFIX} file` };
   }
-  return { boards: ordered.map((name) => ({ name, frame: boards[name] })) };
+  return { boards: ordered.map((name) => ({ name, frame: boards[name] })), canvas, ...(page ? { page: { id: page.id, name: page.name ?? page.id } } : {}) };
+}
+
+// The `canvas.json` an import of one page writes: every key kept, its boards, `order` and notes cut
+// to the page, and `pages` to the page alone, which is then the first page.
+export function pageCanvas(canvas, page, boards) {
+  const kept = new Set(boards.map((board) => board.name));
+  const notes = canvas.notes != null && typeof canvas.notes === "object" && !Array.isArray(canvas.notes)
+    ? Object.fromEntries(Object.entries(canvas.notes).filter(([, note]) => note?.page === page.id))
+    : canvas.notes;
+  return `${JSON.stringify({
+    ...canvas,
+    pages: [{ id: page.id, name: page.name }],
+    ...(canvas.launch?.page !== undefined ? { launch: { ...canvas.launch, page: page.id } } : {}),
+    boards: Object.fromEntries(Object.entries(canvas.boards).filter(([name]) => kept.has(name))),
+    order: Array.isArray(canvas.order) ? canvas.order.filter((name) => kept.has(name)) : [...kept],
+    ...(notes !== undefined ? { notes } : {}),
+  }, null, 2)}\n`;
 }
 
 // A board's frame as a window size, or null when it is not a positive whole number of CSS pixels.
@@ -73,6 +106,7 @@ export function readImport(text) {
   const canvas = /^(\S+) \(version (.+)\)$/u.exec(line("Canvas") ?? "");
   if (!canvas) return null;
   const system = /^(\S+) \(version (.+)\)$/u.exec(line("System") ?? "");
+  const page = /^(\S+)(?: \((.*)\))?$/u.exec(line("Page") ?? "");
   const listed = (heading) => {
     const start = text.indexOf(`\n## ${heading}\n`);
     if (start < 0) return [];
@@ -85,6 +119,7 @@ export function readImport(text) {
     canvasVersion: canvas[2],
     system: system?.[1] ?? null,
     systemVersion: system?.[2] ?? null,
+    page: page?.[1] ?? null,
     approval: line("Approval"),
     files: listed("Files"),
     frames: listed("Frames"),
@@ -92,7 +127,7 @@ export function readImport(text) {
 }
 
 // The README an import writes. It names no frame until capture adds them.
-export function importReadme({ canvas, canvasVersion, system, systemVersion, approval, date }, files) {
+export function importReadme({ canvas, canvasVersion, page, pageName, system, systemVersion, approval, date }, files) {
   return [
     "# Mocks",
     "",
@@ -101,6 +136,7 @@ export function importReadme({ canvas, canvasVersion, system, systemVersion, app
     "lists, and nothing else in this directory. Open a board from disk to see it; it needs no network.",
     "",
     `Canvas: ${canvas} (version ${canvasVersion})`,
+    ...(page != null ? [`Page: ${page} (${pageName ?? page})`] : []),
     `System: ${system} (version ${systemVersion})`,
     `Imported: ${date}`,
     `Approval: ${approval}`,
@@ -131,8 +167,9 @@ export function withFrames(readme, frames) {
 
 // The import, decided. `pulled` is every file under the pulled directory, as relative POSIX paths;
 // `canvasText` is its `canvas.json`, or null; `existing` is every file under mocks/ as relative POSIX
-// paths, with `readme` the text of mocks/README.md, or null. Answers `{ refusal: { message, code } }`
-// or `{ plan: { copies: [{ from, to }], remove: [rel], readme, files, previous } }`.
+// paths, with `readme` the text of mocks/README.md, or null. `provenance.page`, when given, imports
+// that page alone. Answers `{ refusal: { message, code } }` or `{ plan: { copies: [{ from, to } |
+// { text, to }], remove: [rel], readme, files, previous } }`: a copy with `text` writes it.
 export function planImport({ pulled, canvasText, existing = [], readme = null, provenance, date }) {
   const refuse = (message, code) => ({ refusal: { message, code } });
   for (const rel of pulled) {
@@ -142,14 +179,17 @@ export function planImport({ pulled, canvasText, existing = [], readme = null, p
   if (canvasText == null || !pulled.includes(CANVAS)) {
     return refuse(`The pulled canvas lacks "${CANVAS}", so its boards are unknown. Read it back with the boards, then import again. Nothing was written.`, "design-system-mocks-incomplete");
   }
-  const parsed = canvasBoards(canvasText);
+  const parsed = canvasBoards(canvasText, provenance.page ?? undefined);
   if (parsed.fault) return refuse(`${parsed.fault}. Nothing was written.`, "design-system-mocks-bad-canvas");
   const boards = parsed.boards.map((board) => `project/${board.name}`);
+  const elsewhere = parsed.page ? Object.keys(parsed.canvas.boards).map((name) => `project/${name}`) : [];
   for (const rel of pulled) {
     if (rel === CANVAS || rel === RUNTIME || TOKENS.test(rel) || boards.includes(rel)) continue;
-    const reason = rel.startsWith("project/") && rel.endsWith(BOARD_SUFFIX)
-      ? `"canvas.json" names no such board`
-      : "it is not a file a canvas is imported from (canvas.json, its boards, ds/<system>/tokens.json and the type's dc-runtime.js)";
+    const reason = elsewhere.includes(rel)
+      ? `the board is on another page than "${parsed.page.id}", so it is not this milestone's`
+      : rel.startsWith("project/") && rel.endsWith(BOARD_SUFFIX)
+        ? `"canvas.json" names no such board`
+        : "it is not a file a canvas is imported from (canvas.json, its boards, ds/<system>/tokens.json and the type's dc-runtime.js)";
     return refuse(`"${rel}" is refused: ${reason}. Nothing was written.`, "design-system-mocks-stray-file");
   }
   for (const rel of [...boards, RUNTIME]) {
@@ -159,7 +199,9 @@ export function planImport({ pulled, canvasText, existing = [], readme = null, p
   }
 
   const admitted = [CANVAS, ...boards, RUNTIME, ...pulled.filter((rel) => TOKENS.test(rel)).sort()];
-  const copies = admitted.map((from) => ({ from, to: destinationOf(from) }));
+  const copies = admitted.map((from) => (from === CANVAS && parsed.page
+    ? { text: pageCanvas(parsed.canvas, parsed.page, parsed.boards), to: destinationOf(from) }
+    : { from, to: destinationOf(from) }));
   const files = copies.map((copy) => copy.to);
   const previous = readImport(readme);
   if (readme != null && previous == null) {
@@ -172,7 +214,7 @@ export function planImport({ pulled, canvasText, existing = [], readme = null, p
     }
   }
   const remove = [...(previous?.files ?? []), ...(previous?.frames ?? [])].filter((rel) => !files.includes(rel) && existing.includes(rel) && pathFault(rel) == null);
-  return { plan: { copies, remove, files, readme: importReadme({ ...provenance, date }, files), previous } };
+  return { plan: { copies, remove, files, readme: importReadme({ ...provenance, pageName: parsed.page?.name, date }, files), previous } };
 }
 
 // Whether a previous import already records this exact approval of this exact canvas and system.
@@ -180,6 +222,7 @@ export function sameImport(previous, provenance) {
   return previous != null
     && previous.canvas === provenance.canvas && previous.canvasVersion === provenance.canvasVersion
     && previous.system === provenance.system && previous.systemVersion === provenance.systemVersion
+    && previous.page === (provenance.page ?? null)
     && previous.approval === provenance.approval;
 }
 

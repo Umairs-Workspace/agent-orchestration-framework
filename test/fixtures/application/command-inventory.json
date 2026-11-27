@@ -1645,6 +1645,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "canvas": {
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -1655,7 +1658,7 @@
         "use"
       ],
       "spec": {
-        "usage": "aof design-system use --name <title> | --artifact <link> --mode owned|reference [--source <css-file>]… [--json]",
+        "usage": "aof design-system use --name <title> | --artifact <link> --mode owned|reference [--source <css-file>]… [--canvas <link>] [--json]\n       aof design-system use --canvas <link> [--json]",
         "flags": {
           "name": {
             "type": "string",
@@ -1673,6 +1676,10 @@
             "type": "string",
             "repeatable": true,
             "description": "a CSS file an owned system is synced from"
+          },
+          "canvas": {
+            "type": "string",
+            "description": "the claude.ai link of the project's Design canvas, where each milestone's mocks are drawn on a page of their own"
           }
         }
       }
@@ -1693,6 +1700,9 @@
           "type": "string"
         },
         "canvasVersion": {
+          "type": "string"
+        },
+        "page": {
           "type": "string"
         },
         "system": {
@@ -1718,7 +1728,7 @@
         "import"
       ],
       "spec": {
-        "usage": "aof design-system mocks import <pulled-dir> --item <milestone> --canvas <link> --canvas-version <v> --system <link> --system-version <v> --approval <reference> [--json]",
+        "usage": "aof design-system mocks import <pulled-dir> --item <milestone> --canvas <link> --canvas-version <v> [--page <id>] --system <link> --system-version <v> --approval <reference> [--json]",
         "flags": {
           "item": {
             "type": "string",
@@ -1731,6 +1741,10 @@
           "canvasVersion": {
             "type": "string",
             "description": "the canvas version the operator approved"
+          },
+          "page": {
+            "type": "string",
+            "description": "the canvas page that holds this milestone's boards; only they are imported"
           },
           "system": {
             "type": "string",

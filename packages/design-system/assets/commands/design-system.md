@@ -16,7 +16,23 @@ stylesheet, never compares two token sets by eye, and never edits the config by 
 
 **Only Claude can do this**, because only a Claude session holds the Artifact tool. Codex and
 OpenCode render no `aof:design-system`; say so if asked.
+
+**A project's design lives in two artifacts, and never more** (198/ADR-005, ADR-006, amended
+2026-11-27). An artifact has one type, so one artifact cannot be both:
+- **the Design System**, which this command builds: the tokens, the README and the component cards;
+- **the project's one Design canvas**, where every milestone's mocks are drawn, each milestone on a
+  page of its own. This command never draws on it. It only records its link, when one exists, so
+  refine knows which canvas to add a page to.
 </objective>
+
+<conversation>
+**The operator's questions are answered, never acted on.** A reply that asks something, or that does
+not plainly answer the question that was asked, gets an answer and the same question again; nothing
+is published, deleted or written on it. A link on its own is information, not an instruction. Never
+delete an artifact unless the operator says, in words, to delete that artifact. When you are unsure
+what the operator wants, ask what they want to end up with, then say what is possible before doing
+anything.
+</conversation>
 
 <config>
 Parse `$ARGUMENTS`: the first word is the subcommand, and `extract` is the only one. Anything else
@@ -24,11 +40,23 @@ is a stop: name it and say that `extract` is the subcommand. The words after `ex
 directories of freshly exported mocks (`.dc.html` or `.html`) the operator wants read as well.
 
 Read `.aof/aof.config.json` → `work.dir` and `work.ui.designSystem`. This command needs no practice
-switched on: it is what writes the block. When the block already names a system, say which, and ask
-whether to replace it before anything else runs. A no ends the run with nothing changed.
+switched on: it is what writes the block.
 </config>
 
 <process>
+**0. Ask first: what exists, and what the operator wants.** Before any token is read, list the Design
+System and the Design artifacts the operator can open (the Artifact tool's `list`, once with each
+type), and say what the block names now. Then show the two-artifact layout above in two lines, and
+ask once, with `AskUserQuestion`, what to do:
+- **build a new system from the code** (the rest of this process), or
+- **name a system that already exists**, the operator's pick from the list: run step 9 with
+  `--artifact <its link> --mode reference` and stop, or
+- **stop**, with nothing changed.
+
+In the same question, ask which listed canvas, if any, holds this project's mocks. A named canvas
+is recorded in step 9 with `--canvas <link>`; none is fine, and the first refine that draws creates
+one. Never offer to merge the system into a canvas: it is not possible.
+
 **1. Gather the inputs (ADR-004 §1).**
 - **The code:** the CSS files that declare the project's design tokens, usually the app's root
   stylesheet. Find them with Grep, and confirm the list with the operator in step 3. For AOF this is
@@ -103,16 +131,17 @@ A no ends the run: the system stays published and the config is not written.
 **9. Name it in the config — through the verb, never by hand.**
 
 ```
-aof design-system use --name "<title>" --mode owned --source <css-file> [--source <css-file>]… --json
+aof design-system use --name "<title>" --mode owned --source <css-file> [--source <css-file>]… [--canvas <link>] --json
 ```
 
 The mode is always `owned`, with the CSS files step 2 read as the source: a system someone else
-owns is named by hand, with `--mode reference`. Then run `aof project validate` and confirm it
+owns is named with `--mode reference` (step 0). `--canvas` is the canvas the operator named in step
+0; without it, a canvas the block already names is kept. Then run `aof project validate` and confirm it
 reports no `design-system-*` finding.
 </process>
 
 <output>
-Report the system's title and link, its token counts, its components, the `check` verdict, and the
-block `use` wrote. On a stop, name the step that stopped and what the operator can do next, and say
+Report the system's title and link, its token counts, its components, the `check` verdict, the
+canvas the block names (or that refine will create one), and the block `use` wrote. On a stop, name the step that stopped and what the operator can do next, and say
 plainly what was and was not published or written.
 </output>

@@ -281,18 +281,22 @@ export function createDesignSystemCommands({ commandError, listItemsCacheFirst, 
         artifact: { type: "string" },
         mode: { type: "string" },
         source: { type: "array", items: { type: "string" } },
+        canvas: { type: "string" },
       },
       additionalProperties: false,
     },
     async run(input, ctx) {
       const { projectRoot, configPath } = ctx.workspace;
       const [{ designSystemBlock, designSystemBlockOf, designSystemDiagnostics, isArtifactLink, normaliseSourcePath }, { readFile, stat, writeFile }, { formatJson }] = await Promise.all([lazy.config(), lazy.fs(), lazy.json()]);
-      const { name, artifact, mode } = input;
+      const { name, artifact, mode, canvas } = input;
+      if (canvas !== undefined && !isArtifactLink(canvas)) throw refuse(`"${canvas}" is not a claude.ai artifact link: the canvas is named by its link, https://claude.ai/artifact/<id> or https://claude.ai/code/artifact/<uuid>.`, "design-system-bad-canvas");
+      // "--canvas" alone names the project's canvas and leaves the system as the block names it.
+      const canvasOnly = canvas !== undefined && name === undefined && artifact === undefined && mode === undefined && input.source === undefined;
       if (name !== undefined && artifact !== undefined) throw refuse('A system is named by "--name" or "--artifact", not both.', "design-system-name-and-artifact");
-      if (name === undefined && artifact === undefined) throw refuse('"--name" or "--artifact" is required: give the system\'s title, or its claude.ai link.', "design-system-unnamed");
+      if (!canvasOnly && name === undefined && artifact === undefined) throw refuse('"--name" or "--artifact" is required: give the system\'s title, or its claude.ai link.', "design-system-unnamed");
       if (name !== undefined && name.trim() === "") throw refuse("The name is empty: give the system's title.", "design-system-empty-name");
       if (artifact !== undefined && !isArtifactLink(artifact)) throw refuse(`"${artifact}" is not a claude.ai artifact link: https://claude.ai/artifact/<id> or https://claude.ai/code/artifact/<uuid>.`, "design-system-bad-artifact");
-      if (!USE_MODES.includes(mode)) throw refuse(`The mode is "owned" or "reference"${mode === undefined ? ": pass --mode" : `, not "${mode}"`}.`, "design-system-bad-mode");
+      if (!canvasOnly && !USE_MODES.includes(mode)) throw refuse(`The mode is "owned" or "reference"${mode === undefined ? ": pass --mode" : `, not "${mode}"`}.`, "design-system-bad-mode");
       if (mode === "owned" && (input.source ?? []).length === 0) throw refuse('"owned" needs "--source": the CSS files the system is synced from.', "design-system-source-missing");
       if (mode === "reference" && input.source !== undefined) throw refuse('"reference" takes no "--source": a referenced system is synced by its owner.', "design-system-source-stray");
       let source;
@@ -309,10 +313,6 @@ export function createDesignSystemCommands({ commandError, listItemsCacheFirst, 
           source.push(relative);
         }
       }
-      const block = designSystemBlock({ name, artifact, mode, source });
-      const [problem] = designSystemDiagnostics(block);
-      if (problem) throw refuse(problem.message, problem.code);
-
       let previousText;
       try {
         previousText = await readFile(configPath, "utf8");
@@ -326,6 +326,17 @@ export function createDesignSystemCommands({ commandError, listItemsCacheFirst, 
         throw refuse(`The project config "${toPosix(configPath)}" is not JSON, so it was not written.`, "design-system-config-unreadable");
       }
       const previous = designSystemBlockOf(config) ?? null;
+      const named = previous != null && typeof previous === "object" && !Array.isArray(previous) ? previous : null;
+      if (canvasOnly && (named == null || (named.name === undefined && named.artifact === undefined))) {
+        throw refuse('There is no system to draw the canvas on: name it first, with "--name" or "--artifact" and "--mode", then the canvas.', "design-system-unnamed");
+      }
+      // The canvas is not the system: naming the system again keeps the canvas, and "--canvas" alone
+      // keeps the system.
+      const block = canvasOnly
+        ? { ...named, enabled: true, canvas }
+        : designSystemBlock({ name, artifact, mode, source, canvas: canvas ?? named?.canvas });
+      const [problem] = designSystemDiagnostics(block);
+      if (problem) throw refuse(problem.message, problem.code);
       const shown = toPosix(path.relative(projectRoot, configPath));
       if (JSON.stringify(previous) === JSON.stringify(block)) return { config: shown, block, previous, changed: false };
       const isObject = (value) => value != null && typeof value === "object" && !Array.isArray(value);
@@ -338,12 +349,13 @@ export function createDesignSystemCommands({ commandError, listItemsCacheFirst, 
     cli: {
       route: [...ROUTE, "use"],
       spec: {
-        usage: `${PREFIX} use --name <title> | --artifact <link> --mode owned|reference [--source <css-file>]… [--json]`,
+        usage: `${PREFIX} use --name <title> | --artifact <link> --mode owned|reference [--source <css-file>]… [--canvas <link>] [--json]\n       ${PREFIX} use --canvas <link> [--json]`,
         flags: {
           name: { type: "string", description: "the system's title, as the operator sees it" },
           artifact: { type: "string", description: "the system's claude.ai artifact link" },
           mode: { type: "string", description: `${USE_MODES.join(" or ")}` },
           source: { type: "string", repeatable: true, description: "a CSS file an owned system is synced from" },
+          canvas: { type: "string", description: "the claude.ai link of the project's Design canvas, where each milestone's mocks are drawn on a page of their own" },
         },
       },
       argv: (_positionals, options = {}) => ({
@@ -351,10 +363,11 @@ export function createDesignSystemCommands({ commandError, listItemsCacheFirst, 
         ...(options.artifact != null ? { artifact: String(options.artifact) } : {}),
         ...(options.mode != null ? { mode: String(options.mode) } : {}),
         ...(options.source != null ? { source: listOf(options.source) } : {}),
+        ...(options.canvas != null ? { canvas: String(options.canvas) } : {}),
       }),
       render: (result) => {
         const named = result.block.name !== undefined ? `"${result.block.name}"` : result.block.artifact;
-        const from = result.block.source ? `, from ${result.block.source.join(", ")}` : "";
+        const from = `${result.block.source ? `, from ${result.block.source.join(", ")}` : ""}${result.block.canvas ? `, drawn on ${result.block.canvas}` : ""}`;
         return result.changed
           ? `work.ui.designSystem now names ${named} (${result.block.mode}${from}) in ${result.config}.`
           : `work.ui.designSystem already names ${named} (${result.block.mode}${from}): ${result.config} is unchanged.`;
@@ -372,6 +385,7 @@ export function createDesignSystemCommands({ commandError, listItemsCacheFirst, 
         item: { type: "string" },
         canvas: { type: "string" },
         canvasVersion: { type: "string" },
+        page: { type: "string" },
         system: { type: "string" },
         systemVersion: { type: "string" },
         approval: { type: "string" },
@@ -399,6 +413,7 @@ export function createDesignSystemCommands({ commandError, listItemsCacheFirst, 
       if (pulled == null) throw refuse(`Cannot read the pulled canvas "${toPosix(input.pulled)}": it is not a directory. Nothing was written.`, "design-system-unreadable");
       const provenance = {
         canvas: input.canvas, canvasVersion: input.canvasVersion.trim(),
+        ...(input.page !== undefined ? { page: input.page.trim() } : {}),
         system: input.system, systemVersion: input.systemVersion.trim(),
         approval: input.approval.trim(),
       };
@@ -415,19 +430,20 @@ export function createDesignSystemCommands({ commandError, listItemsCacheFirst, 
       if (refusal) throw refuse(refusal.message, refusal.code);
 
       const shown = (rel) => `${target.shown}/${rel}`;
-      const answer = { item: target.ref, mocks: target.shown, canvas: { link: provenance.canvas, version: provenance.canvasVersion }, system: { link: provenance.system, version: provenance.systemVersion }, approval: provenance.approval };
+      const answer = { item: target.ref, mocks: target.shown, canvas: { link: provenance.canvas, version: provenance.canvasVersion, ...(provenance.page ? { page: provenance.page } : {}) }, system: { link: provenance.system, version: provenance.systemVersion }, approval: provenance.approval };
       if (mocks.sameImport(plan.previous, provenance)) {
-        const same = await Promise.all(plan.copies.map(async ({ from, to }) => {
-          const [incoming, present] = await Promise.all([readFile(path.join(pulledRoot, from)), readFile(path.join(target.dir, to)).catch(() => null)]);
+        const same = await Promise.all(plan.copies.map(async ({ from, text, to }) => {
+          const [incoming, present] = await Promise.all([from !== undefined ? readFile(path.join(pulledRoot, from)) : Buffer.from(text, "utf8"), readFile(path.join(target.dir, to)).catch(() => null)]);
           return present != null && incoming.equals(present);
         }));
         if (same.every(Boolean) && plan.remove.length === 0) return { ...answer, changed: false, written: [], removed: [] };
       }
       await mkdir(target.dir, { recursive: true });
       for (const rel of plan.remove) await rm(path.join(target.dir, rel), { force: true });
-      for (const { from, to } of plan.copies) {
+      for (const { from, text, to } of plan.copies) {
         await mkdir(path.dirname(path.join(target.dir, to)), { recursive: true });
-        await copyFile(path.join(pulledRoot, from), path.join(target.dir, to));
+        if (from !== undefined) await copyFile(path.join(pulledRoot, from), path.join(target.dir, to));
+        else await writeFile(path.join(target.dir, to), text, "utf8");
       }
       await writeFile(readmePath, plan.readme, "utf8");
       return { ...answer, changed: true, date, written: [...plan.files, mocks.README].map(shown), removed: plan.remove.map(shown) };
@@ -435,11 +451,12 @@ export function createDesignSystemCommands({ commandError, listItemsCacheFirst, 
     cli: {
       route: [...ROUTE, "mocks", "import"],
       spec: {
-        usage: `${PREFIX} mocks import <pulled-dir> --item <milestone> --canvas <link> --canvas-version <v> --system <link> --system-version <v> --approval <reference> [--json]`,
+        usage: `${PREFIX} mocks import <pulled-dir> --item <milestone> --canvas <link> --canvas-version <v> [--page <id>] --system <link> --system-version <v> --approval <reference> [--json]`,
         flags: {
           item: { type: "string", description: "the milestone whose mocks/ receives the canvas" },
           canvas: { type: "string", description: "the approved canvas's claude.ai artifact link" },
           canvasVersion: { type: "string", description: "the canvas version the operator approved" },
+          page: { type: "string", description: "the canvas page that holds this milestone's boards; only they are imported" },
           system: { type: "string", description: "the resolved design system's claude.ai artifact link" },
           systemVersion: { type: "string", description: "the design system's version installed in the canvas" },
           approval: { type: "string", description: "the approving answer's reference: run <runId> ask <n>, or session <sessionId> <instant>" },
@@ -450,13 +467,13 @@ export function createDesignSystemCommands({ commandError, listItemsCacheFirst, 
         const text = (value) => (value == null ? undefined : String(value));
         return Object.fromEntries(Object.entries({
           pulled: String(positionals[0]), item: String(options.item),
-          canvas: text(options.canvas), canvasVersion: text(options.canvasVersion),
+          canvas: text(options.canvas), canvasVersion: text(options.canvasVersion), page: text(options.page),
           system: text(options.system), systemVersion: text(options.systemVersion),
           approval: text(options.approval),
         }).filter(([, value]) => value !== undefined));
       },
       render: (result) => (result.changed
-        ? [`Imported version ${result.canvas.version} of ${result.canvas.link} into ${result.mocks}/, approved by ${result.approval}:`, ...result.written.map((file) => `  ${file}`), ...(result.removed.length > 0 ? ["Removed from the previous import:", ...result.removed.map((file) => `  ${file}`)] : []), `Next: ${PREFIX} mocks capture --item ${result.item}`].join("\n")
+        ? [`Imported version ${result.canvas.version} of ${result.canvas.link}${result.canvas.page ? `, page "${result.canvas.page}",` : ""} into ${result.mocks}/, approved by ${result.approval}:`, ...result.written.map((file) => `  ${file}`), ...(result.removed.length > 0 ? ["Removed from the previous import:", ...result.removed.map((file) => `  ${file}`)] : []), `Next: ${PREFIX} mocks capture --item ${result.item}`].join("\n")
         : `${result.mocks}/ already holds version ${result.canvas.version} of ${result.canvas.link}, as approved by ${result.approval}: the import is unchanged.`),
       json: (result) => result,
     },

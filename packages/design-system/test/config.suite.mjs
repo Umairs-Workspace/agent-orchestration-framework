@@ -1,7 +1,8 @@
 // Traceability wiring for milestone 198 / story 01 — "aof design-system use" and the block's shape check.
 //
 // Covers the R5 scenarios of
-//   tasks/04_use-names-one-system-and-the-validator-holds-it.feature
+//   tasks/04_use-names-one-system-and-the-validator-holds-it.feature, E22 and E23 (the canvas,
+//   amended 2026-11-27) among them,
 // and the shape check's codes at the package seam. The R6 scenarios run through `aof project
 // validate`'s own validator in test/command/config-inspect.test.mjs (`designSystemBlockTests`).
 //
@@ -20,6 +21,8 @@ import { commandError } from "./tokens.suite.mjs";
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const INDEX_CSS = "apps/ui/src/index.css";
 const LINK = "https://claude.ai/artifact/5M7UeXXcx16TP3vzVFNDzd";
+const CANVAS_LINK = "https://claude.ai/artifact/NeFyvPA4cnuBx9CXwD8Fpb";
+const OTHER_CANVAS = "https://claude.ai/artifact/9Qm2LrT4vWx8YbN3cK7pZd";
 const E13 = Object.freeze({ enabled: true, name: "AOF", mode: "owned", source: [INDEX_CSS] });
 const { useCommand } = createDesignSystemCommands({ commandError });
 
@@ -142,12 +145,39 @@ export const configTests = [
       assert.deepEqual(blockIn(await read()).source, [INDEX_CSS]);
     }),
   },
+  // ── 198 amended 2026-11-27 · the block holds the project's one canvas ──────────────────────────
+  {
+    name: "198/01 04 E22 · \"--canvas\" alone names the canvas and keeps the system, and naming the system again keeps the canvas",
+    run: () => withRepoConfig(async ({ use, read }) => {
+      const result = await use({ canvas: CANVAS_LINK });
+      assert.equal(result.changed, true);
+      assert.deepEqual(blockIn(await read()), { ...E13, canvas: CANVAS_LINK });
+      await use({ artifact: LINK, mode: "reference" });
+      assert.deepEqual(blockIn(await read()), { enabled: true, artifact: LINK, mode: "reference", canvas: CANVAS_LINK });
+      const named = await use({ name: "AOF", mode: "owned", source: [INDEX_CSS], canvas: OTHER_CANVAS });
+      assert.equal(named.block.canvas, OTHER_CANVAS, "a given canvas replaces the old one");
+    }, { block: E13 }),
+  },
+  {
+    name: "198/01 04 E23 · a canvas before any system, a bad canvas link, and the system's own link as the canvas are refused, writing nothing",
+    run: async () => {
+      await withRepoConfig(async ({ use, read, original }) => {
+        await assert.rejects(use({ canvas: CANVAS_LINK }), (error) => error.code === "design-system-unnamed" && /name it first/.test(error.message));
+        assert.equal(await read(), original);
+      });
+      await withRepoConfig(async ({ use, read, original }) => {
+        await assert.rejects(use({ canvas: "https://example.com/x" }), (error) => error.code === "design-system-bad-canvas");
+        await assert.rejects(use({ artifact: LINK, mode: "reference", canvas: `${LINK}/` }), (error) => error.code === "design-system-canvas-is-system");
+        assert.equal(await read(), original);
+      }, { block: E13 });
+    },
+  },
   {
     name: "198/01 04 the verb's modes are the block's modes, and every code the shape check emits is a declared code",
     run: () => {
       assert.deepEqual([...USE_MODES], [...DESIGN_SYSTEM_MODES]);
       const declared = new Set(Object.values(DESIGN_SYSTEM_CODES));
-      const blocks = ["on", { enabled: "yes" }, { enabled: true }, { enabled: true, name: 1, artifact: "x", mode: "x", source: "x", y: 1 }, { mode: "owned", source: [1] }];
+      const blocks = ["on", { enabled: "yes" }, { enabled: true }, { enabled: true, name: 1, artifact: "x", mode: "x", source: "x", y: 1, canvas: "x" }, { mode: "owned", source: [1] }, { artifact: LINK, canvas: LINK }];
       for (const block of blocks) {
         for (const entry of designSystemDiagnostics(block)) assert.ok(declared.has(entry.code), `${entry.code} is declared`);
       }
