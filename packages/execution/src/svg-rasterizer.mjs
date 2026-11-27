@@ -13,6 +13,11 @@
 // defaults for the CLI, so the suites drive every rung and the launcher-returns-early case without
 // a real browser. The argv is formed by ONE function, `browserArgv`, and the one spawn below uses it
 // (FF-13303). Nothing here imports Playwright or spawns a package manager.
+//
+// TWO ENTRIES, ONE RENDER (198/ADR-006 §3, 198/02 Q7). `rasterizeSvg` sizes the window from the
+// SVG's viewBox; `rasterizePage` renders a local page (an imported Design board, `.dc.html`) at the
+// size it is handed. Both go through `renderToPng`, so they share the argv, the spawn, the done-poll
+// and the profile clean-up.
 import { spawn as spawnProcess } from "node:child_process";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
@@ -156,9 +161,10 @@ function whichOnPath(name, { env = process.env, platform = process.platform, exi
   return null;
 }
 
-// THE ONE FUNCTION THAT FORMS A BROWSER ARGV (FF-13303). The window IS the viewBox, so the
-// screenshot is the diagram and nothing else; the device scale factor is the export's scale.
-export function browserArgv({ kind, width, height, scale, userDataDir, pngPath, svgPath }) {
+// THE ONE FUNCTION THAT FORMS A BROWSER ARGV (FF-13303). The window IS the source's size (an SVG's
+// viewBox, a page's board), so the screenshot is the source and nothing else; the device scale
+// factor is the render's scale. `sourcePath` is the local file the browser opens, last.
+export function browserArgv({ kind, width, height, scale, userDataDir, pngPath, sourcePath }) {
   return [
     ...(kind === "full" ? ["--headless=new"] : []),
     "--disable-gpu",
@@ -169,7 +175,7 @@ export function browserArgv({ kind, width, height, scale, userDataDir, pngPath, 
     `--force-device-scale-factor=${scale}`,
     `--user-data-dir=${userDataDir}`,
     `--screenshot=${slashes(path.resolve(pngPath))}`,
-    pathToFileURL(path.resolve(svgPath)).href,
+    pathToFileURL(path.resolve(sourcePath)).href,
   ];
 }
 
@@ -195,22 +201,23 @@ const defaultStat = (file) => {
 const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function createSvgRasterizer({ reportDegrade }) {
-async function rasterizeSvg({
-  svgPath,
+// The render both entries share: remove a stale output, spawn the browser on `sourcePath` at
+// `width`×`height`, and answer once it has exited AND the PNG exists, is non-empty and has stopped
+// growing, or once the deadline passes. The profile directory is removed on every path.
+async function renderToPng({
+  sourcePath,
   pngPath,
-  scale = 2,
+  width,
+  height,
+  scale,
   browser,
-  spawn = spawnProcess,
-  stat = defaultStat,
-  now = Date.now,
-  sleep = defaultSleep,
-  tmp = os.tmpdir(),
-  deadlineMs = RENDER_DEADLINE_MS,
+  spawn,
+  stat,
+  now,
+  sleep,
+  tmp,
+  deadlineMs,
 }) {
-  if (path.extname(svgPath).toLowerCase() !== ".svg") {
-    throw commandError(`The rasterizer renders the committed SVG, never the source: ${svgPath} is not an .svg.`, "diagram-png-source-not-svg", 400);
-  }
-  const { width, height } = viewBoxSize(await readFile(svgPath, "utf8"));
   await rm(pngPath, { force: true });
   const userDataDir = await mkdtemp(path.join(tmp, "aof-diagram-profile-"));
   const failed = (exitCode, stderr) => ({
@@ -225,7 +232,7 @@ async function rasterizeSvg({
     try {
       child = spawn(
         browser.path,
-        browserArgv({ kind: browser.kind, width, height, scale, userDataDir, pngPath, svgPath }),
+        browserArgv({ kind: browser.kind, width, height, scale, userDataDir, pngPath, sourcePath }),
         { stdio: ["ignore", "ignore", "pipe"], windowsHide: true },
       );
     } catch (error) {
@@ -265,5 +272,47 @@ async function rasterizeSvg({
   }
 }
 
-return { rasterizeSvg };
+async function rasterizeSvg({
+  svgPath,
+  pngPath,
+  scale = 2,
+  browser,
+  spawn = spawnProcess,
+  stat = defaultStat,
+  now = Date.now,
+  sleep = defaultSleep,
+  tmp = os.tmpdir(),
+  deadlineMs = RENDER_DEADLINE_MS,
+}) {
+  if (path.extname(svgPath).toLowerCase() !== ".svg") {
+    throw commandError(`The rasterizer renders the committed SVG, never the source: ${svgPath} is not an .svg.`, "diagram-png-source-not-svg", 400);
+  }
+  const { width, height } = viewBoxSize(await readFile(svgPath, "utf8"));
+  return renderToPng({ sourcePath: svgPath, pngPath, width, height, scale, browser, spawn, stat, now, sleep, tmp, deadlineMs });
+}
+
+// The page entry (198/02 Q7): a local page at the size it is handed, which the caller reads from
+// the page's own record (a Design canvas's `boards` frame). A size that is not a positive whole
+// number of CSS pixels is refused before any spawn: the window would be a guess.
+async function rasterizePage({
+  pagePath,
+  pngPath,
+  width,
+  height,
+  scale = 2,
+  browser,
+  spawn = spawnProcess,
+  stat = defaultStat,
+  now = Date.now,
+  sleep = defaultSleep,
+  tmp = os.tmpdir(),
+  deadlineMs = RENDER_DEADLINE_MS,
+}) {
+  if (![width, height].every((side) => Number.isInteger(side) && side > 0)) {
+    throw commandError(`A page is rendered at a positive whole-pixel size, not ${width}x${height}: ${pagePath}.`, "page-png-size-unusable", 400);
+  }
+  return renderToPng({ sourcePath: pagePath, pngPath, width, height, scale, browser, spawn, stat, now, sleep, tmp, deadlineMs });
+}
+
+return { rasterizeSvg, rasterizePage };
 }

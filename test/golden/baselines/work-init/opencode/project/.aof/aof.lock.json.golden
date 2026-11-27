@@ -746,7 +746,8 @@
     "practices": {
       "build-brief": false,
       "discovery": false,
-      "operator-aware": false
+      "operator-aware": false,
+      "design-system": false
     }
   }
 }

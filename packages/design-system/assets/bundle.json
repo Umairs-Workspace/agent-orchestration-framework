@@ -3,7 +3,7 @@
     {
       "id": "design-system",
       "title": "Design system",
-      "summary": "Mocks are drawn on the project's one Design System, named in work.ui.designSystem.",
+      "summary": "Refine draws a UI milestone's mocks as a canvas on the project's one Design System, named in work.ui.designSystem, and commits the approved canvas under mocks/.",
       "keys": [
         "work.ui.designSystem.enabled"
       ]
@@ -19,6 +19,58 @@
       ],
       "commandNamespace": "aof",
       "mapped": false
+    },
+    {
+      "id": "design-system-refine-canvas",
+      "kind": "fragment",
+      "practice": "design-system",
+      "target": "command:refine",
+      "slot": "decide.designer",
+      "runtimes": [
+        "claude"
+      ],
+      "file": "fragments/design-system/refine.md"
+    },
+    {
+      "id": "design-system-verify-pull-back",
+      "kind": "fragment",
+      "practice": "design-system",
+      "target": "command:verify",
+      "slot": "conformance.baseline",
+      "runtimes": [
+        "claude"
+      ],
+      "file": "fragments/design-system/verify.md"
+    },
+    {
+      "id": "design-system-verify-re-sync",
+      "kind": "fragment",
+      "practice": "design-system",
+      "target": "command:verify",
+      "slot": "checks.design-system",
+      "runtimes": [
+        "claude"
+      ],
+      "file": "fragments/design-system/verify.md"
+    },
+    {
+      "id": "design-system-designer-system",
+      "kind": "fragment",
+      "practice": "design-system",
+      "target": "agent:aof-designer",
+      "slot": "ownership.design-system",
+      "runtimes": [
+        "claude"
+      ],
+      "file": "fragments/design-system/aof-designer.md"
+    },
+    {
+      "id": "design-system-design-template",
+      "kind": "template-variant",
+      "practice": "design-system",
+      "template": "milestone",
+      "name": "DESIGN.md",
+      "file": "templates/milestone/DESIGN.md"
     }
   ]
 }

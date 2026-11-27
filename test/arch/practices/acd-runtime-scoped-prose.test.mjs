@@ -74,6 +74,25 @@ export function scopedLeaks(subject) {
   return leaks;
 }
 
+// 198/02 — the design-system practice's leg, as FF-19802 words it: with the practice on, Claude's
+// render of each target holds each of the practice's fragment bodies, and every other runtime's
+// render holds none of them. It reads every fragment of the practice, scoped or not, so a fragment
+// that loses its `runtimes` is caught here even though the sweep above no longer sees it.
+export function claudeOnlyLeaks(subject, practice = "design-system") {
+  const leaks = [];
+  const on = practiceOn(subject.descriptor.practices ?? []);
+  const bundle = subject.load(on);
+  for (const fragment of subject.descriptor.members.filter((member) => member.kind === "fragment" && member.practice === practice)) {
+    const body = bodyFor({ ...fragment, variants: undefined }, "claude", subject.readText);
+    for (const [runtime, text] of rendered(bundle, fragment.target)) {
+      if (text === "") continue;
+      if (runtime === "claude" && !text.includes(body)) leaks.push({ fragment: fragment.id, member: fragment.target, runtime, why: "Claude's render lacks the body" });
+      if (runtime !== "claude" && text.includes(body)) leaks.push({ fragment: fragment.id, member: fragment.target, runtime, why: "a runtime other than Claude renders the body" });
+    }
+  }
+  return leaks;
+}
+
 const describe = (leaks) => leaks.map(({ fragment, member, runtime, why }) => `fragment ${fragment}, member ${member}, runtime ${runtime}: ${why}`).join("; ");
 const assertNoLeak = (leaks, what) => assert.deepEqual(leaks, [], `${what}: ${describe(leaks)}`);
 
@@ -99,6 +118,21 @@ function replacerFixture() {
       { id: "alpha-plus", kind: "fragment", practice: "plus", target: "command:demo", slot: "demo.notes", file: "alpha-plus.md", runtimes: ["claude"], replaces: "alpha" },
     );
   });
+}
+
+// The shipped bundle as a subject, and 198/02's design-system targets in it.
+const shipped = () => subjectOf(readDescriptor(), readAssetText);
+const DESIGN_SYSTEM_TARGETS = Object.freeze(["agent:aof-designer", "command:refine", "command:verify", "command:verify"]);
+
+// A copy of the subject with one scoped fragment made unscoped: `runtimes` dropped, and its common
+// body also given to Codex, whose authored variant carries the slot, so the load accepts it.
+function madeUnscoped(subject, id) {
+  const members = subject.descriptor.members.map((member) => {
+    if (member.id !== id) return member;
+    const { runtimes: _dropped, ...rest } = member;
+    return { ...rest, variants: { codex: { file: member.file } } };
+  });
+  return subjectOf({ ...subject.descriptor, members }, subject.readText);
 }
 
 // ── the planted composers: test-only wrappers around the real load ─────────────────────────────
@@ -144,8 +178,29 @@ export const archTests = [
   },
   {
     name: "arch/198 FF-19802 · Claude-only prose lands on Claude and nowhere else (two legs) — the shipped leg, every fragment that declares runtimes",
-    run: () => assertNoLeak(scopedLeaks(subjectOf(readDescriptor(), readAssetText)), "the shipped bundle"),
+    run: () => {
+      const subject = shipped();
+      assert.deepEqual(scopedOf(subject.descriptor).filter((fragment) => fragment.practice === "design-system").map((fragment) => fragment.target).sort(), DESIGN_SYSTEM_TARGETS, "198/02's three fragments and 198/03's re-sync are in the sweep, so the shipped leg is not empty");
+      assertNoLeak(scopedLeaks(subject), "the shipped bundle");
+      assertNoLeak(claudeOnlyLeaks(subject), "the design-system practice");
+    },
   },
+  // 198/02 task 00 — the same control over the shipped bundle, each red named by fragment and runtime.
+  ...[
+    ["one of the design-system fragments made unscoped, with a Codex body so it still loads", () => madeUnscoped(shipped(), "design-system-refine-canvas"), { fragment: "design-system-refine-canvas", member: "command:refine", runtime: "opencode" }],
+    ["a composer that loses the Claude leg, so Claude's render lacks the body", () => dropsScoped(shipped()), { fragment: "design-system-verify-pull-back", member: "command:verify", runtime: "claude" }],
+    // 198/03 task 02 — the re-sync's fragment made unscoped: both other runtimes are named.
+    ["the re-sync's checks.design-system fragment made unscoped (Codex named)", () => madeUnscoped(shipped(), "design-system-verify-re-sync"), { fragment: "design-system-verify-re-sync", member: "command:verify", runtime: "codex" }],
+    ["the re-sync's checks.design-system fragment made unscoped (OpenCode named)", () => madeUnscoped(shipped(), "design-system-verify-re-sync"), { fragment: "design-system-verify-re-sync", member: "command:verify", runtime: "opencode" }],
+  ].map(([planted, subject, expected]) => ({
+    name: `arch/198 FF-19802 red probe · the shipped bundle turns the control red — ${planted}`,
+    run: () => {
+      const planted = subject();
+      const leaks = [...scopedLeaks(planted), ...claudeOnlyLeaks(planted)];
+      assert.ok(leaks.some((leak) => leak.fragment === expected.fragment && leak.member === expected.member && leak.runtime === expected.runtime), `the control names the fragment, the member and the runtime: ${describe(leaks)}`);
+      assert.throws(() => assertNoLeak(leaks, "planted"), (error) => Object.values(expected).every((name) => error.message.includes(name)));
+    },
+  })),
   ...[
     ["a composer that fills a common text once and serves it to every runtime", () => fillsOnce(fixture()), { fragment: "notes-demo", member: "command:demo", runtime: "opencode" }],
     ["a composer that drops every scoped fragment, so the Claude render lacks the body", () => dropsScoped(fixture()), { fragment: "notes-demo", member: "command:demo", runtime: "claude" }],

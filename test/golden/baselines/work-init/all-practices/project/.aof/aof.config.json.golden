@@ -6,6 +6,13 @@
     },
     "plan": {
       "enabled": true
+    },
+    "ui": {
+      "designSystem": {
+        "enabled": true,
+        "name": "AOF",
+        "mode": "reference"
+      }
     }
   }
 }

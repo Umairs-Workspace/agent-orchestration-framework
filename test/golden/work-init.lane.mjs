@@ -40,7 +40,7 @@ export default Object.freeze({
     { id: "claude", base: "default", steps: init("claude") },
     { id: "codex", base: "default", steps: init("codex") },
     { id: "opencode", base: "default", steps: init("opencode") },
-    { id: "all-practices", base: "default", files: config({ examples: { enabled: true, operatorAware: true }, plan: { enabled: true } }), steps: init(ALL) },
+    { id: "all-practices", base: "default", files: config({ examples: { enabled: true, operatorAware: true }, plan: { enabled: true }, ui: { designSystem: { enabled: true, name: "AOF", mode: "reference" } } }), steps: init(ALL) },
     { id: "notion", base: "default", files: config({ integrations: { notion: {} } }), steps: init(ALL) },
     { id: "hyperagent", base: "default", files: config({ integrations: { hyperagent: {} } }), steps: init(ALL) },
     { id: "customised", base: "default", files: CUSTOMISED_FILES, steps: init(ALL) },

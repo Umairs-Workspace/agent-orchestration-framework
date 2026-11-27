@@ -168,7 +168,8 @@ const task00 = [
 // ── task 01 · R2 · every profile renders to its baseline ───────────────────────────────────
 
 const PROFILE_CONFIG = {
-  "all-practices": { examples: { enabled: true, operatorAware: true }, plan: { enabled: true } },
+  // 198/02 — the design-system practice joined at its first prose: Claude's refine, verify and designer brief.
+  "all-practices": { examples: { enabled: true, operatorAware: true }, plan: { enabled: true }, ui: { designSystem: { enabled: true, name: "AOF", mode: "reference" } } },
   notion: { integrations: { notion: {} } },
   hyperagent: { integrations: { hyperagent: {} } },
 };
@@ -200,8 +201,13 @@ const task01 = [
         ...["architect", "product-owner", "qa", "researcher"].flatMap((agent) => [`.claude/agents/aof-${agent}.md`, `.codex/agents/aof-${agent}.toml`, `.opencode/agents/aof-${agent}.md`]),
         ".aof/templates/work/milestone/RESEARCH.md",
         ".aof/templates/work/story/EXAMPLES.md",
+        // 198/02 — the design-system practice's Claude-only prose; no Codex or OpenCode render moves.
+        ".claude/commands/aof/verify.md",
+        ".claude/agents/aof-designer.md",
+        // 198/03 — its variant of the milestone DESIGN.md template, which every runtime's project holds.
+        ".aof/templates/work/milestone/DESIGN.md",
       ];
-      assert.equal(renders.length, 18);
+      assert.equal(renders.length, 21);
       const expected = [".aof/aof.config.json", ...renders].map((rel) => `project/${rel}`).sort();
       assert.deepEqual(storedProjectFiles("all-practices").filter(notInstallRecord), expected);
       assert.deepEqual(storedProjectFiles("all-practices").filter((key) => !notInstallRecord(key)), ["project/.aof/aof.lock.json"], "of the install records, the lock alone");

@@ -2,7 +2,10 @@
 //
 // Covers EVERY @executable scenario in
 //   tasks/02_tokens-reads-the-system-from-the-code.feature
-// except the two FF-19804 scenarios, which are test/arch/practices/acd-design-system-verbs-offline.test.mjs.
+// except the two FF-19804 scenarios, which are test/arch/practices/acd-design-system-verbs-offline.test.mjs,
+// and, from milestone 198 / story 03, EVERY @executable scenario in
+//   tasks/01_tokens-merge-re-syncs-a-system-from-the-code.feature ("tokens --merge"; E9 runs `check`
+//   over the merged file with the package's own `check` verb).
 //
 // The verb is built from the package's own factory with a stand-in for core's `commandError`, and run over a
 // project in a fresh temp directory: the repository's real `apps/ui/src/index.css` is copied in, and
@@ -17,22 +20,25 @@ import { readTokens } from "@aof/design-system/tokens";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const INDEX_CSS = "apps/ui/src/index.css";
+const CONFIG = "(config)"; // a key of `withProject`'s files that is the loaded config, not a file
 
 // Core's injected error shape: a message, a code and a status.
 export const commandError = (message, code, status) => Object.assign(new Error(message), { code, status });
-const { tokensCommand } = createDesignSystemCommands({ commandError });
+const { tokensCommand, checkCommand } = createDesignSystemCommands({ commandError });
 
 // A project in a temp dir holding `files` (relative path → text), and the verb run in it.
 async function withProject(files, body) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-ds-tokens-"));
   try {
     for (const [relative, text] of Object.entries(files)) {
+      if (relative === CONFIG) continue;
       await mkdir(path.dirname(path.join(root, relative)), { recursive: true });
       await writeFile(path.join(root, relative), text, "utf8");
     }
-    const ctx = { workspace: { projectRoot: root, config: {} } };
+    const ctx = { workspace: { projectRoot: root, config: files[CONFIG] === undefined ? {} : JSON.parse(files[CONFIG]) } };
     const tokens = (argv, options = {}) => tokensCommand.run(tokensCommand.cli.argv(argv, options), ctx);
-    return await body({ root, tokens });
+    const check = (options) => checkCommand.run(checkCommand.cli.argv([], options), ctx);
+    return await body({ root, tokens, check });
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -162,4 +168,171 @@ export const tokensTests = [
       assert.match(text, /Not placed \(0\):\n {2}\(none\)$/, "the last section, empty here");
     }),
   },
+  ...mergeTests(),
 ];
+
+// ── 198/03 task 01 · tokens --merge ─────────────────────────────────────────────────────────────
+
+// "The code" and "the system" of the feature's background.
+const CODE = "@theme {\n  --color-primary: hsl(174 72% 27%);\n  --color-warning: hsl(38 92% 50%);\n}\n";
+const SYSTEM = Object.freeze({
+  name: "AOF",
+  version: "2",
+  editing: "code",
+  meta: { source: { kind: "github", repo: "aof", ref: "518f07d3", paths: ["apps/ui/src/index.css"] } },
+  color: {
+    themes: [{ id: "light", name: "Light" }],
+    tokens: [
+      { name: "color-primary", value: { light: "hsl(174 72% 30%)" }, usage: "Primary actions" },
+      { name: "color-legacy", value: { light: "hsl(0 0% 50%)" }, usage: "Old borders" },
+    ],
+  },
+});
+const json = (value) => `${JSON.stringify(value, null, 2)}\n`;
+const system = (edit = (doc) => doc) => json(edit(structuredClone(SYSTEM)));
+const MERGE = ["index.css"];
+const OPTS = Object.freeze({ merge: "system.json", out: "merged.json" });
+const readMerged = async (root) => JSON.parse(await readFile(path.join(root, "merged.json"), "utf8"));
+const colour = (doc, name) => doc.color.tokens.find((token) => token.name === name);
+const exists = (root, file) => readFile(path.join(root, file)).then(() => true, () => false);
+
+function mergeTests() {
+  return [
+    {
+      name: "198/03 01 E4 · a changed value is updated, and its usage note is kept",
+      run: () => withProject({ "index.css": CODE, "system.json": system() }, async ({ root, tokens }) => {
+        const result = await tokens(MERGE, OPTS);
+        assert.deepEqual(colour(await readMerged(root), "color-primary"), { name: "color-primary", value: { light: "hsl(174 72% 27%)" }, usage: "Primary actions" });
+        assert.deepEqual(result.changed, [{ family: "color", name: "color-primary", theme: "light", system: "hsl(174 72% 30%)", code: "hsl(174 72% 27%)" }]);
+      }),
+    },
+    {
+      name: "198/03 01 E5 · a token only the code declares is appended",
+      run: () => withProject({ "index.css": CODE, "system.json": system() }, async ({ root, tokens }) => {
+        const result = await tokens(MERGE, OPTS);
+        const merged = await readMerged(root);
+        assert.deepEqual(merged.color.tokens.map((token) => token.name), ["color-primary", "color-warning"]);
+        assert.deepEqual(colour(merged, "color-warning"), { name: "color-warning", value: { light: "hsl(38 92% 50%)" }, usage: "" });
+        assert.deepEqual(result.added, [{ family: "color", name: "color-warning" }]);
+      }),
+    },
+    {
+      name: "198/03 01 E6 · a token the code no longer declares is listed, then removed",
+      run: () => withProject({ "index.css": CODE, "system.json": system() }, async ({ root, tokens }) => {
+        const result = await tokens(MERGE, OPTS);
+        assert.deepEqual(result.removed, [{ family: "color", name: "color-legacy", value: { light: "hsl(0 0% 50%)" }, usage: "Old borders" }]);
+        assert.equal(colour(await readMerged(root), "color-legacy"), undefined);
+      }),
+    },
+    {
+      name: "198/03 01 E7 · what the page owns is kept, and the source is restamped",
+      run: () => withProject({ "index.css": CODE, "system.json": system((doc) => { doc.color.tokens[0].deprecated = true; return doc; }) }, async ({ root, tokens }) => {
+        await tokens(MERGE, { ...OPTS, ref: "6a3826de" });
+        const merged = await readMerged(root);
+        assert.deepEqual([merged.name, merged.version, merged.editing], ["AOF", "2", "code"]);
+        assert.equal(colour(merged, "color-primary").deprecated, true);
+        assert.deepEqual(merged.meta.source, { kind: "github", repo: "aof", ref: "6a3826de", paths: ["index.css"] });
+      }),
+    },
+    {
+      name: "198/03 01 E8 · the merge never writes over the code",
+      run: () => withProject({ [INDEX_CSS]: CODE, "system.json": system() }, async ({ root, tokens }) => {
+        await assert.rejects(tokens([INDEX_CSS], { merge: "system.json", out: INDEX_CSS }), (error) => error.message.includes(INDEX_CSS) && error.message.includes("source file"));
+        assert.equal(await readFile(path.join(root, INDEX_CSS), "utf8"), CODE, "the code is unchanged");
+        assert.equal(await exists(root, "merged.json"), false, "no file is written");
+      }),
+    },
+    {
+      name: "198/03 01 E9 · a merged system has no drift from its code",
+      run: () => withProject({ "index.css": CODE, "system.json": system() }, async ({ tokens, check }) => {
+        await tokens(MERGE, OPTS);
+        const result = await check({ tokens: "merged.json", source: ["index.css"] });
+        assert.deepEqual([result.changed, result.added, result.missing], [[], [], []]);
+        assert.equal(checkCommand.cli.exit(result), 0);
+      }),
+    },
+    {
+      name: "198/03 01 outline · themes, aliases and what cannot be placed (6 rows)",
+      run: async () => {
+        const rows = [
+          ["the code's .dark declares a colour the system lacks", `${CODE}.dark {\n  --color-primary: hsl(174 60% 40%);\n}\n`, (doc) => doc, (merged, result) => {
+            assert.deepEqual(colour(merged, "color-primary").value, { light: "hsl(174 72% 27%)", dark: "hsl(174 60% 40%)" });
+            assert.ok(merged.color.themes.some((theme) => theme.id === "dark" && theme.name === "Dark"));
+            assert.ok(result.added.some((entry) => entry.name === "color-primary" && entry.theme === "dark"));
+          }],
+          ["the system holds a dark value the code no longer declares", CODE, (doc) => { doc.color.tokens[0].value.dark = "hsl(174 60% 40%)"; doc.color.themes.push({ id: "dark", name: "Dark" }); return doc; }, (merged, result) => {
+            assert.equal(colour(merged, "color-primary").value.dark, undefined);
+            assert.ok(result.removed.some((entry) => entry.name === "color-primary" && entry.theme === "dark"));
+          }],
+          ["an alias", `${CODE.slice(0, -2)}  --color-ring: var(--color-primary);\n}\n`, (doc) => doc, (merged) => {
+            assert.deepEqual(colour(merged, "color-ring").value, { light: "{color-primary}" });
+          }],
+          ["a value it cannot place", `${CODE.slice(0, -2)}  --color-scrim: color-mix(in srgb, black 40%, transparent);\n}\n`, (doc) => doc, (merged, result) => {
+            assert.ok(result.unplaced.some((entry) => entry.property === "--color-scrim" && entry.reason.length > 0));
+            assert.equal(colour(merged, "color-scrim"), undefined);
+          }],
+          ["a radius", `${CODE.slice(0, -2)}  --radius: 0.375rem;\n}\n`, (doc) => { doc.radius = { tokens: [{ name: "radius", value: "0.5rem", usage: "Corners" }] }; return doc; }, (merged, result) => {
+            assert.equal(merged.radius.tokens[0].value, "0.375rem");
+            assert.ok(result.changed.some((entry) => entry.family === "radius" && entry.name === "radius"));
+          }],
+          ["only whitespace", CODE, (doc) => { doc.color.tokens[0].value.light = "hsl(174  72% 27%)"; doc.color.tokens.pop(); return doc; }, (merged, result) => {
+            assert.equal(colour(merged, "color-primary").value.light, "hsl(174  72% 27%)", "the system's value is kept");
+            assert.deepEqual(result.changed, []);
+          }],
+        ];
+        for (const [label, code, edit, expect] of rows) {
+          await withProject({ "index.css": code, "system.json": system(edit) }, async ({ root, tokens }) => {
+            const result = await tokens(MERGE, OPTS);
+            try { expect(await readMerged(root), result); } catch (error) { error.message = `${label}: ${error.message}`; throw error; }
+          });
+        }
+      },
+    },
+    {
+      name: "198/03 01 · with no CSS files it merges from the configured source, and refuses that source as --out",
+      run: () => withProject({
+        [INDEX_CSS]: CODE,
+        "system.json": system(),
+        [CONFIG]: JSON.stringify({ work: { ui: { designSystem: { enabled: true, name: "AOF", mode: "owned", source: [INDEX_CSS] } } } }),
+      }, async ({ root, tokens }) => {
+        const result = await tokens([], OPTS);
+        assert.deepEqual(result.source, [INDEX_CSS]);
+        assert.equal(colour(await readMerged(root), "color-primary").value.light, "hsl(174 72% 27%)");
+        await assert.rejects(tokens([], { merge: "system.json", out: INDEX_CSS }), (error) => error.message.includes(INDEX_CSS) && error.message.includes("source file"));
+      }),
+    },
+    {
+      name: "198/03 01 outline · a merge it cannot run is refused, and nothing is written (4 rows)",
+      run: async () => {
+        const rows = [
+          [{ "index.css": CODE }, MERGE, { merge: "missing.json", out: "merged.json" }, ["missing.json", "cannot be read"]],
+          [{ "index.css": CODE, "system.json": json({ color: { brand: { $value: "#f00" } } }) }, MERGE, OPTS, ["system.json", "is not a list"]],
+          [{ "index.css": CODE, "system.json": system() }, MERGE, { merge: "system.json" }, ["--out"]],
+          [{ "system.json": system() }, [], OPTS, ["--source", "work.ui.designSystem.source"]],
+        ];
+        for (const [files, argv, options, named] of rows) {
+          await withProject(files, async ({ root, tokens }) => {
+            await assert.rejects(tokens(argv, options), (error) => named.every((needle) => error.message.includes(needle)) || assert.fail(`${named.join(", ")} in: ${error.message}`));
+            assert.equal(await exists(root, "merged.json"), false, `${named[0]}: no file is written`);
+          });
+        }
+      },
+    },
+    {
+      // Review close (198/03): a re-sync reads the code alone, so "--mocks" is refused rather than ignored.
+      name: "198/03 01 · --mocks beside --merge is refused, and nothing is written",
+      run: () => withProject({ "index.css": CODE, "system.json": system() }, async ({ root, tokens }) => {
+        await assert.rejects(tokens(MERGE, { ...OPTS, mocks: "mocks" }), (error) => error.message.includes("--mocks") && error.message.includes("--merge"));
+        assert.equal(await exists(root, "merged.json"), false);
+      }),
+    },
+    {
+      name: "198/03 01 · without --json it prints what the merge did",
+      run: () => withProject({ "index.css": CODE, "system.json": system() }, async ({ tokens }) => {
+        const text = tokensCommand.cli.render(await tokens(MERGE, OPTS));
+        for (const heading of ["Changed", "Added", "Removed"]) assert.ok(text.includes(`${heading} (1):`), heading);
+        for (const name of ["color-primary", "color-warning", "color-legacy", "merged.json"]) assert.ok(text.includes(name), name);
+      }),
+    },
+  ];
+}

@@ -12,7 +12,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { browserArgv, createSvgRasterizer, findBrowser } from "@aof/execution/svg-rasterizer";
 
-const { rasterizeSvg } = createSvgRasterizer({ reportDegrade() {} });
+const { rasterizeSvg, rasterizePage } = createSvgRasterizer({ reportDegrade() {} });
 
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const EDGE = "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
@@ -177,7 +177,7 @@ export const diagramRasterizeTests = [
       const svgPath = path.resolve(os.tmpdir(), "S.svg");
       const pngPath = path.resolve(os.tmpdir(), "O.png");
       for (const [kind, headless] of [["headless-shell", false], ["full", true]]) {
-        const argv = browserArgv({ kind, width: 1000, height: 480, scale: 2, userDataDir: "U", pngPath, svgPath });
+        const argv = browserArgv({ kind, width: 1000, height: 480, scale: 2, userDataDir: "U", pngPath, sourcePath: svgPath });
         assert.equal(argv.includes("--headless=new"), headless, kind);
         assert.equal(argv.some((arg) => arg.startsWith("--headless")), headless, `${kind}: no other headless flag`);
         for (const flag of ["--window-size=1000,480", "--force-device-scale-factor=2", "--user-data-dir=U"]) assert.ok(argv.includes(flag), flag);
@@ -244,6 +244,61 @@ export const diagramRasterizeTests = [
           (error) => error.code === "diagram-png-source-not-svg",
         );
         assert.equal(spawned, false, "refused before any spawn");
+      });
+    },
+  },
+  // 198/02 task 02 — the page entry is the SVG path's twin, and the SVG path is unchanged.
+  {
+    name: "198/02 task 02: a page is rendered at the size it is given, through the one argv function, and is done only once the browser has exited and the PNG is written",
+    run: async () => {
+      await withSvg("0 0 10 10", async (fx) => {
+        const pagePath = path.join(fx.root, "fleet-filter.dc.html");
+        await writeFile(pagePath, "<!doctype html><script src=\"./support.js\"></script>", "utf8");
+        const pngPath = path.join(fx.root, "fleet-filter.png");
+        const clock = fakeClock();
+        // The Edge launcher's shape: exit at once, write 400 ms later; done waits for the write.
+        const fake = fakeSpawn(clock, ({ child, out, clock: c }) => {
+          c.at(0, () => child.emit("exit", 0));
+          c.at(400, () => writeFileSync(out, PNG));
+        });
+        const answer = await rasterizePage({ pagePath, pngPath, width: 1280, height: 884, browser: BROWSER, spawn: fake.spawn, now: clock.now, sleep: clock.sleep, tmp: fx.tmp });
+        assert.deepEqual(answer, { ok: true, pngPath });
+        assert.ok(clock.now() >= 400, "answered only after the PNG was written");
+        const [call] = fake.calls;
+        const userDataDir = call.args.find((arg) => arg.startsWith("--user-data-dir=")).slice("--user-data-dir=".length);
+        assert.deepEqual(call.args, browserArgv({ kind: BROWSER.kind, width: 1280, height: 884, scale: 2, userDataDir, pngPath, sourcePath: pagePath }));
+        assert.equal(call.args.at(-1), pathToFileURL(pagePath).href, "the page's file URL is last");
+        assert.ok(call.args.includes("--window-size=1280,884") && call.args.includes("--force-device-scale-factor=2"));
+        assert.deepEqual(readdirSync(fx.tmp), [], "the profile is removed");
+      });
+    },
+  },
+  {
+    name: "198/02 task 02: a page size that is not a positive whole number is refused before any spawn",
+    run: async () => {
+      await withSvg("0 0 10 10", async (fx) => {
+        for (const [width, height] of [[0, 884], [1280, undefined], [1280.5, 884], [-1, 10]]) {
+          let spawned = false;
+          await assert.rejects(
+            rasterizePage({ pagePath: path.join(fx.root, "b.dc.html"), pngPath: fx.pngPath, width, height, browser: BROWSER, spawn: () => { spawned = true; }, tmp: fx.tmp }),
+            (error) => error.code === "page-png-size-unusable",
+            `${width}x${height}`,
+          );
+          assert.equal(spawned, false, `${width}x${height}: no spawn`);
+        }
+      });
+    },
+  },
+  {
+    name: "198/02 task 02: the diagram export is unchanged — the SVG's argv and answer are what browserArgv forms for it",
+    run: async () => {
+      await withSvg("0 0 1000 480", async (fx) => {
+        const { answer, fake } = await render(fx, ({ child, out, clock }) => clock.at(0, () => { writeFileSync(out, PNG); child.emit("exit", 0); }));
+        assert.deepEqual(answer, { ok: true, pngPath: fx.pngPath });
+        const [call] = fake.calls;
+        const userDataDir = call.args.find((arg) => arg.startsWith("--user-data-dir=")).slice("--user-data-dir=".length);
+        assert.deepEqual(call.args, browserArgv({ kind: BROWSER.kind, width: 1000, height: 480, scale: 2, userDataDir, pngPath: fx.pngPath, sourcePath: fx.svgPath }));
+        assert.equal(call.args.at(-1), pathToFileURL(fx.svgPath).href);
       });
     },
   },

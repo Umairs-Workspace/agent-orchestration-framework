@@ -19,6 +19,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { loadBundle, readDescriptor, renderBundleOutputs } from "../../../packages/core/src/work/bundle.mjs";
+import { practiceStates } from "../../../packages/core/src/work/bundle-compose.mjs";
+import { readAssetText } from "../../../packages/core/src/asset-base.mjs";
+import { RUNTIMES } from "../../../packages/core/src/model.mjs";
 
 const root = new URL("../../../", import.meta.url);
 const read = (rel) => readFileSync(fileURLToPath(new URL(rel, root)), "utf8");
@@ -39,6 +43,49 @@ function toolsOf(rel) {
 }
 
 const has = (rel, needle) => read(rel).toLowerCase().includes(needle.toLowerCase());
+
+// FF-19803 (198/ADR-002 §2) — the designer stays read-only with every shipped practice on. A practice
+// reaches the designer only as fragment prose; a fragment that named a tool would be the one way a
+// practice could widen the grant, so the detector reads each fragment for a `tools` field and for a
+// `tools:` line in its body, and names each tool it finds.
+const DESIGNER_TOOLS = Object.freeze(["Read", "Grep", "Glob", "Write", "Edit", "WebSearch", "WebFetch"]);
+const DESIGNER_TARGET = "agent:aof-designer";
+
+export function designerToolGrants(descriptor, readText = readAssetText) {
+  const grants = [];
+  for (const member of descriptor.members) {
+    if (member.kind !== "fragment" || member.target !== DESIGNER_TARGET) continue;
+    for (const tool of [].concat(member.tools ?? [])) grants.push(`${member.id} grants ${tool}`);
+    const files = [member.file, ...Object.values(member.variants ?? {}).map((variant) => variant.file)].filter(Boolean);
+    for (const file of files) {
+      const line = /^tools:(.*)$/mu.exec(readText(member.assetClass ?? "bundle", file))?.[1];
+      for (const tool of (line ?? "").split(",").map((entry) => entry.trim()).filter(Boolean)) grants.push(`${member.id} grants ${tool}`);
+    }
+  }
+  return grants;
+}
+
+// Every shipped practice on: each practice's keys set to `true` in a fresh config.
+function everyPracticeOn(practices) {
+  const config = {};
+  for (const key of practices.flatMap((practice) => practice.keys)) {
+    const parts = key.split(".");
+    let node = config;
+    for (const part of parts.slice(0, -1)) node = node[part] ??= {};
+    node[parts.at(-1)] = true;
+  }
+  return config;
+}
+
+// Each runtime's render of the designer: `Map<runtime, text>`.
+function designerRenders(config) {
+  const runtimes = Object.keys(RUNTIMES);
+  const out = new Map();
+  for (const output of renderBundleOutputs(loadBundle({ config }), { runtimes })) {
+    if (/aof-designer\.(md|toml)$/u.test(output.path.replaceAll("\\", "/"))) out.set(output.runtime, output.content);
+  }
+  return out;
+}
 
 export const archTests = [
   {
@@ -116,5 +163,43 @@ export const archTests = [
       assert.ok(has(QA, "absent ≡ off") || has(QA, "no a11y check"), "absent opt-in ≡ off (no a11y check runs)");
       assert.ok(!has(DESIGNER, "axe-core"), "the designer contract does not own/run the a11y check");
     }
-  }
+  },
+  {
+    name: "arch/198 FF-19803 · E3 · the designer's tools are the same in every runtime, with every shipped practice on and with none",
+    run: () => {
+      const { practices } = readDescriptor();
+      const on = everyPracticeOn(practices);
+      assert.deepEqual([...practiceStates(practices, on)].filter(([, state]) => state !== true), [], "every shipped practice is on");
+      assert.equal(practiceStates(practices, on).get("design-system"), true, "the design-system practice is among them");
+      const offRenders = designerRenders({ work: {} });
+      const onRenders = designerRenders(on);
+      assert.deepEqual([...onRenders.keys()].sort(), Object.keys(RUNTIMES).sort(), "every runtime renders the designer");
+      const claudeTools = (text) => /^tools:(.*)$/mu.exec(text)[1].split(",").map((tool) => tool.trim());
+      for (const renders of [offRenders, onRenders]) assert.deepEqual(claudeTools(renders.get("claude")), DESIGNER_TOOLS);
+      // A grant lives in the frontmatter: Claude's `tools:` line, OpenCode's `permission:` block. Codex
+      // renders no tool list, so its whole render is held: the practice adds it no prose either.
+      const frontmatter = (text) => /^---\n([\s\S]*?)\n---/u.exec(text)?.[1] ?? text;
+      for (const runtime of ["claude", "opencode"]) assert.equal(frontmatter(onRenders.get(runtime)), frontmatter(offRenders.get(runtime)), `${runtime}: the grant is the same on and off`);
+      assert.equal(onRenders.get("codex"), offRenders.get("codex"), "codex: the render is the same on and off");
+    },
+  },
+  {
+    name: "arch/198 FF-19803 · no fragment the bundle ships names a tool for aof-designer",
+    run: () => {
+      const descriptor = readDescriptor();
+      assert.ok(descriptor.members.some((member) => member.kind === "fragment" && member.target === DESIGNER_TARGET), "a shipped fragment fills the designer brief, so the sweep is not vacuous");
+      assert.deepEqual(designerToolGrants(descriptor), []);
+    },
+  },
+  {
+    name: "arch/198 FF-19803 red probe · a fragment that grants the designer Bash turns the control red, naming the tool",
+    run: () => {
+      const descriptor = readDescriptor();
+      const planted = { ...descriptor, members: [...descriptor.members, { id: "planted-designer-bash", kind: "fragment", practice: "design-system", target: DESIGNER_TARGET, slot: "ownership.design-system", runtimes: ["claude"], file: "planted.md", tools: ["Bash"] }] };
+      const grants = designerToolGrants(planted, (assetClass, file) => (file === "planted.md" ? "<!-- fragment:ownership.design-system -->\n- planted\n" : readAssetText(assetClass, file)));
+      assert.deepEqual(grants, ["planted-designer-bash grants Bash"]);
+      const inBody = designerToolGrants({ members: [{ id: "planted-body", kind: "fragment", target: DESIGNER_TARGET, file: "body.md" }] }, () => "tools: Read, Bash\n");
+      assert.ok(inBody.includes("planted-body grants Bash"), inBody.join("; "));
+    },
+  },
 ];

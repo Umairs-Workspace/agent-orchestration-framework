@@ -12,6 +12,12 @@
 // no code token holds, compared after both sides are normalised to RGBA (ADR-004 §2: code beats
 // mocks, and a mock-only value is the operator's to accept or drop).
 //
+// `mergeTokens(system, code, { ref, paths })` is the Design System type's re-sync, as a function
+// (198/03, ADR-007, RESEARCH R3): the code's values win, everything the page owns is kept, a token
+// the code no longer declares is listed and then dropped, and the code's new tokens are appended in
+// declaration order. Values compare as `check` compares them, whitespace collapsed, so a merged
+// system checks clean against the code it came from.
+//
 // Pure: no file, no network (FF-19804). The rules each choice follows are 198/01's example map,
 // Q1–Q5.
 
@@ -328,4 +334,136 @@ export function mockOnly(tokens, mocks) {
     }
   }
   return [...found.values()];
+}
+
+// ── the re-sync ────────────────────────────────────────────────────────────────────────────────
+
+// The single-value families, each with where its list lives on a token set.
+const VALUE_FAMILIES = Object.freeze([
+  ["spacing", (set) => set?.spacing?.tokens],
+  ["radius", (set) => set?.radius?.tokens],
+  ["shadow", (set) => set?.shadow?.tokens],
+  ["type.families", (set) => set?.type?.families],
+]);
+const STYLE_FIELDS = Object.freeze(["fontSize", "lineHeight", "letterSpacing", "fontWeight"]);
+const isObject = (value) => value != null && typeof value === "object" && !Array.isArray(value);
+const same = (a, b) => String(a).replace(/\s+/g, " ").trim() === String(b).replace(/\s+/g, " ").trim();
+
+/**
+ * Re-sync a system's tokens from the code's. `system` is a parsed tokens.json in the type's shape;
+ * `code` is what `readTokens` answered. Answers `{ document, changed, added, removed, unplaced }`:
+ * `changed` holds `{ family, name, theme | field, system, code }`, `added` `{ family, name, theme? }`
+ * and `removed` `{ family, name, theme?, value, usage? }`. The system is never mutated.
+ */
+export function mergeTokens(system, code, { ref, paths } = {}) {
+  const document = structuredClone(system);
+  const changed = [];
+  const added = [];
+  const removed = [];
+
+  // Colours: per theme. A bare string is the first theme's value, as `check` reads it.
+  const firstTheme = document.color?.themes?.[0]?.id ?? code.color.themes[0]?.id ?? FIRST_THEME;
+  if (code.color.tokens.length > 0 || document.color !== undefined) {
+    document.color ??= {};
+    document.color.themes ??= [];
+    for (const theme of code.color.themes) {
+      if (!document.color.themes.some((entry) => entry.id === theme.id)) document.color.themes.push({ ...theme });
+    }
+    const codeByName = new Map(code.color.tokens.map((token) => [token.name, token]));
+    const kept = [];
+    for (const token of document.color.tokens ?? []) {
+      const theirs = codeByName.get(token.name);
+      if (!theirs) {
+        removed.push({ family: "color", name: token.name, value: token.value, ...(token.usage !== undefined ? { usage: token.usage } : {}) });
+        continue;
+      }
+      const ours = isObject(token.value) ? token.value : { [firstTheme]: token.value };
+      const next = {};
+      let moved = false;
+      for (const [theme, value] of Object.entries(ours)) {
+        if (!(theme in theirs.value)) { removed.push({ family: "color", name: token.name, theme, value }); moved = true; continue; }
+        if (same(value, theirs.value[theme])) next[theme] = value;
+        else { next[theme] = theirs.value[theme]; changed.push({ family: "color", name: token.name, theme, system: value, code: theirs.value[theme] }); moved = true; }
+      }
+      for (const [theme, value] of Object.entries(theirs.value)) {
+        if (theme in ours) continue;
+        next[theme] = value;
+        added.push({ family: "color", name: token.name, theme });
+        moved = true;
+      }
+      kept.push(moved ? { ...token, value: next } : token);
+    }
+    const known = new Set(kept.map((token) => token.name).concat(removed.filter((entry) => entry.family === "color" && entry.theme === undefined).map((entry) => entry.name)));
+    for (const token of code.color.tokens) {
+      if (known.has(token.name)) continue;
+      kept.push({ name: token.name, value: { ...token.value }, usage: "" });
+      added.push({ family: "color", name: token.name });
+    }
+    document.color.tokens = kept;
+  }
+
+  // The single-value families.
+  for (const [family, listOf] of VALUE_FAMILIES) {
+    const theirs = listOf(code) ?? [];
+    const ours = listOf(document);
+    if (ours === undefined && theirs.length === 0) continue;
+    const codeByName = new Map(theirs.map((token) => [token.name, token]));
+    const kept = [];
+    for (const token of ours ?? []) {
+      const other = codeByName.get(token.name);
+      if (!other) { removed.push({ family, name: token.name, value: token.value, ...(token.usage !== undefined ? { usage: token.usage } : {}) }); continue; }
+      if (same(token.value, other.value)) kept.push(token);
+      else { kept.push({ ...token, value: other.value }); changed.push({ family, name: token.name, system: token.value, code: other.value }); }
+    }
+    const known = new Set((ours ?? []).map((token) => token.name));
+    for (const token of theirs) {
+      if (known.has(token.name)) continue;
+      kept.push({ name: token.name, value: token.value, usage: "" });
+      added.push({ family, name: token.name });
+    }
+    if (family === "type.families") { document.type ??= {}; document.type.families = kept; }
+    else document[family] = { ...(isObject(document[family]) ? document[family] : {}), tokens: kept };
+  }
+
+  // Type styles: per field, across the system's groups; a new style joins the code's group.
+  const codeStyles = new Map(code.type.groups.flatMap((group) => group.styles.map((style) => [style.name, { group: group.name, style }])));
+  if (codeStyles.size > 0 || document.type?.groups !== undefined) {
+    document.type ??= {};
+    const groups = (document.type.groups ?? []).map((group) => ({ ...group, styles: [] }));
+    const known = new Set();
+    (document.type.groups ?? []).forEach((group, index) => {
+      for (const style of group.styles ?? []) {
+        known.add(style.name);
+        const other = codeStyles.get(style.name)?.style;
+        if (!other) { removed.push({ family: "type.styles", name: style.name, value: style, ...(style.usage !== undefined ? { usage: style.usage } : {}) }); continue; }
+        const next = { ...style };
+        for (const field of STYLE_FIELDS) {
+          if (style[field] === undefined && other[field] === undefined) continue;
+          if (other[field] === undefined) { delete next[field]; removed.push({ family: "type.styles", name: style.name, field, value: style[field] }); continue; }
+          if (style[field] === undefined) { next[field] = other[field]; added.push({ family: "type.styles", name: style.name, field }); continue; }
+          if (!same(style[field], other[field])) { next[field] = other[field]; changed.push({ family: "type.styles", name: style.name, field, system: style[field], code: other[field] }); }
+        }
+        groups[index].styles.push(next);
+      }
+    });
+    for (const [name, { group, style }] of codeStyles) {
+      if (known.has(name)) continue;
+      let home = groups.find((candidate) => candidate.name === group);
+      if (!home) { home = { name: group, styles: [] }; groups.push(home); }
+      home.styles.push({ ...style });
+      added.push({ family: "type.styles", name });
+    }
+    document.type.groups = groups;
+  }
+
+  // The provenance: the ref and the paths are the code's; the rest of `meta` is the page's.
+  if (ref !== undefined || paths !== undefined) {
+    document.meta = isObject(document.meta) ? { ...document.meta } : {};
+    document.meta.source = {
+      ...(isObject(document.meta.source) ? document.meta.source : {}),
+      ...(ref !== undefined ? { ref } : {}),
+      ...(paths !== undefined ? { paths: [...paths] } : {}),
+    };
+  }
+  return { document, changed, added, removed, unplaced: code.unplaced };
 }

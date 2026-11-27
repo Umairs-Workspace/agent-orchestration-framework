@@ -17,7 +17,7 @@
       ],
       "dryRun": false,
       "summary": {
-        "created": 232,
+        "created": 233,
         "updated": 0,
         "skipped": 0,
         "drift-warning": 0,
@@ -220,6 +220,10 @@
         {
           "action": "create",
           "path": ".claude/commands/aof/teach.md"
+        },
+        {
+          "action": "create",
+          "path": ".claude/commands/aof/design-system.md"
         },
         {
           "action": "create",

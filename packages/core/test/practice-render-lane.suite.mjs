@@ -169,6 +169,7 @@ const listTests = [
       const row = listed(text, practice.id);
       assert.equal(row.state, "off", `${practice.id} is listed off`);
       assert.ok(row.line.includes(practice.summary), `${practice.id} is listed with its one-line summary`);
+      // 198/03 — design-system's DESIGN.md variant reaches every runtime, so no practice lists runtimes.
       assert.ok(row.line.endsWith(practice.keys.join(" + ")), `${practice.id} is listed with its key`);
     }
     assert.deepEqual(declared().map((practice) => practice.id).sort(), ["build-brief", "design-system", "discovery", "operator-aware"]); // 198/01 adds design-system

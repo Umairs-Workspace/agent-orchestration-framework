@@ -163,6 +163,8 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
        so the surface still has a baseline the review can judge against (rather than an INCONCLUSIVE on a
        missing baseline). A surface with neither a committed mock nor a checklist has no baseline.
 
+     <!-- slot:decide.designer -->
+
      **Recall prior lessons first (before authoring ADRs/stories).** Role-scoped, run unconditionally
      (memory may be off — see below): the **architect**, before writing an ADR, runs `aof memory
      recall "<the decision in a few words>" --area architecture --block`; the **PO**, before the

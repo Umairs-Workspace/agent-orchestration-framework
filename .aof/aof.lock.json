@@ -522,6 +522,16 @@
         "generatedAt": "2026-11-23T22:39:22.187Z"
       },
       {
+        "path": ".claude/commands/aof/design-system.md",
+        "runtime": "claude",
+        "resource": {
+          "id": "design-system",
+          "kind": "command"
+        },
+        "hash": "sha256:ad9310bbc99b76b22e2b4ae69dca4b0e097faadfa8cecd4b7e26a0b2be1a97ac",
+        "generatedAt": "2026-11-25T22:42:09.059Z"
+      },
+      {
         "path": ".codex/aof/workflows/workflow-contract.md",
         "runtime": "codex",
         "resource": {
@@ -2561,7 +2571,8 @@
     "practices": {
       "build-brief": true,
       "discovery": true,
-      "operator-aware": false
+      "operator-aware": false,
+      "design-system": false
     }
   },
   "planning": {

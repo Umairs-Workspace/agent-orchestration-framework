@@ -132,6 +132,8 @@ const EXCLUDED = Object.freeze({
   "autonomous.md": "sequences existing items through the loop shell; cuts nothing",
   "continue.md": "builds an existing story; carries its own recall regardless",
   "delegate.md": "sets two model decisions",
+  // 198/01 — @aof/design-system's command: extracts the project's one design system and names it in config.
+  "design-system.md": "extracts one project's design system into an artifact and names it in config; partitions nothing",
   // 150 — says what items are for, composed of the read verbs; writes nothing, carries no memory call.
   "explain.md": "explains items; reads only, cuts nothing",
   // The Hyperagent integration (contributed by @aof/integration-hyperagent since 169/01) — hands

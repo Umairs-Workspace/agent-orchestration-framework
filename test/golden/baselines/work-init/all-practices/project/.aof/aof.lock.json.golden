@@ -501,6 +501,16 @@
         "generatedAt": "<timestamp>"
       },
       {
+        "path": ".claude/commands/aof/design-system.md",
+        "runtime": "claude",
+        "resource": {
+          "id": "design-system",
+          "kind": "command"
+        },
+        "hash": "sha256:<hash>",
+        "generatedAt": "<timestamp>"
+      },
+      {
         "path": ".codex/aof/workflows/workflow-contract.md",
         "runtime": "codex",
         "resource": {
@@ -2507,7 +2517,8 @@
     "practices": {
       "build-brief": true,
       "discovery": true,
-      "operator-aware": true
+      "operator-aware": true,
+      "design-system": true
     }
   }
 }

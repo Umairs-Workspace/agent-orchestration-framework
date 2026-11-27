@@ -59,6 +59,7 @@
         "packages/core/test",
         "packages/diagrams-ui/test",
         "packages/diagrams/test",
+        "packages/design-system/test",
         "packages/execution/test",
         "packages/foundation/test",
         "packages/integration-hyperagent/test",

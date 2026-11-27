@@ -217,6 +217,8 @@ import { archTests as acdDiagramRenderedAsImageTests } from "./acd-diagram-rende
 import { archTests as acdLoopPaneReadOnlyTests } from "./acd-loop-pane-read-only.test.mjs";
 // milestone 167 / story 02 — FF-16703: every UI poll runs through the one cadence.
 import { archTests as acdUiPollsThroughOneCadenceTests } from "./acd-ui-polls-through-one-cadence.test.mjs";
+// milestone 198 / story 02 — FF-19805: an imported mock is self-contained.
+import { archTests as acdImportedMockSelfContainedTests } from "./acd-imported-mock-self-contained.test.mjs";
 export const tests = [
   ...acdFleetReclaimGuardedTests,
   ...acdReusesRenderPlanTests,
@@ -277,4 +279,6 @@ export const tests = [
   ...acdLoopPaneReadOnlyTests,
   // 167/02 — FF-16703: every interval poll in apps/ui/src is scheduled through poll-cadence.mjs.
   ...acdUiPollsThroughOneCadenceTests,
+  // 198/02 — FF-19805: an imported mock references only its runtime, its siblings and its tokens.
+  ...acdImportedMockSelfContainedTests,
 ];

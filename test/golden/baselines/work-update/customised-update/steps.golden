@@ -17,7 +17,7 @@
       "summary": {
         "created": 0,
         "updated": 0,
-        "skipped": 231,
+        "skipped": 232,
         "drift-warning": 1,
         "deleted": 0
       },
@@ -218,6 +218,10 @@
         {
           "action": "skip",
           "path": ".claude/commands/aof/teach.md"
+        },
+        {
+          "action": "skip",
+          "path": ".claude/commands/aof/design-system.md"
         },
         {
           "action": "skip",
@@ -998,6 +1002,15 @@
           "keys": [
             "work.examples.enabled",
             "work.examples.operatorAware"
+          ],
+          "on": false
+        },
+        {
+          "id": "design-system",
+          "title": "Design system",
+          "summary": "Refine draws a UI milestone's mocks as a canvas on the project's one Design System, named in work.ui.designSystem, and commits the approved canvas under mocks/.",
+          "keys": [
+            "work.ui.designSystem.enabled"
           ],
           "on": false
         }

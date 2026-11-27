@@ -1540,6 +1540,15 @@
           "items": {
             "type": "string"
           }
+        },
+        "merge": {
+          "type": "string"
+        },
+        "out": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
         }
       },
       "required": [
@@ -1553,12 +1562,24 @@
         "tokens"
       ],
       "spec": {
-        "usage": "aof design-system tokens <css-file>… [--mocks <dir>]… [--json]",
+        "usage": "aof design-system tokens <css-file>… [--mocks <dir>]… [--json] | aof design-system tokens [<css-file>…] --merge <tokens.json> --out <file> [--ref <commit>] [--json]",
         "flags": {
           "mocks": {
             "type": "string",
             "repeatable": true,
             "description": "a directory of exported .dc.html/.html mocks; lists the colours only a mock paints"
+          },
+          "merge": {
+            "type": "string",
+            "description": "a system's tokens.json to re-sync from the code (default code: work.ui.designSystem.source)"
+          },
+          "out": {
+            "type": "string",
+            "description": "where --merge writes the merged tokens.json; never a source file"
+          },
+          "ref": {
+            "type": "string",
+            "description": "the commit --merge records as meta.source.ref"
           }
         }
       }
@@ -1652,6 +1673,107 @@
             "type": "string",
             "repeatable": true,
             "description": "a CSS file an owned system is synced from"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "design-system:mocks-import",
+    "input": {
+      "type": "object",
+      "properties": {
+        "pulled": {
+          "type": "string"
+        },
+        "item": {
+          "type": "string"
+        },
+        "canvas": {
+          "type": "string"
+        },
+        "canvasVersion": {
+          "type": "string"
+        },
+        "system": {
+          "type": "string"
+        },
+        "systemVersion": {
+          "type": "string"
+        },
+        "approval": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "pulled",
+        "item"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "design-system",
+        "mocks",
+        "import"
+      ],
+      "spec": {
+        "usage": "aof design-system mocks import <pulled-dir> --item <milestone> --canvas <link> --canvas-version <v> --system <link> --system-version <v> --approval <reference> [--json]",
+        "flags": {
+          "item": {
+            "type": "string",
+            "description": "the milestone whose mocks/ receives the canvas"
+          },
+          "canvas": {
+            "type": "string",
+            "description": "the approved canvas's claude.ai artifact link"
+          },
+          "canvasVersion": {
+            "type": "string",
+            "description": "the canvas version the operator approved"
+          },
+          "system": {
+            "type": "string",
+            "description": "the resolved design system's claude.ai artifact link"
+          },
+          "systemVersion": {
+            "type": "string",
+            "description": "the design system's version installed in the canvas"
+          },
+          "approval": {
+            "type": "string",
+            "description": "the approving answer's reference: run <runId> ask <n>, or session <sessionId> <instant>"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "design-system:mocks-capture",
+    "input": {
+      "type": "object",
+      "properties": {
+        "item": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "item"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "design-system",
+        "mocks",
+        "capture"
+      ],
+      "spec": {
+        "usage": "aof design-system mocks capture --item <milestone> [--json]",
+        "flags": {
+          "item": {
+            "type": "string",
+            "description": "the milestone whose imported canvas is framed"
           }
         }
       }
