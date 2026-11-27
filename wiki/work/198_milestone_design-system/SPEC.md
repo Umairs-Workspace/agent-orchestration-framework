@@ -3,10 +3,10 @@ type: milestone
 number: 198
 slug: design-system
 title: "The designer draws a milestone's mocks on the project's design system, and a project can extract that system from the Claude Design mocks it already has"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-11-16
-updated: 2026-11-26
+updated: 2026-11-27
 schema: 1
 aofVersion: 0.1.0
 depends: [192]
@@ -92,7 +92,7 @@ Out of scope:
 
 Four stories in three waves (ARCHITECTURE ADR-008): 00 and 01, then 02, then 03.
 
-- [ ] `00_story_a-fragment-can-be-for-claude-only`: a fragment names the runtimes it is for, and any other runtime's render holds none of it.
+- [x] `00_story_a-fragment-can-be-for-claude-only`: a fragment names the runtimes it is for, and any other runtime's render holds none of it.
 - [ ] `01_story_a-project-extracts-its-design-system-and-names-it`: the `@aof/design-system` package, the `work.ui.designSystem` key, the token verbs, and `aof:design-system extract` building the system from code tokens and exported mocks.
 - [ ] `02_story_mocks-are-drawn-on-the-system-and-committed-as-the-baseline`: refine draws a canvas on the system; once the operator approves it, it is imported into `mocks/` with its runtime, frames and provenance.
 - [ ] `03_story_an-owned-system-stays-true-to-its-code`: accepting a milestone re-syncs an owned system from code, and drift that survives the re-sync is a finding.

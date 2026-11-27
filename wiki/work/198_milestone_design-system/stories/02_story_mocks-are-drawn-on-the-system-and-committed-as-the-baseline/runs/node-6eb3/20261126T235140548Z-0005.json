@@ -1,0 +1,24 @@
+{
+  "runId": "20261126T235140548Z-0005",
+  "itemRef": "198/02",
+  "state": "done",
+  "attempt": 2,
+  "outcome": "done",
+  "sessionId": null,
+  "brief": {
+    "halt": {
+      "stop": "cap-exhausted",
+      "producer": "run-store:attempts-exhausted"
+    }
+  },
+  "createdAt": "2026-11-26T23:51:40.548Z",
+  "updatedAt": "2026-11-27T00:47:25.182Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": "20261126T233401256Z-0001",
+  "reclaimedAt": null,
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": null,
+  "asks": []
+}

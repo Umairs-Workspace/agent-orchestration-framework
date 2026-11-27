@@ -56,13 +56,13 @@ Keep `@theme` and every `--x:` grammar out of it (FF-19804's prose leg).
 - 00's practice list adds `runtimes` only for a practice whose every fragment is scoped. With
   zero fragments that test is vacuously true. Check that `design-system`'s entry holds no
   `runtimes` (task 00), and raise it as a finding against 00 if it does.
-- Run `node scripts/supply-chain-audit.mjs` after the `yarn.lock` change.
+- Run the supply-chain audit after the `yarn.lock` change.
 
 ## Verification
 
 From a clean worktree with `AOF_GLOBAL_HOME=$(mktemp -d)`, run by file:
 - the package's suites;
-- `test/command/config-inspect.test.mjs` and `application-assembly.test.mjs`;
+- the config-inspect and application-assembly command suites;
 - the arch/practices index.
 
 Then, in this checkout, run `aof design-system tokens apps/ui/src/index.css --json`. It must

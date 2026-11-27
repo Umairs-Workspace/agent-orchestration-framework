@@ -5,10 +5,10 @@ slug: an-owned-system-stays-true-to-its-code
 title: "When the project owns its design system, accepting a milestone re-syncs the system from the code, and drift that survives the re-sync is a finding"
 parent: 198
 depends: [00, 01, 02]
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-11-17
-updated: 2026-11-26
+updated: 2026-11-27
 adrs: [ADR-005, ADR-007]
 reads:
   - wiki/work/198_milestone_design-system/SPEC.md
@@ -53,6 +53,17 @@ files:
   - test/arch/practices/acd-runtime-scoped-prose.test.mjs
   - .claude/commands/aof/verify.md
   - .aof/templates/work/milestone/DESIGN.md
+  - .agents/skills/aof-verify/SKILL.md
+  - .agents/skills/aof-verify/procedure.md
+  - .agents/skills/aof-verify/agents/openai.yaml
+  - .codex/aof/workflows/workflow-contract.md
+  - .opencode/commands/aof/verify.md
+  - test/arch/practices/acd-design-system-practice.test.mjs
+  - packages/core/test/practice-render-lane.suite.mjs
+  - test/golden/work-init.test.mjs
+  - test/golden/baselines/work-init/
+  - .aof/aof.lock.json
+  - .aof/aof.apply-journal.json
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -69,9 +80,9 @@ look or an edit someone made on the system's page**.
 
 ## Tasks
 
-- [ ] `00_the-design-template-records-design-system-changes` — R1: the practice's variant of the milestone DESIGN.md template
-- [ ] `01_tokens-merge-re-syncs-a-system-from-the-code` — R2: `aof design-system tokens --merge`, the type's merge as a verb
-- [ ] `02_verify-re-syncs-an-owned-system-at-accept` — R3, R4: verify's Claude-only `checks.design-system` fragment and its slot; FF-19802, FF-19804
+- [x] `00_the-design-template-records-design-system-changes` — R1: the practice's variant of the milestone DESIGN.md template
+- [x] `01_tokens-merge-re-syncs-a-system-from-the-code` — R2: `aof design-system tokens --merge`, the type's merge as a verb
+- [x] `02_verify-re-syncs-an-owned-system-at-accept` — R3, R4: verify's Claude-only `checks.design-system` fragment and its slot; FF-19802, FF-19804
 - [ ] `03_a-real-re-sync-leaves-no-drift` — R3, R4 (@manual): one real re-sync on a probe system
 
 ## Notes

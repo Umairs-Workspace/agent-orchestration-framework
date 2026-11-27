@@ -5,10 +5,10 @@ slug: mocks-are-drawn-on-the-system-and-committed-as-the-baseline
 title: "At refine a UI milestone's mocks are drawn as a Design canvas on the configured system, and once the operator approves them they are committed under mocks/ as the offline baseline"
 parent: 198
 depends: [00, 01]
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-11-17
-updated: 2026-11-26
+updated: 2026-11-27
 adrs: [ADR-002, ADR-005, ADR-006]
 reads:
   - wiki/work/198_milestone_design-system/SPEC.md
@@ -86,6 +86,25 @@ files:
   - .agents/skills/aof-verify/agents/openai.yaml
   - .agents/skills/aof-verify/procedure.md
   - .codex/aof/workflows/workflow-contract.md
+  - packages/design-system/src/contribution.mjs
+  - packages/design-system/test/practice.suite.mjs
+  - packages/core/src/application/assemble.mjs
+  - packages/core/test/application.test.mjs
+  - packages/core/test/practice-render-lane.suite.mjs
+  - test/arch/practices/acd-design-system-practice.test.mjs
+  - test/arch/testing/acd-source-directory-budget.test.mjs
+  - test/arch/memory/acd-learning-edge-reaches-every-cut.test.mjs
+  - test/command/application-assembly.test.mjs
+  - test/fixtures/application/command-inventory.json
+  - test/golden/work-init.lane.mjs
+  - test/golden/work-init.test.mjs
+  - test/golden/baselines/work-init/
+  - test/golden/baselines/work-update/
+  - test/golden/baselines/project-init/
+  - scripts/workspace-runtime-audit.json
+  - .aof/aof.config.json
+  - .aof/aof.lock.json
+  - .aof/aof.apply-journal.json
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -102,9 +121,9 @@ UI milestone, and the fidelity judge still has a local baseline it can trust**.
 
 ## Tasks
 
-- [ ] `00_the-practice-prose-lands-on-claude-alone` — R1: the three Claude-only fragments and their slots; FF-19802, FF-19803
-- [ ] `01_import-commits-an-approved-canvas-with-its-provenance` — R4: `aof design-system mocks import`; FF-19805
-- [ ] `02_capture-frames-each-board-at-its-own-size` — R5: `aof design-system mocks capture`, and the rasterizer's page entry
+- [x] `00_the-practice-prose-lands-on-claude-alone` — R1: the three Claude-only fragments and their slots; FF-19802, FF-19803
+- [x] `01_import-commits-an-approved-canvas-with-its-provenance` — R4: `aof design-system mocks import`; FF-19805
+- [x] `02_capture-frames-each-board-at-its-own-size` — R5: `aof design-system mocks capture`, and the rasterizer's page entry
 - [ ] `03_a-real-canvas-is-drawn-approved-and-judged` — R2, R3, R6 (@manual): one real canvas, judged CONFORMS; RESEARCH A1–A3
 
 ## Notes
