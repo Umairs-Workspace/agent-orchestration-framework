@@ -7,7 +7,7 @@ parent: 198
 status: in-review
 owner: product-owner
 created: 2026-11-17
-updated: 2026-11-26
+updated: 2026-11-27
 adrs: [ADR-003, ADR-004, ADR-005, ADR-008]
 reads:
   - wiki/work/198_milestone_design-system/SPEC.md
