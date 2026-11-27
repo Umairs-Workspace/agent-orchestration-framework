@@ -116,6 +116,22 @@ that have content** — no empty "None" placeholders (absence of a section is in
    "run the browser" to "judge the result" — it renders, then hands the screenshot to the read-only
    designer to JUDGE. A green `@executable` suite does **not** prove design fidelity (the litmus keeps
    visual fidelity out of the `.feature`), so catch the drift here. The step:
+   - **An approved canvas first (198/ADR-006).** Before the precondition below, read `DESIGN.md`
+     for a canvas link it names as **awaiting approval**. Put each one to the operator before the
+     fidelity judge runs, as one question that carries the link, "Approve these mocks?", answered
+     **Approve** or **Later** (one question per ask in a driven session).
+     - **On Approve,** resolve the system `work.ui.designSystem` names (an `artifact` link is the
+       system; a `name` is the one Design System you can open with exactly that title, and no
+       match or more than one is a stop naming every candidate's title and link). Read back the
+       canvas's `project/canvas.json`, every board it names, `project/ds/*/tokens.json` and the
+       type's `artifact-type/dc-runtime.js` into one scratchpad directory, keeping their published
+       paths. Then run `aof design-system mocks import <pulled-dir> --item <NN> --canvas <link>
+       --canvas-version <version> --system <link> --system-version <version> --approval
+       "<reference>" --json`, then `aof design-system mocks capture --item <NN> --json`, and name
+       the frames in `DESIGN.md`. **Those frames are the baseline handed to the judge.** A refusal
+       from either verb is a stop: report it.
+     - **On Later,** nothing is imported, and the binding checklist stays the baseline the judge
+       is handed.
    - **Renderability precondition — evaluated BEFORE any render is attempted, and before anything is spawned.** Resolve both halves: **(a) a base URL** — `--url` when given, else `work.ui.baseUrl`; and **(b) a renderer** — `work.ui.renderer` when declared, else the highest-revision Chromium found by GLOBBING the platform's `ms-playwright` cache. Glob it, never template a path: the cache layout is not stable (`chromium-1187 → chrome-win`, `chromium-1234 → chrome-win64`, plus `chromium_headless_shell-<rev>`), so a templated path is a bug with a release-number fuse. **Resolvable means EXISTS AND IS EXECUTABLE**, not merely that the key is set — a declared path that is not there is this precondition's finding, named with the path that failed, rather than a render-time crash. If either half is unresolved, or the surface declares no `Route`: **attempt no render at any breakpoint** — record the reason naming the missing key, the missing binary or the missing `Route`, return `INCONCLUSIVE`, spawn no designer session and no QA session, and continue the gate. The precondition is per surface, so a surface that resolves is still rendered and judged when a sibling surface does not.
    - **Render** each DESIGN surface by driving the resolved renderer directly, one render per breakpoint — `<renderer> --headless=new --disable-gpu --hide-scrollbars --window-size=<W>,<H> --screenshot="<absolute forward-slash path>" "<baseUrl><Route>"`. The output path is made absolute and forward-slashed on every platform before it is passed. A render that exits non-zero, exits zero but writes no file at the named path, writes a zero-byte file, or does not return within the step's own wait is `INCONCLUSIVE` with that failure recorded as the reason.
    - **Breakpoints.** Take the render at the defined breakpoints — the `390` / `768` / `1280` default (mobile / tablet / desktop), DESIGN-overridable per milestone (a surface's `DESIGN.md` may state its own widths). The breakpoint's width is what `--window-size=` carries, so each breakpoint is one invocation at its own width and one screenshot at its own output path; a render that dropped the width would be rendering a different surface than the one being judged.
@@ -123,6 +139,38 @@ that have content** — no empty "None" placeholders (absence of a section is in
    - **Hand off to the designer.** Spawn `aof-designer` to JUDGE the rendered screenshot they pass it (the ADR-001 hand-off) — give it the screenshot path(s) + the conformance baseline (the committed mock under `mocks/` and/or the binding checklist) and have it return the region-by-region verdict. Do NOT instruct the designer to run the browser itself — it has no `Bash`; it only judges the screenshot it is handed.
    - **Spawn QA.** Spawn `aof-qa` for the browser harness / regression / a11y — QA runs the Playwright harness, owns the `toHaveScreenshot` visual-regression that locks the designer-approved baseline, and the optional axe-core-via-Playwright a11y lane.
    - **Verdict.** The verdict is `CONFORMS` / `GAPS` / `INCONCLUSIVE`. It is `INCONCLUSIVE` when no base URL / screenshot is available or no baseline exists (no committed mock AND no binding checklist). A DESIGN surface with no renderable `Route` collapses to `INCONCLUSIVE` naming the missing `Route`. Name the missing baseline as the gap rather than inferring from component code — never read the component code and call it a `CONFORMS`/`GAPS` verdict; the honest answer is `INCONCLUSIVE` + "produce the missing baseline / render".
+
+   **The design system's re-sync (198/ADR-007) — a milestone's accept only, and only when
+   `work.ui.designSystem.mode` is `owned`.** The code is the system's source of truth: at a
+   milestone's accept the session re-syncs the system from the code, then checks that nothing
+   drifted. It does not run when a story is accepted: the milestone's accept follows. With `"mode":
+   "reference"` nothing is re-synced and nothing is published to the system, whatever the code
+   holds: the system is its owner's. Nothing is ever written from the system back to the code. The
+   steps, in this order:
+   1. **Resolve the system (ADR-005 §4).** An `artifact` link is the system. A `name` is the one
+      Design System you can open whose title equals it exactly. No match, or more than one, stops
+      verify before anything is published: name `name`, and every candidate's title and link.
+   2. **Read the system's `tokens.json` back** into the scratchpad, with its version, and run
+      `aof design-system check --tokens <it> --json` against the configured `source`.
+   3. **When it drifts**, run `aof design-system tokens --merge <it> --out <file> --ref <the
+      accepted commit> --json`. Drift before the re-sync is the expected input, and is not a
+      finding: the code moved, and the system follows it.
+   4. **Record it before publishing,** under `## Design-system re-sync` in `VERIFICATION.md`: the
+      system's link and its version, and what the merge changed, added and removed, as its `--json`
+      answer lists them.
+   5. **Publish the merged tokens** to the system, with the type's own procedure, keeping
+      `"editing": "code"`. Each component `DESIGN.md`'s `## Design-system changes` names has its
+      README and preview updated from the milestone's committed mocks, and is published with the
+      tokens.
+   6. **Read the tokens back and run `aof design-system check` again,** recording the new version
+      under `## Design-system re-sync`. Drift this second check still reports is logged under
+      `## Findings` with the check's report, and triaged in the findings step like any other finding.
+
+   When the first check exits 0 and `## Design-system changes` names no component, nothing is
+   published: `VERIFICATION.md` records the system as in sync at its version. When it exits 0 but
+   `## Design-system changes` names a component, there is no merge: each named component is
+   updated from the milestone's committed mocks and published, its tokens untouched, and the
+   record and the second check follow as above.
 2. **Human acceptance — only if `@uat` scenarios exist.** Spawn `aof-qa` to broker it: **stop and
    prompt the user** to perform each `@uat` procedure, then record their result + sign-off under
    **## User sign-off**. Skip this step entirely when there are no `@uat` scenarios (most

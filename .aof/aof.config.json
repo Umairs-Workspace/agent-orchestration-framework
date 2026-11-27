@@ -194,6 +194,13 @@
       "startToCloseMs": 14400000,
       "heartbeatMs": 1800000,
       "scheduleToCloseMs": 43200000
+    },
+    "ui": {
+      "designSystem": {
+        "enabled": true,
+        "artifact": "https://claude.ai/artifact/26W8xGGCgcAmQ7gP3ndhn5",
+        "mode": "reference"
+      }
     }
   },
   "memory": {

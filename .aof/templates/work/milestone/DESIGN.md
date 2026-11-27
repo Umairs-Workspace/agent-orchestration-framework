@@ -78,6 +78,30 @@ doc: design
 - **The states (empty / loading / error / populated):** <how each region/component looks in each state>
 - **The design ramp each uses:** <the spacing / type / colour ramp each region or component draws from>
 
+## Design-system changes
+
+<!--
+  "owned" mode (work.ui.designSystem): the code is the system's source of truth (198/ADR-007). Name
+  every design-system change this milestone ships, one line each:
+  - a token, with its new value: `color-primary` → `hsl(174 72% 27%)`;
+  - a component, with what changed: `scope segment` — gains a disabled state.
+  Or write `None.` At the milestone's accept, verify re-syncs the system from the code and
+  republishes each component named here from this milestone's committed mocks.
+-->
+
+None.
+
+## Design-system gaps
+
+<!--
+  "reference" mode (work.ui.designSystem): the system is someone else's and is never written to
+  (198/ADR-007). Name each thing a surface needs that the system lacks, one line each, for the
+  system's owner: `a warning colour` — the filter's error chip. The mock draws the gap with the
+  system's existing tokens. Refine's hand-back lists every gap named here.
+-->
+
+None.
+
 ## Behavioural outcomes (cross-reference)
 
 <!-- The user-visible BEHAVIOUR is specified as task scenarios, not here. Link to them. -->
