@@ -93,6 +93,13 @@ gate, which has not run (see the accept decision).
   `test/command/application-assembly.test.mjs` and `packages/core/test/practice-render-lane.suite.mjs`,
   by file, with `AOF_GLOBAL_HOME` isolated. Result: 459 cases, 0 failures. The work-init goldens
   match. verifies → 01 E26–E27, 02 E25–E29, FF-19805.
+- **Regression gate 1, at `c5dae319`: red** (`REGRESSION.md`), on three pins F-07 moved, each
+  green alone after its fix at `1569997c`: the rasterizer's `spawn` restamped in
+  `scripts/workspace-runtime-audit.json` (`core-workspace`); `node:http` added to
+  `svg-rasterizer.mjs`'s allowed imports (`yarn-installation`); and FF-19805 reading mounts
+  through `mountedNames` from `@aof/design-system/mocks` rather than its own pattern (FF-11901).
+  The row's `not isolated` cases are red in the pool and green alone, and do not fail it. 307
+  cases, 0 failures, by file. The gate runs once more on the fixed tree.
 - No milestone surface of 198 has a `DESIGN.md`, so no design-conformance render applies. No task
   carries `@uat`.
 

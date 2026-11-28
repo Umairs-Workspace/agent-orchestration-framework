@@ -1,0 +1,15 @@
+<!-- The regression gate's evidence (96/ADR-008). Appended by the gate command; never hand-written. -->
+# Regression gate
+
+## Gate runs
+
+One row per gate run, appended by `aof work regression-gate <ref>`. A rerun APPENDS: the newest row is the one
+the accept door reads, and the earlier rows are the milestone's history. A row whose commit,
+instant, scope or result is missing makes this document UNREADABLE rather than green — repair it
+by hand rather than deleting the row, because a row nobody can read and a gate nobody ran are the
+same fact. A `override` row is a recorded reason for accepting WITHOUT a green gate
+(ADR-008 §4), never a gate result.
+
+| commit | instant | scope | result | detail |
+|---|---|---|---|---|
+| c5dae319e2c336fb5bbcc8402898e3717293b017 | 2026-11-28T17:23:30.620Z | all | red | workspace-boundaries/all actual owners are scanned and every owned array case is registered exactly once, yarn-installation/extracted kernels cannot import core, legacy source, providers or sibling internals, arch/119 FF-11901 · 121: NO control under test/arch/ spells an import-specifier extractor of its own — the one home is test/support/module-family.mjs, and the remainder is a named, shrink-only baseline · not isolated: 201/03 task 00 E1 + outline (seed 177 / seed 178 / no arguments) · a seeded sample is the same sample every time: two runs of --sample 40 --seed 177 replay the same 40 in the same order, seed 178 replays a different 40, and no arguments replays 40 with the seed 177, 201/03 task 02 outline · a judge that cannot answer does not pass for a grade — the judge does not answer in time for 3 of 40 recalls: those 3 are reported as ungraded and left out of every average, and the report says 37 recalls were graded, 201/03 task 02 outline · a judge that cannot answer does not pass for a grade — the judge answers with no grades in it for 3 of 40 recalls: those 3 are reported as ungraded and left out of every average, and the report says 37 recalls were graded, 156 — real resumed loop reports missing assets without creating another attempt, 130/01 stop-request/02 a real interval never holds a finished process open — a child that starts a source with the real process and the default pollMs exits on its own, 59/02 00.2: a row claiming green over a control that FAILS is contradicted, anchored on the item whose register makes the claim, carrying the message the control actually produced, 59/02 00.2b: a GREEN row whose result prose names the word "red" is contradicted, not merely changed — the register-corpus blocker, in the dangerous direction, 172/00 task01 E1 · the first delivery starts a session in the project root, typed the invocation, 172/00 task01 E2 · two subscribers on one key share one session and one live turn, 172/00 task01 E7 · a subscriber returning within ten minutes stops the idle clock, work-ui-verb-rename/00 aof work ui launches the board on the default 127.0.0.1:4180 with the ui human line and the /board URL, 69/04 task 02: independent dispatch processes observe inspect-plan-materialise atomically, test/loop/lane-is-local-slot.test.mjs: executed -1 of 17 assigned cases · sharded · 56.0 min |
