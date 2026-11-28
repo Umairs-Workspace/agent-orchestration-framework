@@ -146,9 +146,9 @@
   {
     "file": "packages/execution/src/svg-rasterizer.mjs",
     "kind": "child-process",
-    "expression": "spawn(\n        browser.path,\n        browserArgv({ kind: browser.kind, width, height, scale, userDataDir, pngPath, sourcePath }),\n        { stdio: [\"ignore\", \"ignore\", \"pipe\"], windowsHide: true },\n      )",
-    "digest": "3823ba6751c27f68d014a26ea64450ddca2b269c1955a9b3bddb718bda3be239",
-    "sourceDigest": "f321a0d3c1cf50d3d501d124233c26550eac42729182b254dd67fd74678cc972",
+    "expression": "spawn(\n        browser.path,\n        browserArgv({ kind: browser.kind, width, height, scale, userDataDir, pngPath, sourcePath, sourceUrl, settleMs }),\n        { stdio: [\"ignore\", \"ignore\", \"pipe\"], windowsHide: true },\n      )",
+    "digest": "0adf671ac705fc6f4bf69708d99c663ad0a665b9f8b042b07178e39169b91957",
+    "sourceDigest": "a4eb3fb3d6b4f7a170e34bc70eb709bfd496e5c37b0af32f2fc34b4b10bf94f9",
     "reason": "Runs a located browser executable with the rasterizer's one argv (an SVG, or a page at its board size, 198/02); browser paths are external tool inputs."
   },
   {

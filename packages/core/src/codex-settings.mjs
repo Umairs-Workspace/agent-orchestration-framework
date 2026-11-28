@@ -144,12 +144,13 @@ export async function checkCodexTarget(output, { targetDir = process.cwd(), glob
 // 204/ADR-002 §2: each co-authored path merges by its kind.
 export async function mergeCoAuthoredOutput(output, prior) {
   let current;
+  let missing = false;
   try { current = await readFile(output.absolutePath, "utf8"); }
-  catch (error) { if (error.code !== "ENOENT") throw error; current = ""; }
+  catch (error) { if (error.code !== "ENOENT") throw error; current = ""; missing = true; }
   let merged;
   const name = portable(output.path);
   if (name.endsWith("/config.toml")) merged = mergeToml(output, current, prior);
-  else if (name.endsWith("/hooks.json")) merged = mergeHooks(output, current, prior);
+  else if (name.endsWith("/hooks.json")) merged = mergeHooks(output, current, prior, { missing });
   else if (name === ".mcp.json") merged = mergeMcpServers(output, current, prior);
   else merged = mergeGuidance(output, current, prior);
   return { ...output, ...merged, hash: hashContent(merged.content) };
@@ -249,13 +250,14 @@ function parseHooks(output, text) {
   return value;
 }
 
-function mergeHooks(output, current, prior) {
+function mergeHooks(output, current, prior, { missing = false } = {}) {
   const found = parseHooks(output, current);
   const wanted = parseHooks(output, output.content);
   const unsupportedEvents = Object.keys(wanted.hooks ?? {}).filter(event => !CODEX_PROFILE.hookEvents.includes(event));
   for (const event of unsupportedEvents) delete wanted.hooks[event];
   const recorded = prior?.ownership?.groups ?? {};
-  if (prior && !prior.ownership && hashContent(current) !== prior.hash) throw refusal(output, "legacy hook file was modified");
+  // A legacy hook file that is gone holds no edit to keep: it is written afresh (198 verify, voice-vox-web).
+  if (prior && !prior.ownership && !missing && hashContent(current) !== prior.hash) throw refusal(output, "legacy hook file was modified");
   const next = structuredClone(found);
   next.hooks ??= {};
   const groups = {};

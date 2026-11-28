@@ -18,6 +18,7 @@ import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { mountedNames } from "@aof/design-system/mocks";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -63,8 +64,6 @@ function sourcesOf(text) {
   return [...out, ...importSpecifiers(text)];
 }
 
-const DC_IMPORT = /<dc-import\b[^>]*?\bname\s*=\s*(["'])([^"']+)\1/giu;
-
 // `<board>: <source> (<why>)` for every source an offline baseline cannot keep. A `<dc-import>`
 // mounts a sibling `.dc.html`; one the import does not hold renders blank offline (198 F-07).
 export function selfContainedBreaches(boards) {
@@ -72,8 +71,8 @@ export function selfContainedBreaches(boards) {
   const held = new Set(boards.map(({ file }) => file));
   for (const { file, text } of boards) {
     const dir = file.includes("/") ? file.slice(0, file.lastIndexOf("/") + 1) : "";
-    for (const match of text.matchAll(DC_IMPORT)) {
-      if (!held.has(`${dir}${match[2]}.dc.html`)) breaches.push(`${file}: <dc-import name="${match[2]}"> (${match[2]}.dc.html is not in the import)`);
+    for (const name of mountedNames(text)) {
+      if (!held.has(`${dir}${name}.dc.html`)) breaches.push(`${file}: <dc-import name="${name}"> (${name}.dc.html is not in the import)`);
     }
     for (const source of sourcesOf(text)) {
       if (source.startsWith("#") || source.startsWith("data:")) continue;

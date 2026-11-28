@@ -151,7 +151,8 @@ export const yarnInstallationTests = [
         'sync-work.mjs': ['node:path', 'node:fs/promises'],
         'notion-sync-work.mjs': ['node:fs'],
         } : name === 'execution' ? {
-        "svg-rasterizer.mjs": ["node:child_process","node:fs","node:fs/promises","node:os","node:path","node:url","@aof/contracts/error"],
+        // 198 F-07: a page is served from its own folder on a loopback port for its render (`serveFolder`).
+        "svg-rasterizer.mjs": ["node:child_process","node:fs","node:fs/promises","node:http","node:os","node:path","node:url","@aof/contracts/error"],
         'run-transitions.mjs': [],
         'reconcile.mjs': ["node:fs/promises"],
         'rubric-process.mjs': ['node:child_process'],

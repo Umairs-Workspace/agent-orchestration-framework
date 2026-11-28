@@ -176,16 +176,20 @@ export function withFrames(readme, frames) {
 // the board and the file the pulled canvas lacks.
 const DC_IMPORT = /<dc-import\b[^>]*?\bname\s*=\s*(["'])([^"']+)\1/giu;
 
+// The names a board's text mounts, in order, each once. The one reading of `<dc-import>`, which
+// FF-19805 shares.
+export const mountedNames = (text) => [...new Set([...String(text).matchAll(DC_IMPORT)].map((match) => match[2]))];
+
 export function componentsOf(boards, texts = {}) {
   const components = [];
   const queue = [...boards];
   for (let next = queue.shift(); next !== undefined; next = queue.shift()) {
     const dir = next.includes("/") ? next.slice(0, next.lastIndexOf("/") + 1) : "";
-    for (const match of String(texts[next] ?? "").matchAll(DC_IMPORT)) {
-      const rel = `${dir}${match[2]}${BOARD_SUFFIX}`;
+    for (const name of mountedNames(texts[next] ?? "")) {
+      const rel = `${dir}${name}${BOARD_SUFFIX}`;
       if (boards.includes(rel) || components.includes(rel)) continue;
       if (pathFault(rel) != null || texts[rel] === undefined) {
-        return { refusal: { message: `"${next}" mounts "${match[2]}" (<dc-import>), but the pulled canvas lacks "${rel}", so the board would render blank offline. Read it back too, then import again. Nothing was written.`, code: "design-system-mocks-incomplete" } };
+        return { refusal: { message: `"${next}" mounts "${name}" (<dc-import>), but the pulled canvas lacks "${rel}", so the board would render blank offline. Read it back too, then import again. Nothing was written.`, code: "design-system-mocks-incomplete" } };
       }
       components.push(rel);
       queue.push(rel);

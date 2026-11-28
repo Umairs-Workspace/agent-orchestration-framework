@@ -18,7 +18,7 @@ import { writeText } from "@aof/foundation/fs";
 import { existsSync } from "node:fs";
 import { createRenderPlan, planApplyActions, executeApplyActions, createLockManifest, formatFriendlyApplyAction } from "../src/render-plan.mjs";
 import { hashContent, readLock, writeLock } from "../src/lock.mjs";
-import { prepareCodexWorktree, codexJournalPath, recordCodexApply, indexMergedToml } from "../src/codex-settings.mjs";
+import { prepareCodexWorktree, codexJournalPath, recordCodexApply, indexMergedToml, mergeCoAuthoredOutput } from "../src/codex-settings.mjs";
 import { readToml } from "../../../test/golden/assets-apply.test.mjs";
 import { assets } from "./support/assets-services.mjs";
 import { updateWork } from "../src/work/update.mjs";
@@ -327,6 +327,17 @@ export const codexOwnershipTests = [
       assert.equal(await read(root, ".codex/unrelated.md"), "unrelated\n");
       assert.ok(!existsSync(codexJournalPath(root)));
     }) },
+  { name: "198 verify · a legacy hook file that was deleted is written afresh, and one that was edited still refuses",
+    run: () => fixture(async root => {
+      const wanted = `${JSON.stringify({ hooks: { SessionStart: [{ hooks: [{ type: "command", command: "aof hook session-start" }] }] } }, null, 2)}\n`;
+      const output = { path: ".codex/hooks.json", absolutePath: path.join(root, ".codex", "hooks.json"), content: wanted };
+      const prior = { path: ".codex/hooks.json", hash: hashContent("{\"hooks\":{}}\n") }; // a legacy lock entry: no ownership
+      const written = await mergeCoAuthoredOutput(output, prior);
+      assert.equal(written.ownership.kind, "hooks", "the missing file is written, and owned from now on");
+      await put(root, ".codex/hooks.json", "{\"hooks\":{},\"operator\":true}\n");
+      await assert.rejects(mergeCoAuthoredOutput(output, prior), (error) => error.code === "codex-output-conflict" && /legacy hook file was modified/.test(error.message));
+    }),
+  },
   { name: "154/04 ownership: identical unowned native bytes are never silently adopted",
     run: () => fixture(async root => {
       const desired = await createRenderPlan(config(), { targetDir: root, runtimes: ["codex"] });
