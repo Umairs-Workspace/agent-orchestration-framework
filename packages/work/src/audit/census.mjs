@@ -424,11 +424,37 @@ async function workspaceExportMap(repoRoot) {
       for (const [key, target] of Object.entries(exports)) {
         if (typeof target !== "string") continue;
         const specifier = key === "." ? pkg.name : `${pkg.name}/${key.replace(/^\.\//u, "")}`;
+        if (key.includes("*") && target.includes("*")) {
+          // A subpath pattern (`"./*": "./src/*.ts"`) places every file its target matches, each
+          // under the specifier the same `*` text makes, as Node resolves it.
+          for (const [match, file] of await patternFiles(repoRoot, directory, target)) out.set(specifier.replace("*", match), file);
+          continue;
+        }
         out.set(specifier, path.posix.join(directory, target).replace(/^\.\//u, ""));
       }
     }
   }
   return out;
+}
+
+// The files a pattern export's target (`./src/*.ts`) matches inside one workspace: `[match, file]`,
+// where `match` is the text the `*` stood for. `*` may span directories, as in Node's resolver.
+async function patternFiles(repoRoot, directory, target) {
+  const [prefix, suffix] = target.replace(/^\.\//u, "").split("*");
+  const base = prefix.slice(0, prefix.lastIndexOf("/") + 1);
+  const found = [];
+  async function walk(rel) {
+    const entries = await readdir(path.join(repoRoot, directory, rel), { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      const child = rel === "" ? entry.name : `${rel}/${entry.name}`;
+      if (entry.isDirectory() && entry.name !== "node_modules") await walk(child);
+      else if (entry.isFile() && child.startsWith(prefix) && child.endsWith(suffix) && child.length >= prefix.length + suffix.length) {
+        found.push([child.slice(prefix.length, child.length - suffix.length), path.posix.join(directory, child)]);
+      }
+    }
+  }
+  await walk(base.replace(/\/$/u, ""));
+  return found;
 }
 
 // A workspace's own `test/` directory: its index registers ARRAY suites with the runner, and its

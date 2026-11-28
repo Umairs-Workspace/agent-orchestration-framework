@@ -93,3 +93,25 @@ test('190/01 the suite walk skips node_modules, a workspace test root counts arr
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test('210 F-19 a subpath pattern export places every file its target matches, as Node resolves it', async () => {
+  const root = await mkdtemp(path.join(await realpath(os.tmpdir()), 'aof-210-f19-census-'));
+  try {
+    const write = async (rel, text = 'export {};\n') => { await mkdir(path.dirname(path.join(root, rel)), { recursive: true }); await writeFile(path.join(root, rel), text); };
+    await write('package.json', JSON.stringify({ workspaces: ['packages/*'] }));
+    await write('packages/contracts/package.json', JSON.stringify({ name: '@acme/contracts', exports: { '.': './src/index.ts', './*': './src/*.ts' } }));
+    await write('packages/contracts/src/index.ts');
+    await write('packages/contracts/src/credential.ts');
+    await write('packages/contracts/src/nested/view.ts');
+    await write('packages/contracts/src/notes.md');
+    await write('packages/contracts/node_modules/dep/src/skip.ts');
+    const census = createAuditCensus({ runBounded: async () => { throw Error('no child'); }, DEFAULT_DEADLINE_MS: 1, isToolkitRoot: () => false, toolkitProgram: () => null, nodeExecutable: () => process.execPath });
+    const exports = await census.workspaceExportMap(root);
+    assert.equal(exports.get('@acme/contracts'), 'packages/contracts/src/index.ts');
+    assert.equal(exports.get('@acme/contracts/credential'), 'packages/contracts/src/credential.ts');
+    assert.equal(exports.get('@acme/contracts/nested/view'), 'packages/contracts/src/nested/view.ts', '* spans directories');
+    assert.equal([...exports.keys()].some(key => key.includes('notes') || key.includes('skip')), false, 'only files the target matches, and never node_modules');
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
