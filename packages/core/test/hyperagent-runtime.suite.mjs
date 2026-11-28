@@ -90,10 +90,10 @@ export const hyperagentRuntimeTests = [
     run: async () => withSidecar(
       // 179/02 — the packaged binary carries every contributor's assets, the practices' after the
       // integrations' (scripts/sea-asset-manifest.mjs), so the sidecar holds @aof/learning's too, and
-      // (192/02) @aof/specification-by-example's.
+      // (192/02) @aof/specification-by-example's, and (198/00) @aof/design-system's.
       async (bundle) => {
         await cp(PACKAGE_ASSETS, path.join(bundle, "packages", "integration-hyperagent"), { recursive: true });
-        for (const practice of ["learning", "specification-by-example"]) {
+        for (const practice of ["learning", "specification-by-example", "design-system"]) {
           await cp(path.resolve(import.meta.dirname, "..", "..", practice, "assets"), path.join(bundle, "packages", practice), { recursive: true });
         }
       },

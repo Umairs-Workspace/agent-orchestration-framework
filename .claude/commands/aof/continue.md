@@ -266,7 +266,8 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      `STATE.md` `## Feedback (for retro)` section (distilled into `RETROSPECTIVE.md` at `aof:verify`).
 
      <build_terminator>
-     Read the file named in `work.test.instructions` before running anything. Choose the suites
+     **Run the story's tests on the suites you choose.** Read the file named in
+     `work.test.instructions` before running anything. Choose the suites
      from those instructions and the changed files, then run `aof test <suite>… --reason "<why these suites>"`.
      Use `aof test --suggest` to check importers and path mentions; it cannot see paths built from fragments
      or source-to-source reach through the application assembly. State any deliberate exclusions by

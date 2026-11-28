@@ -290,7 +290,7 @@
         "file": "procedure.md",
         "sourceFile": "procedure.md"
       },
-      "hash": "sha256:da23be6a63c42d830be1fcda5a56870d8795ced1742ac8981185335e65eb74f4"
+      "hash": "sha256:b9a770de413e94e81e750bcaa779bfec16741e1ef421bd150aa112dcd69226cb"
     },
     {
       "path": ".agents/skills/aof-continue/agents/openai.yaml",

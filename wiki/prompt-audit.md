@@ -1,14 +1,14 @@
 ---
 doc: prompt-audit
 created: 2026-10-07
-updated: 2026-10-31
+updated: 2026-11-28
 ---
 # Runtime prompt audit
 
 The living audit of every shipped descriptor role, procedure and skill. Milestone 154 authored it;
 its delivery-time copy and evaluation evidence stay in that milestone folder, and a member added
 since is audited HERE, in the change that ships it (163 added `command:questions`, PR #13 added `command:diagram-review`, 168 added
-`command:prototype`, 179/00 added `command:manual`, 179/02 added `command:teach` (Claude Code only), 190/04 added `command:map-tests`; the Hyperagent integration added `command:hyperplan`, which delegates planning
+`command:prototype`, 179/00 added `command:manual`, 179/02 added `command:teach` (Claude Code only), 190/04 added `command:map-tests`, 198/01 added `command:design-system` (Claude Code only); the Hyperagent integration added `command:hyperplan`, which delegates planning
 to the AOF Planner over Hyperagent's MCP endpoint, and the planner's seven skills — `aof-prd` plus
 six full rewrites of the planning procedures for a GitHub-integration agent — see
 wiki/hyperagent-support.md. Since 169/02 those skills are the integration package's planner files,
@@ -82,6 +82,7 @@ section when shared obligations change. Installation is ownership guarded, not a
 | command:review | extract | Keep critical phase gates in entry; attach only this native procedure and the shared contract. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | entry + own procedure + shared contract (976 common-body words baseline) | procedure.md; {{references.workflow-contract}} |
 | command:shatter | adapt | Retain mechanical CLI procedure; adapt native invocation and supported question/role handling. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | selected entry only (1836 common-body words baseline) | none |
 | command:teach | keep | Claude Code only (179/ADR-007): the member declares `mapped: false`, so Codex and OpenCode render nothing and no parity is claimed. | Claude tools only; no Codex render | The teaching boundary is the session's instruction, not enforced tool isolation (179/ADR-005); host approval/sandbox governs | selected entry only (1330 common-body words baseline) | none |
+| command:design-system | keep | Claude Code only (198 is for Claude alone; its fragments name their runtime under 198/ADR-001): the member declares `mapped: false`, so Codex and OpenCode render nothing and no parity is claimed; the Artifact calls it drives exist only in Claude Code. | Claude tools only; no Codex render | Every Artifact publish and read is this session's own call, not enforced tool isolation; the `aof design-system` verbs write only the project's token file, `work.ui.designSystem` and the milestone's `mocks/`; host approval/sandbox governs | selected entry only (1537 common-body words at 198) | none |
 | command:validate | adapt | Retain mechanical CLI procedure; adapt native invocation and supported question/role handling. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | selected entry only (750 common-body words baseline) | none |
 | command:verify | extract | Keep critical phase gates in entry; attach only this native procedure and the shared contract. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | entry + own procedure + shared contract (4012 common-body words baseline) | procedure.md; {{references.workflow-contract}} |
 | skill:codex-implementation | keep | Claude-only optional delegation skill; retain its supported host and opt-in policy. | Claude CLI delegation only | Existing opt-in permissions retained | selected entry only (679 common-body words baseline) | none |

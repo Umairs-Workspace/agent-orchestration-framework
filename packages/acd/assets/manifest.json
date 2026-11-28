@@ -210,7 +210,7 @@
         "id": "aof-continue",
         "kind": "skill"
       },
-      "hash": "sha256:da23be6a63c42d830be1fcda5a56870d8795ced1742ac8981185335e65eb74f4"
+      "hash": "sha256:b9a770de413e94e81e750bcaa779bfec16741e1ef421bd150aa112dcd69226cb"
     },
     {
       "path": ".agents/skills/aof-delegate/SKILL.md",
@@ -1290,7 +1290,7 @@
         "id": "continue",
         "kind": "command"
       },
-      "hash": "sha256:d2b93a70e8af59ce73a568389ffa2ad68112fb6bc6baad3d7ae8b7d0ad7dde31"
+      "hash": "sha256:ee1ac1c7ce490a0a060a64256dd415fd1ba87d0761d4d40cc65324b36d29ebc1"
     },
     {
       "path": ".claude/commands/aof/delegate.md",
