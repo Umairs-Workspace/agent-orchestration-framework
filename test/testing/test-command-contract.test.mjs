@@ -582,7 +582,7 @@ export const testCommandContractTests = [
       const stub = launcher();
       const out = await runTest({ files: ["test/a.test.mjs"], reason: "probe" }, { projectRoot: root, config, walk, run: stub.run });
       assert.equal(out.refusal?.code, "test-config-key-removed");
-      assert.ok(out.refusal.message.includes("work.test.couplings") && out.refusal.message.includes("delete it"), out.refusal.message);
+      assert.ok(out.refusal.message.includes("work.test.couplings") && out.refusal.message.includes("/aof:map-tests"), out.refusal.message);
       assert.deepEqual(stub.handed, []);
       const checks = testLayoutChecks({ compiled: resolveTestToolchain(config, { projectRoot: root }), compiledGate: resolveTestGate(config) });
       const removed = checks.find((check) => check.id === "test-config-key-removed");

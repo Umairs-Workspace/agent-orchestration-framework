@@ -43,7 +43,7 @@
       "style": ".aof/diagrams/style.md"
     },
     "test": {
-      "instructions": "wiki/TESTING.md",
+      "instructions": "wiki/work/TESTING.md",
       "command": "node",
       "args": [
         "scripts/test.mjs"

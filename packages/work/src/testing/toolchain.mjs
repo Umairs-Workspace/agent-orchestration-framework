@@ -340,7 +340,7 @@ function resolveTestToolchain(config, options = {}) {
 
   // 210/ADR-008: couplings fed the retired selector. Present at all is the refusal, naming the key.
   if (declared.couplings !== undefined) {
-    return refusal(TEST_CONFIG_KEY_REMOVED, "work.test.couplings", "work.test.couplings was removed with the old test selection (210/ADR-008) — delete it from the aof config. Agents choose suites from the project's testing instructions (work.test.instructions) instead.");
+    return refusal(TEST_CONFIG_KEY_REMOVED, "work.test.couplings", "work.test.couplings was removed with the old test selection (210/ADR-008) — run /aof:map-tests to carry its entries into the project's testing instructions (work.test.instructions) and delete the key.");
   }
 
   // 210/ADR-001: absence is advisory; a declared file must be usable before any run.

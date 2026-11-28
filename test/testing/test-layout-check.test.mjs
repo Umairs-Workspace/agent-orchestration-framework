@@ -124,7 +124,7 @@ export const testLayoutCheckTests = [
     name: "210/00 E10 E11 · repository instructions declare coverage, no-run records and hazards",
     async run() {
       const config = JSON.parse(await readFile(path.join(repoRoot, ".aof/aof.config.json"), "utf8"));
-      assert.equal(config.work.test.instructions, "wiki/TESTING.md");
+      assert.equal(config.work.test.instructions, "wiki/work/TESTING.md", "the instructions live under work.dir, with aof's other artifacts");
       const text = await readFile(path.join(repoRoot, config.work.test.instructions), "utf8");
       for (const phrase of ["wiki/work/**", "needs no run", "test/store/global-work-propagation.test.mjs", ":4182", "node:test", "node scripts/test-workspace.mjs", "whole tree is the regression gate's"]) assert.ok(text.includes(phrase), phrase);
     },
