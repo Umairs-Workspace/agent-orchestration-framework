@@ -334,7 +334,7 @@ const reviewCommandTests = [
     async run() {
       const text = await reviewText();
       const mint = text.indexOf("**Mint the run before anything else** — `aof work run-start <ref> --json`");
-      const tests = text.indexOf("**Run the story's tests first** — `aof test --scope impacted --story <ref>`");
+      const tests = text.indexOf("**Run the story's tests first.** Read the file named in `work.test.instructions`");
       const ladder = text.indexOf("**Walk the gate ladder**");
       const lanes = text.indexOf("**Run the review lanes**");
       assert.ok(mint >= 0 && tests > mint && ladder > tests && lanes > ladder, "mint, then the tests, then the ladder, then the lanes");

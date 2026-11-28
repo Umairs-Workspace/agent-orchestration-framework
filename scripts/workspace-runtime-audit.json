@@ -444,7 +444,7 @@
     "kind": "child-process",
     "expression": "execFile(\"git\", args, { cwd, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) =>\n      resolve({\n        stdout: String(stdout ?? \"\"),\n        stderr: String(stderr ?? \"\"),\n        status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0,\n      }))",
     "digest": "e45b0aba4f94bfe7a064715e6b6a3ce6e2779a4e682737861598b04cead9420b",
-    "sourceDigest": "57d8a5366bf62e6a8f18b53bdb541469e91893f16de915841f3db8967c6a1630",
+    "sourceDigest": "e9e0da52756e23894443ea8a0c1aba0dc887b6300bae0f72ca9b4ada222d89b4",
     "reason": "Git-only bounded comparison reader; no application module entry."
   },
   {
@@ -828,7 +828,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), \"test.mjs\")).href)",
     "digest": "21a42fb352806b055fe00b19220e5c034f37c3cfb7aedb55d3a7dc625401743f",
-    "sourceDigest": "9b0a4cdcc78e7244489db7355e04e55aa8f57a8bc20e182988260817651122c5",
+    "sourceDigest": "fcf40321927ab8619beaef4328438aeb5fe41fc1754c88ce6036d105c775c716",
     "reason": "Repository test tooling: a selection that holds a suite importing the runner sits on an import ring with that suite's directory index; the entry goes through `scripts/test.mjs` first, exactly as the whole-tree run does, and only for such a selection."
   },
   {
@@ -836,7 +836,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(resolve(file)).href)",
     "digest": "4c6a4a5db69c974214972265d17a812e422581afba4b3ba8f2c3816b7ad1e3f0",
-    "sourceDigest": "ae35c6b5d192702cad28e52009331ec887008aeb6d2614503c33248c5498f53a",
+    "sourceDigest": "ef1fdf61671d3a9cefa070197896cc7677e91b6953a647d479619fe236496240",
     "reason": "Repository test tooling: `loadSelected` imports exactly the suite files a selection names, by path - for the runner's `--only` and for the shard entry a focused `aof test` launches - and reports an unusable one by path. No production package consumes this dynamic path."
   },
   {
@@ -964,7 +964,7 @@
     "kind": "child-process",
     "expression": "spawnSync(locator, [binary], { encoding: \"utf8\" })",
     "digest": "dc5db708145856b8186e5cca621b17108ba30b7c9b88167999c0d2962c14ec42",
-    "sourceDigest": "add7b14f7a57fd6a74d44eaa010056fc04e7cbb2f799259ecf268289a668cff7",
+    "sourceDigest": "61c01a25a8955839ec60dc1413bb8ebd9217ba1d92eab080a08200e95c70bdc0",
     "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed. 154/01 adds runtime execution inspection; the platform binary locator call and its argv are unchanged. 180/01 adds the memory node's legacy warnings and doctor check; the locator call and its argv are unchanged. 190/04 adds the test-layout family's tracked-file read beside it; the locator call and its argv are unchanged. 193/02-03 add the operator profile's diagnostics and the operator-aware switch beside the examples gate; this call and its argv are unchanged. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 199 adds the per-person local config (its provenance, its diagnostics and the local file read beside the project config) around it; this call and its argv are unchanged. The project-only machine-mesh-key warning (`config-mesh-machine-key`) is added beside it; this call and its argv are unchanged. Its identity keys are told to pin the id first, never just delete it; this call and its argv are unchanged. 204/01 counts a co-authored refusal as generated-output drift in the project doctor, beside it; this call and its argv are unchanged."
   },
   {
@@ -972,16 +972,8 @@
     "kind": "child-process",
     "expression": "spawnSync(\"git\", [\"ls-files\", \"-z\"], { cwd: projectDir, encoding: \"utf8\", timeout: 30_000, maxBuffer: 256 * 1024 * 1024 })",
     "digest": "cd18cc5d7c87dfe071a2d076953b4486b6c2dbe3027cba91c4ec321e7fc5fae0",
-    "sourceDigest": "add7b14f7a57fd6a74d44eaa010056fc04e7cbb2f799259ecf268289a668cff7",
+    "sourceDigest": "61c01a25a8955839ec60dc1413bb8ebd9217ba1d92eab080a08200e95c70bdc0",
     "reason": "190/ADR-008 §1: the project doctor's test-layout family lists the tracked files with `git ls-files` at its own edge, bounded by a timeout, to judge the declared test roots against the tree. It reads names only and constructs no application module. 193/02-03 add the operator profile's diagnostics and the operator-aware switch beside the examples gate; this call and its argv are unchanged. Chores 195–197 (the loop-recovery branch, merged 2026-11-16) edit this file around it; this call and its argv are unchanged. 199 adds the per-person local config (its provenance, its diagnostics and the local file read beside the project config) around it; this call and its argv are unchanged. The project-only machine-mesh-key warning (`config-mesh-machine-key`) is added beside it; this call and its argv are unchanged. Its identity keys are told to pin the id first, never just delete it; this call and its argv are unchanged. 204/01 counts a co-authored refusal as generated-output drift in the project doctor, beside it; this call and its argv are unchanged."
-  },
-  {
-    "file": "packages/core/src/application/bindings/config-inspect.mjs",
-    "kind": "child-process",
-    "expression": "spawnSync(\"git\", [\"log\", \"-1\", \"--format=%cI\"], { cwd: projectDir, encoding: \"utf8\", timeout: 30_000 })",
-    "digest": "febff93b7b5a19159979342ba0408bbdd32ff9e09aa7cd8c18f852b8f469499f",
-    "sourceDigest": "add7b14f7a57fd6a74d44eaa010056fc04e7cbb2f799259ecf268289a668cff7",
-    "reason": "Chore 197's `test-layout-graph-fresh` doctor lane reads HEAD's commit time with `git log -1 --format=%cI` at its own edge, bounded by a timeout, to compare it with the code graph's build time. It reads one timestamp and constructs no application module. 199 adds the per-person local config (its provenance, its diagnostics and the local file read beside the project config) around it; this call and its argv are unchanged. The project-only machine-mesh-key warning (`config-mesh-machine-key`) is added beside it; this call and its argv are unchanged. Its identity keys are told to pin the id first, never just delete it; this call and its argv are unchanged. 204/01 counts a co-authored refusal as generated-output drift in the project doctor, beside it; this call and its argv are unchanged."
   },
   {
     "file": "packages/core/src/application/bindings/work/doctor.mjs",

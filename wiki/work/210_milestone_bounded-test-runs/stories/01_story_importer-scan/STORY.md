@@ -5,10 +5,10 @@ slug: importer-scan
 title: "A change is matched to the suites that import or name it, from a fresh scan"
 parent: 210
 depends: []
-status: not-started
+status: done
 owner: product-owner
 created: 2026-11-26
-updated: 2026-11-26
+updated: 2026-11-27
 schema: 1
 aofVersion: 0.1.0
 adrs: [ADR-003]
@@ -27,8 +27,8 @@ a suite that reads a file's text is not missed.
 
 ## Tasks
 
-- [ ] [import and helper reach](tasks/00_import-and-helper-reach.feature)
-- [ ] [path mentions and honest misses](tasks/01_path-mentions-and-misses.feature)
+- [x] [import and helper reach](tasks/00_import-and-helper-reach.feature)
+- [x] [path mentions and honest misses](tasks/01_path-mentions-and-misses.feature)
 
 ## Notes
 

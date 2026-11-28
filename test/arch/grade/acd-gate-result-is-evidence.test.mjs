@@ -3,7 +3,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-9606 (96/ADR-008 §1, §2) — THE GATE'S RESULT IS EVIDENCE: a record with a frozen shape, in the
 // item's own folder, that a rerun APPENDS to rather than overwrites.
 //
-// `aof test --scope all` already computed the gate boolean and threw it away. Replacing that with a
+// `aof test --all` already computed the gate boolean and threw it away. Replacing that with a
 // record is only worth doing if the record stays a record: a document that gets overwritten, or one
 // whose half-written row renders as an absence, is the same boolean with more ceremony. Each claim
 // below is one of the ways that regression happens.
@@ -206,7 +206,7 @@ export const archTests = [
     name: "arch/96/04 FF-9606 (5) A RUN THAT WAS NOT A WHOLE-TREE RUN IS RECORDED AND DOES NOT SATISFY THE DOOR",
     run: () => withItem(async ({ recordPath, run }) => {
       for (const [label, suite, cell] of [
-        ["scope was not `all`", suiteResult({ scope: "impacted" }), "impacted"],
+        ["scope was not `all`", suiteResult({ scope: "named" }), "named"],
         ["selection widened", suiteResult({ widened: [{ file: "packages/core/src/x.mjs", reason: "graph-unknown" }] }), "all+widened"],
       ]) {
         await rm(recordPath, { force: true });

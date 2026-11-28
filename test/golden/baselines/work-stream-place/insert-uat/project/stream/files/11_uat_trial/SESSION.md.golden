@@ -37,7 +37,7 @@ aofVersion: <version>
      run when nothing has changed, and agent-runnable `@manual` scenarios are re-run; only the `@uat`
      (human-judgment) scenarios need a person. -->
 
-- [ ] Regression sweep — one `aof test --scope all` for the session: the `@executable` suite + fitness functions (green)
+- [ ] Regression sweep — one `aof test --all` for the session: the `@executable` suite + fitness functions (green)
 - [ ] Re-run agent-runnable `@manual` scenarios (evidence below)
 - [ ] Broker the human `@uat` scenarios (sign-off below)
 

@@ -985,34 +985,25 @@
     "input": {
       "type": "object",
       "properties": {
-        "scope": {
-          "type": "string"
-        },
         "files": {
           "type": "array",
           "items": {
             "type": "string"
           }
         },
-        "since": {
+        "reason": {
           "type": [
             "string",
             "null"
           ]
         },
-        "story": {
-          "type": [
-            "string",
-            "null"
-          ]
+        "suggest": {
+          "type": "boolean"
         },
-        "commit": {
-          "type": [
-            "string",
-            "null"
-          ]
+        "failed": {
+          "type": "boolean"
         },
-        "plan": {
+        "all": {
           "type": "boolean"
         },
         "verbose": {
@@ -1029,27 +1020,23 @@
         "test"
       ],
       "spec": {
-        "usage": "aof test --scope impacted|file|all [<suite-file> ...] [--story <ref>] [--since <rev>] [--commit <rev> --plan] [--plan] [--fresh] [--verbose] [--json]",
+        "usage": "aof test <suite>… --reason \"<why>\" | --suggest | --failed | --all [--fresh] [--verbose] [--json]",
         "flags": {
-          "scope": {
+          "reason": {
             "type": "string",
-            "description": "impacted | file | all — required, and never defaulted"
+            "description": "why these suites — required by a named run, and recorded beside its result"
           },
-          "story": {
-            "type": "string",
-            "description": "take the changed set from this story's declared files: (scope impacted; not with --since)"
-          },
-          "since": {
-            "type": "string",
-            "description": "widen the changed set's base to this revision (scope impacted)"
-          },
-          "commit": {
-            "type": "string",
-            "description": "take the changed set from what this commit changed against its first parent (scope impacted; --plan only; not with --story or --since)"
-          },
-          "plan": {
+          "suggest": {
             "type": "boolean",
-            "description": "select and report without running — launches nothing, writes no record, is answered from none"
+            "description": "list the suites a working-tree change reaches (imports, via a helper, or names it) — runs nothing"
+          },
+          "failed": {
+            "type": "boolean",
+            "description": "a fix round: the last red's failures plus the suites the fix reaches"
+          },
+          "all": {
+            "type": "boolean",
+            "description": "the whole tree — refused inside story work, where the whole tree is the gate's"
           },
           "verbose": {
             "type": "boolean",
@@ -1780,6 +1767,19 @@
       "route": [
         "design-system",
         "mocks",
+        "capture"
+      ],
+      "spec": {
+        "usage": "aof design-system mocks capture --item <milestone> [--json]",
+        "flags": {
+          "item": {
+            "type": "string",
+            "description": "the milestone whose imported canvas is framed"
+          }
+        }
+      }
+    }
+  },
   {
     "id": "design-system:canvas-pages",
     "input": {
@@ -1817,19 +1817,6 @@
           "item": {
             "type": "string",
             "description": "the milestone whose page must exist: its own page if it has one, else m<NN>"
-          }
-        }
-      }
-    }
-  },
-        "capture"
-      ],
-      "spec": {
-        "usage": "aof design-system mocks capture --item <milestone> [--json]",
-        "flags": {
-          "item": {
-            "type": "string",
-            "description": "the milestone whose imported canvas is framed"
           }
         }
       }
@@ -2114,6 +2101,9 @@
         },
         "resume": {
           "type": "boolean"
+        },
+        "again": {
+          "type": "string"
         }
       },
       "required": [
@@ -2127,8 +2117,12 @@
         "regression-gate"
       ],
       "spec": {
-        "usage": "aof work regression-gate <ref> [--serial] [--jobs N] [--resume] [--json]",
+        "usage": "aof work regression-gate <ref> [--serial] [--jobs N] [--resume] [--again \"<reason>\"] [--json]",
         "flags": {
+          "again": {
+            "type": "string",
+            "description": "reason for another gate, requiring the operator’s recorded confirmation after two launches"
+          },
           "serial": {
             "type": "boolean",
             "description": "run the project's plain test program instead of its declared gate program"

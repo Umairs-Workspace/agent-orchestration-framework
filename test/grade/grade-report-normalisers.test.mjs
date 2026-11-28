@@ -19,6 +19,9 @@
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
+import os from "node:os";
+import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { runBounded } from "@aof/execution/bounded-process";
 import { fileURLToPath } from "node:url";
 import { normaliseReport, normaliseTap, REPORT_FORMATS } from "@aof/work/grade";
 
@@ -377,4 +380,49 @@ export const gradeReportNormalisersTests = [
       assert.deepEqual([...onDisk].filter((name) => !claimed.has(name)).sort(), [], "every committed capture is claimed by a supported format");
     },
   },
+  ...[
+    { name: "second suite", text: "ok - a1\nok - a2\n# file test/a.test.mjs 0.1 2\nok - b1\nnot ok - b fails\n# file test/b.test.mjs 0.1 2", files: ["test/b.test.mjs"] },
+    { name: "crash without marker", text: "not ok - crash", files: [null] },
+    { name: "each suite", text: "not ok - a\n# file test/a.test.mjs 0.1 1\nnot ok - b\n# file test/b.test.mjs 0.1 1", files: ["test/a.test.mjs", "test/b.test.mjs"] },
+    { name: "two failures then passing suite", text: "not ok - a1\nnot ok - a2\n# file test/a.test.mjs 0.1 2\nok - b\n# file test/b.test.mjs 0.1 1", files: ["test/a.test.mjs", "test/a.test.mjs"] },
+    { name: "after final marker", text: "ok - a\n# file test/a.test.mjs 0.1 1\nnot ok - crash", files: [null] },
+    { name: "load failure", text: "not ok - test/a.test.mjs could not be loaded: boom\n# file test/a.test.mjs 0.1 0", files: ["test/a.test.mjs"] },
+    { name: "unmarked crash before another suite", text: "not ok - crash\nok - a\n# file test/a.test.mjs 0.1 1", files: [null] },
+  ].map(({ name, text, files }) => ({
+    name: `210/02 attribution: ${name}`,
+    run: () => {
+      const report = normaliseTap(text);
+      assert.equal(report.ok, true);
+      assert.deepEqual(report.failures.map((failure) => failure.file), files);
+    },
+  })),
+  {
+    name: "210/02 plain TAP preserves messages and cases with an unknown file",
+    run: () => {
+      const report = normaliseTap("not ok - fails\nAssertionError: expected yes\n");
+      assert.deepEqual(report.cases, [{ name: "fails", status: "failed" }]);
+      assert.deepEqual(report.failures, [{ case: "fails", message: "AssertionError: expected yes", scenario: null, file: null }]);
+    },
+  },
+
+  {
+    name: "210/02 real light entry preserves capture order across passes, failures and import errors",
+    run: async () => {
+      const root = await mkdtemp(path.join(os.tmpdir(), "aof-attributed-tap-"));
+      try {
+        const a = path.join(root, "a.test.mjs"), b = path.join(root, "b.test.mjs"), bad = path.join(root, "bad.test.mjs");
+        await writeFile(a, 'export const tests = [{name:"a passes",run(){}},{name:"a fails",run(){throw Error("a boom")}}];');
+        await writeFile(b, 'export const tests = [{name:"b fails first",run(){throw Error("b first")}}, {name:"b passes",run(){}}, {name:"b fails last",run(){throw Error("b last")}}];');
+        await writeFile(bad, 'throw Error("import boom");');
+        const observed = await runBounded({ command: process.execPath,
+          args: [fileURLToPath(new URL("../../scripts/test-shard.mjs", import.meta.url)), a, b, bad], deadlineMs: 60000 });
+        assert.equal(observed.exitCode, 1);
+        const report = normaliseTap(`${observed.stdout}\n${observed.stderr}`);
+        assert.deepEqual(report.failures.map((failure) => failure.file), [bad, a, b, b]);
+        assert.match(report.failures[1].message, /a boom/);
+        assert.equal(report.cases.length, 6);
+      } finally { await rm(root, { recursive: true, force: true }); }
+    },
+  },
+
 ];

@@ -125,6 +125,19 @@ These rules are what let an unattended repair run without doing harm. Each is ab
 <verify>
 Before you end `done`, prove the cause is gone the way the loop will test it:
 
+Read the file named in `work.test.instructions` before running anything. Choose the suites
+from those instructions and the changed files, then run `aof test <suite>… --reason "<why these suites>"`.
+Use `aof test --suggest` to check importers and path mentions; it cannot see paths built from fragments
+or source-to-source reach through the application assembly. State any deliberate exclusions by
+suite name in the recorded reason. After a fix, check what the fix changed with `aof test --failed`.
+Never run `aof test --all` in story work: the whole tree is the regression gate's.
+
+A `test-fix-stopped` refusal is a hand-over: record a blocker in the item's `STATE.md`, or in a
+driven session use the loop's question to the operator, and stop. Do not start another automatic
+fix chain. A failure `aof test` labels pre-existing is recorded by case name under
+`## Feedback (for retro)` in `STATE.md`; it is not the story's to fix.
+
+
 - a merge conflict — `git merge-base --is-ancestor <tip> HEAD` exits 0 (the lane's tip is now an
   ancestor of the primary's HEAD), `git status --porcelain` in the primary shows nothing new of yours,
   and no `.git/MERGE_HEAD` remains;

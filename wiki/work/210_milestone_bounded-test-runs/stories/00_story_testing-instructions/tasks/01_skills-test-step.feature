@@ -88,5 +88,5 @@ Feature: every skill that tests reads the instructions, picks suites, states why
 
     @executable
     Scenario: the goldens match the renders
-      When I run "node scripts/golden.mjs --lane work-init" and "node scripts/golden.mjs --lane work-stream"
-      Then neither reports a difference
+      When I run "node scripts/golden.mjs --lane work-init" and each of its "work-stream-fixture", "work-stream-life", "work-stream-place" and "work-stream-read" lanes
+      Then none reports a difference

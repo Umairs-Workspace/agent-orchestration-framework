@@ -65,3 +65,23 @@ Feature: a red that also fails on the work's base is pre-existing, and is not th
       Given baseline trees exist for three bases, used in the order "b1", "b2", "b3"
       When the baselines are pruned
       Then the trees for "b2" and "b3" remain and the tree for "b1" is removed
+
+    @executable @bug @finding-F-07
+    Scenario: the baseline tree is added through the one worktree implementation
+      When a baseline tree is made for a base
+      Then it is added by the execution package's worktree implementation
+      And no module under "packages/work/src/testing/" spawns "git worktree add"
+
+    @executable @bug @finding-F-08
+    Scenario: the working item's record doc is read from the identity leaf's one map
+      When the base is resolved for a running story or a gate's milestone
+      Then the record doc is named by "RECORD_DOC_BY_TYPE" from "packages/work/src/identity.mjs"
+      And "packages/work/src/testing/baseline.mjs" declares no type → record-doc map of its own
+
+    @executable @bug @finding-F-11
+    Scenario: a base that lacks the working tree's instructions file is still measured
+      Given the working project declares "work.test.instructions" as "wiki/TESTING.md"
+      And the base commit holds no "wiki/TESTING.md"
+      When a red run's failures are labelled against that base
+      Then the base's run answers, and each failure is labelled true or false
+      And no failure is labelled "unmeasured" for a missing instructions file

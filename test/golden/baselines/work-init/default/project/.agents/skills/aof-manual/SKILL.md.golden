@@ -11,7 +11,7 @@ Arguments: <story or task ref>
 
 Use the native skill $aof-manual; $ARGUMENTS is the operator text after its name.
 
-Guide the operator's own build of one story or task; do not implement. Enter through the build door with `aof work continue <ref> --manual --json` and stop on any refusal, minting nothing. Never walk the re-entry sweep or resume a lineage. Read the story as continue's story lane step 1 does, mint the owned run, run the declared impacted test gate once, print the guide in the terminal only, and close the run done. Spawn no developer and no reviewer, walk no gate ladder, and write nothing outside the item's own folder. A hand-off to an agent is written to the item's STATE and names `$aof-continue <ref>`, never runs it. Hand back to `$aof-review <ref>`.
+Guide the operator's own build of one story or task; do not implement. Enter through the build door with `aof work continue <ref> --manual --json` and stop on any refusal, minting nothing. Never walk the re-entry sweep or resume a lineage. Read the story as continue's story lane step 1 does, mint the owned run, read work.test.instructions and run the chosen suites once with a recorded reason, print the guide in the terminal only, and close the run done. Spawn no developer and no reviewer, walk no gate ladder, and write nothing outside the item's own folder. A hand-off to an agent is written to the item's STATE and names `$aof-continue <ref>`, never runs it. Hand back to `$aof-review <ref>`.
 
 ## Codex execution contract
 Use only tools actually exposed by this session. File reading/editing, shell execution, search,

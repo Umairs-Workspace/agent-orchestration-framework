@@ -66,6 +66,7 @@ export function createWorkToolchain({ runBounded }) {
 // "which module reads this key" needs the key to exist as text somewhere, and the honest place for
 // it is the module that owns it. FF-7201 asserts this list has exactly one reader in `src/`.
 const TOOLCHAIN_CONFIG_KEYS = Object.freeze([
+  "work.test.instructions",
   "work.test.command",
   "work.test.args",
   "work.test.selectArgs",
@@ -91,11 +92,16 @@ const TEST_RUNNER_DECLARATION_INVALID = "test-runner-declaration-invalid";
 const TEST_RUNNER_UNRESOLVABLE = "test-runner-unresolvable";
 const WORKTREE_PREPARE_DECLARATION_INVALID = "worktree-prepare-declaration-invalid";
 const WORKTREE_PREPARE_UNRESOLVABLE = "worktree-prepare-unresolvable";
+// 210/ADR-008 — a key the testing rewrite removed. Removed, not deprecated: a config that still
+// carries it is refused by name, so nothing half-works under the old selection's words.
+const TEST_CONFIG_KEY_REMOVED = "test-config-key-removed";
 
 const TOOLCHAIN_REFUSAL_CODES = Object.freeze([
   TEST_RUNNER_UNDECLARED,
   TEST_RUNNER_DECLARATION_INVALID,
   TEST_RUNNER_UNRESOLVABLE,
+  "test-instructions-missing",
+  TEST_CONFIG_KEY_REMOVED,
   WORKTREE_PREPARE_DECLARATION_INVALID,
   WORKTREE_PREPARE_UNRESOLVABLE,
 ]);
@@ -306,23 +312,6 @@ function compileProgram(command, unresolvableCode, key, options) {
   return { resolved };
 }
 
-// A coupling list is `[{ paths, suites, via?, why }]`: `paths` a non-empty array of globs, `suites`
-// an array of suite paths (empty, with no `via`, declares that nothing reads those paths), `via` an
-// optional array of helper modules whose suite dependents read them (190/ADR-009 §2), `why` the
-// stated reason.
-function couplingDeclarationProblem(couplings) {
-  if (couplings === undefined) return null;
-  if (!Array.isArray(couplings)) return "must be an array of { paths, suites, why } entries";
-  for (const [index, entry] of couplings.entries()) {
-    if (!isPlainObject(entry)) return `entry ${index} must be an object with paths, suites and why`;
-    if (!Array.isArray(entry.paths) || stringArrayProblem(entry.paths) != null || entry.paths.length === 0) return `entry ${index}'s paths must be a non-empty array of globs`;
-    if (!Array.isArray(entry.suites) || stringArrayProblem(entry.suites) != null) return `entry ${index}'s suites must be an array of suite paths, empty when nothing reads them`;
-    if (entry.via !== undefined && (!Array.isArray(entry.via) || stringArrayProblem(entry.via) != null || entry.via.length === 0)) return `entry ${index}'s via must be a non-empty array of helper module paths whose suite dependents read these paths`;
-    if (typeof entry.why !== "string" || entry.why.trim() === "") return `entry ${index} must say why, as a non-empty string`;
-  }
-  return null;
-}
-
 // An exclusion list is `[{ paths, why }]`: `paths` a non-empty array of globs naming test-shaped
 // files the runner does not run, `why` the stated reason (190/ADR-008 §7).
 function exclusionDeclarationProblem(exclude) {
@@ -349,6 +338,23 @@ function resolveTestToolchain(config, options = {}) {
     );
   }
 
+  // 210/ADR-008: couplings fed the retired selector. Present at all is the refusal, naming the key.
+  if (declared.couplings !== undefined) {
+    return refusal(TEST_CONFIG_KEY_REMOVED, "work.test.couplings", "work.test.couplings was removed with the old test selection (210/ADR-008) — delete it from the aof config. Agents choose suites from the project's testing instructions (work.test.instructions) instead.");
+  }
+
+  // 210/ADR-001: absence is advisory; a declared file must be usable before any run.
+  const instructions = declared.instructions;
+  if (instructions !== undefined) {
+    if (typeof instructions !== "string" || instructions.trim() === "" || path.posix.isAbsolute(instructions)
+      || path.win32.isAbsolute(instructions) || instructions.replaceAll("\\", "/").split("/").includes("..")) {
+      return refusal(TEST_RUNNER_DECLARATION_INVALID, "work.test.instructions", "must be a non-empty project-relative file path");
+    }
+    if (!defaultIsFile(path.resolve(options.projectRoot ?? process.cwd(), instructions))) {
+      return refusal("test-instructions-missing", "work.test.instructions", `the declared testing instructions file ${JSON.stringify(instructions)} does not exist or is not a file`, instructions);
+    }
+  }
+
   const fault = compileStep(declared, "work.test", TEST_RUNNER_DECLARATION_INVALID, {
     selectArgs: true,
     roots: true,
@@ -367,18 +373,13 @@ function resolveTestToolchain(config, options = {}) {
     return refusal(TEST_RUNNER_DECLARATION_INVALID, "work.test.selectProgramArgs", `work.test.selectProgramArgs: index ${selectProgramProblem} holds a non-string — every element reaches the child verbatim, so it must already be a string`);
   }
 
-  // 190/ADR-003 §1, §4 — WHAT A SUITE IS, AND WHAT READS A DOCUMENT. Both optional: absent keeps
-  // today's predicate (`.test.mjs`) and no coupling, so every undeclared document still widens.
-  // Present and malformed is a refusal naming the key, never a silent narrowing. A suffix starts at
+  // 190/ADR-003 §1 — WHAT A SUITE IS. Optional: absent keeps today's predicate (`.test.mjs`).
+  // Present and malformed is a refusal naming the key, never a silent guess. A suffix starts at
   // a separator: "." (`.test.mjs`, `.spec.ts`) or "_" (Go's `_test.go`, Python's `_test.py`), so a
   // bare word such as `test.mjs`, which would also match `contest.mjs`, is still refused.
   const suffixesProblem = stringArrayProblem(declared.suiteSuffixes);
   if (declared.suiteSuffixes !== undefined && (suffixesProblem != null || declared.suiteSuffixes.length === 0 || declared.suiteSuffixes.some((suffix) => !/^[._]./u.test(suffix)))) {
     return refusal(TEST_RUNNER_DECLARATION_INVALID, "work.test.suiteSuffixes", "work.test.suiteSuffixes must be a non-empty array of file suffixes, each starting with \".\" or \"_\" (as `.test.mjs` or `_test.go`) — it is what makes a file under a declared root a suite");
-  }
-  const couplingsProblem = couplingDeclarationProblem(declared.couplings);
-  if (couplingsProblem != null) {
-    return refusal(TEST_RUNNER_DECLARATION_INVALID, "work.test.couplings", `work.test.couplings ${couplingsProblem} — a coupling is how a document narrows a run, so one that does not compile would narrow on a guess`);
   }
   // 190/ADR-008 §7 — test-shaped files the runner does not run. Absent excludes nothing.
   const exclusionProblem = exclusionDeclarationProblem(declared.exclude);
@@ -392,6 +393,7 @@ function resolveTestToolchain(config, options = {}) {
   return Object.freeze({
     ok: true,
     toolchain: Object.freeze({
+      instructions: instructions ?? null,
       suiteSuffixes: Object.freeze([...(declared.suiteSuffixes ?? [".test.mjs"])]),
       // 190/ADR-008 §6 — only a DECLARED suffix list reshapes the whole suite's walk; absent keeps
       // the walk's pre-190 pair, so an undeclared project's whole suite does not move.
@@ -400,15 +402,6 @@ function resolveTestToolchain(config, options = {}) {
         paths: Object.freeze([...entry.paths]),
         why: entry.why,
       }))),
-      couplings: Object.freeze((declared.couplings ?? []).map((entry) => Object.freeze({
-        paths: Object.freeze([...entry.paths]),
-        suites: Object.freeze([...entry.suites]),
-        ...(entry.via === undefined ? {} : { via: Object.freeze([...entry.via]) }),
-        why: entry.why,
-      }))),
-      // 190/ADR-008 §1 — absent and `[]` select the same, but only `[]` is an answer: the
-      // test-layout check reads this to tell a question nobody asked from one answered "none".
-      couplingsDeclared: declared.couplings !== undefined,
       command: declared.command,
       program: resolved,
       args: Object.freeze([...(declared.args ?? [])]),

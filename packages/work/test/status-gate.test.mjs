@@ -37,7 +37,7 @@ test('regression gate records the configured whole-tree runner result through it
     runTest: async (input, options) => { calls.push(input); assert.equal(options.projectRoot, root); return { scope: 'all', widened: [], exit: 0, report: { failures: [] } }; },
   });
   const result = await regressionGateCommand.run({ ref: '01', now: instant }, { workspace: { projectRoot: root, config: {} } });
-  assert.deepEqual(calls, [{ scope: 'all' }]); assert.equal(result.satisfiesDoor, true);
+  assert.deepEqual(calls, [{ all: true }]); assert.equal(result.satisfiesDoor, true);
   const rows = parseRegressionRows(await readFile(regressionRecordPath(root), 'utf8'));
   assert.equal(rows.length, 1); assert.equal(rows[0].commit, commit); assert.equal(rows[0].result, 'green');
 }));
@@ -57,4 +57,22 @@ test('milestone acceptance requires gate evidence and notifies only after its tr
   const result = await itemStatusCommand.run({ ref: '01', status: 'done' }, ctx);
   assert.equal(result.moved, true); assert.equal(result.regressionGate.commit, commit);
   assert.deepEqual(calls, ['transition', 'milestone-accepted', 'notify']);
+}));
+
+test('serial gate failures remain unattributed in the test record', () => fixture(async root => {
+  const item = { ref: '17', dir: root, type: 'milestone' };
+  let recorded;
+  const { runRegressionGate } = createRegressionGateCommand({
+    requireLocalCheckout: () => {}, headCommit: async () => commit,
+    resolveTestGate: () => ({ ok: true, gate: null }),
+  });
+  await runRegressionGate({ ref: '17', serial: true, now: instant }, {
+    projectRoot: root, config: {}, resolve: async () => item,
+    git: async () => ({ status: 0, stdout: '' }), keepAlive: () => () => {},
+    runSuite: async () => ({ scope: 'all', widened: [], launched: true, exit: 1,
+      runner: { outcome: 'exited', exitCode: 1 }, report: { ok: true, failures: [{ case: 'serial red', message: 'boom' }] } }),
+    record: { openLedger: async () => ({ ok: true }), writeRecord: async (_ledger, fields) => { recorded = fields; } },
+  });
+  assert.deepEqual(recorded.failures, [{ case: 'serial red', message: 'boom', file: null }]);
+  assert.equal(recorded.mode, 'gate');
 }));

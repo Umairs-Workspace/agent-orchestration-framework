@@ -12,7 +12,7 @@ doc: state
 
 <!-- Lane-by-lane roll-up, mirroring SESSION.md ## Plan. -->
 
-- [ ] Regression sweep (one `aof test --scope all` for the session: `@executable` + fitness functions)
+- [ ] Regression sweep (one `aof test --all` for the session: `@executable` + fitness functions)
 - [ ] `@manual` re-run
 - [ ] `@uat` human sign-off
 

@@ -22,13 +22,22 @@ The ref may be a **milestone**, a **story**, a **uat session**, a **spike**, or 
 session (`type: uat`) is a cross-milestone acceptance gate: its record doc is its own `SESSION.md` (not
 a milestone `VERIFICATION.md`), and the scenarios in scope are the `@manual`/`@uat` ones across the
 milestones it accepts (its `depends:` list). Run one integrated **regression sweep** (green) before
-the manual/human lanes: a single `aof test --scope all` for the whole session, never one run per
+the manual/human lanes: a single `aof test --all` for the whole session, never one run per
 accepted milestone. When the content has not changed since the newest gate run, that sweep is answered
 from the gate run's record, and the answer is the evidence. The same
 steps below apply — just write to `SESSION.md` and read scenarios across the accepted span.
 
 **Spike/chore dispatch (ADR-003) — skip straight to `<spike-chore>` below.** A `spike` or `chore` is
-verified on its **own per-type criterion**, never through the `<process>` steps below (no
+verified on its **own per-type criterion**, never through the `<process>
+
+**Testing step.** Read the file named in `work.test.instructions` before running anything. Choose the suites
+from those instructions and the changed files, then run `aof test <suite>… --reason "<why these suites>"`.
+Use `aof test --suggest` to check importers and path mentions; it cannot see paths built from fragments
+or source-to-source reach through the application assembly. State any deliberate exclusions by
+suite name in the recorded reason. After a fix, check what the fix changed with `aof test --failed`.
+Never run `aof test --all` in story work: the whole tree is the regression gate's.
+
+` steps below (no
 `@executable` suite, no `@manual` scenario run, no design conformance, no human `@uat` step — neither
 type carries a behavioural contract, and a chore/spike folder legitimately has no `tasks/`/`.feature`
 to run). Detect the type from `aof work find` and branch there first.
@@ -117,18 +126,19 @@ that have content** — no empty "None" placeholders (absence of a section is in
    designer to JUDGE. A green `@executable` suite does **not** prove design fidelity (the litmus keeps
    visual fidelity out of the `.feature`), so catch the drift here. The step:
    - **An approved canvas first (198/ADR-006).** Before the precondition below, read `DESIGN.md`
-     for a canvas link it names as **awaiting approval**. Put each one to the operator before the
-     fidelity judge runs, as one question that carries the link, "Approve these mocks?", answered
-     **Approve** or **Later** (one question per ask in a driven session).
+     for a canvas page link (`<canvas link>#page-<page>`) it names as **awaiting approval**. Put
+     each one to the operator before the fidelity judge runs, as one question that carries the
+     link, "Approve these mocks?", answered **Approve** or **Later** (one question per ask in a
+     driven session).
      - **On Approve,** resolve the system `work.ui.designSystem` names (an `artifact` link is the
        system; a `name` is the one Design System you can open with exactly that title, and no
        match or more than one is a stop naming every candidate's title and link). Read back the
-       canvas's `project/canvas.json`, every board it names, `project/ds/*/tokens.json` and the
-       type's `artifact-type/dc-runtime.js` into one scratchpad directory, keeping their published
-       paths. Then run `aof design-system mocks import <pulled-dir> --item <NN> --canvas <link>
-       --canvas-version <version> --system <link> --system-version <version> --approval
-       "<reference>" --json`, then `aof design-system mocks capture --item <NN> --json`, and name
-       the frames in `DESIGN.md`. **Those frames are the baseline handed to the judge.** A refusal
+       canvas's `project/canvas.json`, every board on the milestone's page, `project/ds/*/tokens.json`
+       and the type's `artifact-type/dc-runtime.js` into one scratchpad directory, keeping their
+       published paths. Then run `aof design-system mocks import <pulled-dir> --item <NN> --canvas
+       <link> --canvas-version <version> --page <page> --system <link> --system-version <version> --approval
+       "<reference>" --json`, then `aof design-system mocks capture --item <NN> --json`, where `<page>` is
+       the link's own page id, and name the frames in `DESIGN.md`. **Those frames are the baseline handed to the judge.** A refusal
        from either verb is a stop: report it.
      - **On Later,** nothing is imported, and the binding checklist stays the baseline the judge
        is handed.

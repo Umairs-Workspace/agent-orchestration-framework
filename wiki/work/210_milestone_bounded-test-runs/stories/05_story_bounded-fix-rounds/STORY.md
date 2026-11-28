@@ -5,15 +5,15 @@ slug: bounded-fix-rounds
 title: "A fix round reruns what failed and what the fix touched, skips pre-existing reds, and stops when it stops converging"
 parent: 210
 depends: [04, 03]
-status: not-started
+status: done
 owner: product-owner
 created: 2026-11-26
-updated: 2026-11-26
+updated: 2026-11-28
 schema: 1
 aofVersion: 0.1.0
 adrs: [ADR-004, ADR-005, ADR-006]
 reads: [wiki/work/210_milestone_bounded-test-runs/ARCHITECTURE.md#ADR-004, wiki/work/210_milestone_bounded-test-runs/ARCHITECTURE.md#ADR-005, wiki/work/210_milestone_bounded-test-runs/ARCHITECTURE.md#ADR-006, packages/work/src/testing/importers.mjs, packages/work/src/testing/record.mjs, packages/work/src/testing/changed.mjs, packages/work/src/testing/toolchain.mjs, packages/contracts/src/loop-bounds.mjs, packages/mesh/src/worktrees.mjs, packages/work/src/commands/regression-gate.mjs, packages/core/src/application/assemble.mjs]
-files: [packages/work/src/commands/test.mjs, packages/work/src/testing/baseline.mjs, packages/work/package.json, scripts/workspace-runtime-audit.json, packages/core/src/application/bindings/commands/test.mjs, test/testing/test-fix-rounds.test.mjs, test/testing/index.mjs, test/arch/testing/acd-source-directory-budget.test.mjs]
+files: [packages/work/src/commands/test.mjs, packages/work/src/testing/baseline.mjs, packages/work/package.json, scripts/workspace-runtime-audit.json, packages/core/src/application/bindings/commands/test.mjs, test/testing/test-fix-rounds.test.mjs, test/testing/index.mjs, test/arch/testing/acd-source-directory-budget.test.mjs, packages/work/src/testing/record.mjs, packages/work/src/testing/changed.mjs, packages/work/src/commands/regression-gate.mjs, packages/core/src/application/assemble.mjs, packages/core/src/application/bindings/work/test-changed.mjs, test/bundle/yarn-installation.test.mjs, test/testing/test-command-contract.test.mjs]
 ---
 # 05 · A fix round reruns what failed and what the fix touched, skips pre-existing reds, and stops when it stops converging
 
@@ -28,9 +28,9 @@ and a loop that is going nowhere hands over instead of grinding.
 
 ## Tasks
 
-- [ ] [fix-round selection](tasks/00_fix-round-selection.feature)
-- [ ] [the no-progress stop](tasks/01_no-progress-stop.feature)
-- [ ] [pre-existing reds](tasks/02_pre-existing-reds.feature)
+- [x] [fix-round selection](tasks/00_fix-round-selection.feature)
+- [x] [the no-progress stop](tasks/01_no-progress-stop.feature)
+- [x] [pre-existing reds](tasks/02_pre-existing-reds.feature)
 
 ## Notes
 

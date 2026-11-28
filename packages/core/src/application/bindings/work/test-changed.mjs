@@ -2,14 +2,11 @@
 import { createChangedFilesReader } from "@aof/work/testing/changed";
 import { runBounded } from "@aof/execution/bounded-process";
 
-export function assembleWorkTestChanged({ workTestSelectServices }) {
-  // Core composition for work-owned testing.
+export function assembleWorkTestChanged() {
+  // Core composition for work-owned testing: the working tree's changed set, for `aof test --suggest`,
+  // and what changed between two content keys, for a fix round.
 
-  const { CHANGED_SET_EMPTY } = workTestSelectServices;
-  const { CHANGED_SET_UNREADABLE } = workTestSelectServices;
-  const { SINCE_REV_UNRESOLVABLE } = workTestSelectServices;
+  const { CHANGED_SET_DEADLINE_MS, CHANGED_SET_UNREADABLE, changedBetween, changedFiles, parsePorcelain } = createChangedFilesReader({ runBounded });
 
-  const { CHANGED_SET_DEADLINE_MS, changedFiles, parseNameOnly, parsePorcelain } = createChangedFilesReader({ runBounded, CHANGED_SET_EMPTY, CHANGED_SET_UNREADABLE, SINCE_REV_UNRESOLVABLE });
-
-  return { CHANGED_SET_DEADLINE_MS, changedFiles, parseNameOnly, parsePorcelain };
+  return { CHANGED_SET_DEADLINE_MS, CHANGED_SET_UNREADABLE, changedBetween, changedFiles, parsePorcelain };
 }

@@ -9,7 +9,9 @@
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
 
-import { archTests as acdTestSelectionWidensNeverNarrowsTests } from "./acd-test-selection-widens-never-narrows.test.mjs";
+// milestone 210 / story 04 — FF-21001: testing reads no code graph. It takes the place of FF-19003's
+// retired widens-never-narrows file, so this directory keeps its count.
+import { archTests as acdTestSelectionReadsNoGraphTests } from "./acd-test-selection-reads-no-graph.test.mjs";
 import { archTests as acdSuiteRegistrationSingleDeciderTests } from "./acd-suite-registration-single-decider.test.mjs";
 import { archTests as acdTestCommandReportsNotDecidesTests } from "./acd-test-command-reports-not-decides.test.mjs";
 // ADR-015/F2 (43/04's UI structural review) — `global-work-store.mjs`'s trajectory, one layer
@@ -54,7 +56,7 @@ import { archTests as acdGoldenBaselinesWrittenByTheScriptTests } from "./acd-go
 import { archTests as acdGoldenBaselinesEolPinnedTests } from "./acd-golden-baselines-eol-pinned.test.mjs";
 
 export const tests = [
-  ...acdTestSelectionWidensNeverNarrowsTests,
+  ...acdTestSelectionReadsNoGraphTests,
   ...acdSuiteRegistrationSingleDeciderTests,
   ...acdTestCommandReportsNotDecidesTests,
   ...acdUiSurfaceFileBudgetTests,

@@ -2,16 +2,16 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {mkdtemp,writeFile,realpath,rm} from 'node:fs/promises';
 import os from 'node:os';import path from 'node:path';
-import {createTestSelector} from '@aof/work/testing/select';
+import {isSuiteFile} from '@aof/work/testing/suites';
 import {createChangedFilesReader} from '@aof/work/testing/changed';
 import {createWorkToolchain} from '@aof/work/testing/toolchain';
 import {createTestCommand} from '@aof/work/commands/test';
 import {createTestRecord} from '@aof/work/testing/record';
 
-test('testing ports preserve bounded argv execution and supplied changed-set refusal codes',async()=>{
+test('testing ports preserve bounded argv execution and the changed set reads the working tree only',async()=>{
   const launches=[];
   const launch=async input=>{launches.push(input);return {outcome:'exited',exitCode:0,stdout:input.command==='git'?'?? src/new.mjs\n':'ok - fixture\n',stderr:''};};
-  const reader=createChangedFilesReader({runBounded:launch,CHANGED_SET_EMPTY:'empty',CHANGED_SET_UNREADABLE:'unreadable',SINCE_REV_UNRESOLVABLE:'revision'});
+  const reader=createChangedFilesReader({runBounded:launch});
   const toolchain=createWorkToolchain({runBounded:launch});
   assert.deepEqual(launches,[]);
   const changed=await reader.changedFiles({projectRoot:'fixture',deadlineMs:1234});
@@ -22,26 +22,20 @@ test('testing ports preserve bounded argv execution and supplied changed-set ref
   assert.deepEqual(launches.at(-1),{command:'fixture-runner',args:['--report','--file','test/with space.test.mjs'],cwd:'fixture',env:undefined,deadlineMs:4567});
   await toolchain.launchRunner({...declared,selectProgramArgs:['light-entry']},['a.test.mjs'],{cwd:'fixture'});
   assert.deepEqual(launches.at(-1).args,['light-entry','--file','a.test.mjs'],'a selection launches the declared selection program in place of args');
-  const empty=createChangedFilesReader({runBounded:async()=>({outcome:'exited',exitCode:0,stdout:'',stderr:''}),CHANGED_SET_EMPTY:'custom-empty',CHANGED_SET_UNREADABLE:'unreadable',SINCE_REV_UNRESOLVABLE:'revision'});
-  assert.equal((await empty.changedFiles({projectRoot:'fixture'})).code,'custom-empty');
+  // 210/ADR-003: an empty working tree is an answer, and only a tree git could not read is refused.
+  const empty=createChangedFilesReader({runBounded:async()=>({outcome:'exited',exitCode:0,stdout:'',stderr:''})});
+  assert.deepEqual(await empty.changedFiles({projectRoot:'fixture'}),{ok:true,changed:[]});
+  const unreadable=createChangedFilesReader({runBounded:async()=>({outcome:'exited',exitCode:128,stdout:'',stderr:'not a git repository',attempted:'git status'})});
+  assert.equal((await unreadable.changedFiles({projectRoot:'fixture'})).code,'changed-set-unreadable');
 });
 
-test('selector consumes supplied graph facts and widens an unknown without launching anything',async()=>{
-  const parent=await realpath(os.tmpdir()),root=await mkdtemp(path.join(parent,'aof-testing-package-'));
-  try{
-    // 179/ADR-004: the supplied graph fact is the code corpus's `relations`, asked once per selection.
-    const artifact=path.join(root,'graph.json');let reads=0;
-    const selector=createTestSelector({
-      relations:async(files,{projectRoot})=>{assert.equal(projectRoot,root);reads++;return {served:true,available:true,unavailable:null,artifact,builtAt:'artifact-instant',files:files.map(file=>({file,present:file==='src/known.mjs',dependencies:[],dependents:['test/known.test.mjs']}))};},
-      registrationDecision:()=>({fixture:true}),
-    });
-    assert.equal(reads,0);
-    const allSuites=['test/known.test.mjs','test/other.test.mjs'];
-    const known=await selector.selectSuites({projectRoot:root,changed:['src/known.mjs'],allSuites,roots:['test']});
-    assert.deepEqual(known.selected,['test/known.test.mjs']);assert.equal(known.builtAt,'artifact-instant');assert.equal(known.graphPath,artifact);
-    const unknown=await selector.selectSuites({projectRoot:root,changed:['src/new.mjs'],allSuites,roots:['test']});
-    assert.equal(unknown.scope,'all');assert.deepEqual(unknown.selected,allSuites);assert.equal(unknown.widened[0].reason,'not-in-graph');
-  }finally{assert.equal(path.dirname(await realpath(root)),parent);await rm(root,{recursive:true,force:true});}
+test('the suite predicate reads only the declared roots, suffixes and exclusions',()=>{
+  // 210/ADR-008: the predicate outlives the selector; --all, a named run and the scan all ask it.
+  const exclude=[{paths:['test/native/**'],why:'native'}];
+  assert.equal(isSuiteFile('test/a.test.mjs',['test'],['.test.mjs'],exclude),true);
+  assert.equal(isSuiteFile('test/native/b.test.mjs',['test'],['.test.mjs'],exclude),false);
+  assert.equal(isSuiteFile('test/support/h.mjs',['test'],['.test.mjs'],exclude),false);
+  assert.equal(isSuiteFile('test/node_modules/x.test.mjs',['test']),false);
 });
 
 test('test command composes the supplied toolchain and launches a whole run without selection argv',async()=>{
@@ -51,10 +45,10 @@ test('test command composes the supplied toolchain and launches a whole run with
     resolveTestToolchain:()=>({ok:true,toolchain}),
     launchRunner:async(tc,files,options)=>{assert.equal(tc,toolchain);calls.push({files,options});return {outcome:'exited',exitCode:0,stdout:'ok - fixture\n',stderr:'',verdict:'passed',status:0};},
     changedFiles:()=>{throw Error('whole run must not inspect changes');},
-    selectSuites:()=>{throw Error('whole run must not select');},resolveItemExact:async()=>null,
+    scanImporters:()=>{throw Error('whole run must not scan');},
   });
   assert.deepEqual(calls,[]);
-  const result=await testCommand.run({scope:'all'},{workspace:{projectRoot:'fixture',config:{}}});
+  const result=await testCommand.run({all:true},{workspace:{projectRoot:'fixture',config:{}}});
   assert.equal(result.exit,0);assert.equal(result.gate,true);assert.equal(result.launched,true);
   assert.deepEqual(calls.at(-1),{files:[],options:{cwd:'fixture'}});
 });

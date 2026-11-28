@@ -253,14 +253,17 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      `STATE.md` `## Feedback (for retro)` section (distilled into `RETROSPECTIVE.md` at `$aof-verify`).
 
      <build_terminator>
-     **Run the tests as `aof test --scope impacted --story <ref>`.** The story's own declared
-     `files:` is the changed set, so the run is the suites this story's write set can actually have
-     touched — the declaration paying for a third time, after the wave planner and `validate`. Do
-     **not** name individual suite files: that is `--scope file` wearing prose, and it is a
-     selection made by judgement rather than by the declaration. A changed file narrows the run only
-     on what is positively known — a new suite selects itself, a new module its changed importer
-     inherits, a declared path not yet written contributes nothing — and anything else WIDENS it, so
-     the narrowing can never be silent, and every widening is named in the summary line.
+     Read the file named in `work.test.instructions` before running anything. Choose the suites
+     from those instructions and the changed files, then run `aof test <suite>… --reason "<why these suites>"`.
+     Use `aof test --suggest` to check importers and path mentions; it cannot see paths built from fragments
+     or source-to-source reach through the application assembly. State any deliberate exclusions by
+     suite name in the recorded reason. After a fix, check what the fix changed with `aof test --failed`.
+     Never run `aof test --all` in story work: the whole tree is the regression gate's.
+
+     A `test-fix-stopped` refusal is a hand-over: record a blocker in the item's `STATE.md`, or in a
+     driven session use the loop's question to the operator, and stop. Do not start another automatic
+     fix chain. A failure `aof test` labels pre-existing is recorded by case name under
+     `## Feedback (for retro)` in `STATE.md`; it is not the story's to fix.
 
      **Each run leaves a record, and a repeat on unchanged content is answered from it.** Asking again
      with nothing changed launches nothing: the summary line says `answered from the run of
@@ -394,14 +397,16 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      **Concurrency stays inside the dispatch bound.** Never spawn more lanes at once than the `bound`
      `aof work dispatch --list --json` reports, and spawn the remainder as earlier lanes return.
 
-     **A review lane runs `aof test --scope impacted --story <ref>` too, and never names suite files
-     by hand.** The lanes start together on one diff, so they make one run: the first lane's ask
-     launches it, the others wait for it and are answered from its record, and every lane reads the
-     same answer. That answer is the evidence, not a reason to run again. **A story-scoped green does not accept a
-     milestone.** It says this story's suites pass; the milestone's own regression gate is what says
-     the tree does, and 63/R7 is explicit that story-scoped suites are what make that gate
-     load-bearing rather than ceremonial. Never report a narrowed run as a whole one — the summary
-     line states the scope it ran as, and that is the claim to carry.
+     **Each review lane reads the file named in `work.test.instructions` before running anything**
+     and chooses suites with `aof test <suite>… --reason "<why these suites>"`. After a fix use
+     `aof test --failed`; leave the whole tree to the regression gate. An unchanged covering run is
+     answered from its record: that answer is evidence, not a reason to run again.
+
+     **The structural lane checks the choice of suites.** Compare the story's recorded runs and reasons
+     with `aof test --suggest` for the story's changed files. Raise a finding for each suite that imports
+     or names a changed file, appears in no recorded run, and is named by no recorded reason as
+     deliberately left out. A stated exclusion is accepted. Report the actual suites run; a story's green
+     does not accept a milestone and does not call for a whole-tree run here.
      </review_lanes>
 
      Hand every reviewer only the task `.feature` files (criteria), the build diff, and the story's

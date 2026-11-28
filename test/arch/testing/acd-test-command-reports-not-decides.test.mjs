@@ -48,7 +48,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // row drives without editing a real door.
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, readdir, rm, writeFile, mkdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -76,7 +76,7 @@ const PROBED_MODULES = Object.freeze([
   "packages/core/src/application/bindings/commands/test.mjs",
   "packages/core/src/application/bindings/command-core.mjs",
   "packages/core/src/application/bindings/work/toolchain.mjs",
-  "packages/core/src/application/bindings/work/test-select.mjs",
+  "packages/work/src/testing/importers.mjs",
   "packages/core/src/application/bindings/work/test-changed.mjs",
   "packages/execution/src/bounded-process.mjs",
   "packages/work/src/audit/census.mjs",
@@ -275,23 +275,31 @@ const deps = (extra = {}) => ({
   config: {},
   resolveToolchain: () => TOOLCHAIN,
   walk: async (_root, root) => (root === "test" ? [...WHOLE] : []),
-  readChanged: async () => ({ ok: true, changed: ["packages/core/src/thing.mjs"], base: null }),
-  select: () => Object.freeze({ scope: "impacted", gate: false, selected: ["test/b.test.mjs"], widened: [], builtAt: "2026-09-02T00:00:00.000Z", graphPath: "graphify-out/graph.json", changed: ["packages/core/src/thing.mjs"], resolved: ["packages/core/src/thing.mjs"], refusal: null }),
+  readChanged: async () => { throw new Error("no changed set is read by a run"); },
   run: async () => observed(),
   ...extra,
 });
 
-const widening = (reason) => () => Object.freeze({
-  scope: "all",
-  gate: false,
-  selected: [...WHOLE],
-  widened: [{ file: "packages/core/src/new.mjs", reason }],
-  builtAt: null,
-  graphPath: "graphify-out/graph.json",
-  changed: ["packages/core/src/new.mjs"],
-  resolved: [],
-  refusal: null,
-});
+const NAMED = Object.freeze({ files: ["test/b.test.mjs"], reason: "the change reaches b" });
+
+// The test face's own source, and every source module of the work package.
+const FACE_SOURCE = () => readFileSync(path.join(repoRoot, "packages/work/src/commands/test.mjs"), "utf8");
+function workSources() {
+  const out = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(path.join(repoRoot, dir), { withFileTypes: true })) {
+      const rel = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) walk(rel);
+      else if (entry.name.endsWith(".mjs")) out.push({ rel, text: readFileSync(path.join(repoRoot, rel), "utf8") });
+    }
+  };
+  walk("packages/work/src");
+  return out;
+}
+
+// Every line of a source that hands the runner an empty selection: an empty array literal on a
+// line that names the selection argument.
+const emptySelections = (text) => stripComments(text).split("\n").map((line) => line.trim()).filter((line) => /\bselectionFiles\b.*\[\]/u.test(line));
 
 export const archTests = [
   {
@@ -390,7 +398,7 @@ export const archTests = [
       // A PLANTED invocation in one of those doors is named — driven over supplied sources, so no
       // real door is edited to prove the census can see one.
       for (const shape of [
-        `await invoke("${TEST_COMMAND_ID}", { scope: "all" }, ctx);`,
+        `await invoke("${TEST_COMMAND_ID}", { all: true }, ctx);`,
         `const out = await invokeRegistered("${TEST_COMMAND_ID}", input);`,
         `cli: { route: ["${TEST_COMMAND_ID}"] }`,
         `if (command === "${TEST_COMMAND_ID}") return gateOn(result);`,
@@ -446,34 +454,53 @@ export const archTests = [
   },
 
   {
-    name: "arch/72 FF-7204 (acd-test-command-reports-not-decides): gate: false on every narrowed or widened result, and true only for an unwidened whole run",
+    name: "arch/72 FF-7204 (acd-test-command-reports-not-decides): gate: false on every named result, and true only for a whole-tree run",
     async run() {
-      const narrowed = await runTest({ scope: "impacted" }, deps());
-      assert.equal(narrowed.scope, "impacted", "a narrowed run ran as impacted");
-      assert.equal(narrowed.gate, false, "…and may not stand as a verdict");
-
-      const named = await runTest({ scope: "file", files: ["test/c.test.mjs"] }, deps({ readChanged: async () => { throw new Error("not for this scope"); } }));
-      assert.equal(named.gate, false, "a named run may not stand as a verdict either");
-
-      for (const reason of ["no-graph", "not-in-graph", "no-registered-dependent", "graph-unreadable"]) {
-        const wide = await runTest({ scope: "impacted" }, deps({ select: widening(reason) }));
-        assert.equal(wide.scope, "all", `a run widened by ${reason} runs as all`);
-        assert.equal(wide.gate, false, `…and still may NOT stand as a verdict (${reason})`);
-      }
-
-      const whole = await runTest({ scope: "all" }, deps({ readChanged: async () => { throw new Error("not for this scope"); }, select: () => { throw new Error("not for this scope"); } }));
-      assert.equal(whole.gate, true, "an unwidened whole run is the one result that may stand");
-
-      // NO OPTION SUPPRESSES A WIDENING — the flag half of the same claim FF-7202 makes over the
-      // selection function. Neither the declared flags nor an undeclared key passed straight into
-      // the input can turn one off.
+      const named = await runTest(NAMED, deps());
+      assert.equal(named.form, "named", "a named run ran as named");
+      assert.equal(named.gate, false, "…and may not stand as a verdict");
+      const whole = await runTest({ all: true }, deps());
+      assert.equal(whole.gate, true, "a whole-tree run is the one result that may stand");
+      // NO OPTION TURNS A SUBSET INTO A VERDICT. Neither the declared flags nor an undeclared key
+      // passed straight into the input can.
       const flags = Object.keys(testCommand.cli.spec.flags);
-      const suppressing = flags.filter((flag) => /widen|strict|narrow|suppress|force/iu.test(flag));
-      assert.deepEqual(suppressing, [], `no declared flag can suppress a widening: ${flags.join(", ")}`);
-      const forced = await runTest({ scope: "impacted", noWiden: true, strictScope: true }, deps({ select: widening("not-in-graph") }));
-      assert.equal(forced.scope, "all", "an unknown suppressing key does not narrow the run");
-      assert.equal(forced.widened.length, 1, "…the widening stands");
-      assert.equal(forced.gate, false, "…and it still may not stand as a verdict");
+      assert.deepEqual(flags.filter((flag) => /gate|verdict|strict|force|widen|narrow/iu.test(flag)), [], `no declared flag decides: ${flags.join(", ")}`);
+      const forced = await runTest({ ...NAMED, gate: true, verdict: true }, deps());
+      assert.equal(forced.gate, false, "an unknown key does not make a subset a verdict");
+    },
+  },
+
+  {
+    name: "arch/210 FF-21003 (acd-test-command-reports-not-decides): the whole tree has two doors — the --all branch after the story-work check, and the regression gate",
+    async run() {
+      // Behaviour: every form that launches hands the runner its names, except --all.
+      const handed = [];
+      const run = async (_toolchain, files) => { handed.push([...files]); return observed(); };
+      await runTest(NAMED, deps({ run }));
+      await runTest({ files: [...WHOLE], reason: "every suite, named" }, deps({ run }));
+      assert.deepEqual(handed, [["test/b.test.mjs"], [...WHOLE]], "a named run, even of every suite, hands the runner its names");
+      // …and --all reaches the runner only past the story-work check.
+      const refused = await runTest({ all: true }, deps({ run, inStoryWork: async () => ({ ref: "17/02" }) }));
+      assert.equal(refused.refusal?.code, "test-all-in-story-work");
+      assert.equal(handed.length, 2, "nothing launched inside story work");
+      await runTest({ all: true }, deps({ run, inStoryWork: async () => null }));
+      assert.deepEqual(handed.at(-1), [], "outside story work the whole tree is an empty selection");
+
+      // Structure: in the face, the one empty selection is the `all` branch's, and it follows the
+      // story-work check; across the work package, only the gate drives the all form beside it.
+      assert.deepEqual(emptySelections(FACE_SOURCE()), ['const selectionFiles = form === "all" ? [] : selected;'], "the face's one empty selection");
+      const body = stripComments(FACE_SOURCE());
+      assert.ok(body.indexOf("inStoryWork()") < body.indexOf('form === "all" ? [] : selected'), "the story-work check comes first");
+      const allCallers = workSources().filter(({ text }) => /\brunSuite\(\{\s*all:\s*true\s*\}/u.test(stripComments(text))).map(({ rel }) => rel);
+      assert.deepEqual(allCallers, ["packages/work/src/commands/regression-gate.mjs"], "the regression gate is the other door");
+    },
+  },
+
+  {
+    name: "arch/210 FF-21003 red probe: passing [] to the runner from the named branch fails",
+    run() {
+      const planted = FACE_SOURCE().replace('const selectionFiles = form === "all" ? [] : selected;', 'const selectionFiles = form === "named" ? [] : form === "all" ? [] : selected;');
+      assert.notDeepEqual(emptySelections(planted), ['const selectionFiles = form === "all" ? [] : selected;']);
     },
   },
 
@@ -485,8 +512,8 @@ export const archTests = [
         stderr: ["not ok - beta", "AssertionError: beta blew up", "    at beta (test/x.test.mjs:1:1)"].join("\n"),
         exitCode: 1,
       });
-      const quiet = await runTest({ scope: "impacted" }, deps({ run: async () => output }));
-      const loud = await runTest({ scope: "impacted", verbose: true }, deps({ run: async () => output }));
+      const quiet = await runTest(NAMED, deps({ run: async () => output }));
+      const loud = await runTest({ ...NAMED, verbose: true }, deps({ run: async () => output }));
 
       // ONE OBJECT: the machine face IS the result, not a second assembly of it.
       assert.equal(testCommand.cli.json(quiet), quiet, "the machine face renders from the result itself");
@@ -511,14 +538,14 @@ export const archTests = [
       // A GREEN-READING REPORT BESIDE A NON-ZERO EXIT IS A CONTRADICTION, never a pass — and it
       // SAYS SO. A non-zero exit under a face that printed nothing is the same silent failure this
       // command exists to replace, so the LINE is asserted and not merely the status.
-      const silentRed = await runTest({ scope: "impacted" }, deps({ run: async () => observed({ stdout: "# unit\nok - alpha", stderr: "", exitCode: 1 }) }));
+      const silentRed = await runTest(NAMED, deps({ run: async () => observed({ stdout: "# unit\nok - alpha", stderr: "", exitCode: 1 }) }));
       assert.equal(silentRed.report.contradiction, true, "a green report beside a non-zero exit is reported as a contradiction");
       assert.equal(silentRed.exit, 1, "…and is never a pass");
       assert.ok(testCommand.cli.render(silentRed).includes("is a contradiction, not a pass"), "…and the human face says which of the three it was");
 
       // AND AN UNREADABLE REPORT IS THE THIRD WAY, stated rather than left to the exit code: a run
       // whose output no normaliser could read enumerated no case at all, so it produced no verdict.
-      const unreadable = await runTest({ scope: "impacted" }, deps({ run: async () => observed({ stdout: "a wall of prose no normaliser can read", stderr: "", exitCode: 0 }) }));
+      const unreadable = await runTest(NAMED, deps({ run: async () => observed({ stdout: "a wall of prose no normaliser can read", stderr: "", exitCode: 0 }) }));
       assert.equal(unreadable.report.ok, false, "an unreadable report is reported as unreadable");
       assert.equal(unreadable.exit, 1, "…and a run that produced no verdict is never a pass");
       assert.ok(testCommand.cli.render(unreadable).includes("could not be read as tap"), "…with the human face naming the declared format it failed to read");

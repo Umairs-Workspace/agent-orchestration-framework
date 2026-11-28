@@ -30,21 +30,22 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
+import { stripComments } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
+import { isSuiteFile } from "@aof/work/testing/suites";
 const registrationDecision = _aofApplication.work.audit.census.registrationDecision;
 const runnerImportedSuites = _aofApplication.work.audit.census.runnerImportedSuites;
 const registrationSources = _aofApplication.work.audit.census.registrationSources;
-const isSuiteFile = _aofApplication.work.testSelect.isSuiteFile;
 const resolveTestToolchain = _aofApplication.work.toolchain.resolveTestToolchain;
-const registrationReport = _aofApplication.work.testSelect.registrationReport;
 import { IMPORT_OF, SPREAD_ROW, bindingsOf, directoryCensus, readIndexes, registrationSurface } from "../../support/registration/registration-surface.mjs";
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 const CENSUS = "packages/work/src/audit/census.mjs";
-const REPORTER = "packages/work/src/testing/select.mjs";
-const STORY_MODULES = Object.freeze([REPORTER, "packages/knowledge/src/graph-impact.mjs", "packages/work/src/testing/changed.mjs"]);
+// 210/04 — the selector and its registration report are gone (210/ADR-008), and their legs with
+// them; the re-derivation leg now watches the testing modules that replaced them.
+const REPORTER = "packages/work/src/testing/importers.mjs";
+const STORY_MODULES = Object.freeze([REPORTER, "packages/work/src/testing/suites.mjs", "packages/work/src/testing/changed.mjs"]);
 
 const sourceOf = (rel) => readFileSync(path.join(repoRoot, rel), "utf8");
 const modulesOf = (rels) => rels.map((rel) => ({ rel, code: sourceOf(rel) }));
@@ -87,62 +88,7 @@ export function reDerivationProblems(modules) {
   return problems;
 }
 
-// The parameter names a function destructures from its single options object, cut by matching
-// parens — the language's own region rather than a character window.
-export function destructuredParameters(code, header) {
-  const source = stripComments(code);
-  const start = source.indexOf(header);
-  if (start < 0) return null;
-  const params = matchedParenSpan(source, start);
-  if (params == null) return null;
-  const open = params.body.indexOf("{");
-  const close = params.body.lastIndexOf("}");
-  if (open < 0 || close < open) return null;
-  return params.body
-    .slice(open + 1, close)
-    .split(",")
-    .map((entry) => entry.split("=")[0].trim())
-    .filter(Boolean);
-}
-
 export const archTests = [
-  {
-    name: "arch/72 FF-7203 (acd-suite-registration-single-decider): the registration decider is reached BY IMPORT from the shared census, and its inputs are injected rather than produced",
-    run: () => {
-      const source = stripComments(sourceOf(REPORTER));
-      assert.ok(source.length > 200, `${REPORTER} was actually read (${source.length} bytes)`);
-      const composition = stripComments(sourceOf("packages/core/src/application/bindings/work/test-select.mjs"));
-      for (const code of [source, composition]) {
-        assert.match(code, /createTestSelector\(\{[^}]*\bregistrationDecision\b/u, "the shared decider is supplied to the package");
-      }
-
-      assert.match(
-        composition,
-        /const\s*\{[^}]*registrationDecision[^}]*\}\s*= workAuditCensusServices/u,
-        "the decision comes from the shared census module, by import",
-      );
-      // …and the import is live, not decorative: the function this module calls IS the census's.
-      assert.equal(typeof registrationDecision, "function", "the shared decider is importable");
-      assert.match(source, /registrationDecision\s*\(/u, "…and it is called");
-
-      // THE INPUTS ARE INJECTED. `suiteNames`'s only shipped producer imports every suite in the
-      // runner's own process, which is exactly what this module may not do — so it accepts both
-      // and produces neither, and the reuse claim stays clearable by a module that cannot honestly
-      // produce provenance.
-      const parameters = destructuredParameters(sourceOf(REPORTER), "function registrationReport");
-      assert.ok(Array.isArray(parameters), `the report's parameters were cut structurally: ${JSON.stringify(parameters)}`);
-      for (const required of ["selected", "assembled", "suiteNames", "importedBy"]) {
-        assert.ok(parameters.includes(required), `${required} is an INJECTED parameter — got ${parameters.join(", ")}`);
-      }
-      assert.doesNotMatch(source, /\bassembledSuite\s*\(/u, "…and the 3.5s child that would produce assembled membership is never called");
-      assert.doesNotMatch(source, /\bimport\s*\(/u, "…nor is any suite dynamically imported to produce names");
-
-      // The provenance helper the census owns is NAMED here rather than re-implemented, so a
-      // future author looking for it finds the one that exists.
-      assert.equal(typeof runnerImportedSuites, "function", `${CENSUS} owns runnerImportedSuites, the producer of the decider's classification input`);
-    },
-  },
-
   {
     name: "arch/72 FF-7203 (acd-suite-registration-single-decider): no second derivation of which file contributed which entries is authored anywhere in this story's modules",
     run: () => {
@@ -179,61 +125,6 @@ export const archTests = [
   },
 
   {
-    name: "arch/72 FF-7203 (acd-suite-registration-single-decider): the unregistered report carries the DECIDER'S own verdict vocabulary, driven by planting a suite that is on disk and absent from the assembled array",
-    run: () => {
-      const planted = "test/planted-unregistered.test.mjs";
-
-      // The census's own answer, obtained directly…
-      const decision = registrationDecision({
-        files: [planted],
-        suiteNames: new Map([[planted, ["planted/one"]]]),
-        assembled: new Set(["something else"]),
-        baseline: [],
-        importedBy: new Set(),
-      });
-      assert.equal(decision.findings.length, 1, "the census answers with one finding for the planted suite");
-
-      // …and this story's report over the same inputs, which must carry it verbatim rather than a
-      // re-phrasing of it.
-      const report = registrationReport({
-        selected: [planted],
-        suiteNames: new Map([[planted, ["planted/one"]]]),
-        assembled: new Set(["something else"]),
-        baseline: [],
-        importedBy: new Set(),
-      });
-      const entry = report.files[0];
-      assert.equal(entry.registered, false, "the planted suite is reported unregistered");
-      assert.equal(entry.code, decision.findings[0].code, "with the census's own code");
-      assert.equal(entry.message, decision.findings[0].message, "…and the census's own message, verbatim");
-      assert.deepEqual([...report.findings], [...decision.findings], "…and the findings pass through unaltered");
-
-      // The classification input moves the LABEL and nothing else — the same distinction the
-      // census draws, preserved rather than re-invented.
-      const mentioned = registrationReport({
-        selected: [planted],
-        suiteNames: new Map([[planted, ["planted/one"]]]),
-        assembled: new Set(["something else"]),
-        baseline: [],
-        importedBy: new Set([planted]),
-      });
-      assert.equal(mentioned.files[0].code, "audit-suite-imported-never-spread", "a suite the runner names is imported-never-spread");
-      assert.notEqual(mentioned.files[0].code, entry.code, "…which is a different answer from one no runner mentions");
-      assert.equal(mentioned.files[0].registered, false, "…and neither is registered");
-
-      // …and a suite whose tests ARE assembled is registered, so the report distinguishes rather
-      // than merely refusing.
-      const green = registrationReport({
-        selected: [planted],
-        suiteNames: new Map([[planted, ["planted/one"]]]),
-        assembled: new Set(["planted/one"]),
-        baseline: [],
-      });
-      assert.equal(green.files[0].registered, true, "membership decides");
-      assert.deepEqual([...green.unregistered], [], "…and nothing is reported against it");
-    },
-  },
-  {
     // 190/01 FF-19005 (ADR-003 §1) — a second leg: a suite the runner registers is a suite the
     // selection can choose. Otherwise `impacted` could never select it, and every change it alone
     // covers would widen (41 of RESEARCH Q1's 76 stories did, for exactly this).
@@ -269,7 +160,7 @@ export const archTests = [
     run: () => {
       const code = stripComments(sourceOf(LAYOUT));
       assert.deepEqual(layoutPredicateProblems(code), [], LAYOUT);
-      assert.match(code, /import\s*\{[^}]*\bisSuiteFile\b[^}]*\}\s*from\s*["']\.\/select\.mjs["']/u, "isSuiteFile is reached by import");
+      assert.match(code, /import\s*\{[^}]*\bisSuiteFile\b[^}]*\}\s*from\s*["']\.\/suites\.mjs["']/u, "isSuiteFile is reached by import");
       assert.match(code, /\bisSuiteFile\s*\(/u, "…and called");
       // Self-check: each planted second answer is reported, by what it is.
       for (const [planted, problem] of [

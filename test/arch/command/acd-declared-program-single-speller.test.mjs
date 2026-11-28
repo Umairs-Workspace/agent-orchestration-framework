@@ -65,7 +65,7 @@ const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 // ADR-008 §1's declared module set for this milestone. Restricted at run time to what exists.
 const MILESTONE_MODULES = Object.freeze([
   "packages/work/src/testing/toolchain.mjs",
-  "packages/work/src/testing/select.mjs",
+  "packages/work/src/testing/suites.mjs",
   "packages/work/src/testing/changed.mjs",
   "packages/work/src/commands/test.mjs",
 ]);

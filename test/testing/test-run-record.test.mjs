@@ -161,24 +161,8 @@ function deps(root, extra = {}) {
   };
 }
 
-// The impacted scope for `--story 190/00`, with the declared set and the selector stubbed: these
-// rows are about the record, not the selection.
-function impacted(selected, { scope = "impacted", widened = [] } = {}) {
-  return {
-    readDeclared: async () => ({ ok: true, changed: Object.freeze(["src/a.mjs"]) }),
-    resolveStory: async () => null,
-    select: async () => Object.freeze({
-      scope,
-      selected: Object.freeze([...selected]),
-      widened: Object.freeze([...widened]),
-      builtAt: "2026-11-09T00:00:00.000Z",
-      graphPath: "graphify-out/graph.json",
-      refusal: null,
-    }),
-  };
-}
-
-const STORY_INPUT = Object.freeze({ scope: "impacted", story: "190/00" });
+// A named run on one suite, as the review lanes ask it: the rows below are about the record.
+const NAMED_INPUT = Object.freeze({ files: ["test/a.test.mjs"], reason: "190/00 repeat" });
 
 async function ledgerOf(root) {
   const ledger = await records.openLedger({ projectRoot: root });
@@ -187,7 +171,7 @@ async function ledgerOf(root) {
 }
 
 // Plant a record through the one writer, as a run would have left it.
-async function plant(root, { result = "green", selected = ["test/a.test.mjs"], scope = "file", widened = [], failures = [], environment = null, gate = false } = {}) {
+async function plant(root, { result = "green", selected = ["test/a.test.mjs"], scope = "named", widened = [], failures = [], environment = null, gate = false } = {}) {
   const ledger = await ledgerOf(root);
   const exit = result === "green" ? 0 : 1;
   return await records.writeRecord(
@@ -224,7 +208,7 @@ export const testRunRecordTests = [
     name: "190/00 E1 · a launched run writes one record naming its content",
     run: async () => withRepo(async (root) => {
       const runner = counting();
-      const out = await runTest({ scope: "file", files: ["test/a.test.mjs"] }, deps(root, { run: runner.run }));
+      const out = await runTest({ files: ["test/a.test.mjs"], reason: "probe" }, deps(root, { run: runner.run }));
       assert.equal(runner.launches.length, 1);
       const stored = await storedRecords(root);
       assert.equal(stored.length, 1, "exactly one record is added");
@@ -233,7 +217,8 @@ export const testRunRecordTests = [
       assert.equal(record.environment.platform, process.platform);
       assert.equal(record.environment.arch, process.arch);
       assert.equal(record.environment.node, Number(process.versions.node.split(".")[0]));
-      assert.equal(record.scope, "file");
+      assert.equal(record.scope, "named");
+      assert.equal(record.mode, "named");
       assert.deepEqual(record.selected, ["test/a.test.mjs"]);
       assert.equal(record.result, "green");
       assert.equal(record.exit, 0);
@@ -291,7 +276,7 @@ export const testRunRecordTests = [
       const root = await mkdtemp(path.join(await realpath(os.tmpdir()), "aof-190-00-nogit-"));
       try {
         const runner = counting();
-        const out = await runTest({ scope: "file", files: ["test/a.test.mjs"] }, deps(root, { run: runner.run }));
+        const out = await runTest({ files: ["test/a.test.mjs"], reason: "probe" }, deps(root, { run: runner.run }));
         assert.equal(runner.launches.length, 1, "the runner is launched");
         assert.equal(out.recorded, null, "no record is written");
         assert.equal(out.notRecorded, "no git");
@@ -313,7 +298,7 @@ export const testRunRecordTests = [
       ];
       for (const row of rows) {
         await withRepo(async (root) => {
-          await runTest({ scope: "file", files: ["test/a.test.mjs"] }, deps(root, { run: counting(row.output).run }));
+          await runTest({ files: ["test/a.test.mjs"], reason: "probe" }, deps(root, { run: counting(row.output).run }));
           const [record] = await storedRecords(root);
           assert.equal(record?.result, row.result, row.how);
         });
@@ -325,7 +310,7 @@ export const testRunRecordTests = [
     run: async () => withRepo(async (root) => {
       const ledger = await ledgerOf(root);
       const base = Date.parse("2026-11-09T00:00:00.000Z");
-      const fields = { scope: "file", selected: ["test/a.test.mjs"], outcome: "exited", exit: 0 };
+      const fields = { scope: "named", selected: ["test/a.test.mjs"], outcome: "exited", exit: 0 };
       for (let index = 0; index < 200; index += 1) {
         await records.writeRecord(ledger, fields, { now: () => new Date(base + index * 1000) });
       }
@@ -346,10 +331,10 @@ export const testRunRecordTests = [
     name: "190/00 E1 · the same question on the same content launches nothing",
     run: async () => withRepo(async (root) => {
       const first = counting();
-      const made = await runTest(STORY_INPUT, deps(root, { run: first.run, ...impacted(["test/a.test.mjs"]) }));
+      const made = await runTest(NAMED_INPUT, deps(root, { run: first.run }));
       assert.equal(first.launches.length, 1);
       const repeat = counting();
-      const out = await runTest(STORY_INPUT, deps(root, { run: repeat.run, ...impacted(["test/a.test.mjs"]) }));
+      const out = await runTest(NAMED_INPUT, deps(root, { run: repeat.run }));
       assert.equal(repeat.launches.length, 0, "the runner is launched 0 times");
       assert.equal(out.launched, false);
       assert.deepEqual({ id: out.reused.id, instant: out.reused.instant }, { id: made.recorded.id, instant: made.recorded.instant });
@@ -366,7 +351,7 @@ export const testRunRecordTests = [
       const here = records.currentEnvironment();
       await plant(root, { environment: { ...here, platform: here.platform === "win32" ? "darwin" : "win32" } });
       const runner = counting();
-      await runTest({ scope: "file", files: ["test/a.test.mjs"] }, deps(root, { run: runner.run }));
+      await runTest({ files: ["test/a.test.mjs"], reason: "probe" }, deps(root, { run: runner.run }));
       assert.equal(runner.launches.length, 1, "the runner is launched once");
     }),
   },
@@ -386,9 +371,9 @@ export const testRunRecordTests = [
       ];
       for (const row of rows) {
         await withRepo(async (root) => {
-          await plant(root, { result: row.result, scope: row.scope ?? "file", selected: row.recorded, widened: row.widened ?? [] });
+          await plant(root, { result: row.result, scope: row.scope ?? "named", selected: row.recorded, widened: row.widened ?? [] });
           const runner = counting();
-          await runTest({ scope: "file", files: row.asked }, deps(root, { run: runner.run }));
+          await runTest({ files: row.asked, reason: "probe" }, deps(root, { run: runner.run }));
           assert.equal(runner.launches.length, row.launches, `${row.example ?? ""} ${row.result} ${JSON.stringify(row.recorded)} asked ${JSON.stringify(row.asked)}`);
         });
       }
@@ -400,7 +385,7 @@ export const testRunRecordTests = [
       const files = ["test/a.test.mjs", "test/b.test.mjs"];
       await plant(root, { result: "red", selected: files, failures: [{ case: "b refuses x", message: "AssertionError: x was refused" }] });
       const runner = counting();
-      const out = await runTest({ scope: "file", files }, deps(root, { run: runner.run }));
+      const out = await runTest({ files, reason: "probe" }, deps(root, { run: runner.run }));
       assert.equal(runner.launches.length, 0);
       const text = testCommand.cli.render(out);
       assert.match(text, /^not ok - b refuses x$/mu);
@@ -413,7 +398,7 @@ export const testRunRecordTests = [
     run: async () => withRepo(async (root) => {
       await plant(root, { scope: "all", selected: "all", gate: true });
       const runner = counting();
-      const out = await runTest(STORY_INPUT, deps(root, { run: runner.run, ...impacted(["test/a.test.mjs"]) }));
+      const out = await runTest(NAMED_INPUT, deps(root, { run: runner.run }));
       assert.equal(runner.launches.length, 0, "answered from the whole run");
       assert.equal(out.gate, false, "the answer's gate is the proper subset's own");
       assert.match(summary(out), /may not stand as a verdict/u);
@@ -424,12 +409,12 @@ export const testRunRecordTests = [
     run: async () => withRepo(async (root) => {
       await plant(root, { selected: ["test/a.test.mjs"] });
       const runner = counting();
-      const out = await runTest({ scope: "file", files: ["test/a.test.mjs"], fresh: true }, deps(root, { run: runner.run }));
+      const out = await runTest({ files: ["test/a.test.mjs"], reason: "probe", fresh: true }, deps(root, { run: runner.run }));
       assert.equal(runner.launches.length, 1, "the runner is launched once");
       const fresh = (await storedRecords(root)).find((record) => record.id === out.recorded.id);
       assert.equal(fresh.fresh, true, "the new record carries fresh: true");
       assert.match(summary(out), /fresh run/u);
-      assert.equal(testCommand.cli.argv([], { scope: "file", fresh: true }).fresh, true, "the flag reaches the input");
+      assert.equal(testCommand.cli.argv([], { fresh: true }).fresh, true, "the flag reaches the input");
     }),
   },
 
@@ -438,7 +423,7 @@ export const testRunRecordTests = [
     name: "190/00 E9 · three callers, one runner",
     run: async () => withRepo(async (root) => {
       const runner = gated();
-      const calls = [0, 1, 2].map(() => runTest(STORY_INPUT, deps(root, { run: runner.run, record: fastRecords(), ...impacted(["test/a.test.mjs"]) })));
+      const calls = [0, 1, 2].map(() => runTest(NAMED_INPUT, deps(root, { run: runner.run, record: fastRecords() })));
       await waitUntil(() => runner.launches.length >= 1, "the first runner starts");
       await new Promise((resolve) => setTimeout(resolve, 150));
       runner.release();
@@ -456,9 +441,9 @@ export const testRunRecordTests = [
     name: "190/00 a caller whose question the in-flight run would not answer does not wait",
     run: async () => withRepo(async (root) => {
       const runner = gated();
-      const first = runTest({ scope: "file", files: ["test/a.test.mjs"] }, deps(root, { run: runner.run, record: fastRecords() }));
+      const first = runTest({ files: ["test/a.test.mjs"], reason: "probe" }, deps(root, { run: runner.run, record: fastRecords() }));
       await waitUntil(() => runner.launches.length === 1, "the first runner starts");
-      const second = runTest({ scope: "file", files: ["test/a.test.mjs", "test/b.test.mjs"] }, deps(root, { run: runner.run, record: fastRecords() }));
+      const second = runTest({ files: ["test/a.test.mjs", "test/b.test.mjs"], reason: "probe" }, deps(root, { run: runner.run, record: fastRecords() }));
       await waitUntil(() => runner.launches.length === 2, "a second runner starts while the first is held");
       runner.release();
       await Promise.all([first, second]);
@@ -478,7 +463,7 @@ export const testRunRecordTests = [
           const planted = await records.tryLock(ledger, ["test/a.test.mjs"], row.plant);
           assert.equal(planted.ok, true);
           const runner = counting();
-          const out = await runTest({ scope: "file", files: ["test/a.test.mjs"] }, deps(root, {
+          const out = await runTest({ files: ["test/a.test.mjs"], reason: "probe" }, deps(root, {
             run: runner.run,
             resolveToolchain: toolchainOf(deadlineMs),
             record: fastRecords({ isAlive: (pid) => pid === process.pid }),
@@ -495,10 +480,10 @@ export const testRunRecordTests = [
     run: async () => withRepo(async (root) => {
       const deadlineMs = 300;
       const held = gated();
-      const first = runTest({ scope: "file", files: ["test/a.test.mjs"] }, deps(root, { run: held.run, resolveToolchain: toolchainOf(deadlineMs), record: fastRecords() }));
+      const first = runTest({ files: ["test/a.test.mjs"], reason: "probe" }, deps(root, { run: held.run, resolveToolchain: toolchainOf(deadlineMs), record: fastRecords() }));
       await waitUntil(() => held.launches.length === 1, "the first runner starts");
       const own = counting();
-      const second = await runTest({ scope: "file", files: ["test/a.test.mjs"] }, deps(root, { run: own.run, resolveToolchain: toolchainOf(deadlineMs), record: fastRecords() }));
+      const second = await runTest({ files: ["test/a.test.mjs"], reason: "probe" }, deps(root, { run: own.run, resolveToolchain: toolchainOf(deadlineMs), record: fastRecords() }));
       assert.equal(own.launches.length, 1, "the second caller launches the runner itself");
       assert.equal(second.reused, null, "the second result is its own run");
       held.release();
@@ -507,4 +492,98 @@ export const testRunRecordTests = [
       assert.equal(firstOut.launched && second.launched, true);
     }),
   },
+  {
+    name: "210/02 E3 E4 · metadata and legacy records round trip through the store",
+    run: async () => withRepo(async (root) => {
+      const ledger = await ledgerOf(root);
+      const fields = { scope: "named", selected: WHOLE, outcome: "exited", exit: 1,
+        reason: "record.mjs changed", mode: "named", round: 0,
+        failures: [{ case: "b", message: "broken", file: WHOLE[1] }] };
+      const first = await records.writeRecord(ledger, fields);
+      const read = await records.findAnswer(ledger, WHOLE);
+      assert.equal(read.reason, fields.reason);
+      assert.equal(read.mode, "named");
+      assert.equal(read.round, 0);
+      assert.equal(read.worktree, await git(root, ["rev-parse", "--absolute-git-dir"]));
+      const next = await records.writeRecord(ledger, { ...fields, mode: "failed", parent: first.id, round: 1 });
+      assert.equal((await records.findAnswer(ledger, WHOLE)).parent, first.id);
+      assert.equal((await records.findAnswer(ledger, WHOLE)).round, 1);
+      const legacy = JSON.parse(JSON.stringify(next));
+      for (const key of ["reason", "mode", "worktree", "parent", "round"]) delete legacy[key];
+      delete legacy.failures[0].file;
+      await writeFile(path.join(ledger.store, `${next.id}.json`), JSON.stringify(legacy));
+      const old = await records.findAnswer(ledger, WHOLE);
+      for (const key of ["reason", "mode", "worktree", "parent", "round"]) assert.equal(old[key], null);
+      assert.equal(old.failures[0].file, null);
+    }),
+  },
+  {
+    name: "210/02 E5 · newest red is per worktree and environment across content keys",
+    run: async () => withRepo(async (root) => {
+      const other = `${root}-other`;
+      await git(root, ["worktree", "add", "--detach", other]);
+      try {
+        const a = await ledgerOf(root);
+        const b = await ledgerOf(other);
+        assert.notEqual(a.worktree, b.worktree);
+        assert.equal(a.store, b.store);
+        const fields = { scope: "named", selected: WHOLE, outcome: "exited", exit: 1 };
+        const at = (hour) => ({ now: () => new Date(`2026-11-27T${hour}:00:00.000Z`) });
+        const bRed = await records.writeRecord(b, fields, at("09"));
+        const aRed = await records.writeRecord(a, fields, at("10"));
+        await records.writeRecord(a, { ...fields, exit: 0 }, at("11"));
+        await records.writeRecord({ ...a, environment: { ...a.environment, node: a.environment.node + 1 } }, fields, at("12"));
+        await records.writeRecord(a, { ...fields, outcome: "deadline-expired", exit: null }, at("13"));
+        assert.equal((await records.findNewestRed(b)).id, bRed.id);
+        assert.equal((await records.findNewestRed(a)).id, aRed.id);
+        await writeFile(path.join(root, "src/a.mjs"), "changed\n");
+        assert.equal((await records.findNewestRed(await ledgerOf(root))).id, aRed.id);
+        assert.equal(await records.findNewestRed({ ...a, worktree: "unknown" }), null);
+        assert.equal(await records.findNewestRed({ ...a, environment: { ...a.environment, node: 9999 } }), null);
+        const aLaterRed = await records.writeRecord(a, fields, at("14"));
+        assert.equal((await records.findNewestRed(a)).id, aLaterRed.id);
+      } finally {
+        await git(root, ["worktree", "remove", "--force", other]);
+      }
+    }),
+  },
+  {
+    name: "210/02 newest red excludes unfinished and foreign-environment records alone",
+    run: async () => withRepo(async (root) => {
+      const ledger = await ledgerOf(root);
+      await records.writeRecord(ledger, { scope: "named", selected: WHOLE, outcome: "deadline-expired", exit: null });
+      assert.equal(await records.findNewestRed(ledger), null);
+      await records.writeRecord({ ...ledger, environment: { ...ledger.environment, node: 999 } },
+        { scope: "named", selected: WHOLE, outcome: "exited", exit: 1 });
+      assert.equal(await records.findNewestRed(ledger), null);
+    }),
+  },
+  ...[
+    { name: "E6 covering red answers green subset", asked: ["a", "c"], result: "green", files: [] },
+    { name: "E7 covering red answers red subset", asked: ["b"], result: "red", files: ["b"] },
+    { name: "identical red", asked: ["a", "b", "c"], result: "red", files: ["b"] },
+    { name: "outside coverage", asked: ["a", "d"], result: null },
+    { name: "changed content", asked: ["b"], changed: true, result: null },
+    { name: "E8 unknown failure", asked: ["a"], unattributed: true, result: null },
+    { name: "legacy exit-only red", asked: ["a"], empty: true, result: null },
+    { name: "unfinished", asked: ["a"], unfinished: true, result: null },
+    { name: "green coverage", asked: ["a"], green: true, result: "green", files: [] },
+  ].map((row) => ({
+    name: `210/02 record subsets: ${row.name}`,
+    run: async () => withRepo(async (root) => {
+      const ledger = await ledgerOf(root);
+      const original = await records.writeRecord(ledger, { scope: "named", selected: ["a", "b", "c"],
+        outcome: row.unfinished ? "deadline-expired" : "exited", exit: row.green ? 0 : 1,
+        failures: row.empty || row.unfinished || row.green ? [] : [{ case: "broken", message: "boom", file: row.unattributed ? null : "b" }] });
+      const answer = await records.findAnswer({ ...ledger, key: row.changed ? "other" : ledger.key }, row.asked);
+      assert.equal(answer?.result ?? null, row.result);
+      if (row.result != null) {
+        assert.equal(answer.id, original.id);
+        assert.deepEqual(answer.failures.map((failure) => failure.file), row.files);
+        assert.equal(answer.exit, row.result === "green" ? 0 : 1);
+        assert.deepEqual((await records.recordsFor(ledger.store, ledger.key))[0].failures, original.failures, "answer never rewrites evidence");
+      }
+    }),
+  })),
+
 ];

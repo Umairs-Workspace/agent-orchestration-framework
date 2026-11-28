@@ -72,7 +72,10 @@ for (const file of files) {
   unusable.push(...one.unusable);
   loaded.push({ file, cases: one.selected });
 }
-for (const problem of unusable) console.error(`not ok - ${problem.file} ${problem.reason}`);
+for (const problem of unusable) {
+  console.log(`not ok - ${problem.file} ${problem.reason}`);
+  console.log(`# file ${problem.file} ${(loadSeconds.get(problem.file) ?? 0).toFixed(3)} 0`);
+}
 
 // The cases to run, each with its file, in order.
 let selected = [];
@@ -97,10 +100,8 @@ if (positions != null) {
   }
 }
 
-// Consecutive cases from one file are one group. `runCases` is the runner's frozen loop (FF-5311), so the group is
-// reported from around its cases: each case's `run` is wrapped, and when a group's last case has run, pass or
-// fail, its `# file` line is printed with the seconds since its first case began — plus the seconds its import
-// took, so a file whose cost is its import is scheduled by that cost — and the cases it ran.
+// Mark a group only after the harness has reported its last result and diagnostic.
+// The light entry writes all TAP to stdout, preserving order in captured output.
 const groups = [];
 for (const { file } of selected) {
   if (groups.at(-1)?.path === file) groups.at(-1).count += 1;
@@ -112,18 +113,20 @@ const accounted = selected.map(({ test }) => ({
   run: async () => {
     const current = groups[group];
     current.started ??= Date.now();
-    try {
-      return await test.run();
-    } finally {
-      current.ran += 1;
-      if (current.ran === current.count) {
-        console.log(`# file ${current.path} ${((Date.now() - current.started) / 1000 + (loadSeconds.get(current.path) ?? 0)).toFixed(3)} ${current.ran}`);
-        group += 1;
-      }
-    }
+    return await test.run();
   },
 }));
-const failures = await runCases(accounted);
+const failures = await runCases(accounted, {
+  console: { log: console.log, error: console.log },
+  afterCase: () => {
+    const current = groups[group];
+    current.ran += 1;
+    if (current.ran === current.count) {
+      console.log(`# file ${current.path} ${((Date.now() - current.started) / 1000 + (loadSeconds.get(current.path) ?? 0)).toFixed(3)} ${current.ran}`);
+      group += 1;
+    }
+  },
+});
 // Exit once stdout has drained: a case that leaves a timer or server open must not hold the unit (and its worker
 // slot) forever. The serial runner never had to decide this, because it ran to the end of the whole tree.
 process.stdout.write("", () => process.exit(failures > 0 || unusable.length > 0 ? 1 : 0));

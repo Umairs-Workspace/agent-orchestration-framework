@@ -1,28 +1,16 @@
 
-// Application composition supplies execution, graph and shared work services.
-export function createChangedFilesReader({ runBounded, CHANGED_SET_EMPTY, CHANGED_SET_UNREADABLE, SINCE_REV_UNRESOLVABLE }) {
-// THE CHANGED SET, READ FROM GIT THROUGH THE ONE BOUNDED SEAM — milestone 72 / story 01,
-// ADR-002 §5. This is the story's SECOND deliverable, not a helper: ADR-002 prices it as new code
-// because no reusable changed-files reader exists in `src/` to borrow.
+// Application composition supplies the bounded launch.
+export function createChangedFilesReader({ runBounded }) {
+// THE CHANGED SET, READ FROM GIT THROUGH THE ONE BOUNDED SEAM — milestone 72 / story 01, trimmed by
+// 210/ADR-003 to its one remaining producer: the working tree against HEAD, untracked files
+// included, which is what `aof test --suggest` hands the importer scan; and, for a fix round, the
+// difference between two content keys (below). `--since` and `--commit` went with the selector they
+// fed (210/ADR-008).
 //
-// WHY IT IS A MODULE OF ITS OWN, beside `src/work/test-select.mjs` rather than inside it. The
-// selector's control (FF-7202) censuses it for ROUTES TO THE GRAPH, and the contract's own row
-// list ends with *"a child process of any kind"* — a row whose companion clause is *"with nothing
-// planted no route is found"*. Those two can only both hold over a subject that starts no child.
-// The selector therefore stays spawn-free and stays the censused subject; the git reader lives
-// here, where the rule that governs it is ADR-001 §5's — one bounded seam, argument vector, no
-// shell, deadline armed — rather than the graph-route census.
-//
-// WHY IT IS NEW CODE, measured rather than assumed: `src/build-info.mjs:53,60` uses `execFileSync`
-// directly, `src/commands/ratchet.mjs` sits in the command layer and is unimportable upward (the
-// layer gate), and `src/mesh/worktree.mjs` carries its own private exec. Three near-misses, no
-// reusable surface.
-//
-// THE DEFAULT BASE IS THE WORKING TREE, AND NO DEFAULT BRANCH IS EVER INFERRED. A worktree on a
-// story branch has no reliable answer for "what is my base", and a wrong base SILENTLY NARROWS the
-// changed set — which is the one thing the selection invariant forbids. `--since <rev>` widens the
-// base explicitly, and a revision that does not resolve is a REFUSAL naming it, never a widening
-// and never an empty set.
+// AN EMPTY SET IS AN ANSWER, NOT A REFUSAL. The selector refused it because a narrowed run over
+// nothing read as a green run over zero tests. A suggestion over nothing runs nothing either way,
+// so "nothing has changed" is simply said. Only a tree git could not read is refused: an unknown
+// changed set is not an empty one.
 
 // The version-control program. Not a project-declared runner and not one of the five names
 // FF-7201 freezes: git is a precondition of the repository this reads, not a toolchain choice the
@@ -34,19 +22,19 @@ const VCS = "git";
 // call, ever.
 const CHANGED_SET_DEADLINE_MS = 60_000;
 
+const CHANGED_SET_UNREADABLE = "changed-set-unreadable";
+
 const refusal = (code, message, detail = null) => Object.freeze({ ok: false, code, message, detail });
 
 // `status --porcelain` in its v1 short format. Each line is `XY <path>`, where a rename carries
 // `R  old -> new` and an untracked file carries `?? path`. Untracked files are INCLUDED — a file
-// created this turn is the second-most-common inner-loop action there is, and the selection's
-// whole invariant is that an unknown widens rather than disappears.
+// created this turn is the second-most-common inner-loop action there is.
 function parsePorcelain(text) {
   const files = [];
   for (const line of String(text).split(/\r?\n/)) {
     if (line.length < 4) continue;
     const payload = line.slice(3);
-    // A rename reports both ends; the NEW path is the one on disk now, and the OLD one is a
-    // deletion the graph will not resolve either — both are changed, and both are handed on.
+    // A rename reports both ends; both are changed, and both are handed on.
     const arrow = payload.indexOf(" -> ");
     if (arrow >= 0) {
       files.push(unquote(payload.slice(0, arrow)), unquote(payload.slice(arrow + 4)));
@@ -65,48 +53,11 @@ function unquote(value) {
   return trimmed.slice(1, -1).replaceAll('\\"', '"').replaceAll("\\\\", "\\").replaceAll("\\", "/");
 }
 
-function parseNameOnly(text) {
-  return String(text)
-    .split(/\r?\n/)
-    .map((line) => unquote(line))
-    .filter((line) => line.length > 0);
-}
-
-// One bounded child, through the shared seam. `launch` is injected so every row of the contract
-// drives without a repository, and the real two-commit fixture drives the same code path.
-async function git(args, { cwd, launch, deadlineMs }) {
-  return await launch({ command: VCS, args, cwd, deadlineMs });
-}
-
-// THE CHANGED SET. Returns `{ ok: true, changed, base }` or a coded refusal.
-//
-//   since  — null for the working tree (index + working tree), or a revision to widen the base to.
-//   commit — a revision whose OWN change is the set (190/ADR-008 §2): what it changed against its
-//            first parent, and nothing of the working tree. It is the source a replay of history
-//            needs, so it is read alone; the caller keeps it exclusive of `since`.
-//
-// The three refusals are the module's whole error vocabulary and all three exist for one reason:
-// an answer that selected nothing must never be mistaken for an answer that found nothing
-// affected. They are kept APART because they are three different repairs — name a revision that
-// exists, make a change, or find out why git could not answer.
-async function changedFiles({ projectRoot, since = null, commit = null, launch = runBounded, deadlineMs = CHANGED_SET_DEADLINE_MS } = {}) {
-  const options = { cwd: projectRoot, launch, deadlineMs };
-  if (commit != null) return await committedFiles(commit, options);
-
-  if (since != null) {
-    // ONLY GIT CAN SAY A REVISION DOES NOT RESOLVE, so the check is itself a child and cannot
-    // precede "any spawn" — the honest ordering is that it precedes the RUNNER.
-    const verified = await git(["rev-parse", "--verify", `${since}^{commit}`], options);
-    if (verified.outcome !== "exited" || verified.exitCode !== 0) {
-      return refusal(
-        SINCE_REV_UNRESOLVABLE,
-        `the revision ${JSON.stringify(since)} does not resolve in this repository, so there is no base to compare against. This is a refusal rather than a widening: the four widening reasons are aof failing to KNOW something about the tree, and this is a revision that does not exist.`,
-        verified.stderr?.trim() || verified.error || null,
-      );
-    }
-  }
-
-  const status = await git(["status", "--porcelain"], options);
+// THE CHANGED SET. Returns `{ ok: true, changed }` — possibly empty — or the one coded refusal.
+// `launch` is injected so every row drives without a repository, and a real repository drives the
+// same code path.
+async function changedFiles({ projectRoot, launch = runBounded, deadlineMs = CHANGED_SET_DEADLINE_MS } = {}) {
+  const status = await launch({ command: VCS, args: ["status", "--porcelain", "--untracked-files=all"], cwd: projectRoot, deadlineMs });
   if (status.outcome !== "exited" || status.exitCode !== 0) {
     return refusal(
       CHANGED_SET_UNREADABLE,
@@ -114,61 +65,25 @@ async function changedFiles({ projectRoot, since = null, commit = null, launch =
       status.stderr?.trim() || status.error || null,
     );
   }
-
-  const files = new Set(parsePorcelain(status.stdout));
-
-  if (since != null) {
-    const diff = await git(["diff", "--name-only", since], options);
-    if (diff.outcome !== "exited" || diff.exitCode !== 0) {
-      return refusal(
-        CHANGED_SET_UNREADABLE,
-        `the changes since ${JSON.stringify(since)} could not be read (${diff.attempted}), so the changed set is unknown — the revision resolved, so this is git failing to answer rather than a base that does not exist.`,
-        diff.stderr?.trim() || diff.error || null,
-      );
-    }
-    for (const file of parseNameOnly(diff.stdout)) files.add(file);
-  }
-
-  const changed = [...files].sort();
-  if (changed.length === 0) {
-    return refusal(
-      CHANGED_SET_EMPTY,
-      "nothing has changed, so there is nothing to select. A clean tree just after a commit is one of the commonest states an agent is in, and an empty changed set selects NOTHING — reporting that as a green run over zero tests is the silent narrowing this refuses.",
-    );
-  }
-
-  return Object.freeze({ ok: true, changed: Object.freeze(changed), base: since });
+  return Object.freeze({ ok: true, changed: Object.freeze([...new Set(parsePorcelain(status.stdout))].sort()) });
 }
 
-// ONE COMMIT'S CHANGE, against its FIRST parent: a merge's own change is what it brought onto the
-// line it was merged into, which is what a replay of that line asks about. A root commit has no
-// parent, so its change is every file it holds.
-async function committedFiles(commit, options) {
-  const parents = await git(["rev-list", "--parents", "-n", "1", `${commit}^{commit}`, "--"], options);
-  if (parents.outcome !== "exited" || parents.exitCode !== 0) {
-    return refusal(
-      SINCE_REV_UNRESOLVABLE,
-      `the revision ${JSON.stringify(commit)} does not resolve to a commit in this repository, so there is no change to replay. This is a refusal rather than a widening: the revision does not exist.`,
-      parents.stderr?.trim() || parents.error || null,
-    );
-  }
-  const [sha, firstParent] = String(parents.stdout).trim().split(/\s+/u);
-  const listed = firstParent == null
-    ? await git(["show", "--name-only", "--format=", sha], options)
-    : await git(["diff", "--name-only", firstParent, sha], options);
-  if (listed.outcome !== "exited" || listed.exitCode !== 0) {
+// WHAT CHANGED BETWEEN TWO CONTENT KEYS (210/ADR-004). Both are git tree ids written by the record
+// leaf, so one `git diff --name-only <tree> <tree>` answers what a fix round hands the importer
+// scan. The same key is no change at all.
+async function changedBetween({ projectRoot, from, to, launch = runBounded, deadlineMs = CHANGED_SET_DEADLINE_MS } = {}) {
+  if (from === to) return Object.freeze({ ok: true, changed: Object.freeze([]) });
+  const diff = await launch({ command: VCS, args: ["diff", "--name-only", from, to], cwd: projectRoot, deadlineMs });
+  if (diff.outcome !== "exited" || diff.exitCode !== 0) {
     return refusal(
       CHANGED_SET_UNREADABLE,
-      `the files ${JSON.stringify(commit)} changed could not be read (${listed.attempted}), so the changed set is unknown — the revision resolved, so this is git failing to answer.`,
-      listed.stderr?.trim() || listed.error || null,
+      `what changed since the red run could not be read (${diff.attempted}), so the fix's reach is unknown — and an unknown reach is not an empty one.`,
+      diff.stderr?.trim() || diff.error || null,
     );
   }
-  const changed = [...new Set(parseNameOnly(listed.stdout))].sort();
-  if (changed.length === 0) {
-    return refusal(CHANGED_SET_EMPTY, `the commit ${JSON.stringify(commit)} changed no file against its first parent, so there is nothing to select.`);
-  }
-  return Object.freeze({ ok: true, changed: Object.freeze(changed), base: sha, commit: sha });
+  const changed = String(diff.stdout).split(/\r?\n/u).map((line) => unquote(line)).filter((line) => line.length > 0);
+  return Object.freeze({ ok: true, changed: Object.freeze([...new Set(changed)].sort()) });
 }
 
-return { CHANGED_SET_DEADLINE_MS, changedFiles, parseNameOnly, parsePorcelain };
+return { CHANGED_SET_DEADLINE_MS, CHANGED_SET_UNREADABLE, changedBetween, changedFiles, parsePorcelain };
 }

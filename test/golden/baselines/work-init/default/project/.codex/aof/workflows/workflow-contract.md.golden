@@ -19,8 +19,14 @@ in the accepting item's own contract or a superseding ADR. The main governing se
 record prose, acceptance, outcomes and finding ids. Developers/reviewers return evidence and
 unnumbered findings. No continue/review close creates a work item or accepts a milestone.
 
-Build through `aof test --scope impacted --story <ref>`; report its actual resolved scope and
-widening, never substitute hand-picked files. Syntax/lint and declared fitness controls must
+Read the file named in `work.test.instructions` before running anything. Choose the suites
+from those instructions and the changed files, then run `aof test <suite>… --reason "<why these suites>"`.
+Use `aof test --suggest` to check importers and path mentions; it cannot see paths built from fragments
+or source-to-source reach through the application assembly. State any deliberate exclusions by
+suite name in the recorded reason. After a fix, check what the fix changed with `aof test --failed`.
+Never run `aof test --all` in story work: the whole tree is the regression gate's.
+
+Syntax/lint and declared fitness controls must
 also pass. Walk `aof work validate <ref>` then `aof work doctor <ref>` before review, and again
 after confirmed fixes. Stop on a red rung before paying for reviewers. A story green is not a
 milestone regression gate. Acceptance distinguishes executable evidence, agent-run manual

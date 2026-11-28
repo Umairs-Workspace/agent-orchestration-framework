@@ -5,15 +5,15 @@ slug: attributed-test-records
 title: "A test record says why it ran, where it ran, and which suite each failure came from"
 parent: 210
 depends: []
-status: not-started
+status: done
 owner: product-owner
 created: 2026-11-26
-updated: 2026-11-26
+updated: 2026-11-27
 schema: 1
 aofVersion: 0.1.0
 adrs: [ADR-002, ADR-004]
 reads: [wiki/work/210_milestone_bounded-test-runs/ARCHITECTURE.md#ADR-002, wiki/work/210_milestone_bounded-test-runs/ARCHITECTURE.md#ADR-004, packages/work/src/regression-record.mjs, scripts/test-shard.mjs, test/arch/testing/acd-test-record-one-writer.test.mjs]
-files: [packages/work/src/testing/record.mjs, packages/work/src/grade.mjs, test/testing/test-run-record.test.mjs, test/grade/grade-report-normalisers.test.mjs]
+files: [test/arch/grade/acd-grade-record-envelope.test.mjs, test/testing/test-command-contract.test.mjs, scripts/workspace-runtime-audit.json, scripts/test-harness.mjs, scripts/test-shard.mjs, test/arch/loop/acd-loop-suite-registration.test.mjs, packages/work/src/testing/record.mjs, packages/work/src/grade.mjs, test/testing/test-run-record.test.mjs, test/grade/grade-report-normalisers.test.mjs]
 ---
 # 02 · A test record says why it ran, where it ran, and which suite each failure came from
 
@@ -27,9 +27,9 @@ suites, and review lanes asking about part of a run are answered from it.
 
 ## Tasks
 
-- [ ] [per-suite failures from the light entry](tasks/00_per-suite-failures.feature)
-- [ ] [reason, worktree and chain fields](tasks/01_reason-worktree-chain.feature)
-- [ ] [a covering red answers a subset](tasks/02_covering-red-answers.feature)
+- [x] [per-suite failures from the light entry](tasks/00_per-suite-failures.feature)
+- [x] [reason, worktree and chain fields](tasks/01_reason-worktree-chain.feature)
+- [x] [a covering red answers a subset](tasks/02_covering-red-answers.feature)
 
 ## Notes
 

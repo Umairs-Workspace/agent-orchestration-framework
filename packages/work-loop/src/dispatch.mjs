@@ -365,12 +365,13 @@ async function ignoredPaths(exec, cwd, relpaths) {
 // inheritCodeGraph(projectRoot, worktree, { exec }) — A LANE STARTS WITH THE PRIMARY'S CODE GRAPH
 // (2026-11-15). The graph is derived and git-ignored, so a lane cut from the primary never had one.
 // `aof graph build` fetches a shared graph only for a commit on the default branch, so in a lane on
-// a feature branch every `aof test --scope impacted` widened to the whole suite as `no-graph` (a
-// downstream project worked around it by copying the graph in its worktree prepare step).
+// a feature branch every graph read answered `no-graph` (a downstream project worked around it by
+// copying the graph in its worktree prepare step). Tests no longer read the graph (210/ADR-008);
+// `aof graph impact` in a lane still does.
 //
 // THE PRIMARY'S GRAPH IS THE ONE COPIED, not the nearest published ancestor's: it needs no remote,
 // and the lane is cut from the primary's HEAD, so it is the closest graph there is to the lane's
-// base. The selection still names the graph's own instant and widens for a file it does not hold.
+// base. A reader still names the graph's own instant and treats a file it does not hold as unknown.
 // The copy keeps the file's mtime, because that mtime is the `builtAt` every reader reports.
 //
 // The copy rule is `inheritIgnoredClaudeFiles`' own: the primary holds the file, the lane lacks it,

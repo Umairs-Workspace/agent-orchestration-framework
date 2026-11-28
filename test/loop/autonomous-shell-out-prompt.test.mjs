@@ -795,13 +795,13 @@ export const autonomousShellOutPromptTests = [
     run: () => {
       const manual = manualBody();
       assert.match(manual, /No `aof-developer` is spawned, and no file outside the item's own folder is written/u);
-      assert.match(manual, /Every manual run runs `aof test --scope impacted --story <ref>` once, before the guide/u);
+      assert.match(manual, /Every manual run reads the instructions and runs the chosen suites once, before the guide/u);
       const parts = [
         "the scenarios still red, by name",
         "the user story",
         "each task file with its scenario names, read from `aof work tasks <ref> --json`",
         "every `reads:` entry and every `files:` entry, each with one line on why it matters",
-        "the test files among `files:`, and the command `aof test --scope impacted --story <ref>`",
+        "the test files among `files:`, and the command `aof test <suite>… --reason \"<why these suites>\"`",
         "the build plan's mechanism and known traps, when the story has a `PLAN.md`",
         "an order to take the tasks in, with the reason for it",
       ];
@@ -853,7 +853,7 @@ export const autonomousShellOutPromptTests = [
       const manual = manualBody();
       assert.match(manual, /Enter through the build door — this command's first act\.\*\* Run `aof work continue <ref> --manual --json`/u);
       const door = manual.indexOf("aof work continue <ref> --manual --json");
-      for (const later of ["aof work run-start <ref> --json", "aof test --scope impacted --story <ref>", "Print the guide"]) {
+      for (const later of ["aof work run-start <ref> --json", "aof test <suite>… --reason \"<why these suites>\"", "Print the guide"]) {
         assert.ok(manual.indexOf(later) > door, `the door comes before ${later}`);
       }
       assert.match(manual, /A `continue-manual-not-a-story` refusal for a milestone or a `NN\/MM-PP` span runs `aof work next <ref> --json` and names the ready stories it answers, to take one at a time/u);

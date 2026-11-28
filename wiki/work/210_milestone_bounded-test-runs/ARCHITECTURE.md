@@ -156,7 +156,9 @@ worktree, the refusal is `test-failed-no-red`.
 
 A round's record has `parent` set to the record it follows and `round` set to the parent's plus
 one. A named or `--all` red starts a new chain at round 0. Every red summary, from either face,
-ends with the exact line `aof test --failed`.
+ends with the exact line `aof test --failed`, except a round that latches its chain (ADR-005): that
+summary ends with the hand-over instead, because the fix round would be refused (amended at
+verify, 2026-11-27, ratifying 210/05's build).
 
 ## ADR-005 · A fix loop that stops converging stops itself
 
@@ -304,9 +306,9 @@ changes.
 
 | id | invariant | enforced by (arch-test) | from |
 |---|---|---|---|
-| FF-21001 | **Testing reads no code graph.** No module under `packages/work/src/testing/`, nor `packages/work/src/commands/test.mjs`, imports the code-relations port or a graph reader, and the test command's core bindings are handed no `codeRelations` service. | `test/arch/testing/acd-test-selection-reads-no-graph.test.mjs` — pending (210/04) | ADR-003, ADR-008 |
-| FF-21002 | **One import scan.** Only `packages/work/src/testing/importers.mjs` parses suite import specifiers or searches suite text for a path. `--suggest` and `--failed` reach it through one binding. | a rewritten leg in `test/arch/testing/acd-one-selector-one-changed-set.test.mjs` — pending (210/04) | ADR-003 |
-| FF-21003 | **The whole tree has two doors.** Only the `--all` branch of `packages/work/src/commands/test.mjs`, after the story-work check, and `packages/work/src/commands/regression-gate.mjs` launch the runner with an empty selection. | a leg in `test/arch/testing/acd-test-command-reports-not-decides.test.mjs` — pending (210/04) | ADR-007 |
+| FF-21001 | **Testing reads no code graph.** No module under `packages/work/src/testing/`, nor `packages/work/src/commands/test.mjs`, imports the code-relations port or a graph reader, and the test command's core bindings are handed no `codeRelations` service. | `test/arch/testing/acd-test-selection-reads-no-graph.test.mjs` | ADR-003, ADR-008 |
+| FF-21002 | **One import scan.** Only `packages/work/src/testing/importers.mjs` parses suite import specifiers or searches suite text for a path. `--suggest` and `--failed` reach it through one binding. | a rewritten leg in `test/arch/testing/acd-one-selector-one-changed-set.test.mjs` | ADR-003 |
+| FF-21003 | **The whole tree has two doors.** Only the `--all` branch of `packages/work/src/commands/test.mjs`, after the story-work check, and `packages/work/src/commands/regression-gate.mjs` launch the runner with an empty selection. | a leg in `test/arch/testing/acd-test-command-reports-not-decides.test.mjs` | ADR-007 |
 
 Register FF-21001 in `test/arch/testing/index.mjs` in place of the retired FF-19003 file, so
 `test/arch/testing` stays at its count. Each control owes a red probe in `VERIFICATION.md` when it

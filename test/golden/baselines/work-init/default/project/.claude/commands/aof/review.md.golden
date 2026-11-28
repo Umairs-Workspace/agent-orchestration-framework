@@ -42,7 +42,13 @@ as written. This file holds only what differs from them.
 1. **Mint the run before anything else** — `aof work run-start <ref> --json`, exactly as continue's
    story lane does at its step 2. A `duplicate-run` refusal means a run on this story is still open
    from a phase that died; the mint reclaims a stale one.
-2. **Run the story's tests first** — `aof test --scope impacted --story <ref>`. When nothing has
+2. **Run the story's tests first.** Read the file named in `work.test.instructions` before running anything. Choose the suites
+from those instructions and the changed files, then run `aof test <suite>… --reason "<why these suites>"`.
+Use `aof test --suggest` to check importers and path mentions; it cannot see paths built from fragments
+or source-to-source reach through the application assembly. State any deliberate exclusions by
+suite name in the recorded reason. After a fix, check what the fix changed with `aof test --failed`.
+Never run `aof test --all` in story work: the whole tree is the regression gate's.
+   When nothing has
    changed since the build's own run, it is answered from that run's record, and the answer is the
    evidence. **A red scenario
    stops the review before the gate ladder**: name every red scenario, spawn no reviewer, and do not
@@ -54,7 +60,7 @@ as written. This file holds only what differs from them.
    uncommitted changes included — `git diff $(git merge-base HEAD <default branch>)` plus the
    untracked files `git status --short` lists. **A changed path outside the story's `files:` is
    reported as a contract gap**, a finding in its own right: the declaration is what the wave
-   planner and the impacted test run trusted.
+   planner and the review trusted.
 4. **Walk the gate ladder** — continue's `<gate_ladder>`, scoped to this ref. A red rung is its own
    outcome, exactly as there: name the rung and its findings, spawn no reviewer, and close the run
    as in step 2.

@@ -29,10 +29,10 @@ export async function runStep(context, step) {
       const config = JSON.parse(await readFile(path.join(f.projectDir, ".aof/aof.config.json"), "utf8"));
       assert.equal(config.work.agents.mode, "orchestrated");
       const cliContext = { projectDir: f.projectDir, globalDir: f.globalDir, dataDir: path.join(f.root, "data") };
-      const red = await runCli(cliContext, "test --scope all --json");
+      const red = await runCli(cliContext, "test --all --json");
       assert.notEqual(red.status, 0, red.stdout);
       await writeFile(path.join(f.projectDir, "src/s01.cjs"), "module.exports = { answer: 42 };\n");
-      const green = await runCli(cliContext, "test --scope all --json");
+      const green = await runCli(cliContext, "test --all --json");
       assert.equal(green.status, 0, green.stderr + green.stdout);
     } finally { await rm(f.root, { recursive: true, force: true }); } return;
   }

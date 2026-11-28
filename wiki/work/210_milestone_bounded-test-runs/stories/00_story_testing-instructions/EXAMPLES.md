@@ -6,7 +6,7 @@
 - E3 · No rendered skill still says "never name suite files" or "`--scope file` wearing prose" [proposed]
 
 ## R2 · A project with no instructions file is told how to get one
-- E4 · A project with `work.test` declared and no `work.test.instructions` runs `aof work doctor`. It gets one `test-instructions` warning naming `/aof:map-tests` [proposed]
+- E4 · A project with `work.test` declared and no `work.test.instructions` runs `aof project doctor`. It gets one `test-instructions` warning naming `/aof:map-tests` [proposed]
 - E5 · `work.test.instructions` names `docs/TESTS.md`, which does not exist. `aof test` refuses as `test-instructions-missing` and names the path [proposed]
 - E6 · `/aof:map-tests` on a repository with two test roots and a native `node:test` package drafts a file that names both roots and says how to run the native package, sets the key, and asks the operator to edit it [proposed]
 

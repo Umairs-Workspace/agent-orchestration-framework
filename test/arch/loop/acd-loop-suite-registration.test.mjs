@@ -291,8 +291,10 @@ function orphanProblems(files, runnerText, baseline) {
 //         import rewritten to a module that is not there.
 const RUNNER_LOOP_HEADER = "for (const { name, run } of tests)";
 const RUNNER_INTEGRATION_IMPORT = '  await import("../test/integration/cli.mjs");';
+// 210/02: operator-approved afterCase callback emits the file marker after the result.
+// The reporter defaults to the existing console; isolation and integration pins are unchanged.
 const RUNNER_REGIONS = Object.freeze([
-  { id: "the suite loop's body", from: (suite) => ({ code: suite, at: suite.indexOf(RUNNER_LOOP_HEADER) + RUNNER_LOOP_HEADER.length }), pin: "87795a7916611aa1147d223c93c62c8983cbec9f96d4ff742404d28e4e34d088" },
+  { id: "the suite loop's body", from: (suite) => ({ code: suite, at: suite.indexOf(RUNNER_LOOP_HEADER) + RUNNER_LOOP_HEADER.length }), pin: "1d94f74ae6d92e285e6345fd2f3ed4798ea4fe46a679cd1edc81385aade4ea5c" },
   { id: "the per-test global-home root", from: (suite) => ({ code: suite, at: suite.indexOf("const ghRoot") + "const ghRoot".length }), pin: "e000259f12388892da852afbb326454f66e0d495a0ed47a446e2985823317db4" },
   { id: "the per-test global-home restore (the loop's finally)", from: (suite, loop) => ({ code: loop, at: loop.indexOf("} finally") + "} finally".length }), pin: "0de5a2941999272297fc2f5ef6f776d2f55f4917e67c66bb215d09638c9a1540" },
   { id: "the integration lane's environment restore", from: (suite) => ({ code: suite, at: suite.indexOf("if (previousInProcess === undefined)") + "if (previousInProcess === undefined)".length }), pin: "4726fd6d84c3867494fce10e78674196f83921d2ccb29665da7ddd252c9b3e6d" },
@@ -326,7 +328,7 @@ const RUNNER_REGIONS = Object.freeze([
 // are unchanged.
 // RE-PINNED by 160/13 (ADR-014 §1): the harness gains the pure shard planners `shardPlan` and `parseShard` beside
 // `packUnits`. `runCases` and every pinned region above are unchanged.
-const RUNNER_RESIDUE = "dec50aaf4cf14f1f92f1aa5cb65130e96914ead7c9c4c1ad1f5988be9e4decf3";
+const RUNNER_RESIDUE = "8c3f95f06a7ae0ce145968aaf70a03e1c32e90ebc523ebb047ddf2a54630fa29";
 // RE-PINNED by 142 Plan 09: an owned workspace's `test/index.mjs` import (`../packages/<name>/test/…`,
 // `../apps/<name>/test/…`) is a registration row exactly like a `../test/` one. Measured: the residue
 // loses precisely those imports (seven at the time of the pin) and no logic line, so the digest below

@@ -15,7 +15,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // node:assert/strict, `{ name, run }` shape.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, rm, utimes, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -79,83 +79,64 @@ const E1_TREE = Object.freeze([
   "packages/core/test/two.test.mjs",
 ]);
 
-// Commits the fixture at a fixed commit time, and plants `graphify-out/graph.json` with a given mtime
-// (null plants none), so `test-layout-graph-fresh` compares two known instants.
-async function withCommitAndGraph(root, { committedAt, builtAt }) {
-  const env = { ...process.env, GIT_COMMITTER_DATE: committedAt, GIT_AUTHOR_DATE: committedAt };
-  const commit = spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "--allow-empty", "-m", "fixture"], { cwd: root, encoding: "utf8", env });
-  assert.equal(commit.status, 0, commit.stderr);
-  if (builtAt != null) {
-    await mkdir(path.join(root, "graphify-out"), { recursive: true });
-    const graph = path.join(root, "graphify-out", "graph.json");
-    await writeFile(graph, "{}\n");
-    await utimes(graph, new Date(builtAt), new Date(builtAt));
-  }
-}
-
-async function doctorWithGraph(options, instants) {
-  const root = await project(options);
-  try {
-    await withCommitAndGraph(root, instants);
-    return await doctor.run({ target: root });
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-}
+// 210/00 supersedes the coupling and graph-freshness checks from 190/04.
+// A runner that answers green without starting anything: these rows read what `--all` counts.
+const GREEN_RUN = Object.freeze({ outcome: "exited", exitCode: 0, stdout: "ok - fixture\n", stderr: "", verdict: "passed", status: 0 });
 
 export const testLayoutCheckTests = [
   {
-    name: "test-layout-couplings-match · a glob matching no tracked file and a via helper that is not one are named",
+    name: "210/00 E4 · a runner without instructions gets exactly one warning and a repair",
     async run() {
-      const tracked = ["test/a.test.mjs", "apps/crm/src/app/(crm)/projects/a/page.tsx", "packages/app/src/test-support.ts"];
-      const couplings = [
-        { paths: ["apps/crm/src/app/(crm)/projects/**/page.tsx"], suites: ["test/a.test.mjs"], why: "unescaped route group" },
-        { paths: ["apps/crm/src/app/\\(crm\\)/projects/**/page.tsx"], suites: ["test/a.test.mjs"], why: "escaped" },
-        { paths: ["docs/**"], suites: [], via: ["packages/app/src/test-support.ts", "packages/app/src/gone.ts"], why: "x" },
-      ];
-      const report = await doctorOver({ test: declaration({ couplings }), tracked });
-      const match = check(report, "test-layout-couplings-match");
-      assert.equal(match?.severity, "warning", JSON.stringify(report.checks));
-      assert.deepEqual([...match.details], ['paths "apps/crm/src/app/(crm)/projects/**/page.tsx"', 'paths "docs/**"', 'via "packages/app/src/gone.ts"']);
-      assert.match(match.message, /\\\(crm\\\)/u, "the repair names the escape");
-      const clean = await doctorOver({ test: declaration({ couplings: [couplings[1]] }), tracked });
-      assert.equal(check(clean, "test-layout-couplings-match")?.severity, "ok");
-      const none = await doctorOver({ test: declaration({ couplings: [] }), tracked });
-      assert.equal(check(none, "test-layout-couplings-match"), undefined, "no coupling, nothing to match");
+      const report = await doctorOver({ test: declaration(), tracked: ["test/a.test.mjs"] });
+      const rows = report.checks.filter(row => row.id === "test-instructions");
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].severity, "warning");
+      assert.match(rows[0].message, /\/aof:map-tests/u);
     },
   },
   {
-    name: "test-layout-workdir · a work dir no coupling covers is named, and a coupling answers it",
+    name: "210/00 E5 · missing instructions refuse compilation and report a doctor error",
     async run() {
-      const bare = await doctorOver({ test: declaration({ couplings: [] }), tracked: ["test/a.test.mjs"] });
-      const warned = check(bare, "test-layout-workdir");
-      assert.equal(warned?.severity, "warning", JSON.stringify(bare.checks));
-      assert.match(warned.message, /No coupling covers the work dir \(wiki\/work\)/u);
-      assert.match(warned.message, /\/aof:map-tests/u);
-      const coupled = await doctorOver({ test: declaration({ couplings: [{ paths: ["wiki/**"], suites: [], why: "no suite reads the work stream" }] }), tracked: ["test/a.test.mjs"] });
-      assert.equal(check(coupled, "test-layout-workdir")?.severity, "ok");
-      const custom = await doctorOver({ test: declaration({ couplings: [] }), workDir: "docs/work", tracked: ["test/a.test.mjs"] });
-      assert.match(check(custom, "test-layout-workdir").message, /\(docs\/work\)/u, "the declared work dir is the one named");
+      const root = await project({ test: declaration({ instructions: "docs/TESTS.md" }) });
+      try {
+        const config = { work: { test: declaration({ instructions: "docs/TESTS.md" }) } };
+        const compiled = resolveTestToolchain(config, { projectRoot: root });
+        assert.equal(compiled.ok, false);
+        assert.equal(compiled.code, "test-instructions-missing");
+        assert.match(compiled.message, /docs\/TESTS\.md/u);
+        const row = check(await doctor.run({ target: root }), "test-instructions");
+        assert.equal(row?.severity, "error");
+        assert.match(row.message, /docs\/TESTS\.md/u);
+      } finally { await rm(root, { recursive: true, force: true }); }
     },
   },
   {
-    name: "test-layout-graph-fresh · no graph, a graph older than HEAD, and a current graph (Examples)",
+    name: "210/00 · a present instructions file is ok and the obsolete checks are absent",
     async run() {
-      const committedAt = "2026-01-02T00:00:00Z";
-      const rows = [
-        ["no graph", null, "warning", /No code graph is built/u],
-        ["built before HEAD's commit", "2026-01-01T00:00:00Z", "warning", /before HEAD's commit .*aof graph build \. --offline/u],
-        ["built after HEAD's commit", "2026-01-03T00:00:00Z", "ok", /after HEAD's commit/u],
-      ];
-      for (const [state, builtAt, severity, message] of rows) {
-        const report = await doctorWithGraph({ test: declaration(), tracked: ["test/a.test.mjs"] }, { committedAt, builtAt });
-        const fresh = check(report, "test-layout-graph-fresh");
-        assert.equal(fresh?.severity, severity, `${state}: ${JSON.stringify(report.checks)}`);
-        assert.match(fresh.message, message, state);
+      const report = await doctorOver({ test: declaration({ instructions: "wiki/TESTING.md", gate: GATE }), tracked: ["wiki/TESTING.md", "test/a.test.mjs"] });
+      assert.equal(check(report, "test-instructions")?.severity, "ok");
+      assert.match(check(report, "test-instructions").message, /wiki\/TESTING\.md/u);
+      for (const id of ["test-layout-suites", "test-layout-resume"]) assert.ok(check(report, id), id);
+      for (const id of ["test-layout-couplings", "test-layout-couplings-match", "test-layout-workdir", "test-layout-graph-fresh"]) assert.equal(check(report, id), undefined, id);
+    },
+  },
+  {
+    name: "210/00 E10 E11 · repository instructions declare coverage, no-run records and hazards",
+    async run() {
+      const config = JSON.parse(await readFile(path.join(repoRoot, ".aof/aof.config.json"), "utf8"));
+      assert.equal(config.work.test.instructions, "wiki/TESTING.md");
+      const text = await readFile(path.join(repoRoot, config.work.test.instructions), "utf8");
+      for (const phrase of ["wiki/work/**", "needs no run", "test/store/global-work-propagation.test.mjs", ":4182", "node:test", "node scripts/test-workspace.mjs", "whole tree is the regression gate's"]) assert.ok(text.includes(phrase), phrase);
+    },
+  },
+  {
+    name: "210/00 · instructions must be a nonempty relative file path",
+    async run() {
+      for (const instructions of ["", " ", null, 4, "/tmp/test.md", "../TESTING.md", "C:\\TESTING.md"]) {
+        const out = resolveTestToolchain({ work: { test: declaration({ instructions }) } });
+        assert.equal(out.ok, false, String(instructions));
+        assert.equal(out.key, "work.test.instructions");
       }
-      // A checkout with no commit has no HEAD to compare against, so the check is omitted.
-      const uncommitted = await doctorOver({ test: declaration(), tracked: ["test/a.test.mjs"] });
-      assert.equal(check(uncommitted, "test-layout-graph-fresh"), undefined);
     },
   },
   {
@@ -193,10 +174,10 @@ export const testLayoutCheckTests = [
     },
   },
   {
-    name: "190/04-00 E4 · a test-shaped file a coupling accounts for is not counted",
+    name: "190/04-00 E4 · an explicitly excluded fixture is not counted",
     async run() {
       const report = await doctorOver({
-        test: declaration({ roots: ["test"], couplings: [{ paths: ["test/fixtures/**"], suites: [], why: "fixtures no suite runs as a suite" }] }),
+        test: declaration({ roots: ["test"], exclude: [{ paths: ["test/fixtures/**"], why: "fixtures no suite runs as a suite" }] }),
         tracked: ["test/fixtures/app/login.spec.ts", "test/a.test.mjs"],
       });
       assert.equal(check(report, "test-layout-suites")?.severity, "ok", check(report, "test-layout-suites")?.message);
@@ -211,23 +192,6 @@ export const testLayoutCheckTests = [
         tracked: ["wiki/work/12_milestone_x/probe.test.mjs", "test/a.test.mjs"],
       });
       assert.equal(check(report, "test-layout-suites")?.severity, "ok", check(report, "test-layout-suites")?.message);
-    },
-  },
-  {
-    name: "190/04-00 E5 · absent couplings are a question nobody has answered",
-    async run() {
-      const report = await doctorOver({ test: declaration(), tracked: ["test/a.test.mjs"] });
-      const couplings = check(report, "test-layout-couplings");
-      assert.equal(couplings?.severity, "warning");
-      assert.match(couplings.message, /every changed document widens the run/u);
-      assert.match(couplings.message, /\/aof:map-tests/u);
-    },
-  },
-  {
-    name: "190/04-00 E6 · empty couplings are the considered answer",
-    async run() {
-      const report = await doctorOver({ test: declaration({ couplings: [] }), tracked: ["test/a.test.mjs"] });
-      assert.equal(check(report, "test-layout-couplings")?.severity, "ok");
     },
   },
   {
@@ -319,9 +283,9 @@ export const testLayoutCheckTests = [
       const test = declaration({ roots: ["src", "test"], suiteSuffixes: [".test.ts"] });
       const root = await project({ test, tracked: tree });
       try {
-        const out = await runTest({ scope: "all", plan: true }, { projectRoot: root, config: { work: { test } } });
+        const out = await runTest({ all: true }, { projectRoot: root, config: { work: { test } }, run: async () => GREEN_RUN });
         assert.equal(out.refusal, null, out.refusal?.message);
-        assert.deepEqual([...out.selected], ["src/cart.test.ts", "test/price.test.ts"], "the plan's whole suite holds both .test.ts files");
+        assert.deepEqual([...out.selected], ["src/cart.test.ts", "test/price.test.ts"], "the whole suite holds both .test.ts files");
         assert.equal(out.total, 2);
       } finally {
         await rm(root, { recursive: true, force: true });
@@ -340,7 +304,7 @@ export const testLayoutCheckTests = [
       const test = declaration({ roots: ["test"], exclude: [{ paths: ["test/native/**"], why: "native" }] });
       const root = await project({ test, tracked: tree });
       try {
-        const out = await runTest({ scope: "all", plan: true }, { projectRoot: root, config: { work: { test } } });
+        const out = await runTest({ all: true }, { projectRoot: root, config: { work: { test } }, run: async () => GREEN_RUN });
         assert.equal(out.refusal, null, out.refusal?.message);
         assert.deepEqual([...out.selected], ["test/a.test.mjs"]);
       } finally {

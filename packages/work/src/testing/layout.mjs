@@ -1,25 +1,13 @@
-import picomatch from "picomatch";
-import { isExcludedTest, isSuiteFile } from "./select.mjs";
+import { isExcludedTest, isSuiteFile } from "./suites.mjs";
 
-// THE TEST-LAYOUT CHECK FAMILY (190/ADR-008 §1, §5). Every key 190 added keeps the old behaviour
-// when it is absent, which is right for the code and silent for a project already on aof: it takes
-// 190 through `aof work update` and keeps widening to the whole tree. This names each part of the
-// declaration that narrowing and resume cannot use, and its repair.
-//
-// ONE PURE FUNCTION, TWO FACES. `aof project doctor` lists the checks and `aof work update` prints
-// the warnings, and both call this, so the two cannot disagree. It takes the COMPILED toolchain and
-// gate (`toolchain.mjs` is the one reader of `work.test.*`, FF-7201), the tracked files git listed
-// at the caller's edge, and the work dir. It reads no record, no graph and no file, and it never
-// runs a test. Suite membership is `isSuiteFile`'s alone (FF-19006).
+// 210/ADR-001: the project doctor and work update share these pure checks over the
+// compiled declaration. The toolchain owns config and filesystem reads; this module
+// owns the messages. Suite membership remains isSuiteFile's decision.
 
 // The one repair every warning names.
 export const TEST_LAYOUT_REPAIR = "/aof:map-tests";
 
-export const TEST_LAYOUT_CHECK_IDS = Object.freeze(["test-layout-suites", "test-layout-couplings", "test-layout-couplings-match", "test-layout-workdir", "test-layout-resume", "test-layout-graph-fresh"]);
-
-// The one repair the graph-freshness warning names: offline, so it sends nothing to a hosted model
-// and neither fetches nor publishes a shared graph.
-export const GRAPH_REBUILD = "aof graph build . --offline";
+export const TEST_LAYOUT_CHECK_IDS = Object.freeze(["test-instructions", "test-layout-suites", "test-layout-resume"]);
 
 // THE LANGUAGE-NEUTRAL NAME SET, frozen: what a file that is a test looks like in the runners a
 // project is likely to use. It decides only what is COUNTED; whether a file is a suite is the
@@ -70,15 +58,12 @@ function considered({ tracked, workDir }) {
     .filter((file) => workDir == null || !under(file, workDir));
 }
 
-// The test-shaped files the declaration cannot select. A file a coupling's `paths` matches is
-// accounted for, and so is a file `work.test.exclude` names: the declaration says the runner does
-// not run it (190/ADR-008 §7).
+// Test-shaped files outside the suite predicate are gaps unless explicitly excluded.
 function unselectable({ files, toolchain }) {
   return files
     .filter((file) => isTestShaped(file))
     .filter((file) => !isSuiteFile(file, toolchain.roots, toolchain.suiteSuffixes, toolchain.exclude))
-    .filter((file) => !isExcludedTest(file, toolchain.exclude))
-    .filter((file) => !toolchain.couplings.some((entry) => picomatch.isMatch(file, entry.paths, { dot: true })));
+    .filter((file) => !isExcludedTest(file, toolchain.exclude));
 }
 
 function suitesCheck({ toolchain, tracked, workDir }) {
@@ -92,12 +77,12 @@ function suitesCheck({ toolchain, tracked, workDir }) {
   const seen = considered({ tracked, workDir });
   const files = unselectable({ files: seen, toolchain });
   if (files.length === 0) {
-    // 190/ADR-008 §8 — an empty whole suite is never `ok`: `impacted` would select nothing.
+    // 190/ADR-008 §8 — an empty whole suite is never `ok`: `--all` and the gate would run nothing.
     if (!seen.some((file) => isSuiteFile(file, toolchain.roots, toolchain.suiteSuffixes, toolchain.exclude))) {
       return Object.freeze({
         id: "test-layout-suites",
         severity: "warning",
-        message: `No tracked file is a suite under work.test's roots and suffixes, so the whole suite is empty and \`aof test --scope impacted\` selects nothing. Declare the roots and suffixes the runner's suites use with ${TEST_LAYOUT_REPAIR}.`,
+        message: `No tracked file is a suite under work.test's roots and suffixes, so the whole suite is empty and \`aof test --all\` runs nothing. Declare the roots and suffixes the runner's suites use with ${TEST_LAYOUT_REPAIR}.`,
       });
     }
     return Object.freeze({ id: "test-layout-suites", severity: "ok", message: "Every tracked test file is a suite under the declared roots and suffixes, or is excluded with a reason." });
@@ -110,89 +95,9 @@ function suitesCheck({ toolchain, tracked, workDir }) {
   return Object.freeze({
     id: "test-layout-suites",
     severity: "warning",
-    message: `${files.length} tracked test file${files.length === 1 ? " is" : "s are"} not a suite under work.test's roots and suffixes, so \`aof test --scope impacted\` can never select ${files.length === 1 ? "it" : "them"}: ${listed.join(", ")}${more}. Declare them as suites, or exclude them with a reason where the runner does not run them, with ${TEST_LAYOUT_REPAIR}.`,
+    message: `${files.length} tracked test file${files.length === 1 ? " is" : "s are"} not a suite under work.test's roots and suffixes, so the declared runner cannot select ${files.length === 1 ? "it" : "them"}: ${listed.join(", ")}${more}. Declare them as suites, or exclude them with a reason where the runner does not run them, with ${TEST_LAYOUT_REPAIR}.`,
     details: Object.freeze(ranked.map(([dir, count]) => Object.freeze({ dir, count }))),
   });
-}
-
-function couplingsCheck({ toolchain }) {
-  if (toolchain.couplingsDeclared === true) {
-    return Object.freeze({
-      id: "test-layout-couplings",
-      severity: "ok",
-      message: toolchain.couplings.length === 0
-        ? "work.test.couplings is declared empty: no suite reads a document."
-        : `work.test.couplings declares ${toolchain.couplings.length} coupling${toolchain.couplings.length === 1 ? "" : "s"}.`,
-    });
-  }
-  return Object.freeze({
-    id: "test-layout-couplings",
-    severity: "warning",
-    message: `work.test.couplings is not declared, so every changed document widens the run to the whole suite. Declare which suites read which documents, or [] when none do, with ${TEST_LAYOUT_REPAIR}.`,
-  });
-}
-
-// A COUPLING THAT MATCHES NOTHING DOES NOTHING, SILENTLY. A typo, a moved folder, or a folder name
-// that is glob syntax (a Next.js route group `(crm)` beside `**` reads as a pattern group) all leave
-// a coupling that never places a file. Every glob is asked against the tracked files, and every
-// `via` helper must be one (190/ADR-009, amendment).
-function couplingsMatchCheck({ toolchain, tracked }) {
-  const files = tracked.map(posix).filter((file) => !file.split("/").includes("node_modules"));
-  const present = new Set(files);
-  const dead = [];
-  for (const entry of toolchain.couplings) {
-    for (const glob of entry.paths) {
-      const matches = picomatch(glob, { dot: true });
-      if (!files.some((file) => matches(file))) dead.push(`paths ${JSON.stringify(glob)}`);
-    }
-    for (const helper of entry.via ?? []) if (!present.has(posix(helper))) dead.push(`via ${JSON.stringify(helper)}`);
-  }
-  if (dead.length === 0) {
-    return Object.freeze({ id: "test-layout-couplings-match", severity: "ok", message: "Every coupling glob matches a tracked file, and every via helper is one." });
-  }
-  return Object.freeze({
-    id: "test-layout-couplings-match",
-    severity: "warning",
-    message: `${dead.length} coupling entr${dead.length === 1 ? "y matches" : "ies match"} no tracked file, so ${dead.length === 1 ? "it places" : "they place"} nothing: ${dead.join(", ")}. Fix the path, or escape glob syntax in folder names (a route group \`(crm)\` beside \`*\` is a pattern group: write \`\\(crm\\)\` or \`[(]crm[)]\`). A coupling written ahead of its files warns until they exist. With ${TEST_LAYOUT_REPAIR}.`,
-    details: Object.freeze(dead),
-  });
-}
-
-// THE WORK DIR CHANGES ON EVERY BUILD. `aof:continue` edits STATE, SPEC and feature files all the
-// time, and with nothing declared each edit widens `impacted` to the whole suite. A coupling whose
-// paths cover a record under the work dir answers the question, `suites: []` included.
-function workdirCheck({ toolchain, workDir }) {
-  const dir = posix(workDir).replace(/^\.\//u, "").replace(/\/+$/u, "");
-  const probe = `${dir}/item/STATE.md`;
-  if (toolchain.couplings.some((entry) => picomatch.isMatch(probe, entry.paths, { dot: true }))) {
-    return Object.freeze({ id: "test-layout-workdir", severity: "ok", message: `Changes under ${dir} are placed by a declared coupling.` });
-  }
-  return Object.freeze({
-    id: "test-layout-workdir",
-    severity: "warning",
-    message: `No coupling covers the work dir (${dir}), so every STATE, SPEC or feature edit widens \`aof test --scope impacted\` to the whole suite. Couple it to the suites that read it, or to [] when none do, with ${TEST_LAYOUT_REPAIR}.`,
-  });
-}
-
-// A STALE GRAPH READS AS ORDINARY WIDENING. Every file added since the last build widens as
-// `not-in-graph`, and nothing else says why. The caller hands in the artifact's `builtAt` and HEAD's
-// commit time; this compares them and reads nothing itself (FF-19006).
-function graphFreshCheck({ graph }) {
-  if (graph.builtAt == null) {
-    return Object.freeze({
-      id: "test-layout-graph-fresh",
-      severity: "warning",
-      message: `No code graph is built, so every \`aof test --scope impacted\` run widens to the whole suite as \`no-graph\`. Build it with \`${GRAPH_REBUILD}\`.`,
-    });
-  }
-  if (Date.parse(graph.headAt) > Date.parse(graph.builtAt)) {
-    return Object.freeze({
-      id: "test-layout-graph-fresh",
-      severity: "warning",
-      message: `The code graph was built at ${graph.builtAt}, before HEAD's commit at ${graph.headAt}, so every file added since widens \`aof test --scope impacted\` as \`not-in-graph\`. Rebuild it with \`${GRAPH_REBUILD}\`.`,
-    });
-  }
-  return Object.freeze({ id: "test-layout-graph-fresh", severity: "ok", message: `The code graph was built at ${graph.builtAt}, after HEAD's commit.` });
 }
 
 // Only a declared gate is asked: a project with no gate runs it serially, and a serial gate has
@@ -209,20 +114,23 @@ function resumeCheck({ gate }) {
   });
 }
 
-// `compiled` and `compiledGate` are the results of `resolveTestToolchain` and `resolveTestGate`.
-// `tracked` is the tracked file list, or null when it could not be read. `graph` is
-// `{ builtAt, headAt }` (the artifact's build instant or null when there is none, and HEAD's commit
-// time), or null when the caller could not tell, which omits the freshness check. With `work.test`
-// undeclared or malformed the family emits nothing: `aof test` already refuses there, naming the key.
-export function testLayoutChecks({ compiled, compiledGate, tracked = null, workDir = null, graph = null } = {}) {
-  if (compiled?.ok !== true || compiledGate?.ok !== true) return Object.freeze([]);
+// A missing declared instructions file and a removed key (210/ADR-008) stay visible even though
+// compilation failed: each is reported with the compiler's own message.
+export function testLayoutChecks({ compiled, compiledGate, tracked = null, workDir = null } = {}) {
+  if (compiled?.ok !== true) {
+    if (compiled?.key === "work.test.instructions") {
+      return Object.freeze([Object.freeze({ id: "test-instructions", severity: "error", message: compiled.message })]);
+    }
+    if (compiled?.code === "test-config-key-removed") {
+      return Object.freeze([Object.freeze({ id: "test-config-key-removed", severity: "error", message: compiled.message, details: Object.freeze([compiled.key]) })]);
+    }
+    return Object.freeze([]);
+  }
   const toolchain = compiled.toolchain;
-  const checks = [suitesCheck({ toolchain, tracked, workDir }), couplingsCheck({ toolchain })];
-  if (toolchain.couplings.length > 0 && tracked != null) checks.push(couplingsMatchCheck({ toolchain, tracked }));
-  // Asked only once couplings are declared: until then `test-layout-couplings` already says every
-  // changed document widens, the work dir's records among them.
-  if (toolchain.couplingsDeclared === true && workDir != null && posix(workDir).replace(/^\.\/?/u, "") !== "") checks.push(workdirCheck({ toolchain, workDir }));
-  if (compiledGate.gate != null) checks.push(resumeCheck({ gate: compiledGate.gate }));
-  if (graph != null && graph.headAt != null) checks.push(graphFreshCheck({ graph }));
+  const instructions = Object.freeze(toolchain.instructions == null
+    ? { id: "test-instructions", severity: "warning", message: `work.test.instructions is not declared. Draft the project's testing instructions with ${TEST_LAYOUT_REPAIR}.` }
+    : { id: "test-instructions", severity: "ok", message: `Testing instructions: ${toolchain.instructions}.` });
+  const checks = [instructions, suitesCheck({ toolchain, tracked, workDir })];
+  if (compiledGate?.ok === true && compiledGate.gate != null) checks.push(resumeCheck({ gate: compiledGate.gate }));
   return Object.freeze(checks);
 }

@@ -1332,7 +1332,7 @@ For: "$ARGUMENTS"
      `status: not-started`, `owner: qa`, `depends: [<the accepted milestones>]`, `created`/`updated`:
      today); the heading is `# <Title>` with no number prefix; `## Scope`
      (the accepted milestones — referenced, never restated; entry/exit criteria); `## Plan` (the
-     automated regression sweep — one `aof test --scope all` for the session — + agent-runnable
+     automated regression sweep — one `aof test --all` for the session — + agent-runnable
      `@manual` vs the human `@uat` lane); `## Live /
      environmental checks`; `## Acceptance judgment`; `## Findings`; `## Sign-off / verdict`.
    - `STATE.md` — frontmatter `doc: state`; `## Progress`; `## Notes & decisions in flight`;
@@ -1602,7 +1602,7 @@ position independently.
 
 Use the native skill $aof-continue; $ARGUMENTS is the operator text after its name.
 
-Build and review every member of the exact declared scope; never widen a span or accept a story/milestone. Resolve resume/next first, mint each story before code and recall near-misses. Solo means inline, no dispatch or subagent. Build through the declared impacted test gate and retain the two-consecutive-no-progress bound. Validate then doctor the same ref before any review. Perform structural, behavioural and craft lenses, plus design when required. Independent review requires a separate supported native role; inline lenses are self-review. Review defaults to one round and caps at three; only reproduced Blockers earn a bounded delta rereview. Tick green tasks, move to in-review with the CLI, settle the owned run, then continue the remaining scoped members.
+Build and review every member of the exact declared scope; never widen a span or accept a story/milestone. Resolve resume/next first, mint each story before code and recall near-misses. Solo means inline, no dispatch or subagent. Read work.test.instructions, choose suites with recorded reasons, check fixes with aof test --failed, and leave the whole tree to the gate. Retain the two-consecutive-no-progress bound. Validate then doctor the same ref before any review. Perform structural, behavioural and craft lenses, plus design when required. Independent review requires a separate supported native role; inline lenses are self-review. Review defaults to one round and caps at three; only reproduced Blockers earn a bounded delta rereview. Tick green tasks, move to in-review with the CLI, settle the owned run, then continue the remaining scoped members.
 
 ## Codex execution contract
 Use only tools actually exposed by this session. File reading/editing, shell execution, search,
@@ -1878,14 +1878,17 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      `STATE.md` `## Feedback (for retro)` section (distilled into `RETROSPECTIVE.md` at `$aof-verify`).
 
      <build_terminator>
-     **Run the tests as `aof test --scope impacted --story <ref>`.** The story's own declared
-     `files:` is the changed set, so the run is the suites this story's write set can actually have
-     touched — the declaration paying for a third time, after the wave planner and `validate`. Do
-     **not** name individual suite files: that is `--scope file` wearing prose, and it is a
-     selection made by judgement rather than by the declaration. A changed file narrows the run only
-     on what is positively known — a new suite selects itself, a new module its changed importer
-     inherits, a declared path not yet written contributes nothing — and anything else WIDENS it, so
-     the narrowing can never be silent, and every widening is named in the summary line.
+     Read the file named in `work.test.instructions` before running anything. Choose the suites
+     from those instructions and the changed files, then run `aof test <suite>… --reason "<why these suites>"`.
+     Use `aof test --suggest` to check importers and path mentions; it cannot see paths built from fragments
+     or source-to-source reach through the application assembly. State any deliberate exclusions by
+     suite name in the recorded reason. After a fix, check what the fix changed with `aof test --failed`.
+     Never run `aof test --all` in story work: the whole tree is the regression gate's.
+
+     A `test-fix-stopped` refusal is a hand-over: record a blocker in the item's `STATE.md`, or in a
+     driven session use the loop's question to the operator, and stop. Do not start another automatic
+     fix chain. A failure `aof test` labels pre-existing is recorded by case name under
+     `## Feedback (for retro)` in `STATE.md`; it is not the story's to fix.
 
      **Each run leaves a record, and a repeat on unchanged content is answered from it.** Asking again
      with nothing changed launches nothing: the summary line says `answered from the run of
@@ -2019,14 +2022,16 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      **Concurrency stays inside the dispatch bound.** Never spawn more lanes at once than the `bound`
      `aof work dispatch --list --json` reports, and spawn the remainder as earlier lanes return.
 
-     **A review lane runs `aof test --scope impacted --story <ref>` too, and never names suite files
-     by hand.** The lanes start together on one diff, so they make one run: the first lane's ask
-     launches it, the others wait for it and are answered from its record, and every lane reads the
-     same answer. That answer is the evidence, not a reason to run again. **A story-scoped green does not accept a
-     milestone.** It says this story's suites pass; the milestone's own regression gate is what says
-     the tree does, and 63/R7 is explicit that story-scoped suites are what make that gate
-     load-bearing rather than ceremonial. Never report a narrowed run as a whole one — the summary
-     line states the scope it ran as, and that is the claim to carry.
+     **Each review lane reads the file named in `work.test.instructions` before running anything**
+     and chooses suites with `aof test <suite>… --reason "<why these suites>"`. After a fix use
+     `aof test --failed`; leave the whole tree to the regression gate. An unchanged covering run is
+     answered from its record: that answer is evidence, not a reason to run again.
+
+     **The structural lane checks the choice of suites.** Compare the story's recorded runs and reasons
+     with `aof test --suggest` for the story's changed files. Raise a finding for each suite that imports
+     or names a changed file, appears in no recorded run, and is named by no recorded reason as
+     deliberately left out. A stated exclusion is accepted. Report the actual suites run; a story's green
+     does not accept a milestone and does not call for a whole-tree run here.
      </review_lanes>
 
      Hand every reviewer only the task `.feature` files (criteria), the build diff, and the story's
@@ -2873,7 +2878,7 @@ Parse "$ARGUMENTS": one milestone ref (`NN`). One milestone per run: a range is 
 
 Use the native skill $aof-manual; $ARGUMENTS is the operator text after its name.
 
-Guide the operator's own build of one story or task; do not implement. Enter through the build door with `aof work continue <ref> --manual --json` and stop on any refusal, minting nothing. Never walk the re-entry sweep or resume a lineage. Read the story as continue's story lane step 1 does, mint the owned run, run the declared impacted test gate once, print the guide in the terminal only, and close the run done. Spawn no developer and no reviewer, walk no gate ladder, and write nothing outside the item's own folder. A hand-off to an agent is written to the item's STATE and names `$aof-continue <ref>`, never runs it. Hand back to `$aof-review <ref>`.
+Guide the operator's own build of one story or task; do not implement. Enter through the build door with `aof work continue <ref> --manual --json` and stop on any refusal, minting nothing. Never walk the re-entry sweep or resume a lineage. Read the story as continue's story lane step 1 does, mint the owned run, read work.test.instructions and run the chosen suites once with a recorded reason, print the guide in the terminal only, and close the run done. Spawn no developer and no reviewer, walk no gate ladder, and write nothing outside the item's own folder. A hand-off to an agent is written to the item's STATE and names `$aof-continue <ref>`, never runs it. Hand back to `$aof-review <ref>`.
 
 ## Codex execution contract
 Use only tools actually exposed by this session. File reading/editing, shell execution, search,
@@ -2939,14 +2944,20 @@ the same reason — nothing here spawns a role whose effort it could set.
    session writes no status move of its own.** A `duplicate-run` refusal from
    `aof work run-start <ref> --json` means another run on this story is still open — an agent's, or
    a phase that died. Report it and the session stops: it never resumes or settles that run.
-5. **Every manual run runs `aof test --scope impacted --story <ref>` once, before the guide** — the
-   first run and every re-run alike, so the guide is always headed by what is still red.
+5. **Every manual run reads the instructions and runs the chosen suites once, before the guide.**
+   Read the file named in `work.test.instructions` before running anything. Choose the suites
+   from those instructions and the changed files, then run `aof test <suite>… --reason "<why these suites>"`.
+   Use `aof test --suggest` to check importers and path mentions; it cannot see paths built from fragments
+   or source-to-source reach through the application assembly. State any deliberate exclusions by
+   suite name in the recorded reason. After a fix, check what the fix changed with `aof test --failed`.
+   Never run `aof test --all` in story work: the whole tree is the regression gate's.
+   The first run and every re-run alike head the guide with what is still red.
 6. **Print the guide, with its parts in this order:**
    - the scenarios still red, by name;
    - the user story;
    - each task file with its scenario names, read from `aof work tasks <ref> --json`;
    - every `reads:` entry and every `files:` entry, each with one line on why it matters;
-   - the test files among `files:`, and the command `aof test --scope impacted --story <ref>` that
+   - the test files among `files:`, and the command `aof test <suite>… --reason "<why these suites>"` that
      gates them;
    - the build plan's mechanism and known traps, when the story has a `PLAN.md`;
    - an order to take the tasks in, with the reason for it.
@@ -2969,7 +2980,7 @@ to hand the story to an agent, the session appends a hand-off entry under
 a nested story, and the story's own for a standalone one.** The entry opens
 `- <date> — Hand-off <ref> from manual:`, then lists the `files:` the human changed, their commits
 since the run was minted, and the scenarios green and red at that moment (run
-`aof test --scope impacted --story <ref>` for them). The entry is a record in the item's own folder,
+`aof test <suite>… --reason "<why these suites>"` for them). The entry is a record in the item's own folder,
 never a write under `files:`.
 
 **A standalone task has no `STATE.md`, so its hand-off is reported in the terminal and nothing is
@@ -3014,156 +3025,41 @@ not a question tool or elapsed time. AOF_NEEDS_INPUT is for an actually unanswer
 never a fabricated native capability.
 
 <objective>
-Make `aof test --scope impacted` and the regression gate's resume work on THIS project's tree, and
-prove it by replay. Every `work.test` key that narrows a run or resumes a gate keeps the old
-behaviour when it is absent, so a project that was on aof before them still widens every run to the
-whole suite, and `aof project doctor` names that as its `test-layout-*` warnings. This command
-declares the missing keys from what the tree really holds, and shows the effect as the before and
-after selection of the project's own recent commits.
-
-**Its only write is `.aof/aof.config.json` `work.test.*`.** It edits no test, no runner config and
-no source, and no other config key. **The report is the replay, never a promise**: it gives counts
-the replay measured and no estimate of time saved.
+Give agents one plain-words file that tells them how this project tests. The project owns the
+choice of suites, the changes that need no run, and the hazards on this machine.
 </objective>
 
 <config>
-Parse "$ARGUMENTS" for one optional flag, **`--dry-run`**. With no flag the command writes the
-declaration, then shows the diff and both replays. **`--dry-run` stops after the before replay and
-the proposed `work.test.*` change**, and leaves `.aof/aof.config.json` byte-identical.
-
-Read `.aof/aof.config.json` → `work.dir` (default `wiki/work`) and the current `work.test` block.
-With no `work.test` declared there is no runner to replay: say so, name `work.test` as the key to
-declare first, and stop. `aof test` refuses there too.
+Read `.aof/aof.config.json`, including `work.test`, `work.dir` and `work.test.instructions`.
+Use the declared instructions path, or `wiki/TESTING.md` when none is declared. Preserve an existing
+file's useful instructions and the operator's edits. `--dry-run` previews the draft and config diff
+and writes nothing: both files remain byte-identical. With no flag, write the draft and set the key.
 </config>
 
 <process>
-1. **The before replay — first, before the layout is read.** **Make the graph current first**, or
-   the replay measures a stale graph rather than the declaration: every file added since the last
-   build widens as `not-in-graph`. When HEAD's commit time (`git log -1 --format=%cI`) is later
-   than the graph's `builtAt` (any `--plan --json` answer carries it), **say the graph is stale and
-   stop**, naming `aof graph build . --offline` as the step to run first: it sends nothing to a
-   hosted model and neither fetches nor publishes a shared graph. This command does not rebuild it,
-   because its only write is the declaration. Then list the last 30 non-merge commits that touch a
-   file outside the work dir:
-
-   ```
-   git log --no-merges -n 30 --format=%H -- . ":(exclude)<work.dir>"
-   ```
-
-   and for each `<sha>` run:
-
-   ```
-   aof test --scope impacted --commit <sha> --plan --json
-   ```
-
-   `--plan` selects and stops: it launches nothing, writes no record and is answered from none, so
-   the replay costs seconds. Keep each result. From the 30, count:
-   - **widened**: `scope` is `all`; keep every `widened[].reason` with its file, and count apart
-     the widened files under `<work.dir>`;
-   - **narrowed**: `scope` is `impacted`; keep `selected.length`;
-   - **refused**: a `refusal` (for instance `changed-set-empty`); count it apart, never as either;
-   - **the total**: `total`, the whole suite the declaration holds.
-
-   The replay uses today's graph, so a file deleted since its commit widens as `not-in-graph`. That
-   is honest, and it is reported in two parts: files that no longer exist at HEAD (deleted since),
-   and files that do, which the graph never holds (a document, an asset), so only a coupling places
-   them.
-2. **Read the runner and the layout.** Read the declared `work.test.command` and `args` and the
-   program they run, the gate (`work.test.gate`) and the program it runs, and the tracked test files
-   (`git ls-files`). Run `aof project doctor --json` and read its `test-layout-*` checks: they name
-   the test files the declaration cannot select, by directory, and the keys that are absent.
-   **Check the selection's fidelity too**: read how the program treats a selected path. A runner
-   that rewrites it (reduces it to a file name, or hands it to a filter that matches substrings)
-   runs more suites than were selected. That is a finding for the project, reported in the output;
-   this command does not fix it.
-3. **Roots and suffixes.** Author `work.test.roots` as every directory that holds the runner's
-   suites (the doctor's `test-layout-suites` directories are the candidates), and
-   `work.test.suiteSuffixes` as the suffixes those suites end in, each starting with `.` or `_` (as `.test.mjs` or Go's `_test.go`). Declare a
-   directory or a suffix only when the runner actually runs those files: a test-shaped file the
-   runner never runs is not a suite, and declaring it makes nothing selectable. **Exclude it
-   instead**: author `work.test.exclude` as `[{ paths, why }]`, where `paths` holds globs for the
-   test-shaped files the runner does not run and `why` says what runs them, if anything. An excluded
-   file is never selected, and the doctor stops counting it.
-4. **Couplings, judged, each with its reason.** A coupling `{ paths, suites, via?, why }` is how
-   a changed file that no import edge reaches selects the suites that read it (190/ADR-009). Author
-   each one from a **search of the suites for the coupled paths**: grep the suite files for each
-   candidate path, both as a literal string and as `path.join` segments, and read the suites that a
-   hit names. Couple a path to exactly the suites shown to read it, and write the `why` from what
-   the search found. The candidates are:
-   - **documents and data the suites read**: fixtures, manifests, schemas, migrations;
-   - **the work dir and the doc trees, always**: `<work.dir>`, root `*.md` and any other doc or
-     asset tree. Every `aof:continue` edits them, so when no suite reads them, couple them to
-     `suites: []`; left undeclared, each STATE or SPEC edit widens the run to the whole suite;
-   - **code a suite reads from disk instead of importing**: a fitness test that walks a source
-     tree, a guard that reads route pages, a suite that spawns a script. Couple those paths to the
-     reading suites; for code the coupling adds to what the graph selects, and places a file no
-     import reaches. **Never write `suites: []` for code**: an empty coupling never places code, so
-     it changes nothing;
-   - **a helper between the suites and the path**: when a hit is a module that is not a suite (a
-     shared test-support file the suites import), name it in `via` instead of listing its
-     importers. The selector expands it to every suite that reaches it, at selection time, so the
-     list cannot go stale.
-
-   Overlapping couplings combine: a file takes the readers of every coupling that matches it, and
-   an empty one counts only where no matching coupling names a reader. **Escape glob syntax in
-   folder names**: a route group such as `(crm)` beside `*` or `**` is read as a pattern group and
-   matches `crm`, never the folder. Write `\(crm\)` (`\\(crm\\)` inside the JSON string) or
-   `[(]crm[)]`, and the same for `[ ]` and `{ }`. The doctor's `test-layout-couplings-match` names
-   any glob that matches no tracked file, so read it after the write.
-
-   When a suite walks a directory or reads a manifest it does not name, couple the directory to
-   it, or declare nothing for those paths, so they keep widening: a coupling built on a guess
-   narrows on a guess. **Write `couplings: []` when no suite reads a document**, because that is the
-   considered answer. Leaving the key absent means nobody asked the question.
-5. **Gate resume, only for a program that honours the resume contract.** The resume contract is:
-   the gate program takes **a newline-separated file list at `{files}`** and plans only those files,
-   and writes **a JSON report at `{report}`** of the shape
-   `{ "units": { "<unit>": ["<file>", …] }, "lanes": …, "notFinished": […], "notStarted": […] }`.
-   Write `work.test.gate.reportArgs` (carrying `{report}`) and `filesArgs` (carrying `{files}`)
-   **only when the gate program is shown to honour that contract**: its source reads the flag and
-   writes that report. When the gate program also takes a flag that skips its lanes (the
-   integration or cargo lanes a resume must not repeat once they finished), declare that flag as
-   `work.test.gate.noLanesArgs` too. Otherwise **say that resume is unavailable for this
-   runner**, name the resume contract as what would change the answer, and **leave the gate
-   unchanged**. A template the program ignores would make `aof work regression-gate --resume` run
-   the whole tree under a resume's name. With no gate declared there is nothing to resume, so
-   declare none.
-6. **The proposed change.** Assemble the new `work.test` block from steps 3–5 and print it as a diff
-   against the current block. **Under `--dry-run`, stop here**: print the before replay and the
-   proposed change, and write nothing. The config is left byte-identical.
-7. **Write `work.test.*` and nothing else.** Edit `.aof/aof.config.json`, replacing only the keys
-   steps 3–5 authored inside `work.test`. Every other key, in `work.test` and outside it, stays as
-   it is. Then run `aof project validate`; a refusal means the edit is wrong, so fix it before going
-   on.
-8. **The after replay.** Run the same 30 commits through the same
-   `aof test --scope impacted --commit <sha> --plan --json` and count them the same way.
-9. **The project doctor, last.** Run `aof project doctor` and keep its `test-layout-*` checks.
+1. **Read the repository.** Read the declared test roots and suite suffixes, runner scripts and
+   package test scripts. Identify native `node:test` packages and how their own runners execute
+   them. Read known hazards from the project's existing testing guidance and work records. Report
+   gaps you cannot establish; do not guess commands or claim a run happened.
+2. **Draft the instructions file.** Map areas to suites, including consumers reached through the
+   application assembly and suites that construct paths from fragments. Explain record-only and
+   docs-only changes that need no run, native-test commands, slow lanes, and machine hazards such
+   as fixed ports. Say that the whole tree is the regression gate's. Tell agents to read this file
+   before choosing suites, use `aof test <suite>… --reason "<why>"`, check fixes with
+   `aof test --failed`, and consult `aof test --suggest` for importers and path mentions.
+3. **Show the draft.** Under `--dry-run`, stop here with the proposed instructions and config diff.
+   Otherwise write the instructions and set `work.test.instructions` to its project-relative path.
+   This command neither authors couplings nor replays commits. It changes no test or runner.
+4. **Check and hand over.** Run `aof project doctor` and report `test-instructions`,
+   `test-layout-suites` and `test-layout-resume`. Ask the operator to edit the draft: they know the
+   project's hazards and coverage gaps. A missing runner or incomplete suite/resume declaration
+   stays a named gap; this draft does not invent runner support.
 </process>
 
 <output>
-Report, in this order:
-
-- **the `work.test.*` diff** this run wrote (under `--dry-run`, the proposed one, saying nothing was
-  written and the config is byte-identical);
-- **the before and after replays**, side by side: of the 30 commits, how many widened, the
-  **median and 75th-percentile selected count** among those that narrowed, and the total. Under
-  `--dry-run`, the before replay only;
-- **every reason that still widens** after, each with the files that caused it, with the widened
-  files under `<work.dir>` counted apart and `not-in-graph` split into deleted-since and
-  never-in-the-graph;
-- **the graph**: its `builtAt`, which step 1 found current;
-- **runner fidelity**: the finding from step 2, or that the program passes each selected path
-  through unchanged;
-- **near-total narrowing, said in one line**: when the narrowed median is within 10% of the total,
-  say the narrowed runs are near-total, and name the composition root a near-total selection keeps
-  reaching (the module that nearly every suite imports) when the replay shows one;
-- **resume**: the templates written (`reportArgs`, `filesArgs` and, when the gate takes one, `noLanesArgs`), or that resume is unavailable for this runner, with the resume
-  contract named;
-- **the doctor's `test-layout-*` checks**, as it printed them.
-
-Give no estimate of time saved: the replay counts suites, and a suite count is not a duration.
-Next: `aof test --scope impacted` on the next change, or re-run `$aof-map-tests` after the test
-layout moves.
+Show the instructions path, the draft, the `work.test.instructions` config diff and the doctor's
+checks (or the dry-run preview). Ask the operator to edit the draft before relying on it. Give no
+estimate of time saved and make no claim about tests having passed.
 </output>
 
 <!-- variant:migrate -->
@@ -4370,6 +4266,19 @@ These rules are what let an unattended repair run without doing harm. Each is ab
 <verify>
 Before you end `done`, prove the cause is gone the way the loop will test it:
 
+Read the file named in `work.test.instructions` before running anything. Choose the suites
+from those instructions and the changed files, then run `aof test <suite>… --reason "<why these suites>"`.
+Use `aof test --suggest` to check importers and path mentions; it cannot see paths built from fragments
+or source-to-source reach through the application assembly. State any deliberate exclusions by
+suite name in the recorded reason. After a fix, check what the fix changed with `aof test --failed`.
+Never run `aof test --all` in story work: the whole tree is the regression gate's.
+
+A `test-fix-stopped` refusal is a hand-over: record a blocker in the item's `STATE.md`, or in a
+driven session use the loop's question to the operator, and stop. Do not start another automatic
+fix chain. A failure `aof test` labels pre-existing is recorded by case name under
+`## Feedback (for retro)` in `STATE.md`; it is not the story's to fix.
+
+
 - a merge conflict — `git merge-base --is-ancestor <tip> HEAD` exits 0 (the lane's tip is now an
   ancestor of the primary's HEAD), `git status --porcelain` in the primary shows nothing new of yours,
   and no `.git/MERGE_HEAD` remains;
@@ -4551,7 +4460,7 @@ lesson; note whether an `observability/` snapshot was written (or skipped: `work
 
 Use the native skill $aof-review; $ARGUMENTS is the operator text after its name.
 
-Review the operator build; do not implement. Mint the owned run, use the declared impacted test gate, then validate and doctor the same ref before review. Structural, behavioural and craft lenses remain mandatory; design joins for UI. In orchestrated mode each independent reviewer must be a supported native role that did not build the patch. Solo records inline self-review honestly. One review round per invocation; bounded rereviews belong to continue and admit only reproduced Blockers, never a whole-story restart. Close the owned run even when findings remain and hand back the actual verdict.
+Review the operator build; do not implement. Mint the owned run, read work.test.instructions and choose suites with recorded reasons, then validate and doctor the same ref before review. Structural, behavioural and craft lenses remain mandatory; design joins for UI. In orchestrated mode each independent reviewer must be a supported native role that did not build the patch. Solo records inline self-review honestly. One review round per invocation; bounded rereviews belong to continue and admit only reproduced Blockers, never a whole-story restart. Close the owned run even when findings remain and hand back the actual verdict.
 
 ## Codex execution contract
 Use only tools actually exposed by this session. File reading/editing, shell execution, search,
@@ -4599,7 +4508,13 @@ review lenses; solo performs each lens in this session, in turn.
 1. **Mint the run before anything else** — `aof work run-start <ref> --json`, exactly as continue's
    story lane does at its step 2. A `duplicate-run` refusal means a run on this story is still open
    from a phase that died; the mint reclaims a stale one.
-2. **Run the story's tests first** — `aof test --scope impacted --story <ref>`. When nothing has
+2. **Run the story's tests first.** Read the file named in `work.test.instructions` before running anything. Choose the suites
+from those instructions and the changed files, then run `aof test <suite>… --reason "<why these suites>"`.
+Use `aof test --suggest` to check importers and path mentions; it cannot see paths built from fragments
+or source-to-source reach through the application assembly. State any deliberate exclusions by
+suite name in the recorded reason. After a fix, check what the fix changed with `aof test --failed`.
+Never run `aof test --all` in story work: the whole tree is the regression gate's.
+   When nothing has
    changed since the build's own run, it is answered from that run's record, and the answer is the
    evidence. **A red scenario
    stops the review before the gate ladder**: name every red scenario, spawn no reviewer, and do not
@@ -4611,7 +4526,7 @@ review lenses; solo performs each lens in this session, in turn.
    uncommitted changes included — `git diff $(git merge-base HEAD <default branch>)` plus the
    untracked files `git status --short` lists. **A changed path outside the story's `files:` is
    reported as a contract gap**, a finding in its own right: the declaration is what the wave
-   planner and the impacted test run trusted.
+   planner and the review trusted.
 4. **Walk the gate ladder** — continue's `<gate_ladder>`, scoped to this ref. A red rung is its own
    outcome, exactly as there: name the rung and its findings, spawn no reviewer, and close the run
    as in step 2.
@@ -4932,6 +4847,7 @@ validate** — never substituted for the keystone or the agent-only layer. Modif
 </output>
 
 <!-- variant:verify -->
+
 # verify
 
 Use the native skill $aof-verify; $ARGUMENTS is the operator text after its name.
@@ -4973,13 +4889,21 @@ The ref may be a **milestone**, a **story**, a **uat session**, a **spike**, or 
 session (`type: uat`) is a cross-milestone acceptance gate: its record doc is its own `SESSION.md` (not
 a milestone `VERIFICATION.md`), and the scenarios in scope are the `@manual`/`@uat` ones across the
 milestones it accepts (its `depends:` list). Run one integrated **regression sweep** (green) before
-the manual/human lanes: a single `aof test --scope all` for the whole session, never one run per
+the manual/human lanes: a single `aof test --all` for the whole session, never one run per
 accepted milestone. When the content has not changed since the newest gate run, that sweep is answered
 from the gate run's record, and the answer is the evidence. The same
 steps below apply — just write to `SESSION.md` and read scenarios across the accepted span.
 
 **Spike/chore dispatch (ADR-003) — skip straight to `<spike-chore>` below.** A `spike` or `chore` is
-verified on its **own per-type criterion**, never through the `<process>` steps below (no
+verified on its **own per-type criterion**, never through the `<process>
+
+**Testing step.** Read the file named in `work.test.instructions` before running anything. Choose the suites
+from those instructions and the changed files, then run `aof test <suite>… --reason "<why these suites>"`.
+Use `aof test --suggest` to check importers and path mentions; it cannot see paths built from fragments
+or source-to-source reach through the application assembly. State any deliberate exclusions by
+suite name in the recorded reason. After a fix, check what the fix changed with `aof test --failed`.
+Never run `aof test --all` in story work: the whole tree is the regression gate's.
+` steps below (no
 `@executable` suite, no `@manual` scenario run, no design conformance, no human `@uat` step — neither
 type carries a behavioural contract, and a chore/spike folder legitimately has no `tasks/`/`.feature`
 to run). Detect the type from `aof work find` and branch there first.

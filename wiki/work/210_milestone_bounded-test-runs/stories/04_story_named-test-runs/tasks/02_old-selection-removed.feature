@@ -28,7 +28,7 @@ Feature: the old selection is gone, with no compatibility layer
       Given a project whose "work.test" declares "couplings"
       When I run "aof test test/a.test.mjs --reason probe"
       Then it is refused as "test-config-key-removed", naming "work.test.couplings" and saying to delete it
-      And "aof work doctor --json" reports the same key as removed
+      And "aof project doctor --json" reports the same key as removed
 
     @executable
     Scenario: this repository's config carries no removed key
@@ -52,3 +52,15 @@ Feature: the old selection is gone, with no compatibility layer
       Given a project declaring roots "test" and suffixes ".test.mjs", excluding "test/native/**"
       Then "test/a.test.mjs" is a suite
       And "test/native/b.test.mjs" and "test/support/h.mjs" are not
+
+    @executable @bug @finding-F-10
+    Scenario: a retired control is retired in every register that declared it
+      Given 72's FF-7202 and 190's FF-19003 both named the removed widens-never-narrows control
+      Then no accepted item's register declares a control that does not resolve
+      And each retired row says it was superseded by 210/ADR-008
+
+    @executable @bug @finding-F-12
+    Scenario: the gate's native status-gate check drives the all form
+      When "packages/work/test/status-gate.test.mjs" runs under node:test
+      Then its regression-gate case expects the gate to call the test command with "all: true"
+      And no case expects a "scope" selection

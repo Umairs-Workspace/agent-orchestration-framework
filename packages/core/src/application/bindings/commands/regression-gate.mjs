@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { runBounded } from "@aof/execution/bounded-process";
 
-export function assembleCommandsRegressionGate({ meshWorktreeServices, commandsResolveServices, commandsTestServices, workToolchainServices, degradeServices, runStoreServices }) {
+export function assembleCommandsRegressionGate({ provideWorkExamplesAnswers, meshWorktreeServices, commandsResolveServices, commandsTestServices, workToolchainServices, degradeServices, runStoreServices }) {
   // Core composition for work-owned regression-gate commands.
 
   const { headCommit } = meshWorktreeServices;
@@ -24,7 +24,7 @@ export function assembleCommandsRegressionGate({ meshWorktreeServices, commandsR
   const { isRunning, readRuns } = runStoreServices;
   const { gateToolchain, launchRunner, resolveTestGate, resolveTestToolchain } = workToolchainServices;
 
-  const { DIRTY_TREE, JOBS_INVALID, JOBS_UNDECLARED, NOTHING_TO_RESUME, RESUME_REPORT_MISSING, RESUME_TREE_CHANGED, RESUME_UNDECLARED, SETTINGS_CONFLICT, STOPPED, cleanLaunchEnv, regressionGateCommand, runRegressionGate } = createRegressionGateCommand({ execFile, gateToolchain, headCommit, isRunning, launchRunner, readRuns, reportDegrade, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runBounded, runTest, testRecord, gateScratch });
+  const { DIRTY_TREE, JOBS_INVALID, JOBS_UNDECLARED, NOTHING_TO_RESUME, RESUME_REPORT_MISSING, RESUME_TREE_CHANGED, RESUME_UNDECLARED, SETTINGS_CONFLICT, STOPPED, cleanLaunchEnv, regressionGateCommand, runRegressionGate } = createRegressionGateCommand({ collectAnswers: async (...args) => (await provideWorkExamplesAnswers()).collectAnswers(...args), execFile, gateToolchain, headCommit, isRunning, launchRunner, readRuns, reportDegrade, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runBounded, runTest, testRecord, gateScratch });
 
   return { DIRTY_TREE, JOBS_INVALID, JOBS_UNDECLARED, NOTHING_TO_RESUME, RESUME_REPORT_MISSING, RESUME_TREE_CHANGED, RESUME_UNDECLARED, SETTINGS_CONFLICT, STOPPED, cleanLaunchEnv, regressionGateCommand, runRegressionGate };
 }

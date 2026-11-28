@@ -1,20 +1,15 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
-// Traceability wiring for milestone 72 / story 02 — THE TEST COMMAND'S FACE.
+// Traceability wiring for milestone 72 / story 02 — THE TEST COMMAND'S FACE — and for milestone 210 /
+// story 04, which replaced its three scope forms with four (named, --suggest, --failed, --all).
 //
 // One test object per @executable scenario (Scenario-Outline rows folded into one entry), each
 // name tracing to its feature and scenario:
 //
-//   00_the-command-selects-launches-and-reports-failures-only.feature
-//        — the three closed scope forms and a fourth that is not one; an input that is not one of
-//          the three refused rather than defaulted; what a run prints and exits with; verbose
-//          restoring and removing nothing; the two faces rendering from one result.
-//   01_the-command-reports-and-never-decides.feature
-//        — only an unwidened whole-suite run may stand as a verdict.
-//   02_the-runner-learns-a-selection-argv-additively.feature
-//        — every shape the selection argv can be handed; named files run without reading the
-//          assembled array; a change to the assembled array detected over a FIXTURE; the
-//          registration control green; one execution loop; a selected test driven isolated; and
-//          importing the runner running nothing whatever the importer's argv holds.
+//   72/02 00 and 01 — what a run prints and exits with; verbose restoring and removing nothing; the
+//        two faces rendering from one result; only a whole-tree run standing as a verdict. Their
+//        scope-form rows went with the forms (210/ADR-008).
+//   72/02 02 — the runner's selection argv, unchanged.
+//   210/04 00_named-runs, 01_whole-tree-outside-story-work, 02_old-selection-removed.
 //
 // FEATURE 01's REMAINING SCENARIOS LIVE IN FF-7204 (`test/arch/acd-test-command-reports-not-
 // decides.test.mjs`), and deliberately so rather than by omission: the door census, the planted
@@ -30,12 +25,16 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // because the rows it buys are the ones a pure test cannot reach: an exit STATUS, a per-test
 // global home OBSERVED from inside a running test, and an importer whose argv holds a selection.
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdtemp, mkdir, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { runBounded } from "@aof/execution/bounded-process";
+import { createTestRecord } from "@aof/work/testing/record";
+import { testLayoutChecks } from "@aof/work/testing/layout";
+import { isSuiteFile } from "@aof/work/testing/suites";
 
 // A value embedded as a string literal in generated JavaScript: JSON.stringify, plus the characters JSON
 // leaves raw that still mean something in a script context (`<`, `>`, `/`, U+2028, U+2029) as \uXXXX.
@@ -45,12 +44,11 @@ function jsLiteral(value) {
 
 // The story's own subject, and its two faces — taken from the REGISTERED command object rather
 // than from a private helper, so what these rows measure is what the runtime runs.
-const NO_SCOPE = _aofApplication.work.commandTools.test.NO_SCOPE;
-const SCOPE_UNRECOGNISED = _aofApplication.work.commandTools.test.SCOPE_UNRECOGNISED;
-const NO_FILES_NAMED = _aofApplication.work.commandTools.test.NO_FILES_NAMED;
-const TEST_SCOPES = _aofApplication.work.commandTools.test.TEST_SCOPES;
-const runTest = _aofApplication.work.commandTools.test.runTest;
+const { ALL_IN_STORY_WORK, FORM_CONFLICT, FORM_MISSING, NOT_A_SUITE, REASON_MISSING, runTest, storyWorkOf } = _aofApplication.work.commandTools.test;
+const { resolveTestGate, resolveTestToolchain } = _aofApplication.work.toolchain;
+const parseSpecArgv = _aofApplication.cli.parseSpecArgv;
 const testCommand = _aofApplication.getCommand("test");
+const records = createTestRecord({ runBounded });
 // The runner's own selection half, exported so its shape rows drive in-process. Importing the
 // runner from inside the suite is FREE in both paths that matter: under the full run and under
 // `--only`, this module is the entry point and is already evaluated, so the import resolves from
@@ -136,26 +134,55 @@ function launcher(output = observed()) {
 
 const walk = async (_root, root) => (root === "test" ? [...WHOLE] : []);
 const resolveToolchain = () => TOOLCHAIN;
-const neverRead = async () => { throw new Error("the changed set must not be read for this scope"); };
-const neverSelect = () => { throw new Error("the selector must not be asked for this scope"); };
+const neverRead = async () => { throw new Error("the changed set must not be read for this form"); };
 
-const changedOk = (changed) => async () => ({ ok: true, changed, base: null });
+// A story run in this checkout, as the story-work check answers it.
+const storyRunning = (ref) => async () => Object.freeze({ ref });
 
-function selector(fields) {
-  return () => Object.freeze({
-    scope: fields.scope,
-    gate: fields.scope === "all" && (fields.widened ?? []).length === 0,
-    selected: Object.freeze([...fields.selected]),
-    widened: Object.freeze([...(fields.widened ?? [])]),
-    builtAt: fields.builtAt ?? null,
-    graphPath: "graphify-out/graph.json",
-    changed: Object.freeze([...(fields.changed ?? [])]),
-    resolved: Object.freeze([]),
-    refusal: fields.refusal ?? null,
-  });
+// ── A TEMPORARY REPOSITORY, FOR THE ROWS ABOUT RECORDS AND THE WORKING TREE ─────────────────────
+
+async function git(cwd, args) {
+  const out = await runBounded({ command: "git", args, cwd, deadlineMs: 60_000 });
+  assert.equal(out.exitCode, 0, `git ${args.join(" ")} failed: ${out.stderr}`);
+  return String(out.stdout).trim();
 }
 
-const BUILT_AT = "2026-09-02T11:22:33.000Z";
+// test/a imports src/record.mjs and test/b names its path: the two ways a suite is reached.
+const SUGGEST_FILES = Object.freeze({
+  "src/record.mjs": "export const record = 1;\n",
+  "test/a.test.mjs": 'import { record } from "../src/record.mjs";\nexport const tests = [record];\n',
+  "test/b.test.mjs": 'export const tests = [];\n// reads "src/record.mjs" as text\n',
+});
+
+async function withRepo(body, files = {}) {
+  const root = await mkdtemp(path.join(await realpath(os.tmpdir()), "aof-210-04-"));
+  try {
+    await git(root, ["init", "-q"]);
+    const seeded = { "src/a.mjs": "export const a = 1;\n", "test/a.test.mjs": "export const tests = [];\n", "test/b.test.mjs": "export const tests = [];\n", ...files };
+    for (const [rel, text] of Object.entries(seeded)) {
+      await mkdir(path.dirname(path.join(root, rel)), { recursive: true });
+      await writeFile(path.join(root, rel), text, "utf8");
+    }
+    await git(root, ["add", "-A"]);
+    await git(root, ["-c", "user.email=aof@example.invalid", "-c", "user.name=aof", "-c", "commit.gpgsign=false", "commit", "-q", "-m", "seed"]);
+    return await body(root);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+async function storedRecords(root) {
+  const store = path.join(await git(root, ["rev-parse", "--path-format=absolute", "--git-common-dir"]), "aof", "test-records");
+  if (!existsSync(store)) return [];
+  const names = (await readdir(store)).filter((name) => name.endsWith(".json")).sort();
+  return Promise.all(names.map(async (name) => JSON.parse(await readFile(path.join(store, name), "utf8"))));
+}
+
+// Every AOF_* variable named anywhere in this codebase's sources: the override row sets them all.
+async function aofEnvironmentNames() {
+  const out = await runBounded({ command: "git", args: ["grep", "-ohE", "AOF_[A-Z0-9_]+", "--", ":(glob)packages/*/src/**", ":(glob)apps/*/src/**", "scripts"], cwd: repoRoot, deadlineMs: 60_000 });
+  return [...new Set(String(out.stdout).split(/\r?\n/u).filter(Boolean))].sort();
+}
 
 // ── THE CHILD-DRIVEN HALF ────────────────────────────────────────────────────────────────────
 
@@ -272,93 +299,7 @@ function applyStoryTransform(source) {
 }
 
 export const testCommandContractTests = [
-  // ── 00_the-command-selects-launches-and-reports-failures-only.feature ──────────────────────
-  {
-    name: "72/02 task 00 (aof test): the scope form decides what is selected and whether the result may stand as a verdict",
-    async run() {
-      // Row 1 — `all` asks nothing: no changed set is read and no selector is consulted, and the
-      // runner is handed NO selection, which for a declared runner is how "run everything" is
-      // spelled. Nine hundred paths in an argv would be the same run at a length no operating
-      // system accepts.
-      const all = launcher();
-      const allResult = await runTest({ scope: "all" }, { projectRoot: repoRoot, config: {}, resolveToolchain, walk, readChanged: neverRead, select: neverSelect, run: all.run });
-      assert.equal(allResult.scope, "all", "an `all` run reports the scope it ran as");
-      assert.deepEqual([...allResult.selected], [...WHOLE], "…and every registered suite is what it selected");
-      assert.deepEqual(all.handed, [[]], "…handed to the runner as no narrowing at all");
-      assert.equal(allResult.gate, true, "…and it is the one form that may stand as a verdict");
-
-      // Row 2 — `impacted`, nothing widened: the suites the changed set reaches, and no verdict.
-      const narrow = launcher();
-      const narrowResult = await runTest({ scope: "impacted" }, {
-        projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: narrow.run,
-        readChanged: changedOk(["packages/core/src/thing.mjs"]),
-        select: selector({ scope: "impacted", selected: ["test/b.test.mjs"], builtAt: BUILT_AT, changed: ["packages/core/src/thing.mjs"] }),
-      });
-      assert.equal(narrowResult.scope, "impacted", "a narrowed run reports `impacted`");
-      assert.deepEqual([...narrowResult.selected], ["test/b.test.mjs"], "…selecting the suites the changed set reaches");
-      assert.deepEqual(narrow.handed, [["test/b.test.mjs"]], "…and those are the files the runner was asked to run");
-      assert.equal(narrowResult.gate, false, "…and a subset may not stand as a verdict");
-
-      // Row 3 — `impacted` that WIDENED: it runs as `all`, and it still may not stand, because it
-      // got there from an UNKNOWN. A widened whole run and an asked-for whole run are the same
-      // execution and two different claims.
-      const widened = launcher();
-      const widenedResult = await runTest({ scope: "impacted" }, {
-        projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: widened.run,
-        readChanged: changedOk(["packages/core/src/new.mjs"]),
-        select: selector({ scope: "all", selected: [...WHOLE], widened: [{ file: "packages/core/src/new.mjs", reason: "not-in-graph" }], builtAt: BUILT_AT, changed: ["packages/core/src/new.mjs"] }),
-      });
-      assert.equal(widenedResult.scope, "all", "a widened run reports that it ran as `all`");
-      assert.deepEqual([...widenedResult.selected], [...WHOLE], "…over every registered suite");
-      assert.deepEqual(widened.handed, [[]], "…launched as a whole run rather than as nine hundred paths");
-      assert.equal(widenedResult.gate, false, "…and it may NOT stand, because a widening is an unknown");
-
-      // Row 4 — `file`: exactly what the caller named, and never a verdict.
-      const named = launcher();
-      const namedResult = await runTest({ scope: "file", files: ["test/c.test.mjs"] }, { projectRoot: repoRoot, config: {}, resolveToolchain, walk, readChanged: neverRead, select: neverSelect, run: named.run });
-      assert.equal(namedResult.scope, "file", "a named run reports `file`");
-      assert.deepEqual([...namedResult.selected], ["test/c.test.mjs"], "…selecting only what the caller named");
-      assert.deepEqual(named.handed, [["test/c.test.mjs"]], "…which is what the runner was asked to run");
-      assert.equal(namedResult.gate, false, "…and it may not stand as a verdict");
-
-      // Row 5 — a fourth form: nothing at all is selected and NO runner is launched.
-      const fourth = launcher();
-      const fourthResult = await runTest({ scope: "sweep" }, { projectRoot: repoRoot, config: {}, resolveToolchain, walk, readChanged: neverRead, select: neverSelect, run: fourth.run });
-      assert.equal(fourthResult.scope, NO_SCOPE, "a fourth form ran as no scope at all");
-      assert.deepEqual([...fourthResult.selected], [], "…selecting nothing");
-      assert.deepEqual(fourth.handed, [], "…and launching no runner");
-      assert.equal(fourthResult.launched, false, "…which the result says in as many words");
-      assert.equal(fourthResult.gate, false, "…and it may not stand as a verdict");
-      assert.deepEqual([...TEST_SCOPES], ["impacted", "file", "all"], "the three forms are closed, and `sweep` is not one of them");
-    },
-  },
-
-  {
-    name: "72/02 task 00 (aof test): an input that is not one of the three forms is refused, never defaulted",
-    async run() {
-      const rows = [
-        { given: "a word that is not one of the three", input: { scope: "sweep" }, code: SCOPE_UNRECOGNISED, names: "sweep" },
-        { given: "an empty scope", input: { scope: "" }, code: SCOPE_UNRECOGNISED, names: "no scope was given" },
-        { given: "one of the three in a different case", input: { scope: "ALL" }, code: SCOPE_UNRECOGNISED, names: "ALL" },
-        { given: "file, with no file named", input: { scope: "file", files: [] }, code: NO_FILES_NAMED, names: "file" },
-      ];
-      for (const row of rows) {
-        const stub = launcher();
-        const result = await runTest(row.input, { projectRoot: repoRoot, config: {}, resolveToolchain, walk, readChanged: neverRead, select: neverSelect, run: stub.run });
-        assert.equal(result.refusal?.code, row.code, `${row.given} is a CODED refusal`);
-        assert.ok(result.refusal.message.includes(row.names), `…naming what was not understood (${row.given}): ${result.refusal.message}`);
-        assert.deepEqual([...result.selected], [], `…with nothing selected (${row.given})`);
-        assert.deepEqual(stub.handed, [], `…and no runner launched (${row.given})`);
-        assert.equal(result.exit, 1, `…and a refusal exits non-zero (${row.given})`);
-      }
-
-      // An ABSENT scope takes the same answer as an empty one. A default here would be a narrowing
-      // nobody asked for, which is the one thing the selection invariant forbids.
-      const absent = await runTest({}, { projectRoot: repoRoot, config: {}, resolveToolchain, walk, readChanged: neverRead, select: neverSelect, run: launcher().run });
-      assert.equal(absent.refusal?.code, SCOPE_UNRECOGNISED, "an absent scope is as unrecognised as a wrong one");
-    },
-  },
-
+  // ── 72/02 task 00, as 210/04 leaves it: what a run prints, and its two faces ─────────────────
   {
     name: "72/02 task 00 (aof test): what a run prints, and what it exits with — failures only, one summary line, both faces",
     async run() {
@@ -375,46 +316,21 @@ export const testCommandContractTests = [
         { mix: "every test fails", verbose: false, passing: 0, failing: 2, status: 1 },
         { mix: "every test fails", verbose: true, passing: 0, failing: 2, status: 1 },
       ];
-
       for (const row of expectations) {
         const stub = launcher(observed(mixes[row.mix]));
-        const result = await runTest({ scope: "impacted", verbose: row.verbose }, {
-          projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: stub.run,
-          readChanged: changedOk(["packages/core/src/thing.mjs"]),
-          select: selector({ scope: "impacted", selected: ["test/b.test.mjs", "test/c.test.mjs"], builtAt: BUILT_AT, changed: ["packages/core/src/thing.mjs"] }),
-        });
+        const result = await runTest({ files: ["test/b.test.mjs", "test/c.test.mjs"], reason: "the mix", verbose: row.verbose }, { projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: stub.run });
         const text = testCommand.cli.render(result);
         const lines = text.split("\n");
         const label = `${row.mix} ${row.verbose ? "with --verbose" : "with no option"}`;
-
         assert.equal(lines.filter((line) => line.startsWith("ok - ")).length, row.passing, `${label}: passing rows`);
         assert.equal(lines.filter((line) => line.startsWith("not ok - ")).length, row.failing, `${label}: failing rows`);
-        for (const failure of result.report.failures) {
-          assert.ok(text.includes(failure.message), `${label}: each failure carries its assertion output`);
-        }
+        for (const failure of result.report.failures) assert.ok(text.includes(failure.message), `${label}: each failure carries its assertion output`);
         assert.equal(result.exit, row.status, `${label}: the exit status`);
-
-        // ONE summary line, and it carries every claim: what out of what, the scope, the graph's
-        // build time, and every widening.
-        const summary = lines.filter((line) => line.includes(" suites · scope "));
+        const summary = lines.filter((line) => line.startsWith("named · "));
         assert.equal(summary.length, 1, `${label}: exactly one summary line`);
-        assert.ok(summary[0].startsWith("2/3 suites · scope impacted · "), `${label}: what was selected out of what, and the scope — ${summary[0]}`);
-        assert.ok(summary[0].includes(BUILT_AT), `${label}: the graph's build time`);
-        assert.ok(summary[0].includes("no widening"), `${label}: and every widening`);
       }
-
-      // The widened case names the FILE that caused each widening, on that same one line.
-      const widened = await runTest({ scope: "impacted" }, {
-        projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: launcher().run,
-        readChanged: changedOk(["packages/core/src/new.mjs"]),
-        select: selector({ scope: "all", selected: [...WHOLE], widened: [{ file: "packages/core/src/new.mjs", reason: "not-in-graph" }], builtAt: BUILT_AT, changed: ["packages/core/src/new.mjs"] }),
-      });
-      const summary = testCommand.cli.render(widened).split("\n").filter((line) => line.includes(" suites · scope "));
-      assert.equal(summary.length, 1, "a widened run still prints exactly one summary line");
-      assert.ok(summary[0].includes("packages/core/src/new.mjs (not-in-graph)"), `…naming the widening and the file that caused it — ${summary[0]}`);
     },
   },
-
   {
     name: "72/02 task 00 (aof test): verbose restores the passing rows and removes nothing — a containment, never a count",
     async run() {
@@ -424,76 +340,301 @@ export const testCommandContractTests = [
         { mix: "every test fails", output: streams([], ["alpha", "beta"]), restored: 0 },
       ];
       for (const row of rows) {
-        const deps = (verbose) => ({
-          projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: launcher(observed(row.output)).run,
-          readChanged: changedOk(["packages/core/src/thing.mjs"]),
-          select: selector({ scope: "impacted", selected: ["test/b.test.mjs", "test/c.test.mjs"], builtAt: BUILT_AT, changed: ["packages/core/src/thing.mjs"] }),
-          verbose,
-        });
-        const quiet = testCommand.cli.render(await runTest({ scope: "impacted" }, deps(false)));
-        const loud = testCommand.cli.render(await runTest({ scope: "impacted", verbose: true }, deps(true)));
-        const loudLines = loud.split("\n");
-
+        const ask = async (verbose) => testCommand.cli.render(await runTest({ files: ["test/b.test.mjs"], reason: "containment", verbose }, { projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: launcher(observed(row.output)).run }));
+        const quiet = await ask(false);
+        const loudLines = (await ask(true)).split("\n");
         assert.equal(loudLines.filter((line) => line.startsWith("ok - ")).length, row.restored, `${row.mix}: the passing rows restored`);
-        for (const line of quiet.split("\n")) {
-          assert.ok(loudLines.includes(line), `${row.mix}: verbose removes nothing — "${line}" is missing from the verbose output`);
+        for (const line of quiet.split("\n")) assert.ok(loudLines.includes(line), `${row.mix}: verbose removes nothing — "${line}" is missing from the verbose output`);
+      }
+    },
+  },
+  {
+    name: "72/02 task 00 (aof test): the human face and the machine face render from ONE result",
+    async run() {
+      const result = await runTest({ files: ["test/a.test.mjs", "test/b.test.mjs"], reason: "both faces" }, { projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: launcher(observed(streams(["alpha"], ["beta"]))).run });
+      const text = testCommand.cli.render(result);
+      const machine = testCommand.cli.json(result);
+      assert.ok(text.includes(machine.form), "the form");
+      assert.ok(text.includes(`${machine.selected.length} suites`), "how many suites ran");
+      assert.ok(text.includes(machine.reason), "the reason it ran for");
+      assert.ok(text.includes(machine.gate ? "may stand as a verdict" : "may not stand as a verdict"), "whether the result may stand as a verdict");
+      assert.ok(machine.report.failures.length > 0, "…and the fixture actually failed, so the last field is not vacuous");
+      for (const failure of machine.report.failures) assert.ok(text.includes(failure.message), "a failing test's assertion text");
+      assert.equal(machine, result, "the machine face IS the result object, not a second assembly of it");
+    },
+  },
+  {
+    name: "72/02 task 01 (aof test): only a whole-tree run may stand as a verdict",
+    async run() {
+      const named = await runTest({ files: ["test/c.test.mjs"], reason: "a subset" }, { projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: launcher().run });
+      assert.equal(named.gate, false, "a named run is a subset, and may not stand");
+      const all = launcher();
+      const whole = await runTest({ all: true }, { projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: all.run });
+      assert.equal(whole.gate, true, "the whole tree may stand");
+      assert.deepEqual([...whole.selected], [...WHOLE], "…over every registered suite");
+      assert.deepEqual(all.handed, [[]], "…handed to the runner as no selection at all");
+    },
+  },
+
+  // ── 210/04 task 00 · a named run runs exactly what it names, and records why ─────────────────
+  {
+    name: "210/04 E1 · one named suite runs through the light entry, and its reason is recorded",
+    run: async () => withRepo(async (root) => {
+      const stub = launcher();
+      const out = await runTest({ files: ["test/a.test.mjs"], reason: "record.mjs changed" }, { projectRoot: root, config: {}, resolveToolchain, walk, run: stub.run, record: records });
+      assert.deepEqual(stub.handed, [["test/a.test.mjs"]], "launched once, with that suite only");
+      const [stored] = await storedRecords(root);
+      assert.equal(stored.id, out.recorded.id);
+      assert.deepEqual({ mode: stored.mode, reason: stored.reason, selected: stored.selected }, { mode: "named", reason: "record.mjs changed", selected: ["test/a.test.mjs"] });
+    }),
+  },
+  {
+    name: "210/04 [outline] a named run that cannot be honoured is refused, and runs nothing (7 rows)",
+    async run() {
+      const rows = [
+        { argv: ["test/a.test.mjs"], code: REASON_MISSING, named: ["--reason"] },
+        { argv: ["test/a.test.mjs", "--reason", "  "], code: REASON_MISSING, named: ["--reason"] },
+        { argv: ["src/record.mjs", "--reason", "probe"], code: NOT_A_SUITE, named: ["src/record.mjs"] },
+        { argv: ["test/missing.test.mjs", "--reason", "probe"], code: NOT_A_SUITE, named: ["test/missing.test.mjs"] },
+        { argv: ["test/a.test.mjs", "--all", "--reason", "probe"], code: FORM_CONFLICT, named: ["--all"] },
+        { argv: ["--suggest", "--failed"], code: FORM_CONFLICT, named: ["--suggest", "--failed"] },
+        { argv: [], code: FORM_MISSING, named: ["<suite>… --reason", "--suggest", "--failed", "--all"] },
+      ];
+      for (const row of rows) {
+        const options = parseSpecArgv(row.argv, testCommand.cli.spec, testCommand.id);
+        const stub = launcher();
+        const out = await runTest(testCommand.cli.argv(options._, options), { projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: stub.run, readChanged: neverRead, inStoryWork: async () => null });
+        assert.equal(out.refusal?.code, row.code, `aof test ${row.argv.join(" ")}`);
+        for (const words of row.named) assert.ok(out.refusal.message.includes(words), `…naming ${words}: ${out.refusal.message}`);
+        assert.deepEqual(stub.handed, [], "…and no runner is launched");
+        assert.equal(out.exit, 1);
+      }
+    },
+  },
+  {
+    name: "210/04 E4 · three lanes asking the same named run on unchanged content share one launch",
+    run: async () => withRepo(async (root) => {
+      const handed = [];
+      const releases = [];
+      const run = (_toolchain, files) => new Promise((resolve) => { handed.push([...files]); releases.push(resolve); });
+      const fast = { ...records, acquire: (ledger, selection, options) => records.acquire(ledger, selection, { ...options, pollMs: 10 }) };
+      const lanes = ["architect", "qa", "craft"].map((lane) => runTest({ files: ["test/a.test.mjs", "test/b.test.mjs"], reason: `${lane} lane` }, { projectRoot: root, config: {}, resolveToolchain, walk, run, record: fast }));
+      for (let tries = 0; handed.length === 0 && tries < 500; tries += 1) await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      for (const release of releases.splice(0)) release(observed());
+      const results = await Promise.all(lanes);
+      assert.equal(handed.length, 1, "the runner is launched once");
+      const ran = results.find((out) => out.launched);
+      const answered = results.filter((out) => out.reused != null);
+      assert.equal(answered.length, 2);
+      for (const out of answered) {
+        assert.ok(testCommand.cli.render(out).includes(`answered from the run of ${ran.recorded.instant}`), "the answer names that run's instant");
+        assert.equal(out.exit, ran.exit, "…with its result");
+      }
+    }),
+  },
+  {
+    name: "210/04 a lane asking about part of a green run is answered from it",
+    run: async () => withRepo(async (root) => {
+      await runTest({ files: ["test/a.test.mjs", "test/b.test.mjs"], reason: "the build" }, { projectRoot: root, config: {}, resolveToolchain, walk, run: launcher(observed(streams(["a", "b"], []))).run, record: records });
+      const stub = launcher();
+      const out = await runTest({ files: ["test/b.test.mjs"], reason: "review lane" }, { projectRoot: root, config: {}, resolveToolchain, walk, run: stub.run, record: records });
+      assert.deepEqual(stub.handed, [], "no runner is launched");
+      assert.equal(out.reused?.result, "green", "the answer is green from that run");
+      assert.equal(out.exit, 0);
+    }),
+  },
+  {
+    name: "210/04 the summary line states the form, the suites and the reason it ran for",
+    async run() {
+      const out = await runTest({ files: ["test/a.test.mjs", "test/b.test.mjs"], reason: "record.mjs changed" }, { projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: launcher().run });
+      const summary = testCommand.cli.render(out).split("\n").find((line) => line.startsWith("named · "));
+      for (const words of ["named", "2 suites", "record.mjs changed"]) assert.ok(summary.includes(words), `${words}: ${summary}`);
+    },
+  },
+  {
+    name: "210/04 E5 · --suggest lists the suites a working-tree change reaches, and launches nothing",
+    run: async () => withRepo(async (root) => {
+      await writeFile(path.join(root, "src/record.mjs"), "export const record = 2;\n");
+      const stub = launcher();
+      const out = await runTest({ suggest: true }, { projectRoot: root, config: {}, resolveToolchain, walk, run: stub.run, record: records });
+      const by = Object.fromEntries(out.suggestion.suites.map((entry) => [entry.suite, entry.reachedBy.map((reach) => `${reach.how} ${reach.file}`)]));
+      assert.deepEqual(by["test/a.test.mjs"], ["imports src/record.mjs"]);
+      assert.deepEqual(by["test/b.test.mjs"], ["names src/record.mjs"]);
+      assert.deepEqual(stub.handed, [], "no runner is launched");
+      assert.deepEqual(await storedRecords(root), [], "…and no record is written");
+      assert.equal(out.exit, 0);
+    }, SUGGEST_FILES),
+  },
+  {
+    name: "210/04 --suggest with nothing changed says so",
+    run: async () => withRepo(async (root) => {
+      const out = await runTest({ suggest: true }, { projectRoot: root, config: {}, resolveToolchain, walk, run: launcher().run });
+      assert.deepEqual(out.suggestion.suites, [], "no suite is listed");
+      assert.match(testCommand.cli.render(out), /nothing has changed/u);
+    }, SUGGEST_FILES),
+  },
+
+  // ── 210/04 task 01 · the whole tree is refused inside story work, with no override ───────────
+  {
+    name: "210/04 E6 · a running story run refuses --all and names the ways on",
+    async run() {
+      const stub = launcher();
+      const out = await runTest({ all: true }, { projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: stub.run, inStoryWork: storyRunning("17/02") });
+      assert.equal(out.refusal?.code, ALL_IN_STORY_WORK);
+      for (const words of ["17/02", "aof test --failed", "aof test <suite>… --reason"]) assert.ok(out.refusal.message.includes(words), `${words}: ${out.refusal.message}`);
+      assert.deepEqual(stub.handed, [], "no runner is launched");
+    },
+  },
+  {
+    name: "210/04 [outline] what counts as story work (6 rows)",
+    async run() {
+      const items = [
+        { ref: "17", type: "milestone", dir: "/w/17" },
+        { ref: "17/02", type: "story", dir: "/w/17/02" },
+        { ref: "17/02/00", type: "task", dir: "/w/17/02/00" },
+        { ref: "32", type: "uat", dir: "/w/32" },
+      ];
+      const runs = (states) => async (item) => (states[item.dir] ?? []).map(([runId, state]) => ({ runId, state, itemRef: items.find((entry) => entry.dir === item.dir)?.ref }));
+      const rows = [
+        { state: "AOF_RUN_ID names a running run on story 17/02", env: { AOF_RUN_ID: "r1", AOF_RUN_ITEM_DIR: "/w/17/02" }, runs: { "/w/17/02": [["r1", "running"]] }, refused: true },
+        { state: "AOF_RUN_ID names a running run on a task 17/02/00", env: { AOF_RUN_ID: "r2", AOF_RUN_ITEM_DIR: "/w/17/02/00" }, runs: { "/w/17/02/00": [["r2", "running"]] }, refused: true },
+        { state: "AOF_RUN_ID names a run on milestone 17 and no story run is running", env: { AOF_RUN_ID: "r3", AOF_RUN_ITEM_DIR: "/w/17" }, runs: { "/w/17": [["r3", "running"]] }, refused: false },
+        { state: "no AOF_RUN_ID, and a run on story 17/02 has settled as done", env: {}, runs: { "/w/17/02": [["r4", "done"]] }, refused: false },
+        { state: "no AOF_RUN_ID, and a run on UAT session 32 is running", env: {}, runs: { "/w/32": [["r5", "running"]] }, refused: false },
+        { state: "no AOF_RUN_ID, and no run is running", env: {}, runs: {}, refused: false },
+      ];
+      for (const row of rows) {
+        const stub = launcher();
+        const inStoryWork = () => storyWorkOf({ env: row.env, items, read: runs(row.runs), running: (run) => run.state === "running" });
+        const out = await runTest({ all: true }, { projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: stub.run, inStoryWork });
+        if (row.refused) {
+          assert.equal(out.refusal?.code, ALL_IN_STORY_WORK, row.state);
+          assert.deepEqual(stub.handed, [], `${row.state}: nothing launched`);
+        } else {
+          assert.equal(out.refusal, null, row.state);
+          assert.deepEqual(stub.handed, [[]], `${row.state}: the runner is launched with an empty selection`);
         }
       }
     },
   },
-
   {
-    name: "72/02 task 00 (aof test): the human face and the machine face render from ONE result",
+    name: "210/04 E11 · a reason does not override the refusal",
     async run() {
-      const stub = launcher(observed(streams(["alpha"], ["beta"])));
-      const result = await runTest({ scope: "impacted" }, {
-        projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: stub.run,
-        readChanged: changedOk(["packages/core/src/new.mjs"]),
-        select: selector({ scope: "all", selected: [...WHOLE], widened: [{ file: "packages/core/src/new.mjs", reason: "not-in-graph" }], builtAt: BUILT_AT, changed: ["packages/core/src/new.mjs"] }),
-      });
-      const text = testCommand.cli.render(result);
-      const machine = testCommand.cli.json(result);
-
-      // Six fields, each read from BOTH faces. A drift between the two is what makes a claim
-      // verified through --json a different claim from the one an operator reads.
-      assert.ok(text.includes(`${machine.selected.length}/${machine.total} suites`), "how many suites were selected out of how many");
-      assert.ok(text.includes(`scope ${machine.scope}`), "the scope the run ran as");
-      assert.ok(text.includes(String(machine.builtAt)), "the graph's build time");
-      for (const entry of machine.widened) {
-        assert.ok(text.includes(`${entry.file} (${entry.reason})`), "each widening and the file that caused it");
-      }
-      assert.ok(text.includes(machine.gate ? "may stand as a verdict" : "may not stand as a verdict"), "whether the result may stand as a verdict");
-      assert.ok(machine.report.failures.length > 0, "…and the fixture actually failed, so the last field is not vacuous");
-      for (const failure of machine.report.failures) {
-        assert.ok(text.includes(failure.message), "a failing test's assertion text");
-      }
-      assert.equal(machine, result, "the machine face IS the result object, not a second assembly of it");
+      const stub = launcher();
+      const out = await runTest({ all: true, reason: "operator asked" }, { projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: stub.run, inStoryWork: storyRunning("17/02") });
+      assert.equal(out.refusal?.code, ALL_IN_STORY_WORK);
+      assert.deepEqual(stub.handed, []);
     },
   },
-
-  // ── 01_the-command-reports-and-never-decides.feature ───────────────────────────────────────
   {
-    name: "72/02 task 01 (aof test): only an unwidened whole-suite run may stand as a verdict",
+    name: "210/04 the refusal has no override of any kind",
+    async run() {
+      // Every flag the command accepts beside --all, alone and together, and every AOF_* variable
+      // this codebase reads, set at once: the refusal reads none of them.
+      const extras = Object.keys(testCommand.cli.spec.flags).filter((flag) => !["all", "suggest", "failed"].includes(flag));
+      const variables = await aofEnvironmentNames();
+      assert.ok(variables.includes("AOF_RUN_ID") && variables.length > 5, `the AOF_* names were found: ${variables.length}`);
+      const env = Object.fromEntries(variables.map((name) => [name, "1"]));
+      for (const flags of [[], ...extras.map((flag) => [flag]), extras]) {
+        const argv = ["--all", ...flags.flatMap((flag) => (testCommand.cli.spec.flags[flag].type === "string" ? [`--${flag}`, "override"] : [`--${flag}`]))];
+        const options = parseSpecArgv(argv, testCommand.cli.spec, testCommand.id);
+        const stub = launcher();
+        const inStoryWork = () => storyWorkOf({ env, items: [{ ref: "17/02", type: "story", dir: "/w/17/02" }], read: async () => [{ runId: "r", state: "running", itemRef: "17/02" }], running: (run) => run.state === "running" });
+        const out = await runTest(testCommand.cli.argv(options._, options), { projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: stub.run, inStoryWork });
+        assert.equal(out.refusal?.code, ALL_IN_STORY_WORK, `aof test ${argv.join(" ")}`);
+        assert.deepEqual(stub.handed, []);
+      }
+    },
+  },
+  {
+    name: "210/04 E8 · a whole-tree run outside story work is recorded as all",
+    run: async () => withRepo(async (root) => {
+      const out = await runTest({ all: true }, { projectRoot: root, config: {}, resolveToolchain, walk, run: launcher().run, record: records, inStoryWork: async () => null });
+      const [stored] = await storedRecords(root);
+      assert.equal(stored.id, out.recorded.id);
+      assert.deepEqual({ mode: stored.mode, reason: stored.reason, selected: stored.selected }, { mode: "all", reason: null, selected: "all" });
+    }),
+  },
+
+  // ── 210/04 task 02 · the old selection is gone, with no compatibility layer ──────────────────
+  {
+    name: "210/04 [outline] E9 · each removed flag is unknown (6 rows)",
     async run() {
       const rows = [
-        { asked: "all", ran: "all", widening: "nothing widened", gate: true },
-        { asked: "impacted", ran: "impacted", widening: "nothing widened", gate: false },
-        { asked: "impacted", ran: "all", widening: "one changed file the graph does not cover", widened: [{ file: "packages/core/src/new.mjs", reason: "not-in-graph" }], gate: false },
-        { asked: "impacted", ran: "all", widening: "there was no graph artifact at all", widened: [{ file: "packages/core/src/thing.mjs", reason: "no-graph" }], gate: false },
-        { asked: "file", ran: "file", widening: "nothing widened", gate: false },
+        ["--scope", "impacted"],
+        ["--scope", "all"],
+        ["test/a.test.mjs", "--scope", "file", "--reason", "probe"],
+        ["--story", "17/02"],
+        ["--since", "HEAD~1"],
+        ["--commit", "HEAD", "--plan"],
       ];
-      for (const row of rows) {
-        const deps = { projectRoot: repoRoot, config: {}, resolveToolchain, walk, run: launcher().run };
-        const result = row.asked === "impacted"
-          ? await runTest({ scope: "impacted" }, {
-            ...deps,
-            readChanged: changedOk(["packages/core/src/thing.mjs"]),
-            select: selector({ scope: row.ran, selected: row.ran === "all" ? [...WHOLE] : ["test/b.test.mjs"], widened: row.widened ?? [], builtAt: row.widening.includes("no graph") ? null : BUILT_AT, changed: ["packages/core/src/thing.mjs"] }),
-          })
-          : await runTest({ scope: row.asked, files: ["test/c.test.mjs"] }, { ...deps, readChanged: neverRead, select: neverSelect });
-        assert.equal(result.scope, row.ran, `asked ${row.asked}, ran as ${row.ran}`);
-        assert.equal(result.gate, row.gate, `${row.asked} → ${row.ran} (${row.widening}) ${row.gate ? "may" : "may not"} stand as a verdict`);
+      for (const argv of rows) {
+        const flag = argv.find((arg) => arg.startsWith("--") && !["--reason"].includes(arg));
+        assert.throws(() => parseSpecArgv(argv, testCommand.cli.spec, testCommand.id), (error) => error.code === "unknown-flag" && error.message.includes(`"${flag}"`), `aof test ${argv.join(" ")}`);
       }
+    },
+  },
+  {
+    name: "210/04 E10 · a config that still declares couplings is refused by name, and the doctor reports it",
+    run: async () => withRepo(async (root) => {
+      const config = { work: { test: { command: "node", args: ["scripts/test.mjs"], selectArgs: ["--only", "{file}"], roots: ["test"], couplings: [] } } };
+      const stub = launcher();
+      const out = await runTest({ files: ["test/a.test.mjs"], reason: "probe" }, { projectRoot: root, config, walk, run: stub.run });
+      assert.equal(out.refusal?.code, "test-config-key-removed");
+      assert.ok(out.refusal.message.includes("work.test.couplings") && out.refusal.message.includes("delete it"), out.refusal.message);
+      assert.deepEqual(stub.handed, []);
+      const checks = testLayoutChecks({ compiled: resolveTestToolchain(config, { projectRoot: root }), compiledGate: resolveTestGate(config) });
+      const removed = checks.find((check) => check.id === "test-config-key-removed");
+      assert.equal(removed?.severity, "error");
+      assert.ok(removed.message.includes("work.test.couplings"), removed.message);
+    }),
+  },
+  {
+    name: "210/04 this repository's config carries no removed key",
+    async run() {
+      const config = JSON.parse(await readFile(path.join(repoRoot, ".aof", "aof.config.json"), "utf8"));
+      assert.equal(Object.hasOwn(config.work.test, "couplings"), false);
+    },
+  },
+  {
+    name: "210/04 the test command's help names only the four forms",
+    async run() {
+      const { usage } = testCommand.cli.spec;
+      for (const words of ["<suite>… --reason", "--suggest", "--failed", "--all"]) assert.ok(usage.includes(words), `${words}: ${usage}`);
+      for (const words of ["--scope", "impacted", "--story", "--since", "--commit", "--plan"]) assert.equal(usage.includes(words), false, `${words}: ${usage}`);
+      for (const flag of ["scope", "story", "since", "commit", "plan"]) assert.equal(Object.hasOwn(testCommand.cli.spec.flags, flag), false, flag);
+    },
+  },
+  {
+    name: "210/04 tests run with no code graph present",
+    run: async () => withRepo(async (root) => {
+      // A FILE where the graph's directory would be: any read of `graphify-out/…` fails loudly.
+      await writeFile(path.join(root, "graphify-out"), "not a directory\n");
+      await writeFile(path.join(root, "src/record.mjs"), "export const record = 3;\n");
+      const named = await runTest({ files: ["test/a.test.mjs"], reason: "probe" }, { projectRoot: root, config: {}, resolveToolchain, walk, run: launcher(observed(streams(["a"], []))).run });
+      assert.equal(named.exit, 0, "the named run answers");
+      const suggested = await runTest({ suggest: true }, { projectRoot: root, config: {}, resolveToolchain, walk, run: launcher().run });
+      assert.equal(suggested.refusal, null, "the suggestion answers");
+      assert.ok(suggested.suggestion.suites.length > 0);
+    }, SUGGEST_FILES),
+  },
+  {
+    name: "210/04 the suite predicate still decides what --all and a named run count as a suite",
+    async run() {
+      const roots = ["test"];
+      const suffixes = [".test.mjs"];
+      const exclude = [{ paths: ["test/native/**"], why: "native" }];
+      assert.equal(isSuiteFile("test/a.test.mjs", roots, suffixes, exclude), true);
+      assert.equal(isSuiteFile("test/native/b.test.mjs", roots, suffixes, exclude), false);
+      assert.equal(isSuiteFile("test/support/h.mjs", roots, suffixes, exclude), false);
+      const declared = () => ({ ok: true, toolchain: { ...TOOLCHAIN.toolchain, exclude } });
+      const listed = async () => ["test/a.test.mjs", "test/native/b.test.mjs"];
+      const stub = launcher();
+      const all = await runTest({ all: true }, { projectRoot: repoRoot, config: {}, resolveToolchain: declared, walk: listed, run: stub.run });
+      assert.deepEqual([...all.selected], ["test/a.test.mjs"], "--all counts only suites");
+      const native = await runTest({ files: ["test/native/b.test.mjs"], reason: "probe" }, { projectRoot: repoRoot, config: {}, resolveToolchain: declared, walk: listed, run: stub.run });
+      assert.equal(native.refusal?.code, NOT_A_SUITE, "a named run refuses an excluded file");
     },
   },
 
@@ -785,7 +926,7 @@ process.stdout.write(JSON.stringify({ assembled: Array.isArray(module.tests), co
         await writeFile(plain, "export const value = 1;\n", "utf8");
         for (const [bad, reason] of [[missing, "could not be loaded"], [plain, "exports no array of { name, run } entries"]]) {
           const result = await shard([good, bad], { home: path.join(dir, "home") });
-          assert.ok(result.stderr.includes(`not ok - ${bad} ${reason}`), `the unusable file is named with its reason — ${result.stderr}`);
+          assert.ok(result.stdout.includes(`not ok - ${bad} ${reason}`), `the ordered TAP names the unusable file and its reason — ${result.stdout}`);
           assert.deepEqual(okRows(result.stdout), ["good 0", "good 1"], "…and the good suite's cases still ran");
           assert.notEqual(result.exitCode, 0, "…and the run fails");
         }

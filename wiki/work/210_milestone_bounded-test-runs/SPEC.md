@@ -6,7 +6,7 @@ title: "Bounded test runs — the agent picks the suites from the project's own 
 status: in-progress
 owner: product-owner
 created: 2026-11-26
-updated: 2026-11-26
+updated: 2026-11-28
 schema: 1
 aofVersion: 0.1.0
 depends: [72, 190, 197]
@@ -102,12 +102,12 @@ Out of scope:
 
 ## Stories
 
-- [ ] `00_story_testing-instructions` — A project tells its agents how to test, in its own words.
-- [ ] `01_story_importer-scan` — A change is matched to the suites that import or name it, from a fresh scan.
-- [ ] `02_story_attributed-test-records` — A test record says why it ran, where it ran, and which suite each failure came from.
-- [ ] `03_story_gate-runs-twice` — A milestone's whole tree runs at most twice, then hands over.
-- [ ] `04_story_named-test-runs` — An agent runs the suites it names and states why, and the whole tree is refused inside story work.
-- [ ] `05_story_bounded-fix-rounds` — A fix round reruns what failed and what the fix touched, skips pre-existing reds, and stops when it stops converging.
+- [x] `00_story_testing-instructions` — A project tells its agents how to test, in its own words.
+- [x] `01_story_importer-scan` — A change is matched to the suites that import or name it, from a fresh scan.
+- [x] `02_story_attributed-test-records` — A test record says why it ran, where it ran, and which suite each failure came from.
+- [x] `03_story_gate-runs-twice` — A milestone's whole tree runs at most twice, then hands over.
+- [x] `04_story_named-test-runs` — An agent runs the suites it names and states why, and the whole tree is refused inside story work.
+- [x] `05_story_bounded-fix-rounds` — A fix round reruns what failed and what the fix touched, skips pre-existing reds, and stops when it stops converging.
 
 Waves: 00, 01, 02 and 03 are independent. 04 composes 00–02. 05 composes 04 and reads 03's gate
 records.

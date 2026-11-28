@@ -52,10 +52,12 @@ OpenCode render no `aof:teach`; say so if asked, and claim no parity.
 4. **Read the story exactly as continue's story lane step 1 reads it, and no wider** — its `reads:`
    set and its task features. A story whose `reads:` is absent, or whose tasks are thin or untagged,
    halts and sends the operator to `aof:refine <ref>`. Close the run `done` first.
-5. **Run the story's own tests once, quietly.** When the test files among `files:` exist, run
-   `aof test --scope file <those files>` once, so the session knows which of the story's scenarios
-   are red. When none exists yet, run nothing: every scenario is red because nothing is built. Never
-   widen the run to the repository, and never run it again to shorten its output.
+5. **Run the story's own tests once, quietly.** Read the file named in `work.test.instructions`
+   before running anything. Choose the suites from the instructions. When the test files among
+   `files:` exist, run `aof test <suite>… --reason "<why these suites>"` once, so the session knows
+   which scenarios are red. After a fix use `aof test --failed`. When none exists yet, run nothing:
+   every scenario is red because nothing is built. Never widen the run to the repository, and never
+   run it again to shorten its output. The whole tree is the regression gate's.
 6. **Open** (`<opening>`), then teach (`<guidance>`), in `<voice>`, holding `<boundary>` on every
    turn.
 7. **Close the run with `aof work run-complete <ref> --outcome done`, never `failed`**:

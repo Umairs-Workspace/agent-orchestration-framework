@@ -5,6 +5,7 @@ import { writeText } from "@aof/foundation/fs";
 import {
   COMMIT_UNKNOWN,
   GATE_SCOPE,
+  NO_LAUNCH_DETAIL,
   appendRegressionRow,
   detailCell,
   gateInstant,
@@ -13,17 +14,18 @@ import {
   newestRegressionRow,
   parseRegressionRows,
   regressionRecordPath,
+  regressionLaunchRows,
   satisfiesDoor,
   scopeCell,
 } from "../regression-record.mjs";
 
 // Core supplies configured resolution, execution, notification and transition services.
-export function createRegressionGateCommand({ execFile, gateToolchain, headCommit, isRunning, launchRunner, readRuns, reportDegrade = () => {}, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runBounded, runTest, testRecord = null, gateScratch = null }) {
+export function createRegressionGateCommand({ collectAnswers = async () => [], execFile, gateToolchain, headCommit, isRunning, launchRunner, readRuns, reportDegrade = () => {}, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runBounded, runTest, testRecord = null, gateScratch = null }) {
 // `aof work regression-gate <ref>` — THE GATE RUN (milestone 96 / story 04, ADR-008 §1, §2).
 // FF-9606 is its control.
 //
-// THIS IS NOT A NEW TEST RUN. `aof test --scope all` already computes the gate boolean
-// (`scope === "all" && widened.length === 0`, `src/commands/test.mjs`) and then discards it. This
+// THIS IS NOT A NEW TEST RUN. `aof test --all` already computes the gate boolean (the whole tree
+// ran, `src/commands/test.mjs`) and then discards it. This
 // verb composes that same command body, records what it proved, and hands the door in
 // `src/commands/item-status.mjs` something durable to read. Two seams already existed and this
 // story rebuilds neither: the run is `runTest`'s, and the document's shape is
@@ -58,7 +60,7 @@ export function createRegressionGateCommand({ execFile, gateToolchain, headCommi
 // moved here unedited (119/02, FF-11908: the registry cites, it does not explain).
 //
 //   milestone 96 / story 04 (ADR-008 §1, §2) — THE REGRESSION GATE'S RUN, the other half of the
-//   door `work:status` above now holds. It composes the existing `aof test --scope all` body, refuses a
+//   door `work:status` above now holds. It composes the existing `aof test --all` body, refuses a
 //   dirty checkout, and appends the run to the milestone's own `REGRESSION.md` — durability over a
 //   boolean the test command already computed and discarded.
 
@@ -262,11 +264,13 @@ function runLine({ mode, jobs, minutes, budgetMinutes, overBudget }) {
 // The detail cell, composed in ONE place and in ONE order: what failed, then what did not finish, then
 // what is not isolated, then the run line — so a red row still leads with its failures, the units that ran
 // out of time are named apart from them, and a green row is never empty.
-function rowDetail({ red, outcome, failures, unfinished, notIsolated, run, resumed = null }) {
+function rowDetail({ red, outcome, failures, unfinished, notIsolated, run, resumed = null, confirmation = null }) {
   const parts = [];
+  if (outcome.launched === false) parts.push(NO_LAUNCH_DETAIL);
   // 190/ADR-005 §3 — a resumed run's row says what it resumed and how much of it ran again, first,
   // so the accept door's reader sees a combined row as one.
   if (resumed != null) parts.push(`resumed from ${resumed.from}: ${resumed.rerun} of ${resumed.total} units re-run`);
+  if (confirmation != null) parts.push(`confirmed ${confirmation.token}: ${confirmation.reason}`);
   if (red) parts.push(failureDetail(outcome, failures));
   if (unfinished != null) parts.push(unfinished);
   if (notIsolated.length > 0) parts.push(`not isolated: ${notIsolated.join(", ")}`);
@@ -306,6 +310,7 @@ async function runRegressionGate(input, deps = {}) {
     env = process.env,
     bounded = runBounded,
     runs = readRuns,
+    answers = collectAnswers,
     // 190/ADR-005 — the test-record store and a scratch directory for the program's report and a
     // resume's file list. NULL BY DEFAULT, like `runTest`'s: only the CLI face hands them in, so a
     // suite driving the gate with a stub never files the stub's verdict as a record of a real tree.
@@ -384,6 +389,35 @@ async function runRegressionGate(input, deps = {}) {
   const resumed = input?.resume === true
     ? await prepareResume({ item, target, read, record, projectRoot, gate: mode === SHARDED ? gate : null })
     : null;
+  let confirmation = null;
+  if (resumed == null) {
+    let existing = null;
+    try { existing = await read(target, "utf8"); } catch (error) { if (error?.code !== "ENOENT") throw error; }
+    const launches = regressionLaunchRows(existing == null ? [] : parseRegressionRows(existing, displayPath(target)));
+    if (launches.length >= 2) {
+      const number = launches.length + 1;
+      const token = `${item.ref} G${number}`;
+      const ordinal = number === 3 ? "third" : number === 4 ? "fourth" : `${number}th`;
+      const question = `${token} · Run a ${ordinal} whole-tree gate for milestone ${item.ref}?`;
+      const affirmative = `Run gate ${number}`;
+      if (typeof input.again !== "string" || !input.again.trim()) {
+        throw commandError(
+          `The regression gate for ${item.ref} has spent its two launches: ${launches.map((row) => `${row.commit} (${row.result})`).join(", ")}. `
+          + `Hand over: record a blocker in milestone ${item.ref}'s STATE.md, or use the loop's question in a driven session. `
+          + "Use aof test --failed for the confirming run's new reds. A further gate needs --again and the operator's recorded confirmation.",
+          "regression-gate-runs-spent", 409);
+      }
+      const recorded = await answers(item, { workspace: { projectRoot, config }, env });
+      const answer = recorded.filter((entry) => entry.token === token).at(-1);
+      if (answer?.answer !== affirmative) {
+        const error = commandError(`${question} Affirmative option: "${affirmative}". Ask the operator; --again alone confirms nothing.`,
+          "regression-gate-confirmation-missing", 409);
+        error.detail = { token, question, affirmative };
+        throw error;
+      }
+      confirmation = { token, reason: input.again };
+    }
+  }
   let scratchDir = null;
   let reportPath = null;
   let filesPath = null;
@@ -416,10 +450,9 @@ async function runRegressionGate(input, deps = {}) {
   const boundedLaunch = (spec) => bounded({ ...spec, signal: controller.signal, stdin: "pipe" });
   let outcome;
   try {
-    outcome = await runSuite({ scope: GATE_SCOPE }, {
+    outcome = await runSuite({ all: true }, {
       projectRoot,
       config,
-      resolveStory: resolve,
       resolveToolchain: (declared, options) => {
         if (gateDeclared.ok !== true) return gateDeclared;
         const compiled = resolveTestToolchain(declared, options);
@@ -478,7 +511,7 @@ async function runRegressionGate(input, deps = {}) {
     instant: gateInstant(input?.now),
     scope: scopeCell({ scope: outcome.scope, widened: outcome.widened ?? [] }),
     result,
-    detail: rowDetail({ red, outcome, failures, unfinished, notIsolated: report.notIsolated, run, resumed }),
+    detail: rowDetail({ red, outcome, failures, unfinished, notIsolated: report.notIsolated, run, resumed, confirmation }),
   };
 
   // (6) THE APPEND — read-modify-write through the atomic seam. A malformed existing document stops
@@ -493,7 +526,7 @@ async function runRegressionGate(input, deps = {}) {
   await write(target, appendRegressionRow(existing, row, displayPath(target)));
 
   // (7) THE TEST RECORD (190/ADR-005 §2, §4). Every launched gate run is also an ADR-001 record of scope
-  // `all`, so a later `aof test --scope all` on this content is answered from it; a run that did not
+  // `all`, so a later `aof test --all` on this content is answered from it; a run that did not
   // finish keeps its program's report beside the record, for its resume. Keyed AFTER the row is
   // appended: the row is the gate's own write, and keying before it would leave the record on a tree
   // that stopped existing the moment it was written — neither the UAT answer nor the resume's
@@ -502,6 +535,7 @@ async function runRegressionGate(input, deps = {}) {
     try {
       const ledger = await record.openLedger({ projectRoot });
       if (ledger.ok === true) {
+        const sharded = reportPath != null ? await read(reportPath, "utf8").then(JSON.parse).catch(() => null) : null;
         const written = await record.writeRecord(ledger, {
           scope: GATE_SCOPE,
           askedScope: GATE_SCOPE,
@@ -511,15 +545,20 @@ async function runRegressionGate(input, deps = {}) {
           // A run that did not finish never EXITED with a verdict, whatever its exit code says: the
           // record leaf reads that, in the gate's own words and precedence (`gateResult`).
           outcome: notFinished ? "stopped" : "exited",
-          failures,
+          failures: attributedGateFailures(failures, sharded),
+          mode: "gate",
+          // 210/ADR-006 — the milestone this gate ran for: a fix round after it measures against
+          // the base that milestone's SPEC.md dates.
+          item: item.ref,
+          reason: confirmation?.reason ?? null,
+          round: 0,
           runner: outcome.runner ?? null,
           report: outcome.report == null ? null : { ok: outcome.report.ok, format: outcome.report.format, contradiction: outcome.report.contradiction },
           exit: green ? 0 : 1,
           wallMs: Math.round(minutes * 60_000),
           source: "gate",
         }, { instant: row.instant });
-        const sharded = notFinished && reportPath != null ? await read(reportPath, "utf8").then(JSON.parse).catch(() => null) : null;
-        if (sharded != null) await record.writeAttachment(ledger, written, SHARDED_REPORT, sharded);
+        if (notFinished && sharded != null) await record.writeAttachment(ledger, written, SHARDED_REPORT, sharded);
       }
     } catch (error) {
       reportDegrade("regression-gate-record", error);
@@ -610,6 +649,22 @@ async function prepareResume({ item, target, read, record, projectRoot, gate }) 
   });
 }
 
+// Match emitted case names to the report's units. Ambiguous names remain unknown.
+function attributedGateFailures(failures, report) {
+  const units = new Map();
+  for (const entry of report?.failures ?? []) {
+    for (const name of entry.cases ?? []) {
+      const found = units.get(name) ?? new Set();
+      found.add(entry.unit);
+      units.set(name, found);
+    }
+  }
+  return failures.map((failure) => {
+    const found = units.get(failure.case);
+    return { ...failure, file: found?.size === 1 ? [...found][0] ?? null : null };
+  });
+}
+
 function failureDetail(outcome, failures) {
   if (outcome.refusal != null) return `${outcome.refusal.code}: ${outcome.refusal.message}`;
   if (failures.length > 0) return failures.map((failure) => failure.case).join(", ");
@@ -635,6 +690,7 @@ const regressionGateCommand = {
       serial: { type: "boolean" },
       jobs: { type: ["string", "number"] },
       resume: { type: "boolean" },
+      again: { type: "string" },
     },
     required: ["ref"],
     additionalProperties: false,
@@ -658,8 +714,9 @@ const regressionGateCommand = {
   cli: {
     route: ["work", "regression-gate"],
     spec: {
-      usage: "aof work regression-gate <ref> [--serial] [--jobs N] [--resume] [--json]",
+      usage: 'aof work regression-gate <ref> [--serial] [--jobs N] [--resume] [--again "<reason>"] [--json]',
       flags: {
+        again: { type: "string", description: "reason for another gate, requiring the operator’s recorded confirmation after two launches" },
         serial: { type: "boolean", description: "run the project's plain test program instead of its declared gate program" },
         jobs: { type: "string", description: "the gate program's worker count, through its declared jobsArgs template" },
         resume: { type: "boolean", description: "re-run only the units the newest not-finished run left, on the same content, and record one row for the whole" },
@@ -671,6 +728,7 @@ const regressionGateCommand = {
       ...(options.serial === true ? { serial: true } : {}),
       ...(options.jobs != null ? { jobs: options.jobs } : {}),
       ...(options.resume === true ? { resume: true } : {}),
+      ...(options.again != null ? { again: options.again } : {}),
     }),
 
     // The verdict, the row's detail, then where the time went — the program's own slowest-files

@@ -34,6 +34,7 @@ const PRE_190 = Object.freeze({
 // E21's: the same, with every key the family reads declared, the work dir's coupling among them.
 const COVERED = Object.freeze({
   ...PRE_190,
+  instructions: "wiki/TESTING.md",
   roots: ["test", "packages/work/test"],
   suiteSuffixes: [".test.mjs", ".suite.mjs"],
   couplings: [{ paths: ["wiki/**"], suites: [], why: "no suite reads the work stream" }],
@@ -53,7 +54,7 @@ async function withRepo(test, run) {
     // A suite and a work-stream record, so E21's work-dir coupling matches a tracked file.
     const file = "packages/work/test/a.suite.mjs";
     const record = "wiki/work/README.md";
-    for (const tracked of [file, record]) {
+    for (const tracked of [file, record, "wiki/TESTING.md"]) {
       await mkdir(path.join(repo, path.dirname(tracked)), { recursive: true });
       await writeFile(path.join(repo, tracked), "// fixture\n");
     }
@@ -72,7 +73,7 @@ async function updated(repo, { dryRun = false } = {}) {
   return { result, json: update.cli.json(result), text: update.cli.render(result) };
 }
 
-const layoutLines = (text) => text.split("\n").filter((line) => line.includes("test-layout-"));
+const layoutLines = (text) => text.split("\n").filter((line) => /test-layout-|test-instructions/u.test(line));
 
 // Every file under the repo with its size and modification time, to show a dry run wrote nothing.
 async function snapshot(root) {
@@ -100,8 +101,8 @@ export const workUpdateTestLayoutTests = [
       const lines = text.split("\n");
       const summary = lines.findIndex((line) => line.startsWith("Updated ACD:"));
       assert.ok(summary >= 0, text);
-      const after = lines.slice(summary + 1).filter((line) => line.includes("test-layout-"));
-      assert.deepEqual(after.map((line) => line.match(/test-layout-[a-z]+/u)[0]), ["test-layout-suites", "test-layout-couplings", "test-layout-resume"]);
+      const after = lines.slice(summary + 1).filter((line) => /test-layout-|test-instructions/u.test(line));
+      assert.deepEqual(after.map((line) => line.match(/test-layout-[a-z]+|test-instructions/u)[0]), ["test-instructions", "test-layout-suites", "test-layout-resume"]);
       assert.deepEqual(layoutLines(text), after, "no test-layout line before the Updated ACD line");
       for (const line of after) assert.match(line, /\/aof:map-tests/u, line);
     }),
@@ -131,7 +132,7 @@ export const workUpdateTestLayoutTests = [
       const { json } = await updated(repo);
       const report = await doctor.run({ target: repo });
       const warnings = report.checks
-        .filter((check) => check.id.startsWith("test-layout-") && check.severity === "warning")
+        .filter((check) => (check.id.startsWith("test-layout-") || check.id === "test-instructions") && check.severity === "warning")
         .map(({ id, message }) => ({ id, message }));
       assert.equal(warnings.length, 3);
       assert.deepEqual(json.testLayout.map(({ id, message }) => ({ id, message })), warnings);

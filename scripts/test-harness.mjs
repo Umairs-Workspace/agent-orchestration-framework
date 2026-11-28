@@ -20,7 +20,7 @@ if (!process.env.AOF_TEST_CLAUDE_HOME) {
   });
 }
 
-export async function runCases(tests) {
+export async function runCases(tests, { console = globalThis.console, afterCase = () => {} } = {}) {
   let failures = 0;
   // Per-test hermetic global AOF home (34/story 00) — see scripts/test-unit.mjs for the
   // rationale: the node identity is machine-wide now, so each test gets its OWN empty
@@ -51,6 +51,7 @@ export async function runCases(tests) {
       if (prevHome === undefined) delete process.env.AOF_GLOBAL_HOME;
       else process.env.AOF_GLOBAL_HOME = prevHome;
     }
+    afterCase();
   }
   try { rmSync(ghRoot, { recursive: true, force: true }); } catch { /* best-effort cleanup */ }
 

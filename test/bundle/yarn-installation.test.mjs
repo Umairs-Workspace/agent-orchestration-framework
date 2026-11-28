@@ -361,11 +361,12 @@ export const yarnInstallationTests = [
         'commands/archive.mjs': ['node:path', 'node:fs', '@aof/contracts/error'],
         'commands/doctor.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs', '@aof/contracts/error'],
         'commands/validate.mjs': ['node:path', 'node:fs/promises'],
-        'declared.mjs': ['node:path', 'node:fs/promises'],
-        // 190/01: the selector resolves a changed file's literal specifiers by path and matches declared couplings; it reads no file itself.
-        'select.mjs': ['node:path', 'picomatch'],
-        // 190/04: the test-layout check matches a coupling's paths the way the selector does; it reads no file itself.
-        'layout.mjs': ['picomatch'],
+        // 210/05: the work's base keeps its prepared trees under the clone's git dir, touched when used and pruned to two.
+        'baseline.mjs': ['node:path', 'node:fs/promises'],
+        // 210/04: the suite predicate matches declared exclusions; it reads no file itself.
+        'suites.mjs': ['picomatch'],
+        // 210/01: the importer scan reads suite and helper text under the test roots, fresh on every call, and skips builtin specifiers.
+        'importers.mjs': ['node:path', 'node:fs/promises', 'node:module'],
         // 190/00: the test record keys the working tree in a throwaway index under the temp dir, names its lock by a digest, and writes its store.
         'record.mjs': ['node:crypto', 'node:fs/promises', 'node:os', 'node:path'],
         'observe.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error'],

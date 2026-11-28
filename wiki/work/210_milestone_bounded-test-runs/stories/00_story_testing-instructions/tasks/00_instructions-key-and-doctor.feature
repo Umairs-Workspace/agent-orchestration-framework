@@ -12,7 +12,7 @@ Feature: a project names its testing instructions, and a project without them is
     @executable
     Scenario: E4 · a declared test runner with no instructions key gets one doctor warning
       Given a project whose config declares "work.test" with no "instructions" key
-      When I run "aof work doctor --json"
+      When I run "aof project doctor --json"
       Then exactly one check "test-instructions" has severity "warning"
       And its message names "/aof:map-tests"
 
@@ -21,7 +21,7 @@ Feature: a project names its testing instructions, and a project without them is
       Given a project whose "work.test.instructions" is "docs/TESTS.md" and no such file exists
       When its test declaration is compiled, as every aof test run and the gate compile it
       Then the compile is refused with code "test-instructions-missing", naming "docs/TESTS.md"
-      And "aof work doctor --json" reports "test-instructions" with severity "error", naming "docs/TESTS.md"
+      And "aof project doctor --json" reports "test-instructions" with severity "error", naming "docs/TESTS.md"
 
     @executable
     Scenario: aof work update prints the same warning a project's doctor gives
@@ -32,7 +32,7 @@ Feature: a project names its testing instructions, and a project without them is
     @executable
     Scenario Outline: the test-layout family keeps only the checks that still mean something
       Given a project with a declared "work.test" and a declared gate
-      When I run "aof work doctor --json"
+      When I run "aof project doctor --json"
       Then the check <id> is <presence>
 
       Examples:
@@ -48,7 +48,7 @@ Feature: a project names its testing instructions, and a project without them is
     @executable
     Scenario: a present instructions file is reported as ok and named
       Given a project whose "work.test.instructions" is "wiki/TESTING.md" and the file exists
-      When I run "aof work doctor --json"
+      When I run "aof project doctor --json"
       Then the check "test-instructions" has severity "ok" and names "wiki/TESTING.md"
 
     @executable
@@ -59,3 +59,9 @@ Feature: a project names its testing instructions, and a project without them is
       And it names "test/store/global-work-propagation.test.mjs" as binding ":4182"
       And it says how to run a workspace's native "node:test" files
       And it says the whole tree is the regression gate's
+
+    @executable @bug @finding-F-09
+    Scenario: the graph-reader allow-lists drop config-inspect once it reads no graph
+      Given config-inspect no longer runs the graph-freshness probe
+      Then "packages/core/src/application/bindings/config-inspect.mjs" is in neither codebase-grounding allow-list
+      And both codebase-grounding controls are green

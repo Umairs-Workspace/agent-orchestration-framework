@@ -60,12 +60,18 @@ import { testShardedReportTests } from "./test-sharded-report.test.mjs";
 // temp git repositories with a runner that counts its launches.
 import { testRunRecordTests } from "./test-run-record.test.mjs";
 
-// 190/04 — the project doctor names what the test declaration leaves out (task 00), and a commit's
-// selection is replayed with `--plan` without running anything (task 02).
+// 190/04 — the project doctor names what the test declaration leaves out (task 00). Its planned
+// replay (task 02) went with `--plan` and the selector it replayed (210/ADR-008).
 import { testLayoutCheckTests } from "./test-layout-check.test.mjs";
-import { testPlanCommitTests } from "./test-plan-commit.test.mjs";
+
+// 210/01: fresh import/helper/path-mention scans.
+import { testImporterScanTests } from "./test-importer-scan.test.mjs";
+// 210/05: bounded fix rounds — the round's selection, the chain's stop rules and the work's base.
+import { testFixRoundsTests } from "./test-fix-rounds.test.mjs";
 
 export const tests = [
+  ...testImporterScanTests,
+  ...testFixRoundsTests,
   // milestone 72 / story 02 - the test command's face (tasks 00-02) plus FF-7204.
   ...testCommandContractTests,
   ...repoTestIsolationGuardTests,
@@ -78,7 +84,6 @@ export const tests = [
   ...testShardedReportTests,
   // 190/00 — the test record.
   ...testRunRecordTests,
-  // 190/04 — the test-layout check family and the planned replay.
+  // 190/04 — the test-layout check family.
   ...testLayoutCheckTests,
-  ...testPlanCommitTests,
 ];

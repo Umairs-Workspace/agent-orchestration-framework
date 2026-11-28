@@ -58,7 +58,7 @@ export const teachFrameTests = [
     name: "188/02 E8 (@finding-F-14) · the story's own tests run once, and only its results are told",
     run: () => {
       const process = region("process");
-      assert.match(process, /When the test files among `files:` exist, run `aof test --scope file <those files>` once/u);
+      assert.match(process, /When the test files among `files:` exist, run `aof test <suite>… --reason "<why these suites>"` once/u);
       assert.match(process, /Never widen the run to the repository, and never run it again to shorten its output/u);
       assert.doesNotMatch(process, /--scope impacted/u, "the session no longer widens to the impacted scope");
       assert.match(region("voice"), /A failure outside the story's files is not theirs to hear about/u);

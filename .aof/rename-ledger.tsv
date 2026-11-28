@@ -2601,3 +2601,5 @@ R073	.planning/RETROSPECTIVE.md	wiki/work/.gsd-archive/RETROSPECTIVE.md
 R100	.planning/v1.1-MILESTONE-AUDIT.md	.planning/milestones/v1.1-MILESTONE-AUDIT.md
 R083	test/integration/steps/cli-legacy.steps.mjs	test/integration/steps/shared-cli.steps.mjs
 R100	.planning/v1-MILESTONE-AUDIT.md	.planning/milestones/v1-MILESTONE-AUDIT.md
+F	packages/work/src/testing/declared.mjs	packages/work/src/commands/test.mjs
+F	packages/core/src/application/bindings/work/test-select.mjs	packages/core/src/application/bindings/commands/test.mjs

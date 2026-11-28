@@ -9,16 +9,6 @@
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
 
-// milestone 72 / story 01 — THE SELECTION: changed files reach suite files through the code graph
-// the repo already builds, READ and never built; an UNKNOWN widens the selection to the whole suite
-// and is NAMED with one of four exhaustive reasons, presence outranking the union so a test file
-// created this turn widens rather than quietly selecting itself; every result carries the
-// ARTIFACT's own instant or exactly null; selection is pure across calls; and a selected suite the
-// runner does not assemble is reported in the census's own verdict, reached by import with no
-// second derivation. The changed set itself comes from a bounded git reader through the one seam,
-// where an unresolvable base and an empty set are REFUSALS rather than a fifth widening. Both
-// @executable task features, plus FF-7202 and FF-7203.
-import { workTestSelectTests } from "./work-test-select.test.mjs";
 import { workMemorySeamTests } from "./work-memory-seam.test.mjs";
 // milestone 03 — work board UI
 import { workListTests } from "./work-list.test.mjs";
@@ -63,7 +53,6 @@ import { mapTestsCommandTests } from "./map-tests-command.test.mjs";
 
 export const tests = [
   // milestone 72 / story 01 — the selection (tasks 00–01) plus FF-7202 and FF-7203.
-  ...workTestSelectTests,
   ...workMemorySeamTests,
   ...workListTests,
   // milestone 68 / story 04 — story-and-phase-scoped-observe (the three @executable

@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { copyFile, link, mkdir, mkdtemp, readFile, readdir, rename, rm, unlink, writeFile } from "node:fs/promises";
+import { copyFile, link, mkdir, mkdtemp, readFile, readdir, rename, rm, stat, unlink, utimes, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -84,7 +84,13 @@ async function treeKey({ projectRoot, launch = runBounded, env = process.env } =
   const scratch = await mkdtemp(path.join(os.tmpdir(), "aof-tree-key-"));
   const index = path.join(scratch, "index");
   try {
-    await copyFile(path.join(gitDir, "index"), index).catch((error) => {
+    // The copy keeps the index's own timestamps (210/05): git trusts an entry's cached stat only
+    // when the file is older than the index, so a copy stamped "now" would hide an edit made in the
+    // same second as the last index write, at the same size — a stale key, answered as a match.
+    await copyFile(path.join(gitDir, "index"), index).then(async () => {
+      const { atime, mtime } = await stat(path.join(gitDir, "index"));
+      await utimes(index, atime, mtime);
+    }, (error) => {
       // A repository with nothing staged yet has no index; an empty throwaway is the same thing.
       if (error?.code !== "ENOENT") throw error;
     });
@@ -96,7 +102,7 @@ async function treeKey({ projectRoot, launch = runBounded, env = process.env } =
     if (!answered(written) || !/^[0-9a-f]{40,64}$/u.test(key)) {
       return Object.freeze({ ok: false, reason: "the working tree could not be read" });
     }
-    return Object.freeze({ ok: true, key, store: path.join(commonDir, ...RECORD_DIR) });
+    return Object.freeze({ ok: true, key, worktree: gitDir, store: path.join(commonDir, ...RECORD_DIR) });
   } finally {
     await rm(scratch, { recursive: true, force: true });
   }
@@ -124,17 +130,19 @@ const identical = (ran, asked) => (ran === ALL || asked === ALL)
   ? ran === asked
   : ran.length === asked.length && ran.every((file, index) => file === asked[index]);
 
-// Does this record answer this question? A GREEN answers anything its run covered. A RED answers
-// only the identical question: a case name does not reliably name its file, so a red is never
-// split, and a red answered as green for a subset is the confidently-wrong-once failure 72 exists
-// to refuse. A `not-finished` answers nothing.
+// A covering red can answer a subset only when all its failures name a suite.
+// Exit-only reds and contradictory reports have no safely attributable failure set.
+const attributedRed = (record) => record.failures?.length > 0
+  && record.failures.every((failure) => typeof failure.file === "string" && failure.file.length > 0)
+  && record.report?.contradiction !== true && record.report?.ok !== false;
+
 function recordAnswers(record, { key, environment, selection }) {
   if (record?.key !== key || !sameEnvironment(record.environment, environment)) return false;
   const ran = selectionOf(record.selected);
   const asked = selectionOf(selection);
   if (isNotFinishedRow(record)) return false;
   if (record.result === GREEN) return covers(ran, asked);
-  if (record.result === RED) return identical(ran, asked);
+  if (record.result === RED) return identical(ran, asked) || (attributedRed(record) && covers(ran, asked));
   return false;
 }
 
@@ -173,13 +181,23 @@ async function readJson(file) {
   }
 }
 
+// Old records remain readable; unknown metadata and unattributed failures are explicit.
+async function readRecord(file) {
+  const record = await readJson(file);
+  if (record == null) return null;
+  return { ...record, reason: record.reason ?? null, mode: record.mode ?? null,
+    worktree: record.worktree ?? null, parent: record.parent ?? null, round: record.round ?? null,
+    item: record.item ?? null, baseline: record.baseline ?? null, stopped: record.stopped ?? null,
+    failures: (record.failures ?? []).map((failure) => ({ ...failure, file: failure.file ?? null, preExisting: failure.preExisting ?? null })) };
+}
+
 // Every record on this key, newest first. The short key in the name spares parsing the rest.
 async function recordsFor(store, key) {
   const short = key.slice(0, 12);
   const names = (await recordNames(store)).filter((name) => name.includes(`-${short}-`)).reverse();
   const records = [];
   for (const name of names) {
-    const record = await readJson(path.join(store, name));
+    const record = await readRecord(path.join(store, name));
     if (record?.key === key) records.push(record);
   }
   return records;
@@ -189,7 +207,27 @@ async function recordsFor(store, key) {
 // the same question answers red rather than with the older green.
 async function findAnswer({ key, store, environment }, selection) {
   for (const record of await recordsFor(store, key)) {
-    if (recordAnswers(record, { key, environment, selection })) return record;
+    if (!recordAnswers(record, { key, environment, selection })) continue;
+    const asked = selectionOf(selection);
+    if (record.result !== RED || identical(selectionOf(record.selected), asked)) return record;
+    const failures = record.failures.filter((failure) => asked === ALL || asked.includes(posix(failure.file)));
+    return { ...record, failures, result: failures.length ? RED : GREEN, exit: failures.length ? record.exit : 0 };
+  }
+  return null;
+}
+
+// One record by its id, or null: how a fix chain walks its `parent` links back (210/ADR-005).
+async function readRecordById({ store }, id) {
+  if (typeof id !== "string" || !/^[\w.-]+$/u.test(id)) return null;
+  return await readRecord(path.join(store, `${id}.json`));
+}
+
+// Fix rounds start from this worktree's newest red in this environment, on any content.
+async function findNewestRed({ store, worktree, environment }) {
+  if (!worktree) return null;
+  for (const name of (await recordNames(store)).reverse()) {
+    const record = await readRecord(path.join(store, name));
+    if (record?.result === RED && record.worktree === worktree && sameEnvironment(record.environment, environment)) return record;
   }
   return null;
 }
@@ -211,7 +249,7 @@ async function placeExclusive(target, text) {
 //
 // `instant` (190/ADR-005 §4) names the instant a regression gate stamped on its row, so the gate's
 // record and its `REGRESSION.md` row name one moment, and a resume finds the one from the other.
-async function writeRecord({ key, store, environment }, fields, { now = () => new Date(), pid = process.pid, instant: stamped = null } = {}) {
+async function writeRecord({ key, store, environment, worktree }, fields, { now = () => new Date(), pid = process.pid, instant: stamped = null } = {}) {
   await mkdir(store, { recursive: true });
   const instant = stamped ?? now().toISOString();
   const stem = `${compactInstant(instant)}-${key.slice(0, 12)}-${pid}`;
@@ -224,6 +262,16 @@ async function writeRecord({ key, store, environment }, fields, { now = () => ne
       key,
       environment,
       instant,
+      reason: fields.reason ?? null,
+      mode: fields.mode ?? null,
+      worktree: worktree ?? null,
+      parent: fields.parent ?? null,
+      round: fields.round ?? null,
+      // 210/ADR-006, ADR-005 — the item a gate record was run for, the base a red was measured
+      // against, and the latch a fix chain stopped on. Null when they did not apply.
+      item: fields.item ?? null,
+      baseline: fields.baseline ?? null,
+      stopped: fields.stopped ?? null,
       scope: fields.scope,
       askedScope: fields.askedScope ?? fields.scope,
       story: fields.story ?? null,
@@ -231,7 +279,7 @@ async function writeRecord({ key, store, environment }, fields, { now = () => ne
       widened: Object.freeze([...(fields.widened ?? [])]),
       gate: fields.gate === true,
       result,
-      failures: Object.freeze((fields.failures ?? []).map((entry) => Object.freeze({ case: entry.case, message: entry.message ?? "" }))),
+      failures: Object.freeze((fields.failures ?? []).map((entry) => Object.freeze({ case: entry.case, message: entry.message ?? "", file: entry.file ?? null, preExisting: entry.preExisting ?? null }))),
       runner: fields.runner ?? null,
       report: fields.report ?? null,
       exit: fields.exit,
@@ -287,7 +335,7 @@ async function readAttachment({ store }, record, name) {
 async function findGateRun({ store }, instant) {
   const names = (await recordNames(store)).reverse();
   for (const name of names) {
-    const record = await readJson(path.join(store, name));
+    const record = await readRecord(path.join(store, name));
     if (record?.source === "gate" && record.instant === instant) return record;
   }
   return null;
@@ -428,8 +476,8 @@ async function acquire(ledger, selection, {
 async function openLedger({ projectRoot, launch, env, host } = {}) {
   const keyed = await treeKey({ projectRoot, launch, env });
   if (!keyed.ok) return keyed;
-  return Object.freeze({ ok: true, key: keyed.key, store: keyed.store, environment: currentEnvironment(host) });
+  return Object.freeze({ ok: true, key: keyed.key, store: keyed.store, worktree: keyed.worktree, environment: currentEnvironment(host) });
 }
 
-return { ALL, KEY_DEADLINE_MS, RECORD_DIR, RECORD_LIMIT, WAIT_POLL_MS, acquire, currentEnvironment, findAnswer, findGateRun, openLedger, readAttachment, recordAnswers, recordsFor, releaseLock, resultOf, treeKey, tryLock, writeAttachment, writeRecord };
+return { ALL, KEY_DEADLINE_MS, RECORD_DIR, RECORD_LIMIT, WAIT_POLL_MS, acquire, currentEnvironment, findAnswer, findGateRun, findNewestRed, openLedger, readRecordById, readAttachment, recordAnswers, recordsFor, releaseLock, resultOf, treeKey, tryLock, writeAttachment, writeRecord };
 }

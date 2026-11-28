@@ -19,13 +19,22 @@ The ref may be a **milestone**, a **story**, a **uat session**, a **spike**, or 
 session (`type: uat`) is a cross-milestone acceptance gate: its record doc is its own `SESSION.md` (not
 a milestone `VERIFICATION.md`), and the scenarios in scope are the `@manual`/`@uat` ones across the
 milestones it accepts (its `depends:` list). Run one integrated **regression sweep** (green) before
-the manual/human lanes: a single `aof test --scope all` for the whole session, never one run per
+the manual/human lanes: a single `aof test --all` for the whole session, never one run per
 accepted milestone. When the content has not changed since the newest gate run, that sweep is answered
 from the gate run's record, and the answer is the evidence. The same
 steps below apply — just write to `SESSION.md` and read scenarios across the accepted span.
 
 **Spike/chore dispatch (ADR-003) — skip straight to `<spike-chore>` below.** A `spike` or `chore` is
-verified on its **own per-type criterion**, never through the `<process>` steps below (no
+verified on its **own per-type criterion**, never through the `<process>
+
+**Testing step.** Read the file named in `work.test.instructions` before running anything. Choose the suites
+from those instructions and the changed files, then run `aof test <suite>… --reason "<why these suites>"`.
+Use `aof test --suggest` to check importers and path mentions; it cannot see paths built from fragments
+or source-to-source reach through the application assembly. State any deliberate exclusions by
+suite name in the recorded reason. After a fix, check what the fix changed with `aof test --failed`.
+Never run `aof test --all` in story work: the whole tree is the regression gate's.
+
+` steps below (no
 `@executable` suite, no `@manual` scenario run, no design conformance, no human `@uat` step — neither
 type carries a behavioural contract, and a chore/spike folder legitimately has no `tasks/`/`.feature`
 to run). Detect the type from `aof work find` and branch there first.

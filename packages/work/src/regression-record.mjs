@@ -1,7 +1,7 @@
 // THE REGRESSION RECORD — milestone 96 / story 04, ADR-008 §1, §2. FF-9606 is its control.
 //
-// `aof test --scope all` already computes the gate boolean — `scope === "all" && widened.length
-// === 0` (`src/commands/test.mjs`) — and then discards it. So this module is not a new test run.
+// `aof test --all` already computes the gate boolean — the whole tree ran (`src/commands/test.mjs`)
+// — and then discards it. So this module is not a new test run.
 // It is DURABILITY over a result the command already produces, and the door in
 // `src/commands/item-status.mjs` is the other half.
 //
@@ -237,6 +237,15 @@ export function parseRegressionRows(text, target = REGRESSION_RECORD_BASENAME) {
     rows.push(Object.freeze({ commit, instant, scope, result, detail: isFilled(detail) ? detail : null, line }));
   }
   return rows;
+}
+
+export const NO_LAUNCH_DETAIL = "not launched";
+
+// A resumed row completes its original launch. Override and refused rows launch nothing.
+export function regressionLaunchRows(rows) {
+  return rows.filter((row) => row.result !== OVERRIDE
+    && !row.detail?.startsWith("resumed from ")
+    && row.detail !== NO_LAUNCH_DETAIL && !row.detail?.startsWith(`${NO_LAUNCH_DETAIL} · `));
 }
 
 // newestRegressionRow(rows) — the row the door reads. The document is append-only, so the newest

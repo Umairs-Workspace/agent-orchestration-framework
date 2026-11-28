@@ -1,0 +1,19 @@
+{
+  "runId": "20261127T181807585Z-0000",
+  "itemRef": "210/02",
+  "state": "failed",
+  "attempt": 1,
+  "outcome": "failed",
+  "sessionId": "916fbe69-c108-47be-ae07-3f940696df57",
+  "brief": {},
+  "createdAt": "2026-11-27T18:18:07.585Z",
+  "updatedAt": "2026-11-27T18:57:46.204Z",
+  "failureReason": "runtime_offline",
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": "2026-11-27T18:57:46.204Z",
+  "node": "node-6eb3",
+  "resumeAfter": null,
+  "spend": null,
+  "asks": []
+}

@@ -112,9 +112,9 @@ export const archTests = [
     },
   },
   {
-    name: "arch/179/04 FF-17904 red probe: a select.mjs that imports readGraph from the graph-normalize module fails, naming the module, the line and the reader",
+    name: "arch/179/04 FF-17904 red probe: an importers.mjs that imports readGraph from the graph-normalize module fails, naming the module, the line and the reader",
     run() {
-      const rel = "packages/work/src/testing/select.mjs";
+      const rel = "packages/work/src/testing/importers.mjs";
       const text = readFileSync(path.join(repoRoot, rel), "utf8");
       const planted = `import { readGraph } from "@aof/knowledge/graph-normalize";\n${text}`;
       assert.deepEqual(oneReaderFailures([{ rel, text: planted }]).map((failure) => failure.split(" — ")[0]), [`${rel}:1 imports readGraph from @aof/knowledge/graph-normalize`]);

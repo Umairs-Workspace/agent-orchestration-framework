@@ -32,7 +32,7 @@ STATE measurement. Keep it to the five headings ADR-001 lists.
 ## Verification step
 
 Point a temporary project at a missing instructions path and run `aof test` (refused, path named)
-and `aof work doctor` (one warning naming `/aof:map-tests`). Then run `aof work update` here and
+and `aof project doctor` (one warning naming `/aof:map-tests`). Then run `aof work update` here and
 grep every render for `never name suite files`, `--scope` and `wearing prose`. There must be zero
 hits outside the work stream. `node scripts/golden.mjs` must report no diff after `--update`.
 

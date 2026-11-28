@@ -411,19 +411,19 @@ export function malformedLines(map) {
   return [...map.malformed];
 }
 
-// ── THE TOKEN — `<story ref> Q<n>` / `<story ref> E<n>` (ADR-003 §2) ───────────────────────────
+// ── THE TOKEN — `<ref> Q<n>` / `<ref> E<n>` / `<ref> G<n>` (210/ADR-007) ───────────────────────────
 // Built and read by this one pair, so the answer reader and the discovery prose cannot spell it
 // two ways.
 const STORY_REF = /^\d+(?:\/\d+)?$/;
-const TOKEN_ID = /^[EQ][1-9]\d*$/;
-const TOKEN_AT_HEAD = /^(\d+(?:\/\d+)?) ([EQ][1-9]\d*)(?=$| )/;
+const TOKEN_ID = /^[EQG][1-9]\d*$/;
+const TOKEN_AT_HEAD = /^(\d+(?:\/\d+)?) ([EQG][1-9]\d*)(?=$| )/;
 
 export function mapToken(storyRef, id) {
   if (typeof storyRef !== "string" || !STORY_REF.test(storyRef)) {
     throw new TypeError(`mapToken: "${String(storyRef)}" is not a story ref`);
   }
   if (typeof id !== "string" || !TOKEN_ID.test(id)) {
-    throw new TypeError(`mapToken: "${String(id)}" is not a question or example id`);
+    throw new TypeError(`mapToken: "${String(id)}" is not a question, example or gate id`);
   }
   return `${storyRef} ${id}`;
 }

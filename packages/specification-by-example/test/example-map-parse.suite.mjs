@@ -1073,4 +1073,16 @@ const factAndDecisionTests = [
   },
 ];
 
-export const exampleMapParseTests = [...taskGrammarTests, ...taskQueryTests, ...factAndDecisionTests];
+export const exampleMapParseTests = [...taskGrammarTests, ...taskQueryTests, ...factAndDecisionTests, {
+  name: "210/03 gate tokens share the map grammar with questions and examples",
+  run: () => {
+    for (const [text, expected] of [
+      ["17 G3 · Run a third whole-tree gate?", { storyRef: "17", id: "G3" }],
+      ["17/02 Q1 · Does a reserved book count?", { storyRef: "17/02", id: "Q1" }],
+      ["17 E1", { storyRef: "17", id: "E1" }],
+      ["17 G0 · Run gate 0?", null], ["17 X3 · Something else", null],
+    ]) assert.deepEqual(readMapToken(text), expected);
+    assert.equal(mapToken("17", "G3"), "17 G3");
+    assert.throws(() => mapToken("17", "G0"));
+  },
+}];

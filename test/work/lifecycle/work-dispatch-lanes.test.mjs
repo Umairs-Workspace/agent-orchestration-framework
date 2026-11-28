@@ -563,7 +563,7 @@ export const workDispatchLaneTests = [
   },
   {
     // The graph is derived and git-ignored, so a lane cut from the primary had none, and every
-    // `aof test --scope impacted` in it widened as `no-graph` (a downstream loop, 2026-11-15).
+    // a graph read in it answered `no-graph` (a downstream loop, 2026-11-15).
     name: "dispatch 2026-11-15 a lane starts with the primary's git-ignored code graph, its build time kept — never one git would commit, never over the lane's own, and nothing when the primary has none",
     run: async () => {
       const GRAPH = "graphify-out/graph.json";

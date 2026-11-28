@@ -73,10 +73,6 @@ const GRAPH_READER_ALLOWLIST = new Set([
   // their three core bindings, left this list: each asks the code corpus's `relations` through the
   // port, so the code backend above is the one reader they share.
   path.join("packages", "knowledge", "src/memory/graphify-backend.mjs"),
-  // 190/ADR-008's amendment (ed8ee723) — the doctor's `test-layout-graph-fresh` check: config inspection
-  // locates the artifact (`graphJsonPath`) and reads its build instant (`graphArtifactBuiltAt`, the one
-  // derivation of it, from the file's mtime). It never reads the graph's contents (FF-17904).
-  path.join("packages/core/src/application/bindings/config-inspect.mjs"),
   // Chore 197 (8e85906b) — a dispatch lane opens with a copy of the primary's git-ignored code graph: the
   // core binding supplies `graphJsonPath` to work-loop's lane factory, which copies the file by that path,
   // mtime kept. Neither module opens the artifact; the copy is a file copy.

@@ -48,14 +48,20 @@ the same reason — nothing here spawns a role whose effort it could set.
    session writes no status move of its own.** A `duplicate-run` refusal from
    `aof work run-start <ref> --json` means another run on this story is still open — an agent's, or
    a phase that died. Report it and the session stops: it never resumes or settles that run.
-5. **Every manual run runs `aof test --scope impacted --story <ref>` once, before the guide** — the
-   first run and every re-run alike, so the guide is always headed by what is still red.
+5. **Every manual run reads the instructions and runs the chosen suites once, before the guide.**
+   Read the file named in `work.test.instructions` before running anything. Choose the suites
+   from those instructions and the changed files, then run `aof test <suite>… --reason "<why these suites>"`.
+   Use `aof test --suggest` to check importers and path mentions; it cannot see paths built from fragments
+   or source-to-source reach through the application assembly. State any deliberate exclusions by
+   suite name in the recorded reason. After a fix, check what the fix changed with `aof test --failed`.
+   Never run `aof test --all` in story work: the whole tree is the regression gate's.
+   The first run and every re-run alike head the guide with what is still red.
 6. **Print the guide, with its parts in this order:**
    - the scenarios still red, by name;
    - the user story;
    - each task file with its scenario names, read from `aof work tasks <ref> --json`;
    - every `reads:` entry and every `files:` entry, each with one line on why it matters;
-   - the test files among `files:`, and the command `aof test --scope impacted --story <ref>` that
+   - the test files among `files:`, and the command `aof test <suite>… --reason "<why these suites>"` that
      gates them;
    - the build plan's mechanism and known traps, when the story has a `PLAN.md`;
    - an order to take the tasks in, with the reason for it.
@@ -78,7 +84,7 @@ to hand the story to an agent, the session appends a hand-off entry under
 a nested story, and the story's own for a standalone one.** The entry opens
 `- <date> — Hand-off <ref> from manual:`, then lists the `files:` the human changed, their commits
 since the run was minted, and the scenarios green and red at that moment (run
-`aof test --scope impacted --story <ref>` for them). The entry is a record in the item's own folder,
+`aof test <suite>… --reason "<why these suites>"` for them). The entry is a record in the item's own folder,
 never a write under `files:`.
 
 **A standalone task has no `STATE.md`, so its hand-off is reported in the terminal and nothing is

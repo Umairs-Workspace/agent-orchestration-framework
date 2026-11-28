@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 
 
 
-import { isSuiteFile } from "./testing/select.mjs";
+import { isSuiteFile } from "./testing/suites.mjs";
 
 export const PROPOSAL_REASONS = Object.freeze([
   // The author's own subject — a path they already declared in `files:`.

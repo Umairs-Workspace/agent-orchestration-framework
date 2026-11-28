@@ -109,7 +109,7 @@ export const archTests = [
       const derive = await source(DERIVE);
       // A second definition of "what is a suite" is two answers that agree until the day someone
       // changes one — the species 72/FF-7203 already names one module over.
-      assert.ok(importsOf(derive).includes("./testing/select.mjs"), "suite membership is decided through the shipped path predicate");
+      assert.ok(importsOf(derive).includes("./testing/suites.mjs"), "suite membership is decided through the shipped path predicate");
       assert.ok(derive.includes("isSuiteFile("), "…and it is actually called");
       assert.doesNotMatch(derive, /function\s+isSuiteFile\b/, "the derivation holds no second definition of a suite file");
       assert.doesNotMatch(derive, /\.test\.mjs["'`]\s*\)/, "…and no second inline spelling of the suffix as a membership test");

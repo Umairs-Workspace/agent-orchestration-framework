@@ -163,7 +163,6 @@ import { assembleCommandsObserve } from './bindings/commands/observe.mjs';
 import { assembleCommandsPromoteFindingToChore } from './bindings/commands/promote-finding-to-chore.mjs';
 import { assembleCommandsPromoteGapToChore } from './bindings/commands/promote-gap-to-chore.mjs';
 import { assembleCommandsRatchet } from './bindings/commands/ratchet.mjs';
-import { assembleWorkTestSelect } from './bindings/work/test-select.mjs';
 import { assembleWorkTestChanged } from './bindings/work/test-changed.mjs';
 import { assembleWorkToolchain } from './bindings/work/toolchain.mjs';
 import { assembleCommandsTest } from './bindings/commands/test.mjs';
@@ -398,10 +397,9 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const commandsPromoteFindingToChore = assembleCommandsPromoteFindingToChore({ commandsPromoteServices: commandsPromote, workReadServices: workRead });
   const commandsPromoteGapToChore = assembleCommandsPromoteGapToChore({ commandsInsertSharedServices: commandsInsertShared, commandsPromoteServices: commandsPromote });
   const commandsRatchet = assembleCommandsRatchet({ commandsResolveServices: commandsResolve });
-  const workTestSelect = assembleWorkTestSelect({ workAuditCensusServices: workAuditCensus, codeRelationsServices: codeRelations });
-  const workTestChanged = assembleWorkTestChanged({ workTestSelectServices: workTestSelect });
-  const commandsTest = assembleCommandsTest({ workAuditCensusServices: workAuditCensus, workTestChangedServices: workTestChanged, commandsResolveServices: commandsResolve, workTestSelectServices: workTestSelect, workToolchainServices: workToolchain, degradeServices: degrade });
-  const commandsRegressionGate = assembleCommandsRegressionGate({ meshWorktreeServices: meshWorktree, commandsResolveServices: commandsResolve, commandsTestServices: commandsTest, workToolchainServices: workToolchain, degradeServices: degrade, runStoreServices: runStore });
+  const workTestChanged = assembleWorkTestChanged();
+  const commandsTest = assembleCommandsTest({ workAuditCensusServices: workAuditCensus, workTestChangedServices: workTestChanged, workReadServices: workRead, workToolchainServices: workToolchain, degradeServices: degrade, runStoreServices: runStore });
+  const commandsRegressionGate = assembleCommandsRegressionGate({ provideWorkExamplesAnswers: async () => { lifetime.assertReady(); return workExamplesAnswers; }, meshWorktreeServices: meshWorktree, commandsResolveServices: commandsResolve, commandsTestServices: commandsTest, workToolchainServices: workToolchain, degradeServices: degrade, runStoreServices: runStore });
   const commandsResume = assembleCommandsResume({ commandsResolveServices: commandsResolve, runStoreServices: runStore, effectsRunTransitionsServices: effectsRunTransitions, workReadServices: workRead, itemLockServices: itemLock, loopAskRequestServices: loopAskRequest, loopAskServices: loopAsk, boardMeshExecutionServices: boardMeshExecution, notifyNotifyServices: notifyNotify, workServices: work, workspaceServices: workspace, degradeServices: degrade, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
   const commandsResync = assembleCommandsResync({ globalWorkStoreServices: globalWorkStore, workspaceServices: workspace, meshResyncServices: meshResync });
   const commandsRunComplete = assembleCommandsRunComplete({ commandsResolveServices: commandsResolve, effectsRunTransitionsServices: effectsRunTransitions, runStoreServices: runStore, globalWorkPublisherServices: globalWorkPublisher });
@@ -567,14 +565,21 @@ export function assembleApplication({ env = process.env, base = createBaseServic
           resolveRatchetBase: commandsRatchet.resolveRatchetBase,
         }),
         test: Object.freeze({
-          COMMIT_NEEDS_PLAN: commandsTest.COMMIT_NEEDS_PLAN,
-          NO_FILES_NAMED: commandsTest.NO_FILES_NAMED,
-          NO_SCOPE: commandsTest.NO_SCOPE,
-          SCOPE_UNRECOGNISED: commandsTest.SCOPE_UNRECOGNISED,
-          STORY_AND_SINCE: commandsTest.STORY_AND_SINCE,
-          STORY_OUTSIDE_IMPACTED: commandsTest.STORY_OUTSIDE_IMPACTED,
-          TEST_SCOPES: commandsTest.TEST_SCOPES,
+          ALL_IN_STORY_WORK: commandsTest.ALL_IN_STORY_WORK,
+          FAILED_NO_RED: commandsTest.FAILED_NO_RED,
+          FAILED_UNATTRIBUTED: commandsTest.FAILED_UNATTRIBUTED,
+          FIX_ROUND_LINE: commandsTest.FIX_ROUND_LINE,
+          FIX_STOPPED: commandsTest.FIX_STOPPED,
+          FORM_CONFLICT: commandsTest.FORM_CONFLICT,
+          FORM_MISSING: commandsTest.FORM_MISSING,
+          NO_FORM: commandsTest.NO_FORM,
+          NOT_A_SUITE: commandsTest.NOT_A_SUITE,
+          REASON_MISSING: commandsTest.REASON_MISSING,
+          TEST_FORMS: commandsTest.TEST_FORMS,
+          baselineServices: commandsTest.baselineServices,
+          chainStop: commandsTest.chainStop,
           runTest: commandsTest.runTest,
+          storyWorkOf: commandsTest.storyWorkOf,
         }),
         regressionGate: Object.freeze({
           DIRTY_TREE: commandsRegressionGate.DIRTY_TREE,
@@ -609,7 +614,6 @@ export function assembleApplication({ env = process.env, base = createBaseServic
       integrations: Object.freeze({
         routing: integrationsRouting,
       }),
-      testSelect: workTestSelect,
       testChanged: workTestChanged,
       toolchain: workToolchain,
       tune: Object.freeze({

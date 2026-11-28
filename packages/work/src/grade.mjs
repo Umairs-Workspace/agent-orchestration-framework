@@ -133,7 +133,7 @@ function looksLikeTap(lines) {
 // normaliseTap(text) → { ok, cases, failures } | { ok: false }
 //
 // `cases` is `[{ name, status }]` in EMITTED order, `status` one of CASE_STATUSES or null.
-// `failures` is `[{ case, message, scenario }]` — `scenario` ALWAYS null here, because no
+// `failures` is `[{ case, message, scenario, file }]` — `scenario` ALWAYS null here, because no
 // join is performed at this layer and an absent join is not an unjoined one (ADR-006 §4).
 export function normaliseTap(text) {
   const lines = String(text ?? "").split(/\r?\n/);
@@ -141,6 +141,8 @@ export function normaliseTap(text) {
 
   const cases = [];
   const failures = [];
+  let fileBoundary = 0;
+  const failureByCase = new Map();
   // Announced-but-not-yet-resolved case names, in announcement order.
   const announced = [];
   // The failure a diagnostic block or trailing prose currently belongs to.
@@ -204,6 +206,25 @@ export function normaliseTap(text) {
       continue;
     }
 
+    const fileLine = /^# file (.+) (\d+(?:\.\d+)?) (\d+)$/u.exec(line);
+    if (fileLine) {
+      closeFailure();
+      const [, file, , executed] = fileLine;
+      const pending = cases.slice(fileBoundary);
+      // A zero-case marker can account for an import failure, whose emitted name
+      // includes the exact path. It does not claim an unrelated crash.
+      const held = Number(executed) === 0
+        ? pending.filter((entry) => entry.name.startsWith(`${file} `))
+        : pending.slice(-Number(executed));
+      for (const entry of held) {
+        const failure = failureByCase.get(entry);
+        if (failure) failure.file = file;
+      }
+      fileBoundary = cases.length;
+      lastCase = null;
+      continue;
+    }
+
     const subtest = SUBTEST_LINE.exec(line);
     if (subtest) {
       closeFailure();
@@ -227,7 +248,8 @@ export function normaliseTap(text) {
       lastCase = { name, status };
       cases.push(lastCase);
       if (status === "failed") {
-        const entry = { case: name, message: "", scenario: null };
+        const entry = { case: name, message: "", scenario: null, file: null };
+        failureByCase.set(lastCase, entry);
         failures.push(entry);
         openFailure = { entry, lines: [] };
       }

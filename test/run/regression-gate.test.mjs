@@ -43,6 +43,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile, realpath } from "node:fs/promises";
 import { runBounded } from "@aof/execution/bounded-process";
+import { createExampleAnswers } from "@aof/specification-by-example/answers";
 import { createTestRecord } from "@aof/work/testing/record";
 import { existsSync } from "node:fs";
 import { normaliseTap } from "@aof/work/grade";
@@ -114,19 +115,19 @@ const suiteResult = ({ scope = "all", widened = [], failures = [], refusal = nul
     exit: exit ?? (refusal != null || failures.length > 0 ? 1 : 0),
   });
 
-async function withGateFixture(body) {
+async function withGateFixture(body, ref = "70") {
   const tmp = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-regression-gate-")));
   const itemDir = path.join(tmp, "wiki", "work", "70_milestone_gate");
   await mkdir(itemDir, { recursive: true });
   await writeFile(path.join(itemDir, "SPEC.md"), "---\ntype: milestone\n---\n# 70\n", "utf8");
   await writeFile(path.join(itemDir, "VERIFICATION.md"), "# Verification\n\nUNTOUCHED\n", "utf8");
-  const item = { ref: "70", dir: itemDir, type: "milestone" };
+  const item = { ref, dir: itemDir, type: "milestone" };
   const recordPath = path.join(itemDir, REGRESSION_RECORD_BASENAME);
   const run = (overrides = {}) =>
-    runRegressionGate({ ref: "70", now: overrides.now ?? INSTANT }, {
+    runRegressionGate({ ref, now: overrides.now ?? INSTANT, ...overrides.input }, {
       projectRoot: tmp,
       config: {},
-      resolve: async (ref) => (ref === "70" ? item : null),
+      resolve: async (asked) => (asked === ref ? item : null),
       git: gitStub(overrides.git ?? {}),
       runSuite: overrides.runSuite ?? (async () => (overrides.suite ?? suiteResult())),
       ...(overrides.keepAlive == null ? {} : { keepAlive: overrides.keepAlive }),
@@ -153,6 +154,22 @@ async function initRepo(root) {
     "commit", "-q", "--allow-empty", "-m", "fixture",
   ], { cwd: root });
   return (await git("git", ["rev-parse", "HEAD"], { cwd: root })).stdout.trim();
+}
+
+// Confirmation fixtures use the one answer reader, including both supported channels.
+function gateAnswers(token, answer, channel = "loop") {
+  const question = `${token} · Run a third whole-tree gate for milestone 17?`;
+  const transcript = [
+    { type: "assistant", message: { content: [{ type: "tool_use", id: "ask-gate", name: "fixture-input", input: { questions: [{ question }] } }] } },
+    { type: "user", sessionId: "fixture-session", timestamp: INSTANT, toolUseResult: { answers: { [question]: answer } },
+      message: { content: [{ type: "tool_result", tool_use_id: "ask-gate" }] } },
+  ].map((entry) => JSON.stringify(entry)).join("\n");
+  const reader = createExampleAnswers({ HUMAN_INPUT_TOOL_NAMES: ["fixture-input"], reportDegrade: assert.fail,
+    isRunning: () => channel === "harness", readTranscriptTree: async () => transcript, claudeProjectsDir: () => "/fixture",
+    readRuns: async () => [{ runId: "fixture-run", sessionId: "fixture-session", asks: channel === "loop"
+      ? [{ question, answer, askedAt: INSTANT, answeredAt: INSTANT }] : [] }],
+  });
+  return reader.collectAnswers;
 }
 
 // ── the accept door's fixture ────────────────────────────────────────────────
@@ -298,18 +315,20 @@ export const regressionGateTests = [
   },
   {
     name: "160/04 [outline] What the launch environment keeps and drops (10 rows)",
-    run: () => withGateFixture(async ({ run }) => {
+    run: async () => {
       const rows = [
         ["GIT_INDEX_FILE", "absent"], ["GIT_CONFIG_NOSYSTEM", "absent"], ["CLAUDE_CODE_ENTRYPOINT", "absent"],
         ["AOF_RUN_PHASE", "absent"], ["AOF_SEA_EMBEDDED", "absent"], ["AOF_GLOBAL_HOME", "present"],
         ["PATH", "present"], ["SystemRoot", "present"], ["TEMP", "present"], ["VSCODE_PID", "present"],
       ];
       for (const [name, kept] of rows) {
-        const { launched } = await launchedEnv(run, { [name]: "v" });
-        assert.equal(name in launched, kept === "present", `${name} is ${kept} in the launched environment`);
-        if (kept === "present") assert.equal(launched[name], "v");
+        await withGateFixture(async ({ run }) => {
+          const { launched } = await launchedEnv(run, { [name]: "v" });
+          assert.equal(name in launched, kept === "present", `${name} is ${kept} in the launched environment`);
+          if (kept === "present") assert.equal(launched[name], "v");
+        });
       }
-    }),
+    },
   },
   {
     name: "160/04 The gate's own process environment is untouched",
@@ -534,7 +553,7 @@ export const regressionGateTests = [
     name: "96/04-00 a run that was not a whole-tree run is recorded and does not satisfy the door",
     run: () => withGateFixture(async ({ recordPath, run }) => {
       for (const [property, suite, cell] of [
-        ["scope was not `all`", suiteResult({ scope: "impacted" }), "impacted"],
+        ["scope was not `all`", suiteResult({ scope: "named" }), "named"],
         ["selection widened during the run", suiteResult({ widened: [{ file: "src/x.mjs", reason: "graph-unknown" }] }), "all+widened"],
       ]) {
         await rm(recordPath, { force: true });
@@ -848,7 +867,7 @@ export const regressionGateTests = [
   {
     name: "144-00 the usage and the operator guide name the settings",
     run: async () => {
-      assert.equal(regressionGateCommand.cli.spec.usage, "aof work regression-gate <ref> [--serial] [--jobs N] [--resume] [--json]");
+      assert.equal(regressionGateCommand.cli.spec.usage, 'aof work regression-gate <ref> [--serial] [--jobs N] [--resume] [--again "<reason>"] [--json]');
       const guide = await readFile(path.join(repoRoot, "docs", "acd.md"), "utf8");
       assert.match(guide, /regression-gate[\s\S]{0,400}`work\.test\.gate` when the project declares one/, "the guide says the gate runs work.test.gate when declared");
       assert.match(guide, /`--serial`/);
@@ -1252,8 +1271,8 @@ export const regressionGateTests = [
           assert.equal(record?.result, result, `${how}: a record of scope all on K`);
           assert.equal(record.scope, "all");
           const counter = { launched: 0 };
-          await runTest({ scope: "all" }, { projectRoot: root, config: resumeConfig(), walk: async () => [], record: gateRecords, run: async () => { counter.launched += 1; return GREEN_OBSERVED; } });
-          assert.equal(counter.launched, launches, `${how}: aof test --scope all afterwards launches the runner ${launches} time(s)`);
+          await runTest({ all: true }, { projectRoot: root, config: resumeConfig(), walk: async () => [], record: gateRecords, run: async () => { counter.launched += 1; return GREEN_OBSERVED; } });
+          assert.equal(counter.launched, launches, `${how}: aof test --all afterwards launches the runner ${launches} time(s)`);
         });
       }
     },
@@ -1281,6 +1300,108 @@ export const regressionGateTests = [
       assert.equal(record.instant, out.instant, "the record names the row's instant");
     }),
   },
+  ...[
+    { rows: [], allowed: true }, { rows: [redRow()], allowed: true }, { rows: [greenRow()], allowed: true },
+    { rows: [redRow(), redRow({ commit: LATER_COMMIT })], allowed: false },
+    { rows: [redRow(), greenRow({ commit: LATER_COMMIT })], allowed: false },
+    { rows: [redRow(), redRow(), greenRow({ scope: "override", result: "override" })], allowed: false },
+  ].map(({ rows, allowed }, index) => ({
+    name: `210/03 two-launch bound: row ${index + 1}`,
+    run: () => withGateFixture(async ({ run, recordPath }) => {
+      if (rows.length) await writeFile(recordPath, recordWith(rows));
+      let launches = 0;
+      const call = () => run({ runSuite: async () => { launches++; return suiteResult(); } });
+      if (allowed) await call();
+      else await assert.rejects(call, (error) => {
+        assert.equal(error.code, "regression-gate-runs-spent");
+        assert.match(error.message, /STATE\.md/); assert.match(error.message, /loop's question/);
+        assert.match(error.message, /aof test --failed/);
+        for (const row of rows.slice(0, 2)) { assert.ok(error.message.includes(row.commit)); assert.ok(error.message.includes(row.result)); }
+        return true;
+      });
+      assert.equal(launches, allowed ? 1 : 0);
+      assert.equal(parseRegressionRows(await readRecord(recordPath)).length, rows.length + (allowed ? 1 : 0));
+    }, "17"),
+  })),
+  ...[
+    { token: "17 G3", answer: "Run gate 3", allowed: true, channel: "harness" },
+    { token: "17 G3", answer: "Run gate 3", allowed: true, channel: "loop" },
+    { token: "17 G3", answer: "Don't run it", allowed: false },
+    { token: "18 G3", answer: "Run gate 3", allowed: false },
+    { token: "17 G3", answer: "Run gate 3", third: true, allowed: false },
+    { token: "17 G4", answer: "Run gate 4", third: true, allowed: true },
+    { token: null, answer: null, allowed: false },
+  ].map((row, index) => ({
+    name: `210/03 recorded gate confirmation: row ${index + 1}`,
+    run: () => withGateFixture(async ({ run, recordPath, itemDir }) => {
+      const rows = [redRow(), redRow({ commit: LATER_COMMIT }), ...(row.third ? [redRow({ detail: "confirmed 17 G3: fixed" })] : [])];
+      await writeFile(recordPath, recordWith(rows));
+      await writeFile(path.join(itemDir, "STATE.md"), "17 G3 · Run gate 3");
+      let launches = 0;
+      const call = () => run({ input: { again: "fixed F-03" }, deps: { answers: row.token == null ? async () => [] : gateAnswers(row.token, row.answer, row.channel) },
+        runSuite: async () => { launches++; return suiteResult(); } });
+      if (row.allowed) {
+        const out = await call();
+        assert.ok(out.detail.includes(row.token)); assert.ok(out.detail.includes("fixed F-03"));
+      } else await assert.rejects(call, (error) => {
+        assert.equal(error.code, "regression-gate-confirmation-missing");
+        const n = row.third ? 4 : 3;
+        assert.equal(error.detail.question, `17 G${n} · Run a ${row.third ? "fourth" : "third"} whole-tree gate for milestone 17?`);
+        assert.equal(error.detail.affirmative, `Run gate ${n}`); return true;
+      });
+      assert.equal(launches, row.allowed ? 1 : 0);
+      assert.equal(parseRegressionRows(await readRecord(recordPath)).length, rows.length + (row.allowed ? 1 : 0));
+    }, "17"),
+  })),
+  {
+    name: "210/03 early --again is ordinary and the count is per milestone",
+    run: () => withGateFixture(async ({ run, recordPath }) => {
+      await writeFile(recordPath, recordWith([redRow()]));
+      await run({ input: { again: "early" }, deps: { answers: assert.fail } });
+      await withGateFixture(async ({ run: other }) => { assert.equal((await other()).result, "green"); }, "18");
+      assert.equal(regressionGateCommand.cli.argv(["17"], { again: "fixed" }).again, "fixed");
+    }, "17"),
+  },
+  {
+    name: "210/03 resume completes the second launch and opens no third",
+    run: () => withResumeFixture(async ({ gate, program, root, rows }) => {
+      await gate({ program: program.red("first") });
+      await commitAll(root, "first gate");
+      await gate({ now: LATER_INSTANT, program: program.stop({ killed: 1, notStarted: 0 }) });
+      await gate({ resume: true, now: "2026-09-06T08:00:00Z", program: program.green() });
+      assert.equal((await rows()).length, 3);
+      const count = program.launches();
+      await assert.rejects(gate({ program: program.green() }), { code: "regression-gate-runs-spent" });
+      assert.equal(program.launches(), count);
+    }),
+  },
+  {
+    name: "210/03 sharded failures carry the report unit, serial failures remain unknown",
+    run: () => withResumeFixture(async ({ gate, program, root }) => {
+      await gate({ program: program.attributed([
+        { unit: "test/a.test.mjs", cases: ["a1", "a2"] }, { unit: "test/b.test.mjs", cases: ["b"] },
+      ]) });
+      const [record] = await storedRecords(root);
+      assert.deepEqual(record.failures.map((failure) => failure.file), ["test/a.test.mjs", "test/a.test.mjs", "test/b.test.mjs"]);
+      assert.equal(record.mode, "gate");
+      await commitAll(root, "first gate");
+      await gate({ now: LATER_INSTANT, program: program.red("unattributed") });
+      assert.equal((await storedRecords(root)).at(-1).failures[0].file, null);
+    }),
+  },
+
+  {
+    name: "210/03 a refused runner consumes no whole-tree launch",
+    run: () => withGateFixture(async ({ run, recordPath }) => {
+      const refusal = { code: "test-runner-undeclared", message: "declare the runner" };
+      for (let i = 0; i < 3; i++) await run({ suite: suiteResult({ refusal }) });
+      await run();
+      await run();
+      await assert.rejects(run(), { code: "regression-gate-runs-spent" });
+      assert.equal(parseRegressionRows(await readRecord(recordPath)).length, 5);
+    }, "17"),
+  },
+
 ];
 
 // ── 144's fixture ──────────────────────────────────────────────────────────────
@@ -1391,6 +1512,8 @@ function shardedProgram() {
     lastArgs: () => calls.at(-1)?.args ?? [],
     lastFiles: () => calls.at(-1)?.files ?? null,
     unfinishedFiles: () => [...(planted?.notFinished ?? []), ...(planted?.notStarted ?? [])].sort(),
+    attributed: (failures) => answer({ stdout: failures.flatMap((entry) => entry.cases.map((name) => `not ok - ${name}`)).join("\n"), exitCode: 1,
+      report: { ...baseReport, failures, notFinished: [], notStarted: [] } }),
     green: () => answer({ stdout: "TAP version 13\nok - all\n", exitCode: 0, report: { ...baseReport, notFinished: [], notStarted: [] } }),
     red: (file) => answer({ stdout: "TAP version 13\n", stderr: `not ok - ${file}\nAssertionError: it failed\n`, exitCode: 1, report: { ...baseReport, notFinished: [], notStarted: [] } }),
     stop: ({ killed, notStarted, packedKilled = [] }) => {

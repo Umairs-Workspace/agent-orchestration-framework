@@ -11,7 +11,7 @@ Arguments: <story or task ref> [--solo | --orchestrated]
 
 Use the native skill $aof-review; $ARGUMENTS is the operator text after its name.
 
-Review the operator build; do not implement. Mint the owned run, use the declared impacted test gate, then validate and doctor the same ref before review. Structural, behavioural and craft lenses remain mandatory; design joins for UI. In orchestrated mode each independent reviewer must be a supported native role that did not build the patch. Solo records inline self-review honestly. One review round per invocation; bounded rereviews belong to continue and admit only reproduced Blockers, never a whole-story restart. Close the owned run even when findings remain and hand back the actual verdict.
+Review the operator build; do not implement. Mint the owned run, read work.test.instructions and choose suites with recorded reasons, then validate and doctor the same ref before review. Structural, behavioural and craft lenses remain mandatory; design joins for UI. In orchestrated mode each independent reviewer must be a supported native role that did not build the patch. Solo records inline self-review honestly. One review round per invocation; bounded rereviews belong to continue and admit only reproduced Blockers, never a whole-story restart. Close the owned run even when findings remain and hand back the actual verdict.
 
 ## Codex execution contract
 Use only tools actually exposed by this session. File reading/editing, shell execution, search,

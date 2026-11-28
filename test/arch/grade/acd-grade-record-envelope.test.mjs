@@ -38,7 +38,8 @@ const RECORD_KEYS = ["ref", "verdict", "codes", "runner", "report", "cases", "fa
 const RUNNER_KEYS = ["command", "cwd", "exit", "durationMs"];
 const REPORT_KEYS = ["format", "path", "floor"];
 const CASES_KEYS = ["total", "failed", "skipped"];
-const FAILURE_KEYS = ["case", "message", "scenario"];
+// 210/02 attributes each failure to its suite, or explicitly to no known suite.
+const FAILURE_KEYS = ["case", "message", "scenario", "file"];
 
 const RUBRIC = { report: { format: "tap", path: "report.tap", floor: null } };
 const COMPLETED = { command: ["node", "scripts/test.mjs"], cwd: "/repo", exit: 0, durationMs: 12, outcome: "completed" };
