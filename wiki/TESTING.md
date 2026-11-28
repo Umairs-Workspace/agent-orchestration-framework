@@ -17,7 +17,7 @@ Record failures labelled pre-existing by case name in the item's STATE feedback.
 | Testing instructions and declaration compilation | `test/testing/test-layout-check.test.mjs`, `test/work/lifecycle/work-update-test-layout.test.mjs`, `test/work/lifecycle/work-test-declared.test.mjs` |
 | Importer suggestions | `test/testing/test-importer-scan.test.mjs` |
 | Test CLI and run records | `test/testing/test-command-contract.test.mjs`, `test/testing/test-run-record.test.mjs`, and the relevant suites under `test/work/lifecycle/` |
-| ACD command prose and runtime rendering | `test/work/lifecycle/map-tests-command.test.mjs`, `test/loop/autonomous-shell-out-prompt.test.mjs`, `test/arch/bundle/`, `test/golden/work-init.test.mjs` |
+| ACD command prose and runtime rendering | `test/work/lifecycle/map-tests-command.test.mjs`, `test/loop/autonomous-shell-out-prompt.test.mjs`, `test/arch/bundle/`, `test/golden/work-init.test.mjs`, `packages/core/test/bundle-runtime-variants.suite.mjs` (its prompt audit pins the words each high-risk command must keep) |
 | Learning commands | the owning `.suite.mjs` files in `packages/learning/test/` |
 | Work lifecycle, gates and records | the relevant suites under `test/work/lifecycle/`, `test/work/gate/`, `test/work/record/` and `packages/work/test/` |
 | Work-stream placement and templates | `test/golden/work-stream.test.mjs` and `test/work/stream/` |
@@ -26,6 +26,9 @@ Record failures labelled pre-existing by case name in the item's STATE feedback.
 | Memory and knowledge | `test/memory/` and the owning suites in `packages/knowledge/test/` |
 | UI | the changed component's suites in `apps/ui/test/` and `packages/design-system/test/`, plus `yarn ui:build` |
 | A new module, or a changed import, in a workspace package | `test/bundle/yarn-installation.test.mjs` (its package import allow-list pins each module's imports, and no importer scan reaches it) |
+| A module added, removed or emptied of a capability | the `test/arch` controls that name the file or what it does (search `test/arch` for its path, and for the concern: a worktree, a record-doc map, a graph reader); allow-lists that check their own honesty go red when an entry stops being true |
+| A file or control deleted | search all of `wiki/work` for its path, run the stream-wide `aof work validate`, and run `test/arch/work/acd-milestone-66-controls-resolve.test.mjs` (FF-6607b reads every accepted register) |
+| A command added to the catalog or the bundle | the native `packages/core/test/application.test.mjs` (catalog count), `packages/core/test/bundle-runtime-variants.suite.mjs` (member count and its `wiki/prompt-audit.md` row), `test/loop/autonomous-shell-out-prompt.test.mjs`, and `packages/core/test/hyperagent-runtime.suite.mjs` for a new practice package |
 | Dependencies or install behaviour | `node scripts/supply-chain-audit.mjs` first, then the affected install and packaging suites |
 
 Directory entries describe where to choose suite files; do not pass a directory as a suite. Inspect

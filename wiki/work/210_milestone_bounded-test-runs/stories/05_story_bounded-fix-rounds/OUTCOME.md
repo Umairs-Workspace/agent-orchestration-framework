@@ -21,4 +21,4 @@ A red run reruns its failing suites on the work's base, which is the commit that
 ### Machine-hazard exclusions in a fix round
 - **Status:** open
 - **Discharge condition:** a project can declare suites a fix round must not select on this machine, and `--failed` honours it (210 F-05).
-`--failed`'s reach can select `test/store/global-work-propagation.test.mjs`, which binds the live daemon's `:4182`; the instructions file says not to run it, and nothing tells the tool.
+`--failed`'s reach can select any suite the scan reaches, including one the project's instructions say must not run on this machine, and nothing lets a project state that to the tool.

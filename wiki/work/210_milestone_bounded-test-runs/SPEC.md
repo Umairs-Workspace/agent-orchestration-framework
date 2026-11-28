@@ -3,7 +3,7 @@ type: milestone
 number: 210
 slug: bounded-test-runs
 title: "Bounded test runs — the agent picks the suites from the project's own words, a fix reruns only what failed and what it touched, and the whole tree runs at the gate"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-11-26
 updated: 2026-11-28

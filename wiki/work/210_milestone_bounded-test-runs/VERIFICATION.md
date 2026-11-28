@@ -97,6 +97,17 @@ updated: 2026-11-28
   out of date.
 - verifies → the milestone gate (REGRESSION.md row 1).
 
+### Regression gate 2 (2026-11-28)
+
+- **Procedure.** F-15 and F-16 were fixed and checked with one named run of 572 suites (all of
+  `test/arch`, the four red suites and the consumers of continue's prose), which was green, plus
+  core's native `application.test.mjs` (2 of 2). The fixes were committed (`1a9037dd`), then
+  `aof work regression-gate 210` ran on a clean tree at `ef8b280f` with an isolated
+  `AOF_GLOBAL_HOME`.
+- **Result: green.** 16,274 of 16,274 cases ran in 255 units over 51.0 min, and no unit failed.
+  Nine units were red in the pool and green alone; these are load flakes, logged and not failed.
+- verifies → the milestone gate (REGRESSION.md row 2, "may stand as the accept gate").
+
 ## Findings
 
 | id | observed | type | severity | triage | routed-to | status |
@@ -145,3 +156,7 @@ was. F-08 and F-11 are distinct incidents.
 - **The milestone is not accepted: the regression gate has not run.** `aof work regression-gate
   210` needs a clean checkout, and 210's work is still uncommitted, in the same tree as 198's
   edits. F-14 (198's) will make the gate red until 198 updates its census pin.
+- **2026-11-28 — Milestone 210 accepted.** All six stories are done. Gate 2 is green at
+  `ef8b280f` (REGRESSION.md row 2). Validate passes, doctor reports no unresolved control, and no
+  blocker finding is open: F-15 and F-16 were fixed in this verify. F-04, F-05, F-06 and F-13 stay
+  open as non-blockers.
