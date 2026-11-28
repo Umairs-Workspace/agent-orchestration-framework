@@ -55,7 +55,8 @@ Feature: The design-system practice's prose reaches Claude's refine, verify and 
     Scenario: Claude's refine says how a canvas is drawn and approved
       Given the practice is on
       When the bundle is rendered for "claude"
-      Then ".claude/commands/aof/refine.md" says the canvas is offered, and that turning it down elicits mocks as before
+      Then ".claude/commands/aof/refine.md" says the step replaces the mock elicitation, offering neither the binding checklist alone nor the operator's own mocks (amended 2026-11-27, F-05)
+      And that the milestone's page comes from "aof design-system canvas pages", and boards already on it are the starting point, never redrawn from scratch
       And that a "name" is resolved among the Design Systems the operator can open, and that no match or more than one is a stop naming every candidate's title and link
       And that the approval is a question carrying the canvas link, answered Approve, Revise or Later, one question per ask in a driven session
       And that only an approved canvas is pulled back, then imported with "aof design-system mocks import" and framed with "aof design-system mocks capture"

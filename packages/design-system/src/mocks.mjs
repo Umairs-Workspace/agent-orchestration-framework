@@ -252,3 +252,92 @@ export function planCapture({ readme, canvasText, existing = [] }) {
   }
   return { frames };
 }
+
+// ── The canvas's pages (ADR-006 §0, amended 2026-11-27) ─────────────────────────────────────────
+// `aof design-system canvas pages` decides them, so the session never sorts boards by eye. A canvas
+// with no `pages` is sorted ONCE: a board whose title starts with a milestone number ("37 · …") goes
+// to that milestone's page, `m<NN>`, and every other board to `earlier`. Sorting only sets a board's
+// `page`; nothing in a board changes. A canvas that already has pages is never re-sorted: a board
+// added there without a page is on its first page, as the Design type reads it. `item` asks for that
+// milestone's page, added at the end when missing. The Design type holds at most 40 pages.
+
+export const MAX_PAGES = 40;
+export const EARLIER_PAGE = "earlier";
+const TITLE_MILESTONE = /^\s*(\d{1,4})\s*·/u;
+const PAGE_NAME_MAX = 60;
+
+export const pageIdOf = (ref) => `m${ref}`;
+
+// A milestone number as a key: "05", "5" and "005" are one milestone.
+const numberKey = (value) => String(Number(value));
+const PAGE_NAME_MILESTONE = /^\s*(\d{1,4})\b/u;
+
+// The page a milestone already has: `m<ref>`, or one whose name starts with the milestone's number
+// ("05 · Directory"), so a page the operator made by hand is used, never duplicated beside it.
+export function milestonePageOf(pages, ref) {
+  const key = numberKey(ref);
+  return pages.find((page) => page.id === pageIdOf(ref) || page.id === pageIdOf(key))
+    ?? pages.find((page) => PAGE_NAME_MILESTONE.test(String(page.name ?? "")) && numberKey(PAGE_NAME_MILESTONE.exec(String(page.name))[1]) === key);
+}
+
+// A milestone's page name: its number and the title up to its first ":" or " — ", at most 60 chars.
+export function pageNameOf(ref, title) {
+  const short = String(title ?? "").split(/:| — /u)[0].trim();
+  const name = short === "" ? String(ref) : `${ref} ${short}`;
+  return name.length > PAGE_NAME_MAX ? `${name.slice(0, PAGE_NAME_MAX - 1).trimEnd()}…` : name;
+}
+
+// The pages, decided. `titles` maps a milestone ref, as the stream spells it, to its title; a board
+// title's number names its milestone by value, so "5 ·" and "05 ·" both land on milestone 05's page.
+// Answers `{ refusal }` or `{ canvas, pages: [{ id, name, boards }], moved: [{ board, page }],
+// added: [id], page, changed }`, where `page` is the item's page id when an item was given.
+export function planPages({ canvasText, item = null, titles = {} }) {
+  const refuse = (message, code) => ({ refusal: { message, code } });
+  let canvas;
+  try {
+    canvas = JSON.parse(canvasText);
+  } catch {
+    return refuse(`"canvas.json" is not JSON. Nothing was written.`, "design-system-canvas-bad");
+  }
+  if (canvas == null || typeof canvas !== "object" || Array.isArray(canvas) || canvas.boards == null || typeof canvas.boards !== "object" || Array.isArray(canvas.boards)) {
+    return refuse(`"canvas.json" holds no "boards" map. Nothing was written.`, "design-system-canvas-bad");
+  }
+  const pages = Array.isArray(canvas.pages) ? canvas.pages.map((page) => ({ ...page })) : [];
+  const boards = Object.fromEntries(Object.entries(canvas.boards).map(([name, frame]) => [name, { ...frame }]));
+  const moved = [];
+  const added = [];
+  const name = (ref) => pageNameOf(ref, titles[ref]);
+  const refByNumber = new Map(Object.keys(titles).map((ref) => [numberKey(ref), ref]));
+  const streamRef = (number) => refByNumber.get(numberKey(number)) ?? numberKey(number);
+  if (pages.length === 0 && Object.keys(boards).length > 0) {
+    const numbered = new Map();
+    for (const [board, frame] of Object.entries(boards)) {
+      const number = TITLE_MILESTONE.exec(String(frame.title ?? ""))?.[1];
+      const ref = number ? streamRef(number) : null;
+      const id = ref ? pageIdOf(ref) : EARLIER_PAGE;
+      if (ref) numbered.set(id, ref);
+      frame.page = id;
+      moved.push({ board, page: id });
+    }
+    // `earlier` first: a note with no page is on the first page, and the notes predate the pages.
+    if (moved.some((entry) => entry.page === EARLIER_PAGE)) pages.push({ id: EARLIER_PAGE, name: String(canvas.title ?? "Earlier boards") });
+    for (const [id, ref] of [...numbered].sort((a, b) => Number(a[1]) - Number(b[1]))) pages.push({ id, name: name(ref) });
+    added.push(...pages.map((page) => page.id));
+  }
+  let page = null;
+  if (item != null) {
+    page = milestonePageOf(pages, item)?.id ?? null;
+    if (page == null) {
+      page = pageIdOf(item);
+      pages.push({ id: page, name: name(item) });
+      added.push(page);
+    }
+  }
+  if (pages.length > MAX_PAGES) {
+    return refuse(`The canvas would hold ${pages.length} pages, over the Design type's limit of ${MAX_PAGES}. Name a new canvas with "aof design-system use --canvas <link>". Nothing was written.`, "design-system-canvas-full");
+  }
+  const first = pages[0]?.id;
+  const listed = pages.map((page) => ({ id: page.id, name: page.name ?? page.id, boards: Object.entries(boards).filter(([, frame]) => (frame.page ?? first) === page.id).map(([board]) => board) }));
+  const changed = moved.length > 0 || added.length > 0;
+  return { canvas: changed ? { ...canvas, pages, boards } : canvas, pages: listed, moved, added, ...(page != null ? { page } : {}), changed };
+}

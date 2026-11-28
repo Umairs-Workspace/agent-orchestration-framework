@@ -117,6 +117,32 @@ Feature: "aof design-system mocks import" commits a pulled, approved canvas unde
       When the import runs with "--page m13"
       Then it is refused, saying the canvas names no boards on the page "m13"
 
+    Scenario: E25 · a canvas with no pages is sorted once, and only each board's page changes
+      Given a pulled "canvas.json" titled "Portal Redesign" with no pages, whose boards are titled "37 · A discussion on a CRM company", "Shell — product nav" and "034 · Messaging at 390 px"
+      When "aof design-system canvas pages <it> --out <file> --item 12" runs
+      Then its pages are "earlier" (named "Portal Redesign", holding the unnumbered board), "m34", "m37" and "m12" (named "12 fleet-filter", empty), in that order
+      And in <file> each board differs from the pulled one only by its "page", and the notes and the order are unchanged
+
+    Scenario: E26 · a canvas that has pages is never re-sorted
+      Given a pulled "canvas.json" whose only page is "earlier", and a board titled "37 · Late" with no "page"
+      When "aof design-system canvas pages <it> --out <file> --item 12" runs
+      Then no board is moved, and only "m12" is added
+      When it runs again on <file>
+      Then it reports nothing changed, and the page "m12"
+
+    Scenario: E28 · a milestone's own page is found by the number its name starts with
+      Given a pulled "canvas.json" with the pages "portal-03" named "03 · Task portal" and "directory-05" named "05 · Directory", and the stream's milestone "05"
+      When "aof design-system canvas pages <it> --out <file> --item 05" runs, and again with "--item 5"
+      Then each reports nothing changed, and the page "directory-05"
+      Given a pulled "canvas.json" with no pages and one board titled "5 · Directory at 390"
+      When "aof design-system canvas pages <it> --out <file> --item 5" runs
+      Then its one page is "m05", named for the milestone's title, holding the board, and the page it reports is "m05"
+
+    Scenario: E27 · what the pages verb refuses, writing nothing
+      Then a sort that would need 41 pages is refused as over the Design type's limit of 40
+      And "--item 12/01" is refused, saying a canvas page belongs to a milestone
+      And an index that cannot be read is refused
+
   Scenario: E15 · an imported mock is self-contained, and the control proves it can fail
     Given "test/arch/ui/acd-imported-mock-self-contained.test.mjs" (FF-19805) is registered in "test/arch/ui/index.mjs"
     And it sweeps every mocks/ dir in the work tree whose README.md has a "Canvas:" line, and a fixture import

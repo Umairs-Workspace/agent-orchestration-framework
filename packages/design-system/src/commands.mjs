@@ -9,7 +9,8 @@
 // `requireLocalCheckout`; the rasterizer's `rasterizePage` and `findBrowser`), so the package owns
 // the schema, argv, behaviour and rendering and spawns nothing (FF-19804): capture reaches a browser
 // only through the page entry core hands it. Ids take the `design-system:` prefix, under the route
-// `["design-system", <verb>]` or `["design-system", "mocks", <verb>]`.
+// `["design-system", <verb>]`, `["design-system", "mocks", <verb>]` or `["design-system", "canvas",
+// "pages"]`, which decides the project canvas's milestone pages (ADR-006 §0).
 //
 // Only the descriptors load with the registry: each verb imports its implementation when it RUNS, so
 // a CLI path that never touches a design system pays nothing for it (FF-16004). No module of this
@@ -541,7 +542,69 @@ export function createDesignSystemCommands({ commandError, listItemsCacheFirst, 
     },
   };
 
-  return { tokensCommand, checkCommand, useCommand, mocksImportCommand, mocksCaptureCommand };
+  const canvasPagesCommand = {
+    id: "design-system:canvas-pages",
+    input: {
+      type: "object",
+      properties: {
+        canvas: { type: "string" },
+        out: { type: "string" },
+        item: { type: "string" },
+      },
+      required: ["canvas", "out"],
+      additionalProperties: false,
+    },
+    async run(input, ctx) {
+      const [mocks, { readFile, writeFile, mkdir }] = await Promise.all([lazy.mocks(), lazy.fs()]);
+      const source = located(ctx.workspace.projectRoot, input.canvas);
+      const target = located(ctx.workspace.projectRoot, input.out);
+      let canvasText;
+      try {
+        canvasText = await readFile(source.absolute, "utf8");
+      } catch {
+        throw refuse(`Cannot read the canvas index "${source.shown}": read the canvas's "project/canvas.json" back first. Nothing was written.`, "design-system-unreadable");
+      }
+      const rows = await listItemsCacheFirst(ctx.workspace, { globalWorkStoreOptions: ctx.globalWorkStoreOptions ?? {} });
+      const milestones = rows.filter((row) => row.type === "milestone" && row.parent == null);
+      let itemRef = null;
+      if (input.item !== undefined) {
+        const item = rows.find((row) => row.ref === input.item) ?? (/^\d+$/u.test(input.item) ? milestones.find((row) => /^\d+$/u.test(row.ref) && Number(row.ref) === Number(input.item)) : undefined);
+        if (!item) throw commandError(`No item "${input.item}" exists in the work stream.`, "ref-not-found", 404);
+        if (item.type !== "milestone" || item.parent != null) throw refuse(`"${input.item}" is a ${item.type}: a canvas page belongs to a milestone. Pass the milestone's ref.`, "design-system-mocks-not-a-milestone");
+        itemRef = item.ref;
+      }
+      const titles = Object.fromEntries(milestones.map((row) => [row.ref, row.title ?? row.slug ?? ""]));
+      const { refusal, canvas, pages, moved, added, page, changed } = mocks.planPages({ canvasText, item: itemRef, titles });
+      if (refusal) throw refuse(refusal.message, refusal.code);
+      await mkdir(path.dirname(target.absolute), { recursive: true });
+      await writeFile(target.absolute, changed ? `${JSON.stringify(canvas, null, 2)}\n` : canvasText, "utf8");
+      return { canvas: source.shown, out: target.shown, changed, added, moved, pages, ...(page != null ? { page } : {}) };
+    },
+    cli: {
+      route: [...ROUTE, "canvas", "pages"],
+      spec: {
+        usage: `${PREFIX} canvas pages <canvas.json> --out <file> [--item <milestone>] [--json]`,
+        flags: {
+          out: { type: "string", description: "where the canvas index, with its pages, is written for the session to publish" },
+          item: { type: "string", description: "the milestone whose page must exist: its own page if it has one, else m<NN>" },
+        },
+      },
+      argv: (positionals, options = {}) => {
+        if (positionals.length !== 1 || options.out == null) throw refuse(`Usage: ${PREFIX} canvas pages <canvas.json> --out <file> [--item <milestone>]`, "usage");
+        return { canvas: String(positionals[0]), out: String(options.out), ...(options.item != null ? { item: String(options.item) } : {}) };
+      },
+      render: (result) => {
+        if (!result.changed) return `${result.canvas} already has its pages${result.page ? `, "${result.page}" among them` : ""}: nothing to publish. ${result.out} holds it unchanged.`;
+        const lines = [`Pages for ${result.canvas}, written to ${result.out} (publish it as the canvas's project/canvas.json):`];
+        for (const page of result.pages) lines.push(`  ${page.id}  ${page.name}  (${page.boards.length} board${page.boards.length === 1 ? "" : "s"})${result.added.includes(page.id) ? "  new" : ""}`);
+        if (result.moved.length > 0) lines.push(`${result.moved.length} board${result.moved.length === 1 ? "" : "s"} sorted onto pages by the milestone number their title starts with; nothing inside a board changed.`);
+        return lines.join("\n");
+      },
+      json: (result) => result,
+    },
+  };
+
+  return { tokensCommand, checkCommand, useCommand, mocksImportCommand, mocksCaptureCommand, canvasPagesCommand };
 }
 
 // ── rendering ──────────────────────────────────────────────────────────────────────────────────

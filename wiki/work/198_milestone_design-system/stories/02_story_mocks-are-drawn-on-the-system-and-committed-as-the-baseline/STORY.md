@@ -129,8 +129,10 @@ UI milestone, and the fidelity judge still has a local baseline it can trust**.
 ## Notes
 
 - **Prose** (all `runtimes: ["claude"]`, via 00):
-  - Refine's designer step offers a canvas when the practice is on. Without it, the step elicits
-    mocks exactly as today.
+  - Refine's designer step draws the mocks on the system whenever the practice is on: the config
+    is the decision, so it offers nothing and asks only for approval (amended 2026-11-27, the
+    operator, 198 VERIFICATION F-05). It starts from the boards already on the milestone's page of
+    the project canvas. Without the practice, the step elicits mocks exactly as today.
   - The designer brief's fragment relates a mock to the system. Its `reference`-mode rule (raise a
     gap, never write to the system) lands here too.
   - Verify's fragment pulls back an approved canvas that has not yet been imported.

@@ -1308,7 +1308,7 @@
         "id": "design-system",
         "kind": "command"
       },
-      "hash": "sha256:ad9310bbc99b76b22e2b4ae69dca4b0e097faadfa8cecd4b7e26a0b2be1a97ac"
+      "hash": "sha256:090c04f1e8c36eda8e9d154c03000653d9e50e3cb9856d082826dfc6d3365960"
     },
     {
       "path": ".claude/commands/aof/diagram-review.md",

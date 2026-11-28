@@ -139,12 +139,27 @@ aof design-system use --name "<title>" --mode owned --source <css-file> [--sourc
 
 The mode is always `owned`, with the CSS files step 2 read as the source: a system someone else
 owns is named with `--mode reference` (step 0). `--canvas` is the canvas the operator named in step
-0; without it, a canvas the block already names is kept. Then run `aof project validate` and confirm it
-reports no `design-system-*` finding.
+0; without it, a canvas the block already names is kept. Then run `aof project validate` and confirm
+it reports no `design-system-*` finding.
+
+**10. Give a named canvas its milestone pages, once (198/ADR-006 §0).** When step 9 named a canvas,
+read its `project/canvas.json` back and run:
+
+```
+aof design-system canvas pages <canvas.json> --out <file> --json
+```
+
+When it reports `changed`, the canvas had no pages: the verb sorted every board onto its milestone's page `m<NN>` by the
+milestone number its title starts with, and the rest onto `earlier`. Only each board's `page`
+changed. Show the operator the sort, each page with its board count, and ask once whether to publish
+it. On yes, publish `<file>` as the canvas's `project/canvas.json`; on no, publish nothing, and the
+first refine that draws asks the same through its approval. A canvas that already has pages is left
+as it is.
 </process>
 
 <output>
 Report the system's title and link, its token counts, its components, the `check` verdict, the
-canvas the block names (or that refine will create one), and the block `use` wrote. On a stop, name the step that stopped and what the operator can do next, and say
-plainly what was and was not published or written.
+canvas the block names (or that refine will create one) and its pages, and the block `use` wrote.
+On a stop, name the step that stopped and what the operator can do next, and say plainly what was
+and was not published or written.
 </output>

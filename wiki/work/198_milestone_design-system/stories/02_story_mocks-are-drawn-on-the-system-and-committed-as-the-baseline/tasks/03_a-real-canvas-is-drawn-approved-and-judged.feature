@@ -14,13 +14,14 @@ Feature: One real canvas is drawn on the system, approved, imported, captured, a
   and archived after it. Record each scenario's evidence, and each assumption's result, in this
   milestone's VERIFICATION.md.
 
-  Rule: R2 · Refine offers a canvas drawn on the resolved system, and nothing becomes a baseline until the operator approves it
+  Rule: R2 · Refine draws the milestone's mocks on the resolved system whenever the practice is on, and nothing becomes a baseline until the operator approves it
 
     Scenario: E4 · refine draws the canvas on the system and asks for approval
       Given the UI milestone has a surface and no mock
-      When "/aof:refine <the milestone>" reaches the designer step and the operator takes the canvas
-      Then the session resolves "AOF" to exactly one Design System, and draws one canvas with it installed
-      And it asks "Approve these mocks?" with the canvas link, offering Approve, Revise and Later
+      When "/aof:refine <the milestone>" reaches the designer step
+      Then it asks no question about how the mocks are made
+      And the session resolves "AOF" to exactly one Design System, and draws on the milestone's page of the project canvas with it installed
+      And it asks "Approve these mocks?" with the page's link, offering Approve, Revise and Later
       And mocks/ is untouched while the question is open
 
     Scenario: E6 · a revision is drawn on the same canvas, and asked about again

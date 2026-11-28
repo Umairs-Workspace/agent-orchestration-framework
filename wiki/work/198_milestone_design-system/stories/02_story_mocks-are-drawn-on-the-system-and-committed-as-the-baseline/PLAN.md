@@ -17,9 +17,11 @@ Three seams. Build 00 first, so the prose names verbs that exist by the time 03 
    - Each fragment declares `"runtimes": ["claude"]`, a single common body and no Codex variant.
    - Check the goldens are untouched with the practice off before writing any prose (E1).
    - The refine body follows this order:
-     1. offer the canvas (turning it down falls through to today's text);
+     1. replace the mock elicitation: no offer, no checklist-only or own-mocks path (amended
+        2026-11-27, F-05);
      2. resolve the system (ADR-005 §4);
-     3. draw one canvas, from the designer's brief when orchestrated;
+     3. find the milestone's page with `canvas pages`, and draw on it from the boards already
+        there, from the designer's brief when orchestrated;
      4. ask Approve / Revise / Later (one per ask when driven);
      5. on Approve: read back, then run `mocks import`, then `mocks capture`, then name the frames
         in DESIGN.md;

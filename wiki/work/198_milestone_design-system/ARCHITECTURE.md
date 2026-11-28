@@ -87,7 +87,7 @@ An unscoped fragment still lands on every runtime (FF-19206 amended).
 
 ## ADR-002 — The session that runs refine publishes the mocks; the designer's tools do not change
 
-**Status:** Accepted
+**Status:** Accepted (amended 2026-11-27: with the practice on, the mocks are always drawn)
 **Date:** 2026-11-17
 
 **Context.** A subagent can hold the Artifact tool, but only through its `tools:` list (R1). Giving
@@ -105,6 +105,14 @@ already holds the tool (R1).
 3. **The operator approves.** Approval is a question to the operator carrying the canvas link: an
    `AskUserQuestion` interactively, the loop's ask when the session is driven (R7). A mock is never
    committed as a baseline without a recorded approval.
+4. **The config is the decision** (amended 2026-11-27, the operator, 198 VERIFICATION F-05). With
+   `work.ui.designSystem` on, refine draws the milestone's mocks on the system. It offers nothing,
+   so it never asks how the mocks are made and never offers the binding checklist alone or the
+   operator's own mocks instead, and its one question is the approval. What a page already holds is
+   the starting point (ADR-006 §0): existing boards are brought onto the system and extended,
+   never redrawn from scratch beside, and hand-made mocks are a reference, never the baseline.
+   - *Rejected: offer the canvas* (02's first reading). It made the configured system optional
+     at the moment it mattered, so the operator was asked again what the config already said.
 
 **Alternatives considered.**
 - *Add `Artifact` to the designer's tools.* It breaks m07/ADR-001's structural guarantee, and the
@@ -260,11 +268,17 @@ not (R6).
 0. **One canvas, a page per milestone** (amended 2026-11-27, 198 VERIFICATION F-04, the operator's
    decision; it replaces 02's defaulted Q10, one canvas per milestone). The project draws every
    milestone's mocks on the one canvas `work.ui.designSystem.canvas` names (ADR-005), each on its
-   own page: id `m<NN>`, name `<NN> <milestone title>`, every board of it carrying `"page":
-   "m<NN>"`. A board with no `page` is on the canvas's first page, as the Design type reads it, so a
-   canvas that holds boards but no `pages` first gets a page for them (id `earlier`), and the
-   milestone's page comes after it. Refine never moves, changes or removes a board on another page.
-   The type allows 40 pages; a full canvas is a stop, and the operator names a new one.
+   own page: id `m<NN>`, named for the milestone, every board of it carrying `"page": "m<NN>"`.
+   A board with no `page` is on the canvas's first page, as the Design type reads it, which is why
+   a canvas with no pages is sorted before its first milestone page is added (below). Refine never
+   moves, changes or removes a board on another milestone's page. The type allows 40 pages; a full
+   canvas is a stop, and the operator names a new one.
+   **The pages are decided by a verb, never by eye** (amended again 2026-11-27, F-05):
+   `aof design-system canvas pages <canvas.json> --out <file> [--item <NN>]`. A canvas with no
+   pages is sorted ONCE, when it is named or at the first refine that draws on it: a board whose
+   title starts with a milestone number ("37 · …") goes to `m<NN>`, any other to `earlier`, first,
+   and only each board's `page` changes. A canvas that has pages is never re-sorted; `--item` only
+   adds the milestone's page when it is missing.
    - *Rejected: a canvas per milestone.* It is what the operator does not want: a growing list of
      design files beside the one system.
    - *Cost:* two milestones refined at once publish to one artifact, and the second publish is

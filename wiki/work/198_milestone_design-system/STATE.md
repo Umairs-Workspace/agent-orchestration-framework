@@ -61,6 +61,10 @@ doc: state
   the project's one canvas (`canvas`, `use --canvas`), mocks are drawn on a page per milestone of
   that one canvas (`mocks import --page`), and the extract asks first and answers questions without
   acting. ADR-005 and ADR-006 amended. The live 02/03 run now draws on a page, not a new canvas.
+- 2026-11-27 — F-05 fixed inline (operator's go), from the portal's 37 refine: with the practice on,
+  refine draws on the system and asks only for approval (no checklist-only or own-mocks offer), a
+  canvas's pages come from `aof design-system canvas pages`, and refine starts from the boards already
+  on the milestone's page. ADR-002 §4 and ADR-006 §0 amended.
 
 ## Notes & decisions in flight
 

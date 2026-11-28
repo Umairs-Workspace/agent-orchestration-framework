@@ -1780,6 +1780,48 @@
       "route": [
         "design-system",
         "mocks",
+  {
+    "id": "design-system:canvas-pages",
+    "input": {
+      "type": "object",
+      "properties": {
+        "canvas": {
+          "type": "string"
+        },
+        "out": {
+          "type": "string"
+        },
+        "item": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "canvas",
+        "out"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "design-system",
+        "canvas",
+        "pages"
+      ],
+      "spec": {
+        "usage": "aof design-system canvas pages <canvas.json> --out <file> [--item <milestone>] [--json]",
+        "flags": {
+          "out": {
+            "type": "string",
+            "description": "where the canvas index, with its pages, is written for the session to publish"
+          },
+          "item": {
+            "type": "string",
+            "description": "the milestone whose page must exist: its own page if it has one, else m<NN>"
+          }
+        }
+      }
+    }
+  },
         "capture"
       ],
       "spec": {

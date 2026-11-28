@@ -19,7 +19,7 @@ export const contribution = Object.freeze({
   name: "@aof/design-system",
   assets: Object.freeze({ package: "@aof/design-system" }),
   commands(services) {
-    const { tokensCommand, checkCommand, useCommand, mocksImportCommand, mocksCaptureCommand } = createDesignSystemCommands(services);
-    return [tokensCommand, checkCommand, useCommand, mocksImportCommand, mocksCaptureCommand];
+    const { tokensCommand, checkCommand, useCommand, mocksImportCommand, mocksCaptureCommand, canvasPagesCommand } = createDesignSystemCommands(services);
+    return [tokensCommand, checkCommand, useCommand, mocksImportCommand, mocksCaptureCommand, canvasPagesCommand];
   },
 });

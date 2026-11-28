@@ -119,15 +119,15 @@ export const practiceTests = [
     },
   },
   {
-    // Amended by 198/02: the two mocks verbs join the three of 01.
-    name: "198/01 00 (amended 198/02) the contribution is the package's, names its assets, and carries the five verbs",
+    // Amended by 198/02: the two mocks verbs join the three of 01, and (2026-11-27) the canvas pages verb.
+    name: "198/01 00 (amended 198/02) the contribution is the package's, names its assets, and carries the six verbs",
     run: () => {
       assert.equal(contribution.id, "design-system");
       assert.equal(contribution.name, "@aof/design-system");
       assert.deepEqual(contribution.assets, { package: "@aof/design-system" });
       const commands = contribution.commands({ commandError: (message) => new Error(message) });
-      assert.deepEqual(commands.map((verb) => verb.id), ["design-system:tokens", "design-system:check", "design-system:use", "design-system:mocks-import", "design-system:mocks-capture"]);
-      assert.deepEqual(commands.map((verb) => verb.cli.route), [["design-system", "tokens"], ["design-system", "check"], ["design-system", "use"], ["design-system", "mocks", "import"], ["design-system", "mocks", "capture"]]);
+      assert.deepEqual(commands.map((verb) => verb.id), ["design-system:tokens", "design-system:check", "design-system:use", "design-system:mocks-import", "design-system:mocks-capture", "design-system:canvas-pages"]);
+      assert.deepEqual(commands.map((verb) => verb.cli.route), [["design-system", "tokens"], ["design-system", "check"], ["design-system", "use"], ["design-system", "mocks", "import"], ["design-system", "mocks", "capture"], ["design-system", "canvas", "pages"]]);
     },
   },
   {

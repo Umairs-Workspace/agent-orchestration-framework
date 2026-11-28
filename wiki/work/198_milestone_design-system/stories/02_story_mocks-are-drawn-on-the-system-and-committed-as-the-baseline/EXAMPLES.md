@@ -8,7 +8,8 @@ installed into the canvas as project/ds/aof/tokens.json. "The pulled dir" is wha
 read back: project/canvas.json, the two boards, project/ds/aof/tokens.json and
 artifact-type/dc-runtime.js. "mocks/" is the milestone's own mocks dir.
 ADR-002, ADR-005, ADR-006 and ADR-007 settle every rule below, and the story's Notes settle the
-rest (the canvas is OFFERED, and verify pulls back an approved canvas not yet imported), so no
+rest (the canvas is drawn whenever the practice is on, amended 2026-11-27 from "offered", and
+verify pulls back an approved canvas not yet imported), so no
 business question is left for a person. Each engineering choice still open is technical, and
 takes the default it names.
 -->
@@ -18,13 +19,17 @@ takes the default it names.
 - E2 · "enabled": true, "name": "AOF": ".claude/commands/aof/refine.md" holds the canvas step, ".claude/commands/aof/verify.md" the pull-back and ".claude/agents/aof-designer.md" the system rule. ".opencode/commands/aof/refine.md", ".agents/skills/aof-refine/procedure.md", ".codex/agents/aof-designer.toml" and ".opencode/agents/aof-designer.md" hold none of them [proposed]
 - E3 · In every runtime's render of aof-designer, with the practice on and with it off, "tools" is Read, Grep, Glob, Write, Edit, WebSearch, WebFetch [proposed]
 
-## R2 · Refine offers a canvas drawn on the resolved system, and nothing becomes a baseline until the operator approves it
+## R2 · Refine draws the milestone's mocks on the resolved system whenever the practice is on, and nothing becomes a baseline until the operator approves it
 - E4 · "name": "AOF", and exactly one Design System titled "AOF": the session draws the milestone's surfaces on the milestone's page of the project's canvas, with the system installed, and asks "Approve these mocks?" with the page's link, offering Approve, Revise and Later. Amended 2026-11-27 (ADR-006 §0): the page, not a canvas of its own [proposed]
-- E24 · Amended 2026-11-27. The block names no "canvas": the session creates one, records it with "use --canvas", and draws on page "m<NN>". The block names a canvas holding 60 boards and no pages: a page "earlier" is added first for them, then "m<NN>", and no board of theirs moves or changes [proposed]
+- E24 · Amended 2026-11-27. The block names no "canvas": the session creates one, records it with "use --canvas", and draws on page "m<NN>" [proposed]
 - E5 · Two Design Systems titled "AOF": the session stops before drawing, naming "AOF" and both titles and links. No canvas is created [proposed]
 - E6 · The operator answers Revise, "the chip row is too tall": the same canvas is revised and asked about again, at its new version. mocks/ is untouched until Approve [proposed]
 - E7 · The operator answers Later: refine ends with DESIGN.md naming the canvas link as awaiting approval, and the surface's binding checklist is its baseline. mocks/ is untouched [proposed]
-- E8 · The operator turns the offer down, having a mock of their own: the step elicits mocks exactly as it does today [proposed]
+- E8 · Amended 2026-11-27 (F-05). The practice is on: refine asks no "how do you want the mocks" question, offers neither the binding checklist alone nor the operator's own mocks, and draws. Hand-made mocks under mocks/ are a reference for the drawing, never the baseline [proposed]
+- E25 · Amended 2026-11-27. The canvas has 60 boards and no pages, titled "37 · …", "34 · …" and some with no number: "aof design-system canvas pages" puts each numbered board on "m<NN>" and the rest on "earlier", first, and changes nothing but each board's "page". A canvas that has pages is never re-sorted; "--item 12" only adds "m12" [proposed]
+- E26 · Amended 2026-11-27. Page m37 already holds two boards: refine starts from them, brings their literal colours onto the system's tokens, adds the surfaces the page lacks, and says which boards changed in the approval question. It draws nothing from scratch beside them [proposed]
+- E27 · Amended 2026-11-27. mocks/ holds an import of page m37 at the page's current version, and the scope is unchanged: refine draws nothing and asks nothing [proposed]
+- E28 · Amended 2026-11-28. The canvas already has the operator's pages "portal-03" ("03 · Task portal") and "directory-05" ("05 · Directory"), and the stream spells milestone 5 "05": "--item 05" and "--item 5" both answer "directory-05" and add nothing. On a canvas with no pages, a board titled "5 · …" lands on "m05", the page "--item 5" answers [proposed]
 
 ## R3 · The session never writes to the system at refine, and in reference mode what the system lacks is a gap for its owner
 - E9 · "mode": "reference", and a surface needs a warning colour the system does not hold: the canvas draws it with the system's existing tokens, DESIGN.md names "a warning colour" under "## Design-system gaps", and nothing is published to the system [proposed]

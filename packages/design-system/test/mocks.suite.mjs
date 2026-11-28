@@ -4,7 +4,8 @@
 // Covers EVERY @executable scenario in
 //   tasks/01_import-commits-an-approved-canvas-with-its-provenance.feature — E11, the E12 outline, the
 //     "cannot render offline" outline, E13, the bad-provenance outline, E14, the hand-written README
-//     and the same-version re-import, and R4a's E21–E23 (a page per milestone, amended 2026-11-27)
+//     and the same-version re-import, and R4a's E21–E23 and E25–E28 (a page per milestone and the
+//     canvas pages verb, amended 2026-11-27)
 //     (E15 is FF-19805, test/arch/ui/acd-imported-mock-self-contained)
 //   tasks/02_capture-frames-each-board-at-its-own-size.feature — E16, the re-capture, E17, the failing
 //     board, E18, the size outline, and "the package spawns nothing" (the rasterizer's own rules are
@@ -52,7 +53,8 @@ function pulledFiles(boards = BOARDS_V4) {
 function services({ browser = { ok: true, rung: "config", kind: "full", path: "/fake/chrome" }, fail = null } = {}) {
   const asked = [];
   const rows = [
-    { ref: "12", type: "milestone", parent: null, dir: MILESTONE },
+    { ref: "12", type: "milestone", slug: "fleet-filter", parent: null, dir: MILESTONE },
+    { ref: "05", type: "milestone", slug: "directory", title: "Directory provider contract and Connect Google", parent: null, dir: "wiki/work/05_milestone_directory" },
     { ref: "12/01", type: "story", parent: "12", dir: `${MILESTONE}/stories/01_story_chips` },
   ];
   const verbs = createDesignSystemCommands({
@@ -102,7 +104,9 @@ async function withProject({ pulled = pulledFiles(), mocks = {}, collaborators =
       return out;
     };
     const readme = () => readFile(path.join(mocksDir, "README.md"), "utf8");
-    return await body({ root, mocksDir, pull, importIt, capture, snapshot, readme, asked });
+    const pagesOf = ({ canvas, ...flags }) => verbs.canvasPagesCommand.run(verbs.canvasPagesCommand.cli.argv([canvas], flags), ctx);
+    const readJson = async (rel) => JSON.parse(await readFile(path.join(root, rel), "utf8"));
+    return await body({ root, mocksDir, pull, importIt, capture, snapshot, readme, asked, pagesOf, readJson });
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -397,6 +401,87 @@ export const mocksTests = [
       await withProject({ pulled }, async ({ importIt }) => {
         await assert.rejects(importIt({ ...FLAGS, page: "m12" }), refusedWith('no page "m12"', '"earlier", "m13"'));
         await assert.rejects(importIt({ ...FLAGS, page: "m13" }), refusedWith('no boards on the page "m13"'));
+      });
+    },
+  },
+  // ── 198 amended 2026-11-27 · canvas pages: sorted once by the verb, never by eye ─────────────
+  {
+    name: "198/02 01 E25 · a canvas with no pages is sorted once by the milestone number each title starts with, and only each board's page changes",
+    run: async () => {
+      const canvas = {
+        v: 3, title: "Portal Redesign", pages: [], order: ["a.dc.html", "b.dc.html", "c.dc.html"], notes: { n: { x: 0, y: -300, text: "Flows" } },
+        boards: {
+          "a.dc.html": { x: 0, y: 0, w: 800, h: 600, title: "37 · A discussion on a CRM company" },
+          "b.dc.html": { x: 880, y: 0, w: 800, h: 600, title: "Shell — product nav" },
+          "c.dc.html": { x: 0, y: 720, w: 390, h: 844, title: "034 · Messaging at 390 px" },
+        },
+      };
+      await withProject({}, async ({ root, pagesOf, readJson }) => {
+        await write(root, { "pulled/canvas.json": JSON.stringify(canvas) });
+        const answer = await pagesOf({ canvas: "pulled/canvas.json", out: "out/canvas.json", item: "12" });
+        assert.equal(answer.changed, true);
+        assert.deepEqual(answer.pages.map((page) => [page.id, page.boards]), [["earlier", ["b.dc.html"]], ["m34", ["c.dc.html"]], ["m37", ["a.dc.html"]], ["m12", []]]);
+        assert.equal(answer.pages[0].name, "Portal Redesign", "earlier is named for the canvas, and first, so its notes stay with it");
+        assert.equal(answer.pages.at(-1).name, "12 fleet-filter", "the asked-for milestone's page is named for it");
+        assert.deepEqual(answer.moved.map((entry) => entry.page), ["m37", "earlier", "m34"]);
+        const written = await readJson("out/canvas.json");
+        for (const [name, frame] of Object.entries(canvas.boards)) {
+          const { page, ...rest } = written.boards[name];
+          assert.deepEqual(rest, frame, `${name}: only its page changed`);
+          assert.ok(page, `${name} has a page`);
+        }
+        assert.deepEqual(written.notes, canvas.notes);
+        assert.deepEqual(written.order, canvas.order);
+      });
+    },
+  },
+  {
+    name: "198/02 01 E26 · a canvas that has pages is never re-sorted: only the milestone's missing page is added, and one already there changes nothing",
+    run: async () => {
+      const canvas = { pages: [{ id: "earlier", name: "Portal" }], boards: { "x.dc.html": { x: 0, y: 0, w: 10, h: 10, title: "37 · Late" } } };
+      await withProject({}, async ({ root, pagesOf, readJson }) => {
+        await write(root, { "pulled/canvas.json": JSON.stringify(canvas) });
+        const added = await pagesOf({ canvas: "pulled/canvas.json", out: "out/canvas.json", item: "12" });
+        assert.deepEqual(added.moved, [], "no board is moved");
+        assert.deepEqual(added.added, ["m12"]);
+        assert.equal((await readJson("out/canvas.json")).boards["x.dc.html"].page, undefined, "the board stays on the first page");
+        await write(root, { "pulled/canvas.json": JSON.stringify(await readJson("out/canvas.json")) });
+        const again = await pagesOf({ canvas: "pulled/canvas.json", out: "out/again.json", item: "12" });
+        assert.equal(again.changed, false);
+        assert.equal(again.page, "m12");
+      });
+    },
+  },
+  {
+    name: "198/02 01 E28 · a milestone's own page is found by the number its name starts with, and a ref's leading zero is the stream's spelling",
+    run: async () => {
+      // The shape of a real canvas: pages the operator made, named for their milestones, with ids of their own.
+      const handMade = { pages: [{ id: "portal-03", name: "03 · Task portal" }, { id: "directory-05", name: "05 · Directory" }], boards: { "d.dc.html": { x: 0, y: 0, w: 10, h: 10, title: "Directory · setup", page: "directory-05" } } };
+      const unpaged = { pages: [], boards: { "e.dc.html": { x: 0, y: 0, w: 10, h: 10, title: "5 · Directory at 390" } } };
+      await withProject({}, async ({ root, pagesOf, readJson }) => {
+        await write(root, { "pulled/hand.json": JSON.stringify(handMade), "pulled/unpaged.json": JSON.stringify(unpaged) });
+        for (const item of ["05", "5"]) {
+          const found = await pagesOf({ canvas: "pulled/hand.json", out: `out/hand-${item}.json`, item });
+          assert.equal(found.changed, false, `--item ${item}: no page is added beside the operator's own`);
+          assert.equal(found.page, "directory-05", `--item ${item}: the operator's page is the milestone's page`);
+        }
+        const sorted = await pagesOf({ canvas: "pulled/unpaged.json", out: "out/unpaged.json", item: "5" });
+        assert.deepEqual(sorted.pages.map((page) => [page.id, page.name, page.boards]), [["m05", "05 Directory provider contract and Connect Google", ["e.dc.html"]]], "the board and the item share one page, spelt as the stream spells the ref");
+        assert.equal(sorted.page, "m05");
+        assert.equal((await readJson("out/unpaged.json")).boards["e.dc.html"].page, "m05");
+      });
+    },
+  },
+  {
+    name: "198/02 01 E27 · over the type's 40 pages, a story, or an unreadable index is refused, writing nothing",
+    run: async () => {
+      const boards = Object.fromEntries(Array.from({ length: 41 }, (_, n) => [`b${n}.dc.html`, { title: `${n + 1} · board` }]));
+      await withProject({}, async ({ root, pagesOf }) => {
+        await write(root, { "pulled/full.json": JSON.stringify({ pages: [], boards }), "pulled/ok.json": JSON.stringify({ pages: [], boards: {} }) });
+        await assert.rejects(pagesOf({ canvas: "pulled/full.json", out: "out/a.json" }), (error) => error.code === "design-system-canvas-full" && /limit of 40/.test(error.message));
+        await assert.rejects(pagesOf({ canvas: "pulled/ok.json", out: "out/b.json", item: "12/01" }), (error) => error.code === "design-system-mocks-not-a-milestone");
+        await assert.rejects(pagesOf({ canvas: "pulled/missing.json", out: "out/c.json" }), (error) => error.code === "design-system-unreadable");
+        assert.equal(existsSync(path.join(root, "out")), false, "nothing is written");
       });
     },
   },
