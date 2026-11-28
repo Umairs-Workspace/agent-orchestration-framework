@@ -115,3 +115,21 @@ test('210 F-19 a subpath pattern export places every file its target matches, as
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test('210 F-20 a pnpm project\'s workspaces are read from pnpm-workspace.yaml', async () => {
+  const root = await mkdtemp(path.join(await realpath(os.tmpdir()), 'aof-210-f20-census-'));
+  try {
+    const write = async (rel, text = 'export {};\n') => { await mkdir(path.dirname(path.join(root, rel)), { recursive: true }); await writeFile(path.join(root, rel), text); };
+    await write('package.json', JSON.stringify({ name: 'pnpm-root' }));
+    await write('pnpm-workspace.yaml', 'packages:\n  - "packages/services/*"\n  - packages/ui # the design system\n  - "!packages/ignored"\nonlyBuiltDependencies:\n  - esbuild\n');
+    await write('packages/services/governance/package.json', JSON.stringify({ name: '@acme/governance', exports: { './catalogue': './src/catalogue.ts' } }));
+    await write('packages/ui/package.json', JSON.stringify({ name: '@acme/ui', exports: { '.': './src/index.ts' } }));
+    const census = createAuditCensus({ runBounded: async () => { throw Error('no child'); }, DEFAULT_DEADLINE_MS: 1, isToolkitRoot: () => false, toolkitProgram: () => null, nodeExecutable: () => process.execPath });
+    const exports = await census.workspaceExportMap(root);
+    assert.equal(exports.get('@acme/governance/catalogue'), 'packages/services/governance/src/catalogue.ts');
+    assert.equal(exports.get('@acme/ui'), 'packages/ui/src/index.ts', 'a trailing comment is not part of the pattern');
+    assert.equal(exports.size, 2, 'a negated pattern and the keys after packages: place nothing');
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

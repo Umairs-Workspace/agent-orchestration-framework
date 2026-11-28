@@ -566,7 +566,7 @@
         "id": "aof-map-tests",
         "kind": "skill"
       },
-      "hash": "sha256:80cd131b2451bfd8d3cdd526c2792749bfb3825f2f302e62112ad51f1e7f7a0f"
+      "hash": "sha256:9b025f4b2e00424d21ad95fdab3546bd2d813bb4811eb33b18612ae810b8e678"
     },
     {
       "path": ".agents/skills/aof-map-tests/agents/openai.yaml",

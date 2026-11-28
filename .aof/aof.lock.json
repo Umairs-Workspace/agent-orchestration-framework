@@ -318,7 +318,7 @@
           "id": "map-tests",
           "kind": "command"
         },
-        "hash": "sha256:62988551514e91d8fab4c4858198a64a93ffab262b7e5bf22839c20116667ac0",
+        "hash": "sha256:899a4babc0b30014c80e6c2ef5b8456f78fffbbaf97e7602b7e6b635d7d98ec3",
         "generatedAt": "2026-11-28T15:45:46.866Z"
       },
       {
@@ -1150,7 +1150,7 @@
           "id": "aof-map-tests",
           "kind": "skill"
         },
-        "hash": "sha256:80cd131b2451bfd8d3cdd526c2792749bfb3825f2f302e62112ad51f1e7f7a0f",
+        "hash": "sha256:9b025f4b2e00424d21ad95fdab3546bd2d813bb4811eb33b18612ae810b8e678",
         "generatedAt": "2026-11-28T15:45:46.866Z"
       },
       {
@@ -1896,7 +1896,7 @@
           "id": "map-tests",
           "kind": "command"
         },
-        "hash": "sha256:5f799baf300b366d9c7c10c63864020d1d641e742408f56c4cb0847990d926ee",
+        "hash": "sha256:5fe53673269de67ce07ca791231a9f4669bc62c582c530705637d0eb8fce94b1",
         "generatedAt": "2026-11-28T15:45:46.866Z"
       },
       {

@@ -409,9 +409,10 @@ async function workspaceSuiteRoots(repoRoot, root) {
 async function workspaceExportMap(repoRoot) {
   const out = new Map();
   const manifest = await readFile(path.join(repoRoot, "package.json"), "utf8").then(JSON.parse).catch(() => null);
-  const patterns = Array.isArray(manifest?.workspaces) ? manifest.workspaces : manifest?.workspaces?.packages ?? [];
+  const declared = Array.isArray(manifest?.workspaces) ? manifest.workspaces : manifest?.workspaces?.packages ?? null;
+  const patterns = declared ?? await pnpmWorkspacePatterns(repoRoot);
   for (const pattern of patterns) {
-    if (typeof pattern !== "string" || pattern.includes("..") || path.isAbsolute(pattern)) continue;
+    if (typeof pattern !== "string" || pattern.includes("..") || pattern.startsWith("!") || path.isAbsolute(pattern)) continue;
     const directories = pattern.endsWith("/*")
       ? await readdir(path.join(repoRoot, pattern.slice(0, -2)), { withFileTypes: true })
         .then((entries) => entries.filter((entry) => entry.isDirectory()).map((entry) => `${pattern.slice(0, -2)}/${entry.name}`))
@@ -435,6 +436,23 @@ async function workspaceExportMap(repoRoot) {
     }
   }
   return out;
+}
+
+// A pnpm project lists its workspaces in `pnpm-workspace.yaml`, under `packages:`, and its
+// package.json has no `workspaces`. Only that list is read: one `- pattern` per line, quoted or not.
+async function pnpmWorkspacePatterns(repoRoot) {
+  const text = await readFile(path.join(repoRoot, "pnpm-workspace.yaml"), "utf8").catch(() => null);
+  if (text == null) return [];
+  const patterns = [];
+  let inPackages = false;
+  for (const line of text.split(/\r?\n/u)) {
+    if (/^packages:\s*$/u.test(line)) { inPackages = true; continue; }
+    if (!inPackages) continue;
+    const item = /^\s+-\s+["']?([^"'#]+?)["']?\s*(?:#.*)?$/u.exec(line);
+    if (item) patterns.push(item[1]);
+    else if (/^\S/u.test(line)) break;
+  }
+  return patterns;
 }
 
 // The files a pattern export's target (`./src/*.ts`) matches inside one workspace: `[match, file]`,

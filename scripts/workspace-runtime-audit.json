@@ -396,7 +396,7 @@
     "kind": "child-process",
     "expression": "spawn({ command: execPath, args: [probe, target], cwd: repoRoot, deadlineMs })",
     "digest": "159a1145ba46cb74dd73fded47998bda790932b1cd2e00f6b89ca02b16652de0",
-    "sourceDigest": "ff55202bda37f4f716aa7ebcd3e6ea19a7825f36ad426e0849ab0c2a11f07963",
+    "sourceDigest": "a13234422ffa0b3cf7dd820720f5ebcf7559c3d33a40d969dfc77ea4d4f6ae2b",
     "reason": "Bounded child invokes the installed audit-probe entry resolved by toolkitProgram; selected target is the governed project runner, intentionally external to AOF."
   },
   {

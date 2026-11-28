@@ -26,8 +26,11 @@ and remove `work.test.couplings` when the repo still has it.
    `aof test` refuses while the key is present. When it is present, carry every entry into the
    instructions as an area row, so no mapping the project recorded is lost: the entry's `why` is the
    area, its `paths` are the files the area covers, and its `suites` are the suites to consider.
-   Group a long suite list by directory with a count per directory, and merge entries that name the
-   same area. Skip this step when the key is absent.
+   List a long suite list as its directory followed by the file names, so every suite stays named,
+   and merge entries that name the same area. Before the key is deleted, search the project's own
+   code and tests for anything that reads `work.test.couplings`, such as a test that checks every
+   source area is covered. Name each reader, and move it to read the instructions file's area rows,
+   or deleting the key breaks it. Skip this step when the key is absent.
 3. **Draft the instructions file.** Map areas to suites, including consumers reached through the
    application assembly and suites that construct paths from fragments. Explain record-only and
    docs-only changes that need no run, native-test commands, slow lanes, and machine hazards such
