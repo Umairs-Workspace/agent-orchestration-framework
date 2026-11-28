@@ -62,6 +62,46 @@ gate, which has not run (see the accept decision).
   green. The work-init goldens are re-derived (`node scripts/golden.mjs --lane work-init`: every
   scenario matches). verifies → 01/04 E22–E24, 02/01 E21–E23, F-04.
 
+- **The live runs, 2026-11-27 and 2026-11-28 (operator's projects, interactive Claude sessions).**
+  - **The extract, twice.** On voice-vox-company-portal it built, published and checked a Design
+    System, `company-portal` (`https://claude.ai/artifact/19BJuHdWtj1RjxsDDvGkvE`), owned from
+    `platform/packages/ui/src/styles/tokens.css`, with no drift, and named it with its canvas (F-04
+    came from this run). On ai-workforce-platform it built `ai-workforce-platform`
+    (`https://claude.ai/artifact/1PcTE4EapjpVyfuPteVuZs`), owned from
+    `apps/central-dashboard/src/styles/tokens.css` (F-02 and F-03 came from this run), and
+    `aof project validate` is clean there with the canvas named. verifies → 01/05 E19's procedure.
+    AOF's own system is not built by extract: the operator chose to name the existing
+    `https://claude.ai/artifact/26W8xGGCgcAmQ7gP3ndhn5` in `reference` mode (`4ed7d45f`), which
+    supersedes E19's "titled AOF, owned" for this repository.
+  - **Refine to baseline, on the portal's milestone 37.** Refine drew the milestone on page `m37` of
+    the project canvas with `company-portal` installed, and the operator approved it. `mocks/README.md`
+    records the canvas and version `1795814732-d099`, the page, the system and version
+    `1795802231-fee4`, and the approval `session 4eed8612-434c-47bb-b21f-e32de7f0f72d
+    2026-11-27T22:03:48Z`. `DESIGN.md` names each frame as its surface's baseline. verifies → 02/03
+    E4 and "approving commits the baseline".
+  - **The system is untouched by refine.** Read today, `company-portal` is still at version
+    `1795802231-fee4`, the version the import recorded. verifies → 02/03 E10.
+  - **Offline render and framing.** After F-07, the capture of all eleven boards from the
+    loopback-served mocks folder: every frame whole, the two that were blank checked by eye.
+    verifies → 02/03 A2 and A3.
+  - **The pages verb on two real canvases.** The portal's 60 unpaged boards sort onto nine pages,
+    37's two on `m37`. ai-workforce's hand-made pages "03 · Task portal" and "05 · Directory" are
+    found as milestones 03 and 05, and only `m07` would be added. verifies → 02/01 E25–E28.
+- **The F-05 to F-07 fixes, 2026-11-28.** `packages/design-system/test/index.mjs`,
+  `packages/execution/test/diagram-rasterize.suite.mjs`, `test/arch/ui/index.mjs`,
+  `test/arch/practices/index.mjs`, `test/arch/diagrams/index.mjs`,
+  `test/command/application-assembly.test.mjs` and `packages/core/test/practice-render-lane.suite.mjs`,
+  by file, with `AOF_GLOBAL_HOME` isolated. Result: 459 cases, 0 failures. The work-init goldens
+  match. verifies → 01 E26–E27, 02 E25–E29, FF-19805.
+- No milestone surface of 198 has a `DESIGN.md`, so no design-conformance render applies. No task
+  carries `@uat`.
+
+## Design-system re-sync
+
+AOF names its system with `"mode": "reference"`
+(`https://claude.ai/artifact/26W8xGGCgcAmQ7gP3ndhn5`), so this accept re-syncs nothing and
+publishes nothing to it (ADR-007).
+
 ## Findings
 
 | id | observed | type | severity | triage | routed to | status |
@@ -72,8 +112,25 @@ gate, which has not run (see the accept decision).
 | F-04 | The live extract on `voice-vox-company-portal` (2026-11-27) built, published and checked a clean system, then spent about 30 minutes, and two deletions, on what the operator wanted around it. The command never asked which design artifacts already existed or what the operator wanted to end up with (it checked only for a title clash), and never said a project's design is two artifacts: the system, and a canvas for the mocks. Its steps are all actions, and nothing in it says a question from the operator pauses them. So the session treated each reply as an instruction: it deleted the new system on a correcting link, registered the mocks canvas as the system, copied the system into the canvas and tried to delete the system again. The operator's decision, which settles the cause: one Design System, plus ONE canvas for every milestone's mocks, a page each, and the block names both, "so it knows which artifact to edit/maintain". Distinct incident (recall `4307975d-d00e-42ef-8732-2af5ae5b2aaf`: no candidate shares its cause). | defect (contract + prose) | blocker for 01 and 02 (the extract's conversation, and 02's defaulted canvas-per-milestone) | `@bug` fix in 198/01 and 198/02: the block gains `canvas` (ADR-005 amended); one canvas per project with a page per milestone (ADR-006 §0, replacing 02's Q10); the command asks first, shows the two-artifact layout, and answers questions without acting | 198/01, 198/02 | fixed 2026-11-27 inline (operator's go). Code: `use --canvas`, the codes `design-system-bad-canvas` and `design-system-canvas-is-system`, and `mocks import --page`. Prose: the extract command's step 0 and `<conversation>` rule, and refine's and verify's page-scoped canvas steps. Contracts: 01 E22–E25 and Q15, 02 E4, E21–E24, and Q10 settled (both questions are recorded as defaults citing the amended ADRs, because the doctor anchors an "answered" only to an ask inside a story run). Seven new cases (config suite E22 and E23; mocks suite E21–E23; two validator rows), red on the unfixed source, because neither `canvas` nor `--page` existed there. |
 | F-05 | Refining the portal's milestone 37 (2026-11-27), refine asked "How do you want the mocks?" with three options: the canvas, "Binding checklist only", or "I have mocks". `work.ui.designSystem` names the system and the canvas. 02's prose offered the canvas, and turning the offer down fell through to the old elicitation, so the configured system was optional exactly where it mattered. The operator's rule: "If a design system is set, it must be used. No ifs or buts." The same run showed a second gap: the canvas already held 37's two boards, with no page, and refine had no step for boards that already exist. Related to F-04 (same practice, a different cause: the extract's conversation), a distinct incident (recall `3108c384-2a5e-4abb-99c9-d095967c9f7c`). | defect (contract + prose) | blocker for 02 | `@bug` fix in 198/02: with the practice on, refine replaces the mock elicitation and asks only for approval (ADR-002 §4); the pages come from a verb, never by eye; refine starts from the boards on the page (ADR-006 §0) | 198/02 | fixed 2026-11-27 inline (operator's go). A new verb, `aof design-system canvas pages`, sorts a canvas with no pages once, by the milestone number each title starts with, and adds a milestone's page. The extract's step 10 runs it once when a canvas is named. Refine's step replaces the elicitation, starts from the page's boards and from an existing import, and treats hand-made mocks as a reference. The designer's brief rule says the same. Contracts: 02 R2 retitled, E8 rewritten, E25–E27 added, and tasks 00, 01 and 03 amended. Three new cases in the mocks suite (E25–E27), and the practice test's wording checks. On the portal's own canvas, the verb sorts 60 boards onto 9 pages, with 37's two on `m37`. Amended 2026-11-28, from ai-workforce-platform's canvas, which already had pages the operator made ("03 · Task portal" as `portal-03`, "05 · Directory" as `directory-05`) and whose stream spells its refs `05`: the verb took a page only by the id `m<NN>`, so it would have added an empty `m05` beside `directory-05`, and it stripped a board title's leading zero into `m5` while `--item 05` answered `m05`. It now takes a page whose name starts with the milestone's number as that milestone's page, spells every page id as the stream spells the ref, resolves `--item 5` to `05`, and answers the page it chose; refine, verify and the import use that id as `<page>` and never assume `m<NN>`. E28 added, in the mocks suite and in task 01. |
 | F-06 | The operator, 2026-11-28, after the ai-workforce canvas: "extract is good on a fresh project. But in some cases there are many mocks and designs floating around and I want to consolidate and standardise them first AND THEN create an owned design system + canvas. ... the designs are in canvas mate. They should be consumed and then used to create a design system." Extract read the code's tokens and the repo's `mocks/` folders only. Its first question was a fixed menu with one canvas to record, never one to read, and the review offered each mock-only colour as accept or drop, with no way to say "this is that token" for the near-duplicates scattered boards hold. Related to F-04 (the same first question, a different cause: what it reads), a distinct incident (recall `ce90a582-983e-40fd-82cf-650345f848c1`). | defect (prose + verb) | blocker for 01 (the operator is not passing the milestone without it) | `@bug` fix in 198/01: extract consumes named canvases and standardises before it builds (ADR-004 amended) | 198/01 | fixed 2026-11-28 inline (operator's go). `tokens --mocks` names each mock-only colour's `nearest` code token and its RGBA distance. The command asks in plain words, reads the boards of any number of canvases back into one folder each as more `--mocks` directories, and the review offers map, accept or drop, grouped by the nearest token; map writes nothing to the code. A consumed canvas is never changed, moved or deleted. Contracts: 01 E25 amended, E26 and E27 added, tasks 01 and 02 amended. Three new cases (two in the tokens suite, one in the practice suite). |
+| F-07 | At this verify (2026-11-28), two of the portal's eleven 37 baselines, `Messaging-OnRecord.png` and `Messaging-Events.png`, were blank grey frames. Each board holds only `<dc-import name="Messaging">`, which mounts the sibling `Messaging.dc.html` from the page `earlier`. Refine pulled back the page's boards alone, `mocks import` accepted them without the component, and `mocks capture` opened each board from `file://`, where the browser refuses the runtime's fetch of a sibling. Reproduced: the component copied in beside the board still rendered blank from disk; served on loopback with a settle budget it rendered whole. FF-19805 checked the sources a board names, not the components it mounts. A distinct incident (recall `04a6f2fa-9b3f-438d-bc08-5e7ea3094544`): no prior finding concerns a board's dependencies. | defect (verb + prose + control) | blocker for 02 (a committed baseline the judge would read as the approved design was blank) | `@bug` fix in 198/02: the import carries every mounted component and refuses a missing one; capture serves the folder on loopback; refine and verify pull components back; FF-19805 holds mounts (ADR-006 amended) | 198/02 | fixed 2026-11-28 inline. `componentsOf` in `src/mocks.mjs`, transitive; `serveFolder` and `PAGE_SETTLE_MS` in `packages/execution/src/svg-rasterizer.mjs`, scoped to the page's folder, loopback only, read-only. Cases: E29 in the mocks suite, "198 F-07" in the rasterizer suite, FF-19805's red probe gains a missing mount. The portal's 37 import was redone from the approved version `1795814732-d099` with the same approval: `Messaging.dc.html` imported, all eleven frames whole (`Messaging-OnRecord.png` 237,674 bytes, `Messaging-Events.png` 222,816, both checked by eye). |
+| F-08 | Not every `@manual` path has met a live run. Run live: the extract on two real projects, refine drawing on a page and approving, the import with provenance, the capture, the owned system untouched by refine, and the pages verb on two real canvases (see the evidence). Not run live: 01/05 E20 (a title collision), E21 (a declined inventory), a mock-only value accepted into code, and the loop-driven extract; 02/03 E5 (an ambiguous title), E6 (Revise), E7 (Later), E9 (a reference system's gap), E19 and E20 (verify pulling back an awaiting canvas) and A1 (a loop-driven refine); and 03/03 whole (a live owned re-sync at an accept). Each is covered by the executable prose and verb cases, not by a live run. A distinct incident (recall `ada401ff-2bb8-40db-90e9-1f72fe32b9ad`). | verification gap | non-blocker (the operator signed the milestone off 2026-11-28: "let's sign off this fucking milestone") | deferred: each runs live on its first natural occurrence, the owned re-sync at the first owned milestone accepted in the portal or ai-workforce | backlog (198 OUTCOME gaps) | open, deferred |
 
 ## Accept decision
+
+2026-11-28 · aof:verify 198 (solo, product owner inline), on the operator's sign-off: "Commit what
+you've done, and let's sign off this fucking milestone".
+
+- **198/01, 198/02, 198/03: accepted** (`in-review → done`). Every `@executable` task and FF-19801
+  to FF-19805 are green (459 cases on the F-05 to F-07 fixes, the earlier lanes as recorded above).
+  The live runs on the operator's projects cover the extract, refine to baseline, the import, the
+  capture and the system left untouched. The paths no live run has met are F-08, a non-blocker the
+  operator deferred, carried as each story's and the milestone's `## Gaps`.
+- **Findings:** F-01 to F-07 fixed; F-08 open, deferred. No blocker is open.
+- **The milestone: accepted** once `aof work regression-gate 198` records a green row in
+  `REGRESSION.md`, which the door reads. Its outcome and retrospective are written, and STATE's
+  feedback has graduated into the retrospectives.
+
+Earlier:
 
 2026-11-27 · aof:verify 198 (solo, product owner inline).
 

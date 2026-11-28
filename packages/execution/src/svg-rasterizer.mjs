@@ -18,7 +18,15 @@
 // SVG's viewBox; `rasterizePage` renders a local page (an imported Design board, `.dc.html`) at the
 // size it is handed. Both go through `renderToPng`, so they share the argv, the spawn, the done-poll
 // and the profile clean-up.
+//
+// A PAGE IS SERVED, NEVER OPENED FROM DISK (198 F-07). A board mounts its components with
+// `<dc-import>`, which the runtime fetches as sibling files, and a browser refuses a fetch from a
+// `file://` page. So `rasterizePage` serves the page's own folder, and nothing above it, on a
+// loopback port for the length of the render, and the screenshot waits for the page to settle
+// (`--virtual-time-budget`): without it the shell shoots before the mounted component has loaded. Allowing file access instead would let any board
+// read any local file while the network is up.
 import { spawn as spawnProcess } from "node:child_process";
+import { createServer } from "node:http";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
@@ -27,6 +35,8 @@ import { pathToFileURL } from "node:url";
 import { commandError } from "@aof/contracts/error";
 
 export const RENDER_DEADLINE_MS = 30_000;
+// The virtual time a page is given to fetch and mount its components before the screenshot.
+export const PAGE_SETTLE_MS = 5_000;
 const POLL_MS = 100;
 const ENV_KEY = "AOF_DIAGRAM_BROWSER";
 const CONFIG_KEY = "work.diagrams.browser";
@@ -163,8 +173,9 @@ function whichOnPath(name, { env = process.env, platform = process.platform, exi
 
 // THE ONE FUNCTION THAT FORMS A BROWSER ARGV (FF-13303). The window IS the source's size (an SVG's
 // viewBox, a page's board), so the screenshot is the source and nothing else; the device scale
-// factor is the render's scale. `sourcePath` is the local file the browser opens, last.
-export function browserArgv({ kind, width, height, scale, userDataDir, pngPath, sourcePath }) {
+// factor is the render's scale. `sourcePath` is the local file the browser opens, last, unless
+// `sourceUrl` names the loopback address a page is served at.
+export function browserArgv({ kind, width, height, scale, userDataDir, pngPath, sourcePath, sourceUrl, settleMs }) {
   return [
     ...(kind === "full" ? ["--headless=new"] : []),
     "--disable-gpu",
@@ -175,8 +186,50 @@ export function browserArgv({ kind, width, height, scale, userDataDir, pngPath, 
     `--force-device-scale-factor=${scale}`,
     `--user-data-dir=${userDataDir}`,
     `--screenshot=${slashes(path.resolve(pngPath))}`,
-    pathToFileURL(path.resolve(sourcePath)).href,
+    ...(settleMs ? [`--virtual-time-budget=${settleMs}`] : []),
+    sourceUrl ?? pathToFileURL(path.resolve(sourcePath)).href,
   ];
+}
+
+const SERVED_TYPES = Object.freeze({
+  ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".json": "application/json",
+  ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2",
+});
+
+// Serve `root` and nothing outside it, on 127.0.0.1 at a port the OS picks. Answers `{ url, close }`.
+export async function serveFolder(root, { read = readFile } = {}) {
+  const base = path.resolve(root);
+  const server = createServer(async (request, response) => {
+    const answer = (status, body = "", type = "text/plain; charset=utf-8") => {
+      response.writeHead(status, { "content-type": type, "cache-control": "no-store" });
+      response.end(request.method === "HEAD" ? undefined : body);
+    };
+    if (request.method !== "GET" && request.method !== "HEAD") return answer(405);
+    let rel;
+    try {
+      rel = decodeURIComponent(new URL(request.url, "http://127.0.0.1").pathname);
+    } catch {
+      return answer(400);
+    }
+    const file = path.resolve(base, `.${rel}`);
+    if (file !== base && !file.startsWith(`${base}${path.sep}`)) return answer(404);
+    try {
+      return answer(200, await read(file), SERVED_TYPES[path.extname(file).toLowerCase()] ?? "application/octet-stream");
+    } catch {
+      return answer(404);
+    }
+  });
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  return {
+    url: (name) => `http://127.0.0.1:${server.address().port}/${encodeURIComponent(name)}`,
+    close: () => new Promise((resolve) => {
+      server.close(() => resolve());
+      server.closeAllConnections();
+    }),
+  };
 }
 
 // The root `<svg>`'s viewBox width and height, rounded UP. The origin does not size the window.
@@ -206,6 +259,8 @@ export function createSvgRasterizer({ reportDegrade }) {
 // growing, or once the deadline passes. The profile directory is removed on every path.
 async function renderToPng({
   sourcePath,
+  sourceUrl,
+  settleMs,
   pngPath,
   width,
   height,
@@ -232,7 +287,7 @@ async function renderToPng({
     try {
       child = spawn(
         browser.path,
-        browserArgv({ kind: browser.kind, width, height, scale, userDataDir, pngPath, sourcePath }),
+        browserArgv({ kind: browser.kind, width, height, scale, userDataDir, pngPath, sourcePath, sourceUrl, settleMs }),
         { stdio: ["ignore", "ignore", "pipe"], windowsHide: true },
       );
     } catch (error) {
@@ -311,7 +366,12 @@ async function rasterizePage({
   if (![width, height].every((side) => Number.isInteger(side) && side > 0)) {
     throw commandError(`A page is rendered at a positive whole-pixel size, not ${width}x${height}: ${pagePath}.`, "page-png-size-unusable", 400);
   }
-  return renderToPng({ sourcePath: pagePath, pngPath, width, height, scale, browser, spawn, stat, now, sleep, tmp, deadlineMs });
+  const served = await serveFolder(path.dirname(pagePath));
+  try {
+    return await renderToPng({ sourcePath: pagePath, sourceUrl: served.url(path.basename(pagePath)), settleMs: PAGE_SETTLE_MS, pngPath, width, height, scale, browser, spawn, stat, now, sleep, tmp, deadlineMs });
+  } finally {
+    await served.close();
+  }
 }
 
 return { rasterizeSvg, rasterizePage };

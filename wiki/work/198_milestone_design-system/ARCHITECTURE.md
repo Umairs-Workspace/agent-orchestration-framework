@@ -317,6 +317,15 @@ not (R6).
 **Consequences.** A mock is reproducible offline and traceable to the exact canvas version that
 was approved. The judge, and QA's regression, are untouched.
 
+**Amended 2026-11-28 (F-07).** §2 is widened: a baseline is the page's boards **and every
+component they mount** with `<dc-import name="X">` (the sibling `X.dc.html`, followed transitively,
+on whatever page it sits). `mocks import` copies each one beside the boards, lists it in the
+README, never frames it, and refuses a board whose component the pulled canvas lacks, so a blank
+baseline cannot be committed. `mocks capture` serves the mocks folder, and nothing above it, on a
+loopback port for each render and lets the page settle before the shot: a browser refuses a
+`file://` page's fetch of its sibling, and allowing file access would let any board read any local
+file. FF-19805 now also holds that every mounted component is in the import.
+
 ### Diagram
 
 Why: the flow crosses five actors and one approval gate, and the boundary that matters is

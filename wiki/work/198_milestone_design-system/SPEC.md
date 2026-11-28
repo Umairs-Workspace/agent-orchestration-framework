@@ -93,9 +93,9 @@ Out of scope:
 Four stories in three waves (ARCHITECTURE ADR-008): 00 and 01, then 02, then 03.
 
 - [x] `00_story_a-fragment-can-be-for-claude-only`: a fragment names the runtimes it is for, and any other runtime's render holds none of it.
-- [ ] `01_story_a-project-extracts-its-design-system-and-names-it`: the `@aof/design-system` package, the `work.ui.designSystem` key, the token verbs, and `aof:design-system extract` building the system from code tokens and exported mocks.
-- [ ] `02_story_mocks-are-drawn-on-the-system-and-committed-as-the-baseline`: refine draws a canvas on the system; once the operator approves it, it is imported into `mocks/` with its runtime, frames and provenance.
-- [ ] `03_story_an-owned-system-stays-true-to-its-code`: accepting a milestone re-syncs an owned system from code, and drift that survives the re-sync is a finding.
+- [x] `01_story_a-project-extracts-its-design-system-and-names-it`: the `@aof/design-system` package, the `work.ui.designSystem` key, the token verbs, and `aof:design-system extract` building the system from code tokens and exported mocks.
+- [x] `02_story_mocks-are-drawn-on-the-system-and-committed-as-the-baseline`: refine draws a canvas on the system; once the operator approves it, it is imported into `mocks/` with its runtime, frames and provenance.
+- [x] `03_story_an-owned-system-stays-true-to-its-code`: accepting a milestone re-syncs an owned system from code, and drift that survives the re-sync is a finding.
 
 ## Dependencies
 

@@ -423,6 +423,7 @@ export function createDesignSystemCommands({ commandError, listItemsCacheFirst, 
       const { refusal, plan } = mocks.planImport({
         pulled,
         canvasText: pulled.includes(mocks.CANVAS) ? await readFile(path.join(pulledRoot, mocks.CANVAS), "utf8") : null,
+        texts: Object.fromEntries(await Promise.all(pulled.filter((rel) => rel.endsWith(".dc.html") && mocks.pathFault(rel) == null).map(async (rel) => [rel, await readFile(path.join(pulledRoot, rel), "utf8")]))),
         existing: (await filesUnder(target.dir)) ?? [],
         readme: await readOrNull(readmePath),
         provenance,

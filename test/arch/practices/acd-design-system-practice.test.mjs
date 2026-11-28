@@ -269,6 +269,7 @@ export const archTests = [
         "aof design-system use --canvas",
         "Every board you add carries `\"page\": \"<page>\"`",
         "never assume `m<NN>`",
+        "every component those boards", // 198 F-07: a board's <dc-import> components are pulled back too
         "Never move, change or remove a board or note on another milestone's page",
         "--page <page>",
         "**Approve**, **Revise**",
@@ -291,6 +292,7 @@ export const archTests = [
         "aof design-system mocks import",
         "aof design-system mocks capture",
         "--page <page>",
+        "every component those",
         "Those frames are the baseline handed to the judge.",
         "the binding checklist stays the baseline",
       ]) assert.ok(text.includes(phrase), phrase);

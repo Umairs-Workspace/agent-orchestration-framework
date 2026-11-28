@@ -7,7 +7,8 @@
      - **On Approve,** resolve the system `work.ui.designSystem` names (an `artifact` link is the
        system; a `name` is the one Design System you can open with exactly that title, and no
        match or more than one is a stop naming every candidate's title and link). Read back the
-       canvas's `project/canvas.json`, every board on the milestone's page, `project/ds/*/tokens.json`
+       canvas's `project/canvas.json`, every board on the milestone's page, every component those
+       boards mount with `<dc-import name="X">` (the sibling `project/X.dc.html`, transitively), `project/ds/*/tokens.json`
        and the type's `artifact-type/dc-runtime.js` into one scratchpad directory, keeping their
        published paths. Then run `aof design-system mocks import <pulled-dir> --item <NN> --canvas
        <link> --canvas-version <version> --page <page> --system <link> --system-version <version> --approval

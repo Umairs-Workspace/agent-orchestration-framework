@@ -170,7 +170,31 @@ export function withFrames(readme, frames) {
 // paths, with `readme` the text of mocks/README.md, or null. `provenance.page`, when given, imports
 // that page alone. Answers `{ refusal: { message, code } }` or `{ plan: { copies: [{ from, to } |
 // { text, to }], remove: [rel], readme, files, previous } }`: a copy with `text` writes it.
-export function planImport({ pulled, canvasText, existing = [], readme = null, provenance, date }) {
+// The components a board mounts: every `<dc-import name="X">` is the sibling file `X.dc.html`, which
+// the board needs to render at all (198 F-07). `texts` maps a pulled `.dc.html` path to its text.
+// Answers `{ components }`, followed transitively and in first-mounted order, or `{ refusal }` naming
+// the board and the file the pulled canvas lacks.
+const DC_IMPORT = /<dc-import\b[^>]*?\bname\s*=\s*(["'])([^"']+)\1/giu;
+
+export function componentsOf(boards, texts = {}) {
+  const components = [];
+  const queue = [...boards];
+  for (let next = queue.shift(); next !== undefined; next = queue.shift()) {
+    const dir = next.includes("/") ? next.slice(0, next.lastIndexOf("/") + 1) : "";
+    for (const match of String(texts[next] ?? "").matchAll(DC_IMPORT)) {
+      const rel = `${dir}${match[2]}${BOARD_SUFFIX}`;
+      if (boards.includes(rel) || components.includes(rel)) continue;
+      if (pathFault(rel) != null || texts[rel] === undefined) {
+        return { refusal: { message: `"${next}" mounts "${match[2]}" (<dc-import>), but the pulled canvas lacks "${rel}", so the board would render blank offline. Read it back too, then import again. Nothing was written.`, code: "design-system-mocks-incomplete" } };
+      }
+      components.push(rel);
+      queue.push(rel);
+    }
+  }
+  return { components };
+}
+
+export function planImport({ pulled, canvasText, texts = {}, existing = [], readme = null, provenance, date }) {
   const refuse = (message, code) => ({ refusal: { message, code } });
   for (const rel of pulled) {
     const fault = pathFault(rel);
@@ -183,13 +207,16 @@ export function planImport({ pulled, canvasText, existing = [], readme = null, p
   if (parsed.fault) return refuse(`${parsed.fault}. Nothing was written.`, "design-system-mocks-bad-canvas");
   const boards = parsed.boards.map((board) => `project/${board.name}`);
   const elsewhere = parsed.page ? Object.keys(parsed.canvas.boards).map((name) => `project/${name}`) : [];
+  const mounted = componentsOf(boards.filter((rel) => pulled.includes(rel)), texts);
+  if (mounted.refusal) return mounted;
+  const { components } = mounted;
   for (const rel of pulled) {
-    if (rel === CANVAS || rel === RUNTIME || TOKENS.test(rel) || boards.includes(rel)) continue;
+    if (rel === CANVAS || rel === RUNTIME || TOKENS.test(rel) || boards.includes(rel) || components.includes(rel)) continue;
     const reason = elsewhere.includes(rel)
       ? `the board is on another page than "${parsed.page.id}", so it is not this milestone's`
       : rel.startsWith("project/") && rel.endsWith(BOARD_SUFFIX)
         ? `"canvas.json" names no such board`
-        : "it is not a file a canvas is imported from (canvas.json, its boards, ds/<system>/tokens.json and the type's dc-runtime.js)";
+        : "it is not a file a canvas is imported from (canvas.json, its boards, the components they mount, ds/<system>/tokens.json and the type's dc-runtime.js)";
     return refuse(`"${rel}" is refused: ${reason}. Nothing was written.`, "design-system-mocks-stray-file");
   }
   for (const rel of [...boards, RUNTIME]) {
@@ -198,7 +225,8 @@ export function planImport({ pulled, canvasText, existing = [], readme = null, p
     }
   }
 
-  const admitted = [CANVAS, ...boards, RUNTIME, ...pulled.filter((rel) => TOKENS.test(rel)).sort()];
+  // A component is copied beside the boards that mount it, never framed: canvas.json lists the page's boards alone.
+  const admitted = [CANVAS, ...boards, ...components, RUNTIME, ...pulled.filter((rel) => TOKENS.test(rel)).sort()];
   const copies = admitted.map((from) => (from === CANVAS && parsed.page
     ? { text: pageCanvas(parsed.canvas, parsed.page, parsed.boards), to: destinationOf(from) }
     : { from, to: destinationOf(from) }));

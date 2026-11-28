@@ -5,12 +5,12 @@
 // starts and the real Playwright cache is never read.
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { existsSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { browserArgv, createSvgRasterizer, findBrowser } from "@aof/execution/svg-rasterizer";
+import { PAGE_SETTLE_MS, browserArgv, createSvgRasterizer, findBrowser, serveFolder } from "@aof/execution/svg-rasterizer";
 
 const { rasterizeSvg, rasterizePage } = createSvgRasterizer({ reportDegrade() {} });
 
@@ -266,10 +266,39 @@ export const diagramRasterizeTests = [
         assert.ok(clock.now() >= 400, "answered only after the PNG was written");
         const [call] = fake.calls;
         const userDataDir = call.args.find((arg) => arg.startsWith("--user-data-dir=")).slice("--user-data-dir=".length);
-        assert.deepEqual(call.args, browserArgv({ kind: BROWSER.kind, width: 1280, height: 884, scale: 2, userDataDir, pngPath, sourcePath: pagePath }));
-        assert.equal(call.args.at(-1), pathToFileURL(pagePath).href, "the page's file URL is last");
+        // Amended by 198 F-07: a page is served from its own folder on loopback, and settles before the shot.
+        const sourceUrl = call.args.at(-1);
+        assert.match(sourceUrl, /^http:\/\/127\.0\.0\.1:\d+\/fleet-filter\.dc\.html$/u, "the page's loopback URL is last");
+        assert.deepEqual(call.args, browserArgv({ kind: BROWSER.kind, width: 1280, height: 884, scale: 2, userDataDir, pngPath, sourcePath: pagePath, sourceUrl, settleMs: PAGE_SETTLE_MS }));
+        assert.ok(call.args.includes(`--virtual-time-budget=${PAGE_SETTLE_MS}`));
         assert.ok(call.args.includes("--window-size=1280,884") && call.args.includes("--force-device-scale-factor=2"));
         assert.deepEqual(readdirSync(fx.tmp), [], "the profile is removed");
+      });
+    },
+  },
+  {
+    name: "198 F-07: a page's folder is served on loopback and nothing above it, read-only",
+    run: async () => {
+      await withSvg("0 0 10 10", async (fx) => {
+        const folder = path.join(fx.root, "mocks");
+        mkdirSync(folder, { recursive: true });
+        writeFileSync(path.join(folder, "Messaging.dc.html"), "<x-dc></x-dc>");
+        writeFileSync(path.join(fx.root, "secret.txt"), "not served");
+        const served = await serveFolder(folder);
+        try {
+          const page = await fetch(served.url("Messaging.dc.html"));
+          assert.equal(page.status, 200);
+          assert.equal(await page.text(), "<x-dc></x-dc>");
+          assert.match(page.headers.get("content-type"), /^text\/html/u);
+          const base = served.url("x").replace(/\/x$/u, "");
+          for (const escape of ["/../secret.txt", "/%2e%2e/secret.txt", "/..%2fsecret.txt"]) {
+            assert.equal((await fetch(`${base}${escape}`)).status, 404, escape);
+          }
+          assert.equal((await fetch(served.url("Messaging.dc.html"), { method: "POST" })).status, 405);
+          assert.match(base, /^http:\/\/127\.0\.0\.1:\d+$/u, "loopback only");
+        } finally {
+          await served.close();
+        }
       });
     },
   },

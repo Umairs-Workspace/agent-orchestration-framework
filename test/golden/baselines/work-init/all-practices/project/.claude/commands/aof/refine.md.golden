@@ -226,7 +226,9 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
         2 made and which existing boards step 3 brought onto the system or changed. `mocks/` is
         untouched while the question is open: **only an approved canvas becomes a baseline.**
      5. **On Approve, pull it back and commit it — through the verbs, never by hand.** Read back
-        `project/canvas.json`, every board on the milestone's page, `project/ds/*/tokens.json` and
+        `project/canvas.json`, every board on the milestone's page, every component those boards
+        mount with `<dc-import name="X">` (the sibling `project/X.dc.html`, on whatever page it
+        sits, and the components it mounts in turn), `project/ds/*/tokens.json` and
         the type's `artifact-type/dc-runtime.js` into one directory under the scratchpad, keeping
         their published paths, and note the canvas's version. Then run, in order:
         ```

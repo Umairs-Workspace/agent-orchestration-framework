@@ -69,6 +69,11 @@ doc: state
   boards of any number of canvases, and the inventory review standardises their values onto the
   code's tokens (map, accept or drop, by the verb's `nearest`) before the system is built. ADR-004
   amended.
+- 2026-11-28 — F-07 fixed inline, found at verify on the portal's 37 import: two of its eleven
+  baselines were blank, because each board only mounts `Messaging` (`<dc-import>`), which the
+  import never copied, and capture opened boards from `file://`. The import now carries mounted
+  components, capture serves the folder on loopback, and the portal's 37 import was redone from the
+  same approved version. ADR-006 amended.
 
 ## Notes & decisions in flight
 
@@ -106,161 +111,8 @@ doc: state
 
 ## Feedback (for retro)
 
-- 2026-11-26 · 198/00 build (solo) · the declared read set was incomplete: the build also read
-  `packages/core/src/model.mjs` (`RUNTIMES`, the matrix's names the loader hands the pure composer),
-  `packages/core/src/work/delegation.mjs` (a body rewrite after load), the work-doctor engine
-  (`packages/work/src/doctor/index.mjs`, to run a scoped doctor in-process over the fixture) and
-  `test/arch/testing/acd-source-directory-budget.test.mjs`.
-- 2026-11-26 · 198/00 build · `aof test --scope impacted --story 198/00` widens to all 1315
-  suites because `wiki/reference/practice-prose.md` is not in the graph; the affected suites were
-  run by file instead.
-- 2026-11-26 · 198/00 build · the near-miss recall ran after the build had started, not before it
-  (it returned nothing, so nothing it would have surfaced was missed).
-- 2026-11-26 · 198/00 review close (solo; architect, QA and craft lenses inline; 0 Blockers, one
-  round). Routed:
-  - **fixed** — `applyDelegationModelToResources` rewrote `body` but not the per-runtime
-    `commonBodies`, so with a scoped fragment on and a non-default delegation model, Claude's and
-    OpenCode's renders kept the default literal. Fixed in `packages/core/src/work/delegation.mjs`
-    (write set grew by that file), with a case in `bundle-compose.suite.mjs` that is red without it.
-  - **recorded** — `doctor-practices.mjs` repeats `update.mjs`'s legacy-lock fallback (no
-    `runtimes` → `["claude"]`); one home would be better.
-  - **recorded** — `acd-source-directory-budget`'s entry for `test/arch/practices` still says
-    "four members"; it now holds the index and five controls (under the threshold, so green).
-  - **recorded** — task 02's doctor scenarios run the work-doctor engine with the practice lane's
-    own binding over the NOTES fixture rather than the CLI, which cannot be handed a fixture bundle
-    (192/03's precedent for fixture practices).
-  - **recorded** — `bundle-compose.suite.mjs` is now about 1,000 lines; 198's cases could move to
-    a suite of their own.
-  - **recorded (not 00's)** — FF-7106 is red at the base commit and here: 198/03's `files:` names
-    `packages/acd/assets/commands/verify.md` without its tracked renders
-    (`.agents/skills/aof-verify/{SKILL.md,procedure.md,agents/openai.yaml}`,
-    `.codex/aof/workflows/workflow-contract.md`, `.opencode/commands/aof/verify.md`). For 03's
-    contract to carry.
-- **198/01 build (2026-11-26, solo)**
-  - **recorded** — the declared write set missed five files the story could not land without, now
-    added to its `files:`: `schemas/aof.schema.json` (`work.ui` is closed, so `designSystem` needs
-    a node), `scripts/workspace-runtime-audit.json` (editing `config-inspect.mjs` and
-    `scripts/test.mjs` re-keys their audited child-process entries; the expressions are unchanged,
-    only `sourceDigest` restamped), `test/arch/command/acd-cli-entry-executes.test.mjs` (FF-16004's
-    `work find` ceiling 763 → 766: the contribution, its verb descriptors and the config shape
-    check), the render-level control `test/arch/practices/acd-design-system-practice.test.mjs`
-    (a package suite may not import core, so tasks 00/01's render cases cannot live in the package),
-    and `.aof/aof.lock.json` from `aof work update`.
-  - **fixed** — the token scanner read a `:root` inside `@media (prefers-color-scheme: dark)` as the
-    light theme, silently overwriting light values; only `@layer` may now wrap a theme selector,
-    and anything else is unplaced with its reason.
-  - **recorded** — the near-miss recall ran after the build rather than before it (empty either
-    way; recall `eb487a54-5b34-4944-a0e4-cc140720140d`).
-  - **recorded** — five suites (`bundle-asset-manifest-complete` ×3, `core-workspace`'s copied core,
-    `application-assembly`'s HTTP close) need `apps/ui/dist`, which a dispatch worktree has not
-    built. With the UI built (`node scripts/ui-build.mjs`) all five are green.
-  - **fixed** (attempt 2) — the affected suites, run by file, named the counts a third practice
-    moves: the practices registry (2 → 3), the command members (39 → 40, `design-system` added to
-    `COMMAND_IDS`), OpenCode's render (teach and design-system both Claude-only), the practice list
-    (192/03 E2, E3), the shipped practices (192/00), the workspace owners (21 → 22), and FF-11904's
-    two new flat layers, `packages/design-system/{src,test}`, declared as size exemptions. All are
-    in the story's `files:` now. FF-7106 is green for 01 once `.codex/aof/workflows/workflow-contract.md`
-    is declared; its remaining lines are 03's, recorded above.
-  - **recorded** — the story's impacted run widens to every suite (1,321: the manifests and
-    `yarn.lock` have no registered dependent) and outlasts an attempt's time limit, which is what
-    stopped attempt 1. Attempt 2 ran the 18 suites the change can touch, by file, all green bar
-    03's FF-7106 lines (record on tree 3cd1000, then `bundle.suite` on d9cf1cc). The milestone's
-    regression gate still owes the whole tree.
-  - **recorded** — `tokens.json`'s exact shape (`type.groups[].styles`, `color.themes`) is this
-    story's reading of the Design System type; 05's real run against `from-code.md` is what
-    confirms it.
-  - Task 05 (@manual) is the operator's interactive run; its supply-chain-audit leg passed at build
-    (`node scripts/supply-chain-audit.mjs`: 0 warnings).
-
-- **198/02 build (2026-11-27, solo)**
-  - **recorded** — the declared read set was incomplete: the build also read
-    `packages/core/src/application/bindings/integrations/services.mjs` (the collaborators a practice's
-    verbs get), `packages/work/src/commands/resolve.mjs` (`requireLocalCheckout`),
-    `packages/core/src/application/assemble.mjs`, `packages/core/src/application/bindings/commands/init-update.mjs`
-    (the practice list's runtime suffix), `scripts/workspace-boundaries.mjs`, `test/support/module-family.mjs`,
-    and the golden lane `test/golden/work-init.{lane,test}.mjs`.
-  - **recorded** — the declared write set missed what the build could not land without, now in
-    `files:`: `assemble.mjs` (core hands the command core the rasterizer's services), 01's own
-    controls whose claims 02 changes (`acd-design-system-practice.test.mjs` E1/E2, the package's
-    `practice.suite.mjs`, `contribution.mjs`), 192/03's practice-list cases
-    (`practice-render-lane.suite.mjs`: design-system now lists `for claude`), the command counts and
-    inventory (`application.test.mjs`, `application-assembly.test.mjs`,
-    `test/fixtures/application/command-inventory.json`), FF-11904's table (`test/arch/ui` 39 → 40 for
-    FF-19805; `test/fixtures/design-system` exempted), the runtime audit (the rasterizer's one spawn
-    moved into the shared render), the golden lanes, and the `.aof` records.
-  - **fixed (not 02's)** — four reds 198/01 left, each red at HEAD on a clean copy: the work-init,
-    work-update and project-init goldens lacked `/aof:design-system` (regenerated); FF-12405 leg 7
-    did not classify `design-system.md` (excluded, with its reason); `work.test.roots` lacked
-    `packages/design-system/test`, so FF-19005 found its suites unselectable; and
-    `application.test.mjs` still counted 144 commands.
-  - **recorded** — the `all-practices` golden profile says it turns on every practice key; it lacked
-    `work.ui.designSystem`, and now carries it. Its baselines show the Claude-only prose landing on
-    Claude's refine, verify and designer brief, and no Codex or OpenCode file moving.
-  - **recorded** — `aof test --scope impacted --story 198/02` widens to all 1,323 suites (the
-    manifests, the bundle's prose and the rendered files are not in the graph), the run that timed
-    out 01's first attempt. The suites the change can touch were run by file, all green: the
-    design-system package's five suites, the rasterizer suite and `domain-services.test.mjs`, the
-    practices, ui, diagrams, command, bundle and testing arch indexes (bar FF-7106, below), the four
-    golden suites, and the 54 suites that read the changed modules. The milestone's regression gate
-    still owes the whole tree.
-  - **recorded (not 02's)** — FF-7106 stays red on 198/03's declaration (six tracked renders of
-    `verify.md` and of its own verify fragment) and on 210/00's (thirty). For their contracts.
-  - **recorded** — E12's `..`, `\` and leading-`/` rows cannot exist as entries of a real directory
-    listing, so they are driven through `planImport`, the plan the verb applies; the two rows a
-    listing can hold go through the verb.
-  - **recorded** — A3 is half-measured: capture framed a hand-made pull with this machine's browser,
-    each board at its `boards` size, and a stand-in runtime's script had run by the screenshot. The
-    real `dc-runtime.js` is task 03's (@manual).
-  - **recorded** — the near-miss recall ran after the build rather than before it, as at 00 and 01
-    (`99cc789b-bde4-4c4b-a839-32637dc0cdaf`). Its `--block` and `--json` forms ranked different top
-    fives for one query; the observation records the block's.
-  - **recorded (tooling)** — `aof work resume` listed 198/01 as READY on its timed-out attempt 1
-    although attempt 2 finished `done`: the sweep reads the latest FAILED run, not the lineage's
-    latest. And `aof work resume <ref>` mints its run with no `sessionId`, where `run-start` captures
-    one from the live store.
-- **198/02 review close (solo; architect, QA and craft lenses inline; no UI surface, so no designer
-  lens; 0 Blockers, one round).** Routed:
-  - **fixed** — capture wrote `<board>.png` into `mocks/` whatever stood there, so a hand-taken frame
-    of the same name (milestone 47's `fleet-filter.png`, say) was silently replaced, against Q5's
-    rule that a verb never overwrites a file it did not write. It now refuses, naming the file;
-    a case in `mocks.suite.mjs` is red without it.
-  - **fixed** — a nit: capture's temp directory read `(os.default ?? os).tmpdir()`.
-  - **recorded** — the rasterizer's profile directory is still named `aof-diagram-profile-*` for a
-    page render.
-  - **recorded** — core hands `rasterizePage` and `findBrowser` to every integration's and
-    practice's verbs, as it hands `zipFiles`: the shared services bag is not per-contributor.
-  - **recorded** — verify's pull-back offers Approve and Later and no Revise: a revision at verify
-    is a refine act. E19 and E20 name only those two.
-- **198/03 build (2026-11-27, solo, attempt 1; run `20261127T004735853Z-0001`, no session captured)**
-  - **recorded** — the template variant reaches every runtime, so 198/ADR-001 §5 lists the practice
-    with no runtimes again: 02's amendments of 01's E1 and 192/03's practice-list cases were moved
-    to this state, and 02's "Codex and OpenCode unchanged" case now sets the DESIGN.md template
-    aside. The golden `all-practices` profile gains the template, for all three runtimes.
-  - **recorded** — the write set grew by verify's tracked renders (FF-7106 is green for 03 now:
-    `.agents/skills/aof-verify/*`, `.codex/aof/workflows/workflow-contract.md`,
-    `.opencode/commands/aof/verify.md`; none of them changed, since the practice is off here), the
-    render control `acd-design-system-practice.test.mjs` (E1–E3 run `aof work update` in fixtures),
-    192/03's practice-list suite, the work-init golden test and baselines, and the `.aof` records.
-  - **fixed (not 03's)** — 01's `PLAN.md` restated two paths 01's build had declared (96/02-00's ban
-    was red at HEAD on it); reworded without the paths.
-  - **recorded (not 198's)** — 96/02-00 stays red on 210/00's `PLAN.md` (`wiki/TESTING.md`,
-    `wiki/work`), and FF-7106 on 210/00's declaration. For 210.
-  - **recorded** — the plan's hand check: `apps/ui/src/index.css` printed as a system, hand-edited
-    (a value changed, a usage note written, a token dropped, a stale one added), merged with
-    `--ref`, then checked: the code's value back, the note kept, the dropped token re-added, the
-    stale one removed, `meta.source` restamped, and `check` exits 0.
-  - **recorded** — the near-miss recall ran after the build, again
-    (`fc0ada25-b8c2-4fa1-a092-8c608b0bec08`).
-- **198/03 review close (solo; architect, QA and craft lenses inline; no UI surface; 0 Blockers, one
-  round).** Routed:
-  - **fixed** — `tokens --merge` ignored `--mocks` silently, so a caller passing both would believe
-    the mocks had been weighed. A re-sync reads the code alone (extraction is where a mock-only
-    colour is accepted), so the pair is refused; a case in `tokens.suite.mjs` is red without it.
-  - **recorded** — `--out` is refused when it resolves to a source path, compared as resolved
-    paths: on a case-insensitive file system a differently-cased spelling of a source file is not
-    caught.
-  - **recorded** — the merged file keeps the input's JSON layout (`formatJson` mirrors it), so a
-    hand-compacted system file comes back with mixed indentation.
+Graduated 2026-11-28 into `RETROSPECTIVE.md` and the stories' retrospectives (01, 02); the
+blow-by-blow is in git history before this commit.
 
 ## Verification
 

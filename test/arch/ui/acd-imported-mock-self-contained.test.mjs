@@ -2,7 +2,8 @@
 //
 // "Every `.dc.html` under a `mocks/` dir that names a canvas URL in its README references only
 //  `./support.js`, its sibling files and `ds/*/tokens.json`. It holds no `http(s)://` source other
-//  than a Google Fonts `css2` link."
+//  than a Google Fonts `css2` link." Amended by 198 F-07: every component a board mounts with
+//  `<dc-import>` is a sibling file the import holds.
 //
 // Covers E15 of 198/02's tasks/01_import-commits-an-approved-canvas-with-its-provenance.feature.
 //
@@ -62,10 +63,18 @@ function sourcesOf(text) {
   return [...out, ...importSpecifiers(text)];
 }
 
-// `<board>: <source> (<why>)` for every source an offline baseline cannot keep.
+const DC_IMPORT = /<dc-import\b[^>]*?\bname\s*=\s*(["'])([^"']+)\1/giu;
+
+// `<board>: <source> (<why>)` for every source an offline baseline cannot keep. A `<dc-import>`
+// mounts a sibling `.dc.html`; one the import does not hold renders blank offline (198 F-07).
 export function selfContainedBreaches(boards) {
   const breaches = [];
+  const held = new Set(boards.map(({ file }) => file));
   for (const { file, text } of boards) {
+    const dir = file.includes("/") ? file.slice(0, file.lastIndexOf("/") + 1) : "";
+    for (const match of text.matchAll(DC_IMPORT)) {
+      if (!held.has(`${dir}${match[2]}.dc.html`)) breaches.push(`${file}: <dc-import name="${match[2]}"> (${match[2]}.dc.html is not in the import)`);
+    }
     for (const source of sourcesOf(text)) {
       if (source.startsWith("#") || source.startsWith("data:")) continue;
       if (/^https?:\/\//iu.test(source)) {
@@ -103,6 +112,10 @@ export const archTests = [
       const breaches = selfContainedBreaches(planted);
       assert.deepEqual(breaches, ["test/fixtures/design-system/imported-mock/board.dc.html: https://cdn.example.com/x.js (a network source other than a Google Fonts css2 link)"]);
       assert.deepEqual(selfContainedBreaches([{ file: "m/b.dc.html", text: '<script src="../../secret.js"></script>' }]), ["m/b.dc.html: ../../secret.js (not a sibling file of the board)"]);
+      // 198 F-07: a board that mounts a component the import does not hold, as the portal's 37 import did.
+      const mounting = { file: "m/OnRecord.dc.html", text: '<dc-import name="Messaging" view="record"></dc-import>' };
+      assert.deepEqual(selfContainedBreaches([mounting]), ['m/OnRecord.dc.html: <dc-import name="Messaging"> (Messaging.dc.html is not in the import)']);
+      assert.deepEqual(selfContainedBreaches([mounting, { file: "m/Messaging.dc.html", text: "<x-dc></x-dc>" }]), [], "held beside it, it is self-contained");
     },
   },
 ];

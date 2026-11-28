@@ -138,6 +138,14 @@ Feature: "aof design-system mocks import" commits a pulled, approved canvas unde
       When "aof design-system canvas pages <it> --out <file> --item 5" runs
       Then its one page is "m05", named for the milestone's title, holding the board, and the page it reports is "m05"
 
+    Scenario: E29 · a board's mounted components are imported with it, and a missing one is refused
+      Given the page "m12" holds "fleet-filter.dc.html", which holds <dc-import name="Messaging">, and "Messaging.dc.html" mounts "Avatar"
+      And "Messaging.dc.html" sits on the page "earlier"
+      When the import runs with "--page m12" and the pulled canvas lacks "project/Avatar.dc.html"
+      Then it is refused, saying "project/Messaging.dc.html" mounts "Avatar" and the board would render blank offline, and nothing is written
+      When the pulled canvas holds both
+      Then mocks/ holds "Messaging.dc.html" and "Avatar.dc.html", the README lists them, mocks/canvas.json names neither, and capture frames only the page's boards
+
     Scenario: E27 · what the pages verb refuses, writing nothing
       Then a sort that would need 41 pages is refused as over the Design type's limit of 40
       And "--item 12/01" is refused, saying a canvas page belongs to a milestone

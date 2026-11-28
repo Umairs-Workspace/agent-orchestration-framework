@@ -4,7 +4,7 @@
 // Covers EVERY @executable scenario in
 //   tasks/01_import-commits-an-approved-canvas-with-its-provenance.feature — E11, the E12 outline, the
 //     "cannot render offline" outline, E13, the bad-provenance outline, E14, the hand-written README
-//     and the same-version re-import, and R4a's E21–E23 and E25–E28 (a page per milestone and the
+//     and the same-version re-import, and R4a's E21–E23, E25–E28 and E29 (a page per milestone, the components a board mounts, and the
 //     canvas pages verb, amended 2026-11-27)
 //     (E15 is FF-19805, test/arch/ui/acd-imported-mock-self-contained)
 //   tasks/02_capture-frames-each-board-at-its-own-size.feature — E16, the re-capture, E17, the failing
@@ -366,6 +366,42 @@ export const mocksTests = [
         assert.equal(again.changed, false, "the same page at the same version is unchanged");
         const framed = await capture();
         assert.deepEqual(framed.frames.map((frame) => frame.board), ["fleet-filter.dc.html", "fleet-filter-390.dc.html"]);
+      });
+    },
+  },
+  {
+    name: "198/02 01 E29 · a board's <dc-import> component is imported beside it, even from another page, and never framed; a missing one is refused",
+    run: async () => {
+      // The portal's 37 shape (F-07): a board that only mounts "Messaging", which sits on another page.
+      const boards = {
+        "Messaging.dc.html": { x: 0, y: 0, w: 1440, h: 1000, page: "earlier" },
+        "fleet-filter.dc.html": { x: 0, y: 0, w: 1280, h: 884, page: "m12" },
+        "fleet-filter-390.dc.html": { x: 1340, y: 0, w: 390, h: 274, page: "m12" },
+      };
+      const pulled = pulledFiles(boards);
+      const canvas = JSON.parse(pulled["project/canvas.json"]);
+      canvas.pages = [{ id: "earlier", name: "Portal" }, { id: "m12", name: "12 Fleet filter" }];
+      pulled["project/canvas.json"] = `${JSON.stringify(canvas, null, 2)}\n`;
+      pulled["project/fleet-filter.dc.html"] = '<script src="./support.js"></script><x-dc><dc-import name="Messaging" view="record" hint-size="100%,1000px"></dc-import></x-dc>';
+      pulled["project/Messaging.dc.html"] = '<script src="./support.js"></script><x-dc><dc-import name="Avatar"></dc-import></x-dc>';
+      pulled["project/Avatar.dc.html"] = '<script src="./support.js"></script><x-dc></x-dc>';
+      const missing = { ...pulled };
+      delete missing["project/Avatar.dc.html"];
+      await withProject({ pulled: missing }, async ({ importIt, snapshot }) => {
+        await assert.rejects(importIt({ ...FLAGS, page: "m12" }), (error) => error.code === "design-system-mocks-incomplete"
+          && error.message.includes('"project/Messaging.dc.html" mounts "Avatar"') && error.message.includes("render blank offline"));
+        assert.equal(await snapshot(), null, "nothing is written");
+      });
+      await withProject({ pulled }, async ({ mocksDir, importIt, capture, readme }) => {
+        const answer = await importIt({ ...FLAGS, page: "m12" });
+        for (const component of ["Messaging.dc.html", "Avatar.dc.html"]) {
+          assert.ok(answer.written.includes(`${MOCKS}/${component}`), `${component} is imported`);
+          assert.ok((await readme()).includes(`- \`${component}\``), `the README lists ${component}`);
+        }
+        const written = JSON.parse(await readFile(path.join(mocksDir, "canvas.json"), "utf8"));
+        assert.deepEqual(Object.keys(written.boards), ["fleet-filter.dc.html", "fleet-filter-390.dc.html"], "a component is not one of the page's boards");
+        const framed = await capture();
+        assert.deepEqual(framed.frames.map((frame) => frame.board), ["fleet-filter.dc.html", "fleet-filter-390.dc.html"], "and is never framed");
       });
     },
   },

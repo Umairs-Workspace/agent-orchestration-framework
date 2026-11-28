@@ -45,9 +45,10 @@ Feature: One real canvas is drawn on the system, approved, imported, captured, a
       Then refine ends with DESIGN.md naming the canvas link as awaiting approval
       And the surface's binding checklist is its baseline, and mocks/ is untouched
 
-    Scenario: E8 · turning the canvas down elicits mocks as before
-      When the operator turns the canvas down at the designer step
-      Then the step asks for a mock of their own, or fills the binding checklist, exactly as it does with the practice off
+    Scenario: E8 · with the practice on the canvas is not optional (amended 2026-11-28, F-05)
+      When refine reaches the designer step
+      Then it asks no "how do you want the mocks" question, and offers neither the binding checklist alone nor the operator's own mocks
+      And a hand-made mock under mocks/ is a reference for the drawing, never the baseline
 
     Scenario: A1 · a refine driven by the loop publishes and asks through the loop
       When the same designer step runs in a refine that "aof work loop" drives
