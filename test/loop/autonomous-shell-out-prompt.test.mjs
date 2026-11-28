@@ -92,6 +92,9 @@ const commandIdsBeforeStory = [
   // `teach` ADDED AT 179/02, after the integrations': it is @aof/learning's command, and the
   // descriptor appends each practice's fragment after the integrations' (179/ADR-004 §4).
   "teach",
+  // `design-system` ADDED AT 198/01, after `teach`: it is @aof/design-system's command, a
+  // practice's fragment like `teach`'s, appended in the same practice order (179/ADR-004 §4).
+  "design-system",
 ];
 const delegatedCommandRows = [
   ["c01", "/aof:autonomous 03", "aof work loop 03 --level L2"],
