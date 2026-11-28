@@ -55,10 +55,10 @@ native file to the array registry merely to make it selectable.
 
 ## Machine hazards and slow lanes
 
-`test/store/global-work-propagation.test.mjs` starts a real control stream server binding `:4182`.
-Do not run it against the live control daemon on this machine. Use an isolated gate environment,
-and state the exclusion by suite name in the recorded reason. Do not stop the live daemon to test.
-Tests that launch daemons or bind ports may need the host's sandbox approval.
+Tests that launch daemons or bind ports may need the host's sandbox approval. Never stop the live
+control daemon (`:4182`, relay `:4183`) to test. `test/store/global-work-propagation.test.mjs` is
+safe beside it: since the 129 gate it injects a fake control stream server and turns the relay
+off, and it ran green beside the live daemon in milestone 210's gate.
 
 `test/memory/recall-replay.test.mjs` is a slow lane involving recall evaluation. Include it when
 recall behaviour changes; avoid adding it to unrelated fix checks. Report its actual result and
