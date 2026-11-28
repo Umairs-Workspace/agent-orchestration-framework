@@ -1,6 +1,6 @@
 ---
 aof-generated: true
-description: Extract this project's design system — read its code tokens and its exported mocks, show the operator the inventory, build a Design System artifact from it once they agree, check it against the code, and name it in work.ui.designSystem. Claude Code only.
+description: Extract this project's design system — read its code tokens and its mocks, exported or on the canvases you name, standardise them with you, show the operator the inventory, build a Design System artifact from it once they agree, check it against the code, and name it in work.ui.designSystem. Claude Code only.
 argument-hint: "extract [<exported-mocks-dir>…]"
 aof-invocation: /aof:design-system
 aof-runtime: claude
@@ -9,8 +9,12 @@ aof-runtime: claude
 <objective>
 Capture the project's look once, as a **Design System artifact** every later mock is drawn on, and
 name it in `.aof/aof.config.json` → `work.ui.designSystem`. The system is built from the **code's
-tokens** and the **exported mocks**, never live from Claude Design (198/ADR-004): code beats mocks,
-and a value only a mock paints is the operator's to accept or drop, never written silently.
+tokens** and the **mocks**: the repository's exported mocks and the boards of every canvas the
+operator names, read back once, never live from Claude Design (198/ADR-004). Code beats mocks, and a
+value only a mock paints is the operator's to accept, map onto a code token, or drop, never written
+silently. **A project whose designs are scattered across canvases is consolidated here, first:** the
+boards are read, their values are standardised onto the code's tokens with the operator, and only
+then is the system built (198 F-06).
 
 **The verbs own everything deterministic; this command owns only the Artifact calls and the two
 conversations with the operator** (198/ADR-003). Every parse, comparison and config write is an
@@ -50,21 +54,29 @@ switched on: it is what writes the block.
 **0. Ask first: what exists, and what the operator wants.** Before any token is read, list the Design
 System and the Design artifacts the operator can open (the Artifact tool's `list`, once with each
 type), and say what the block names now. Then show the two-artifact layout above in two lines, and
-ask once, with `AskUserQuestion`, what to do:
-- **build a new system from the code** (the rest of this process), or
+ask once, in plain words, what they want to end up with. The usual answers:
+- **build a new system from the code**, consuming the boards of **any number** of the listed
+  canvases, so the designs scattered across them are consolidated into it (the rest of this
+  process), or
 - **name a system that already exists**, the operator's pick from the list: run step 9 with
   `--artifact <its link> --mode reference` and stop, or
 - **stop**, with nothing changed.
 
-In the same question, ask which listed canvas, if any, holds this project's mocks. A named canvas
-is recorded in step 9 with `--canvas <link>`; none is fine, and the first refine that draws creates
-one. Never offer to merge the system into a canvas: it is not possible.
+In the same question, ask which canvases to consume, and which one canvas, if any, is the project's
+canvas from now on: one of those consumed, another, or none (the first refine that draws creates
+one). It is recorded in step 9 with `--canvas <link>`. A consumed canvas is read, never changed,
+moved or deleted: retiring the old ones is the operator's, on their word. Never offer to merge the
+system into a canvas: it is not possible.
 
 **1. Gather the inputs (ADR-004 §1).**
 - **The code:** the CSS files that declare the project's design tokens, usually the app's root
   stylesheet. Find them with Grep, and confirm the list with the operator in step 3. For AOF this is
   `apps/ui/src/index.css`.
 - **The mocks:** every `mocks/` directory under `work.dir`, plus each directory the arguments name.
+- **The consumed canvases:** read each one's `project/canvas.json` and every board it lists (its
+  `project/*.dc.html` and `project/*.html`) back into a folder of its own under the scratchpad, one
+  folder per canvas, keeping the file names. Each folder is one more `--mocks` directory in step 2.
+  Read the boards, never their screenshots.
 
 **2. Read the tokens and the mock-only values — through the verb, never by reading CSS yourself.**
 
@@ -85,7 +97,10 @@ element.
 **4. The inventory review — the operator agrees before anything is published.** Show, in one message:
 - the token counts per family (for AOF, 20 colours and 1 radius) and the CSS files they came from;
 - every `unplaced` entry, saying the system will not hold it;
-- every `mockOnly` value, each for the operator to **accept or drop**;
+- every `mockOnly` value, grouped by its `nearest` code token, each for the operator to **map onto
+  that token, accept as a new token, or drop**. Propose mapping where the verb's `distance` is
+  small (a hair from the token: the same colour drawn twice) and say each value's distance, so
+  the scattered boards' near-duplicates are standardised in one review;
 - the component inventory;
 - the title you propose: the project's name, unless the operator gives another.
 
@@ -95,7 +110,11 @@ question, carrying the whole inventory. Never publish on a permission prompt nob
 - **Declined:** stop. Nothing is published and the config is not written.
 - **A mock-only value accepted:** it goes into the **code first** — add it to the CSS file the
   tokens came from — and run step 2 again. It is never written into the system alone, so `check`
-  stays clean from the first publish.
+  stays clean from the first publish. Values the operator wants as one new token are accepted once:
+  after the re-run, the others name it as their `nearest`, and are mapped.
+- **A mock-only value mapped:** nothing is written to the code. The token's usage note in the
+  system names the values it replaces, and refine brings each milestone's boards onto the token
+  when it draws on that milestone's page.
 - **Changed:** apply the change and show the inventory again.
 
 **5. Resolve the title before publishing (ADR-005 §4).** List the Design System artifacts the

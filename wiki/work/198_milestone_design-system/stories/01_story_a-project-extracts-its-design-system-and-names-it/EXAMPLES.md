@@ -21,6 +21,7 @@ takes the default it names.
 - E6 · "--color-primary: hsl(174 72% 27%)" in @theme and "--color-primary: hsl(174 60% 40%)" under ".dark": one token "color-primary" whose value is {"light": "hsl(174 72% 27%)", "dark": "hsl(174 60% 40%)"}, and the themes are light, then dark [proposed]
 - E7 · "--color-ring: var(--color-primary)" becomes the alias "{color-primary}". "--color-scrim: color-mix(in srgb, black 40%, transparent)" and "--color-none: transparent" are listed as unplaced, each with its file, its line and the reason [proposed]
 - E8 · With "--mocks wiki/work": a mock that paints "#b3261e", which no code token holds, lists that value as mock-only, with every file it appears in. A mock that paints "hsl(174 72% 27%)" lists nothing [proposed]
+- E26 · Amended 2026-11-28 (F-06). Code tokens "--surface: #f3f4f6" and "--ink: #111827", and two canvases' boards painting "#f4f4f6", "#101826" and "#e11d48": "#f4f4f6" is one mock-only entry across both, nearest "surface" at distance 1; "#101826" is nearest "ink"; "#e11d48" is far from every token. With no code colour, no entry names a nearest token [proposed]
 
 ## R4 · "aof design-system check" compares a system's tokens with the code, and exits non-zero on drift
 - E9 · A tokens.json that "tokens" printed from index.css, with usage notes and "meta.source" added: no drift, exit 0 [proposed]
@@ -42,8 +43,9 @@ takes the default it names.
 - E24 · Amended 2026-11-27. "canvas": "claude.ai/artifact/x": "design-system-bad-canvas". "canvas" equal to "artifact": "design-system-canvas-is-system" [proposed]
 
 ## R7 · Extract builds the system from the code and the mocks, publishes it only after the operator agrees, and names it only when its title is unambiguous
-- E25 · Amended 2026-11-27 (F-04). Before reading any token, the run lists the Design Systems and canvases the operator can open, says the system and the canvas are two artifacts, and asks once: build from the code, name an existing system, or stop, and which canvas holds the mocks. A question in reply is answered and the same question asked again; nothing is published, deleted or written on it [proposed]
+- E25 · Amended 2026-11-27 (F-04). Before reading any token, the run lists the Design Systems and canvases the operator can open, says the system and the canvas are two artifacts, and asks once, in plain words (amended 2026-11-28, F-06): build from the code consuming any number of the listed canvases, name an existing system, or stop, and which one canvas is the project's from now on. A question in reply is answered and the same question asked again; nothing is published, deleted or written on it [proposed]
 - E19 · AOF's own run: the inventory lists 20 colours, 1 radius, and the bar, nav, scope segment, pills, cards and terminal pane. The operator agrees. A Design System titled "AOF", marked "editing": "code", exists, and .aof/aof.config.json names it as "name": "AOF" [proposed]
+- E27 · Amended 2026-11-28 (F-06). The operator names two canvases to consume: each one's boards are read back into a folder of their own and passed to "tokens" as two "--mocks" directories. The review shows each mock-only colour grouped by its nearest code token, for map, accept or drop; a mapped value writes nothing to the code. Neither canvas is changed, moved or deleted [proposed]
 - E20 · A system titled "AOF" is already among those the operator can open: the run stops before publishing, naming every candidate's title and link, and the config is not written [proposed]
 - E21 · The operator declines the inventory: nothing is published, and the config is unchanged [proposed]
 

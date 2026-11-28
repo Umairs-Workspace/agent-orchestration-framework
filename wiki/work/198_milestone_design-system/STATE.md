@@ -65,6 +65,10 @@ doc: state
   refine draws on the system and asks only for approval (no checklist-only or own-mocks offer), a
   canvas's pages come from `aof design-system canvas pages`, and refine starts from the boards already
   on the milestone's page. ADR-002 §4 and ADR-006 §0 amended.
+- 2026-11-28 — F-06 fixed inline (operator's go: "amend what you delivered"): extract consumes the
+  boards of any number of canvases, and the inventory review standardises their values onto the
+  code's tokens (map, accept or drop, by the verb's `nearest`) before the system is built. ADR-004
+  amended.
 
 ## Notes & decisions in flight
 

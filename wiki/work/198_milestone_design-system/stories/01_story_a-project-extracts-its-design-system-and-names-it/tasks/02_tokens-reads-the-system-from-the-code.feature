@@ -41,6 +41,15 @@ Feature: "aof design-system tokens" prints the token lists the type reads, from 
       Then "mockOnly" holds "#b3261e" with the files "a.dc.html" and "b.html"
       And "mockOnly" holds no entry for "hsl(174 72% 27%)"
 
+    Scenario: E26 · each mock-only colour names the code token nearest it
+      Given the code tokens "--surface: #f3f4f6" and "--ink: #111827"
+      And "scratch/canvases/a" and "scratch/canvases/b" hold boards painting "#f4f4f6", "#101826" and "#e11d48"
+      When "aof design-system tokens app/tokens.css --mocks scratch/canvases/a --mocks scratch/canvases/b --json" runs
+      Then "mockOnly" holds "#f4f4f6" once, with both boards, nearest "surface" at distance 1
+      And "#101826" is nearest "ink", and "#e11d48" is far from every token
+      When the code declares no colour
+      Then no "mockOnly" entry names a nearest token
+
     Scenario Outline: each property goes to its family, or is unplaced with its reason
       Given a CSS file whose @theme declares <declaration>
       When "aof design-system tokens --json" runs over it

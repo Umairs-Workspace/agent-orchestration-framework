@@ -32,6 +32,13 @@ Feature: The extract command is Claude's alone, and is installed whether the pra
       Then it says to read "from-code.md" from the Design System type at run time
       And no file under "packages/design-system/assets" is named "from-code.md" or "format.md"
 
+  Scenario: E27 · extract consumes named canvases and standardises them before it builds
+    Given the command "design-system.md" the package ships
+    Then its first question is asked in plain words, offering to build from the code consuming any number of the listed canvases, and asks which one canvas is the project's from now on
+    And each consumed canvas's boards are read back into a folder of their own, one more "--mocks" directory
+    And the review offers each mock-only colour, grouped by its nearest code token, to map, accept or drop, and a mapped value writes nothing to the code
+    And a consumed canvas is never changed, moved or deleted, and all of this comes before the build
+
   Scenario: the command hands every deterministic step to a verb
     When the rendered ".claude/commands/aof/design-system.md" is read
     Then it calls "aof design-system tokens", "aof design-system check" and "aof design-system use"

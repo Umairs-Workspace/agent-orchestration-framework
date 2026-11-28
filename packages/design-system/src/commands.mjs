@@ -622,7 +622,7 @@ function renderTokens(result) {
     section(`Shadow (${result.shadow.tokens.length})`, result.shadow.tokens.map((token) => `  ${token.name}  ${token.value}`)),
   ];
   if (result.mockOnly !== undefined) {
-    sections.push(section(`Only in a mock (${result.mockOnly.length})`, result.mockOnly.map((entry) => `  ${entry.value}  in ${entry.files.join(", ")}`)));
+    sections.push(section(`Only in a mock (${result.mockOnly.length})`, result.mockOnly.map((entry) => `  ${entry.value}  in ${entry.files.join(", ")}${entry.nearest ? `  (nearest: ${entry.nearest.name} ${entry.nearest.value}, distance ${entry.nearest.distance})` : ""}`)));
   }
   sections.push(section(`Not placed (${result.unplaced.length})`, result.unplaced.map((entry) => `  ${entry.property}  ${entry.file}:${entry.line}  ${entry.reason}`)));
   return sections.join("\n\n");

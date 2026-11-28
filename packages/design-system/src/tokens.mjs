@@ -328,15 +328,21 @@ export function colourLiterals(text) {
 
 /**
  * The colours the mocks paint that no code token holds. `mocks` is `[{ file, text }]`. Answers
- * `[{ value, files }]` in first-seen order: one entry per distinct RGBA colour, `value` as first
- * written, `files` every mock it appears in.
+ * `[{ value, files, nearest? }]` in first-seen order: one entry per distinct RGBA colour, `value` as
+ * first written, `files` every mock it appears in, and `nearest` the code token closest to it
+ * (`{ name, theme, value, distance }`, the RGBA distance on 0–255 channels, alpha scaled the same),
+ * so consolidating scattered mocks onto the code's tokens is the verb's comparison, never the
+ * session's eye (198 F-06). No code colour, no `nearest`.
  */
 export function mockOnly(tokens, mocks) {
   const code = new Set();
+  const candidates = [];
   for (const token of tokens?.color?.tokens ?? []) {
-    for (const value of Object.values(token.value ?? {})) {
+    for (const [theme, value] of Object.entries(token.value ?? {})) {
       const key = rgbaKey(value);
-      if (key != null) code.add(key);
+      if (key == null) continue;
+      code.add(key);
+      candidates.push({ name: token.name, theme, value, key });
     }
   }
   const found = new Map();
@@ -344,12 +350,25 @@ export function mockOnly(tokens, mocks) {
     for (const literal of colourLiterals(text)) {
       const key = rgbaKey(literal);
       if (code.has(key)) continue;
-      const entry = found.get(key) ?? { value: literal, files: [] };
+      const entry = found.get(key) ?? { value: literal, files: [], ...nearestOf(key, candidates) };
       if (!entry.files.includes(file)) entry.files.push(file);
       found.set(key, entry);
     }
   }
   return [...found.values()];
+}
+
+const channelsOf = (key) => key.split(",").map(Number).map((part, index) => (index === 3 ? part * 255 : part));
+
+function nearestOf(key, candidates) {
+  const ours = channelsOf(key);
+  let best = null;
+  for (const candidate of candidates) {
+    const theirs = channelsOf(candidate.key);
+    const distance = Math.hypot(...ours.map((part, index) => part - theirs[index]));
+    if (best == null || distance < best.distance) best = { name: candidate.name, theme: candidate.theme, value: candidate.value, distance };
+  }
+  return best == null ? {} : { nearest: { ...best, distance: Math.round(best.distance * 10) / 10 } };
 }
 
 // ── the re-sync ────────────────────────────────────────────────────────────────────────────────

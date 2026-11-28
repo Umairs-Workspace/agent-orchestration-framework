@@ -98,8 +98,36 @@ export const tokensTests = [
       "wiki/work/2_milestone_b/mocks/b.html": "<style>.x { border-color: #b3261e; }</style>",
     }, async ({ tokens }) => {
       const result = await tokens([INDEX_CSS], { mocks: ["wiki/work"] });
-      assert.deepEqual(result.mockOnly, [{ value: "#b3261e", files: ["wiki/work/1_milestone_a/mocks/a.dc.html", "wiki/work/2_milestone_b/mocks/b.html"] }]);
+      assert.deepEqual(result.mockOnly.map(({ value, files }) => ({ value, files })), [{ value: "#b3261e", files: ["wiki/work/1_milestone_a/mocks/a.dc.html", "wiki/work/2_milestone_b/mocks/b.html"] }]);
       assert.ok(!result.mockOnly.some((entry) => entry.value === "hsl(174 72% 27%)"));
+    }),
+  },
+  {
+    name: "198/01 02 E26 · each mock-only colour names the code token nearest it, so scattered boards are consolidated onto the code's tokens by the verb",
+    run: async () => withProject({
+      "app/tokens.css": ":root { --surface: #f3f4f6; --ink: #111827; }\n.dark { --surface: #1f2937; }\n",
+      // Two canvases' boards, read back into one folder each.
+      "scratch/canvases/a/Main.dc.html": "<div style=\"background:#f4f4f6;color:#101826\"></div>",
+      "scratch/canvases/b/Task.dc.html": "<div style=\"background:#f4f4f6;border-color:#e11d48\"></div>",
+    }, async ({ tokens }) => {
+      const result = await tokens(["app/tokens.css"], { mocks: ["scratch/canvases/a", "scratch/canvases/b"] });
+      const byValue = Object.fromEntries(result.mockOnly.map((entry) => [entry.value, entry]));
+      assert.deepEqual(Object.keys(byValue), ["#f4f4f6", "#101826", "#e11d48"]);
+      assert.deepEqual(byValue["#f4f4f6"].files, ["scratch/canvases/a/Main.dc.html", "scratch/canvases/b/Task.dc.html"], "one entry across both canvases");
+      assert.deepEqual(byValue["#f4f4f6"].nearest, { name: "surface", theme: byValue["#f4f4f6"].nearest.theme, value: "#f3f4f6", distance: 1 });
+      assert.equal(byValue["#101826"].nearest.name, "ink");
+      assert.ok(byValue["#101826"].nearest.distance < 3, "a hair from --ink");
+      assert.ok(byValue["#e11d48"].nearest.distance > 50, "a real new colour is far from every token");
+    }),
+  },
+  {
+    name: "198/01 02 E26 · with no code colour, a mock-only colour names no nearest token",
+    run: async () => withProject({
+      "app/tokens.css": ":root { --gap: 8px; }\n",
+      "scratch/canvases/a/Main.dc.html": "<div style=\"background:#f4f4f6\"></div>",
+    }, async ({ tokens }) => {
+      const result = await tokens(["app/tokens.css"], { mocks: ["scratch/canvases/a"] });
+      assert.deepEqual(result.mockOnly, [{ value: "#f4f4f6", files: ["scratch/canvases/a/Main.dc.html"] }]);
     }),
   },
   {

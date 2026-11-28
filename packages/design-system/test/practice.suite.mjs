@@ -99,6 +99,22 @@ export const practiceTests = [
     },
   },
   {
+    name: "198/01 01 E27 · extract consumes the boards of any number of canvases and standardises them onto the code's tokens before it builds",
+    run: async () => {
+      const text = (await command()).replace(/\s+/g, " ");
+      for (const phrase of [
+        "consuming the boards of **any number** of the listed canvases",
+        "ask once, in plain words, what they want to end up with",
+        "which one canvas, if any, is the project's canvas from now on",
+        "A consumed canvas is read, never changed, moved or deleted",
+        "one folder per canvas, keeping the file names. Each folder is one more `--mocks` directory in step 2",
+        "grouped by its `nearest` code token, each for the operator to **map onto that token, accept as a new token, or drop**",
+        "**A mock-only value mapped:** nothing is written to the code.",
+      ]) assert.ok(text.includes(phrase), phrase);
+      assert.ok(text.indexOf("The consumed canvases") < text.indexOf("Build and publish the system"), "consolidation comes before the build");
+    },
+  },
+  {
     name: "198/01 01 the command hands every deterministic step to a verb, and asks before publishing and before use",
     run: async () => {
       const text = await command();

@@ -192,6 +192,17 @@ projects into artifacts.* Neither exists, and the deadline is fixed. Rejected.
 operator before 2026-12-14. That is an operator action, recorded in `STATE.md`, and it does not
 depend on this milestone being built.
 
+**Amended 2026-11-28 (F-06).** §1 and §2 are widened, not replaced. The inputs also include the
+boards of **any number of canvases the operator names**, each read back once into a folder of its
+own and passed as one more mocks directory: a project whose designs are scattered across canvases
+is consolidated by extract, before the system is built, not by a separate step. A value only a mock
+paints is now the operator's to **map onto a code token, accept, or drop**: `tokens --mocks` names
+each one's `nearest` code token and its RGBA distance, so standardising near-duplicates is the
+verb's comparison (ADR-003), never the session's eye. Accept still writes the code first (Q6); map
+writes nothing to the code, and the token's usage note names what it replaces. A consumed canvas is
+read, never changed, moved or deleted; which canvas is the project's from now on is the operator's
+answer in the same first question, asked in plain words rather than as a fixed menu.
+
 ## ADR-005 — `work.ui.designSystem`: one boolean key turns the practice on, beside its data
 
 **Status:** Accepted (amended 2026-11-26: a system is named by `name` or by `artifact`; amended
